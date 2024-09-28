@@ -1,5 +1,8 @@
 # AI Fundermentals
 
+## 基础
+- [查询 GPU 卡详细参数](DeviceQuery.md)
+
 ## nvidia-smi
 - [nvidia-smi 入门](nvidia-smi.md)
 
