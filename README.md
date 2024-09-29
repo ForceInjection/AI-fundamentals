@@ -2,6 +2,7 @@
 
 ## 基础
 - [查询 GPU 卡详细参数](DeviceQuery.md)
+- [Understanding Nvidia CUDA Cores: A Comprehensive Guide](cuda_cores_cn.md)
 
 ## nvidia-smi
 - [nvidia-smi 入门](nvidia-smi.md)
