@@ -12,9 +12,9 @@
 - [GPU 内存](gpu_memory.md)
 - [GPU Example: Tesla V100](tesla_v100.md)
 - [GPUs on Frontera: RTX 5000](rtx_5000.md)
-- Exercises
-	- Exercise: Device Query
-	- Exercise: Device Bandwidth
+- 练习：
+	- [Exercise: Device Query](exer_device_query.md)
+	- [Exercise: Device Bandwidth](exer_device_bandwidth.md)
 
 ### 其他相关知识点
 - [深入理解 Nvidia CUDA 核心（vs. Tensor Cores vs. RT Cores)](cuda_cores_cn.md)
