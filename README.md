@@ -11,7 +11,7 @@
 - [GPU 特性](gpu_characteristics.md)
 - [GPU 内存](gpu_memory.md)
 - [GPU Example: Tesla V100](tesla_v100.md)
-- GPUs on Frontera: RTX 5000
+- [GPUs on Frontera: RTX 5000](rtx_5000.md)
 - Exercises
 	- Exercise: Device Query
 	- Exercise: Device Bandwidth
