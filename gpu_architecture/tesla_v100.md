@@ -1,5 +1,7 @@
 # GPU Example: Tesla V100
 
+**原文：[Cornell University -> Cornell Virtual Workshop -> Understanding GPU Architecture -> GPU Example: Tesla V100](https://cvw.cac.cornell.edu/gpu-architecture/gpus-frontera-rtx-5000/index)**
+
 It's fine to have a general understanding of what graphics processing units can be used for, and to know conceptually how they work. But at the actual hardware level, what does a particular GPU consist of, if one peeks "under the hood"? Sometimes the best way to learn about a certain type of device is to consider one or two concrete examples. First we'll take detailed look at the Tesla V100, one of the NVIDIA models that has been favored for HPC applications. In a subsequent topic, we do a similar deep dive into the [Quadro RTX 5000](rtx_5000.md), a GPU which is found in TACC's Frontera.
 
 # NVIDIA Tesla V100
