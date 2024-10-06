@@ -16,6 +16,9 @@
 	- [Exercise: Device Query](gpu_architecture/exer_device_query.md)
 	- [Exercise: Device Bandwidth](gpu_architecture/exer_device_bandwidth.md)
 
+### GPU 架构和编程模型介绍
+- [GPU Architecture and Programming — An Introduction](gpu_programming_introduction.md)
+
 ### 其他相关知识点
 - [深入理解 Nvidia CUDA 核心（vs. Tensor Cores vs. RT Cores)](cuda_cores_cn.md)
 
