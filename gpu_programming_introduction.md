@@ -4,7 +4,7 @@
 
 Explore Kernel Grids, Blocks, Warps, and Threads to Accelerate Your Code
 
-![gpu execution hierarchical](img/gpu_threads.JPEG)
+![gpu execution hierarchical](img/gpu_threads.jpeg)
 
 A GPU executes code in a hierarchical fashion with the kernel as an independent unit of compute. The kernel is executed using independent thread blocks and each thread block consist of subgroups that work in lockstep called warps or wavefronts.
 
