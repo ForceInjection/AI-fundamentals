@@ -1,0 +1,3 @@
+[submodule "AISystem"]
+	path = AISystem
+	url = git@github.com:chenzomi12/AISystem.git
