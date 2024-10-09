@@ -39,6 +39,10 @@
 	- [《CUDA编程基础与实践》一书的代码](https://github.com/MAhaitao999/CUDA_Programming)
 - [《CUDA 编程简介: 基础与实践 by 李瑜》](http://www.frankyongtju.cn/ToSeminars/hpc.pdf)
 
+###
+- [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
+- [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
+
 ## 监控与运维
 - [nvidia-smi 入门](nvidia-smi.md)
 - [Nvidia GPU XID 故障码解析](https://mp.weixin.qq.com/s/ekCnhr3qrhjuX_-CEyx65g)
@@ -49,7 +53,6 @@
 
 ## 性能分析与调优
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
-
 
 # AI Infra for LLM
 - [高性能 GPU 服务器硬件拓扑与集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-1-zh/)
