@@ -31,15 +31,13 @@
 ### 参考资料
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
 - [《CUDA C++ Programming Guide》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
-- [《CUDA C 编程权威指南》](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)
-	- [书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
+- [《CUDA C 编程权威指南》](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)：[书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
 - [Nvidia 官方 CUDA 是示例](https://github.com/NVIDIA/cuda-samples)
 - [《CUDA 编程：基础与实践 by 樊哲勇》](https://book.douban.com/subject/35252459/)
-	- [基于《cuda编程-基础与实践》（樊哲勇 著）的cuda学习之路](https://github.com/QINZHAOYU/CudaSteps)
-	- [《CUDA编程基础与实践》一书的代码](https://github.com/MAhaitao999/CUDA_Programming)
+	- [学习笔记](https://github.com/QINZHAOYU/CudaSteps)
+	- [示例代码](https://github.com/MAhaitao999/CUDA_Programming)
 - [《CUDA 编程简介: 基础与实践 by 李瑜》](http://www.frankyongtju.cn/ToSeminars/hpc.pdf)
-
-###
+- [《CUDA 编程入门》 - 本文改编自北京大学超算队 CUDA 教程讲义](https://hpcwiki.io/gpu/cuda/)
 - [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
@@ -54,7 +52,14 @@
 ## 性能分析与调优
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
 
-# AI Infra for LLM
+# LLM 基础
+
+## AI Infra
 - [高性能 GPU 服务器硬件拓扑与集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-1-zh/)
 - [NVIDIA GH200 芯片、服务器及集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-4-zh/)
 - [深度学习（大模型）中的精度](https://mp.weixin.qq.com/s/b08gFicrKNCfrwSlpsecmQ)
+
+## 深度学习/机器学习
+
+- [《机器学习系统：设计和实现》](https://openmlsys.github.io/index.html)
+- [《动手学深度学习》](https://zh.d2l.ai/)
