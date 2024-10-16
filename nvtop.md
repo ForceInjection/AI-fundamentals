@@ -1,4 +1,4 @@
-# nvtop 使用入门
+# nvtop 快速入门
 
 ## 1. 什么是 nvtop
 
@@ -11,7 +11,7 @@ nvtop 是一款类似于 `htop` 的命令行工具，可用于监控 NVIDIA、AM
 ## 2. 如何安装 nvtop
 
 ### 2.1 在不同操作系统上的安装方法
-具体参考项目 [Readme](https://github.com/Syllo/nvtop/blob/master/README.markdown)。
+具体参考项目 [README](https://github.com/Syllo/nvtop/blob/master/README.markdown)。
 
 - **Ubuntu 19.04 / Debian Buster (stable)**:
 

@@ -41,6 +41,7 @@
 
 ## 监控与运维
 - [nvidia-smi 入门](nvidia-smi.md)
+- [nvtop 入门](nvtop.md)
 - [Nvidia GPU XID 故障码解析](https://mp.weixin.qq.com/s/ekCnhr3qrhjuX_-CEyx65g)
 - [Nvidia GPU 卡 之 ECC 功能](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
 - [查询 GPU 卡详细参数](DeviceQuery.md)
