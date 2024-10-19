@@ -25,6 +25,7 @@
 ### 快速入门
 - [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
+- [CUDA 并发编程之 Stream 介绍](cuda_streams.md)
 
 ### 参考资料
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
@@ -63,7 +64,7 @@
 - [《动手学深度学习》](https://zh.d2l.ai/)
 
 # LLM 训练
-## Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings
+## 从零开始训练 70B 模型
 * [Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings](https://imbue.com/research/70b-intro/)
 * [Sanitized open-source datasets for natural language and code understanding: how we evaluated our 70B model](https://imbue.com/research/70b-evals/)
 * [From bare metal to a 70B model: infrastructure set-up and scripts](https://imbue.com/research/70b-infrastructure/)
