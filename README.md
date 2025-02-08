@@ -1,71 +1,155 @@
-# AI Fundermentals
-## 相关硬件知识
-- [PCIe 知识大全](https://mp.weixin.qq.com/s/dHvKYcZoa4rcF90LLyo_0A)
-- [NVLink 入门](https://mp.weixin.qq.com/s/fP69UEgusOa_X4ZKLo30ig)
-- [NVIDIA DGX SuperPOD：下一代可扩展的AI领导基础设施](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q)
 
-## 深入理解 GPU 架构
-在准备在 GPU 上运行的应用程序时，了解 GPU 硬件设计的主要特性并了解与 CPU 的相似之处和不同之处会很有帮助。本路线图适用于那些对 GPU 比较陌生或只是想了解更多有关 GPU 中计算机技术的人。不需要特定的并行编程经验，练习基于 CUDA 工具包中包含的标准 NVIDIA 示例程序。
+# build
 
-- [GPU 特性](gpu_architecture/gpu_characteristics.md)
-- [GPU 内存](gpu_architecture/gpu_memory.md)
-- [GPU Example: Tesla V100](gpu_architecture/tesla_v100.md)
-- [GPUs on Frontera: RTX 5000](gpu_architecture/rtx_5000.md)
-- 练习：
-	- [Exercise: Device Query](gpu_architecture/exer_device_query.md)
-	- [Exercise: Device Bandwidth](gpu_architecture/exer_device_bandwidth.md)
+```bash
+docker build --network=host -t ollama-bench .
+```
 
-### GPU 架构和编程模型介绍
-- [GPU Architecture and Programming — An Introduction](gpu_programming_introduction.md)
+# run
 
-### 其他相关知识点
-- [深入理解 Nvidia CUDA 核心（vs. Tensor Cores vs. RT Cores)](cuda_cores_cn.md)
+```bash
+docker run --rm --network=host ollama-bench
+```
 
-## CUDA 学习材料
-### 快速入门
-- [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
-- [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
-- [CUDA 并发编程之 Stream 介绍](cuda_streams.md)
+# outpu
 
-### 参考资料
-- [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
-- [《CUDA C++ Programming Guide》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
-- [《CUDA C 编程权威指南》](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)：[书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
-- [Nvidia 官方 CUDA 是示例](https://github.com/NVIDIA/cuda-samples)
-- [《CUDA 编程：基础与实践 by 樊哲勇》](https://book.douban.com/subject/35252459/)
-	- [学习笔记](https://github.com/QINZHAOYU/CudaSteps)
-	- [示例代码](https://github.com/MAhaitao999/CUDA_Programming)
-- [《CUDA 编程简介: 基础与实践 by 李瑜》](http://www.frankyongtju.cn/ToSeminars/hpc.pdf)
-- [《CUDA 编程入门》 - 本文改编自北京大学超算队 CUDA 教程讲义](https://hpcwiki.io/gpu/cuda/)
-- [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
-- [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
+```text
+🔥 预热模型中，请稍候...
+✅ 预热完成，开始正式推理...
 
-## 监控与运维
-- [nvidia-smi 入门](nvidia-smi.md)
-- [nvtop 入门](nvtop.md)
-- [Nvidia GPU XID 故障码解析](https://mp.weixin.qq.com/s/ekCnhr3qrhjuX_-CEyx65g)
-- [Nvidia GPU 卡 之 ECC 功能](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
-- [查询 GPU 卡详细参数](DeviceQuery.md)
-- [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
-- [GPU Utilization is a Misleading Metric](gpu_utils.md)
+🚀 运行第 1 轮推理...
+📜 提示词 Token 数: 11, 处理耗时: 0.16 秒
+📜 生成 Token 数: 881, 生成耗时: 83.77 秒
+⏱️  总推理时间: 83.99 秒
+⚡ Token 速率: 10.52 tokens/sec
+📢 **模型输出:**
+<think>
+嗯，用户让我介绍屈原。首先，我得回想一下关于屈原的基本信息。他是战国时期的楚国诗人，对吧？我记得他生活在公元前340年左右，后来投江自尽，这个故事和端午节有关。
 
-## 性能分析与调优
-- [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
-- [CUDA Kernel Profiling using Nvidia Nsight Compute](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)
+然后，我要考虑用户的需求是什么。他们可能只是想了解屈原的生平、成就或者他的影响。也许用户在学习中国文学或历史，所以需要详细一点的信息。
 
-# LLM 基础
-## AI Infra
-- [高性能 GPU 服务器硬件拓扑与集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-1-zh/)
-- [NVIDIA GH200 芯片、服务器及集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-4-zh/)
-- [深度学习（大模型）中的精度](https://mp.weixin.qq.com/s/b08gFicrKNCfrwSlpsecmQ)
+接下来，我应该分点介绍，这样结构更清晰。比如，生平简介、代表作品、主要思想以及他的影响。这样用户看起来会比较有条理。
 
-## 深度学习/机器学习
-- [《机器学习系统：设计和实现》](https://openmlsys.github.io/index.html)
-- [《动手学深度学习》](https://zh.d2l.ai/)
+我还得提到屈原的爱国情怀和对楚文化的贡献，这些是他在历史上最重要的部分。还有端午节的由来，这样可以让内容更丰富，满足可能的兴趣点。
 
-# LLM 训练
-## 从零开始训练 70B 模型
-* [Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings](https://imbue.com/research/70b-intro/)
-* [Sanitized open-source datasets for natural language and code understanding: how we evaluated our 70B model](https://imbue.com/research/70b-evals/)
-* [From bare metal to a 70B model: infrastructure set-up and scripts](https://imbue.com/research/70b-infrastructure/)
-* [Open-sourcing CARBS: how we used our hyperparameter optimizer to scale up to a 70B-parameter language model](https://imbue.com/research/70b-carbs/)
+另外，考虑到用户可能是学生或者对中国文化感兴趣的人，所以用词要准确但不过于学术化，让所有人都能理解。
+
+最后，我应该总结一下屈原的重要性，强调他在中国文学史和文化中的地位。这样用户不仅能获得信息，还能感受到屈原的价值。
+</think>
+
+当然可以！屈原是中国战国时期著名的诗人、政治家，也是中国文学史上第一位伟大的爱国诗人。他是楚文化的杰出代表，对后世的文学和文化产生了深远的影响。
+
+### 生平简介
+屈原（公元前340年－公元前278年），名平，字原，出生于楚国贵族家庭，是中国战国时期的诗人、政治家。他曾在楚国担任要职，参与国家的政治活动，并提出了许多改革建议，主张富国强兵、反对秦国的侵略政策。
+
+然而，屈原因其正直和对楚国的忠诚而遭到权臣的谗言攻击，最终被流放到沅湘流域。在流放期间，他创作了许多抒发爱国情怀和忧国忧民情感的作品。公元前278年，秦军攻破楚国都城郢都，屈原心怀绝望与悲愤，在汨罗江投水自尽，以身殉国。
+
+### 代表作品
+屈原的诗歌以其深沉的情感、高超的艺术成就和独特的浪漫主义风格著称。他的作品主要包括《离骚》、《九章》、《天问》、《九歌》等。这些作品不仅是中国文学的瑰宝，也被视为世界文化的重要遗产。
+
+- **《离骚》**：这是屈原的代表作，也是中国古代最长的抒情诗。诗中表达了诗人对理想的追求、对现实的不满以及对国家命运的深切关怀。
+- **《九章》**：包括9首诗歌，内容涉及诗人对楚国的忠诚、对现实的批判以及个人遭遇的感慨。
+- **《天问》**：屈原以疑问的形式提出了对天地万物和历史兴衰的思考，展现了他博大的胸怀和深邃的思想。
+- **《九歌》**：这是一组祭祀性质的诗歌，包含了丰富的神话传说和民间信仰元素。
+
+### 主要思想
+屈原的作品中体现了以下几个主要思想：
+1. **爱国情怀**：屈原对楚国怀有深厚的感情，始终以国家利益为重，反对秦国的侵略。
+2. **忠诚与正直**：他坚持自己的政治立场，即使遭到流放和排挤也不改其志。
+3. **理想主义**：屈原追求美好的政治理想和社会秩序，即使在现实中屡遭挫折也从未放弃。
+
+### 历史地位与影响
+屈原是中国文学史上第一位伟大的诗人，他的作品开创了中国浪漫主义文学的先河。他不仅是楚辞的创始人，还被后世称为“诗祖”和“中华诗神”。
+
+此外，屈原的爱国精神和悲壮命运深深打动了后人的心灵，成为中华民族精神的重要象征。每年农历五月初五的端午节，就是为了纪念屈原而设立的传统节日，人们通过赛龙舟、吃粽子等活动来表达对他的怀念。
+
+总之，屈原不仅是中国文学史上的一座丰碑，也是中华文化中一颗璀璨的明珠。他的作品和精神至今仍然被广泛传颂，并激励着后人不断追求理想与正义。
+--------------------------------------------------------------------------------
+
+🚀 运行第 2 轮推理...
+📜 提示词 Token 数: 11, 处理耗时: 0.09 秒
+📜 生成 Token 数: 718, 生成耗时: 68.52 秒
+⏱️  总推理时间: 68.69 秒
+⚡ Token 速率: 10.48 tokens/sec
+📢 **模型输出:**
+<think>
+嗯，用户让我介绍一下中国的屈原。首先，我得回忆一下关于屈原的基本信息。他是战国时期的楚国人，对吧？我记得他是一位诗人，同时也是政治家。
+
+用户可能对他的生平感兴趣，所以我应该从他的出生背景开始讲起。他是贵族出身，父亲可能在朝廷里有职位，这影响了他后来的政治生涯。然后是他在楚国的地位和职责，比如管理国家大事、外交和文化活动这些方面。
+
+接下来，屈原的政治主张也很重要。他支持联齐抗秦的策略，这在当时对楚国有很大的意义。但因为内部的权力斗争，特别是上官大夫和令尹子椒的谗言，导致他被流放。这部分能体现他的忠诚和遭遇的不公。
+
+然后是他的文学成就，尤其是《离骚》、《天问》等作品。这些诗歌不仅是文学瑰宝，也反映了他对国家命运的担忧和个人理想的追求。我还应该提到端午节与屈原的关系，解释为什么人们会在这一天纪念他。
+
+最后，总结一下屈原的历史地位和影响。他不仅在文学上有着重要地位，在民族精神上也有深远的影响，比如坚持正义、忧国忧民的情怀。这些点用户可能都想知道，所以需要全面覆盖。
+</think>
+
+屈原（公元前340年－公元前278年），名平，字原，战国时期楚国诗人、政治家，汉族人，出生于楚国丹阳（今湖北秭归）。他是中国历史上第一位伟大的爱国诗人，也是浪漫主义文学的奠基人，被誉为“中华诗祖”、“辞赋之祖”。
+
+### 生平与贡献
+1. **出身与地位**：
+   屈原出身贵族，父亲可能是楚国的重要官员。他年轻时便展现出卓越的政治才能和文学天赋。
+
+2. **政治生涯**：
+   屈原在楚怀王时期担任左徒（相当于宰相），参与国家重大事务的决策，包括外交、军事和法律制度的改革。他主张联齐抗秦，以维护楚国的独立与强大。然而，由于佞臣上官大夫和令尹子椒的谗言，屈原逐渐失去信任，最终被流放。
+
+3. **文学创作**：
+   屈原在流放期间创作了大量诗歌，其中最著名的是《离骚》、《天问》、《九章》等。这些作品充满了对国家命运的关切和对理想的追求，具有强烈的浪漫主义色彩。他的作品奠定了中国古典文学的基础，并被后人称为“楚辞”，成为中国文学的重要传统。
+
+4. **死亡与纪念**：
+   公元前278年，屈原得知秦国攻陷郢都（楚国都城），悲愤交加，在汨罗江投水自尽。为了纪念他，每年农历五月初五成为端午节，人们通过赛龙舟、吃粽子等方式来表达对他的怀念。
+
+### 历史地位与影响
+屈原不仅是文学巨匠，更是中华民族精神的象征。他的作品充满了对国家和民族的忠诚，体现了“宁溘死以流亡兮，余不忍为此态也”的高洁品质。他的爱国情怀、坚持真理的精神以及卓越的文学成就，对中国文化产生了深远的影响。
+
+总之，屈原是中国历史上一位极为重要的人物，他的精神和作品至今仍被广泛传颂，成为中华文化的重要组成部分。
+--------------------------------------------------------------------------------
+
+🚀 运行第 3 轮推理...
+📜 提示词 Token 数: 11, 处理耗时: 0.09 秒
+📜 生成 Token 数: 662, 生成耗时: 63.45 秒
+⏱️  总推理时间: 63.65 秒
+⚡ Token 速率: 10.43 tokens/sec
+📢 **模型输出:**
+<think>
+好，我现在需要介绍中国历史上的著名人物屈原。首先，我得回忆一下关于他的基本信息。他是战国时期楚国的大诗人、政治家，这点我记得很清楚。然后是他的生平，大致在公元前340年到公元前278年之间。
+
+接下来，我要考虑他的主要成就和作品。他创作了《离骚》、《九章》、《天问》等不朽诗篇，这些作品在中国文学史上有着重要地位。特别是《离骚》，它不仅是中国最长的抒情诗，还充满了浪漫主义色彩，对后世影响深远。
+
+然后是他的政治生涯，屈原曾在楚国担任要职，积极主张改革和抗秦。但后来因为小人谗言被流放，最终投江自尽，这是一个悲剧性的结局。我记得他是在五月初五这天投江的，后来这个日子演变成了端午节，用来纪念他。
+
+端午节的由来也是一个重要点，包括赛龙舟、吃粽子等习俗都是为了纪念屈原，这一点需要详细说明，因为它不仅展示了屈原的影响，也体现了他的文化意义。
+
+我还应该提到屈原的历史地位和影响。他是浪漫主义文学的奠基人，作品充满了爱国情怀和对理想的追求，激励了无数后世文人。此外，他也是世界文化名人之一，提升了中国文化的国际影响力。
+
+最后，总结一下屈原的重要性：作为诗人、政治家和爱国者的象征，他的作品和精神至今仍被广泛传颂和尊敬。
+
+在组织内容时，要分点说明，确保信息清晰有条理。同时，语言要通俗易懂，避免过于学术化的表达，让读者容易理解和记住。
+</think>
+
+屈原是中国战国时期楚国的著名诗人、政治家，被誉为“中华诗祖”和“辞赋之祖”。以下是关于屈原的一些关键点：
+
+1. **生平**：
+   - 屈原出生于公元前340年左右，卒于公元前278年。
+   - 他是楚国贵族，芈姓屈氏，名平，字原。
+
+2. **文学成就**：
+   - 屈原创作了《离骚》、《天问》、《九章》、《九歌》等不朽诗篇，开创了“香草美人”的象征传统。
+   - 他的作品是中国浪漫主义文学的奠基之作，对后世影响深远。
+
+3. **政治生涯**：
+   - 屈原曾担任楚国的重要职务，主张改革内政和抗秦外交政策。
+   - 因遭谗言被流放，最终投汨罗江自尽。
+
+4. **端午节的由来**：
+   - 为纪念屈原，每年农历五月初五成为端午节，习俗包括赛龙舟、吃粽子等。
+
+5. **历史地位与影响**：
+   - 屈原是第一位对世界文化产生深远影响的中国诗人。
+   - 他的爱国情怀和高尚品德激励了无数后人。
+
+总结而言，屈原不仅是文学巨匠，更是中华民族的精神象征，其作品和精神至今仍被广泛传颂。
+--------------------------------------------------------------------------------
+
+🏆 平均 Token 速率: 10.48 tokens/sec
+```
