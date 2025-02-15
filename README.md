@@ -68,6 +68,7 @@
 - [在 Mac 上运行 DeepSeek-R1 模型](llm/mac-deepseek-r1.md)
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/traditional-chinese-medicine.md)
 - [ollama benchmark](llm/ollama/README.md)
+- [解密大语言模型中的 Tokens](llm/token/llm_token_intro.md)
 
 # LLM 训练
 ## 从零开始训练 70B 模型
