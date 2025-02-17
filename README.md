@@ -56,6 +56,7 @@
 # LLM 基础
 ## Article & Video
 - [Andrej Karpathy：Deep Dive into LLMs like ChatGPT（B站视频）](https://www.bilibili.com/video/BV16cNEeXEer)
+- [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181)
 
 ## eBook
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
@@ -76,6 +77,17 @@
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/traditional-chinese-medicine.md)
 - [ollama benchmark](llm/ollama/README.md)
 - [解密大语言模型中的 Tokens](llm/token/llm_token_intro.md)
+	- [Tiktokenizer 在线版](https://tiktokenizer.vercel.app/?model=gpt-4o)
+
+
+## Useful Projects
+
+- [unstructured](https://github.com/Unstructured-IO/unstructured):Open source libraries and APIs to build custom preprocessing pipelines for labeling, training, or production machine learning pipelines.
+- [MinerU](https://github.com/opendatalab/MinerU):A high-quality tool for convert PDF to Markdown and JSON.
+- [markitdown](https://github.com/microsoft/markitdown): Python tool for converting files and office documents to Markdown.
+- [unsloth](https://github.com/unslothai/unsloth): About
+Finetune Llama 3.3, DeepSeek-R1 & Reasoning LLMs 2x faster with 70% less memory! 
+- [ktransformers](https://github.com/kvcache-ai/ktransformers): A Flexible Framework for Experiencing Cutting-edge LLM Inference Optimizations
 
 # LLM 训练
 ## 从零开始训练 70B 模型
