@@ -57,6 +57,7 @@
 ## Article & Video
 - [Andrej Karpathy：Deep Dive into LLMs like ChatGPT（B站视频）](https://www.bilibili.com/video/BV16cNEeXEer)
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181)
+- [深入浅出文本嵌入技术](llm/text_embeddings_guide.md)
 
 ## eBook
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
