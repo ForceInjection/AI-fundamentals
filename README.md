@@ -80,6 +80,9 @@
 - [解密大语言模型中的 Tokens](llm/token/llm_token_intro.md)
 	- [Tiktokenizer 在线版](https://tiktokenizer.vercel.app/?model=gpt-4o)
 
+## DeepSeek
+
+- [**Deepseek 3FS（ Fire-Flyer File System）设计笔记**](deepseek/deepseek_3fs_design_notes.zh-CN.md)
 
 ## Useful Projects
 
