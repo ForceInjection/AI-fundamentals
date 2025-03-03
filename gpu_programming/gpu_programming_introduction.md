@@ -6,7 +6,7 @@ Explore Kernel Grids, Blocks, Warps, and Threads to Accelerate Your Code
 
 探索内核网格、块、Warps 和线程以加速我们的代码
 
-![gpu execution hierarchical](img/gpu_threads.jpeg)
+![gpu execution hierarchical](../img/gpu_threads.jpeg)
 
 A GPU executes code in a hierarchical fashion with the kernel as an independent unit of compute. The kernel is executed using independent thread blocks and each thread block consist of subgroups that work in lockstep called warps or wavefronts.
 
@@ -28,7 +28,7 @@ At the core level, each **_thread_** operates on individual scalar values with p
 
 在核心层面，每个 **_thread_** 使用私有寄存器对单个标量值进行操作。虽然同时运行数千个线程是不切实际的，但单个线程本身也效率不高。相反，线程被组织成称为 **_warps 或 wavefronts_** 的小组，通常由 32 个线程组成。每个 warp 跨 32 个数据点执行单个指令。例如，在矩阵乘法中，warp 可能会处理两个矩阵的行和列，执行乘法和累加以生成结果，如下图所示。
 
-![thread warp](img/thread_warp.png)
+![thread warp](../img/thread_warp.png)
 
 A four thread warp performing matrix multiplication. The warp first performs independent point-wise multiply operation and then performs accumulate operation using some shared memory.
 
@@ -40,7 +40,7 @@ When operations exceed the warp size of 32 threads, GPUs use tiling to manage la
 
 当操作超过 32 个线程的 Warp 大小时，GPU 会使用平铺来管理更大的维度。这涉及将输入分成适合 Warp 大小的块或平铺，处理这些块，然后合并所有 Warp 的结果。要累积部分结果，需要一个占位符，这就是 **_thread block_** 的作用所在。线程块将多个 Warp 分组，使它们能够共享内存并同步执行，如下图所示。
 
-![thread block](img/thread_block.png)
+![thread block](../img/thread_block.png)
 
 A thread block comprising of two warps computing matrix multiplication. All the warps in a thread block need to complete execution in order to compute the final output.
 
@@ -62,7 +62,7 @@ Following the structure of the computations, memory is organized into a hierarch
 
 根据计算结构，内存被组织成一个层次结构，从具有超低延迟和几千字节大小的小型快速寄存器开始。寄存器是线程私有的。接下来，线程块内的 warp 使用包含数百千字节的 **_shared memory_** 共享状态。最后，全局内存可在整个设备中访问，并提供数十 GB 级的大容量，高吞吐量接近每秒 1 TB。全局内存具有更高的延迟，因此使用缓存来减少延迟。下图显示了每种内存类型的相对范围。
 
-![Memory Hierarchy](img/memory_hierarchy.png)
+![Memory Hierarchy](../img/memory_hierarchy.png)
 
 # Programming（编程）
 

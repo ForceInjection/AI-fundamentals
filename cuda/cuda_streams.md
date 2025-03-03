@@ -16,7 +16,7 @@ CUDA 内核非常强大，因为它可以利用 GPU 上大量的 CUDA 核心帮�
     
 我们可以提出两个模型，包括串行模型和并发模型，来实现该程序。
 
-![cuda stream](img/cuda-stream.png)
+![cuda stream](../img/cuda-stream.png)
 
 
 # 串行模型与并发模型
@@ -79,7 +79,7 @@ for (int i = 0; i < nStreams; i ++)
 
 我们也可以从流的角度来看待串行模型和并发模型。
 
-![cuda stream](img/cuda-stream-2.png)
+![cuda stream](../img/cuda-stream-2.png)
 
 CUDA Stream：串行模型与并发模型
 

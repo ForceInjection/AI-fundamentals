@@ -87,7 +87,7 @@ sudo docker run -it --rm --runtime=nvidia --gpus=all --pid=host nvtop
 ```bash
 nvtop
 ```
-![nvtop](img/nvtop.png)
+![nvtop](../img/nvtop.png)
 
 常用的 `nvtop` 命令行选项如下：
 
@@ -121,7 +121,7 @@ nvtop
 ### 3.1 设置
 点击 `F2` 可以打开设置页面：
 
-![Settings](img/nvtop-settings.png)
+![Settings](../img/nvtop-settings.png)
 
 可以通过上下左右键来选择并调整配置项。按 F12 保存在设置窗口中设置的首选项。下次运行 nvtop 时将加载这些首选项。
 

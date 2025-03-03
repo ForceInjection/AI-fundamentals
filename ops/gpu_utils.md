@@ -26,11 +26,11 @@ A better definition can (surprisingly) be found on [Datadog’s NVML docs](https
 
 A GPU has [cores and multiprocessing managers](https://cvw.cac.cornell.edu/gpu-architecture/gpu-characteristics/kernel_sm). With Nvidia GPUs these multiprocessing managers are referred to as streaming multiprocessors (SMs), and on AMD hardware these are referred to as compute units (CU). Below is an illustration of the GH100 GPU, with 144 SMs.
 
-[![img](img/144-SMs.png "Illustration of GH100 GPU, with 144 SMs")](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
+[![img](../img/144-SMs.png "Illustration of GH100 GPU, with 144 SMs")](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
 
 These multiprocessing managers can be thought of as foremen for a group of workers, in this case, cores. When you launch a CUDA kernel, the work is executed on CUDA cores by one or more SMs. As you can see below, a single SM on the GH100 chip has many CUDA cores.
 
-[![img](img/H100-SM.png "Illustration of a single SM within GH100 GPU")](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
+[![img](../img/H100-SM.png "Illustration of a single SM within GH100 GPU")](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
 
 **This means the metric, GPU Utilization, is only measuring whether a kernel is executing at a given time.** It has no indication of whether your kernel is using all cores available, or parallelizing the workload to the GPU’s maximum capability. In the most extreme case, you can get 100% GPU utilization by just reading/writing to memory while doing 0 FLOPS.
 
@@ -44,7 +44,7 @@ The next step to search for more performance was certainly to profile the model�
 
 As you can see below, the Softmax kernel was registering high GPU utilization, but low for a metric called SM efficiency. Now this was already sounding the alarm for us because naive softmax is a notorious bottleneck for LLMs, with many [kernel fusions](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html#motivations) such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) coming out to address its memory-bound nature. Given this information, the SM efficiency statistic could be pointing out inefficiencies in our model’s execution.
 
-![img](img/profiler_tool.png)
+![img](../img/profiler_tool.png)
 
 ## But What does SM Efficiency represent?
 
@@ -56,7 +56,7 @@ Great, this is exactly what we were looking for! We can monitor SM efficiency la
 
 Now that we can easily identify which kernels aren’t running hot on the GPU, we can work on optimizing these layers. Since this is a transformer stack, most gains are going to be made by fusing the layers in the transformer block definition. The figure below summarizes what we optimized.
 
-![img](img/fused.png)
+![img](../img/fused.png)
 
 By fusing, we mean instead of using a PyTorch native definition of a set of layers, we replace it with a GPU kernel, implemented in either CUDA or Triton, that combines all the layers into one kernel. The speedup results from less time per kernel reading/writing to GPU memory than time spent doing math in the case of certain layers (e.g. [Softmax](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)). [Flash Attention](https://github.com/Dao-AILab/flash-attention) is an example of such a fused kernel. The other kernels that needed to be fused are the [MLP](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f618b4ba814c825b109c6d7e8f5/flash_attn/ops/fused_dense.py#L531) and [dropout layer norm residual add](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f618b4ba814c825b109c6d7e8f5/flash_attn/ops/fused_dense.py#L531) operations.
 

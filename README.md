@@ -16,16 +16,16 @@
 	- [Exercise: Device Bandwidth](gpu_architecture/exer_device_bandwidth.md)
 
 ### GPU 架构和编程模型介绍
-- [GPU Architecture and Programming — An Introduction](gpu_programming_introduction.md)
+- [GPU Architecture and Programming — An Introduction](gpu_programming/gpu_programming_introduction.md)
 
 ### 其他相关知识点
-- [深入理解 Nvidia CUDA 核心（vs. Tensor Cores vs. RT Cores)](cuda_cores_cn.md)
+- [深入理解 Nvidia CUDA 核心（vs. Tensor Cores vs. RT Cores)](cuda/cuda_cores_cn.md)
 
 ## CUDA 学习材料
 ### 快速入门
 - [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
-- [CUDA 并发编程之 Stream 介绍](cuda_streams.md)
+- [CUDA 并发编程之 Stream 介绍](cuda/cuda_streams.md)
 
 ### 参考资料
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
@@ -41,13 +41,13 @@
 - [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
 ## 监控与运维
-- [nvidia-smi 入门](nvidia-smi.md)
-- [nvtop 入门](nvtop.md)
+- [nvidia-smi 入门](ops/nvidia-smi.md)
+- [nvtop 入门](ops/nvtop.md)
 - [Nvidia GPU XID 故障码解析](https://mp.weixin.qq.com/s/ekCnhr3qrhjuX_-CEyx65g)
 - [Nvidia GPU 卡 之 ECC 功能](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
-- [查询 GPU 卡详细参数](DeviceQuery.md)
+- [查询 GPU 卡详细参数](ops/DeviceQuery.md)
 - [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
-- [GPU Utilization is a Misleading Metric](gpu_utils.md)
+- [GPU Utilization is a Misleading Metric](ops/gpu_utils.md)
 
 ## 性能分析与调优
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
@@ -58,6 +58,8 @@
 - [Andrej Karpathy：Deep Dive into LLMs like ChatGPT（B站视频）](https://www.bilibili.com/video/BV16cNEeXEer)
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181)
 - [深入浅出文本嵌入技术](llm/text_embeddings_guide.md)
+- [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
+- [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
 
 ## eBook
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
@@ -73,16 +75,16 @@
 - [《动手学深度学习》](https://zh.d2l.ai/)
 
 ## 动手实践
-- [DeepSeek r1 蒸馏模型和满血模型对比](llm/deepseek-r1-cmp.md)
-- [在 Mac 上运行 DeepSeek-R1 模型](llm/mac-deepseek-r1.md)
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/traditional-chinese-medicine.md)
 - [ollama benchmark](llm/ollama/README.md)
 - [解密大语言模型中的 Tokens](llm/token/llm_token_intro.md)
 	- [Tiktokenizer 在线版](https://tiktokenizer.vercel.app/?model=gpt-4o)
+- [Markitdown 入门](llm/markitdown/README.md)
 
 ## DeepSeek
-
-- [**Deepseek 3FS（ Fire-Flyer File System）设计笔记**](deepseek/deepseek_3fs_design_notes.zh-CN.md)
+- [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
+- [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
+- [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
 
 ## Useful Projects
 
