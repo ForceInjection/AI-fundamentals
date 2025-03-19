@@ -60,10 +60,13 @@
 - [深入浅出文本嵌入技术](llm/text_embeddings_guide.md)
 - [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
 - [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
+- [**大模型可视化指南**](https://www.maartengrootendorst.com/)
 
 ## eBook
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
 	<img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
+- [Hands-On Large Language Models](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) <br>
+	<img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
 	
 ## AI Infra
 - [高性能 GPU 服务器硬件拓扑与集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-1-zh/)
