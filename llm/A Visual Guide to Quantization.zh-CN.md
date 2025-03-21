@@ -1,5 +1,7 @@
 量化技术可视化指南
 ==============================
+> 原文：`https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-quantization`<br/>
+>  作者：`Maarten Grootendorst`
 
 顾名思义，大型语言模型的规模通常过于庞大，难以在消费级硬件上运行。这类模型的参数量可达数十亿级别，通常需要配备大容量显存的GPU来加速推理过程。
 

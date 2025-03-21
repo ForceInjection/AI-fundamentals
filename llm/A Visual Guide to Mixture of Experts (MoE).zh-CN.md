@@ -1,5 +1,7 @@
 混合专家系统（MoE）图解指南
 ==========================================
+> 原文：`https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-mixture-of-experts`<br/>
+>  作者：`Maarten Grootendorst`
 
 在追踪最新发布的**大型语言模型**时，您会发现许多模型的标题中都醒目标注着「**MoE**」。 这个「**MoE**」究竟代表何种技术？为何能成为众多 `LLM` 的架构首选？
 
