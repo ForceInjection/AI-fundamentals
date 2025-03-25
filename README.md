@@ -98,6 +98,14 @@
 Finetune Llama 3.3, DeepSeek-R1 & Reasoning LLMs 2x faster with 70% less memory! 
 - [ktransformers](https://github.com/kvcache-ai/ktransformers): A Flexible Framework for Experiencing Cutting-edge LLM Inference Optimizations
 
+## RAG
+- [**从0到1快速搭建RAG应用**](https://mp.weixin.qq.com/s/89-bwZ4aPor4ySj5U3n5zw)
+	- [配套代码](llm/rag/lession2.ipynb)
+
+## Fine-Tuning
+- [**Qwen 2 大模型指令微调入门实战**](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA)
+	- [配套代码](llm/fine-tuning/train_qwen2.ipynb)
+
 # LLM 训练
 ## 从零开始训练 70B 模型
 * [Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings](https://imbue.com/research/70b-intro/)
