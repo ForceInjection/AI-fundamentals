@@ -31,6 +31,8 @@
 
 这些多处理管理器可视为一组工人（即核心）的工头。当启动 `CUDA` 内核时，工作会通过一个或多个流式多处理器（`SM`）在 `CUDA` 核心上执行。如下图所示，`GH100` 芯片中的单个流式多处理器（`SM`）包含大量 `CUDA` 核心。
 
+[![img](../img/H100-SM.png "Illustration of a single SM within GH100 GPU")](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
+
 **这意味着 `GPU` 利用率这个指标仅测量内核在给定时间内是否正在执行。** 它无法反映内核是否使用了所有可用核心，或是否将工作负载并行化至 `GPU` 的最大处理能力。在最极端的情况下，仅通过内存读写操作（执行 `0` 次浮点运算）即可获得 `100%` 的 `GPU` 利用率。
 
 现在我们需要澄清的是：这种情况仅对缺乏系统背景知识的人群（如许多机器学习工程师）具有误导性。正如 [此处](https://arthurchiao.art/blog/understanding-gpu-performance/#24-the-use-methodology) 所述，在 ["USE 方法论"](https://www.brendangregg.com/usemethod.html) 框架下，`GPU` 利用率的定义确实具有特定意义。
@@ -70,3 +72,20 @@
 我们强烈建议各 AI 团队在监控 `GPU` 集群时，除 `GPU` 利用率外还应关注流多处理器效率（`SM Efficiency`）。该指标能更真实反映 `GPU` 的性能压榨程度，而 `GPU` 利用率仅能体现设备是否处于空闲状态。当然，计算模型浮点利用率（`MFUs`）也很有价值，但这并非一个可实时逐层监控的指标。值得注意的是，[英伟达 DCGM](https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/feature-overview.html#profiling-metrics) （数据中心 GPU 管理器）默认就提供流多处理器活动的监控数据。
 
 除此之外，还存在更细粒度的指标，例如流多处理器占用率（在 `PyTorch` 分析器中称为“实际占用率”），这些指标能反映每个流多处理器实际执行的工作量。然而，理解这些指标并不像单纯追求流多处理器效率最大化那么直观。如果您希望深入了解，我建议您查阅以下资源：[PyTorch 分析器博客](https://pytorch.org/blog/pytorch-profiler-1.9-released/#gpu-metric-on-timeline) 、[DCGM 文档](https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/feature-overview.html#profiling-metrics) 、[Nsight 内核性能分析指南](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html) 以及 [Nsight 文档](https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/achievedoccupancy.htm) 。
+
+---
+### MFU vs SM Efficiency vs GPU Utilization 对比表
+
+| **指标名称** | **关注层级** | **表示意义** | **典型使用场景** | **优点**                             | **局限性** | **计算公式（含说明）** | **举例解释** |
+|-------------------------|-------------------------------------|------------------|-------------------------------------------------------------|--------------------------------|--------------------------------------|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| **`MFU`** (`Model Flops Utilization`) | 模型级 | 模型实际执行的 `FLOPs` 占理论 `FLOPs` 的比例 | 深度学习训练、推理 | 准确反映模型计算利用率 | 不适用于非模型任务，需已知模型结构 | `MFU` = 实际执行的 `FLOPs` / 理论最大 `FLOPs` <br>（需通过 `profiler` 获取模型实际 `FLOPs`） | 理论 `FLOPs` 为 `1000 GFLOPs`，实际执行了 `900 GFLOPs`，则 `MFU = 0.9` |
+| **`SM Efficiency`** (`Streaming Multiprocessor Efficiency`) | GPU 内核级 | `SM` 上有活跃 `warp` 的周期占总周期比例 | `CUDA kernel` 优化 | 可反映线程调度活跃性                 | 活跃 `warp` 不代表充分利用核心           | `SM Efficiency` = 有 `warp` 活跃的周期数 / `SM` 总周期数 | `SM` 在 `100` 个周期中有 `40` 个周期有活跃 `warp`，则 `SM Efficiency` = `40%` |
+| **`GPU Util`**(`GPU Utilization`)  | 整体硬件级 | `GPU` 在某时间段内是否“忙碌”（无论执行类型）               | 粗略判断 GPU 是否在被使用 | 简单直观，易于采集 | 可能误判内存读写或轻负载为满载 | `GPU Util = 忙碌时间 / 总采样时间`<br>**说明：**<br>1) **忙碌**定义为有任意内核在运行<br> 2) 不考虑是否占满 `CUDA` 核心 <br>3) 哪怕只是执行内存 `copy`，也可能显示为 `100%` | `GPU` 执行内存 `copy` 操作时，即使 `CUDA` 核心空闲，`GPU Util` 也可能显示为 `100%` |
+
+### 补充说明：GPU Utilization 的误区
+
+- **`GPU Utilization` ≠ 实际计算能力利用率**。
+- 只要有任何内核在运行（包括仅做 `memory copy`），就会视为“忙碌”；
+- **即使 CUDA 核心空闲，`GPU Utilization` 也可能是 100%**；
+- 若要精确评估 `GPU` 的计算利用情况，建议结合 **`MFU`** 或 **`SM Efficiency`**；
+- 通过结合 `MFU` 和 `SM Efficiency`，可以更全面地评估 GPU 的计算效率，而不仅仅是依赖 `GPU Utilization` 这一粗略指标。
