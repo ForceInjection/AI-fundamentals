@@ -1,4 +1,3 @@
-
 # nvidia-smi 快速入门
 
 `nvidia-smi` 是 NVIDIA 驱动提供的命令行工具，能够帮助用户监控和管理 GPU 的状态与行为。本文整理了一些常用的 `nvidia-smi` 命令，帮助大家快速上手和高效使用。
