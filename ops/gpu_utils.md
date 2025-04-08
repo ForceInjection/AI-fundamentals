@@ -1,5 +1,8 @@
 # GPU Utilization is a Misleading Metric
 
+> url: `https://www.trainy.ai/blog/gpu-utilization-misleading`  
+> 翻译：[GPU 利用率是一个误导性指标](GPU%20利用率是一个误导性指标.md)
+
 **The most common metric ML teams use to understand GPU usage is GPU Utilization, commonly accessed by running nvidia-smi from your terminal. Many integrated observability tools track GPU Utilization as their main performance metric as well.** Somewhat to our surprise, it turns out that this is not always the best metric for understanding your GPU performance. In fact, you can get 100% GPU utilization by just reading/writing to memory while doing 0 computations! This article is about how we found that out, and what else we learned along the way.
 
 At [Trainy](https://trainy.ai/), we work on infrastructure for managing GPU clusters, so we spend a lot of time thinking about this stuff. Last year we were working with a foundation model company to scale out and improve the efficiency of their LLM training. We went through the basic steps that are mentioned in practically every guide about performance tuning for Pytorch—namely:
