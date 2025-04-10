@@ -40,6 +40,9 @@
 - [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
+### 专业选手
+[**CUDA-Learn-Notes**](https://github.com/xlite-dev/CUDA-Learn-Notes)：📚Modern CUDA Learn Notes: 200+ Tensor/CUDA Cores Kernels🎉, HGEMM, FA2 via MMA and CuTe, 98~100% TFLOPS of cuBLAS/FA2.
+
 ## 监控与运维
 - [nvidia-smi 入门](ops/nvidia-smi.md)
 - [nvtop 入门](ops/nvtop.md)
