@@ -1,10 +1,13 @@
 # AI Fundermentals
+原力注入 AI 基础知识
 ## 相关硬件知识
+
 - [PCIe 知识大全](https://mp.weixin.qq.com/s/dHvKYcZoa4rcF90LLyo_0A)
 - [NVLink 入门](https://mp.weixin.qq.com/s/fP69UEgusOa_X4ZKLo30ig)
 - [NVIDIA DGX SuperPOD：下一代可扩展的AI领导基础设施](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q)
 
 ## 深入理解 GPU 架构
+
 在准备在 GPU 上运行的应用程序时，了解 GPU 硬件设计的主要特性并了解与 CPU 的相似之处和不同之处会很有帮助。本路线图适用于那些对 GPU 比较陌生或只是想了解更多有关 GPU 中计算机技术的人。不需要特定的并行编程经验，练习基于 CUDA 工具包中包含的标准 NVIDIA 示例程序。
 
 - [GPU 特性](gpu_architecture/gpu_characteristics.md)
@@ -16,6 +19,7 @@
 	- [Exercise: Device Bandwidth](gpu_architecture/exer_device_bandwidth.md)
 
 ### GPU 架构和编程模型介绍
+
 - [GPU Architecture and Programming — An Introduction](gpu_programming/gpu_programming_introduction.md)
 
 ### 其他相关知识点
@@ -50,7 +54,7 @@
 - [Nvidia GPU 卡 之 ECC 功能](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
 - [查询 GPU 卡详细参数](ops/DeviceQuery.md)
 - [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
-- [GPU Utilization is a Misleading Metric](ops/gpu_utils.md)
+- [GPU Utilization is a Misleading Metric](ops/gpu_utils.md)：[GPU 利用率是一个误导性指标](ops/GPU%20利用率是一个误导性指标.md)
 
 ## 性能分析与调优
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)

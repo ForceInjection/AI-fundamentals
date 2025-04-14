@@ -3,4 +3,5 @@
 python3 -m venv MCP_Demo
 source MCP_Demo/bin/activate
 
-pip install langchain-mcp-adapters langgraph langchain-openai
+# 使用requirements文件安装依赖
+pip install -r requirements.txt
