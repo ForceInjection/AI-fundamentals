@@ -1,10 +1,12 @@
 # MCP 智能体演示项目
 
-参考：[**LangChain + 模型上下文协议（MCP）：AI 智能体 Demo**](https://mp.weixin.qq.com/s/D5d3F3xKeqstBataPBVbFA)
+* [**LangChain + 模型上下文协议（MCP）：AI 智能体 Demo**](https://mp.weixin.qq.com/s/D5d3F3xKeqstBataPBVbFA)
+* [**MCP-K8s 实践：构建大模型驱动的 Kubernetes 运维管理能力**](https://mp.weixin.qq.com/s/FqIyBz3nr4Ywe17c5a5sfA)
+
 
 ## 介绍
 
-MCP 是一个基于模型上下文协议的智能体演示项目，旨在展示如何使用模型上下文协议（MCP）来实现智能体的交互和通信。
+`MCP` 是一个基于模型上下文协议的智能体演示项目，旨在展示如何使用模型上下文协议（`MCP`）来实现智能体的交互和通信。
 
 ### 项目结构
 
@@ -12,6 +14,7 @@ MCP 是一个基于模型上下文协议的智能体演示项目，旨在展示�
 ├── README.md
 ├── client.py
 ├── client2.py
+├── client_for_k8s.py
 ├── math_server.py
 ├── math_server2.py
 ├── requirements.txt
@@ -22,7 +25,7 @@ MCP 是一个基于模型上下文协议的智能体演示项目，旨在展示�
 
 ### 功能说明
 
-- 使用模型上下文协议（MCP）实现智能体的交互和通信
+- 使用模型上下文协议（`MCP`）实现智能体的交互和通信
 - 支持两种传输模式：`Stdio`模式和`SSE`模式
 
 ### 传输模式说明
