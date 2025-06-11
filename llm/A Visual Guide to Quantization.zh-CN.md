@@ -1,7 +1,7 @@
-量化技术可视化指南
-==============================
+# 量化技术可视化指南
+
 > 原文：`https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-quantization`<br/>
->  作者：`Maarten Grootendorst`
+> 作者：`Maarten Grootendorst`
 
 顾名思义，大型语言模型的规模通常过于庞大，难以在消费级硬件上运行。这类模型的参数量可达数十亿级别，通常需要配备大容量显存的GPU来加速推理过程。
 
@@ -54,7 +54,7 @@
 
 这些比特位数具备一个实用特性：可精确计算设备存储给定数值所需的内存空间。鉴于8比特(bit)组成1字节(byte)，我们可以为大多数浮点表示方法建立基础计算公式。
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe146740d-72e9-44dc-99e1-f7bc42737cec_1128x144.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe146740d-72e9-44dc-99e1-f7bc42737cec_1128x144.png) **注意**：实际应用中，推理过程所需的(V)RAM容量还需考虑其他因素，例如上下文长度和模型架构设计。
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe146740d-72e9-44dc-99e1-f7bc42737cec_1128x144.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe146740d-72e9-44dc-99e1-f7bc42737cec_1128x144.png) **注意**：实际应用中，推理过程所需的(V)RAM容量还需考虑其他因素，例如上下文长度和模型架构设计。
 
 现在假设我们有一个包含700亿个参数的模型。大多数模型原生采用32位浮点数（常称为_全精度_）表示，仅加载模型就需要占用**280GB**内存空间。
 
@@ -75,7 +75,7 @@
 
 为了直观演示这种效果，我们可以任取一张图像，仅使用8种色彩来呈现它：
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa33638d8-3506-4471-986f-5960184f98f0_2657x1260.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa33638d8-3506-4471-986f-5960184f98f0_2657x1260.png)
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa33638d8-3506-4471-986f-5960184f98f0_2657x1260.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa33638d8-3506-4471-986f-5960184f98f0_2657x1260.png)
 
 > 本图片基于[Slava Sidorov](https://pixabay.com/users/slava_web-designer-39623293/?utm_source=link-attribution&utm_medium=referral&utm_campaign=image&utm_content=8668140) 的原作进行修改并适配。
 
@@ -105,7 +105,7 @@
 
 当我们将比特位数进一步降低时，便会进入基于整数的表示方法范畴，而不再使用浮点表示法。以`FP32`浮点格式转换为8比特的`INT8`为例，其比特位数将缩减至原始值的四分之一：
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffa37a58d-1f5a-433c-b235-5b073596bbca_1460x848.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffa37a58d-1f5a-433c-b235-5b073596bbca_1460x848.png)
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffa37a58d-1f5a-433c-b235-5b073596bbca_1460x848.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffa37a58d-1f5a-433c-b235-5b073596bbca_1460x848.png)
 
 具体硬件条件下，基于整数的运算速度可能优于浮点运算，但这一优势并非绝对成立。然而，通常当使用较少比特位数时，计算速度会显著提升。
 
@@ -129,7 +129,7 @@
 
 给定一组数值，我们以_最高_绝对值（**α**）作为范围来进行线性映射。
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F782beaa8-340f-45b8-ba7f-20491f66867a_1172x848.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F782beaa8-340f-45b8-ba7f-20491f66867a_1172x848.png)
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F782beaa8-340f-45b8-ba7f-20491f66867a_1172x848.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F782beaa8-340f-45b8-ba7f-20491f66867a_1172x848.png)
 
 注意数值范围\[-127, 127\]表示受限区间。无约束范围设定为[-128, 127]，具体取值取决于所采用的量化方法。
 
@@ -137,9 +137,8 @@
 
 我们通过以下公式计算比例因子（_**s**_）：
 
-*   其中_**b**_表示目标量化字节数（8字节），
-*   **α**表示输入张量中的最大绝对值，
-    
+* 其中_**b**_表示目标量化字节数（8字节），
+* **α**表示输入张量中的最大绝对值，
 
 随后使用计算得到的比例因子_**s**_对输入值_**x**_执行量化：
 
@@ -207,7 +206,7 @@
 
 注意观察其中一个值明显大于其他所有值，可视为离群值。若将该向量的全部取值范围进行映射，则所有较小值都会被压缩至相同的低比特表示形式，从而丧失其差异性特征：
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F72052ddb-1c54-45b3-9800-2c4335cc9581_1120x564.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F72052ddb-1c54-45b3-9800-2c4335cc9581_1120x564.png)
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F72052ddb-1c54-45b3-9800-2c4335cc9581_1120x564.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F72052ddb-1c54-45b3-9800-2c4335cc9581_1120x564.png)
 
 这正是前文使用的absmax量化方法。需注意的是，若不实施截断操作，非对称量化同样会出现类似现象。
 
@@ -235,10 +234,9 @@
 
 针对已知且保持静态的权重参数，选择量化范围的校准技术主要包括：
 
-*   手动选定输入范围的_百分位点_；
-*   通过优化原始权重与量化权重之间的_均方误差_（MSE）进行校准；
-*   最小化原始数据与量化值间的_信息熵_（KL散度）。
-    
+* 手动选定输入范围的_百分位点_；
+* 通过优化原始权重与量化权重之间的_均方误差_（MSE）进行校准；
+* 最小化原始数据与量化值间的_信息熵_（KL散度）。
 
 [![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ff24238b2-de53-40c8-8869-9a7d83678544_772x312.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ff24238b2-de53-40c8-8869-9a7d83678544_772x312.png)
 
@@ -248,7 +246,7 @@
 
 在大型语言模型（LLM）中持续更新的输入通常被称为「_激活值_」。
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F6baaee7f-40dd-4f6a-9a8d-bd79a7b2abc7_1456x520.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F6baaee7f-40dd-4f6a-9a8d-bd79a7b2abc7_1456x520.png)需要注意的是，这些数值之所以称为激活值，是因为它们通常会通过某些激活函数（如Sigmoid或ReLU）进行处理。
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F6baaee7f-40dd-4f6a-9a8d-bd79a7b2abc7_1456x520.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F6baaee7f-40dd-4f6a-9a8d-bd79a7b2abc7_1456x520.png)需要注意的是，这些数值之所以称为激活值，是因为它们通常会通过某些激活函数（如Sigmoid或ReLU）进行处理。
 
 与权重不同，在推理过程中，激活值会随着输入数据的变化而动态改变，因此对其进行精确量化颇具挑战。
 
@@ -258,10 +256,10 @@
 
 总体而言，校准权重和激活值的量化方法可分为两大类：
 
-*   训练后量化（PTQ）
-    *   训练_**完成**_后量化
-*   量化感知训练（QAT）
-    *   训练/微调_**过程中**_量化
+* 训练后量化（PTQ）
+  * 训练_**完成**_后量化
+* 量化感知训练（QAT）
+  * 训练/微调_**过程中**_量化
 
 第三部分：**训练后量化技术**
 --------------------------------------
@@ -270,8 +268,8 @@
 
 _权重_的量化可采用对称量化或非对称量化方法。而_激活值_的量化则需通过模型推理获取其潜在分布，因其数值范围无法预先确定。激活值的量化主要包含两种形式：
 
-*   _动态_量化
-*   _静态_量化
+* _动态_量化
+* _静态_量化
 
 ### 动态量化
 
@@ -303,8 +301,8 @@ _权重_的量化可采用对称量化或非对称量化方法。而_激活值_�
 
 我们将深入解析`HuggingFace`社区广泛采用的两种代表性方法：
 
-*   _**GPTQ**_（全模型`GPU`部署方案）
-*   _**GGUF**_（支持部分层`CPU`卸载方案）
+* _**GPTQ**_（全模型`GPU`部署方案）
+* _**GGUF**_（支持部分层`CPU`卸载方案）
 
 #### GPTQ算法
 
@@ -318,7 +316,7 @@ _权重_的量化可采用对称量化或非对称量化方法。而_激活值_�
 
 与海森矩阵中较小值对应的权重更为关键，因为这些权重的微小扰动可能导致模型性能的显著波动
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fad39a51b-e47f-44ec-af23-474292719be3_1440x696.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fad39a51b-e47f-44ec-af23-474292719be3_1440x696.png)
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fad39a51b-e47f-44ec-af23-474292719be3_1440x696.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fad39a51b-e47f-44ec-af23-474292719be3_1440x696.png)
 
 > 在逆海森矩阵中，数值越低表示该权重越“重要”。
 
@@ -345,7 +343,7 @@ _权重_的量化可采用对称量化或非对称量化方法。而_激活值_�
 该方法行之有效的原因在于，神经网络中的权重通常具有相互关联性。因此，当某个权重出现量化误差时，相关权重会通过逆海森矩阵（inverse-Hessian）进行协同更新。
 
 > **注意**：[研究者](https://arxiv.org/pdf/2210.17323) 采用了多项优化技巧以提升计算效率和模型性能，包括为海森矩阵引入阻尼因子、实施「惰性批处理」策略，以及采用Cholesky分解进行信息预计算。我们强烈推荐观看[该YouTube技术讲解视频](https://www.youtube.com/watch?v=mii-xFaPCrA) 以深入理解本主题。
-> 
+>
 > **技术提示**：如需针对推理速度进行极致优化的量化方案，请重点关注[EXL2](https://github.com/turboderp/exllamav2) 框架的实现。
 
 #### GGUF格式
@@ -374,7 +372,7 @@ GGUF量化方法迭代更新频繁，其具体实现可能因位量化级别的�
 
 为便于理解，我们将以三种量化位宽（2位、4位和6位）为例进行说明：
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F43ca3393-869a-4be3-bf8b-0c52e42017d7_1984x692.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F43ca3393-869a-4be3-bf8b-0c52e42017d7_1984x692.png) **技术说明**：根据量化类型的不同，需通过附加最小值参数（\_ **m** _）对零点进行校准。这些量化模型的量化方式与比例因子（\_ **s**_）保持一致。
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F43ca3393-869a-4be3-bf8b-0c52e42017d7_1984x692.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F43ca3393-869a-4be3-bf8b-0c52e42017d7_1984x692.png) **技术说明**：根据量化类型的不同，需通过附加最小值参数（\_ **m** _）对零点进行校准。这些量化模型的量化方式与比例因子（\_ **s**_）保持一致。
 
 关于所有量化级别的概述，请参考[原始拉取请求](https://github.com/ggerganov/llama.cpp/pull/1684) 。 如需了解基于重要性矩阵的量化方法，请查阅[此拉取请求](https://github.com/ggerganov/llama.cpp/pull/4861) 。
 
@@ -433,7 +431,7 @@ GGUF量化方法迭代更新频繁，其具体实现可能因位量化级别的�
 
 与量化感知训练（`QAT`）类似，比特线性层在训练过程中会执行'模拟量化'操作，用于评估权重和激活值量化后的效果：
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F25935e2a-7643-4705-8961-0b40506fe757_1296x832.png) ](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F25935e2a-7643-4705-8961-0b40506fe757_1296x832.png) 
+[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F25935e2a-7643-4705-8961-0b40506fe757_1296x832.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F25935e2a-7643-4705-8961-0b40506fe757_1296x832.png)
 
 **技术说明**：原论文使用**γ**作为参数符号，但为保持与本文示例符号体系一致，此处统一采用**α**。 需特别指出，此处的**β**参数与零点量化中的定义不同，它表示平均绝对值。
 
@@ -489,10 +487,9 @@ GGUF量化方法迭代更新频繁，其具体实现可能因位量化级别的�
 
 与之形成对比的是，比特网络1.58b采用的三元权重机制通过以下规则有效规避了乘法运算：
 
-*   1: 需要累加当前值
-*   0: 舍弃当前值
-*   \-1：需要减去该数值时
-    
+* 1: 需要累加当前值
+* 0: 舍弃当前值
+* \-1：需要减去该数值时
 
 因此，当权重完成1.58位量化后，您仅需进行加法运算即可：
 
@@ -514,8 +511,8 @@ GGUF量化方法迭代更新频繁，其具体实现可能因位量化级别的�
 
 至此，实现`1.58`比特量化主要依靠两个关键技术：
 
-*   引入**0**值构建三元表示\[-1, 0, 1\]
-*   针对权重的_绝对值均值量化_
+* 引入**0**值构建三元表示\[-1, 0, 1\]
+* 针对权重的_绝对值均值量化_
 
 通过仅使用计算高效的`1.58`比特参数，最终我们获得了轻量化模型！
 
@@ -524,10 +521,9 @@ GGUF量化方法迭代更新频繁，其具体实现可能因位量化级别的�
 
 希望本文能帮助您初步理解量化技术！如需深入探究，推荐以下学习资源：
 
-*   `HuggingFace`关于**[LLM.int8()](https://huggingface.co/blog/hf-bitsandbytes-integration) **量化方法的技术博客（相关论文参见[此处](https://arxiv.org/pdf/2208.07339) ）
-*   另一篇值得阅读的`HuggingFace`博客详细阐述了[嵌入向量量化](https://huggingface.co/blog/embedding-quantization) 技术
-*   一篇关于[Transformer数学基础](https://blog.eleuther.ai/transformer-math/) 的博客文章，详细解析了`Transformer`模型计算与内存使用相关的基础数学原理。
-*   [此工具](https://huggingface.co/spaces/NyxKrage/LLM-Model-VRAM-Calculator) 与[该平台](https://vram.asmirnov.xyz/) 是计算指定模型所需**显存**的两个优质资源。
-*   如需深入了解用于微调的量化技术**QLoRA**[⁵](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-quantization#footnote-5-145531349) ，您可参考我的即将出版著作《[动手学大语言模型](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) 》，书中对此有系统论述。
-*   这个[精彩的YouTube视频](https://www.youtube.com/watch?v=mii-xFaPCrA) 以极为直观的方式讲解了**GPTQ算法**的核心原理。
-
+* `HuggingFace`关于**[LLM.int8()](https://huggingface.co/blog/hf-bitsandbytes-integration)**量化方法的技术博客（相关论文参见[此处](https://arxiv.org/pdf/2208.07339) ）
+* 另一篇值得阅读的`HuggingFace`博客详细阐述了[嵌入向量量化](https://huggingface.co/blog/embedding-quantization) 技术
+* 一篇关于[Transformer数学基础](https://blog.eleuther.ai/transformer-math/) 的博客文章，详细解析了`Transformer`模型计算与内存使用相关的基础数学原理。
+* [此工具](https://huggingface.co/spaces/NyxKrage/LLM-Model-VRAM-Calculator) 与[该平台](https://vram.asmirnov.xyz/) 是计算指定模型所需**显存**的两个优质资源。
+* 如需深入了解用于微调的量化技术**QLoRA**[⁵](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-quantization#footnote-5-145531349) ，您可参考我的即将出版著作《[动手学大语言模型](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) 》，书中对此有系统论述。
+* 这个[精彩的YouTube视频](https://www.youtube.com/watch?v=mii-xFaPCrA) 以极为直观的方式讲解了**GPTQ算法**的核心原理。

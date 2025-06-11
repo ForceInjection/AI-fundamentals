@@ -6,7 +6,7 @@ It's fine to have a general understanding of what graphics processing units can 
 
 大致了解图形处理单元的用途，并从概念上了解它们的工作原理，这很好。但在实际硬件层面，如果深入了解，特定 GPU 由什么组成？有时，了解某种设备的最佳方法是考虑一两个具体示例。首先，我们将详细了解 Tesla V100，这是 NVIDIA 型号之一，在 HPC 应用方面备受青睐。在后续主题中，我们将对 [Quadro RTX 5000](rtx_5000.md) 进行类似的深入研究，这是 TACC Frontera 中的 GPU。
 
-# NVIDIA Tesla V100
+## NVIDIA Tesla V100
 
 ![NVIDIA Tesla V100 image](img/TeslaV100SXM2.png)
 
@@ -56,7 +56,7 @@ Given the large number of CUDA cores, it is clear that to utilize the device ful
 
 鉴于 CUDA 核心数量庞大，显然要充分利用该设备，应用程序需要启动数千个 SIMT 线程。这意味着应用程序必须能够适应极高的细粒度并行性。
 
-# Volta Block Diagram
+## Volta Block Diagram
 
 The NVIDIA Tesla V100 accelerator is built around the Volta GV100 GPU. This chip is designed to provide significant speedups to deep learning algorithms and frameworks, and to offer superior number-crunching power to HPC systems and applications.
 
@@ -78,24 +78,24 @@ The edges of the block diagram show the links to other system components. The lo
 
 框图的边缘显示了与其他系统组件的链接。最长的条表示 PCIe 3.0 与主机的链接。对边的绿色块是速度更快的 NVLink 2.0 桥接器，可通向其他 NVIDIA 设备以及某些基于 POWER9 的主机，包括 Longhorn（现已退役）中的 IBM AC922 服务器。其他边缘是八个 512 位内存控制器（总共 4096 位），它们将整个 SM 阵列连接到设备的 HBM2 高带宽内存。中央 L2 高速缓存的作用将在后面描述。
 
-# Inside a Volta SM
+## Inside a Volta SM
 
 We now zoom in on one of the streaming multiprocessors depicted in the diagram on the previous page. Each Volta SM gets its processing power from:
 
 现在我们放大上一页图表中描绘的流式多处理器之一。每个 Volta SM 的处理能力来自：
 
-*   Sets of CUDA cores for the following datatypes
-    *   64 FP32 CUDA cores
-    *   64 INT32 CUDA cores
-    *   32 FP64 CUDA cores
-*   8 Tensor Cores
-*   16 Special Function Units
-*   4 Texture units
+* Sets of CUDA cores for the following datatypes
+  * 64 FP32 CUDA cores
+  * 64 INT32 CUDA cores
+  * 32 FP64 CUDA cores
+* 8 Tensor Cores
+* 16 Special Function Units
+* 4 Texture units
 
 * 适用于以下数据类型的 CUDA 核心集
-    * 64 个 FP32 CUDA 核心
-    * 64 个 INT32 CUDA 核心
-    * 32 个 FP64 CUDA 核心
+  * 64 个 FP32 CUDA 核心
+  * 64 个 INT32 CUDA 核心
+  * 32 个 FP64 CUDA 核心
 * 8 个 Tensor 核心
 * 16个特殊功能单元
 * 4 个纹理单元
@@ -112,7 +112,7 @@ Data are supplied to the main part of this hardware through 32 Load/Store units,
 
 数据通过 32 个加载/存储单元提供给该硬件的主要部分，如每个处理块的底部所示。
 
-# Tensor Cores
+## Tensor Cores
 
 Matrix multiplications lie at the heart of Convolutional Neural Networks (CNNs). Both training and inferencing require the multiplication of a series of matrices that hold the input data and the optimized weights of the connections between the layers of the neural net. The Tesla V100 is NVIDIA's first product to include _tensor cores_ to perform such matrix multiplications very quickly. Assuming that half-precision (FP16) representations are adequate for the matrices being multiplied, CUDA 9.1 and later use Volta's tensor cores whenever possible to do the convolutions. Given that very large matrices may be involved, tensor cores can greatly improve the training and inference speed of CNNs.
 
@@ -155,7 +155,7 @@ The reality of how the tensor core works is undoubtedly much more complicated th
 
 张量核心的实际工作原理无疑比图示中显示的要复杂得多。它可能涉及一个逐层向下推进的多级 FMA 管道。然后可以设想连续的 C 矩阵从顶部进入，以累积每层乘积的部分和。
 
-# V100 Memory & NVLink 2.0
+## V100 Memory & NVLink 2.0
 
 The Tesla V100 features high-bandwidth HBM2 memory, which can be stacked on the same physical package as the GPU, thus permitting more GPUs and memory to be installed in servers. The V100s in TACC Longhorn have eight memory chips per HBM2 stack, and four stacks, yielding 32 GB of GPU memory in each device. This configuration provides 900 GB/sec of peak memory bandwidth across the four stacks.
 

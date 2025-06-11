@@ -6,7 +6,7 @@ Just like a CPU, the GPU relies on a memory hierarchy—from RAM, through cache 
 
 就像 CPU 一样，GPU 依赖于内存层次结构——从 RAM 到各级缓存——以确保其处理引擎能够持续获得数据以进行有用工作。就像 CPU 中的核心一样，GPU 中的流式多处理器（SMs）最终也需要数据位于寄存器中才能用于计算。本主题探讨了 GPU 内存层次结构中不同元素的大小和属性，以及它们与 CPU 中发现的元素的比较。
 
-# Memory Levels（内存级别）
+## Memory Levels（内存级别）
 
 Compared to a CPU core, a streaming multiprocessor (SM) in a GPU has many more registers. For example, an SM in the NVIDIA Tesla V100 has 65536 registers in its register file. Taken as a whole, its register file is larger in terms of its total capacity, too, despite the fact that the SM's 4-byte registers hold just a single float, whereas the vector registers in an Intel AVX-512 core hold 16 floats.
 
@@ -33,7 +33,7 @@ Notice that data transfers onto and off of the device are mediated by the L2 cac
 
 请注意，数据传输到设备上和从设备传输出去都是由 L2 缓存介导的。在大多数情况下，传入的数据将从 L2 进入设备的大容量全局内存。
 
-# <span id="Memory_Types">Memory Types(内存类型)</span>
+## <span id="Memory_Types">Memory Types(内存类型)</span>
 
 The picture on the preceding page is more complex than it would be for a CPU, because the GPU reserves certain areas of memory for specialized use during rendering. Here, we summarize the roles of each type of GPU memory for doing GPGPU computations.
 
@@ -43,37 +43,37 @@ The first list covers the on-chip memory areas that are closest to the CUDA core
 
 第一个列表涵盖了最接近 CUDA 核心的片上内存区域。它们是每个 SM 的一部分。
 
-*   **Register File** - denotes the area of memory that feeds directly into the CUDA cores. Accordingly, it is organized into 32 _banks_, matching the 32 threads in a warp. Think of the register file as a big matrix of 4-byte elements, having many rows and 32 columns. A warp operates on full rows; within a given row, each thread (CUDA core) operates on a different column (bank).
-*   **L1 Cache** - refers to the usual on-chip storage location providing fast access to data that are recently read from, or written to, main memory (RAM). Additionally, L1 serves as the overflow region when the amount of active data exceeeds what an SM's register file can hold, a condition which is termed "register spilling". In L1, the cache lines and spilled registers are organized into banks, just as in the register file.
-*   **Shared Memory** - is a memory area that physically resides in the same memory as the L1 cache, but differs from L1 in that all its data may be accessed by any thread in a thread block. This allows threads to communicate and share data with each other. Variables that occupy it must be declared explicitly by an application. The application can also set the dividing line between L1 and shared memory.
-*   **Constant Caches** - are special caches pertaining to variables declared as read-only constants in global memory. Such variables can be read by any thread in a thread block. The main and best use of these caches is to broadcast a single constant value to all the threads in a warp.
+* **Register File** - denotes the area of memory that feeds directly into the CUDA cores. Accordingly, it is organized into 32 _banks_, matching the 32 threads in a warp. Think of the register file as a big matrix of 4-byte elements, having many rows and 32 columns. A warp operates on full rows; within a given row, each thread (CUDA core) operates on a different column (bank).
+* **L1 Cache** - refers to the usual on-chip storage location providing fast access to data that are recently read from, or written to, main memory (RAM). Additionally, L1 serves as the overflow region when the amount of active data exceeeds what an SM's register file can hold, a condition which is termed "register spilling". In L1, the cache lines and spilled registers are organized into banks, just as in the register file.
+* **Shared Memory** - is a memory area that physically resides in the same memory as the L1 cache, but differs from L1 in that all its data may be accessed by any thread in a thread block. This allows threads to communicate and share data with each other. Variables that occupy it must be declared explicitly by an application. The application can also set the dividing line between L1 and shared memory.
+* **Constant Caches** - are special caches pertaining to variables declared as read-only constants in global memory. Such variables can be read by any thread in a thread block. The main and best use of these caches is to broadcast a single constant value to all the threads in a warp.
 
-- **寄存器文件** - 表示直接进入 CUDA 核心的内存区域。相应地，它被组织成 32 个银行，与一个 warp 中的 32 个线程相匹配。将寄存器文件视为一个由 4 字节元素组成的大矩阵，有很多行和 32 列。一个 warp 在完整的行上操作；在给定的行中，每个线程（CUDA 核心）在不同的列（银行）上操作。
+* **寄存器文件** - 表示直接进入 CUDA 核心的内存区域。相应地，它被组织成 32 个银行，与一个 warp 中的 32 个线程相匹配。将寄存器文件视为一个由 4 字节元素组成的大矩阵，有很多行和 32 列。一个 warp 在完整的行上操作；在给定的行中，每个线程（CUDA 核心）在不同的列（银行）上操作。
 
-- **L1 缓存** - 指的是通常的片上存储位置，提供对最近从主内存（RAM）读取或写入的数据的快速访问。此外，当活动数据量超过 SM 的寄存器文件可以容纳的量时，L1 还充当溢出区域，这种情况被称为“寄存器溢出”。在 L1 中，缓存行和溢出的寄存器被组织成银行，就像寄存器文件一样。
+* **L1 缓存** - 指的是通常的片上存储位置，提供对最近从主内存（RAM）读取或写入的数据的快速访问。此外，当活动数据量超过 SM 的寄存器文件可以容纳的量时，L1 还充当溢出区域，这种情况被称为“寄存器溢出”。在 L1 中，缓存行和溢出的寄存器被组织成银行，就像寄存器文件一样。
 
-- **共享内存** - 是一个物理上位于与 L1 缓存相同的内存中的内存区域，但它与 L1 不同，因为它的所有数据都可以被一个线程块中的任何线程访问。这允许线程相互通信和共享数据。占用它的变量必须由应用程序显式声明。应用程序还可以设置 L1 和共享内存之间的分界线。
+* **共享内存** - 是一个物理上位于与 L1 缓存相同的内存中的内存区域，但它与 L1 不同，因为它的所有数据都可以被一个线程块中的任何线程访问。这允许线程相互通信和共享数据。占用它的变量必须由应用程序显式声明。应用程序还可以设置 L1 和共享内存之间的分界线。
 
-- **常量缓存** - 是专门用于全局内存中声明为只读常量的变量的特殊缓存。这些变量可以被线程块中的任何线程读取。这些缓存的主要和最佳用途是将单个常量值广播到 warp 中的所有线程。
+* **常量缓存** - 是专门用于全局内存中声明为只读常量的变量的特殊缓存。这些变量可以被线程块中的任何线程读取。这些缓存的主要和最佳用途是将单个常量值广播到 warp 中的所有线程。
 
 The second list pertains to the more distant, larger memory areas that are shared by all the SMs.
 
 第二个列表涉及更遥远、更大的内存区域，这些区域由所有 SM 共享。
 
-*   **L2 Cache** - is a further on-chip cache for retaining copies of the data that travel back and forth between the SMs and main memory. Like the L1, the L2 cache is intended to speed up subsequent reloads. But unlike the L1 cache(s), there is just one L2 that is shared by all the SMs. The L2 cache is also situated in the path of data moving on or off the device via PCIe or NVLink.
-*   **Global Memory** - represents the bulk of the main memory of the device, equivalent to RAM in a CPU-based processor. For performance reasons, the Tesla V100 has special HBM2 high-bandwidth memory, while the Quadro RTX 5000 has fast GDDR6 graphics memory.
-*   **Local Memory** - corresponds to specially mapped regions of main memory that are assigned to each SM. Whenever "register spilling" overflows the L1 cache on a particular SM, the excess data are further offloaded to L2, then to "local memory". The performance penalty for reloading a spilled register becomes steeper for every memory level that must be traversed in order to retrieve it.
-*   **Texture and Constant Memory** - are regions of main memory that are treated as read-only by the device. When fetched to an SM, variables with a "texture" or "constant" declaration can be read by any thread in a thread block, much like shared memory. Texture memory is cached in L1, while constant memory is cached in the constant caches.
+* **L2 Cache** - is a further on-chip cache for retaining copies of the data that travel back and forth between the SMs and main memory. Like the L1, the L2 cache is intended to speed up subsequent reloads. But unlike the L1 cache(s), there is just one L2 that is shared by all the SMs. The L2 cache is also situated in the path of data moving on or off the device via PCIe or NVLink.
+* **Global Memory** - represents the bulk of the main memory of the device, equivalent to RAM in a CPU-based processor. For performance reasons, the Tesla V100 has special HBM2 high-bandwidth memory, while the Quadro RTX 5000 has fast GDDR6 graphics memory.
+* **Local Memory** - corresponds to specially mapped regions of main memory that are assigned to each SM. Whenever "register spilling" overflows the L1 cache on a particular SM, the excess data are further offloaded to L2, then to "local memory". The performance penalty for reloading a spilled register becomes steeper for every memory level that must be traversed in order to retrieve it.
+* **Texture and Constant Memory** - are regions of main memory that are treated as read-only by the device. When fetched to an SM, variables with a "texture" or "constant" declaration can be read by any thread in a thread block, much like shared memory. Texture memory is cached in L1, while constant memory is cached in the constant caches.
 
-- **L2 缓存** - 是一个进一步的片上缓存，用于保留在 SM 和主内存之间来回传输的数据的副本。像 L1 一样，L2 缓存旨在加速后续的重新加载。但与 L1 缓存不同，只有一个 L2 被所有 SM 共享。L2 缓存也位于通过 PCIe 或 NVLink 在设备上或下移动的数据的路径上。
+* **L2 缓存** - 是一个进一步的片上缓存，用于保留在 SM 和主内存之间来回传输的数据的副本。像 L1 一样，L2 缓存旨在加速后续的重新加载。但与 L1 缓存不同，只有一个 L2 被所有 SM 共享。L2 缓存也位于通过 PCIe 或 NVLink 在设备上或下移动的数据的路径上。
 
-- **全局内存** - 代表设备的大部分主内存，相当于基于 CPU 的处理器中的 RAM。出于性能原因，Tesla V100 拥有特殊的 HBM2 高带宽内存，而 Quadro RTX 5000 拥有快速的 GDDR6 图形内存。
+* **全局内存** - 代表设备的大部分主内存，相当于基于 CPU 的处理器中的 RAM。出于性能原因，Tesla V100 拥有特殊的 HBM2 高带宽内存，而 Quadro RTX 5000 拥有快速的 GDDR6 图形内存。
 
-- **局部内存** - 对应于分配给每个 SM 的主内存的特定映射区域。每当“寄存器溢出”溢出特定 SM 的 L1 缓存时，超出的数据会被进一步卸载到 L2，然后是“局部内存”。重新加载溢出寄存器的性能惩罚随着必须遍历的每个内存级别而变得更加严重。
+* **局部内存** - 对应于分配给每个 SM 的主内存的特定映射区域。每当“寄存器溢出”溢出特定 SM 的 L1 缓存时，超出的数据会被进一步卸载到 L2，然后是“局部内存”。重新加载溢出寄存器的性能惩罚随着必须遍历的每个内存级别而变得更加严重。
 
-- **纹理和常量内存** - 是被视为设备只读的内存区域。当它们被传输到 SM 时，具有“纹理”或“常量”声明的变量可以被线程块中的任何线程读取，就像共享内存一样。纹理内存被缓存在 L1 中，而常量内存被缓存在常量缓存中。
+* **纹理和常量内存** - 是被视为设备只读的内存区域。当它们被传输到 SM 时，具有“纹理”或“常量”声明的变量可以被线程块中的任何线程读取，就像共享内存一样。纹理内存被缓存在 L1 中，而常量内存被缓存在常量缓存中。
 
-# <span id="comparison_cpu_mem">Comparison to CPU Memory(与 CPU 内存对比)</span>
+## <span id="comparison_cpu_mem">Comparison to CPU Memory(与 CPU 内存对比)</span>
 
 The organization of memory in a GPU largely resembles a CPU's—but there are significant differences as well. This is particularly true of the total capacities available at each level of the memory hierarchy. As mentioned previously, the GPU is characterized by very large register files, while the CPU is much more cache-heavy and has generally wider data paths.
 
@@ -145,15 +145,16 @@ In the next section, we will continue to dig into the unique properties of the s
 
 <span id="ref2">2</span>. The memory hierarchies of [Cascade Lake](https://en.wikichip.org/wiki/intel/microarchitectures/cascade_lake#Memory_Hierarchy) and [Skylake](https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(server)#Memory_Hierarchy) are identical up to RAM, according to WikiChip. Published data puts the minimum RAM latency of [Cascade Lake](https://images.anandtech.com/doci/16594/ICX_briefing_51.png) at 81 nsec and [Skylake](https://www.anandtech.com/show/11544/intel-skylake-ep-vs-amd-epyc-7000-cpu-battle-of-the-decade/13) at 90 nsec; these values are converted to cycles by multiplying by 2.7 GHz and 2.1 GHz, respectively. The L3 bandwidth is taken to be the 30 GB/s asymptote seen in Fig. 3 of [Hammond, Vaughn, and Hughes (2018)](https://www.osti.gov/biblio/1515123), normalized by 2.1 GHz for their Xeon 8160 (same model as in Stampede2); the result should apply to Cascade Lake as well. The RAM bandwidths assume that all 6 channels are populated with the maximum [2933 MT/s DDR4](https://en.wikipedia.org/wiki/DDR4_SDRAM) for Cascade Lake or [2666 MT/s DDR4](https://en.wikipedia.org/wiki/DDR4_SDRAM) for Skylake; the global results are then divided by the number of cores per chip, either 28 for Cascade Lake or 24 for Skylake, and normalized by the same frequencies as above (to match [Frontera](https://frontera-portal.tacc.utexas.edu/user-guide/system/#cascade-lake-clx-compute-nodes) and [Stampede2](https://portal.tacc.utexas.edu/user-guides/stampede2#overview-skxcomputenodes), respectively). - 根据 WikiChip，Cascade Lake 和 Skylake 的内存层次结构直到 RAM 都是相同的。发布的数据显示 Cascade Lake 的最小 RAM 延迟为 81 纳秒，Skylake 为 90 纳秒；这些值通过乘以 2.7 GHz 和 2.1 GHz 分别转换为周期。L3 带宽取自 Hammond、Vaughn 和 Hughes（2018 年）图 3 中看到的 30 GB/s 渐近值，按 2.1 GHz 归一化，适用于他们的 Xeon 8160（与 Stampede2 中的型号相同）；结果应该也适用于 Cascade Lake。RAM 带宽假设所有 6 个通道都装满了最大 2933 MT/s DDR4 对于 Cascade Lake 或 2666 MT/s DDR4 对于 Skylake；全局结果然后除以每个芯片的核心数，分别是 28 个对于 Cascade Lake 或 24 个对于 Skylake，并通过上述相同的频率归一化（以匹配 Frontera 和 Stampede2）。
 
-# <span id="Appendix">Appendix: Finer Memory Slices(附录：更细的内存切片)</span>
+## <span id="Appendix">Appendix: Finer Memory Slices(附录：更细的内存切片)</span>
 
 The table [in the main text](#comparison_cpu_mem) illuminates the per-SM or per-core capacities that pertain to different memory levels. However, it is perhaps fairer to look at how large a slice of each memory type is available to a single CUDA core in a GPU, vs. a single vector lane in a CPU. We again take the NVIDIA Tesla V100 and a couple of contemporary Intel Xeon server-grade processors as the examples.
 
 正文中的表格阐明了与不同内存级别相关的每个 SM 或每个核心的容量。然而，也许更公平地看待的是，查看 GPU 中的单个 CUDA 核心与 CPU 中的单个矢量通道可用的每种内存类型的切片有多大。我们再次以 NVIDIA Tesla V100 和一些当代 Intel Xeon 服务器级处理器为例。
 
-1.  **_Register file._** In the NVIDIA Tesla V100, the register file of an SM stores (65536)/(2x32) = 1024 floats per CUDA core. In the Intel Cascade Lake and Skylake chips, a [CPU core](https://en.wikichip.org/wiki/intel/microarchitectures/cascade_lake#Individual_Core) has a [physical register file](https://travisdowns.github.io/blog/2020/05/26/kreg2.html#the-register-files) that stores [168 vector registers](https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(server)#Scheduler_.26_512-SIMD_addition) of 64B, or 10.5 kB in total. This works out to (16x168)/(2x16) = 84 floats per vector lane, which is an order of magnitude _less_ than what is available to a CUDA core. (The factors of 2 appear because a CPU core can handle 2x16-float vectors/cycle, and a GPU SM can handle 2x32-float warps/cycle.) - **_寄存器文件。_** 在 NVIDIA Tesla V100 中，SM 的寄存器文件存储 (65536)/(2x32) = 1024 个每个 CUDA 核心的浮点数。在 Intel Cascade Lake 和 Skylake 芯片中，CPU 核心有一个物理寄存器文件，存储 168 个 64B 的矢量寄存器，总共 10.5 kB。这相当于 (16x168)/(2x16) = 84 个每个矢量通道的浮点数，这比 CUDA 核心可用的少一个数量级。（2 的因子是因为 CPU 核心可以处理 2x16-float 向量/周期，GPU SM 可以处理 2x32-float warps/周期。）
+1. **_Register file._** In the NVIDIA Tesla V100, the register file of an SM stores (65536)/(2x32) = 1024 floats per CUDA core. In the Intel Cascade Lake and Skylake chips, a [CPU core](https://en.wikichip.org/wiki/intel/microarchitectures/cascade_lake#Individual_Core) has a [physical register file](https://travisdowns.github.io/blog/2020/05/26/kreg2.html#the-register-files) that stores [168 vector registers](https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(server)#Scheduler_.26_512-SIMD_addition) of 64B, or 10.5 kB in total. This works out to (16x168)/(2x16) = 84 floats per vector lane, which is an order of magnitude _less_ than what is available to a CUDA core. (The factors of 2 appear because a CPU core can handle 2x16-float vectors/cycle, and a GPU SM can handle 2x32-float warps/cycle.) - **_寄存器文件。_** 在 NVIDIA Tesla V100 中，SM 的寄存器文件存储 (65536)/(2x32) = 1024 个每个 CUDA 核心的浮点数。在 Intel Cascade Lake 和 Skylake 芯片中，CPU 核心有一个物理寄存器文件，存储 168 个 64B 的矢量寄存器，总共 10.5 kB。这相当于 (16x168)/(2x16) = 84 个每个矢量通道的浮点数，这比 CUDA 核心可用的少一个数量级。（2 的因子是因为 CPU 核心可以处理 2x16-float 向量/周期，GPU SM 可以处理 2x32-float warps/周期。）
 
-2.  **_Cache sizes._** In the NVIDIA Tesla V100, an SM has 128 kB (max) in its L1 data cache, and 64 kB in its constant cache. Adding these to its share of the 6 MB shared L2 (6/80 = 0.075 MB) yields 0.26 MB per SM, or 0.0041 MB per CUDA core. In the Intel Cascade Lake and Skylake chips, a CPU core has 32 kB in its L1 plus 1 MB in its L2 data cache. Adding these to its share of the shared L3 cache (1.375 MB) yields 2.4 MB, or 0.75 MB per vector lane, which is _two_ orders of magnitude _more_ than what is available to a CUDA core. - **_缓存大小。_** 在 NVIDIA Tesla V100 中，SM 在其 L1 数据缓存中有 128 kB（最大）和在其常量缓存中有 64 kB。将这些添加到其共享的 6 MB L2（6/80 = 0.075 MB）中，每个 SM 有 0.26 MB，或者每个 CUDA 核心有 0.0041 MB。在 Intel Cascade Lake 和 Skylake 芯片中，CPU 核心在其 L1 中有 32 kB，在其 L2 数据缓存中有 1 MB。将这些添加到其共享的 L3 缓存（1.375 MB）中，得到 2.4 MB，或者每个矢量通道有 0.75 MB，这比 CUDA 核心可用的多两个数量级。
+2. **_Cache sizes._** In the NVIDIA Tesla V100, an SM has 128 kB (max) in its L1 data cache, and 64 kB in its constant cache. Adding these to its share of the 6 MB shared L2 (6/80 = 0.075 MB) yields 0.26 MB per SM, or 0.0041 MB per CUDA core. In the Intel Cascade Lake and Skylake chips, a CPU core has 32 kB in its L1 plus 1 MB in its L2 data cache. Adding these to its share of the shared L3 cache (1.375 MB) yields 2.4 MB, or 0.75 MB per vector lane, which is _two_ orders of magnitude _more_ than what is available to a CUDA core. - **_缓存大小。_** 在 NVIDIA Tesla V100 中，SM 在其 L1 数据缓存中有 128 kB（最大）和在其常量缓存中有 64 kB。将这些添加到其共享的 6 MB L2（6/80 = 0.075 MB）中，每个 SM 有 0.26 MB，或者每个 CUDA 核心有 0.0041 MB。在 Intel Cascade Lake 和 Skylake 芯片中，CPU 核心在其 L1 中有 32 kB，在其 L2 数据缓存中有 1 MB。将这些添加到其共享的 L3 缓存（1.375 MB）中，得到 2.4 MB，或者每个矢量通道有 0.75 MB，这比 CUDA 核心可用的多两个数量级。
 
+3. **_Cache lines._** In any GPU, the 128-byte cache lines consist of four 32-byte sectors. In the event of a cache miss, not all 4 sectors in the cache line have to be filled, just the ones that need updating. This means that 4 sectors from 4 different cache lines can be fetched just as readily as 1 full cache line. The [32-byte sector size persists today](https://forums.developer.nvidia.com/t/pascal-l1-cache/49571/20), even though the Volta's HBM2 memory has a 64-byte interface. By contrast, in an Intel Cascade Lake or Skylake processor, data always travel all the way from RAM to registers in full cache lines of 64 bytes. - **_缓存行。_** 在任何 GPU 中，128 字节的缓存行由四个 32 字节的扇区组成。在缓存未命中的情况下，不必填充缓存行中的所有 4 个扇区，只需要更新需要更新的扇区。这意味着可以像获取一个完整的缓存行一样轻松地获取来自 4 个不同缓存行的 4 个扇区。32 字节的扇区大小即使在 Volta 的 HBM2 内存有 64 字节的接口的情况下也持续存在。相比之下，在 Intel Cascade Lake 或 Skylake 处理器中，数据总是以完整的 64 字节缓存行从 RAM 传输到寄存器。
 
-3.  **_Cache lines._** In any GPU, the 128-byte cache lines consist of four 32-byte sectors. In the event of a cache miss, not all 4 sectors in the cache line have to be filled, just the ones that need updating. This means that 4 sectors from 4 different cache lines can be fetched just as readily as 1 full cache line. The [32-byte sector size persists today](https://forums.developer.nvidia.com/t/pascal-l1-cache/49571/20), even though the Volta's HBM2 memory has a 64-byte interface. By contrast, in an Intel Cascade Lake or Skylake processor, data always travel all the way from RAM to registers in full cache lines of 64 bytes. - **_缓存行。_** 在任何 GPU 中，128 字节的缓存行由四个 32 字节的扇区组成。在缓存未命中的情况下，不必填充缓存行中的所有 4 个扇区，只需要更新需要更新的扇区。这意味着可以像获取一个完整的缓存行一样轻松地获取来自 4 个不同缓存行的 4 个扇区。32 字节的扇区大小即使在 Volta 的 HBM2 内存有 64 字节的接口的情况下也持续存在。相比之下，在 Intel Cascade Lake 或 Skylake 处理器中，数据总是以完整的 64 字节缓存行从 RAM 传输到寄存器。
+---

@@ -23,6 +23,7 @@ ollama --version
 ```
 
 如果安装成功，会返回类似 ollama 0.x.x 的版本号。
+
 ```bash
 ollama version is 0.5.7
 ```
@@ -105,7 +106,7 @@ Use """ to begin a multi-line message.
 ```bash
 git clone git@github.com:open-webui/open-webui.git
 ```
-	
+
 这个步骤可选，主要用于查看 Open-WebUI 代码。如果不需要修改代码，可以直接运行容器。
 
 ## 4.2 启动 Open-WebUI 容器
@@ -137,6 +138,7 @@ docker run -d \
 ```plaintext
 http://127.0.0.1:3000
 ```
+
 进入 `Web` 界面后，我们可以配置 `Ollama`，并选择 `deepseek-r1:1.5b` 作为默认模型。完成后，即可在 `WebUI` 中使用 `DeepSeek-R1` 进行文本生成和对话。
 
 ## 6. 结束运行
@@ -183,6 +185,6 @@ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-
 
 ## 8. 参考链接
 
-*	[Ollama 官方网站](https://ollama.com)
-*	[DeepSeek 开源项目](https://github.com/deepseek-ai)
-*	[Open-WebUI GitHub](https://github.com/open-webui/open-webui)
+* [Ollama 官方网站](https://ollama.com)
+* [DeepSeek 开源项目](https://github.com/deepseek-ai)
+* [Open-WebUI GitHub](https://github.com/open-webui/open-webui)

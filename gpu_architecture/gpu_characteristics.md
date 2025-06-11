@@ -6,7 +6,7 @@ The hardware design for graphics processing units (GPUs) is optimized for highly
 
 图形处理单元（GPU）的硬件设计优化了高度并行处理。因此，GPU的应用程序依赖于像NVIDIA CUDA这样的编程模型，与传统的基于CPU的串行编程模型有很大不同。尽管如此，人们可能会问：GPU的世界真的与CPU的世界如此不同吗？如果仔细研究，就会发现GPU的许多架构方面与现代CPU相似，差异至少部分是术语上的问题。
 
-# Design: GPU vs. CPU（设计：GPU 与 CPU）
+## Design: GPU vs. CPU（设计：GPU 与 CPU）
 
 GPUs were originally designed to render graphics. They work very well for shading, texturing, and rendering the thousands of independent polygons that comprise a 3D object. CPUs, on the other hand, are meant to control the logical flow of any general-purpose program, where lots of number crunching may (or may not) be involved. Due to these very different roles, GPUs are characterized by many more processing units and higher aggregate memory bandwidth, while CPUs feature more sophisticated instruction processing and faster clock speed.
 
@@ -24,19 +24,19 @@ This diagram, which is taken from the [CUDA C++ Programming Guide (v.11.2)](http
 
 这张图表取自CUDA C++编程指南（第11.2版），并不描绘任何特定CPU或GPU的实际硬件设计。然而，根据不同区域的大小、颜色和数量，该图表确实表明：
 
-1.  CPUs can handle more complex workflows compared to GPUs.
-2.  CPUs don't have as many arithmetic logic units or floating point units as GPUs (the small green boxes above, roughly speaking), but the ALUs and FPUs in a CPU core are individually more capable.
-3.  CPUs have more cache memory than GPUs.
+1. CPUs can handle more complex workflows compared to GPUs.
+2. CPUs don't have as many arithmetic logic units or floating point units as GPUs (the small green boxes above, roughly speaking), but the ALUs and FPUs in a CPU core are individually more capable.
+3. CPUs have more cache memory than GPUs.
 
-1.  CPU 可以处理比 GPU 更复杂的工作流程。
-2.  CPU 没有 GPU 那么多的算术逻辑单元或浮点单元（上面的小绿盒，大致来说），但 CPU 核心中的 ALU 和 FPU 每个都更有能力。
-3.  CPU 拥有比 GPU 更多的缓存内存。
+1. CPU 可以处理比 GPU 更复杂的工作流程。
+2. CPU 没有 GPU 那么多的算术逻辑单元或浮点单元（上面的小绿盒，大致来说），但 CPU 核心中的 ALU 和 FPU 每个都更有能力。
+3. CPU 拥有比 GPU 更多的缓存内存。
 
 A final point is that GPUs are really designed for workloads that can be parallelized to a significant degree. This is indicated in the diagram by having just one gold control box for every row of the little green computational boxes.
 
 最后一点是，GPU确实设计用于能够显著并行化的工作负载。这在图表中通过每一行小绿计算盒有一个金色控制盒来表示。
 
-# Performance: GPU vs. CPU（性能：GPU 与 CPU）
+## Performance: GPU vs. CPU（性能：GPU 与 CPU）
 
 GPUs and CPUs are intended for fundamentally different types of workloads. CPUs are typically designed for multitasking and fast serial processing, while GPUs are designed to produce high computational throughput using their massively parallel architectures.
 
@@ -51,14 +51,16 @@ The chart below, which is adapted from the [CUDA C Programming Guide (v.9.1)](ht
 Peak performance in Gflop/s of GPUs and CPUs in single and double precision, 2009-2016.
 
 > Info:
-
+>
 > Note, "single precision" refers to a 32-bit representation for floating point numbers (sometimes called FP32), while "double precision" refers to a 64-bit representation (FP64). Single precision numbers can often be processed twice as fast as the longer doubles.
 
-> 信息：
+---
 
+> 信息：
+>
 > 注意，“单精度”指的是 32 位的浮点数表示（有时称为 FP32），而“双精度”指的是 64 位表示（FP64）。单精度数字通常可以比更长的双精度处理得快两倍。
 
-# Heterogeneous Applications（异构应用程序）
+## Heterogeneous Applications（异构应用程序）
 
 It turns out that almost any application that relies on huge amounts of floating-point operations and simple data access patterns can gain a significant speedup using GPUs. This is sometimes referred to as GPGPU, or General-Purpose computing on Graphics Processing Units.
 
@@ -98,7 +100,7 @@ Either way, GPUs may outperform CPU-based processors by quite a lot, assuming th
 
 不管怎样，GPU 可能会比基于 CPU 的处理器性能高出很多，假设应用程序能够充分利用硬件的固有并行性。正如我们将看到的，在 TACC 的 Frontera 系统中，其基于 CPU 的Intel "Cascade Lake"处理器之一——特别是 Intel Xeon Platinum 8280 —— 的单精度计算原始速度为 4.3 Tflop/s；而其中的一个 GPU，Quadro RTX 5000，可能达到 11.2 Tflop/s，而配套的 Longhorn 系统（现已退役）中的一个 Tesla V100 可能高达 15.7 Tflop/s。
 
-# Threads and Cores Redefined（重新定义线程和核心）
+## Threads and Cores Redefined（重新定义线程和核心）
 
 What is the secret to the high performance that can be achieved by a GPU? The answer lies in the graphics pipeline that the GPU is meant to "pump": the sequence of steps required to take a scene of geometrical objects described in 3D coordinates and render them on a 2D display.
 
@@ -134,7 +136,7 @@ The table below attempts to reduce the potential sources of confusion. It lists 
 
 Comparison of terminology between GPUs and CPUs.
 
-# SIMT and Warps（SIMT 和 Warps）
+## SIMT and Warps（SIMT 和 Warps）
 
 On the preceding page we encountered two new GPU\-related terms, SIMT and warp. Let's explore their meanings and implications more thoroughly.
 
@@ -159,11 +161,13 @@ The figure, like several others in this topic, is taken from NVIDIA's [Volta arc
 该图与本主题中的其他几张图一样，取自 NVIDIA 的 [Volta 架构白皮书](https://images.nvidia.com/content/volta-architecture/pdf/volta-architecture-whitepaper.pdf)。它说明了如何通过最新的 GPU（例如 Tesla V100（或更高版本））执行 _if-else_ 构造。
 
 > Info:
-
+>
 > Note that in NVIDIA GPUs prior to Volta, the entire _if_ clause (i.e., both statements A and B) would have to be executed by the relevant threads, then the entire _else_ clause (both statements X and Y) would have to be executed by the remainder of the threads, then all threads would have to synchronize before continuing execution (statement Z). Volta's more flexible SIMT model permits synchronization of shared data at intermediate points (say, after A and X).
 
-> 信息：
+---
 
+> 信息：
+>
 > 请注意，在 Volta 之前的 NVIDIA GPU 中，整个 _if_ 子句（即语句 A 和 B）必须由相关线程执行，然后整个 _else_ 子句（语句 X 和 Y）必须由其余线程执行，然后所有线程必须同步才能继续执行（语句 Z）。Volta 更灵活的 SIMT 模型允许在中间点（例如，在 A 和 X 之后）同步共享数据。
 
 It is worth observing that a form of SIMT also exists on CPUs. Many vector instructions in Intel's x86\_64 have masked variants, in which a vector instruction can be turned on/off for selected vector lanes according to the true/false values in an extra vector operand. This extra operand is called a "mask" because it functions like one: it "hides" certain vector lanes. And the masking trick enables branching to be vectorized on CPUs, too, to a limited extent.
@@ -175,11 +179,13 @@ In contrast to how CPU code is written, SIMT parallelism on the GPU does not hav
 与 CPU 代码的编写方式不同，GPU 上的 SIMT 并行性不必通过“矢量化循环”来表达。相反，至少在 CUDA 中，每个 GPU 线程都会按编写的方式执行内核代码。这在某种程度上证明了 NVIDIA 的“线程”命名法的合理性。
 
 > Info:
-
+>
 > Note that GPU code can also be written by applying OpenMP or OpenACC directives to loops, in which case it can end up looking very much like vectorized CPU code.
 
-> 信息：
+---
 
+> 信息：
+>
 > 请注意，GPU 代码也可以通过将 OpenMP 或 OpenACC 指令应用于循环来编写，在这种情况下，它最终看起来非常像矢量化的 CPU 代码。
 
 ## Warps
@@ -200,7 +206,7 @@ One could argue that the existence of warps is a hardware detail that isn't dire
 
 有人可能会认为 Warp 的存在是硬件细节，与应用程序程序员没有直接关系。但是，基于 Warp 的执行模型对性能有影响，可能会影响编码选择。例如，如上图所示，如果同一 Warp 中的两个线程分支到不同的指令，分支会使 Warp 的执行流程复杂化。因此，程序员可能希望避免在 Warp 大小的循环迭代集内进行分支。
 
-# Kernels and SMs
+## Kernels and SMs
 
 We continue our survey of GPU-related terminology by looking at the relationship between kernels, thread blocks, and streaming multiprocessors (SMs).
 
@@ -246,7 +252,7 @@ The SM includes several levels of memory that can be accessed only by the CUDA c
 
 SM 包含多个级别的内存，这些内存只能由该 SM 的 CUDA 核心访问：寄存器、L1 缓存、常量缓存和共享内存。Volta GPU 中可用的每个 SM 和全局内存的确切属性将很快概述。
 
-# Compute Capability（计算能力）
+## Compute Capability（计算能力）
 
 The technical properties of the SMs in a particular NVIDIA GPU are represented collectively by a version number called the _compute capability_ of the device. This serves as a reference to the set of features that is supported by the GPU. It can even be discovered by applications at run time to find out whether certain hardware properties and/or instructions are present on the GPU.
 
@@ -265,3 +271,5 @@ NVIDIA Tesla V100, based on the Volta architecture, and NVIDIA Quadro RTX 5000, 
 Are you thinking about writing CUDA programs for the NVIDIA graphics card in your personal computer? First, make sure this is a real possibility by searching through the lists of [GPUs that are enabled for CUDA](https://developer.nvidia.com/cuda-gpus#compute). If your card is listed, then note its compute capability, because this number lets you learn all kinds of things about the [features and technical specifications](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities) of your GPU (much more than a beginner needs to know).
 
 大家是否正在考虑在个人电脑中为 NVIDIA 显卡编写 CUDA 程序？首先，通过搜索 [启用 CUDA 的 GPU](https://developer.nvidia.com/cuda-gpus#compute) 列表，确保这确实可行。如果显卡已列出，请记下它的计算能力，因为这个数字可以让我们了解有关 GPU 的 [功能和技术规格](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities) 的各种信息（远远超过初学者需要了解的内容）。
+
+---

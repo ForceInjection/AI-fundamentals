@@ -45,8 +45,8 @@
 
 本课介绍了智能体框架的概念和作用。智能体框架允许开发人员通过代码实现智能体模式，提供模板、插件和工具，以实现更好的 AI 智能体协作。这些优势提供了更好的可观察性和 `AI` 智能体系统故障排除能力。课程中重点介绍了微软的 `AutoGen` 框架和 `Semantic Kernel` 框架。
 
-> **AutoGen**(`https://github.com/autogenhub/autogen`): AutoGen is an open-source programming framework for building AI agents and facilitating cooperation among multiple agents to solve tasks. 
-> 
+> **AutoGen**(`https://github.com/autogenhub/autogen`): AutoGen is an open-source programming framework for building AI agents and facilitating cooperation among multiple agents to solve tasks.
+>
 > **Semantic Kernel**(`https://github.com/microsoft/semantic-kernel`): Semantic Kernel is an SDK that integrates Large Language Models (LLMs) like OpenAI, Azure OpenAI, and Hugging Face with conventional programming languages like C#, Python, and Java. Semantic Kernel achieves this by allowing you to define plugins that can be chained together in just a few lines of code.
 
 ### 第3课：理解智能体设计模式
@@ -85,7 +85,8 @@
 
 AI Agent 是通过为大语言模型（`LLMs`）提供工具和知识的访问权限，从而扩展其能力以执行操作的系统。其基本组件包括环境、传感器和执行器。环境定义了 AI Agent 运行的空间，传感器用于收集和解释环境的当前状态信息，执行器则根据任务需求执行操作以改变环境。利用 LLMs 构建 AI Agent 的优势在于它们能够解释人类语言和数据，从而更好地理解和处理环境信息并制定行动计划。
 
-## 第1课：AI Agent 及使用场景简介
+## 第1课：AI Agent 及使用场景简介(示例)
+
 ### AI Agent类型
 
 根据不同的工作方式和应用场景，`AI Agent` 可以分为以下几种类型：

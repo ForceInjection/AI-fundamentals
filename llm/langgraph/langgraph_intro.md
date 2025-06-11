@@ -173,19 +173,19 @@ config:
     curve: linear
 ---
 graph TD;
-	__start__([<p>__start__</p>]):::first
-	agent(agent)
-	tool(tool)
-	final(final)
-	__end__([<p>__end__</p>]):::last
-	__start__ --> agent;
-	agent -.-> final;
-	agent -.-> tool;
-	tool --> final;
-	final --> __end__;
-	classDef default fill:#f2f0ff,line-height:1.2
-	classDef first fill-opacity:0
-	classDef last fill:#bfb6fc
+ __start__([<p>__start__</p>]):::first
+ agent(agent)
+ tool(tool)
+ final(final)
+ __end__([<p>__end__</p>]):::last
+ __start__ --> agent;
+ agent -.-> final;
+ agent -.-> tool;
+ tool --> final;
+ final --> __end__;
+ classDef default fill:#f2f0ff,line-height:1.2
+ classDef first fill-opacity:0
+ classDef last fill:#bfb6fc
 ```
 
 ### 4.2 LangSmith 集成调试

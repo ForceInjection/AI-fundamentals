@@ -1,7 +1,7 @@
-混合专家系统（MoE）图解指南
-==========================================
+# 混合专家系统（MoE）图解指南
+
 > 原文：`https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-mixture-of-experts`<br/>
->  作者：`Maarten Grootendorst`
+> 作者：`Maarten Grootendorst`
 
 在追踪最新发布的**大型语言模型**时，您会发现许多模型的标题中都醒目标注着「**MoE**」。 这个「**MoE**」究竟代表何种技术？为何能成为众多 `LLM` 的架构首选？
 
@@ -14,15 +14,15 @@
 若想获取更多与大型语言模型相关的可视化解析，并支持本专栏持续创作，欢迎查阅笔者编著的《**大型语言模型实战指南**》！
 
 > 附言：若您已品读此书，在[亚马逊平台](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) 撰写简短书评将是对作者最珍贵的鼓励——您的反馈切实影响着学术创作生态。
-> 
+>
 > `Github` 地址：`https://github.com/HandsOnLLM/Hands-On-Large-Language-Models`
 
 **混合专家系统**（`Mixture of Experts`，`MoE`）是一种通过协同多个差异化子模型（即「**专家单元**」）来提升大型语言模型性能的技术范式。
 
 `MoE`架构包含两大核心组件：
 
-*   **专家集群**——每个前馈神经网络层配置了可动态调度的多组专家单元集合这些专家单元本质上仍保持前馈神经网络的结构特性；
-*   **路由分配器**或**门控网络**——负责确定文本标记的专家调度路径。
+* **专家集群**——每个前馈神经网络层配置了可动态调度的多组专家单元集合这些专家单元本质上仍保持前馈神经网络的结构特性；
+* **路由分配器**或**门控网络**——负责确定文本标记的专家调度路径。
 
 在集成`MoE`的大型语言模型各层级中，均部署了（具有领域特化能力的）专家单元：
 
@@ -65,7 +65,6 @@
 具体实现上，可将稠密模型拆分为多个专家单元，经重新训练后，每次推理仅激活部分专家集群：
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fcc4eeaf8-166b-419f-896c-463498af5692_880x656.png)
-
 
 核心原理在于：**每个专家单元在训练过程中会习得不同的信息特征**。**在执行推理时，仅调用与当前任务最相关的特定专家系统**。
 
@@ -180,7 +179,6 @@
 `KeepTopK`策略通过为每个文本标记选择特定专家单元实现定向处理。该方法称为_标记择路_[3](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-mixture-of-experts#footnote-3-148217245) ，支持将文本标记路由至单一专家（ _Top-1路由_ ）：
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdf7a9988-d4c8-4b1b-a968-073a6b3bfc6a_1004x648.png)
-
 
 或同时分配给多个专家单元（top-k路由）：
 
@@ -298,7 +296,6 @@
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F65f972b9-640b-4a76-b77d-2d2ef1b40609_1736x420.png)
 
-
 优先级路由机制通过聚焦最关键的分块，可显著减少需要处理的图像分块数量。
 
 在`V-MoE`架构中，优先级评分器能有效区分图像分块的重要性差异。但每个专家单元仅处理被分配的分块，导致未处理图块的信息丢失。
@@ -349,10 +346,10 @@
 
 希望本文能为您提供关于混合专家系统的入门指引。若您希望深入研究，以下资源值得参考：
 
-*   [这篇](https://arxiv.org/pdf/2209.01667) 与[这篇](https://arxiv.org/pdf/2407.06204) 论文详尽阐述了混合专家系统领域的最新突破。
-    
-*   关于[专家选择路由机制](https://arxiv.org/pdf/2202.09368) 的研究论文已在学术界引起广泛讨论。
-    
-*   [这篇优质博客](https://cameronrwolfe.substack.com/p/conditional-computation-the-birth) 深入剖析了多篇关键论文及其研究成果。
-    
-*   同类[技术解析博客](https://brunomaga.github.io/Mixture-of-Experts) 则完整呈现了混合专家系统的演进历程。
+* [这篇](https://arxiv.org/pdf/2209.01667) 与[这篇](https://arxiv.org/pdf/2407.06204) 论文详尽阐述了混合专家系统领域的最新突破。
+
+* 关于[专家选择路由机制](https://arxiv.org/pdf/2202.09368) 的研究论文已在学术界引起广泛讨论。
+
+* [这篇优质博客](https://cameronrwolfe.substack.com/p/conditional-computation-the-birth) 深入剖析了多篇关键论文及其研究成果。
+
+* 同类[技术解析博客](https://brunomaga.github.io/Mixture-of-Experts) 则完整呈现了混合专家系统的演进历程。

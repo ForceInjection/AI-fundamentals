@@ -1,4 +1,5 @@
 # 一、文本嵌入（Text-Embedding） 技术快速入门
+>
 > 这部分是一个快速入门
 
 ## 1. Text-Embedding 技术概述
@@ -43,6 +44,7 @@
 `Text-embedding` 技术通过将文本转化为向量表示，为自然语言处理任务提供了强大支持，应用广泛。随着 Transformer 等模型的发展，其质量和效率不断提升，推动了文本处理技术的飞跃。向量数据库的出现进一步提升了相似度搜索的效率，为开发者提供了有力工具。选择模型时需根据任务需求、计算资源和性能要求做出平衡，其在智能问答、推荐系统等领域的潜力巨大，应用前景广阔。
 
 # 二、深入了解文本嵌入技术
+>
 > 作者：`Mariya Mansurova` <br>
 > 原文：`https://towardsdatascience.com/text-embeddings-comprehensive-guide-afd97fce8fb5/`
 
@@ -58,11 +60,11 @@
 
 在本文中，我想深入探讨嵌入技术主题，并讨论所有细节：
 
-*   嵌入技术之前的背景以及它们是如何演变的，
-*   如何使用`OpenAI`工具计算嵌入，
-*   如何定义句子之间的相似性，
-*   如何可视化嵌入，
-*   最令人兴奋的部分是你如何在实践中使用嵌入。
+- 嵌入技术之前的背景以及它们是如何演变的，
+- 如何使用`OpenAI`工具计算嵌入，
+- 如何定义句子之间的相似性，
+- 如何可视化嵌入，
+- 最令人兴奋的部分是你如何在实践中使用嵌入。
 
 让我们继续前进，了解嵌入的演变。
 
@@ -94,6 +96,7 @@ print(stemmed_words)
 # ['我们', '很', '幸运', '能', '生活', '在', '一个', '时代', '中', '在', 
 #  '我们', '仍然', '在', '进行', '发现']
 ```
+
 现在，我们有了所有单词的基本形式列表。 下一步是计算它们的频率以创建一个向量。
 
 ```python
@@ -103,6 +106,7 @@ print(bag_of_words)
 # {'我们': 2, '在': 2, '运气': 2, '中': 1, '生活': 1, 
 # '一个': 1, '时代': 1, '我们': 1, '仍然': 1, '可以': 1, '发现': 1}
 ```
+
 实际上，如果我们想将文本转换为向量，我们不仅需要考虑文本中的单词，还需要考虑整个词汇表。 假设我们的词汇中还有 _"我"_、_"你"_ 和 _"学习"_，让我们从费曼的名言中创建一个向量。
 
 ![作者图表](https://towardsdatascience.com/wp-content/uploads/2024/02/1W5AP-lvW7c0fD5Pa6suhJQ.png)
@@ -111,15 +115,15 @@ print(bag_of_words)
 
 ### TF-IDF
 
-一种稍微改进的词袋模型方法是 **[TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) ** (_词频 – 逆文档频率_)。它是两个指标的乘积。
+一种稍微改进的词袋模型方法是 **[TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf)** (_词频 – 逆文档频率_)。它是两个指标的乘积。
 
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1Bt4EIN6sSmoFix_ImYZPtQ.png)
 
-*   **词频** 显示了单词在文档中的频率。 计算它的最常见方法是将该文档中术语的原始计数（如词袋模型中）除以文档中的总词数。 然而，还有许多其他方法，比如仅使用原始计数、布尔 "频率" 和不同的归一化方法。 您可以在 [维基百科](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) 上了解更多不同的方法。
+- **词频** 显示了单词在文档中的频率。 计算它的最常见方法是将该文档中术语的原始计数（如词袋模型中）除以文档中的总词数。 然而，还有许多其他方法，比如仅使用原始计数、布尔 "频率" 和不同的归一化方法。 您可以在 [维基百科](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) 上了解更多不同的方法。
 
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1jZJ6EsX8l5Am9LL3ZMVMfg.png)
 
-*   **逆文档频率** 表示单词提供的信息量。 例如，单词 _"a"_ 或 _"that"_ 并没有为文档的主题提供任何额外的信息。 相比之下，像 _"ChatGPT"_ 或 _"生物信息学"_ 这样的词可以帮助你定义领域（但不适用于这个句子）。 它的计算方式是文档总数与包含该词的文档数之比的对数。 IDF 越接近 0，表示该词越常见，提供的信息就越少。
+- **逆文档频率** 表示单词提供的信息量。 例如，单词 _"a"_ 或 _"that"_ 并没有为文档的主题提供任何额外的信息。 相比之下，像 _"ChatGPT"_ 或 _"生物信息学"_ 这样的词可以帮助你定义领域（但不适用于这个句子）。 它的计算方式是文档总数与包含该词的文档数之比的对数。 IDF 越接近 0，表示该词越常见，提供的信息就越少。
 
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1EUJyikNdYu4b_8bUW5M3AA.png)
 
@@ -165,8 +169,8 @@ print(bag_of_words)
 
 在本文中，我们将使用 `OpenAI` 嵌入。 我们将尝试一个新的模型 `text-embedding-3-small`，该模型最近刚刚[发布](https://openai.com/blog/new-embedding-models-and-api-updates) 。 新模型的性能相比于 `text-embedding-ada-002` 有所提升：
 
-*   在一个广泛使用的多语言检索基准（[MIRACL](https://github.com/project-miracl/miracl) ）上的平均得分从 `31.4%` 上升到 `44.0%`。
-*   在一个常用的英语任务基准（[MTEB](https://github.com/embeddings-benchmark/mteb) ）上的平均表现也有所改善，从 `61.0%` 上升到 `62.3%`。
+- 在一个广泛使用的多语言检索基准（[MIRACL](https://github.com/project-miracl/miracl) ）上的平均得分从 `31.4%` 上升到 `44.0%`。
+- 在一个常用的英语任务基准（[MTEB](https://github.com/embeddings-benchmark/mteb) ）上的平均表现也有所改善，从 `61.0%` 上升到 `62.3%`。
 
 `OpenAI` 还发布了一个新的更大模型 `text-embedding-3-large`。 现在，它是他们表现最好的嵌入模型。
 
@@ -184,7 +188,7 @@ def get_embedding(text, model="text-embedding-3-small"):
        .data[0].embedding
     
 get_embedding("We are lucky to live in an age in which we are still making discoveries.")
-```    
+```
 
 结果是我们得到了一个1536维的浮点数向量。 我们现在可以对所有数据重复这个过程，并开始分析这些值。
 
@@ -196,10 +200,10 @@ get_embedding("We are lucky to live in an age in which we are still making disco
 
 可以使用不同的度量来测量两个向量之间的距离：
 
-*   **欧几里得距离** (L2)，
-*   **曼哈顿距离** (L1)，
-*   **点积**，
-*   **余弦距离**。
+- **欧几里得距离** (L2)，
+- **曼哈顿距离** (L1)，
+- **点积**，
+- **余弦距离**。
 
 让我们讨论一下它们。 作为一个简单的例子，我们将使用两个二维向量。
 
@@ -227,6 +231,7 @@ sum(list(map(lambda x, y: (x - y) ** 2, vector1, vector2))) ** 0.5
 np.linalg.norm((np.array(vector1) - np.array(vector2)), ord = 2)
 # 2.2361
 ```
+
 ### 曼哈顿距离 (L1)
 
 另一个常用的距离是L1范数或曼哈顿距离。 这个距离是以曼哈顿岛（纽约）命名的。这个岛有一个网格布局的街道，曼哈顿中两个点之间的最短路线将是L1距离，因为你需要沿着网格行驶。
@@ -259,8 +264,8 @@ np.dot(vector1, vector2)
 
 这个度量有点难以解释。 一方面，它告诉你向量是否指向同一个方向。 另一方面，结果高度依赖于向量的大小。 例如，让我们计算两个向量对之间的点积：
 
-*   `(1, 1)` 对 `(1, 1)`
-*   `(1, 1)` 对 `(10, 10)`。
+- `(1, 1)` 对 `(1, 1)`
+- `(1, 1)` 对 `(10, 10)`。
 
 在这两种情况下，向量是共线的，但第二种情况的点积大十倍：`2` 对 `20`。
 
@@ -304,26 +309,25 @@ math.degrees(math.acos(0.8575))
     
 # 30.96
 ```
+
 ### 使用什么度量？
 
 我们讨论了不同的计算两个向量之间距离的方法，你可能会开始考虑使用哪一种。
 
 你可以使用任何距离来比较你拥有的嵌入。 例如，我计算了不同簇之间的平均距离。 L2距离和余弦相似度都给我们展示了相似的图景：
 
-*   簇内的对象彼此之间比与其他簇的对象更接近。 解释我们的结果有点棘手，因为对于L2距离，距离越近意味着距离越小，而对于余弦相似度——度量越高表示对象越接近。不要搞混了。
-*   我们可以发现一些主题彼此非常接近，例如，_"政治"_ 和 _"经济学"_ 或 _"人工智能"_ 和 _"数据科学"_。
+- 簇内的对象彼此之间比与其他簇的对象更接近。 解释我们的结果有点棘手，因为对于L2距离，距离越近意味着距离越小，而对于余弦相似度——度量越高表示对象越接近。不要搞混了。
+- 我们可以发现一些主题彼此非常接近，例如，_"政治"_ 和 _"经济学"_ 或 _"人工智能"_ 和 _"数据科学"_。
 
 ![作者提供的图片](https://towardsdatascience.com/wp-content/uploads/2024/02/1LsoVYMBbklb07krWEn8DMA.png)
 
-
 ![作者提供的图片](https://towardsdatascience.com/wp-content/uploads/2024/02/1VH7CMZZhuT-sZ9XUkH0xgQ.png)
-
 
 然而，对于[NLP](https://towardsdatascience.com/tag/nlp/ "NLP") 任务，最佳实践通常是使用余弦相似度。其背后的原因有：
 
-*   余弦相似度的范围在 `-1` 到 `1` 之间，而 `L1` 和 `L2` 是无界的，因此更容易解释。
-*   从实际角度来看，计算点积比计算欧几里得距离的平方根更有效。
-*   余弦相似度受到维度诅咒的影响较小（我们稍后会讨论这个问题）。
+- 余弦相似度的范围在 `-1` 到 `1` 之间，而 `L1` 和 `L2` 是无界的，因此更容易解释。
+- 从实际角度来看，计算点积比计算欧几里得距离的平方根更有效。
+- 余弦相似度受到维度诅咒的影响较小（我们稍后会讨论这个问题）。
 
 > `OpenAI` 的嵌入已经进行了归一化，因此在这种情况下，点积和余弦相似度是相等的。
 
@@ -332,7 +336,6 @@ math.degrees(math.acos(0.8575))
 我想简要展示一下它是如何工作的，以便您获得一些直觉。 我计算了OpenAI嵌入值的分布，并生成了300个具有不同维度的向量集。 然后，我计算了所有向量之间的距离并绘制了直方图。 您可以很容易地看到，向量维度的增加使得分布变得更窄。
 
 ![作者图表](https://towardsdatascience.com/wp-content/uploads/2024/02/1sw4cdnFVB9FTDdJxMp-cxQ.png)
-
 
 我们已经学会了如何测量嵌入之间的相似性。 至此，我们完成了理论部分，接下来将进入更实用的部分（可视化和实际应用）。 让我们从可视化开始，因为首先看到数据总是更好的。
 
@@ -352,6 +355,7 @@ embeddings_array = np.array(df.embedding.values.tolist())
 print(embeddings_array.shape)
 # (1400, 1536)
 ```
+
 然后，我们需要初始化一个PCA模型，设置 `n_components = 2`（因为我们想创建一个二维可视化），在整个数据上训练模型并预测新值。
 
 ```python
@@ -363,7 +367,7 @@ pca_model.fit(embeddings_array)
 pca_embeddings_values = pca_model.transform(embeddings_array)
 print(pca_embeddings_values.shape)
 # (1400, 2)
-```    
+```
 
 结果，我们得到了一个仅包含两个特征的矩阵，因此我们可以很容易地在散点图上进行可视化。
 
@@ -382,6 +386,7 @@ fig.update_layout(
     yaxis_title = 'second component')
 fig.show()
 ```
+
 ![作者提供的图片](https://towardsdatascience.com/wp-content/uploads/2024/02/1U46uJK8QTmK7O5cMLOnIKQ.png)
 
 我们可以看到每个主题的问题彼此非常接近，这很好。 然而，所有的簇都是混合在一起的，因此还有改进的空间。
@@ -437,6 +442,7 @@ fig = px.scatter_3d(
 fig.update_layout(xaxis_title = 'first component', yaxis_title = 'second component')
 fig.show()
 ```
+
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1_qRqBEaETQqudsQlp4dGuQ.png)
 
 ### 条形码
@@ -473,6 +479,7 @@ plt.gcf().set_size_inches(15,1)
 plt.yticks([0.5], labels = ['Bioinformatics'])
 plt.show()
 ```
+
 ![作者图表](https://towardsdatascience.com/wp-content/uploads/2024/02/1yP_aC1hGY90SMXDdby0uIQ.png)
 
 在我们的案例中，由于高维度，判断向量彼此是否接近并不容易。 然而，我仍然喜欢这个可视化。 在某些情况下，这可能会很有帮助，所以我与您分享这个想法。
@@ -516,6 +523,7 @@ fig = px.line(pd.DataFrame(silhouette_scores).set_index('k'),
        color_discrete_sequence = plotly.colors.qualitative.Alphabet)
 fig.update_layout(showlegend = False)
 ```
+
 在我们的案例中，当 `k = 11` 时，轮廓系数达到了最大值。 因此，我们将使用这个簇的数量作为我们最终模型的参数。
 
 ![作者图表](https://towardsdatascience.com/wp-content/uploads/2024/02/135MCNGaR6P0VJqGlhuLI4A.png)
@@ -566,12 +574,13 @@ fig = px.imshow(
     
 fig.show()
 ```
+
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1CZeSezPbxeoLWPZpmT9h7w.png)
 
 在大多数情况下，聚类效果很好。 例如，聚类 `5` 几乎只包含关于自行车的问题，而聚类 `6` 则是关于咖啡的。 然而，它无法区分相近的主题：
 
-*   _"人工智能"_、_"生成性人工智能"_ 和 _"数据科学"_ 都在一个聚类中，
-*   与 _"经济学"_ 和 _"政治"_ 在同一个聚类中。
+- _"人工智能"_、_"生成性人工智能"_ 和 _"数据科学"_ 都在一个聚类中，
+- 与 _"经济学"_ 和 _"政治"_ 在同一个聚类中。
 
 在这个例子中，我们仅使用嵌入作为特征，但如果您有任何额外的信息（例如，提问者的年龄、性别或国家），您也可以将其包含在模型中。
 
@@ -620,6 +629,7 @@ fig = px.imshow(
     
 fig.show()
 ```
+
 ![](https://towardsdatascience.com/wp-content/uploads/2024/02/1UvZCAE7BQlK0LhZTnMhjqg.png)
 
 我们可以看到与聚类相似的结果：一些主题很容易分类，准确率为`100%`，例如_"自行车"_或_"旅行"_，而其他一些则难以区分（尤其是_"人工智能"_）。
@@ -641,6 +651,7 @@ topic_df['is_anomaly'] = clf.fit_predict(topic_embeddings_array)
     
 topic_df[topic_df.is_anomaly == -1][['full_text']]
 ```
+
 所以，我们在这里。我们找到了旅行主题中最不常见的评论 ([来源](https://travel.stackexchange.com/questions/150735/is-it-safe-to-drink-the-water-from-the-fountains-found-all-over-the-older-parts) )。
 
 ```text
@@ -668,15 +679,15 @@ should know about?
 
 当我们有大量文档（例如，来自 ·Stack Exchange· 的所有问题）时，我们需要检索增强生成，因为我们无法将它们全部传递给大型语言模型，因为
 
-*   大型语言模型在上下文大小上有限制（目前，`GPT-4 Turbo` 的限制是 `128K`）。
-*   我们为令牌付费，因此总是传递所有信息会更昂贵。
-*   大型语言模型在更大的上下文中表现较差。 你可以查看 [Needle In A Haystack – Pressure Testing LLMs](https://github.com/gkamradt/LLMTest_NeedleInAHaystack) 以了解更多细节。
+- 大型语言模型在上下文大小上有限制（目前，`GPT-4 Turbo` 的限制是 `128K`）。
+- 我们为令牌付费，因此总是传递所有信息会更昂贵。
+- 大型语言模型在更大的上下文中表现较差。 你可以查看 [Needle In A Haystack – Pressure Testing LLMs](https://github.com/gkamradt/LLMTest_NeedleInAHaystack) 以了解更多细节。
 
 为了能够处理广泛的知识库，我们可以利用 RAG 方法：
 
-*   计算所有文档的嵌入并将其存储在向量存储中。
-*   当我们收到用户请求时，我们可以计算其嵌入并从存储中检索与该请求相关的文档。
-*   仅将相关文档传递给大型语言模型以获得最终答案。
+- 计算所有文档的嵌入并将其存储在向量存储中。
+- 当我们收到用户请求时，我们可以计算其嵌入并从存储中检索与该请求相关的文档。
+- 仅将相关文档传递给大型语言模型以获得最终答案。
 
 要了解更多关于 RAG 的信息，请随时阅读我更详细的文章 [这里.](https://towardsdatascience.com/rag-how-to-talk-to-your-data-eaf5469b83b0)
 
@@ -684,10 +695,10 @@ should know about?
 
 在这篇文章中，我们详细讨论了文本嵌入技术。 希望现在你对这个主题有了全面而深入的理解。 以下是我们旅程的快速回顾：
 
-*   首先，我们回顾了处理文本的方法的演变。
-*   然后，我们讨论了如何理解文本之间是否具有相似的含义。
-*   之后，我们看到了文本嵌入可视化的不同方法。
-*   最后，我们尝试将嵌入用作聚类、分类、异常检测和 RAG 等不同实际任务中的特征。
+- 首先，我们回顾了处理文本的方法的演变。
+- 然后，我们讨论了如何理解文本之间是否具有相似的含义。
+- 之后，我们看到了文本嵌入可视化的不同方法。
+- 最后，我们尝试将嵌入用作聚类、分类、异常检测和 RAG 等不同实际任务中的特征。
 
 > 非常感谢你阅读这篇文章。 如果你有任何后续问题或评论，请在评论区留言。
 
@@ -697,5 +708,5 @@ should know about?
 
 本文的灵感来源于以下课程：
 
-*   "[理解和应用文本嵌入"](https://www.deeplearning.ai/short-courses/google-cloud-vertex-ai/) 由 DeepLearning.AI 与 Google Cloud 合作提供，
-*   ["向量数据库：从嵌入到应用"](https://learn.deeplearning.ai/vector-databases-embeddings-applications/lesson/1/introduction) 由 DeepLearning.AI 与 Weaviate 合作提供。
+- "[理解和应用文本嵌入"](https://www.deeplearning.ai/short-courses/google-cloud-vertex-ai/) 由 DeepLearning.AI 与 Google Cloud 合作提供，
+- ["向量数据库：从嵌入到应用"](https://learn.deeplearning.ai/vector-databases-embeddings-applications/lesson/1/introduction) 由 DeepLearning.AI 与 Weaviate 合作提供。

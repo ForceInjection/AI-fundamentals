@@ -29,13 +29,13 @@
 
 `tiktoken` 是 `OpenAI` 官方库，专为 `GPT` 系列设计。
 
-**安装**
+**安装**：
 
 ```bash
 pip install tiktoken
 ```
 
-**估算示例**
+**估算示例**：
 
 ```python
 import tiktoken
@@ -53,12 +53,14 @@ print(f"Token 数量: {len(tokens)}")  # 输出: 7
 
 `transformers` 提供多语言支持，适合中文文本。
 
-**安装**
+**安装**：
+
 ```bash
 pip install transformers
 ```
 
-**估算示例**
+**估算示例**：
+
 ```python
 from transformers import BertTokenizer
 
@@ -89,10 +91,11 @@ print(f"Token 数量: {len(tokens)}")  # 输出: 115
 `tiktoken` 的 BPE 算法会将中文拆分为更细粒度的子词（如单字或常见组合），而 `transformers` 的 `BertTokenizer` 基于词表匹配，可能保留更多完整词语，因此两者计数不同。
 
 ---
+
 ## 完整代码
 
-### **Dockerfile**:
- 
+### **Dockerfile**
+
 ```Dockerfile
 # 使用官方 Python 3.9 镜像
 FROM python:3.9-slim
@@ -119,6 +122,7 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=1
 # 运行主程序
 CMD ["python", "token_estimation.py"]
 ```
+
 ### **token_estimation.py**
 
 ```python
@@ -170,6 +174,7 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
 ### 构建及执行
 
 ```bash
@@ -194,3 +199,5 @@ Tokens 数量（tiktoken）: 115
 - **英文文本**：推荐使用 `tiktoken`，因其与 `GPT` 系列的分词策略一致。
 - **中文文本**：`transformers` 的分词器更贴近词语划分，而 `tiktoken` 可能生成更多子词 `tokens`。
 - 理解不同工具的分词逻辑，可帮助优化文本输入，避免超出模型限制。
+
+---

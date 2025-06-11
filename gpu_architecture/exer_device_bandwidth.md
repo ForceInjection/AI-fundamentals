@@ -9,30 +9,30 @@ After locating the source and header files and the Makefile, we will build the c
 1\. Load the CUDA software using the module utility (as necessary).
 
 ```bash
-$ module load cuda
+module load cuda
 ```
 
 2\. Set `CUDA_PATH` to the location where CUDA is installed. This can be deduced from the path to the `nvcc` compiler. The `CUDA_PATH` environment variable will be needed by the Makefile, later.
 
 ```bash
-$ export CUDA_PATH=$(dirname $(dirname $(which nvcc)))
-$ echo $CUDA_PATH  # should be the same as $TACC_CUDA_DIR on Frontera
+export CUDA_PATH=$(dirname $(dirname $(which nvcc)))
+echo $CUDA_PATH  # should be the same as $TACC_CUDA_DIR on Frontera
 ```
 
 3\. Copy the desired CUDA sample files to a directory in `$HOME`.
 
 ```bash
-$ mkdir test
-$ cd test
-$ cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/bandwidthTest.cu .
-$ cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/Makefile .
+mkdir test
+cd test
+cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/bandwidthTest.cu .
+cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/Makefile .
 ```
 
 4\. Set `INCLUDES` as an environment variable for the Makefile you just copied, then build the executable with `make -e`.
 
 ```bash
-$ export INCLUDES=-I${CUDA_PATH}/samples/common/inc
-$ make -e
+export INCLUDES=-I${CUDA_PATH}/samples/common/inc
+make -e
 ```
 
 At the end of the make process, you are likely to see a "cannot create directory" error, which can be safely ignored.
@@ -55,7 +55,7 @@ At the end of the make process, you are likely to see a "cannot create directory
 6\. Submit your job using the _sbatch_ command.
 
 ```bash
-$ sbatch batch_test.sh
+sbatch batch_test.sh
 ```
 
 7\. Retrieve the results. If your job ran successfully, your results should be stored in the file _gpu\_test.o\[job ID\]_. Assuming you submitted your job to Frontera's `rtx-dev` queue, your output should look like the following:
@@ -93,10 +93,10 @@ To complete this bonus exercise, repeat the above steps, but replace step 3 with
 3\. Copy the desired CUDA sample files to a second directory in `$HOME`.
 
 ```bash
-$ mkdir test2
-$ cd test2
-$ cp $CUDA_PATH/samples/1_Utilities/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu .
-$ cp $CUDA_PATH/samples/1_Utilities/p2pBandwidthLatencyTest/Makefile .
+mkdir test2
+cd test2
+cp $CUDA_PATH/samples/1_Utilities/p2pBandwidthLatencyTest/p2pBandwidthLatencyTest.cu .
+cp $CUDA_PATH/samples/1_Utilities/p2pBandwidthLatencyTest/Makefile .
 ```
 
 The only other change to the instructions is that batch script should run the executable `p2pBandwidthLatencyTest`.

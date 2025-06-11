@@ -53,7 +53,7 @@ nvidia-smi -q
 
 部分输出内容示例：
 
-```
+```text
 ==============NVSMI LOG==============
 
 Timestamp                                 : Thu Sep 26 19:11:30 2024
@@ -120,7 +120,7 @@ nvidia-smi pmon -i 0
 
 输出示例：
 
-```
+```text
 # gpu        pid  type    sm   mem   enc   dec   command
 # Idx         #   C/G     %     %     %     %   name
     0      2635     C     0     0     0     0   python
@@ -176,7 +176,7 @@ nvidia-smi --query-gpu=driver_version --format=csv
 
 输出内容示例：
 
-```
+```text
 driver_version
 460.39
 ```
@@ -191,7 +191,7 @@ nvidia-smi --query-gpu=memory.total,memory.used,memory.free --format=csv
 
 输出示例：
 
-```
+```text
 memory.total [MiB], memory.used [MiB], memory.free [MiB]
 15109 MiB, 0 MiB, 15109 MiB
 ```
@@ -210,7 +210,7 @@ memory.total [MiB], memory.used [MiB], memory.free [MiB]
 nvidia-smi -i 0 -c 1
 ```
 
-# 参考
+## 参考
 
 ```bash
 nvidia-smi -h
@@ -478,3 +478,5 @@ nvidia-smi [OPTION1 [ARG1]] [OPTION2 [ARG2]] ...
 
 Please see the nvidia-smi(1) manual page for more detailed information.
 ```
+
+---

@@ -1,17 +1,18 @@
+# Ollama
 
-# build
+## build
 
 ```bash
 docker build --network=host -t ollama-bench .
 ```
 
-# run
+## run
 
 ```bash
 docker run --rm --network=host ollama-bench
 ```
 
-# outpu
+## outpu
 
 ```text
 🔥 预热模型中，请稍候...

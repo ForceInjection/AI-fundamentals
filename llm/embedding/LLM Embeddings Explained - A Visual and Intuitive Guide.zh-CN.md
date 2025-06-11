@@ -3,7 +3,7 @@
 > **原文题目**：**LLM Embeddings Explained：A Visual and Intuitive Guide**  
 > **原文地址**：`https://huggingface.co/spaces/hesamation/primer-llm-embedding`  
 > **作者**：**Hesam Sheikh Hassani**  
-> 所属机构：博洛尼亚大学   
+> 所属机构：博洛尼亚大学
 > 发布日期：2025年3月28日  
 > 阅读时间：`12-15`分钟  
 > 如需参与文章贡献、指出错误或提出改进建议，请访问[社区](https://huggingface.co/spaces/hesamation/primer-llm-embedding/discussions)。
@@ -62,7 +62,7 @@
 
 $$
 tf(t, d) = \frac{\text{该词在文档} \ d \ \text{中的出现次数}}{\text{文档} \ d \ \text{中的总词数}}
-$$ 
+$$
 
 例如，若某文档包含 `100` 个单词且"`cat`"出现`5`次，则"`cat`"的词频为$ 5/100=0.05 $。这为我们提供了该词在文档中普遍程度的简单数值化表征。  
 
@@ -83,7 +83,7 @@ $t f i d f(t,d)=t f(t,d)\times i d f(t)$ 我们通过具体示例来理解：
 $$
 idf(\text{''cat''}) = \log \left( \frac{10}{2} \right) = \log(5) \approx 1.61
 $$
- 
+
 若某文档中'cat'出现5次（总词数100），其词频统计（TF）值为 0.05。则该文档中'cat'的最终词频-逆文档频率（TF-IDF）得分为：  
 
 $
@@ -123,6 +123,7 @@ print(f"Embedding shape: {embeddings.shape}")
 # Word count: 11446 e.g.: ['abandon' 'abase' 'abate' 'abated' 'abbey' 'abbot' 'abed' 'abel' 'abet' 'abhor']
 # Embedding shape: (10, 11446)
 ```
+
 > tf-idf.py: `https://gist.github.com/hesamsheikh/951ba078734a66d19a6c963edfd8bc3c/raw/b9ebb3d2c518903b87d62c7e9e42cf842c25ca8b/tf-idf.py`
 
 由此生成`10`维嵌入表示（每个文档对应一维）。为直观理解`TF-IDF`嵌入特性，我们使用主成分分析（`PCA`）将`10`维空间映射至`2`维空间进行可视化呈现。  
@@ -132,7 +133,7 @@ print(f"Embedding shape: {embeddings.shape}")
 
 该嵌入空间有两个显著特征值得注意：  
 
-1. 绝大多数词语都集中在特定区域。这表明在此方法中，大多数词语的嵌入表示具有相似性。这暗示此类嵌入缺乏表达能力和独特性。   
+1. 绝大多数词语都集中在特定区域。这表明在此方法中，大多数词语的嵌入表示具有相似性。这暗示此类嵌入缺乏表达能力和独特性。
 2. 嵌入之间缺乏语义关联。词语间的距离与其实际含义毫无关联。  
 
 由于`TF-IDF`基于词语在文档中的出现频率，语义相近的词汇（如数字）在向量空间中并不存在关联。这种简洁性使得`TF-IDF`及类似统计方法在信息检索、关键词提取和基础文本分析等应用中仍具实用价值。相关方法可参阅文献[2]。  
@@ -148,12 +149,12 @@ print(f"Embedding shape: {embeddings.shape}")
 
 以下是`CBOW`词向量模型逐步工作原理：  
 
-1. 选择上下文窗口（例如上图中大小为2的窗口）   
-2. 选取目标词前后各两个词作为输入   
+1. 选择上下文窗口（例如上图中大小为2的窗口）
+2. 选取目标词前后各两个词作为输入
 3. 将这四个上下文词编码为独热向量  
-4. 将编码后的向量输入隐藏层，该层使用线性激活函数保持输入不变   
-5. 聚合隐藏层输出（例如使用`lambda`均值函数）   
-6. 将聚合结果输入最终层，通过`Softmax`函数预测各候选词的概率分布   
+4. 将编码后的向量输入隐藏层，该层使用线性激活函数保持输入不变
+5. 聚合隐藏层输出（例如使用`lambda`均值函数）
+6. 将聚合结果输入最终层，通过`Softmax`函数预测各候选词的概率分布
 7. 选取概率最高的词元作为网络最终输出  
 
 **隐藏层**是存储嵌入表示的核心结构。其**矩阵维度**为**词表大小** × **嵌入维度**，当我们输入某个词的**独热向量**（即仅有一个元素为`1`其余全`0`的向量）时，该向量中1对应的位置会触发该词的嵌入表示传递至后续层级。您可以在参考文献[4]中看到一个简洁巧妙的词向量模型实现示例。  
@@ -200,7 +201,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 
 您可以通过`TensorFlow Embedding Projector`实际可视化并操作词向量模型的嵌入表示。  
 
-![](https://cdn-mineru.openxlab.org.cn/extract/release/71dff130-2381-4239-92ed-b03ac0fc7ac4/366ee4b2c317ea7ef7dd04f4a023845cf74ba84913ef6051b934493ea4e1b381.jpg) 
+![](https://cdn-mineru.openxlab.org.cn/extract/release/71dff130-2381-4239-92ed-b03ac0fc7ac4/366ee4b2c317ea7ef7dd04f4a023845cf74ba84913ef6051b934493ea4e1b381.jpg)
  `TensorFlow`嵌入投影器在`3D`/`2D`空间中对词向量模型嵌入的交互式探索。  
 
 ### BERT（来自Transformer的双向编码器表示）  
@@ -211,10 +212,10 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 
 总结而言，`BERT`是一个仅含编码器的`Transformer`模型，由四个核心部分组成：  
 
-1. **分词器**：将文本切分为整数序列。   
-2. **嵌入层**：将离散词元转换为向量的模块。   
-3. **编码器**：由多个具有自注意力机制的`Transformer`模块堆叠而成。   
-4. **任务头**：当编码器完成表征处理后，这个任务特定头负责处理   
+1. **分词器**：将文本切分为整数序列。
+2. **嵌入层**：将离散词元转换为向量的模块。
+3. **编码器**：由多个具有自注意力机制的`Transformer`模块堆叠而成。
+4. **任务头**：当编码器完成表征处理后，这个任务特定头负责处理
 用于词元生成或分类任务。  
 
 `BERT`受《**Attention is all you need**》提出的`Transformer`架构启发，演变为能生成有意义表征并理解语言的纯编码器模型。其核心思想是根据具体待解决问题对BERT进行微调，这些特定任务可以是问答（问题 + 段落 -> 答案）、文本摘要、分类等。  
@@ -489,8 +490,8 @@ for token, neighbors in tokens_and_neighbors.items():
         # Get embedding
         neighbor_id, neighbor_emb, _ = prompt_to_embeddings(neighbor)
         all_token_embeddings[neighbor] = neighbor_emb[0][1]
-``` 
- 
+```
+
 ## 嵌入表示图谱化：网络分析法  
 
 我们如何可视化嵌入表示？一种方法是将嵌入层视为网络，其中词元作为节点；如果两个词元向量相近，则假定其节点之间存在边连接。  
@@ -523,9 +524,9 @@ for token, neighbors in tokens_and_neighbors.items():
 
 ## 引用说明  
 
-如需在学术场景中引用本文，请使用如下格式： 
+如需在学术场景中引用本文，请使用如下格式：
 
-**BibTeX引用格式**
+**BibTeX引用格式**:
 
 ```text
 @misc{llm_embeddings_explained, title = {LLM Embeddings Explained: A Visual and Intuitive Guide}, author={Hesam Sheikh Hessani}, year = {2025} , }  
@@ -533,13 +534,13 @@ for token, neighbors in tokens_and_neighbors.items():
 
 ## 参考文献  
 
-1. [**自然语言处理中的词嵌入技术全面指南**](https://medium.com/@harsh.vardhan7695/a-comprehensive-guide-to-word-embeddings-in-nlp-ee3f9e4663ed)  Vardhan, H., 2024. Medium平台.   
-2. [**自然语言处理中的词嵌入指南**](https://www.turing.com/kb/guide-on-word-embeddings-in-nlp) 图灵,, 2022.   
-3. [**向量空间中词表示的有效估计方法**](http://arxiv.org/pdf/1301.3781.pdf) Mikolov, T., Chen, K., Corrado, G. 和 Dean, J., 2013. arXiv.org.   
-4. [**文本数据的深度学习实现方法与特征工程：连续词袋模型（CBOW）**](https://www.kdnuggets.com/2018/04/implementing-deep-learning-methods-feature-engineering-text-data-cbow.html)  Sarkar, D.. KDnuggets.   
-5. [**词向量模型**](https://code.google.com/archive/p/word2vec/) . Google Code Archive.   
-6. [**BERT神经网络详解！**](https://www.youtube.com/watch?v=xI0HHN5XKDo) CodeEmporium,, 2020. YouTube.   
-7. [**BERT：面向语言理解的深度双向Transformer预训练**](http://arxiv.org/pdf/1810.04805.pdf) Devlin, J., Chang, M., Lee, K. 和 Toutanova, K., 2018. arXiv.   
-8. [**构建大型语言模型（从零开始）**](https://www.manning.com/books/build-a-large-language-model-from-scratch) . Manning Publications.   
-9. [**从零开始实现大语言模型**](https://github.com/rasbt/LLMs-from-scratch/tree/main/ch02/03_bonus_embedding-vs-matmul) Rasbt，GitHub   
+1. [**自然语言处理中的词嵌入技术全面指南**](https://medium.com/@harsh.vardhan7695/a-comprehensive-guide-to-word-embeddings-in-nlp-ee3f9e4663ed)  Vardhan, H., 2024. Medium平台.
+2. [**自然语言处理中的词嵌入指南**](https://www.turing.com/kb/guide-on-word-embeddings-in-nlp) 图灵,, 2022.
+3. [**向量空间中词表示的有效估计方法**](http://arxiv.org/pdf/1301.3781.pdf) Mikolov, T., Chen, K., Corrado, G. 和 Dean, J., 2013. arXiv.org.
+4. [**文本数据的深度学习实现方法与特征工程：连续词袋模型（CBOW）**](https://www.kdnuggets.com/2018/04/implementing-deep-learning-methods-feature-engineering-text-data-cbow.html)  Sarkar, D.. KDnuggets.
+5. [**词向量模型**](https://code.google.com/archive/p/word2vec/) . Google Code Archive.
+6. [**BERT神经网络详解！**](https://www.youtube.com/watch?v=xI0HHN5XKDo) CodeEmporium,, 2020. YouTube.
+7. [**BERT：面向语言理解的深度双向Transformer预训练**](http://arxiv.org/pdf/1810.04805.pdf) Devlin, J., Chang, M., Lee, K. 和 Toutanova, K., 2018. arXiv.
+8. [**构建大型语言模型（从零开始）**](https://www.manning.com/books/build-a-large-language-model-from-scratch) . Manning Publications.
+9. [**从零开始实现大语言模型**](https://github.com/rasbt/LLMs-from-scratch/tree/main/ch02/03_bonus_embedding-vs-matmul) Rasbt，GitHub
 10. [**嵌入表示**](https://github.com/chrishayuk/embeddings/tree/main) Chrishayuk，GitHub  

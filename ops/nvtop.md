@@ -11,6 +11,7 @@ nvtop 是一款类似于 `htop` 的命令行工具，可用于监控 NVIDIA、AM
 ## 2. 如何安装 nvtop
 
 ### 2.1 在不同操作系统上的安装方法
+
 具体参考项目 [README](https://github.com/Syllo/nvtop/blob/master/README.markdown)。
 
 - **Ubuntu 19.04 / Debian Buster (stable)**:
@@ -87,6 +88,7 @@ sudo docker run -it --rm --runtime=nvidia --gpus=all --pid=host nvtop
 ```bash
 nvtop
 ```
+
 ![nvtop](../img/nvtop.png)
 
 常用的 `nvtop` 命令行选项如下：
@@ -117,8 +119,8 @@ nvtop
 | **F6**             | 排序：选择用于排序的字段。当前排序字段在标题栏内高亮显示。                                       |
 | **F10, q, Esc**    | 退出 nvtop 命令。                                                                                |
 
-
 ### 3.1 设置
+
 点击 `F2` 可以打开设置页面：
 
 ![Settings](../img/nvtop-settings.png)
@@ -128,3 +130,5 @@ nvtop
 ## 4. 总结
 
 nvtop 是一款功能强大的 GPU 监控工具，它不仅展示了丰富的 GPU 运行状态，还支持高效的监控方式和互动操作。不论是在个人开发环境中，还是在大型数据中心的运维场景中，nvtop 都能发挥重要作用。通过简单的命令行操作，用户可以轻松监控和管理 GPU 资源，从而优化任务分配并提升系统性能。
+
+---

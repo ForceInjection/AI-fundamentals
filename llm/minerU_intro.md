@@ -1,19 +1,19 @@
 # 上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取
 
-> 参考：https://www.shlab.org.cn/news/5443982
+> 参考：<https://www.shlab.org.cn/news/5443982>
 
 `MinerU` 是一款开源智能文档解析工具，专注于将 **PDF**、**网页**、**电子书**等多模态内容转换为结构化数据（如 Markdown、JSON），支持 AI 训练、知识管理、RAG（检索增强生成）等场景。
 
 `MinerU` 不仅能将混合了图片、公式、表格、脚注等在内的复杂多模态 `PDF` 文档精准转化为清晰、易于分析的 `Markdown` 格式；同时支持从包含广告等各种干扰信息或者复杂格式的网页、电子书中快速解析、抽取正式内容，有效提高`AI`语料准备效率，助力各行业利用大模型、`RAG`等技术，结合学术文献、财务报告、法律文件、电子书籍等专业文档，打造垂直领域的新知识引擎。
 
 > **MinerU 项目地址**：`https://github.com/opendatalab/MinerU`
-> 
+>
 > **PDF-Extract-Kit PDF模型解析工具链代码**: `https://github.com/opendatalab/PDF-Extract-Kit`
-> 
+>
 
 **MinerU 在线网站**：
 
-**_https://mineru.net/OpenSourceTools/Extractor/PDF_**
+**_<https://mineru.net/OpenSourceTools/Extractor/PDF>_**
 
 ## 一、MinerU功能介绍
 
