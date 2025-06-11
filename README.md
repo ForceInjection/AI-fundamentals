@@ -53,7 +53,7 @@
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
 - [《CUDA C++ Programming Guide》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
 - [《CUDA C 编程权威指南》](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)：[书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
-- [Nvidia 官方 CUDA 是示例](https://github.com/NVIDIA/cuda-samples)
+- [Nvidia 官方 CUDA 示例](https://github.com/NVIDIA/cuda-samples)
 - [《CUDA 编程：基础与实践 by 樊哲勇》](https://book.douban.com/subject/35252459/)
   - [学习笔记](https://github.com/QINZHAOYU/CudaSteps)
   - [示例代码](https://github.com/MAhaitao999/CUDA_Programming)
@@ -74,7 +74,7 @@
 - [Nvidia GPU 卡 之 ECC 功能](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
 - [查询 GPU 卡详细参数](ops/DeviceQuery.md)
 - [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
-- [GPU Utilization is a Misleading Metric](ops/gpu_utils.md)：[GPU 利用率是一个误导性指标](ops/GPU%20利用率是一个误导性指标.md)
+- [GPU 利用率是一个误导性指标](ops/GPU%20利用率是一个误导性指标.md)
 
 ### 6. 性能分析与调优
 
@@ -89,6 +89,7 @@
 
 - [《机器学习系统：设计和实现》](https://openmlsys.github.io/index.html)
 - [《动手学深度学习》](https://zh.d2l.ai/)
+- [大模型时代为什么需要一本深度学习教科书？揭秘《深度学习：基础与概念》的独特价值](https://mp.weixin.qq.com/s/890mBdrIqzo3Of9RefsMxg)
 
 ---
 
@@ -121,6 +122,9 @@
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
 - [Hands-On Large Language Models](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) <br>
  <img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
+- [《从零构建大模型》：从理论到实践，手把手教你打造自己的大语言模型](https://mp.weixin.qq.com/s/FkBjsQmeXEPlsdFXETYSng)
+- [《百面大模型》打通大模型求职与实战的关键一书](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA)
+- [《图解大模型：生成式AI原理与实践》](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg)
 
 ### 9. LLM 训练
 
@@ -143,7 +147,7 @@
 
 - [**从0到1快速搭建RAG应用**](https://mp.weixin.qq.com/s/89-bwZ4aPor4ySj5U3n5zw)
   - [配套代码](llm/rag/lession2.ipynb)
-- [Evaluating Chunking Strategies for Retrieval 总结](llm/rag/Evaluating Chunking Strategies for Retrieval 总结.md)
+- [Evaluating Chunking Strategies for Retrieval 总结](llm/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
 - [中文RAG系统Embedding模型选型技术文档](llm/rag/中文RAG系统Embedding模型选型技术文档.md)
 
 #### 10.2 AI Agent 开发
@@ -152,7 +156,7 @@
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](llm/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)
 - [A Deep Dive Into MCP and the Future of AI Tooling](llm/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)
 - [LangGraph 实战：用 Python 打造有状态智能体](llm/langgraph/langgraph_intro.md)
-- [n8n_multi_agent_guide](llm/n8n_multi_agent_guide.md)
+- [使用 n8n 构建多智能体系统的实践指南](llm/n8n_multi_agent_guide.md)
 - [开源大模型应用编排平台：Dify、AnythingLLM、Ragflow 与 n8n 的功能与商用许可对比分析](llm/开源大模型应用编排平台：Dify、AnythingLLM、Ragflow%20与%20n8n%20的功能与商用许可对比分析.md)
 
 ---
@@ -161,7 +165,7 @@
 
 ### 11. 模型部署与推理
 
-- [ollama benchmark](llm/ollama/README.md)
+- [动手部署 ollama](llm/ollama/README.md)
 - [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
 - [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
 - [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
@@ -171,7 +175,7 @@
 - [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
 - [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
 - [Markitdown 入门](llm/markitdown/README.md)
-- [DeepWiki 使用方法与技术原理深度分析](llm/DeepWiki 使用方法与技术原理深度分析.md)
+- [DeepWiki 使用方法与技术原理深度分析](llm/DeepWiki%20使用方法与技术原理深度分析.md)
 
 ### 13. 特定领域应用
 
@@ -185,11 +189,10 @@
 
 ### 14. 开源项目推荐
 
-- [unstructured](https://github.com/Unstructured-IO/unstructured):Open source libraries and APIs to build custom preprocessing pipelines for labeling, training, or production machine learning pipelines.
-- [MinerU](https://github.com/opendatalab/MinerU):A high-quality tool for convert PDF to Markdown and JSON.
+- [unstructured](https://github.com/Unstructured-IO/unstructured): Open source libraries and APIs to build custom preprocessing pipelines for labeling, training, or production machine learning pipelines.
+- [MinerU](https://github.com/opendatalab/MinerU): A high-quality tool for convert PDF to Markdown and JSON.
 - [markitdown](https://github.com/microsoft/markitdown): Python tool for converting files and office documents to Markdown.
-- [unsloth](https://github.com/unslothai/unsloth): About
-Finetune Llama 3.3, DeepSeek-R1 & Reasoning LLMs 2x faster with 70% less memory!
+- [unsloth](https://github.com/unslothai/unsloth): Finetune Llama 3.3, DeepSeek-R1 & Reasoning LLMs 2x faster with 70% less memory!
 - [ktransformers](https://github.com/kvcache-ai/ktransformers): A Flexible Framework for Experiencing Cutting-edge LLM Inference Optimizations
 
 ---
