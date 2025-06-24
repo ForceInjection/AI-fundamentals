@@ -1,0 +1,174 @@
+<svg width="900" height="650" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="appGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="kernelVirtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9C27B0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B1FA2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="kernelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#45a049;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="450" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">内核态GPU虚拟化架构</text>
+  
+  <!-- 应用层 -->
+  <rect x="50" y="70" width="800" height="80" fill="url(#appGrad)" stroke="#F57C00" stroke-width="2" rx="10"/>
+  <text x="70" y="100" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">应用层</text>
+  
+  <!-- 应用程序 -->
+  <rect x="80" y="110" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="140" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">VM 1 应用</text>
+  
+  <rect x="220" y="110" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="280" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">VM 2 应用</text>
+  
+  <rect x="360" y="110" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="420" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">VM 3 应用</text>
+  
+  <rect x="500" y="110" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="560" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">容器应用</text>
+  
+  <rect x="640" y="110" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="700" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">裸机应用</text>
+  
+  <!-- 虚拟化管理层 -->
+  <rect x="50" y="170" width="800" height="100" fill="url(#kernelVirtGrad)" stroke="#7B1FA2" stroke-width="2" rx="10"/>
+  <text x="70" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">虚拟化管理层</text>
+  
+  <!-- Hypervisor组件 -->
+  <rect x="80" y="210" width="150" height="50" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="155" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Hypervisor</text>
+  <text x="155" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">VMware vSphere</text>
+  <text x="155" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">KVM/QEMU</text>
+  
+  <!-- GPU虚拟化模块 -->
+  <rect x="250" y="210" width="150" height="50" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="325" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">GPU虚拟化模块</text>
+  <text x="325" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">vGPU Manager</text>
+  <text x="325" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">GPU调度器</text>
+  
+  <!-- 资源管理 -->
+  <rect x="420" y="210" width="150" height="50" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="495" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">资源管理</text>
+  <text x="495" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">显存分配</text>
+  <text x="495" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">计算单元分配</text>
+  
+  <!-- 监控和策略 -->
+  <rect x="590" y="210" width="150" height="50" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="665" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">监控和策略</text>
+  <text x="665" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">性能监控</text>
+  <text x="665" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">QoS策略</text>
+  
+  <!-- 内核虚拟化层 -->
+  <rect x="50" y="290" width="800" height="120" fill="url(#kernelGrad)" stroke="#45a049" stroke-width="2" rx="10"/>
+  <text x="70" y="320" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">内核虚拟化层</text>
+  
+  <!-- 内核模块 -->
+  <rect x="80" y="330" width="130" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="145" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">内核模块</text>
+  <text x="145" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">GPU驱动扩展</text>
+  <text x="145" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">虚拟化驱动</text>
+  <text x="145" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">内存管理</text>
+  <text x="145" y="395" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">中断处理</text>
+  
+  <!-- SR-IOV -->
+  <rect x="230" y="330" width="130" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="295" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">SR-IOV</text>
+  <text x="295" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">物理功能(PF)</text>
+  <text x="295" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">虚拟功能(VF)</text>
+  <text x="295" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">硬件隔离</text>
+  <text x="295" y="395" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">直通访问</text>
+  
+  <!-- IOMMU -->
+  <rect x="380" y="330" width="130" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="445" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">IOMMU</text>
+  <text x="445" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">地址转换</text>
+  <text x="445" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">DMA重映射</text>
+  <text x="445" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">内存保护</text>
+  <text x="445" y="395" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">设备隔离</text>
+  
+  <!-- GPU驱动 -->
+  <rect x="530" y="330" width="130" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="595" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">GPU驱动</text>
+  <text x="595" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">NVIDIA驱动</text>
+  <text x="595" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">AMD驱动</text>
+  <text x="595" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Intel驱动</text>
+  <text x="595" y="395" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">虚拟化支持</text>
+  
+  <!-- 操作系统内核 -->
+  <rect x="680" y="330" width="130" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="745" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">操作系统内核</text>
+  <text x="745" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Linux内核</text>
+  <text x="745" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Windows内核</text>
+  <text x="745" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">虚拟化扩展</text>
+  <text x="745" y="395" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">设备管理</text>
+  
+  <!-- 硬件层 -->
+  <rect x="50" y="430" width="800" height="100" fill="#424242" stroke="#212121" stroke-width="2" rx="10"/>
+  <text x="70" y="460" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">硬件层</text>
+  
+  <!-- CPU -->
+  <rect x="80" y="470" width="120" height="50" fill="#666" stroke="#333" stroke-width="1" rx="5"/>
+  <text x="140" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">CPU</text>
+  <text x="140" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">Intel VT-x</text>
+  <text x="140" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">AMD-V</text>
+  
+  <!-- 内存 -->
+  <rect x="220" y="470" width="120" height="50" fill="#666" stroke="#333" stroke-width="1" rx="5"/>
+  <text x="280" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">系统内存</text>
+  <text x="280" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">DDR4/DDR5</text>
+  <text x="280" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">ECC支持</text>
+  
+  <!-- PCIe -->
+  <rect x="360" y="470" width="120" height="50" fill="#666" stroke="#333" stroke-width="1" rx="5"/>
+  <text x="420" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">PCIe总线</text>
+  <text x="420" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">PCIe 4.0/5.0</text>
+  <text x="420" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">SR-IOV支持</text>
+  
+  <!-- GPU硬件 -->
+  <rect x="500" y="470" width="120" height="50" fill="#666" stroke="#333" stroke-width="1" rx="5"/>
+  <text x="560" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">GPU 1</text>
+  <text x="560" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">Tesla/Quadro</text>
+  <text x="560" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">虚拟化就绪</text>
+  
+  <rect x="640" y="470" width="120" height="50" fill="#666" stroke="#333" stroke-width="1" rx="5"/>
+  <text x="700" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">GPU 2</text>
+  <text x="700" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">Radeon Pro</text>
+  <text x="700" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ccc">MxGPU支持</text>
+  
+  <!-- 箭头 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- 数据流箭头 -->
+  <line x1="450" y1="150" x2="450" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="450" y1="270" x2="450" y2="290" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="450" y1="410" x2="450" y2="430" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- 数据流标签 -->
+  <text x="460" y="165" font-family="Arial, sans-serif" font-size="10" fill="#666">虚拟化调用</text>
+  <text x="460" y="285" font-family="Arial, sans-serif" font-size="10" fill="#666">内核接口</text>
+  <text x="460" y="425" font-family="Arial, sans-serif" font-size="10" fill="#666">硬件访问</text>
+  
+  <!-- 特性说明 -->
+  <rect x="50" y="550" width="800" height="80" fill="#FAFAFA" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="60" y="575" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">内核态虚拟化特性：</text>
+  <text x="60" y="590" font-family="Arial, sans-serif" font-size="12" fill="#666">• 硬件级隔离，安全性高</text>
+  <text x="300" y="590" font-family="Arial, sans-serif" font-size="12" fill="#666">• 性能接近原生</text>
+  <text x="500" y="590" font-family="Arial, sans-serif" font-size="12" fill="#666">• 支持实时迁移</text>
+  <text x="60" y="605" font-family="Arial, sans-serif" font-size="12" fill="#666">• 需要专用硬件支持</text>
+  <text x="300" y="605" font-family="Arial, sans-serif" font-size="12" fill="#666">• 部署复杂度高</text>
+  <text x="500" y="605" font-family="Arial, sans-serif" font-size="12" fill="#666">• 资源利用率相对固定</text>
+  <text x="60" y="620" font-family="Arial, sans-serif" font-size="12" fill="#666">• 适合企业级数据中心</text>
+  <text x="300" y="620" font-family="Arial, sans-serif" font-size="12" fill="#666">• 成本较高</text>
+  <text x="500" y="620" font-family="Arial, sans-serif" font-size="12" fill="#666">• 厂商绑定较强</text>
+</svg>

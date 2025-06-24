@@ -1,0 +1,122 @@
+<svg width="1000" height="650" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="appGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E91E63;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C2185B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hamiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="kernelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hardwareGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#45a049;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="400" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">GPU虚拟化层次结构</text>
+  
+  <!-- 应用层 -->
+  <rect x="50" y="70" width="700" height="80" fill="url(#appGrad)" stroke="#C2185B" stroke-width="2" rx="10"/>
+  <text x="70" y="95" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">应用层</text>
+  <text x="70" y="115" font-family="Arial, sans-serif" font-size="12" fill="white">AI应用程序和深度学习框架</text>
+  
+  <!-- 应用程序框 -->
+  <rect x="250" y="85" width="100" height="30" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="300" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">PyTorch</text>
+  
+  <rect x="370" y="85" width="100" height="30" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="420" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">TensorFlow</text>
+  
+  <rect x="490" y="85" width="100" height="30" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="540" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">AI应用</text>
+  
+  <rect x="610" y="85" width="100" height="30" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="660" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">科学计算</text>
+  
+  <!-- HAMi拦截层 -->
+  <rect x="50" y="170" width="700" height="80" fill="url(#hamiGrad)" stroke="#F57C00" stroke-width="2" rx="10"/>
+  <text x="70" y="195" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">用户态资源管理层 (HAMi)</text>
+  <text x="70" y="215" font-family="Arial, sans-serif" font-size="12" fill="white">CUDA API拦截与资源管理</text>
+  <text x="70" y="235" font-family="Arial, sans-serif" font-size="12" fill="white">• API Hook拦截GPU调用 • 资源切分与调度 • 多租户隔离</text>
+  
+  <!-- HAMi组件框 -->
+  <rect x="300" y="185" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="360" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">CUDA拦截器</text>
+  
+  <rect x="440" y="185" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="500" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">资源调度器</text>
+  
+  <rect x="580" y="185" width="120" height="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="640" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">GPU配额池</text>
+  
+  <!-- 内核态虚拟化层 -->
+  <rect x="50" y="270" width="700" height="80" fill="url(#kernelGrad)" stroke="#1976D2" stroke-width="2" rx="10"/>
+  <text x="70" y="295" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">内核态虚拟化层</text>
+  <text x="70" y="315" font-family="Arial, sans-serif" font-size="12" fill="white">操作系统内核级别的GPU虚拟化</text>
+  <text x="70" y="335" font-family="Arial, sans-serif" font-size="12" fill="white">• 内核模块拦截 • 系统调用级控制 • 硬件资源管理</text>
+  
+  <!-- 内核组件框 -->
+  <rect x="300" y="285" width="120" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="360" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">GPU驱动</text>
+  
+  <rect x="440" y="285" width="120" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="500" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">vGPU管理</text>
+  
+  <rect x="580" y="285" width="120" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="640" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">内核虚拟化</text>
+  
+  <!-- 硬件层虚拟化 -->
+  <rect x="50" y="370" width="700" height="80" fill="url(#hardwareGrad)" stroke="#45a049" stroke-width="2" rx="10"/>
+  <text x="70" y="395" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">硬件层虚拟化</text>
+  <text x="70" y="415" font-family="Arial, sans-serif" font-size="12" fill="white">GPU硬件原生支持的虚拟化技术</text>
+  <text x="70" y="435" font-family="Arial, sans-serif" font-size="12" fill="white">• 硬件级隔离 • MIG技术 • SR-IOV支持</text>
+  
+  <!-- 硬件组件框 -->
+  <rect x="300" y="385" width="120" height="30" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="360" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">NVIDIA MIG</text>
+  
+  <rect x="440" y="385" width="120" height="30" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="500" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">AMD MI系列</text>
+  
+  <rect x="580" y="385" width="120" height="30" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="640" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">国产GPU</text>
+  
+  <!-- 物理GPU硬件 -->
+  <rect x="50" y="470" width="700" height="60" fill="#424242" stroke="#212121" stroke-width="2" rx="10"/>
+  <text x="400" y="495" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">物理GPU硬件</text>
+  <text x="400" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">计算单元 (SM/CU) | 显存 (VRAM) | 缓存 (L1/L2) | PCIe总线</text>
+  
+  <!-- 箭头定义 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- 数据流箭头 -->
+  <line x1="400" y1="150" x2="400" y2="170" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="400" y1="250" x2="400" y2="270" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="400" y1="350" x2="400" y2="370" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="400" y1="450" x2="400" y2="470" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- 特性对比框 -->
+  <rect x="770" y="180" width="180" height="120" fill="#FFF8E1" stroke="#FFC107" stroke-width="1" rx="5"/>
+  <text x="780" y="200" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">HAMi特性</text>
+  <text x="780" y="220" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ 无需内核模块</text>
+  <text x="780" y="235" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ 部署简单快速</text>
+  <text x="780" y="250" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ 云原生友好</text>
+  <text x="780" y="265" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ 多GPU厂商支持</text>
+  <text x="780" y="280" font-family="Arial, sans-serif" font-size="10" fill="#666">✗ 性能开销相对较大</text>
+  <text x="780" y="295" font-family="Arial, sans-serif" font-size="10" fill="#666">✗ 依赖API拦截</text>
+  
+  <!-- 流程说明 -->
+  <text x="60" y="570" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">数据流向：</text>
+  <text x="60" y="590" font-family="Arial, sans-serif" font-size="11" fill="#666">应用调用CUDA API → HAMi拦截处理 → 资源调度分配 → 底层GPU执行</text>
+  <text x="60" y="610" font-family="Arial, sans-serif" font-size="11" fill="#666">HAMi实现了对CUDA运行时的完全拦截，提供GPU资源的配额管理和多租户共享</text>
+</svg>

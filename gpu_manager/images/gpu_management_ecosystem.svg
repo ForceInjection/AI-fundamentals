@@ -1,0 +1,264 @@
+<svg width="1200" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="guideGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8EAF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C5CAE9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="appGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#388E3C;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#03A9F4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0277BD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="virtualizationGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hardwareGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9C27B0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B1FA2;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="600" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#333">GPU管理技术生态图</text>
+  
+  <!-- 1. 技术选择指南层 -->
+  <rect x="50" y="60" width="1100" height="120" fill="url(#guideGrad)" stroke="#5C6BC0" stroke-width="2" rx="15"/>
+  <text x="70" y="90" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#333">技术选择指南</text>
+  
+  <!-- 小模型场景 -->
+  <rect x="80" y="100" width="250" height="70" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+  <text x="205" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">小模型/推理场景</text>
+  <text x="90" y="135" font-family="Arial, sans-serif" font-size="11" fill="#666">推荐：用户态资源管理</text>
+  <text x="90" y="150" font-family="Arial, sans-serif" font-size="11" fill="#666">• 部署简单，成本低</text>
+  <text x="90" y="160" font-family="Arial, sans-serif" font-size="11" fill="#666">• 资源利用率高</text>
+  
+  <!-- 大模型场景 -->
+  <rect x="350" y="100" width="250" height="70" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="8"/>
+  <text x="475" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">大模型/训练场景</text>
+  <text x="360" y="135" font-family="Arial, sans-serif" font-size="11" fill="#666">推荐：硬件虚拟化</text>
+  <text x="360" y="150" font-family="Arial, sans-serif" font-size="11" fill="#666">• 性能损失最小</text>
+  <text x="360" y="160" font-family="Arial, sans-serif" font-size="11" fill="#666">• 硬件级隔离</text>
+  
+  <!-- 企业级场景 -->
+  <rect x="620" y="100" width="250" height="70" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="8"/>
+  <text x="745" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">企业级生产场景</text>
+  <text x="630" y="135" font-family="Arial, sans-serif" font-size="11" fill="#666">推荐：内核态虚拟化</text>
+  <text x="630" y="150" font-family="Arial, sans-serif" font-size="11" fill="#666">• 安全性高</text>
+  <text x="630" y="160" font-family="Arial, sans-serif" font-size="11" fill="#666">• 企业级支持</text>
+  
+  <!-- 混合场景 -->
+  <rect x="890" y="100" width="240" height="70" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+  <text x="1010" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">混合云/边缘场景</text>
+  <text x="900" y="135" font-family="Arial, sans-serif" font-size="11" fill="#666">推荐：远程调用</text>
+  <text x="900" y="150" font-family="Arial, sans-serif" font-size="11" fill="#666">• 资源池化</text>
+  <text x="900" y="160" font-family="Arial, sans-serif" font-size="11" fill="#666">• 弹性扩展</text>
+  
+  <!-- 2. 应用场景层 -->
+   <rect x="50" y="210" width="1100" height="120" fill="url(#appGrad)" stroke="#388E3C" stroke-width="2" rx="15"/>
+  <text x="70" y="240" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">应用场景</text>
+  
+  <!-- 大模型训练 -->
+   <rect x="80" y="260" width="200" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+   <text x="180" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">大模型训练</text>
+   <text x="90" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• LLM训练</text>
+   <text x="90" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 分布式训练</text>
+   <text x="160" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 模型并行</text>
+   <text x="160" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 数据并行</text>
+  
+  <!-- 推理服务 -->
+   <rect x="300" y="260" width="180" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+   <text x="390" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">推理服务</text>
+   <text x="310" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 在线推理</text>
+   <text x="310" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 批量推理</text>
+   <text x="370" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 模型服务</text>
+   <text x="370" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 边缘推理</text>
+  
+  <!-- 科学计算 -->
+   <rect x="500" y="260" width="180" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+   <text x="590" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">科学计算</text>
+   <text x="510" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• HPC应用</text>
+   <text x="510" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 仿真计算</text>
+   <text x="570" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 数值分析</text>
+   <text x="570" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 并行计算</text>
+  
+  <!-- 图形渲染 -->
+   <rect x="700" y="260" width="180" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+   <text x="790" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">图形渲染</text>
+   <text x="710" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 3D渲染</text>
+   <text x="710" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 视频处理</text>
+   <text x="770" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 游戏开发</text>
+   <text x="770" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• VR/AR</text>
+  
+  <!-- 数据分析 -->
+   <rect x="900" y="260" width="230" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+   <text x="1015" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">数据分析</text>
+   <text x="910" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 大数据处理</text>
+   <text x="910" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 机器学习</text>
+   <text x="990" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• 数据挖掘</text>
+   <text x="990" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 实时分析</text>
+  
+  <!-- 3. 云原生生态层 -->
+   <rect x="50" y="350" width="1100" height="120" fill="url(#cloudGrad)" stroke="#0277BD" stroke-width="2" rx="15"/>
+   <text x="70" y="380" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">云原生生态</text>
+  
+  <!-- Kubernetes生态 -->
+   <rect x="80" y="400" width="200" height="60" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+   <text x="180" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">Kubernetes生态</text>
+   <text x="90" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Device Plugin</text>
+   <text x="90" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• GPU Operator</text>
+   <text x="160" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Scheduler</text>
+   <text x="160" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Resource Quota</text>
+  
+  <!-- 容器运行时 -->
+   <rect x="300" y="400" width="180" height="60" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+   <text x="390" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">容器运行时</text>
+   <text x="310" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Docker</text>
+   <text x="310" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• containerd</text>
+   <text x="360" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• CRI-O</text>
+   <text x="360" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Podman</text>
+  
+  <!-- 服务网格 -->
+   <rect x="500" y="400" width="180" height="60" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+   <text x="590" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">服务网格</text>
+   <text x="510" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Istio</text>
+   <text x="510" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Linkerd</text>
+   <text x="560" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Envoy</text>
+   <text x="560" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Consul</text>
+  
+  <!-- 监控观测 -->
+   <rect x="700" y="400" width="200" height="60" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+   <text x="800" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">监控观测</text>
+   <text x="710" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Prometheus</text>
+   <text x="710" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Grafana</text>
+   <text x="770" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• Jaeger</text>
+   <text x="770" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• OpenTelemetry</text>
+  
+  <!-- CI/CD -->
+   <rect x="920" y="400" width="210" height="60" fill="#E1F5FE" stroke="#03A9F4" stroke-width="1" rx="8"/>
+   <text x="1025" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">CI/CD</text>
+   <text x="930" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• GitLab CI</text>
+   <text x="930" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Jenkins</text>
+   <text x="990" y="435" font-family="Arial, sans-serif" font-size="11" fill="#666">• ArgoCD</text>
+   <text x="990" y="450" font-family="Arial, sans-serif" font-size="11" fill="#666">• Tekton</text>
+  
+  <!-- 4. GPU虚拟化技术层 -->
+  <rect x="50" y="490" width="1100" height="150" fill="url(#virtualizationGrad)" stroke="#F57C00" stroke-width="2" rx="15"/>
+  <text x="70" y="520" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">GPU虚拟化技术层</text>
+  
+  <!-- 用户态虚拟化 -->
+  <rect x="80" y="540" width="250" height="90" fill="#FFF3E0" stroke="#FF9800" stroke-width="2" rx="8"/>
+  <text x="205" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">用户态资源管理</text>
+  <rect x="90" y="575" width="100" height="45" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="140" y="595" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">HAMi</text>
+  <text x="140" y="608" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">开源方案</text>
+  
+  <rect x="200" y="575" width="120" height="45" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="260" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">企业级管理平台</text>
+  <text x="260" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">商业解决方案</text>
+  <text x="260" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">增强功能</text>
+  
+  <!-- 内核态虚拟化 -->
+  <rect x="350" y="540" width="250" height="90" fill="#F3E5F5" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="475" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">内核态虚拟化</text>
+  <rect x="360" y="575" width="100" height="45" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="410" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">NVIDIA vGPU</text>
+  <text x="410" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Grid/Tesla</text>
+  <text x="410" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">企业级</text>
+  
+  <rect x="470" y="575" width="120" height="45" fill="#FFEBEE" stroke="#F44336" stroke-width="1" rx="5"/>
+  <text x="530" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">AMD MxGPU</text>
+  <text x="530" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Radeon Pro</text>
+  <text x="530" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">SR-IOV</text>
+  
+  <!-- 硬件虚拟化 -->
+  <rect x="620" y="540" width="250" height="90" fill="#E8EAF6" stroke="#3F51B5" stroke-width="2" rx="8"/>
+  <text x="745" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">硬件虚拟化</text>
+  <rect x="630" y="575" width="100" height="45" fill="#C8E6C9" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="680" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">NVIDIA MIG</text>
+  <text x="680" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">A100/H100</text>
+  <text x="680" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">硬件切分</text>
+  
+  <rect x="740" y="575" width="120" height="45" fill="#FFCDD2" stroke="#F44336" stroke-width="1" rx="5"/>
+  <text x="800" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">AMD MI系列</text>
+  <text x="800" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">MI250/MI300</text>
+  <text x="800" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">多芯片模块</text>
+  
+  <!-- 远程调用 -->
+  <rect x="890" y="540" width="240" height="90" fill="#E0F2F1" stroke="#009688" stroke-width="2" rx="8"/>
+  <text x="1010" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">远程调用</text>
+  <rect x="900" y="575" width="100" height="45" fill="#B2DFDB" stroke="#009688" stroke-width="1" rx="5"/>
+  <text x="950" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">rCUDA</text>
+  <text x="950" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">网络透明</text>
+  <text x="950" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">远程GPU</text>
+  
+  <rect x="1010" y="575" width="110" height="45" fill="#B39DDB" stroke="#673AB7" stroke-width="1" rx="5"/>
+  <text x="1065" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">GPU服务化</text>
+  <text x="1065" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">API Gateway</text>
+  <text x="1065" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">微服务</text>
+  
+  <!-- 5. 硬件基础设施层 -->
+  <rect x="50" y="660" width="1100" height="120" fill="url(#hardwareGrad)" stroke="#7B1FA2" stroke-width="2" rx="15"/>
+  <text x="70" y="690" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">硬件基础设施</text>
+  
+  <!-- NVIDIA -->
+  <rect x="80" y="710" width="200" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="8"/>
+  <text x="180" y="730" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">NVIDIA</text>
+  <text x="90" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• GeForce RTX</text>
+  <text x="90" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Tesla/A100/H100</text>
+  <text x="160" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Quadro</text>
+  <text x="160" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Grace Hopper</text>
+  
+  <!-- AMD -->
+  <rect x="300" y="710" width="180" height="60" fill="#FFEBEE" stroke="#F44336" stroke-width="1" rx="8"/>
+  <text x="390" y="730" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">AMD</text>
+  <text x="310" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Radeon RX</text>
+  <text x="310" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Instinct MI</text>
+  <text x="360" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Radeon Pro</text>
+  <text x="360" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• CDNA架构</text>
+  
+  <!-- Intel -->
+  <rect x="500" y="710" width="180" height="60" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="8"/>
+  <text x="590" y="730" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">Intel</text>
+  <text x="510" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Arc GPU</text>
+  <text x="510" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Xe架构</text>
+  <text x="560" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Data Center GPU</text>
+  <text x="560" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Ponte Vecchio</text>
+  
+  <!-- 其他厂商 -->
+  <rect x="700" y="710" width="200" height="60" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="8"/>
+  <text x="800" y="730" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">其他厂商</text>
+  <text x="710" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• 华为昇腾</text>
+  <text x="710" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• 寒武纪MLU</text>
+  <text x="770" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• 海光DCU</text>
+  <text x="770" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• 燧原GCU</text>
+  
+  <!-- 云服务商 -->
+  <rect x="920" y="710" width="210" height="60" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="8"/>
+  <text x="1025" y="730" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">云服务商</text>
+  <text x="930" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• AWS EC2</text>
+  <text x="930" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• Google Cloud</text>
+  <text x="990" y="745" font-family="Arial, sans-serif" font-size="11" fill="#666">• Azure</text>
+  <text x="990" y="760" font-family="Arial, sans-serif" font-size="11" fill="#666">• 阿里云/腾讯云</text>
+  
+  <!-- 分隔线 -->
+   <line x1="50" y1="190" x2="1150" y2="190" stroke="#E0E0E0" stroke-width="2" stroke-dasharray="5,5"/>
+   
+   <!-- 数据流箭头 -->
+   <line x1="600" y1="330" x2="600" y2="350" stroke="#666" stroke-width="3" marker-end="url(#arrowhead)"/>
+   <line x1="600" y1="470" x2="600" y2="490" stroke="#666" stroke-width="3" marker-end="url(#arrowhead)"/>
+   <line x1="600" y1="640" x2="600" y2="660" stroke="#666" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- 层次标识 -->
+  <text x="30" y="120" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#5C6BC0" text-anchor="middle" transform="rotate(-90 30 120)">指南层</text>
+  <text x="30" y="280" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#388E3C" text-anchor="middle" transform="rotate(-90 30 280)">应用层</text>
+  <text x="30" y="400" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#0277BD" text-anchor="middle" transform="rotate(-90 30 400)">生态层</text>
+  <text x="30" y="565" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#F57C00" text-anchor="middle" transform="rotate(-90 30 565)">虚拟化层</text>
+  <text x="30" y="740" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#7B1FA2" text-anchor="middle" transform="rotate(-90 30 740)">硬件层</text>
+</svg>

@@ -1,0 +1,140 @@
+<svg width="900" height="700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gpuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#45a049;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="migGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="memPattern" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect width="4" height="4" fill="#E3F2FD"/>
+      <rect width="2" height="2" fill="#2196F3"/>
+    </pattern>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="450" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">NVIDIA MIG 硬件切分架构</text>
+  
+  <!-- 物理GPU框架 -->
+  <rect x="50" y="80" width="800" height="550" fill="#F5F5F5" stroke="#333" stroke-width="3" rx="15"/>
+  <text x="70" y="110" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">物理GPU (A100/H100)</text>
+  
+  <!-- MIG实例1 -->
+  <rect x="80" y="140" width="350" height="180" fill="url(#migGrad)" stroke="#1976D2" stroke-width="2" rx="10"/>
+  <text x="90" y="165" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">MIG实例 1 (1g.5gb)</text>
+  
+  <!-- SM单元 -->
+  <rect x="100" y="180" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="130" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">SM 0-13</text>
+  
+  <rect x="180" y="180" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="210" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">L2缓存</text>
+  
+  <!-- 显存 -->
+  <rect x="100" y="240" width="120" height="40" fill="url(#memPattern)" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="160" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">显存 5GB</text>
+  
+  <!-- 计算引擎 -->
+  <rect x="260" y="180" width="80" height="40" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="300" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">计算引擎</text>
+  
+  <rect x="260" y="240" width="80" height="40" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="300" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">编解码器</text>
+  
+  <!-- MIG实例2 -->
+  <rect x="470" y="140" width="350" height="180" fill="url(#migGrad)" stroke="#1976D2" stroke-width="2" rx="10"/>
+  <text x="480" y="165" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">MIG实例 2 (2g.10gb)</text>
+  
+  <!-- SM单元 -->
+  <rect x="490" y="180" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="520" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">SM 14-41</text>
+  
+  <rect x="570" y="180" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="600" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">L2缓存</text>
+  
+  <!-- 显存 -->
+  <rect x="490" y="240" width="140" height="40" fill="url(#memPattern)" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="560" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">显存 10GB</text>
+  
+  <!-- 计算引擎 -->
+  <rect x="650" y="180" width="80" height="40" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="690" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">计算引擎</text>
+  
+  <rect x="650" y="240" width="80" height="40" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="690" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">编解码器</text>
+  
+  <!-- MIG实例3 -->
+  <rect x="80" y="350" width="350" height="180" fill="url(#migGrad)" stroke="#1976D2" stroke-width="2" rx="10"/>
+  <text x="90" y="375" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">MIG实例 3 (3g.20gb)</text>
+  
+  <!-- SM单元 -->
+  <rect x="100" y="390" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="130" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">SM 42-83</text>
+  
+  <rect x="180" y="390" width="60" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="210" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">L2缓存</text>
+  
+  <!-- 显存 -->
+  <rect x="100" y="450" width="140" height="40" fill="url(#memPattern)" stroke="#2196F3" stroke-width="1" rx="5"/>
+  <text x="170" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">显存 20GB</text>
+  
+  <!-- 计算引擎 -->
+  <rect x="260" y="390" width="80" height="40" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="300" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">计算引擎</text>
+  
+  <rect x="260" y="450" width="80" height="40" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+  <text x="300" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">编解码器</text>
+  
+  <!-- 共享资源区域 -->
+  <rect x="470" y="350" width="350" height="180" fill="#F0F0F0" stroke="#666" stroke-width="2" stroke-dasharray="5,5" rx="10"/>
+  <text x="480" y="375" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#666">共享资源</text>
+  
+  <!-- PCIe控制器 -->
+  <rect x="490" y="390" width="100" height="40" fill="#E1F5FE" stroke="#00BCD4" stroke-width="1" rx="5"/>
+  <text x="540" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">PCIe控制器</text>
+  
+  <!-- 显示引擎 -->
+  <rect x="610" y="390" width="100" height="40" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+  <text x="660" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">显示引擎</text>
+  
+  <!-- 系统管理 -->
+  <rect x="490" y="450" width="100" height="40" fill="#FFF8E1" stroke="#FFC107" stroke-width="1" rx="5"/>
+  <text x="540" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">系统管理</text>
+  
+  <!-- 网络接口 -->
+  <rect x="610" y="450" width="100" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+  <text x="660" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">网络接口</text>
+  
+  <!-- 隔离边界线 -->
+  <line x1="450" y1="140" x2="450" y2="320" stroke="#FF5722" stroke-width="3" stroke-dasharray="10,5"/>
+  <line x1="80" y1="330" x2="430" y2="330" stroke="#FF5722" stroke-width="3" stroke-dasharray="10,5"/>
+  <line x1="450" y1="330" x2="450" y2="530" stroke="#FF5722" stroke-width="3" stroke-dasharray="10,5"/>
+  
+  <!-- 隔离标签 -->
+  <text x="455" y="235" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#FF5722" transform="rotate(90 455 235)">硬件隔离</text>
+  
+  <!-- 底部说明 -->
+  <rect x="50" y="650" width="800" height="40" fill="#FAFAFA" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="60" y="675" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">MIG特性：</text>
+  <text x="150" y="675" font-family="Arial, sans-serif" font-size="12" fill="#666">• 硬件级别强隔离</text>
+  <text x="300" y="675" font-family="Arial, sans-serif" font-size="12" fill="#666">• 独立的计算和显存资源</text>
+  <text x="500" y="675" font-family="Arial, sans-serif" font-size="12" fill="#666">• 接近原生性能</text>
+  <text x="650" y="675" font-family="Arial, sans-serif" font-size="12" fill="#666">• 支持多租户安全</text>
+  
+  <!-- 箭头指示 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- 资源分配箭头 -->
+  <path d="M 255 140 Q 300 120 345 140" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="300" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">资源分配</text>
+  
+  <path d="M 645 140 Q 690 120 735 140" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <path d="M 255 350 Q 300 330 345 350" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+</svg>
