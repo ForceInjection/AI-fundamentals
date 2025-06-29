@@ -36,19 +36,24 @@
 - [NVIDIA GH200 芯片、服务器及集群组网](https://arthurchiao.art/blog/gpu-advanced-notes-4-zh/)
 - [深度学习（大模型）中的精度](https://mp.weixin.qq.com/s/b08gFicrKNCfrwSlpsecmQ)
 
+### 4. GPU 管理与虚拟化
+
+- [GPU 管理相关技术深度解析 - 虚拟化、切分及远程调用](gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md)
+- [GPU虚拟化与切分技术原理解析](gpu_manager/GPU虚拟化与切分技术原理解析.md)
+
 ---
 
 ## 第二部分：编程与开发
 
-### 4. CUDA 学习材料
+### 5. CUDA 学习材料
 
-#### 4.1 快速入门
+#### 5.1 快速入门
 
 - [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
 - [CUDA 并发编程之 Stream 介绍](cuda/cuda_streams.md)
 
-#### 4.2 参考资料
+#### 5.2 参考资料
 
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
 - [《CUDA C++ Programming Guide》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
@@ -62,11 +67,11 @@
 - [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
-#### 4.3 专业选手
+#### 5.3 专业选手
 
 [**CUDA-Learn-Notes**](https://github.com/xlite-dev/CUDA-Learn-Notes)：📚Modern CUDA Learn Notes: 200+ Tensor/CUDA Cores Kernels🎉, HGEMM, FA2 via MMA and CuTe, 98~100% TFLOPS of cuBLAS/FA2.
 
-### 5. 监控与运维
+### 6. 监控与运维
 
 - [nvidia-smi 入门](ops/nvidia-smi.md)
 - [nvtop 入门](ops/nvtop.md)
@@ -76,7 +81,7 @@
 - [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
 - [GPU 利用率是一个误导性指标](ops/GPU%20利用率是一个误导性指标.md)
 
-### 6. 性能分析与调优
+### 7. 性能分析与调优
 
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
 - [CUDA Kernel Profiling using Nvidia Nsight Compute](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)
@@ -85,7 +90,7 @@
 
 ## 第三部分：机器学习基础
 
-### 7. 深度学习/机器学习
+### 8. 深度学习/机器学习
 
 - [《机器学习系统：设计和实现》](https://openmlsys.github.io/index.html)
 - [《动手学深度学习》](https://zh.d2l.ai/)
@@ -95,9 +100,9 @@
 
 ## 第四部分：大语言模型
 
-### 8. LLM 基础理论
+### 9. LLM 基础理论
 
-#### 8.1 核心概念
+#### 9.1 核心概念
 
 - [Andrej Karpathy：Deep Dive into LLMs like ChatGPT（B站视频）](https://www.bilibili.com/video/BV16cNEeXEer)
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181)
@@ -116,43 +121,43 @@
 - [Mooncake 架构详解：以 KV 缓存为中心的高效 LLM 推理系统设计](llm/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)
 - [vLLM + LWS：Kubernetes 上的多机多卡推理方案](llm/lws_intro.md)
 
-#### 8.2 参考书籍
+#### 9.2 参考书籍
 
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
- 
+
 - [Hands-On Large Language Models](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) <br>
  <img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
- 
+
 - [《从零构建大模型》：从理论到实践，手把手教你打造自己的大语言模型](https://mp.weixin.qq.com/s/FkBjsQmeXEPlsdFXETYSng)
 - [《百面大模型》打通大模型求职与实战的关键一书](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA)
 - [《图解大模型：生成式AI原理与实践》](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg)
 
-### 9. LLM 训练
+### 10. LLM 训练
 
-#### 9.1 微调技术
+#### 10.1 微调技术
 
 - [**Qwen 2 大模型指令微调入门实战**](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA)
   - [配套代码](llm/fine-tuning/train_qwen2.ipynb)
 - [一文入门垂域模型SFT微调](llm/一文入门垂域模型SFT微调.md)
 
-#### 9.2 从零开始训练大模型
+#### 10.2 从零开始训练大模型
 
 - [Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings](https://imbue.com/research/70b-intro/)
 - [Sanitized open-source datasets for natural language and code understanding: how we evaluated our 70B model](https://imbue.com/research/70b-evals/)
 - [From bare metal to a 70B model: infrastructure set-up and scripts](https://imbue.com/research/70b-infrastructure/)
 - [Open-sourcing CARBS: how we used our hyperparameter optimizer to scale up to a 70B-parameter language model](https://imbue.com/research/70b-carbs/)
 
-### 10. LLM 应用开发
+### 11. LLM 应用开发
 
-#### 10.1 RAG 技术
+#### 11.1 RAG 技术
 
 - [**从0到1快速搭建RAG应用**](https://mp.weixin.qq.com/s/89-bwZ4aPor4ySj5U3n5zw)
   - [配套代码](llm/rag/lession2.ipynb)
 - [Evaluating Chunking Strategies for Retrieval 总结](llm/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
 - [中文RAG系统Embedding模型选型技术文档](llm/rag/中文RAG系统Embedding模型选型技术文档.md)
 
-#### 10.2 AI Agent 开发
+#### 11.2 AI Agent 开发
 
 - [**LangChain + 模型上下文协议（MCP）：AI 智能体 Demo**](llm/agent/README.md)
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](llm/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)
@@ -165,21 +170,41 @@
 
 ## 第五部分：实践案例
 
-### 11. 模型部署与推理
+### 12. AI 推理优化技术
+
+完整的AI推理优化技术文档系列，涵盖从小型到大型集群的推理优化策略：
+
+- [AI推理优化技术文档导航](inference/README.md)
+- [背景与目标](inference/01-背景与目标.md)
+- [集群规模分类与特征分析](inference/02-集群规模分类与特征分析.md)
+- [核心推理优化技术深度解析](inference/03-核心推理优化技术深度解析.md)
+- [不同集群规模的技术选型策略](inference/04-不同集群规模的技术选型策略.md)
+- [性能评估指标体系](inference/05-性能评估指标体系.md)
+- [推理服务架构设计](inference/06-推理服务架构设计.md)
+- [实施建议与最佳实践](inference/07-实施建议与最佳实践.md)
+- [参考资料与延伸阅读](inference/08-参考资料与延伸阅读.md)
+- [安全性与合规性](inference/09-安全性与合规性.md)
+- [多模态推理优化](inference/10-多模态推理优化.md)
+- [边缘推理优化](inference/11-边缘推理优化.md)
+- [场景问题解答](inference/12-场景问题解答.md)
+- [实施检查清单](inference/13-实施检查清单.md)
+- [总结与展望](inference/14-总结与展望.md)
+
+### 13. 模型部署与推理
 
 - [动手部署 ollama](llm/ollama/README.md)
 - [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
 - [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
 - [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
 
-### 12. 文档处理工具
+### 14. 文档处理工具
 
 - [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
 - [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
 - [Markitdown 入门](llm/markitdown/README.md)
 - [DeepWiki 使用方法与技术原理深度分析](llm/DeepWiki%20使用方法与技术原理深度分析.md)
 
-### 13. 特定领域应用
+### 15. 特定领域应用
 
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/scenario/traditional-chinese-medicine.md)
 - [中国大陆合同审核要点清单](llm/scenario/中国大陆合同审核要点清单.md)
@@ -187,9 +212,25 @@
 
 ---
 
+### 16. Java AI 开发
+
+- [Spring AI 中文指南](java_ai/spring_ai_cn.md)
+
+---
+
 ## 第六部分：工具与资源
 
-### 14. 开源项目推荐
+### 17. AI 系统学习资源
+
+[**AISystem**](AISystem/README.md) - 完整的AI系统学习资源，包含：
+
+- [系统介绍](AISystem/01Introduction/README.md) - AI系统概述与发展历程
+- [硬件基础](AISystem/02Hardware/README.md) - AI芯片与硬件架构
+- [编译器技术](AISystem/03Compiler/README.md) - AI编译器原理与实践
+- [推理优化](AISystem/04Inference/README.md) - 模型推理加速技术
+- [框架设计](AISystem/05Framework/README.md) - AI框架架构与并行计算
+
+### 18. 开源项目推荐
 
 - [unstructured](https://github.com/Unstructured-IO/unstructured): Open source libraries and APIs to build custom preprocessing pipelines for labeling, training, or production machine learning pipelines.
 - [MinerU](https://github.com/opendatalab/MinerU): A high-quality tool for convert PDF to Markdown and JSON.
