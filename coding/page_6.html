@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>传统编程 vs AI辅助编程</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .workflow-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .workflow-arrow {
+            position: absolute;
+            top: 50%;
+            right: -15px;
+            transform: translateY(-50%);
+            color: #60a5fa;
+            z-index: 10;
+        }
+
+        .efficiency-bar {
+            transition: width 1s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">传统编程 vs AI辅助编程</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4">
+            <!-- Workflow Comparison -->
+            <div class="grid grid-cols-2 gap-8 mb-6">
+                <!-- Traditional Programming -->
+                <div class="bg-blue-900 bg-opacity-40 rounded-lg p-5 border-t-4 border-blue-500">
+                    <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                        <i class="fas fa-code-branch text-blue-400 mr-3"></i>
+                        传统编程工作流
+                    </h2>
+                    <div class="flex flex-wrap justify-between">
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-search text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">需求分析</span>
+                                <span class="text-xs text-blue-200 mt-1">文档研究、用户需求</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-project-diagram text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">架构设计</span>
+                                <span class="text-xs text-blue-200 mt-1">系统规划、组件设计</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-edit text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">编码实现</span>
+                                <span class="text-xs text-blue-200 mt-1">逐行手写代码</span>
+                            </div>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-bug text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">测试调试</span>
+                                <span class="text-xs text-blue-200 mt-1">手动查找问题</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-file-alt text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">文档编写</span>
+                                <span class="text-xs text-blue-200 mt-1">手动撰写文档</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center">
+                                <i class="fas fa-rocket text-blue-300 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">部署维护</span>
+                                <span class="text-xs text-blue-200 mt-1">环境配置、监控</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- AI-Assisted Programming -->
+                <div class="bg-blue-900 bg-opacity-40 rounded-lg p-5 border-t-4 border-yellow-400">
+                    <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                        <i class="fas fa-robot text-yellow-400 mr-3"></i>
+                        AI辅助编程工作流
+                    </h2>
+                    <div class="flex flex-wrap justify-between">
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-comment-alt text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">需求描述</span>
+                                <span class="text-xs text-blue-200 mt-1">自然语言输入</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-magic text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">AI生成代码</span>
+                                <span class="text-xs text-blue-200 mt-1">自动编写代码</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2 mb-4">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-search-plus text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">人工审查</span>
+                                <span class="text-xs text-blue-200 mt-1">质量检查与调整</span>
+                            </div>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-vial text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">测试优化</span>
+                                <span class="text-xs text-blue-200 mt-1">AI辅助诊断</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-file-code text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">AI生成文档</span>
+                                <span class="text-xs text-blue-200 mt-1">自动生成注释</span>
+                            </div>
+                            <i class="fas fa-chevron-right workflow-arrow"></i>
+                        </div>
+                        <div class="workflow-item w-1/3 px-2">
+                            <div
+                                class="bg-blue-800 bg-opacity-50 rounded-lg p-3 text-center h-24 flex flex-col items-center justify-center border-t-2 border-yellow-400">
+                                <i class="fas fa-cloud-upload-alt text-yellow-400 text-xl mb-2"></i>
+                                <span class="text-blue-100 font-medium">智能部署</span>
+                                <span class="text-xs text-blue-200 mt-1">自动化部署</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Efficiency Improvements -->
+            <div class="bg-blue-900 bg-opacity-30 rounded-lg p-5">
+                <h2 class="text-xl font-bold text-blue-100 mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-yellow-400 mr-3"></i>
+                    效率提升数据（GitHub Copilot用户调研）
+                </h2>
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="relative">
+                        <div class="text-sm text-blue-200 mb-1">代码编写速度</div>
+                        <div class="bg-blue-800 bg-opacity-50 rounded-full h-6 w-full">
+                            <div class="bg-gradient-to-r from-blue-400 to-yellow-400 h-full rounded-full efficiency-bar"
+                                style="width: 55%"></div>
+                        </div>
+                        <div
+                            class="absolute -top-1 -right-1 bg-yellow-400 text-blue-900 rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                            55%
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="text-sm text-blue-200 mb-1">重复性任务减少</div>
+                        <div class="bg-blue-800 bg-opacity-50 rounded-full h-6 w-full">
+                            <div class="bg-gradient-to-r from-blue-400 to-yellow-400 h-full rounded-full efficiency-bar"
+                                style="width: 87%"></div>
+                        </div>
+                        <div
+                            class="absolute -top-1 -right-1 bg-yellow-400 text-blue-900 rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                            87%
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="text-sm text-blue-200 mb-1">新框架学习时间</div>
+                        <div class="bg-blue-800 bg-opacity-50 rounded-full h-6 w-full">
+                            <div class="bg-gradient-to-r from-blue-400 to-yellow-400 h-full rounded-full efficiency-bar"
+                                style="width: 60%"></div>
+                        </div>
+                        <div
+                            class="absolute -top-1 -right-1 bg-yellow-400 text-blue-900 rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                            60%
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="text-sm text-blue-200 mb-1">代码质量评分</div>
+                        <div class="bg-blue-800 bg-opacity-50 rounded-full h-6 w-full">
+                            <div class="bg-gradient-to-r from-blue-400 to-yellow-400 h-full rounded-full efficiency-bar"
+                                style="width: 23%"></div>
+                        </div>
+                        <div
+                            class="absolute -top-1 -right-1 bg-yellow-400 text-blue-900 rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                            23%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>6/26</span>
+        </div>
+    </div>
+    <script>
+        // Animation for efficiency bars
+        document.addEventListener('DOMContentLoaded', function () {
+            const bars = document.querySelectorAll('.efficiency-bar');
+            bars.forEach(bar => {
+                const targetWidth = bar.style.width;
+                bar.style.width = '0';
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 300);
+            });
+        });
+    </script>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

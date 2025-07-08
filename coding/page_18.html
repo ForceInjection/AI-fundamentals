@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>安全与隐私考虑</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 772px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 772px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .section-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .comparison-table th {
+            background: rgba(30, 64, 175, 0.5);
+            padding: 8px 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .comparison-table td {
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">安全与隐私考虑</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-2 grid grid-cols-2 gap-6">
+            <!-- Code Security -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-shield-alt text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码安全</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>敏感信息识别：</strong>API密钥、数据库密码、私钥、用户个人信息、商业机密</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>安全实践：</strong>使用环境变量管理敏感配置，避免硬编码</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-mask text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>数据脱敏技巧：</strong>使用占位符替换真实数据，提供数据结构而非内容</span>
+                    </li>
+                </ul>
+                <div class="mt-3 bg-blue-900 bg-opacity-40 p-3 rounded text-xs">
+                    <div class="flex items-center">
+                        <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                        <span class="text-blue-100">示例：</span>
+                    </div>
+                    <div class="mt-1">
+                        <span class="text-red-300">❌ 错误：</span>
+                        <span class="text-blue-100">&#34;请优化这个连接数据库的代码：const db =
+                            mysql.connect(&#39;mysql://admin:password123@prod-db.company.com:3306/userdata&#39;)&#34;</span>
+                    </div>
+                    <div class="mt-1">
+                        <span class="text-green-300">✅ 正确：</span>
+                        <span class="text-blue-100">&#34;请优化这个MySQL连接代码，使用环境变量管理敏感配置：const db =
+                            mysql.connect(process.env.DATABASE_URL)&#34;</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Data Privacy -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-user-shield text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">数据隐私</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm mb-3">
+                    <li class="flex items-start">
+                        <i class="fas fa-info-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>了解AI工具的数据处理政策和企业级隐私保护措施</span>
+                    </li>
+                </ul>
+                <div class="overflow-x-auto">
+                    <table class="comparison-table w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-blue-100">工具</th>
+                                <th class="text-blue-100">数据存储</th>
+                                <th class="text-blue-100">训练使用</th>
+                                <th class="text-blue-100">企业版隐私保护</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-blue-100">GitHub Copilot</td>
+                                <td class="text-blue-100">临时存储</td>
+                                <td class="text-blue-100">可选退出</td>
+                                <td class="text-blue-100">增强保护</td>
+                            </tr>
+                            <tr>
+                                <td class="text-blue-100">Cursor</td>
+                                <td class="text-blue-100">本地处理</td>
+                                <td class="text-blue-100">不用于训练</td>
+                                <td class="text-blue-100">完全隔离</td>
+                            </tr>
+                            <tr>
+                                <td class="text-blue-100">Trae AI</td>
+                                <td class="text-blue-100">加密存储</td>
+                                <td class="text-blue-100">明确授权</td>
+                                <td class="text-blue-100">私有部署</td>
+                            </tr>
+                            <tr>
+                                <td class="text-blue-100">Tabnine</td>
+                                <td class="text-blue-100">本地优先</td>
+                                <td class="text-blue-100">可选参与</td>
+                                <td class="text-blue-100">完全本地</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Access Control -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-key text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">访问控制</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-layer-group text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>权限分级管理：</strong></span>
+                    </li>
+                </ul>
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                    <div class="bg-blue-900 bg-opacity-30 p-2 rounded">
+                        <div class="text-yellow-400 font-medium">开发者级别</div>
+                        <div class="text-blue-100 text-xs mt-1">基础代码补全和解释</div>
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-30 p-2 rounded">
+                        <div class="text-yellow-400 font-medium">高级开发者</div>
+                        <div class="text-blue-100 text-xs mt-1">项目级重构和架构设计</div>
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-30 p-2 rounded">
+                        <div class="text-yellow-400 font-medium">架构师级别</div>
+                        <div class="text-blue-100 text-xs mt-1">系统设计和技术选型</div>
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-30 p-2 rounded">
+                        <div class="text-yellow-400 font-medium">管理员级别</div>
+                        <div class="text-blue-100 text-xs mt-1">工具配置和使用监控</div>
+                    </div>
+                </div>
+                <div class="mt-3 bg-blue-900 bg-opacity-40 p-2 rounded text-xs">
+                    <div class="text-blue-100">
+                        <i class="fas fa-code text-yellow-400 mr-1"></i>
+                        <span class="font-medium">权限控制实践：</span>
+                    </div>
+                    <div class="text-blue-100 mt-1">
+                        <span class="text-blue-200">ai_tools_permissions:</span>
+                        <span class="text-blue-100">junior_developers:</span>
+                        <span class="text-blue-200">code_completion,</span>
+                        <span class="text-blue-200">code_explanation</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Audit Logs -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-clipboard-list text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">审计日志</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-file-alt text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>记录内容：</strong>AI工具使用频率和时长、生成代码的接受率和修改率、涉及的项目和功能模块、潜在的安全风险事件</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-chart-line text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>审计指标：</strong>开发效率提升比例、代码质量变化趋势、安全漏洞发现和修复情况、团队AI工具采用率</span>
+                    </li>
+                </ul>
+                <div class="mt-3 flex items-center justify-center">
+                    <div class="w-full h-20" id="audit-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>18/26</span>
+        </div>
+    </div>
+    <script>
+        // Simple D3.js visualization for audit metrics (stylized, not based on actual data)
+        document.addEventListener('DOMContentLoaded', function () {
+            const width = document.getElementById('audit-chart').clientWidth;
+            const height = 80;
+
+            const svg = d3.select('#audit-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Create a stylized representation of audit metrics
+            const metrics = [
+                { label: '效率提升', color: '#fcd34d' },
+                { label: '代码质量', color: '#60a5fa' },
+                { label: '安全审计', color: '#a78bfa' },
+                { label: '团队采用', color: '#34d399' }
+            ];
+
+            const barWidth = width / metrics.length - 20;
+
+            // Add bars
+            metrics.forEach((metric, i) => {
+                const x = i * (barWidth + 20) + 10;
+
+                // Bar background
+                svg.append('rect')
+                    .attr('x', x)
+                    .attr('y', 20)
+                    .attr('width', barWidth)
+                    .attr('height', 30)
+                    .attr('rx', 4)
+                    .attr('fill', 'rgba(255, 255, 255, 0.1)');
+
+                // Bar fill (stylized)
+                const barHeight = 15 + Math.random() * 15;
+                svg.append('rect')
+                    .attr('x', x)
+                    .attr('y', 55 - barHeight)
+                    .attr('width', barWidth)
+                    .attr('height', barHeight)
+                    .attr('rx', 4)
+                    .attr('fill', metric.color);
+
+                // Label
+                svg.append('text')
+                    .attr('x', x + barWidth / 2)
+                    .attr('y', 15)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', '#e5e7eb')
+                    .attr('font-size', '12px')
+                    .text(metric.label);
+            });
+        });
+    </script>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

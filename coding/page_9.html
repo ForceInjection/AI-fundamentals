@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程的典型场景：文档生成与学习</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 808px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 808px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .feature-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .workflow-step {
+            position: relative;
+        }
+
+        .workflow-step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            width: 20px;
+            height: 2px;
+            background-color: #fcd34d;
+            transform: translateY(-50%);
+        }
+
+        .workflow-step:last-child::after {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">AI编程的典型场景：文档生成与学习</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-2 gap-8">
+            <!-- Documentation Generation Section -->
+            <div class="feature-card rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-file-alt text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">文档生成应用场景</h2>
+                </div>
+                <!-- Documentation Types -->
+                <div class="mb-5">
+                    <h3 class="text-xl text-yellow-300 mb-2">文档类型</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-function text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">函数注释：参数说明、返回值、使用示例</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-exchange-alt text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">API文档：接口说明、请求响应格式</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-book text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">README文件：项目介绍、安装使用指南</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-cogs text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">技术文档：架构说明、部署指南</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Documentation Workflow -->
+                <h3 class="text-xl text-yellow-300 mb-3">文档生成工作流</h3>
+                <div class="flex justify-between items-center mb-5">
+                    <div class="workflow-step flex flex-col items-center text-center px-2">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2">
+                            <i class="fas fa-pencil-alt text-yellow-400"></i>
+                        </div>
+                        <span class="text-sm text-blue-100">创建文档模板</span>
+                    </div>
+                    <div class="workflow-step flex flex-col items-center text-center px-2">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2">
+                            <i class="fas fa-comment-dots text-yellow-400"></i>
+                        </div>
+                        <span class="text-sm text-blue-100">AI生成内容</span>
+                    </div>
+                    <div class="workflow-step flex flex-col items-center text-center px-2">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2">
+                            <i class="fas fa-check-double text-yellow-400"></i>
+                        </div>
+                        <span class="text-sm text-blue-100">人工审查</span>
+                    </div>
+                    <div class="workflow-step flex flex-col items-center text-center px-2">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2">
+                            <i class="fas fa-file-code text-yellow-400"></i>
+                        </div>
+                        <span class="text-sm text-blue-100">完善文档</span>
+                    </div>
+                </div>
+                <!-- IDE Operations -->
+                <h3 class="text-xl text-yellow-300 mb-3">IDE操作示例</h3>
+                <div class="bg-blue-900 bg-opacity-50 p-3 rounded-md">
+                    <div class="flex items-start mb-2">
+                        <i class="fas fa-code text-blue-300 mt-1 mr-2"></i>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">GitHub Copilot：</span>
+                            <span>输入</span><span
+                                class="bg-blue-800 px-1 rounded">/**</span><span>后按回车，自动生成JSDoc格式注释</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fas fa-code text-blue-300 mt-1 mr-2"></i>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">Cursor：</span>
+                            <span>按</span><span class="bg-blue-800 px-1 rounded">Ctrl+K</span><span>输入：</span><span
+                                class="italic">&#34;为这个项目生成完整的文档&#34;</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Learning New Technologies Section -->
+            <div class="feature-card rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-graduation-cap text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">快速学习新技术</h2>
+                </div>
+                <!-- Learning Path -->
+                <div class="mb-5">
+                    <h3 class="text-xl text-yellow-300 mb-2">学习路径</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex items-start">
+                            <i class="fas fa-lightbulb text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">概念理解：框架原理和核心概念</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-code-branch text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">实例演示：从Hello World到复杂应用</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-award text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">最佳实践：行业标准和规范</span>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-question-circle text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-100">问题解答：实时答疑和指导</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- IDE Learning Operations -->
+                <h3 class="text-xl text-yellow-300 mb-3">IDE辅助学习操作</h3>
+                <div class="space-y-3 mb-5">
+                    <div class="flex items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <span class="text-yellow-400 font-bold">1</span>
+                        </div>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">概念学习阶段：</span>
+                            <span>在AI聊天中询问框架核心概念和特点，获取学习路径和重点内容</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <span class="text-yellow-400 font-bold">2</span>
+                        </div>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">实践操作阶段：</span>
+                            <span>使用Cursor创建项目结构，按</span><span
+                                class="bg-blue-800 px-1 rounded">Ctrl+K</span><span>生成示例代码并获取注释</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <span class="text-yellow-400 font-bold">3</span>
+                        </div>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">边学边练：</span>
+                            <span>使用Copilot的代码建议学习语法，通过AI生成的示例代码理解最佳实践</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <span class="text-yellow-400 font-bold">4</span>
+                        </div>
+                        <div class="text-blue-100">
+                            <span class="font-semibold">知识巩固：</span>
+                            <span>要求AI生成练习题和小项目，让AI审查自己写的代码并提供改进建议</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Learning Effect -->
+                <div class="bg-blue-900 bg-opacity-50 p-3 rounded-md">
+                    <h3 class="text-lg text-yellow-300 mb-2">学习效果对比</h3>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-blue-800 bg-opacity-50 p-2 rounded">
+                            <div class="text-yellow-400 font-bold">+3-5倍</div>
+                            <div class="text-sm text-blue-100">概念理解速度</div>
+                        </div>
+                        <div class="bg-blue-800 bg-opacity-50 p-2 rounded">
+                            <div class="text-yellow-400 font-bold">+2-3倍</div>
+                            <div class="text-sm text-blue-100">实践应用能力</div>
+                        </div>
+                        <div class="bg-blue-800 bg-opacity-50 p-2 rounded">
+                            <div class="text-yellow-400 font-bold">+4-6倍</div>
+                            <div class="text-sm text-blue-100">错误修复能力</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>9/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>总结与行动计划</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .action-item {
+            transition: all 0.3s ease;
+        }
+
+        .action-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">总结与行动计划</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-8"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4">
+            <!-- Key Points Summary -->
+            <div class="mb-10">
+                <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                    <i class="fas fa-star text-yellow-400 mr-3"></i>关键要点回顾
+                </h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-blue-900 bg-opacity-40 rounded-lg p-5 border-l-4 border-yellow-400">
+                        <ul class="space-y-3 text-blue-100">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>AI编程工具正在改变软件开发方式</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>选择合适的工具，掌握Prompt Engineering</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-900 bg-opacity-40 rounded-lg p-5 border-l-4 border-yellow-400">
+                        <ul class="space-y-3 text-blue-100">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>平衡AI使用与基础能力培养</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>持续学习，拥抱变化</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Action Plan -->
+            <div>
+                <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                    <i class="fas fa-rocket text-yellow-400 mr-3"></i>行动建议
+                </h2>
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="action-item bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg p-5 text-center">
+                        <div
+                            class="w-16 h-16 rounded-full bg-blue-700 bg-opacity-50 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-play-circle text-yellow-400 text-3xl pulse-animation"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-blue-100 mb-2">立即开始</h3>
+                        <p class="text-blue-200 text-sm">选择一个AI工具开始使用</p>
+                    </div>
+                    <div class="action-item bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg p-5 text-center">
+                        <div
+                            class="w-16 h-16 rounded-full bg-blue-700 bg-opacity-50 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-book-open text-yellow-400 text-3xl pulse-animation"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-blue-100 mb-2">持续学习</h3>
+                        <p class="text-blue-200 text-sm">跟上技术发展步伐</p>
+                    </div>
+                    <div class="action-item bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg p-5 text-center">
+                        <div
+                            class="w-16 h-16 rounded-full bg-blue-700 bg-opacity-50 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-laptop-code text-yellow-400 text-3xl pulse-animation"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-blue-100 mb-2">实践应用</h3>
+                        <p class="text-blue-200 text-sm">在实际项目中应用</p>
+                    </div>
+                    <div class="action-item bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg p-5 text-center">
+                        <div
+                            class="w-16 h-16 rounded-full bg-blue-700 bg-opacity-50 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-comments text-yellow-400 text-3xl pulse-animation"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-blue-100 mb-2">分享交流</h3>
+                        <p class="text-blue-200 text-sm">与同行交流经验</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Contact Information -->
+            <div class="mt-10 text-center">
+                <div class="inline-flex items-center justify-center bg-blue-800 bg-opacity-50 rounded-full px-6 py-3">
+                    <i class="fas fa-envelope text-yellow-400 mr-2"></i>
+                    <span class="text-blue-100">欢迎交流AI编程相关问题</span>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>26/26</span>
+        </div>
+        <!-- Inspirational quote -->
+        <div class="absolute bottom-6 left-8 text-blue-300 italic text-sm opacity-70">
+            &#34;AI不是替代程序员，而是赋能程序员，释放创造力&#34;
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

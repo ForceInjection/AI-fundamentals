@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AI编程入门课程 - PPT模式</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .slide-container {
+            max-width: 1280px;
+            width: 100%;
+            min-height: 720px;
+            margin: 0 auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }  .page-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .page-card:hover {
+            transform: translateY(-5px);
+            border-left-color: #3b82f6;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2);
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            transition: all 0.3s ease;
+        }
+        
+        .start-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: scale(1.05);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(249, 115, 22, 0.2));
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <div class="course-container mx-auto p-8">
+        <!-- 头部标题 -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 text-blue-500">AI编程入门课程</h1>
+            <h2 class="text-3xl font-semibold mb-6 text-orange-500">大语言模型在编程领域的应用与实践</h2>
+            <p class="text-xl text-gray-400">PPT演示模式 - 交互式课程体验</p>
+        </div>
+
+        <!-- 课程大纲 -->
+        <div class="bg-slate-800 rounded-lg p-8">
+            <h3 class="text-2xl font-semibold mb-6 text-center text-blue-500">
+                <i class="fas fa-list-ul mr-3"></i>
+                课程大纲
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 页面列表将通过JavaScript动态生成 -->
+                <div id="page-list" class="col-span-full">
+                    <!-- 页面卡片将在这里生成 -->
+                </div>
+            </div>
+        </div>
+        <!-- 快捷键说明 -->
+        <div class="mt-12 bg-slate-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold mb-4 text-orange-500">
+                <i class="fas fa-keyboard mr-2"></i>
+                快捷键说明
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">F5</kbd>
+                    <span>切换PPT模式</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">← →</kbd>
+                    <span>上一页/下一页</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">Space</kbd>
+                    <span>下一页</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">F11</kbd>
+                    <span>全屏切换</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">O</kbd>
+                    <span>页面概览</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">ESC</kbd>
+                    <span>退出模式</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 版权信息 -->
+        <div class="text-center mt-8 text-gray-500">
+            <p>© 2025 星环科技 | 课程道师：Grissom</p>
+        </div>
+    </div>
+
+    <script>
+        // 页面信息配置
+        const pageInfo = [
+            // 模块一：课程导入 (1-2)
+            { num: 1, title: "AI 编程入门", desc: "大语言模型在编程领域的应用与实践", category: "课程导入" },
+            { num: 2, title: "课程目标与受众分析", desc: "学习目标和预期成果", category: "课程导入" },
+
+            // 模块二：大模型基础 (3-6)
+            { num: 3, title: "大语言模型基础认知", desc: "大语言模型的基本概念和原理", category: "大模型基础" },
+            { num: 4, title: "大模型的工作原理", desc: "深入理解大模型的运行机制", category: "大模型基础" },
+            { num: 5, title: "大模型的能力边界", desc: "了解大模型的优势和局限性", category: "大模型基础" },
+            { num: 6, title: "传统编程 vs AI辅助编程", desc: "对比传统编程和AI辅助编程的差异", category: "大模型基础" },
+
+            // 模块三：AI编程应用场景 (7-10)
+            { num: 7, title: "AI编程的典型场景：代码生成", desc: "使用AI生成代码的方法和技巧", category: "应用场景" },
+            { num: 8, title: "AI编程的典型场景：代码解释与重构", desc: "AI在代码理解和重构中的应用", category: "应用场景" },
+            { num: 9, title: "AI编程的典型场景：文档生成与学习", desc: "AI辅助文档编写和技术学习", category: "应用场景" },
+            { num: 10, title: "AI编程的价值", desc: "AI编程带来的效率提升和价值创造", category: "应用场景" },
+            
+            // 模块四：AI编程工具 (11-12)
+            { num: 11, title: "主流AI编程工具对比", desc: "GitHub Copilot、ChatGPT等工具对比", category: "编程工具" },
+            { num: 12, title: "工具选择指南", desc: "如何选择适合的AI编程工具", category: "编程工具" },
+            
+            // 模块五：Prompt工程 (13-17)
+            { num: 13, title: "Prompt Engineering基础", desc: "Prompt工程的基本概念和方法", category: "Prompt工程" },
+            { num: 14, title: "编程场景下的Prompt技巧", desc: "针对编程任务的Prompt设计技巧", category: "Prompt工程" },
+            { num: 15, title: "Prompt实战演练：代码生成", desc: "实际操作：使用Prompt生成代码", category: "Prompt工程" },
+            { num: 16, title: "Prompt实战演练：代码重构与测试", desc: "实际操作：使用Prompt重构和测试代码", category: "Prompt工程" },
+            { num: 17, title: "常见Prompt误区与优化", desc: "避免常见错误，优化Prompt效果", category: "Prompt工程" },
+            
+            // 模块六：最佳实践 (18-21)
+            { num: 18, title: "安全与隐私考虑", desc: "AI编程中的安全和隐私保护", category: "最佳实践" },
+            { num: 19, title: "效率最大化策略", desc: "提高AI编程效率的策略和方法", category: "最佳实践" },
+            { num: 20, title: "团队协作规范", desc: "团队中使用AI编程的协作规范", category: "最佳实践" },
+            { num: 21, title: "AI代码质量保证", desc: "确保AI生成代码质量的方法", category: "最佳实践" },
+            
+            // 模块七：未来展望 (22-26)
+            { num: 22, title: "AI编程的发展趋势", desc: "AI编程技术的未来发展方向", category: "未来展望" },
+            { num: 23, title: "对开发者的影响与建议", desc: "AI对开发者职业发展的影响", category: "未来展望" },
+            { num: 24, title: "行动建议与资源推荐", desc: "学习建议和相关资源推荐", category: "未来展望" },
+            { num: 25, title: "常见问题解答", desc: "AI编程相关的常见问题解答", category: "未来展望" },
+            { num: 26, title: "总结与行动计划", desc: "课程总结和后续行动计划", category: "未来展望" }
+        ];
+
+        // 生成页面列表
+        function generatePageList() {
+            const pageList = document.getElementById('page-list');
+            
+            // 按模块分组
+            const moduleGroups = {};
+            pageInfo.forEach(page => {
+                if (!moduleGroups[page.category]) {
+                    moduleGroups[page.category] = [];
+                }
+                moduleGroups[page.category].push(page);
+            });
+            
+            // 为每个模块创建分组
+            Object.keys(moduleGroups).forEach(category => {
+                // 创建模块标题
+                const moduleTitle = document.createElement('div');
+                moduleTitle.className = 'mb-4 mt-8 first:mt-0';
+                moduleTitle.innerHTML = `
+                    <h3 class="text-xl font-bold mb-2 border-b-2 border-blue-500 pb-2">
+                        ${category}
+                    </h3>
+                `;
+                pageList.appendChild(moduleTitle);
+                
+                // 创建该模块的页面网格
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6';
+                
+                moduleGroups[category].forEach(page => {
+                     const pageCard = document.createElement('div');
+                     pageCard.className = 'page-card bg-slate-700 p-4 rounded-lg cursor-pointer';
+                     pageCard.innerHTML = `
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-600 text-white px-2 py-1 rounded text-sm font-semibold mr-3">
+                                ${page.num}
+                            </span>
+                            <h4 class="font-semibold text-white">${page.title}</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm">${page.desc}</p>
+                        <div class="mt-2">
+                            <span class="inline-block bg-gray-600 text-gray-300 px-2 py-1 rounded-full text-xs">
+                                ${page.category}
+                            </span>
+                        </div>
+                    `;
+                    pageCard.addEventListener('click', () => goToPage(page.num));
+                    gridContainer.appendChild(pageCard);
+                });
+                
+                pageList.appendChild(gridContainer);
+            });
+        }
+
+        // 跳转到指定页面
+        function goToPage(pageNum) {
+            window.location.href = `page_${pageNum}.html`;
+        }
+
+        // 开始演示
+        function startPresentation() {
+            window.location.href = 'page_1.html';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            generatePageList();
+        });
+    </script>
+</body>
+</html>

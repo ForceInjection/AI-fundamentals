@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI代码质量保证</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .section-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">AI代码质量保证</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-2 gap-6">
+            <!-- Code Verification -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-check-double text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码验证</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>验证流程标准化：静态分析、功能测试、安全检查、性能验证</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>IDE内置工具验证：Ctrl+Shift+P → &#34;Problems: Focus on Problems View&#34;</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>AI辅助验证：选中代码，按Ctrl+K询问潜在问题</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-clipboard-check text-yellow-400 mt-1 mr-2"></i>
+                        <span>验证清单检查：代码语法、规范、错误处理、变量命名等</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Test Coverage -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-vial text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">测试覆盖</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>AI辅助测试策略：生成测试用例、测试数据、自动化脚本优化</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>测试质量指标：代码覆盖率≥90%，分支覆盖率≥85%</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>AI生成代码的测试通过率≥95%，生产环境bug率≤0.1%</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-chart-line text-yellow-400 mt-1 mr-2"></i>
+                        <span>测试覆盖率分析和改进：识别未测试路径，增加边界条件测试</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Performance Monitoring -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-tachometer-alt text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">性能监控</h2>
+                </div>
+                <ul class="space-y-2 text-blue-100 text-sm">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>开发效率：代码生成速度、调试时间减少、功能交付周期</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>代码质量：代码复杂度、可维护性指数、技术债务水平</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                        <span>运行性能：响应时间、资源消耗、并发处理能力</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-chart-bar text-yellow-400 mt-1 mr-2"></i>
+                        <span>关键性能指标追踪：首屏加载时间、API响应时间等</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Continuous Improvement -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-sync-alt text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">持续改进</h2>
+                </div>
+                <div class="flex">
+                    <div class="w-1/2">
+                        <ul class="space-y-2 text-blue-100 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>PDCA改进循环：计划、执行、检查、行动</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>设定AI使用目标和评估指标</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>收集使用数据并分析效果</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>优化使用策略，更新最佳实践</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="w-1/2 flex justify-center items-center">
+                        <div class="h-32 w-32" id="pdca-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>21/26</span>
+        </div>
+    </div>
+    <script>
+        // PDCA Cycle Visualization
+        document.addEventListener('DOMContentLoaded', function () {
+            const width = 120;
+            const height = 120;
+            const radius = Math.min(width, height) / 2;
+
+            const svg = d3.select('#pdca-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+            // PDCA data
+            const data = [
+                { name: "计划", value: 25, color: "#fcd34d" },
+                { name: "执行", value: 25, color: "#60a5fa" },
+                { name: "检查", value: 25, color: "#34d399" },
+                { name: "行动", value: 25, color: "#f87171" }
+            ];
+
+            // Pie chart generator
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
+
+            // Arc generator
+            const arc = d3.arc()
+                .innerRadius(radius * 0.5)
+                .outerRadius(radius * 0.8);
+
+            // Create pie chart
+            const arcs = svg.selectAll('arc')
+                .data(pie(data))
+                .enter()
+                .append('g');
+
+            // Add paths
+            arcs.append('path')
+                .attr('d', arc)
+                .attr('fill', d => d.data.color)
+                .attr('stroke', '#1e3a8a')
+                .style('stroke-width', '1px');
+
+            // Add labels
+            arcs.append('text')
+                .attr('transform', d => `translate(${arc.centroid(d)})`)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '10px')
+                .attr('fill', '#1e3a8a')
+                .text(d => d.data.name);
+
+            // Add center circle
+            svg.append('circle')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('r', radius * 0.4)
+                .attr('fill', '#1e3a8a')
+                .attr('stroke', '#fcd34d')
+                .style('stroke-width', '2px');
+
+            // Add center text
+            svg.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.3em')
+                .attr('font-size', '12px')
+                .attr('fill', '#fcd34d')
+                .text('PDCA');
+        });
+    </script>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程的典型场景：代码解释与重构</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 757px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 757px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .feature-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .ide-steps {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+
+        .keybinding {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-20 left-20 text-blue-200">function explainCode() { return
+                &#34;AI解释&#34;; }</div>
+            <div class="code-pattern text-xl bottom-20 right-20 text-blue-200">const refactored = ai.transform(code);
+            </div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -right-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -left-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 left-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">AI编程的典型场景：代码解释与重构</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-3 gap-6">
+            <!-- Code Explanation Section -->
+            <div class="feature-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-lightbulb text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码解释</h2>
+                </div>
+                <p class="text-blue-100 text-sm mb-3">AI能解释复杂代码逻辑，帮助开发者快速理解代码功能和工作原理。</p>
+                <div class="mb-3">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">主要功能</h3>
+                    <ul class="space-y-1 text-blue-100 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>复杂算法的逻辑梳理</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>第三方库的使用方法</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>遗留代码快速理解</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="ide-steps p-3 rounded">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">IDE操作步骤</h3>
+                    <div class="space-y-2 text-blue-100 text-xs">
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+L</span>
+                            <span>快速获取代码解释（Cursor）</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+K</span>
+                            <span>打开AI对话，询问详细解释</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">右键菜单</span>
+                            <span>Copilot: Explain This</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Code Refactoring Section -->
+            <div class="feature-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-code-branch text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码重构</h2>
+                </div>
+                <p class="text-blue-100 text-sm mb-3">AI辅助优化和改进现有代码，提高代码质量、可读性和性能。</p>
+                <div class="mb-3">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">重构类型</h3>
+                    <ul class="space-y-1 text-blue-100 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>性能优化：算法复杂度降低</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>可读性提升：变量命名、函数拆分</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>架构改进：设计模式应用、代码解耦</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>安全加固：输入验证、权限控制</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="ide-steps p-3 rounded">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">IDE操作步骤</h3>
+                    <div class="space-y-2 text-blue-100 text-xs">
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+K</span>
+                            <span>在Cursor中选择代码并要求重构</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+Shift+A</span>
+                            <span>Trae AI项目级分析与重构</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Debugging Assistance Section -->
+            <div class="feature-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-bug text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">调试辅助</h2>
+                </div>
+                <p class="text-blue-100 text-sm mb-3">AI提供错误诊断和修复建议，帮助开发者快速定位和解决代码问题。</p>
+                <div class="mb-3">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">错误类型处理</h3>
+                    <ul class="space-y-1 text-blue-100 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>语法错误：快速定位和修复</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>逻辑错误：通过代码分析发现问题</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>运行时错误：异常处理和边界条件</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-0.5 mr-2 text-xs"></i>
+                            <span>性能问题：瓶颈识别和优化建议</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="ide-steps p-3 rounded">
+                    <h3 class="text-yellow-400 text-sm font-semibold mb-2">调试操作流程</h3>
+                    <div class="space-y-2 text-blue-100 text-xs">
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+Shift+P</span>
+                            <span>打开AI助手对话</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+K</span>
+                            <span>在Cursor中打开AI对话</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="keybinding mr-2">Ctrl+Shift+D</span>
+                            <span>Trae AI智能调试</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Example Section -->
+        <div class="relative z-10 px-16 py-2">
+            <div class="bg-blue-900 bg-opacity-50 rounded-lg p-3 border-t border-blue-700">
+                <h3 class="text-yellow-400 text-sm font-semibold mb-2">实际案例：错误调试示例</h3>
+                <div class="flex items-start text-blue-100 text-xs">
+                    <div class="bg-gray-800 bg-opacity-50 p-2 rounded mr-3 flex-1">
+                        <p class="font-semibold mb-1">错误信息：</p>
+                        <p class="text-red-300">TypeError: Cannot read property &#39;map&#39; of undefined</p>
+                        <p class="mt-1">at const results = data.items.map(item =&gt; item.name)</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-2 rounded flex-1">
+                        <p class="font-semibold mb-1">AI建议：</p>
+                        <p>分析发现：data.items可能为undefined或null</p>
+                        <p>解决方案：添加空值检查和类型保护</p>
+                        <p class="mt-1 text-green-300">// 修复后的代码</p>
+                        <p>if (Array.isArray(data.items)) {</p>
+                        <p>  const results = data.items.map(item =&gt; item.name);</p>
+                        <p>}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>8/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

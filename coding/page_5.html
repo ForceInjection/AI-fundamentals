@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>大模型的能力边界</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 738px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 738px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .capability-item,
+        .limitation-item {
+            transition: all 0.3s ease;
+        }
+
+        .capability-item:hover,
+        .limitation-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .capability-card {
+            border-left: 4px solid #4ade80;
+        }
+
+        .limitation-card {
+            border-left: 4px solid #f87171;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">大模型的能力边界</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 flex">
+            <!-- Left Column: Capabilities -->
+            <div class="w-1/2 pr-6">
+                <div class="flex items-center mb-4">
+                    <div
+                        class="w-10 h-10 rounded-full bg-green-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-green-300">擅长的任务</h2>
+                </div>
+                <div class="space-y-3">
+                    <div class="capability-item capability-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-pen-fancy text-green-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">文本创作</h3>
+                                <p class="text-blue-200 text-sm">文章写作、诗歌创作、剧本编写</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="capability-item capability-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-code text-green-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">代码编程</h3>
+                                <p class="text-blue-200 text-sm">代码生成、代码解释、代码调试、代码重构</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="capability-item capability-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-brain text-green-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">逻辑推理</h3>
+                                <p class="text-blue-200 text-sm">数学证明、逻辑推理、因果分析</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="capability-item capability-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-language text-green-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">语言翻译</h3>
+                                <p class="text-blue-200 text-sm">多语言互译，保持语义和语调</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="capability-item capability-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-question-circle text-green-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">知识问答</h3>
+                                <p class="text-blue-200 text-sm">回答各领域专业问题</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column: Limitations -->
+            <div class="w-1/2 pl-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-300">局限性</h2>
+                </div>
+                <div class="space-y-3 mb-6">
+                    <div class="limitation-item limitation-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-ghost text-red-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">幻觉问题</h3>
+                                <p class="text-blue-200 text-sm">生成看似合理但实际错误的信息，无法区分真假</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="limitation-item limitation-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-calendar-alt text-red-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">知识截止时间</h3>
+                                <p class="text-blue-200 text-sm">训练数据有时间限制（如GPT-4知识截止到2023年4月）</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="limitation-item limitation-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-microchip text-red-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">计算限制</h3>
+                                <p class="text-blue-200 text-sm">上下文长度限制（如GPT-4最大128K tokens）</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="limitation-item limitation-card bg-blue-800 bg-opacity-50 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-user-slash text-red-400 mt-1 mr-3 text-lg"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-100">缺乏真正理解</h3>
+                                <p class="text-blue-200 text-sm">基于统计模式，非真正的语义理解</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- How to correctly expect AI's capabilities -->
+                <div class="bg-blue-800 bg-opacity-30 rounded-lg p-4 border border-blue-600">
+                    <h3 class="font-bold text-yellow-400 mb-2 flex items-center">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        如何正确期待AI的能力
+                    </h3>
+                    <ul class="space-y-2 text-blue-100 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-2"></i>
+                            <span>辅助工具定位：AI是强大的助手，不是万能的替代品</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-2"></i>
+                            <span>验证输出：始终检查AI生成的内容，特别是关键信息</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-2"></i>
+                            <span>发挥优势：利用AI处理重复性、创造性任务</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-2"></i>
+                            <span>保持学习：AI工具在快速发展，需要持续学习新功能</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>5/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

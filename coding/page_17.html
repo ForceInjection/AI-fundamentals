@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>常见Prompt误区与优化</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 783px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 783px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .comparison-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+        }
+
+        .wrong-prompt {
+            border-left-color: #ef4444;
+        }
+
+        .right-prompt {
+            border-left-color: #10b981;
+        }
+
+        .strategy-card {
+            background: rgba(30, 58, 138, 0.3);
+            border-top: 3px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">常见Prompt误区与优化</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4">
+            <!-- Common Pitfalls Section -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 mr-3"></i>常见误区
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Example 1 -->
+                    <div class="comparison-card wrong-prompt rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-300 mb-2">
+                            <i class="fas fa-times-circle mr-2"></i>过于模糊的描述
+                        </h3>
+                        <div class="bg-red-900 bg-opacity-20 p-3 rounded">
+                            <p class="text-red-200 mb-2"><i class="fas fa-ban text-red-400 mr-2"></i><span
+                                    class="line-through">&#34;帮我写一个登录功能&#34;</span></p>
+                            <p class="text-green-200 text-sm"><i
+                                    class="fas fa-check text-green-400 mr-2"></i>&#34;请用React +
+                                TypeScript实现一个登录组件，包含用户名/密码输入、表单验证、错误提示、记住密码功能，并集成Redux进行状态管理&#34;</p>
+                        </div>
+                    </div>
+                    <!-- Example 2 -->
+                    <div class="comparison-card wrong-prompt rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-300 mb-2">
+                            <i class="fas fa-times-circle mr-2"></i>缺乏上下文信息
+                        </h3>
+                        <div class="bg-red-900 bg-opacity-20 p-3 rounded">
+                            <p class="text-red-200 mb-2"><i class="fas fa-ban text-red-400 mr-2"></i><span
+                                    class="line-through">&#34;这个函数有bug，帮我修复&#34;</span></p>
+                            <p class="text-green-200 text-sm"><i
+                                    class="fas fa-check text-green-400 mr-2"></i>&#34;这个数据处理函数在处理大数组时内存溢出，错误信息是[具体错误]，运行环境是Node.js
+                                16，期望能处理100万条记录&#34;</p>
+                        </div>
+                    </div>
+                    <!-- Example 3 -->
+                    <div class="comparison-card wrong-prompt rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-300 mb-2">
+                            <i class="fas fa-times-circle mr-2"></i>忽略代码规范要求
+                        </h3>
+                        <div class="bg-red-900 bg-opacity-20 p-3 rounded">
+                            <p class="text-red-200 mb-2"><i class="fas fa-ban text-red-400 mr-2"></i><span
+                                    class="line-through">&#34;生成一个API接口&#34;</span></p>
+                            <p class="text-green-200 text-sm"><i
+                                    class="fas fa-check text-green-400 mr-2"></i>&#34;按照公司编码规范生成API接口：使用ESLint
+                                Airbnb配置、JSDoc注释、错误码统一为E开头、日志使用Winston格式&#34;</p>
+                        </div>
+                    </div>
+                    <!-- Example 4 -->
+                    <div class="comparison-card wrong-prompt rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-300 mb-2">
+                            <i class="fas fa-times-circle mr-2"></i>不提供错误信息
+                        </h3>
+                        <div class="bg-red-900 bg-opacity-20 p-3 rounded">
+                            <p class="text-red-200 mb-2"><i class="fas fa-ban text-red-400 mr-2"></i><span
+                                    class="line-through">&#34;代码运行不了，帮我看看&#34;</span></p>
+                            <p class="text-green-200 text-sm"><i
+                                    class="fas fa-check text-green-400 mr-2"></i>&#34;代码运行时报错：TypeError: Cannot read
+                                property &#39;map&#39; of undefined at line 25，数据来源是API返回的JSON，有时候某个字段可能为null&#34;</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Optimization Strategies Section -->
+            <div>
+                <h2 class="text-2xl font-bold text-blue-100 mb-4 flex items-center">
+                    <i class="fas fa-lightbulb text-yellow-400 mr-3"></i>优化策略
+                </h2>
+                <div class="grid grid-cols-5 gap-3">
+                    <!-- Strategy 1 -->
+                    <div class="strategy-card rounded-lg p-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-baby text-yellow-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-100 text-center mb-2">从简单开始</h3>
+                        <p class="text-sm text-blue-200 text-center">先用基础Prompt测试，逐步复杂化</p>
+                    </div>
+                    <!-- Strategy 2 -->
+                    <div class="strategy-card rounded-lg p-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-sliders-h text-yellow-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-100 text-center mb-2">逐步细化</h3>
+                        <p class="text-sm text-blue-200 text-center">根据输出质量调整细节</p>
+                    </div>
+                    <!-- Strategy 3 -->
+                    <div class="strategy-card rounded-lg p-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-ban text-yellow-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-100 text-center mb-2">添加约束</h3>
+                        <p class="text-sm text-blue-200 text-center">明确不想要的输出类型</p>
+                    </div>
+                    <!-- Strategy 4 -->
+                    <div class="strategy-card rounded-lg p-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-copy text-yellow-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-100 text-center mb-2">提供示例</h3>
+                        <p class="text-sm text-blue-200 text-center">用few-shot learning提高准确性</p>
+                    </div>
+                    <!-- Strategy 5 -->
+                    <div class="strategy-card rounded-lg p-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-code-branch text-yellow-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-blue-100 text-center mb-2">版本管理</h3>
+                        <p class="text-sm text-blue-200 text-center">保存有效的Prompt模板供复用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>17/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

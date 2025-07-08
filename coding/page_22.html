@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程的发展趋势</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .trend-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .trend-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .timeline-point {
+            transition: all 0.3s ease;
+        }
+
+        .timeline-point:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">AI编程的发展趋势</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Timeline Visualization -->
+        <div class="relative z-10 px-16 mb-6">
+            <div class="w-full h-24" id="timeline"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 grid grid-cols-3 gap-8">
+            <!-- Technology Development -->
+            <div class="trend-card rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-microchip text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">技术发展</h2>
+                </div>
+                <ul class="space-y-3 text-blue-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-arrow-trend-up text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>能力提升：</strong>从代码补全到全流程自动化（2024-2027年）</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-layer-group text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>多模态编程：</strong>代码+图像+语音的综合开发</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-sitemap text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>专业领域特化：</strong>针对特定领域的优化模型</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-expand-arrows-alt text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>上下文扩展：</strong>大幅增加模型能处理的上下文长度</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Tool Evolution -->
+            <div class="trend-card rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-tools text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">工具演进</h2>
+                </div>
+                <ul class="space-y-3 text-blue-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-robot text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>从被动到主动：</strong>AI工具从简单助手到智能伙伴</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-users text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>全流程支持：</strong>从代码生成到部署测试的完整链路</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-handshake text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>团队协作：</strong>支持多人协同开发和代码审查</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-lightbulb text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>新兴工具：</strong>AI项目经理、智能测试生成器、架构设计师</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Development Model Transformation -->
+            <div class="trend-card rounded-lg p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-code-branch text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">开发模式变革</h2>
+                </div>
+                <ul class="space-y-3 text-blue-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-water text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>方法论演进：</strong>瀑布模型→敏捷开发→AI驱动开发</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-rocket text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>开发特点：</strong>需求驱动、迭代极速、质量内建</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-sitemap text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>团队结构：</strong>产品设计师→AI协调师→全栈工程师</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-chart-line text-yellow-400 mt-1 mr-2"></i>
+                        <span><strong>价值导向：</strong>从功能实现到价值创造的转变</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>22/26</span>
+        </div>
+    </div>
+    <script>
+        // D3.js Timeline Visualization
+        document.addEventListener('DOMContentLoaded', function () {
+            const timelineData = [
+                { year: "2023", label: "基础代码补全", icon: "fa-code", status: "past" },
+                { year: "2024", label: "全流程自动化", icon: "fa-robot", status: "current" },
+                { year: "2025", label: "多模态编程", icon: "fa-layer-group", status: "future" },
+                { year: "2026", label: "专业领域特化", icon: "fa-microscope", status: "future" },
+                { year: "2027", label: "上下文扩展", icon: "fa-expand", status: "future" }
+            ];
+
+            const width = 1200;
+            const height = 80;
+            const margin = { top: 20, right: 40, bottom: 20, left: 40 };
+
+            const svg = d3.select("#timeline")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            const x = d3.scalePoint()
+                .domain(timelineData.map(d => d.year))
+                .range([margin.left, width - margin.right])
+                .padding(0.5);
+
+            // Draw the line
+            svg.append("line")
+                .attr("x1", margin.left)
+                .attr("y1", height / 2)
+                .attr("x2", width - margin.right)
+                .attr("y2", height / 2)
+                .attr("stroke", "#60A5FA")
+                .attr("stroke-width", 3);
+
+            // Add the points
+            const points = svg.selectAll(".point")
+                .data(timelineData)
+                .enter()
+                .append("g")
+                .attr("class", "timeline-point")
+                .attr("transform", d => `translate(${x(d.year)}, ${height / 2})`);
+
+            // Add circles for points
+            points.append("circle")
+                .attr("r", 12)
+                .attr("fill", d => {
+                    if (d.status === "past") return "#FCD34D";
+                    if (d.status === "current") return "#F59E0B";
+                    return "#3B82F6";
+                })
+                .attr("stroke", "#E5E7EB")
+                .attr("stroke-width", 2);
+
+            // Add year labels
+            points.append("text")
+                .attr("y", -20)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#E5E7EB")
+                .attr("font-weight", "bold")
+                .text(d => d.year);
+
+            // Add description labels
+            points.append("text")
+                .attr("y", 30)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#E5E7EB")
+                .attr("font-size", "12px")
+                .text(d => d.label);
+        });
+    </script>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

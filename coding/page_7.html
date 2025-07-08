@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程的典型场景：代码生成</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .feature-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">AI编程的典型场景：代码生成</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Left Column - Application Scenario -->
+            <div class="col-span-5">
+                <div class="feature-card rounded-lg p-5 h-full">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-magic text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">应用场景</h2>
+                    </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-yellow-300 mb-2">从需求到代码的快速实现</h3>
+                        <p class="text-blue-100 mb-3">用户输入需求描述，AI直接生成完整代码实现</p>
+                        <div class="code-block text-sm mb-3">
+                            <span class="text-green-400"># 创建用户注册API，包含邮箱验证和密码加密</span><br />
+                            <span class="text-blue-300">def register_user(email, password):</span><br />
+                            <span class="text-white pl-4">if not validate_email(email):</span><br />
+                            <span class="text-white pl-8">raise ValueError(&#34;Invalid email&#34;)</span><br />
+                            <span class="text-white pl-4">hashed_password = encrypt(password)</span><br />
+                            <span class="text-white pl-4">store_user(email, hashed_password)</span><br />
+                            <span class="text-blue-300">return &#34;User registered&#34;</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-yellow-300 mb-2">适用范围</h3>
+                        <ul class="space-y-2 text-blue-100">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>CRUD操作：增删改查的标准实现</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>算法实现：排序、搜索、图算法等</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>工具函数：数据处理、格式转换等</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>API接口：RESTful API的快速搭建</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Value and Benefits -->
+                    <div class="feature-card rounded-lg p-5">
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-line text-yellow-400 text-xl"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-blue-100">价值体现</h2>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Efficiency Metrics -->
+                            <div class="bg-blue-800 bg-opacity-40 rounded p-3">
+                                <h3 class="font-semibold text-yellow-300 mb-2 text-sm">效率提升数据</h3>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-blue-100">代码编写速度</span>
+                                        <span class="text-yellow-400 font-bold text-sm">+300%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-blue-100">样板代码生成</span>
+                                        <span class="text-yellow-400 font-bold text-sm">节省80%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-blue-100">学习新技术</span>
+                                        <span class="text-yellow-400 font-bold text-sm">+400%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Quality Improvements -->
+                            <div class="bg-blue-800 bg-opacity-40 rounded p-3">
+                                <h3 class="font-semibold text-yellow-300 mb-2 text-sm">质量提升</h3>
+                                <div class="space-y-1 text-xs text-blue-100">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check text-green-400 mr-2"></i>
+                                        <span>基于最佳实践生成</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check text-green-400 mr-2"></i>
+                                        <span>自动代码规范检查</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check text-green-400 mr-2"></i>
+                                        <span>安全性考虑内置</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check text-green-400 mr-2"></i>
+                                        <span>性能优化建议</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column - Operation Steps -->
+            <div class="col-span-7">
+                <div class="grid grid-rows-2 gap-6 h-full">
+                    <!-- IDE Operation Steps -->
+                    <div class="feature-card rounded-lg p-5">
+                        <div class="flex items-center mb-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                                <i class="fas fa-code text-yellow-400 text-xl"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-blue-100">IDE操作步骤</h2>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <!-- GitHub Copilot -->
+                            <div class="bg-blue-800 bg-opacity-40 rounded p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fab fa-github text-white mr-2"></i>
+                                    <h3 class="font-semibold text-blue-100">GitHub Copilot</h3>
+                                </div>
+                                <ol class="space-y-1 text-xs text-blue-100">
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                                        <span>创建新文件 <code class="bg-blue-900 bg-opacity-50 px-1 rounded text-xs">user_api.py</code></span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                                        <span>编写注释描述需求</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                                        <span>按 <code class="bg-blue-900 bg-opacity-50 px-1 rounded text-xs">Tab</code> 接受AI建议</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">4</span>
+                                        <span>逐步完善功能描述</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">5</span>
+                                        <span>使用 <code class="bg-blue-900 bg-opacity-50 px-1 rounded text-xs">Ctrl+Shift+P</code> 代码审查</span>
+                                    </li>
+                                </ol>
+                            </div>
+                            <!-- Cursor -->
+                            <div class="bg-blue-800 bg-opacity-40 rounded p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-cursor text-white mr-2"></i>
+                                    <h3 class="font-semibold text-blue-100">Cursor</h3>
+                                </div>
+                                <ol class="space-y-1 text-xs text-blue-100">
+                                    <li class="flex items-start">
+                                        <span class="bg-purple-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                                        <span>按 <code class="bg-blue-900 bg-opacity-50 px-1 rounded text-xs">Ctrl+K</code> 打开AI对话</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-purple-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                                        <span>输入详细功能需求</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-purple-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                                        <span>选择代码插入位置</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-purple-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">4</span>
+                                        <span>通过对话迭代优化</span>
+                                    </li>
+                                </ol>
+                            </div>
+                            <!-- Trae AI -->
+                            <div class="bg-blue-800 bg-opacity-40 rounded p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-robot text-white mr-2"></i>
+                                    <h3 class="font-semibold text-blue-100">Trae AI</h3>
+                                </div>
+                                <ol class="space-y-1 text-xs text-blue-100">
+                                    <li class="flex items-start">
+                                        <span class="bg-green-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                                        <span>智能项目分析</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-green-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                                        <span>上下文理解生成</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-green-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                                        <span>多文件协同编辑</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="bg-green-600 rounded-full w-4 h-4 flex items-center justify-center text-xs mr-2 mt-0.5">4</span>
+                                        <span>端到端代码生成</span>
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Bottom corner design element -->
+            <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+                <span>7/26</span>
+            </div>
+        </div>
+        <script>
+            // Animation for efficiency bars and value metrics
+            document.addEventListener('DOMContentLoaded', function () {
+                const bars = document.querySelectorAll('.efficiency-bar');
+                bars.forEach(bar => {
+                    const targetWidth = bar.style.width;
+                    bar.style.width = '0';
+                    setTimeout(() => {
+                        bar.style.width = targetWidth;
+                    }, 300);
+                });
+                
+                // Animate value metrics
+                const metrics = document.querySelectorAll('.text-yellow-400.font-bold');
+                metrics.forEach(metric => {
+                    metric.style.opacity = '0';
+                    setTimeout(() => {
+                        metric.style.opacity = '1';
+                        metric.style.transition = 'opacity 0.5s ease-in-out';
+                    }, 500);
+                });
+            });
+        </script>
+        <script src="ppt-mode.js"></script>
+</body>
+
+</html>

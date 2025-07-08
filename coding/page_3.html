@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>大语言模型基础认知</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 760px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 760px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .feature-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .comparison-table th {
+            background: rgba(30, 64, 175, 0.6);
+        }
+
+        .comparison-table td,
+        .comparison-table th {
+            padding: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-20 left-20 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-20 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">大语言模型基础认知</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Left Column: ChatGPT Introduction -->
+            <div class="col-span-5">
+                <div class="feature-card rounded-lg p-5 mb-6">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-robot text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">从ChatGPT说起</h2>
+                    </div>
+                    <ul class="space-y-2 text-blue-100">
+                        <li class="flex items-start">
+                            <i class="fas fa-calendar-alt text-yellow-400 mt-1 mr-2"></i>
+                            <span>2022年11月发布，2个月内用户破亿</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-lightbulb text-yellow-400 mt-1 mr-2"></i>
+                            <span>核心突破：从&#34;关键词匹配&#34;到&#34;语义理解&#34;</span>
+                        </li>
+                    </ul>
+                    <div class="mt-4 bg-blue-900 bg-opacity-50 p-3 rounded-lg">
+                        <p class="text-sm text-blue-200 font-semibold mb-1">实例对比：</p>
+                        <div class="flex items-start mb-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center mr-2 mt-0.5">
+                                <span class="text-xs">传统</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-blue-100"><span class="text-yellow-400">输入：</span>
+                                    &#34;Python排序&#34;</p>
+                                <p class="text-sm text-blue-100"><span class="text-yellow-400">输出：</span> 返回相关网页链接</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center mr-2 mt-0.5">
+                                <span class="text-xs">ChatGPT</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-blue-100"><span class="text-yellow-400">输入：</span>
+                                    &#34;用Python给我写个排序算法&#34;</p>
+                                <p class="text-sm text-blue-100"><span class="text-yellow-400">输出：</span> 直接生成可运行代码</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Core Capabilities -->
+                <div class="feature-card rounded-lg p-5">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-brain text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">大模型的核心能力</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-blue-900 bg-opacity-40 p-3 rounded-lg">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-book-reader text-yellow-400 mr-2"></i>
+                                <h3 class="font-semibold">理解能力</h3>
+                            </div>
+                            <p class="text-sm text-blue-100">读懂自然语言、代码、数学公式</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-40 p-3 rounded-lg">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-cogs text-yellow-400 mr-2"></i>
+                                <h3 class="font-semibold">推理能力</h3>
+                            </div>
+                            <p class="text-sm text-blue-100">逻辑推理、因果分析、类比思维</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-40 p-3 rounded-lg">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-pen-fancy text-yellow-400 mr-2"></i>
+                                <h3 class="font-semibold">生成能力</h3>
+                            </div>
+                            <p class="text-sm text-blue-100">创作文本、编写代码、设计方案</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-40 p-3 rounded-lg">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-photo-video text-yellow-400 mr-2"></i>
+                                <h3 class="font-semibold">多模态能力</h3>
+                            </div>
+                            <p class="text-sm text-blue-100">处理文本、图像、音频（GPT-4V等）</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column: Comparison Table -->
+            <div class="col-span-7">
+                <div class="feature-card rounded-lg p-5 h-full">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-balance-scale text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">与传统搜索引擎的区别</h2>
+                    </div>
+                    <table class="comparison-table w-full text-sm">
+                        <thead>
+                            <tr class="text-left">
+                                <th class="w-1/4">特性</th>
+                                <th class="w-3/8">传统搜索引擎</th>
+                                <th class="w-3/8">大语言模型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-semibold">工作方式</td>
+                                <td>索引匹配</td>
+                                <td>语义理解</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">输出形式</td>
+                                <td>链接列表</td>
+                                <td>直接答案</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">交互方式</td>
+                                <td>关键词查询</td>
+                                <td>自然对话</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">个性化</td>
+                                <td>基于历史搜索</td>
+                                <td>基于对话上下文</td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">创造性</td>
+                                <td>无</td>
+                                <td>强</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-6 bg-blue-900 bg-opacity-30 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-yellow-400 text-lg mr-3"></i>
+                            <p class="text-blue-100">
+                                大语言模型通过深度学习和大量训练数据，获得了理解人类意图和生成相应内容的能力，这使其在解决复杂问题时表现出色。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>3/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

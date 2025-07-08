@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>主流AI编程工具对比</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .tool-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-top: 3px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-item {
+            transition: all 0.2s ease;
+        }
+
+        .feature-item:hover {
+            background-color: rgba(30, 64, 175, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">主流AI编程工具对比</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-12 py-4 grid grid-cols-4 gap-4">
+            <!-- GitHub Copilot -->
+            <div class="tool-card rounded-lg p-4">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fab fa-github text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">GitHub Copilot</h2>
+                </div>
+                <div class="space-y-2">
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">基于OpenAI Codex模型</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">支持数十种编程语言</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">深度集成VS Code、JetBrains等IDE</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-chart-line text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">准确率：85%+</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-rocket text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">效率提升：55%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-blue-700">
+                    <h3 class="text-yellow-400 text-sm font-medium mb-1">适用场景</h3>
+                    <p class="text-blue-100 text-sm">日常编码、代码补全</p>
+                    <h3 class="text-yellow-400 text-sm font-medium mt-2 mb-1">价格</h3>
+                    <p class="text-blue-100 text-sm">个人版$10/月，企业版$19/月</p>
+                </div>
+            </div>
+            <!-- Cursor -->
+            <div class="tool-card rounded-lg p-4">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-code text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">Cursor</h2>
+                </div>
+                <div class="space-y-2">
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">基于VS Code，集成GPT-4和Claude等模型</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">项目级别的理解和编辑能力</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">多文件协同编辑，智能重构</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-chart-line text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">项目效率提升：300%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-blue-700">
+                    <h3 class="text-yellow-400 text-sm font-medium mb-1">适用场景</h3>
+                    <p class="text-blue-100 text-sm">项目重构、大规模代码修改</p>
+                    <h3 class="text-yellow-400 text-sm font-medium mt-2 mb-1">价格</h3>
+                    <p class="text-blue-100 text-sm">未公布具体价格</p>
+                </div>
+            </div>
+            <!-- Trae AI -->
+            <div class="tool-card rounded-lg p-4">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-robot text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">Trae AI</h2>
+                </div>
+                <div class="space-y-2">
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">下一代智能IDE，AI Agent式编程助手</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">深度理解项目架构、业务逻辑和技术栈</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">端到端支持：从需求分析到部署</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm">AI驱动的代码审查和智能测试生成</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-blue-700">
+                    <h3 class="text-yellow-400 text-sm font-medium mb-1">适用场景</h3>
+                    <p class="text-blue-100 text-sm">企业级开发、架构设计</p>
+                    <h3 class="text-yellow-400 text-sm font-medium mt-2 mb-1">价格</h3>
+                    <p class="text-blue-100 text-sm">未公布具体价格</p>
+                </div>
+            </div>
+            <!-- Other Tools -->
+            <div class="tool-card rounded-lg p-4">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-tools text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">其他工具</h2>
+                </div>
+                <div class="space-y-2">
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm"><strong>Tabnine</strong>：本地运行，隐私保护，适合企业安全需求</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm"><strong>Amazon
+                                    CodeWhisperer</strong>：AWS生态集成，云服务代码生成</span>
+                        </div>
+                    </div>
+                    <div class="feature-item rounded p-1">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2 text-sm"></i>
+                            <span class="text-blue-100 text-sm"><strong>JetBrains AI Assistant</strong>：深度集成JetBrains
+                                IDE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-blue-700">
+                    <h3 class="text-yellow-400 text-sm font-medium mb-1">选择建议</h3>
+                    <ul class="text-blue-100 text-sm space-y-1">
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-1 text-xs"></i>
+                            <span>日常编码：GitHub Copilot</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-1 text-xs"></i>
+                            <span>项目重构：Cursor</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-1 text-xs"></i>
+                            <span>企业开发：Trae AI</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-angle-right text-yellow-400 mt-1 mr-1 text-xs"></i>
+                            <span>数据安全：Tabnine</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>11/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

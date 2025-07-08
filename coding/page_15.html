@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Prompt实战演练：代码生成</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 934px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 934px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        .blueprint {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+        }
+
+        .step-card {
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Prompt实战演练：代码生成</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Left Column - Prompt Design -->
+            <div class="col-span-5">
+                <div class="blueprint rounded-lg p-5 mb-4">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-comment-dots text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">API生成Prompt设计</h2>
+                    </div>
+                    <div class="code-block text-sm text-blue-100 mb-3">
+                        <p class="font-bold text-yellow-400">// Prompt模板</p>
+                        <p class="mb-2">请用Node.js + Express创建一个用户管理API，包含：</p>
+                        <p class="mb-2"><span class="text-green-400">// 功能要求：</span></p>
+                        <p class="mb-2">- GET /users - 获取用户列表（支持分页）</p>
+                        <p class="mb-2">- GET /users/:id - 获取单个用户</p>
+                        <p class="mb-2">- POST /users - 创建新用户</p>
+                        <p class="mb-2">- PUT /users/:id - 更新用户信息</p>
+                        <p class="mb-2">- DELETE /users/:id - 删除用户</p>
+                        <p class="mb-2"><span class="text-green-400">// 技术要求：</span></p>
+                        <p class="mb-2">- 使用MongoDB作为数据库</p>
+                        <p class="mb-2">- 集成JWT身份验证</p>
+                        <p class="mb-2">- 添加输入验证和错误处理</p>
+                        <p class="mb-2">- 包含完整的API文档注释</p>
+                        <p class="mb-2">- 遵循RESTful设计原则</p>
+                    </div>
+                    <div class="flex items-start space-x-2 text-sm">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-lightbulb text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-200">
+                            <strong>提示：</strong>明确的功能描述、技术栈和预期行为是生成高质量代码的关键
+                        </div>
+                    </div>
+                </div>
+                <div class="blueprint rounded-lg p-5">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-code-branch text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">迭代优化过程</h2>
+                    </div>
+                    <div class="flex items-start space-x-2 mb-3">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-arrow-right text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-100 text-sm">
+                            <strong>第一次生成：</strong>API结构和基础代码
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2 mb-3">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-arrow-right text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-100 text-sm">
+                            <strong>第二次生成：</strong>具体路由实现和业务逻辑
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2 mb-3">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-arrow-right text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-100 text-sm">
+                            <strong>第三次生成：</strong>添加安全验证和错误处理
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2 text-sm">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-check-circle text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-200">
+                            <strong>关键点：</strong>通过多次迭代细化，逐步完善生成代码的质量和功能
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Column - IDE Operations &amp; Results -->
+            <div class="col-span-7">
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <!-- Step 1 -->
+                    <div class="step-card blueprint rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-2">
+                                <span class="text-yellow-400 font-bold">1</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-blue-100">项目初始化</h3>
+                        </div>
+                        <div class="text-sm text-blue-100 mb-2">
+                            <i class="fas fa-folder-open text-yellow-400 mr-1"></i> 创建新文件夹 user-api
+                        </div>
+                        <div class="text-sm text-blue-100 mb-2">
+                            <i class="fas fa-code text-yellow-400 mr-1"></i> 在Cursor中打开项目文件夹
+                        </div>
+                        <div class="text-sm text-blue-100">
+                            <i class="fas fa-keyboard text-yellow-400 mr-1"></i> 按 Ctrl+K 打开AI对话
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="step-card blueprint rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-2">
+                                <span class="text-yellow-400 font-bold">2</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-blue-100">AI辅助搭建</h3>
+                        </div>
+                        <div class="code-block text-xs text-blue-100 mb-2">
+                            <p class="text-green-400">// AI对话输入</p>
+                            <p>&#34;请帮我创建一个Node.js + Express项目结构，包含：</p>
+                            <p>- package.json配置</p>
+                            <p>- 基础的Express服务器</p>
+                            <p>- MongoDB连接配置</p>
+                            <p>- 用户路由和模型&#34;</p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="step-card blueprint rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-2">
+                                <span class="text-yellow-400 font-bold">3</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-blue-100">逐步实现功能</h3>
+                        </div>
+                        <div class="text-sm text-blue-100 mb-2">
+                            <i class="fas fa-code-branch text-yellow-400 mr-1"></i> AI生成项目结构和基础代码
+                        </div>
+                        <div class="text-sm text-blue-100 mb-2">
+                            <i class="fas fa-sync-alt text-yellow-400 mr-1"></i> 继续对话完善每个路由的具体实现
+                        </div>
+                        <div class="text-sm text-blue-100">
+                            <i class="fas fa-info-circle text-yellow-400 mr-1"></i> 使用 Ctrl+L 解释生成的代码逻辑
+                        </div>
+                    </div>
+                </div>
+                <!-- Code Generation Results -->
+                <div class="blueprint rounded-lg p-5">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-code text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-blue-100">生成的代码片段</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="code-block text-sm">
+                            <p class="text-green-400">// users.js 路由</p>
+                            <p class="text-blue-300">const express = require(&#39;express&#39;);</p>
+                            <p class="text-blue-300">const router = express.Router();</p>
+                            <p class="text-blue-300">const User = require(&#39;../models/User&#39;);</p>
+                            <p class="text-blue-300">const jwt = require(&#39;jsonwebtoken&#39;);</p>
+                            <p class="text-blue-300">const bcrypt = require(&#39;bcryptjs&#39;);</p>
+                            <p class="text-blue-300">const { body, validationResult } =
+                                require(&#39;express-validator&#39;);</p>
+                            <p class="text-blue-300">// 中间件：验证JWT</p>
+                            <p class="text-blue-300">function authenticateToken(req, res, next) {</p>
+                            <p class="text-blue-300"> // 省略验证逻辑...</p>
+                            <p class="text-blue-300">}</p>
+                        </div>
+                        <div class="code-block text-sm">
+                            <p class="text-green-400">// User.js 模型</p>
+                            <p class="text-blue-300">const mongoose = require(&#39;mongoose&#39;);</p>
+                            <p class="text-blue-300">const Schema = mongoose.Schema;</p>
+                            <p class="text-blue-300">const userSchema = new Schema({</p>
+                            <p class="text-blue-300"> username: { type: String, required: true },</p>
+                            <p class="text-blue-300"> email: { type: String, required: true, unique: true },</p>
+                            <p class="text-blue-300"> password: { type: String, required: true },</p>
+                            <p class="text-blue-300"> createdAt: { type: Date, default: Date.now },</p>
+                            <p class="text-blue-300"> updatedAt: { type: Date, default: Date.now }</p>
+                            <p class="text-blue-300">});</p>
+                            <p class="text-blue-300">module.exports = mongoose.model(&#39;User&#39;, userSchema);</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2 mt-4 text-sm">
+                        <div
+                            class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center">
+                            <i class="fas fa-lightbulb text-yellow-400 text-xs"></i>
+                        </div>
+                        <div class="text-blue-200">
+                            <strong>实践技巧：</strong>先获取整体结构，再细化每个功能模块，逐步验证和优化生成的代码
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>15/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

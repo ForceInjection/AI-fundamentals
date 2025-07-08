@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI 编程入门</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .animated-bg {
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+
+            100% {
+                transform: translateY(-10px) translateX(10px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div
+        class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 flex flex-col items-center justify-center text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl top-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <div class="code-pattern text-lg bottom-20 left-30 text-blue-200">if (developer.uses(AI)) { efficiency *=
+                10; }</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20 animated-bg"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20 animated-bg"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4 animated-bg"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="z-10 text-center px-12 max-w-4xl">
+            <!-- Tech icon -->
+            <div class="flex justify-center mb-6">
+                <div
+                    class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-4xl"></i>
+                </div>
+            </div>
+            <!-- Title -->
+            <h1 class="text-6xl font-bold tracking-tight mb-4 text-white">AI 编程入门</h1>
+            <!-- Subtitle -->
+            <p class="text-2xl text-blue-100 mb-8">大语言模型在编程领域的应用与实践</p>
+            <!-- Divider -->
+            <div class="flex items-center justify-center mb-8">
+                <div class="h-0.5 w-16 bg-yellow-400 mr-3"></div>
+                <i class="fas fa-code text-yellow-400"></i>
+                <div class="h-0.5 w-16 bg-yellow-400 ml-3"></div>
+            </div>
+            <!-- Features -->
+            <div class="flex justify-center gap-16 mb-10">
+                <div class="text-center w-24">
+                    <div
+                        class="w-16 h-16 rounded-lg bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2 mx-auto">
+                        <i class="fas fa-brain text-yellow-400 text-2xl"></i>
+                    </div>
+                    <p class="text-blue-100">大模型基础</p>
+                </div>
+                <div class="text-center w-24">
+                    <div
+                        class="w-16 h-16 rounded-lg bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2 mx-auto">
+                        <i class="fas fa-keyboard text-yellow-400 text-2xl"></i>
+                    </div>
+                    <p class="text-blue-100">AI编程工具</p>
+                </div>
+                <div class="text-center w-24">
+                    <div
+                        class="w-16 h-16 rounded-lg bg-blue-600 bg-opacity-30 flex items-center justify-center mb-2 mx-auto">
+                        <i class="fas fa-comment-dots text-yellow-400 text-2xl"></i>
+                    </div>
+                    <p class="text-blue-100">Prompt工程</p>
+                </div>
+            </div>
+            <!-- Date -->
+            <p class="text-blue-200 mt-8">Grissom 2025年7月</p>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <i class="fas fa-microchip mr-2"></i>
+            <span>从工具到伙伴的编程革命</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

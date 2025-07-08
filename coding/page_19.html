@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>效率最大化策略</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 740px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 740px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .strategy-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-row {
+            transition: all 0.2s ease;
+        }
+
+        .table-row:hover {
+            background-color: rgba(30, 64, 175, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">效率最大化策略</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-2 gap-6">
+            <!-- Tool Combinations -->
+            <div class="strategy-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-tools text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">工具组合</h2>
+                </div>
+                <div class="text-blue-100 text-sm mb-3">
+                    <p class="mb-2">根据开发阶段选择合适的工具：</p>
+                </div>
+                <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3 text-sm">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-code-branch text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">需求分析：</span>
+                        <span class="ml-2">Trae AI（架构设计）</span>
+                    </div>
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-pencil-alt text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">编码实现：</span>
+                        <span class="ml-2">GitHub Copilot（代码补全）</span>
+                    </div>
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-code text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">代码重构：</span>
+                        <span class="ml-2">Cursor（项目级修改）</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-vial text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">测试编写：</span>
+                        <span class="ml-2">GitHub Copilot（单元测试）</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Template Reuse -->
+            <div class="strategy-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-clone text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">模板复用</h2>
+                </div>
+                <div class="text-blue-100 text-sm mb-3">
+                    <p class="mb-2">建立常用Prompt模板库：</p>
+                </div>
+                <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3 text-sm">
+                    <div class="flex items-start mb-2">
+                        <i class="fas fa-folder-tree text-yellow-400 mr-2 mt-1"></i>
+                        <div>
+                            <span class="font-semibold">模板分类体系：</span>
+                            <div class="ml-4 mt-1">
+                                <div>- 代码生成（API接口、数据库模型等）</div>
+                                <div>- 代码审查（安全性、性能等）</div>
+                                <div>- 调试辅助（错误分析等）</div>
+                                <div>- 性能优化（代码重构、性能调优等）</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-code-branch text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">模板版本管理：</span>
+                        <span class="ml-2">使用Git管理模板变更</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Keyboard Shortcuts -->
+            <div class="strategy-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-keyboard text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">快捷键</h2>
+                </div>
+                <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3 text-sm">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-blue-600">
+                                <th class="text-left py-1 px-2 text-yellow-400">工具</th>
+                                <th class="text-left py-1 px-2 text-yellow-400">功能</th>
+                                <th class="text-left py-1 px-2 text-yellow-400">快捷键</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-row border-b border-blue-700">
+                                <td class="py-1 px-2">Copilot</td>
+                                <td class="py-1 px-2">接受建议</td>
+                                <td class="py-1 px-2 font-mono">Tab</td>
+                            </tr>
+                            <tr class="table-row border-b border-blue-700">
+                                <td class="py-1 px-2">Copilot</td>
+                                <td class="py-1 px-2">查看替代方案</td>
+                                <td class="py-1 px-2 font-mono">Ctrl+Enter</td>
+                            </tr>
+                            <tr class="table-row border-b border-blue-700">
+                                <td class="py-1 px-2">Cursor</td>
+                                <td class="py-1 px-2">AI对话</td>
+                                <td class="py-1 px-2 font-mono">Ctrl+K</td>
+                            </tr>
+                            <tr class="table-row">
+                                <td class="py-1 px-2">Cursor</td>
+                                <td class="py-1 px-2">代码解释</td>
+                                <td class="py-1 px-2 font-mono">Ctrl+L</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Batch Processing -->
+            <div class="strategy-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-layer-group text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">批量处理</h2>
+                </div>
+                <div class="text-blue-100 text-sm mb-3">
+                    <p class="mb-2">一次性处理多个相似任务：</p>
+                </div>
+                <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3 text-sm">
+                    <div class="flex items-start mb-3">
+                        <i class="fas fa-code text-yellow-400 mr-2 mt-1"></i>
+                        <div>
+                            <span class="font-semibold">批量代码生成：</span>
+                            <p class="ml-1 mt-1 text-blue-200">请为以下5个实体类生成完整的CRUD操作：</p>
+                            <ul class="ml-4 mt-1 text-blue-200">
+                                <li>- User（用户）- 字段：id, name, email, createdAt</li>
+                                <li>- Product（产品）- 字段：id, title, price, categoryId</li>
+                                <li>- Order（订单）- 字段：id, userId, total, status</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                        <span class="font-semibold">提示：</span>
+                        <span class="ml-2">利用AI的上下文理解能力，提高批量处理的准确性</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>19/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

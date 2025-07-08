@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Prompt实战演练：代码重构与测试</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 916px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 916px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        .highlight {
+            color: #fcd34d;
+        }
+
+        .comment {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .keyword {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .string {
+            color: #10b981;
+        }
+
+        .function {
+            color: #f3f4f6;
+            font-weight: bold;
+        }
+
+        .variable {
+            color: #93c5fd;
+        }
+
+        .section-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Prompt实战演练：代码重构与测试</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-2 gap-8">
+            <!-- Code Refactoring Section -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-code-branch text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">代码重构案例</h2>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-lightbulb mr-2"></i>重构需求
+                    </h3>
+                    <p class="text-blue-100 mb-3">将遗留JavaScript代码现代化，使用ES6+语法、箭头函数、TypeScript类型注解等。</p>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-robot mr-2"></i>AI助手
+                    </h3>
+                    <div class="code-block text-sm mb-3">
+                        <span class="comment">// 使用Trae AI进行项目级重构</span><br />
+                        <span class="keyword">const</span> <span class="variable">refactorPlan</span> = <span
+                            class="keyword">await</span> traeAI.analyzeProject(<span
+                            class="string">&#34;legacy-code&#34;</span>);<br />
+                        <span class="comment">// AI识别需要重构的代码模式</span><br />
+                        <span class="keyword">for</span> (<span class="keyword">const</span> <span
+                            class="variable">pattern</span> <span class="keyword">of</span> <span
+                            class="variable">refactorPlan</span>.patterns) {<br />
+                          <span class="comment">// 应用重构建议</span><br />
+                          <span class="keyword">await</span> traeAI.applyRefactor(<span
+                            class="variable">pattern</span>);<br />
+                        }
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-check-circle mr-2"></i>重构效果
+                    </h3>
+                    <div class="flex space-x-3">
+                        <div class="code-block text-sm flex-1">
+                            <span class="comment">// 重构前</span><br />
+                            <span class="keyword">var</span> <span class="variable">User</span> = <span
+                                class="keyword">function</span>(<span class="variable">name</span>, <span
+                                class="variable">email</span>) {<br />
+                              <span class="keyword">this</span>.name = <span class="variable">name</span>;<br />
+                              <span class="keyword">this</span>.email = <span class="variable">email</span>;<br />
+                            };<br />
+                            <span class="comment">// 省略原型方法</span>
+                        </div>
+                        <div class="code-block text-sm flex-1">
+                            <span class="comment">// 重构后</span><br />
+                            <span class="keyword">class</span> <span class="variable">User</span> {<br />
+                              <span class="keyword">constructor</span>(<span class="variable">name</span>: <span
+                                class="keyword">string</span>, <span class="variable">email</span>: <span
+                                class="keyword">string</span>) {<br />
+                                <span class="keyword">this</span>.name = <span class="variable">name</span>;<br />
+                                <span class="keyword">this</span>.email = <span class="variable">email</span>;<br />
+                              }<br />
+                            <span class="comment">// 省略方法</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Test Generation Section -->
+            <div class="section-card rounded-lg p-5">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-vial text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">单元测试生成案例</h2>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-file-code mr-2"></i>目标函数
+                    </h3>
+                    <div class="code-block text-sm mb-3">
+                        <span class="keyword">function</span> <span class="function">authenticateUser</span>(<span
+                            class="variable">credentials</span>) {<br />
+                          <span class="comment">// 省略实现细节</span><br />
+                        }
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-robot mr-2"></i>测试Prompt
+                    </h3>
+                    <div class="code-block text-sm mb-3">
+                        <span class="comment">// 使用GitHub Copilot生成测试</span><br />
+                        <span class="keyword">describe</span>(<span class="string">&#39;用户认证功能&#39;</span>, () =&gt;
+                        {<br />
+                          <span class="comment">// Copilot自动生成测试用例</span><br />
+                        });
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                        <i class="fas fa-check-circle mr-2"></i>生成的测试用例
+                    </h3>
+                    <div class="code-block text-sm">
+                        <span class="keyword">test</span>(<span class="string">&#39;正常登录流程&#39;</span>, () =&gt; {<br />
+                          <span class="comment">// 测试正常登录情况</span><br />
+                        });<br />
+                        <span class="keyword">test</span>(<span class="string">&#39;错误密码情况&#39;</span>, () =&gt; {<br />
+                          <span class="comment">// 测试错误密码处理</span><br />
+                        });<br />
+                        <span class="keyword">test</span>(<span class="string">&#39;用户不存在情况&#39;</span>, () =&gt;
+                        {<br />
+                          <span class="comment">// 测试用户不存在处理</span><br />
+                        });
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom section -->
+        <div class="relative z-10 px-16 mt-2">
+            <div class="section-card rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-yellow-300 mb-2">
+                    <i class="fas fa-lightbulb mr-2"></i>AI辅助开发流程
+                </h3>
+                <div class="flex justify-between">
+                    <div class="flex items-start">
+                        <div class="step-number">1</div>
+                        <div>
+                            <p class="text-blue-100"><strong>需求分析：</strong>明确重构目标和测试要求</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="step-number">2</div>
+                        <div>
+                            <p class="text-blue-100"><strong>AI生成方案：</strong>获取重构建议和测试用例</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="step-number">3</div>
+                        <div>
+                            <p class="text-blue-100"><strong>人工审查：</strong>检查生成代码质量</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="step-number">4</div>
+                        <div>
+                            <p class="text-blue-100"><strong>运行测试：</strong>验证功能正确性</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>16/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

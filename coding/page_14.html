@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>编程场景下的Prompt技巧</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 912px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 912px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .prompt-card {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .prompt-example {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 0.375rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">编程场景下的Prompt技巧</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-2 grid grid-cols-2 gap-6">
+            <!-- Code Generation -->
+            <div class="prompt-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-code text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码生成模板</h2>
+                </div>
+                <div class="prompt-example p-3 text-sm text-blue-200 mb-3">
+                    <p><i class="fas fa-angle-right text-yellow-400 mr-2"></i>请用[编程语言]实现[功能描述]，要求：</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>输入：[参数说明]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>输出：[返回值说明]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>约束：[性能/安全/规范要求]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>风格：[代码风格偏好]</p>
+                </div>
+                <div class="text-blue-100 text-sm">
+                    <p><strong>高级技巧：</strong></p>
+                    <ul class="list-disc list-inside ml-2 mt-1">
+                        <li>使用具体的技术栈和框架名称</li>
+                        <li>明确指定输入输出格式和约束条件</li>
+                        <li>提供示例输入和预期输出</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Code Explanation -->
+            <div class="prompt-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-comment-alt text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码解释模板</h2>
+                </div>
+                <div class="prompt-example p-3 text-sm text-blue-200 mb-3">
+                    <p><i class="fas fa-angle-right text-yellow-400 mr-2"></i>请解释以下[语言]代码的功能和工作原理：</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>[代码块]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>请重点说明：</p>
+                    <p class="ml-10"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>主要功能</p>
+                    <p class="ml-10"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>关键算法</p>
+                    <p class="ml-10"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>潜在问题</p>
+                    <p class="ml-10"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>优化建议</p>
+                </div>
+                <div class="text-blue-100 text-sm">
+                    <p><strong>高级技巧：</strong></p>
+                    <ul class="list-disc list-inside ml-2 mt-1">
+                        <li>分层解释：从架构到具体实现</li>
+                        <li>关注核心业务逻辑的执行流程</li>
+                        <li>询问异常情况和边界条件的处理</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Code Optimization -->
+            <div class="prompt-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-tachometer-alt text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">代码优化模板</h2>
+                </div>
+                <div class="flex space-x-3">
+                    <div class="w-1/2">
+                        <p class="text-center text-blue-200 mb-1"><i class="fas fa-bolt text-yellow-400 mr-1"></i>
+                            <strong>性能优化</strong></p>
+                        <div class="prompt-example p-2 text-xs text-blue-200">
+                            <p><i class="fas fa-angle-right text-yellow-400 mr-1"></i>请分析以下代码的性能瓶颈并提供优化方案：</p>
+                            <p class="ml-4"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>[代码块]</p>
+                            <p class="ml-4"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>分析维度：</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>时间复杂度</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>空间复杂度</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>并行处理能力</p>
+                        </div>
+                    </div>
+                    <div class="w-1/2">
+                        <p class="text-center text-blue-200 mb-1"><i
+                                class="fas fa-book-reader text-yellow-400 mr-1"></i> <strong>可读性优化</strong></p>
+                        <div class="prompt-example p-2 text-xs text-blue-200">
+                            <p><i class="fas fa-angle-right text-yellow-400 mr-1"></i>请重构以下代码以提高可读性和可维护性：</p>
+                            <p class="ml-4"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>[代码块]</p>
+                            <p class="ml-4"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>重构要求：</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>遵循[规范]</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>添加适当注释</p>
+                            <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-1"></i>提取可复用函数</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Debugging Assistance -->
+            <div class="prompt-card rounded-lg p-5">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                        <i class="fas fa-bug text-yellow-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-blue-100">调试辅助模板</h2>
+                </div>
+                <div class="prompt-example p-3 text-sm text-blue-200 mb-3">
+                    <p><i class="fas fa-angle-right text-yellow-400 mr-2"></i>我遇到了以下问题：</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>问题描述：[具体现象]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>错误信息：[完整错误日志]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>相关代码：[问题代码段]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>运行环境：[系统/版本信息]</p>
+                    <p class="ml-6"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>预期行为：[期望结果]</p>
+                    <p class="ml-4 mt-2"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>请帮我：</p>
+                    <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>分析问题原因</p>
+                    <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>提供解决方案</p>
+                    <p class="ml-8"><i class="fas fa-angle-right text-yellow-400 mr-2"></i>给出预防措施</p>
+                </div>
+                <div class="text-blue-100 text-sm">
+                    <p><strong>错误类型处理：</strong></p>
+                    <ul class="list-disc list-inside ml-2 mt-1 grid grid-cols-2 gap-x-2">
+                        <li>语法错误：快速定位和修复</li>
+                        <li>逻辑错误：通过代码分析发现问题</li>
+                        <li>运行时错误：异常处理和边界条件</li>
+                        <li>性能问题：瓶颈识别和优化建议</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>14/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

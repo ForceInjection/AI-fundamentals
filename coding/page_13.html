@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Prompt Engineering基础</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 720px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .principle-item {
+            transition: all 0.3s ease;
+        }
+
+        .principle-item:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-20 left-20 text-blue-200">function promptAI(model, query) { /* magic
+                happens */ }</div>
+            <div class="code-pattern text-xl bottom-20 right-20 text-blue-200">const response = await
+                ai.complete(prompt);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-10 -left-10"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-10 -right-10"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 left-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Prompt Engineering基础</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-8"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Definition Section -->
+            <div class="col-span-4 bg-blue-800 bg-opacity-40 rounded-lg p-6 border-t-4 border-yellow-400">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-book-open text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">定义</h2>
+                </div>
+                <p class="text-blue-100 mb-4">设计和优化与AI模型交互的提示词。</p>
+                <ul class="space-y-2 text-blue-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-circle text-yellow-400 text-xs mt-2 mr-2"></i>
+                        <span>人机交互的艺术与科学</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-circle text-yellow-400 text-xs mt-2 mr-2"></i>
+                        <span>用最精确的语言获得最理想的AI输出</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-circle text-yellow-400 text-xs mt-2 mr-2"></i>
+                        <span>从简单的问答到复杂的代码生成</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Importance Section -->
+            <div class="col-span-4 bg-blue-800 bg-opacity-40 rounded-lg p-6 border-t-4 border-yellow-400">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-exclamation-circle text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">重要性</h2>
+                </div>
+                <p class="text-blue-100 mb-4">决定AI输出质量的关键因素。</p>
+                <ul class="space-y-2 text-blue-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-arrow-up text-yellow-400 mr-2"></i>
+                        <span>好的Prompt可以让输出质量提升10倍</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-double text-yellow-400 mr-2"></i>
+                        <span>减少反复修改，一次性获得满意结果</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-dollar-sign text-yellow-400 mr-2"></i>
+                        <span>减少API调用次数，降低使用成本</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-user-graduate text-yellow-400 mr-2"></i>
+                        <span>体现开发者的AI工具使用水平</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- Core Principles Section -->
+            <div class="col-span-4 bg-blue-800 bg-opacity-40 rounded-lg p-6 border-t-4 border-yellow-400">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-4">
+                        <i class="fas fa-key text-yellow-400 text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-blue-100">核心原则</h2>
+                </div>
+                <div class="space-y-3">
+                    <div class="principle-item flex items-start p-2 bg-blue-700 bg-opacity-30 rounded">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-bullseye text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-blue-100">清晰性</h3>
+                            <p class="text-sm text-blue-200">避免歧义，使用准确的技术术语</p>
+                        </div>
+                    </div>
+                    <div class="principle-item flex items-start p-2 bg-blue-700 bg-opacity-30 rounded">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-search-plus text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-blue-100">具体性</h3>
+                            <p class="text-sm text-blue-200">提供详细的需求和约束条件</p>
+                        </div>
+                    </div>
+                    <div class="principle-item flex items-start p-2 bg-blue-700 bg-opacity-30 rounded">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-th-large text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-blue-100">结构化</h3>
+                            <p class="text-sm text-blue-200">使用格式化的输入，便于AI理解</p>
+                        </div>
+                    </div>
+                    <div class="principle-item flex items-start p-2 bg-blue-700 bg-opacity-30 rounded">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-sitemap text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-blue-100">上下文</h3>
+                            <p class="text-sm text-blue-200">提供足够的背景信息</p>
+                        </div>
+                    </div>
+                    <div class="principle-item flex items-start p-2 bg-blue-700 bg-opacity-30 rounded">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-copy text-yellow-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-blue-100">示例驱动</h3>
+                            <p class="text-sm text-blue-200">通过例子说明期望的输出格式</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>13/26</span>
+        </div>
+    </div>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>

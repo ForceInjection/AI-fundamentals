@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>大模型的工作原理</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body {
+            width: 1280px;
+            min-height: 756px;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 756px;
+            position: relative;
+
+        }
+
+        .code-pattern {
+            position: absolute;
+            font-family: monospace;
+            opacity: 0.1;
+            user-select: none;
+        }
+
+        .highlight-box {
+            background: rgba(30, 58, 138, 0.5);
+            border-left: 4px solid #fcd34d;
+        }
+
+        .attention-line {
+            stroke: #fcd34d;
+            stroke-width: 2;
+            stroke-opacity: 0.8;
+        }
+
+        .node-circle {
+            fill: #3b82f6;
+            stroke: #fcd34d;
+            stroke-width: 2;
+        }
+
+        .node-text {
+            font-size: 12px;
+            fill: white;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slide bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
+        <!-- Abstract tech background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="code-pattern text-2xl top-10 left-10 text-blue-200">function AI() { return innovation; }</div>
+            <div class="code-pattern text-xl bottom-40 right-20 text-blue-200">const future = await
+                AI.transform(programming);</div>
+            <!-- Geometric shapes for tech feel -->
+            <div class="absolute w-64 h-64 rounded-full bg-blue-500 opacity-10 -top-20 -left-20"></div>
+            <div class="absolute w-80 h-80 rounded-full bg-blue-400 opacity-10 -bottom-40 -right-20"></div>
+            <div class="absolute w-40 h-40 rounded-full bg-yellow-400 opacity-5 top-1/2 right-1/4"></div>
+        </div>
+        <!-- Header -->
+        <div class="relative z-10 px-16 pt-10">
+            <h1 class="text-4xl font-bold text-white mb-2">大模型的工作原理</h1>
+            <div class="w-24 h-1 bg-yellow-400 mb-6"></div>
+        </div>
+        <!-- Main Content -->
+        <div class="relative z-10 px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Transformer Architecture -->
+            <div class="col-span-5">
+                <div class="highlight-box rounded-lg p-5 h-full">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-brain text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-blue-100">Transformer架构</h2>
+                    </div>
+                    <div class="mb-4 text-blue-100">
+                        <p class="mb-2"><strong class="text-yellow-400">直观理解：</strong>类比人脑处理信息</p>
+                        <ul class="space-y-2 pl-5">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>注意力机制：</strong>就像人阅读时会重点关注某些词汇</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>并行处理：</strong>同时处理整个句子，而不是逐词处理</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>多层理解：</strong>从词汇→语法→语义→逻辑，层层递进</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="text-blue-100">
+                        <p class="mb-2"><strong class="text-yellow-400">核心组件：</strong></p>
+                        <ul class="space-y-2 pl-5">
+                            <li class="flex items-start">
+                                <i class="fas fa-arrow-circle-right text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>编码器（Encoder）：</strong>理解输入文本的含义</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-arrow-circle-right text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>解码器（Decoder）：</strong>生成输出文本</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Attention Mechanism -->
+            <div class="col-span-4">
+                <div class="highlight-box rounded-lg p-5 h-full">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-search text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-blue-100">注意力机制</h2>
+                    </div>
+                    <div class="mb-4 text-blue-100">
+                        <p class="mb-2"><strong class="text-yellow-400">核心概念：</strong></p>
+                        <ul class="space-y-2 pl-5">
+                            <li class="flex items-start">
+                                <i class="fas fa-key text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>Query（查询）：</strong>当前要处理的词</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-key text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>Key（键）：</strong>所有可能相关的词</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-key text-yellow-400 mt-1 mr-2"></i>
+                                <span><strong>Value（值）：</strong>实际的词向量信息</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="text-blue-100">
+                        <p class="mb-2"><strong class="text-yellow-400">计算过程：</strong></p>
+                        <ul class="space-y-2 pl-5">
+                            <li class="flex items-start">
+                                <i class="fas fa-calculator text-yellow-400 mt-1 mr-2"></i>
+                                <span>Query与所有Key计算相似度</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-percentage text-yellow-400 mt-1 mr-2"></i>
+                                <span>得到注意力权重</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-plus-circle text-yellow-400 mt-1 mr-2"></i>
+                                <span>加权求和Value</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Attention visualization placeholder -->
+                    <div class="w-full h-24 mt-3" id="attention-viz"></div>
+                </div>
+            </div>
+            <!-- Text Generation Process -->
+            <div class="col-span-3">
+                <div class="highlight-box rounded-lg p-5 h-full">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-600 bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-comment-dots text-yellow-400 text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-blue-100">文本生成过程</h2>
+                    </div>
+                    <div class="text-blue-100 mb-3">
+                        <p class="mb-1"><strong class="text-yellow-400">输入提示：</strong>&#34;请用Python写一个&#34;</p>
+                    </div>
+                    <div class="space-y-3 text-blue-100 text-sm">
+                        <div class="bg-blue-900 bg-opacity-50 p-2 rounded">
+                            <p class="font-bold text-yellow-400">第一步预测：</p>
+                            <p>输入：[&#34;请&#34;, &#34;用&#34;, &#34;Python&#34;, &#34;写&#34;, &#34;一&#34;, &#34;个&#34;]
+                            </p>
+                            <p>预测结果：&#34;函数&#34; (概率: 0.3), &#34;类&#34; (概率: 0.2), &#34;程序&#34; (概率: 0.15)...</p>
+                            <p>选择：&#34;函数&#34; (概率最高)</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-50 p-2 rounded">
+                            <p class="font-bold text-yellow-400">第二步预测：</p>
+                            <p>输入：[&#34;请&#34;, &#34;用&#34;, &#34;Python&#34;, &#34;写&#34;, &#34;一&#34;, &#34;个&#34;,
+                                &#34;函数&#34;]</p>
+                            <p>注意力焦点：&#34;Python&#34;、&#34;写&#34;、&#34;函数&#34; 权重最高</p>
+                            <p>预测结果：&#34;来&#34; (概率: 0.4), &#34;实现&#34; (概率: 0.25)...</p>
+                            <p>选择：&#34;来&#34;</p>
+                        </div>
+                        <div class="bg-blue-900 bg-opacity-50 p-2 rounded">
+                            <p class="font-bold text-yellow-400">最终输出：</p>
+                            <p>&#34;请用Python写一个函数来计算斐波那契数列&#34;</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom corner design element -->
+        <div class="absolute bottom-6 right-8 text-blue-300 opacity-70">
+            <span>4/26</span>
+        </div>
+    </div>
+    <script>
+        // Simple attention mechanism visualization
+        document.addEventListener('DOMContentLoaded', function () {
+            const svg = d3.select("#attention-viz")
+                .append("svg")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .attr("viewBox", "0 0 300 100");
+
+            // Create nodes representing words
+            const words = ["请", "用", "Python", "写", "一个", "函数"];
+            const nodePositions = [];
+
+            // Create encoder nodes (input words)
+            for (let i = 0; i < words.length; i++) {
+                const x = 50 + i * 45;
+                const y = 30;
+
+                nodePositions.push({ x, y });
+
+                // Circle
+                svg.append("circle")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("r", 15)
+                    .attr("class", "node-circle");
+
+                // Text
+                svg.append("text")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("class", "node-text")
+                    .text(words[i]);
+            }
+
+            // Create decoder node (output word)
+            const decoderX = 150;
+            const decoderY = 70;
+
+            // Decoder circle
+            svg.append("circle")
+                .attr("cx", decoderX)
+                .attr("cy", decoderY)
+                .attr("r", 15)
+                .attr("class", "node-circle");
+
+            // Decoder text
+            svg.append("text")
+                .attr("x", decoderX)
+                .attr("y", decoderY)
+                .attr("class", "node-text")
+                .text("函数");
+
+            // Draw attention lines from encoder to decoder
+            for (let i = 0; i < nodePositions.length; i++) {
+                const strength = [0.3, 0.2, 0.25, 0.15, 0.1, 0.05][i];
+
+                svg.append("line")
+                    .attr("x1", nodePositions[i].x)
+                    .attr("y1", nodePositions[i].y)
+                    .attr("x2", decoderX)
+                    .attr("y2", decoderY)
+                    .attr("class", "attention-line")
+                    .style("stroke-opacity", strength);
+            }
+        });
+    </script>
+
+    <script src="ppt-mode.js"></script>
+</body>
+
+</html>
