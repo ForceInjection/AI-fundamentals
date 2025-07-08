@@ -1,0 +1,228 @@
+<svg width="1000" height="700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#E0E0E0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5F5F5;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="task1Gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="task2Gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64B5F6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="task3Gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="contextGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F44336;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EF5350;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="500" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">GPU时间片调度机制</text>
+  
+  <!-- 时间轴 -->
+  <g>
+    <rect x="100" y="70" width="800" height="40" fill="url(#timelineGradient)" stroke="#333" stroke-width="1" rx="5"/>
+    <text x="500" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">时间轴 (Time Axis)</text>
+    
+    <!-- 时间刻度 -->
+    <g>
+      <line x1="150" y1="70" x2="150" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="150" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">0ms</text>
+      
+      <line x1="250" y1="70" x2="250" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="250" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">10ms</text>
+      
+      <line x1="350" y1="70" x2="350" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="350" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">20ms</text>
+      
+      <line x1="450" y1="70" x2="450" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="450" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">30ms</text>
+      
+      <line x1="550" y1="70" x2="550" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="550" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">40ms</text>
+      
+      <line x1="650" y1="70" x2="650" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="650" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">50ms</text>
+      
+      <line x1="750" y1="70" x2="750" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="750" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">60ms</text>
+      
+      <line x1="850" y1="70" x2="850" y2="110" stroke="#333" stroke-width="1"/>
+      <text x="850" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">70ms</text>
+    </g>
+  </g>
+  
+  <!-- GPU执行时间线 -->
+  <g>
+    <text x="50" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">GPU执行</text>
+    
+    <!-- 任务1执行片段 -->
+    <rect x="150" y="150" width="80" height="30" fill="url(#task1Gradient)" stroke="#4CAF50" stroke-width="2" rx="4"/>
+    <text x="190" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务A</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="230" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="240" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务2执行片段 -->
+    <rect x="250" y="150" width="80" height="30" fill="url(#task2Gradient)" stroke="#2196F3" stroke-width="2" rx="4"/>
+    <text x="290" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务B</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="330" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="340" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务3执行片段 -->
+    <rect x="350" y="150" width="80" height="30" fill="url(#task3Gradient)" stroke="#FF9800" stroke-width="2" rx="4"/>
+    <text x="390" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务C</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="430" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="440" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务1第二次执行 -->
+    <rect x="450" y="150" width="80" height="30" fill="url(#task1Gradient)" stroke="#4CAF50" stroke-width="2" rx="4"/>
+    <text x="490" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务A</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="530" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="540" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务2第二次执行 -->
+    <rect x="550" y="150" width="80" height="30" fill="url(#task2Gradient)" stroke="#2196F3" stroke-width="2" rx="4"/>
+    <text x="590" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务B</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="630" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="640" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务3第二次执行 -->
+    <rect x="650" y="150" width="80" height="30" fill="url(#task3Gradient)" stroke="#FF9800" stroke-width="2" rx="4"/>
+    <text x="690" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务C</text>
+    
+    <!-- 上下文切换 -->
+    <rect x="730" y="150" width="20" height="30" fill="url(#contextGradient)" stroke="#F44336" stroke-width="1" rx="2"/>
+    <text x="740" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#F44336">切换</text>
+    
+    <!-- 任务1第三次执行 -->
+    <rect x="750" y="150" width="80" height="30" fill="url(#task1Gradient)" stroke="#4CAF50" stroke-width="2" rx="4"/>
+    <text x="790" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">任务A</text>
+  </g>
+  
+  <!-- 任务队列状态 -->
+  <g>
+    <text x="500" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">任务队列状态</text>
+    
+    <!-- 就绪队列 -->
+    <rect x="100" y="270" width="250" height="120" fill="#E8F5E8" stroke="#4CAF50" stroke-width="2" rx="8"/>
+    <text x="225" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2E7D32">就绪队列 (Ready Queue)</text>
+    
+    <rect x="120" y="310" width="60" height="25" fill="#4CAF50" stroke="#388E3C" rx="4"/>
+    <text x="150" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务A</text>
+    
+    <rect x="190" y="310" width="60" height="25" fill="#2196F3" stroke="#1976D2" rx="4"/>
+    <text x="220" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务B</text>
+    
+    <rect x="260" y="310" width="60" height="25" fill="#FF9800" stroke="#F57C00" rx="4"/>
+    <text x="290" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务C</text>
+    
+    <text x="120" y="355" font-family="Arial, sans-serif" font-size="10" fill="#333">• 优先级：高 → 中 → 低</text>
+    <text x="120" y="370" font-family="Arial, sans-serif" font-size="10" fill="#333">• 时间片：8ms/10ms/8ms</text>
+    
+    <!-- 运行状态 -->
+    <rect x="375" y="270" width="250" height="120" fill="#E3F2FD" stroke="#2196F3" stroke-width="2" rx="8"/>
+    <text x="500" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1565C0">运行状态 (Running)</text>
+    
+    <rect x="450" y="320" width="100" height="40" fill="#2196F3" stroke="#1976D2" stroke-width="2" rx="6"/>
+    <text x="500" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">当前执行任务</text>
+    
+    <text x="385" y="375" font-family="Arial, sans-serif" font-size="10" fill="#333">• 剩余时间片：3ms</text>
+    
+    <!-- 等待队列 -->
+    <rect x="650" y="270" width="250" height="120" fill="#FFF3E0" stroke="#FF9800" stroke-width="2" rx="8"/>
+    <text x="775" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#E65100">等待队列 (Waiting)</text>
+    
+    <rect x="670" y="310" width="60" height="25" fill="#9E9E9E" stroke="#757575" rx="4"/>
+    <text x="700" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务D</text>
+    
+    <rect x="740" y="310" width="60" height="25" fill="#9E9E9E" stroke="#757575" rx="4"/>
+    <text x="770" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务E</text>
+    
+    <rect x="810" y="310" width="60" height="25" fill="#9E9E9E" stroke="#757575" rx="4"/>
+    <text x="840" y="327" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">任务F</text>
+    
+    <text x="660" y="355" font-family="Arial, sans-serif" font-size="10" fill="#333">• 等待I/O完成</text>
+    <text x="660" y="370" font-family="Arial, sans-serif" font-size="10" fill="#333">• 等待内存分配</text>
+  </g>
+  
+  <!-- 调度算法详解 -->
+  <g>
+    <text x="500" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">调度算法类型</text>
+    
+    <!-- 轮转调度 -->
+    <rect x="100" y="450" width="180" height="100" fill="#F1F8E9" stroke="#4CAF50" stroke-width="2" rx="8"/>
+    <text x="190" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2E7D32">轮转调度 (RR)</text>
+    <text x="110" y="495" font-family="Arial, sans-serif" font-size="10" fill="#333">• 固定时间片</text>
+    <text x="110" y="510" font-family="Arial, sans-serif" font-size="10" fill="#333">• 公平分配</text>
+    <text x="110" y="525" font-family="Arial, sans-serif" font-size="10" fill="#333">• 响应时间均匀</text>
+    <text x="110" y="540" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适合交互式任务</text>
+    
+    <!-- 优先级调度 -->
+    <rect x="300" y="450" width="180" height="100" fill="#E8F4FD" stroke="#2196F3" stroke-width="2" rx="8"/>
+    <text x="390" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1565C0">优先级调度 (Priority)</text>
+    <text x="310" y="495" font-family="Arial, sans-serif" font-size="10" fill="#333">• 动态优先级</text>
+    <text x="310" y="510" font-family="Arial, sans-serif" font-size="10" fill="#333">• 抢占式调度</text>
+    <text x="310" y="525" font-family="Arial, sans-serif" font-size="10" fill="#333">• 实时性保证</text>
+    <text x="310" y="540" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适合关键任务</text>
+    
+    <!-- 多级反馈队列 -->
+    <rect x="500" y="450" width="180" height="100" fill="#FFF8E1" stroke="#FF9800" stroke-width="2" rx="8"/>
+    <text x="590" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#E65100">多级反馈队列 (MLFQ)</text>
+    <text x="510" y="495" font-family="Arial, sans-serif" font-size="10" fill="#333">• 多个优先级队列</text>
+    <text x="510" y="510" font-family="Arial, sans-serif" font-size="10" fill="#333">• 动态调整优先级</text>
+    <text x="510" y="525" font-family="Arial, sans-serif" font-size="10" fill="#333">• 自适应时间片</text>
+    <text x="510" y="540" font-family="Arial, sans-serif" font-size="10" fill="#333">• 综合性能最优</text>
+    
+    <!-- 公平共享调度 -->
+    <rect x="700" y="450" width="180" height="100" fill="#FCE4EC" stroke="#E91E63" stroke-width="2" rx="8"/>
+    <text x="790" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#AD1457">公平共享调度 (CFS)</text>
+    <text x="710" y="495" font-family="Arial, sans-serif" font-size="10" fill="#333">• 虚拟运行时间</text>
+    <text x="710" y="510" font-family="Arial, sans-serif" font-size="10" fill="#333">• 红黑树调度</text>
+    <text x="710" y="525" font-family="Arial, sans-serif" font-size="10" fill="#333">• 长期公平性</text>
+    <text x="710" y="540" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适合多用户环境</text>
+  </g>
+  
+  <!-- 性能指标 -->
+  <g>
+    <text x="500" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">关键性能指标</text>
+    
+    <rect x="100" y="610" width="200" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="200" y="630" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2E7D32">上下文切换开销</text>
+    <text x="110" y="650" font-family="Arial, sans-serif" font-size="10" fill="#333">• 寄存器保存/恢复：~50μs</text>
+    <text x="110" y="665" font-family="Arial, sans-serif" font-size="10" fill="#333">• 内存状态同步：~100μs</text>
+    
+    <rect x="320" y="610" width="200" height="60" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="420" y="630" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1565C0">调度延迟</text>
+    <text x="330" y="650" font-family="Arial, sans-serif" font-size="10" fill="#333">• 平均响应时间：~2ms</text>
+    <text x="330" y="665" font-family="Arial, sans-serif" font-size="10" fill="#333">• 最大调度延迟：~10ms</text>
+    
+    <rect x="540" y="610" width="200" height="60" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="640" y="630" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#E65100">吞吐量</text>
+    <text x="550" y="650" font-family="Arial, sans-serif" font-size="10" fill="#333">• GPU利用率：85-95%</text>
+    <text x="550" y="665" font-family="Arial, sans-serif" font-size="10" fill="#333">• 任务完成率：提升30%</text>
+    
+    <rect x="760" y="610" width="140" height="60" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+    <text x="830" y="630" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#AD1457">公平性</text>
+    <text x="770" y="650" font-family="Arial, sans-serif" font-size="10" fill="#333">• 资源分配均衡</text>
+    <text x="770" y="665" font-family="Arial, sans-serif" font-size="10" fill="#333">• 饥饿避免机制</text>
+  </g>
+</svg>

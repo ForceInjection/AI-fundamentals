@@ -1,0 +1,68 @@
+# hami-scheduler-device-configMap
+apiVersion: v1
+data:
+  device-config.yaml: |
+    nvidia:
+      resourceCountName: nvidia.com/gpu
+      resourceMemoryName: nvidia.com/gpumem
+      resourceCoreName: nvidia.com/gpucores
+      knownMigGeometries:
+      - models: [ "A100-SXM4-40GB", "A100-40GB-PCIe" ]
+        allowedGeometries:
+          - 
+            - name: 1g.5gb
+              memory: 5120
+              count: 7
+          - 
+            - name: 2g.10gb
+              memory: 10240
+              count: 3
+            - name: 1g.5gb
+              memory: 5120
+              count: 1
+          - 
+            - name: 3g.20gb
+              memory: 20480
+              count: 2
+          - 
+            - name: 7g.40gb
+              memory: 40960
+              count: 1
+      nodeconfig:
+        - name: nodeA
+          operatingmode: hami-core
+        - name: nodeB
+          operatingmode: mig
+
+---
+# 自动选择虚拟化方式
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-pod-auto
+spec:
+  containers:
+  - name: ai-container
+    image: pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
+    resources:
+      limits:
+        nvidia.com/gpu: 2        # 请求2个vGPU
+        nvidia.com/gpumem: 8000  # 每个vGPU 8GB内存
+    command: ["python", "train.py"]
+
+---
+# 强制使用MIG
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-pod-mig
+  annotations:
+    nvidia.com/vgpu-mode: "mig"  # 强制使用MIG
+spec:
+  containers:
+  - name: ai-container
+    image: pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        nvidia.com/gpumem: 10240  # 使用2g.10gb MIG实例

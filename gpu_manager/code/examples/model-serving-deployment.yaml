@@ -1,0 +1,50 @@
+# model-serving-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-model-serving
+spec:
+  replicas: 8  # 8个推理实例
+  selector:
+    matchLabels:
+      app: model-serving
+  template:
+    metadata:
+      labels:
+        app: model-serving
+    spec:
+      containers:
+      - name: triton-server
+        image: nvcr.io/nvidia/tritonserver:22.07-py3
+        resources:
+          limits:
+            nvidia.com/gpu: "1"        # 每个实例使用1个vGPU
+            nvidia.com/gpumem: "2000"   # 分配2GB显存
+            nvidia.com/gpucores: "25"   # 使用25%计算资源
+        ports:
+        - containerPort: 8000
+        - containerPort: 8001
+        - containerPort: 8002
+        command:
+        - tritonserver
+        - --model-repository=/models
+        - --strict-model-config=false
+        volumeMounts:
+        - name: model-repository
+          mountPath: /models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-serving-service
+spec:
+  selector:
+    app: model-serving
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: grpc
+    port: 8001
+    targetPort: 8001
+  type: LoadBalancer

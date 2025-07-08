@@ -1,0 +1,255 @@
+<svg width="1200" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="migGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#45a049;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sriovGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="passthroughGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hardwareGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9C27B0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B1FA2;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="3" dy="3" result="offset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.3"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="600" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#333">硬件级GPU虚拟化技术架构</text>
+  
+  <!-- 应用层 -->
+  <rect x="100" y="70" width="1000" height="60" fill="#E8F5E8" stroke="#4CAF50" stroke-width="2" rx="10" filter="url(#shadow)"/>
+  <text x="120" y="95" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">应用层</text>
+  <text x="120" y="115" font-family="Arial, sans-serif" font-size="12" fill="#666">AI训练任务、推理服务、科学计算应用</text>
+  
+  <!-- NVIDIA MIG技术区域 -->
+  <rect x="100" y="160" width="320" height="280" fill="url(#migGrad)" stroke="#45a049" stroke-width="3" rx="15" filter="url(#shadow)"/>
+  <text x="260" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">NVIDIA MIG技术</text>
+  
+  <!-- MIG实例 -->
+  <rect x="120" y="200" width="80" height="50" fill="#C8E6C9" stroke="#4CAF50" stroke-width="2" rx="8"/>
+  <text x="160" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">MIG实例1</text>
+  <text x="160" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">14SM+10GB</text>
+  
+  <rect x="220" y="200" width="80" height="50" fill="#C8E6C9" stroke="#4CAF50" stroke-width="2" rx="8"/>
+  <text x="260" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">MIG实例2</text>
+  <text x="260" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">14SM+10GB</text>
+  
+  <rect x="320" y="200" width="80" height="50" fill="#C8E6C9" stroke="#4CAF50" stroke-width="2" rx="8"/>
+  <text x="360" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">MIG实例3</text>
+  <text x="360" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">28SM+20GB</text>
+  
+  <!-- MIG特性 -->
+  <text x="120" y="275" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">核心特性：</text>
+  <text x="120" y="290" font-family="Arial, sans-serif" font-size="10" fill="white">• 硬件级资源隔离</text>
+  <text x="120" y="305" font-family="Arial, sans-serif" font-size="10" fill="white">• 专用SM和内存切片</text>
+  <text x="120" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• 独立错误隔离</text>
+  <text x="120" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• 支持A100/H100</text>
+  
+  <text x="250" y="275" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">配置选项：</text>
+  <text x="250" y="290" font-family="Arial, sans-serif" font-size="10" fill="white">• 1g.5gb (1/7 GPU)</text>
+  <text x="250" y="305" font-family="Arial, sans-serif" font-size="10" fill="white">• 2g.10gb (1/4 GPU)</text>
+  <text x="250" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• 3g.20gb (3/8 GPU)</text>
+  <text x="250" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• 7g.40gb (全GPU)</text>
+  
+  <!-- AMD SR-IOV技术区域 -->
+  <rect x="440" y="160" width="320" height="280" fill="url(#sriovGrad)" stroke="#F57C00" stroke-width="3" rx="15" filter="url(#shadow)"/>
+  <text x="600" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">AMD SR-IOV技术</text>
+  
+  <!-- SR-IOV PF/VF -->
+  <rect x="460" y="200" width="120" height="40" fill="#FFE0B2" stroke="#FF9800" stroke-width="2" rx="8"/>
+  <text x="520" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">物理功能(PF)</text>
+  <text x="520" y="235" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">完整GPU功能</text>
+  
+  <rect x="460" y="250" width="80" height="35" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="500" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">VF1</text>
+  
+  <rect x="550" y="250" width="80" height="35" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="590" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">VF2</text>
+  
+  <rect x="640" y="250" width="80" height="35" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+  <text x="680" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">VF3</text>
+  
+  <!-- SR-IOV特性 -->
+  <text x="460" y="305" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">核心特性：</text>
+  <text x="460" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• PCIe级别虚拟化</text>
+  <text x="460" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• 独立VF设备</text>
+  <text x="460" y="350" font-family="Arial, sans-serif" font-size="10" fill="white">• 硬件级隔离</text>
+  
+  <text x="590" y="305" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">适用场景：</text>
+  <text x="590" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• 虚拟化环境</text>
+  <text x="590" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• 云计算平台</text>
+  <text x="590" y="350" font-family="Arial, sans-serif" font-size="10" fill="white">• 多租户隔离</text>
+  
+  <!-- GPU Passthrough技术区域 -->
+  <rect x="780" y="160" width="320" height="280" fill="url(#passthroughGrad)" stroke="#1976D2" stroke-width="3" rx="15" filter="url(#shadow)"/>
+  <text x="940" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">GPU Passthrough</text>
+  
+  <!-- Passthrough架构 -->
+  <rect x="800" y="200" width="100" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="2" rx="5"/>
+  <text x="850" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">虚拟机1</text>
+  
+  <rect x="920" y="200" width="100" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="2" rx="5"/>
+  <text x="970" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#333">虚拟机2</text>
+  
+  <rect x="800" y="240" width="220" height="30" fill="#BBDEFB" stroke="#2196F3" stroke-width="2" rx="5"/>
+  <text x="910" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">VFIO/IOMMU层</text>
+  
+  <!-- Passthrough特性 -->
+  <text x="800" y="290" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">核心特性：</text>
+  <text x="800" y="305" font-family="Arial, sans-serif" font-size="10" fill="white">• 直接硬件访问</text>
+  <text x="800" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• 接近裸机性能</text>
+  <text x="800" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• IOMMU内存保护</text>
+  <text x="800" y="350" font-family="Arial, sans-serif" font-size="10" fill="white">• 完整GPU功能</text>
+  
+  <text x="920" y="290" font-family="Arial, sans-serif" font-size="11" fill="white" font-weight="bold">技术要求：</text>
+  <text x="920" y="305" font-family="Arial, sans-serif" font-size="10" fill="white">• VT-d/AMD-Vi支持</text>
+  <text x="920" y="320" font-family="Arial, sans-serif" font-size="10" fill="white">• VFIO驱动</text>
+  <text x="920" y="335" font-family="Arial, sans-serif" font-size="10" fill="white">• 专用GPU设备</text>
+  <text x="920" y="350" font-family="Arial, sans-serif" font-size="10" fill="white">• Hypervisor支持</text>
+  
+  <!-- 物理GPU硬件层 -->
+  <rect x="100" y="470" width="1000" height="120" fill="url(#hardwareGrad)" stroke="#7B1FA2" stroke-width="3" rx="15" filter="url(#shadow)"/>
+  <text x="600" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">物理GPU硬件架构</text>
+  
+  <!-- GPU硬件组件 -->
+  <rect x="120" y="520" width="150" height="50" fill="#E1BEE7" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="195" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">流式多处理器</text>
+  <text x="195" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">(SM/CU)</text>
+  
+  <rect x="290" y="520" width="150" height="50" fill="#E1BEE7" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="365" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">内存控制器</text>
+  <text x="365" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">(MC)</text>
+  
+  <rect x="460" y="520" width="150" height="50" fill="#E1BEE7" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="535" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">高速显存</text>
+  <text x="535" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">(HBM/GDDR)</text>
+  
+  <rect x="630" y="520" width="150" height="50" fill="#E1BEE7" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="705" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">PCIe接口</text>
+  <text x="705" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">(Gen4/Gen5)</text>
+  
+  <rect x="800" y="520" width="150" height="50" fill="#E1BEE7" stroke="#9C27B0" stroke-width="2" rx="8"/>
+  <text x="875" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">互连网络</text>
+  <text x="875" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">(NVLink/Infinity)</text>
+  
+  <!-- 箭头定义 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- 连接箭头 -->
+  <line x1="260" y1="130" x2="260" y2="160" stroke="#4CAF50" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <text x="270" y="150" font-family="Arial, sans-serif" font-size="10" fill="#4CAF50" font-weight="bold">MIG API</text>
+  
+  <line x1="600" y1="130" x2="600" y2="160" stroke="#FF9800" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <text x="610" y="150" font-family="Arial, sans-serif" font-size="10" fill="#FF9800" font-weight="bold">SR-IOV</text>
+  
+  <line x1="940" y1="130" x2="940" y2="160" stroke="#2196F3" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <text x="950" y="150" font-family="Arial, sans-serif" font-size="10" fill="#2196F3" font-weight="bold">VFIO</text>
+  
+  <line x1="260" y1="440" x2="260" y2="470" stroke="#9C27B0" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="600" y1="440" x2="600" y2="470" stroke="#9C27B0" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <line x1="940" y1="440" x2="940" y2="470" stroke="#9C27B0" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- 技术对比表格 -->
+  <rect x="100" y="620" width="1000" height="200" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="2" rx="10" filter="url(#shadow)"/>
+  <text x="600" y="645" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">硬件级虚拟化技术对比</text>
+  
+  <!-- 表格头 -->
+  <rect x="120" y="660" width="120" height="30" fill="#E0E0E0" stroke="#BDBDBD" stroke-width="1"/>
+  <text x="180" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">技术特性</text>
+  
+  <rect x="240" y="660" width="200" height="30" fill="#C8E6C9" stroke="#4CAF50" stroke-width="1"/>
+  <text x="340" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">NVIDIA MIG</text>
+  
+  <rect x="440" y="660" width="200" height="30" fill="#FFE0B2" stroke="#FF9800" stroke-width="1"/>
+  <text x="540" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">AMD SR-IOV</text>
+  
+  <rect x="640" y="660" width="200" height="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="1"/>
+  <text x="740" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">GPU Passthrough</text>
+  
+  <rect x="840" y="660" width="200" height="30" fill="#E1BEE7" stroke="#9C27B0" stroke-width="1"/>
+  <text x="940" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">适用场景</text>
+  
+  <!-- 表格内容 -->
+  <rect x="120" y="690" width="120" height="25" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="1"/>
+  <text x="180" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">隔离级别</text>
+  
+  <rect x="240" y="690" width="200" height="25" fill="#F1F8E9" stroke="#4CAF50" stroke-width="1"/>
+  <text x="340" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">硬件级完全隔离</text>
+  
+  <rect x="440" y="690" width="200" height="25" fill="#FFF8E1" stroke="#FF9800" stroke-width="1"/>
+  <text x="540" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">PCIe级别隔离</text>
+  
+  <rect x="640" y="690" width="200" height="25" fill="#F3F9FF" stroke="#2196F3" stroke-width="1"/>
+  <text x="740" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">完全硬件隔离</text>
+  
+  <rect x="840" y="690" width="200" height="25" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
+  <text x="940" y="707" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">AI训练/推理</text>
+  
+  <rect x="120" y="715" width="120" height="25" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="1"/>
+  <text x="180" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">性能开销</text>
+  
+  <rect x="240" y="715" width="200" height="25" fill="#F1F8E9" stroke="#4CAF50" stroke-width="1"/>
+  <text x="340" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">极低 (&lt;5%)</text>
+  
+  <rect x="440" y="715" width="200" height="25" fill="#FFF8E1" stroke="#FF9800" stroke-width="1"/>
+  <text x="540" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">低 (5-10%)</text>
+  
+  <rect x="640" y="715" width="200" height="25" fill="#F3F9FF" stroke="#2196F3" stroke-width="1"/>
+  <text x="740" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">极低 (&lt;2%)</text>
+  
+  <rect x="840" y="715" width="200" height="25" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
+  <text x="940" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">虚拟化环境</text>
+  
+  <rect x="120" y="740" width="120" height="25" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="1"/>
+  <text x="180" y="757" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">部署复杂度</text>
+  
+  <rect x="240" y="740" width="200" height="25" fill="#F1F8E9" stroke="#4CAF50" stroke-width="1"/>
+  <text x="340" y="757" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">中等</text>
+  
+  <rect x="440" y="740" width="200" height="25" fill="#FFF8E1" stroke="#FF9800" stroke-width="1"/>
+  <text x="540" y="757" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">高</text>
+  
+  <rect x="640" y="740" width="200" height="25" fill="#F3F9FF" stroke="#2196F3" stroke-width="1"/>
+  <text x="740" y="757" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">中等</text>
+  
+  <rect x="840" y="740" width="200" height="25" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
+  <text x="940" y="757" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">云计算平台</text>
+  
+  <rect x="120" y="765" width="120" height="25" fill="#F5F5F5" stroke="#BDBDBD" stroke-width="1"/>
+  <text x="180" y="782" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">硬件要求</text>
+  
+  <rect x="240" y="765" width="200" height="25" fill="#F1F8E9" stroke="#4CAF50" stroke-width="1"/>
+  <text x="340" y="782" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">A100/H100</text>
+  
+  <rect x="440" y="765" width="200" height="25" fill="#FFF8E1" stroke="#FF9800" stroke-width="1"/>
+  <text x="540" y="782" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">支持SR-IOV的GPU</text>
+  
+  <rect x="640" y="765" width="200" height="25" fill="#F3F9FF" stroke="#2196F3" stroke-width="1"/>
+  <text x="740" y="782" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">IOMMU支持</text>
+  
+  <rect x="840" y="765" width="200" height="25" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
+  <text x="940" y="782" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">高性能计算</text>
+  
+  <!-- 底部说明 -->
+  <text x="600" y="860" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">硬件级虚拟化技术通过GPU硬件内置功能实现资源隔离，提供最佳性能和安全性</text>
+  <text x="600" y="880" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#666">选择标准：MIG适合AI工作负载，SR-IOV适合虚拟化环境，Passthrough适合高性能需求</text>
+</svg>

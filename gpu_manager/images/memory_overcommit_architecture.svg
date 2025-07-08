@@ -1,0 +1,246 @@
+<svg width="1000" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="virtualGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9C27B0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#BA68C8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="managementGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3F51B5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7986CB;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="physicalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="swapGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hostGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#607D8B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#90A4AE;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <marker id="bidirectional" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#FF5722" />
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="500" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">GPU显存超分技术架构</text>
+  
+  <!-- 虚拟内存层 -->
+  <g>
+    <rect x="100" y="60" width="800" height="100" fill="url(#virtualGradient)" stroke="#9C27B0" stroke-width="2" rx="8"/>
+    <text x="500" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">虚拟内存层 (Virtual Memory Layer)</text>
+    
+    <!-- 虚拟内存块 -->
+    <rect x="120" y="105" width="80" height="40" fill="#AD47C4" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="160" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">应用A</text>
+    <text x="160" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">8GB虚拟</text>
+    
+    <rect x="220" y="105" width="80" height="40" fill="#AD47C4" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="260" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">应用B</text>
+    <text x="260" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">6GB虚拟</text>
+    
+    <rect x="320" y="105" width="80" height="40" fill="#AD47C4" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="360" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">应用C</text>
+    <text x="360" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">4GB虚拟</text>
+    
+    <rect x="420" y="105" width="80" height="40" fill="#AD47C4" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="460" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">应用D</text>
+    <text x="460" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">10GB虚拟</text>
+    
+    <rect x="520" y="105" width="80" height="40" fill="#AD47C4" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="560" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">应用E</text>
+    <text x="560" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">12GB虚拟</text>
+    
+    <rect x="720" y="105" width="160" height="40" fill="#7B1FA2" stroke="#9C27B0" stroke-width="1" rx="4"/>
+    <text x="800" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">总虚拟内存：40GB</text>
+    <text x="800" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">超分比例：4:1</text>
+  </g>
+  
+  <!-- 内存管理层 -->
+  <g>
+    <rect x="100" y="180" width="800" height="120" fill="url(#managementGradient)" stroke="#3F51B5" stroke-width="2" rx="8"/>
+    <text x="500" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">内存管理层 (Memory Management Layer)</text>
+    
+    <!-- 页表管理 -->
+    <rect x="120" y="225" width="150" height="60" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="195" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">页表管理</text>
+    <text x="130" y="260" font-family="Arial, sans-serif" font-size="9" fill="white">• 虚拟地址映射</text>
+    <text x="130" y="275" font-family="Arial, sans-serif" font-size="9" fill="white">• 页面状态跟踪</text>
+    
+    <!-- 换页策略 -->
+    <rect x="290" y="225" width="150" height="60" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="365" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">换页策略</text>
+    <text x="300" y="260" font-family="Arial, sans-serif" font-size="9" fill="white">• LRU算法</text>
+    <text x="300" y="275" font-family="Arial, sans-serif" font-size="9" fill="white">• 预测性换页</text>
+    
+    <!-- 压缩技术 -->
+    <rect x="460" y="225" width="150" height="60" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="535" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">压缩技术</text>
+    <text x="470" y="260" font-family="Arial, sans-serif" font-size="9" fill="white">• 数据压缩</text>
+    <text x="470" y="275" font-family="Arial, sans-serif" font-size="9" fill="white">• 重复数据消除</text>
+    
+    <!-- 访问监控 -->
+    <rect x="630" y="225" width="150" height="60" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="705" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">访问监控</text>
+    <text x="640" y="260" font-family="Arial, sans-serif" font-size="9" fill="white">• 热点检测</text>
+    <text x="640" y="275" font-family="Arial, sans-serif" font-size="9" fill="white">• 访问模式分析</text>
+  </g>
+  
+  <!-- 物理GPU内存 -->
+  <g>
+    <rect x="100" y="320" width="400" height="120" fill="url(#physicalGradient)" stroke="#4CAF50" stroke-width="2" rx="8"/>
+    <text x="300" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">物理GPU内存 (Physical GPU Memory)</text>
+    
+    <!-- 活跃页面 -->
+    <rect x="120" y="365" width="60" height="30" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="3"/>
+    <text x="150" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面1</text>
+    
+    <rect x="190" y="365" width="60" height="30" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="3"/>
+    <text x="220" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面2</text>
+    
+    <rect x="260" y="365" width="60" height="30" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="3"/>
+    <text x="290" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面3</text>
+    
+    <rect x="330" y="365" width="60" height="30" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="3"/>
+    <text x="360" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面4</text>
+    
+    <rect x="400" y="365" width="80" height="30" fill="#388E3C" stroke="#4CAF50" stroke-width="1" rx="3"/>
+    <text x="440" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">空闲空间</text>
+    
+    <text x="300" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">物理容量：10GB</text>
+    <text x="300" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">当前使用：8GB (80%)</text>
+  </g>
+  
+  <!-- 交换存储 -->
+  <g>
+    <rect x="520" y="320" width="380" height="120" fill="url(#swapGradient)" stroke="#FF9800" stroke-width="2" rx="8"/>
+    <text x="710" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">交换存储 (Swap Storage)</text>
+    
+    <!-- 交换页面 -->
+    <rect x="540" y="365" width="60" height="30" fill="#FFA726" stroke="#FF9800" stroke-width="1" rx="3"/>
+    <text x="570" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面A</text>
+    
+    <rect x="610" y="365" width="60" height="30" fill="#FFA726" stroke="#FF9800" stroke-width="1" rx="3"/>
+    <text x="640" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面B</text>
+    
+    <rect x="680" y="365" width="60" height="30" fill="#FFA726" stroke="#FF9800" stroke-width="1" rx="3"/>
+    <text x="710" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面C</text>
+    
+    <rect x="750" y="365" width="60" height="30" fill="#FFA726" stroke="#FF9800" stroke-width="1" rx="3"/>
+    <text x="780" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">页面D</text>
+    
+    <rect x="820" y="365" width="60" height="30" fill="#F57C00" stroke="#FF9800" stroke-width="1" rx="3"/>
+    <text x="850" y="383" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">压缩页</text>
+    
+    <text x="710" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">交换容量：30GB</text>
+    <text x="710" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">已用：20GB (压缩比3:1)</text>
+  </g>
+  
+  <!-- 主机内存 -->
+  <g>
+    <rect x="100" y="460" width="800" height="80" fill="url(#hostGradient)" stroke="#607D8B" stroke-width="2" rx="8"/>
+    <text x="500" y="485" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">主机内存 (Host Memory)</text>
+    
+    <!-- 缓存区域 -->
+    <rect x="120" y="505" width="100" height="25" fill="#78909C" stroke="#607D8B" stroke-width="1" rx="3"/>
+    <text x="170" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">GPU缓存区</text>
+    
+    <rect x="240" y="505" width="100" height="25" fill="#78909C" stroke="#607D8B" stroke-width="1" rx="3"/>
+    <text x="290" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">预取缓冲区</text>
+    
+    <rect x="360" y="505" width="100" height="25" fill="#78909C" stroke="#607D8B" stroke-width="1" rx="3"/>
+    <text x="410" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">压缩缓存</text>
+    
+    <rect x="480" y="505" width="100" height="25" fill="#78909C" stroke="#607D8B" stroke-width="1" rx="3"/>
+    <text x="530" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">元数据存储</text>
+    
+    <rect x="600" y="505" width="280" height="25" fill="#546E7A" stroke="#607D8B" stroke-width="1" rx="3"/>
+    <text x="740" y="522" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="white">主机内存：128GB (GPU缓存：16GB)</text>
+  </g>
+  
+  <!-- 数据流箭头 -->
+  <g>
+    <!-- 虚拟到管理层 -->
+    <line x1="500" y1="160" x2="500" y2="180" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- 管理层到物理内存 -->
+    <line x1="300" y1="300" x2="300" y2="320" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- 管理层到交换存储 -->
+    <line x1="600" y1="300" x2="710" y2="320" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- 物理内存与交换存储的双向数据流 -->
+    <line x1="500" y1="380" x2="520" y2="380" stroke="#FF5722" stroke-width="3" marker-end="url(#bidirectional)"/>
+    <line x1="520" y1="390" x2="500" y2="390" stroke="#FF5722" stroke-width="3" marker-end="url(#bidirectional)"/>
+    <text x="510" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#FF5722">换入</text>
+    <text x="510" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#FF5722">换出</text>
+    
+    <!-- 到主机内存的连接 -->
+    <line x1="300" y1="440" x2="300" y2="460" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="710" y1="440" x2="710" y2="460" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  </g>
+  
+  <!-- 技术特性说明 -->
+  <g>
+    <text x="500" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">核心技术特性</text>
+    
+    <!-- 智能预测 -->
+    <rect x="100" y="600" width="180" height="80" fill="#F3E5F5" stroke="#9C27B0" stroke-width="2" rx="8"/>
+    <text x="190" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#7B1FA2">智能预测</text>
+    <text x="110" y="645" font-family="Arial, sans-serif" font-size="10" fill="#333">• 访问模式学习</text>
+    <text x="110" y="660" font-family="Arial, sans-serif" font-size="10" fill="#333">• 预取策略优化</text>
+    <text x="110" y="675" font-family="Arial, sans-serif" font-size="10" fill="#333">• 动态调整阈值</text>
+    
+    <!-- 压缩优化 -->
+    <rect x="300" y="600" width="180" height="80" fill="#E8F4FD" stroke="#2196F3" stroke-width="2" rx="8"/>
+    <text x="390" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1565C0">压缩优化</text>
+    <text x="310" y="645" font-family="Arial, sans-serif" font-size="10" fill="#333">• 无损压缩算法</text>
+    <text x="310" y="660" font-family="Arial, sans-serif" font-size="10" fill="#333">• 实时压缩/解压</text>
+    <text x="310" y="675" font-family="Arial, sans-serif" font-size="10" fill="#333">• 压缩比3:1-5:1</text>
+    
+    <!-- 性能监控 -->
+    <rect x="500" y="600" width="180" height="80" fill="#E8F5E8" stroke="#4CAF50" stroke-width="2" rx="8"/>
+    <text x="590" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2E7D32">性能监控</text>
+    <text x="510" y="645" font-family="Arial, sans-serif" font-size="10" fill="#333">• 实时性能指标</text>
+    <text x="510" y="660" font-family="Arial, sans-serif" font-size="10" fill="#333">• 瓶颈自动检测</text>
+    <text x="510" y="675" font-family="Arial, sans-serif" font-size="10" fill="#333">• 自适应调优</text>
+    
+    <!-- 故障恢复 -->
+    <rect x="700" y="600" width="180" height="80" fill="#FFF3E0" stroke="#FF9800" stroke-width="2" rx="8"/>
+    <text x="790" y="625" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#E65100">故障恢复</text>
+    <text x="710" y="645" font-family="Arial, sans-serif" font-size="10" fill="#333">• 数据一致性保证</text>
+    <text x="710" y="660" font-family="Arial, sans-serif" font-size="10" fill="#333">• 快速故障检测</text>
+    <text x="710" y="675" font-family="Arial, sans-serif" font-size="10" fill="#333">• 自动恢复机制</text>
+  </g>
+  
+  <!-- 性能指标 -->
+  <g>
+    <text x="500" y="720" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">关键性能指标</text>
+    
+    <rect x="50" y="740" width="150" height="40" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="125" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#2E7D32">超分比例：4:1</text>
+    <text x="125" y="775" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">最大支持10:1</text>
+    
+    <rect x="220" y="740" width="150" height="40" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="295" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#1565C0">换页延迟：&lt;2ms</text>
+    <text x="295" y="775" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">平均1.2ms</text>
+    
+    <rect x="390" y="740" width="150" height="40" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="465" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#E65100">命中率：92%</text>
+    <text x="465" y="775" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">缓存命中率</text>
+    
+    <rect x="560" y="740" width="150" height="40" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1" rx="5"/>
+    <text x="635" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#7B1FA2">压缩比：3.5:1</text>
+    <text x="635" y="775" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">平均压缩比</text>
+    
+    <rect x="730" y="740" width="150" height="40" fill="#FCE4EC" stroke="#E91E63" stroke-width="1" rx="5"/>
+    <text x="805" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#AD1457">性能损失：&lt;5%</text>
+    <text x="805" y="775" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">相对原生性能</text>
+  </g>
+</svg>

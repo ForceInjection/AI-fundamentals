@@ -1,0 +1,159 @@
+<svg width="900" height="700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="clientGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3F51B5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7986CB;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="networkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF5722;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8A65;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="serverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="450" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">GPU远程调用架构</text>
+  
+  <!-- 客户端区域 -->
+  <g>
+    <rect x="0" y="70" width="250" height="550" fill="url(#clientGradient)" stroke="#3F51B5" stroke-width="2" rx="10"/>
+    <text x="125" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">客户端 (Client)</text>
+    
+    <!-- 应用程序层 -->
+    <rect x="20" y="110" width="210" height="80" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">应用程序层</text>
+    <text x="30" y="150" font-family="Arial, sans-serif" font-size="11" fill="white">• AI训练/推理应用</text>
+    <text x="30" y="165" font-family="Arial, sans-serif" font-size="11" fill="white">• 科学计算程序</text>
+    <text x="30" y="180" font-family="Arial, sans-serif" font-size="11" fill="white">• 图形渲染应用</text>
+    
+    <!-- API代理层 -->
+    <rect x="20" y="200" width="210" height="80" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">API代理层</text>
+    <text x="30" y="240" font-family="Arial, sans-serif" font-size="11" fill="white">• CUDA API拦截</text>
+    <text x="30" y="255" font-family="Arial, sans-serif" font-size="11" fill="white">• OpenCL API代理</text>
+    <text x="30" y="270" font-family="Arial, sans-serif" font-size="11" fill="white">• 参数序列化</text>
+    
+    <!-- 网络通信层 -->
+    <rect x="20" y="290" width="210" height="80" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">网络通信层</text>
+    <text x="30" y="330" font-family="Arial, sans-serif" font-size="11" fill="white">• gRPC/HTTP协议</text>
+    <text x="30" y="345" font-family="Arial, sans-serif" font-size="11" fill="white">• 数据压缩传输</text>
+    <text x="30" y="360" font-family="Arial, sans-serif" font-size="11" fill="white">• 连接池管理</text>
+    
+    <!-- 缓存管理层 -->
+    <rect x="20" y="380" width="210" height="80" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">缓存管理层</text>
+    <text x="30" y="420" font-family="Arial, sans-serif" font-size="11" fill="white">• 本地数据缓存</text>
+    <text x="30" y="435" font-family="Arial, sans-serif" font-size="11" fill="white">• 结果缓存</text>
+    <text x="30" y="450" font-family="Arial, sans-serif" font-size="11" fill="white">• 预取策略</text>
+    
+    <!-- 错误处理层 -->
+    <rect x="20" y="470" width="210" height="80" fill="#5C6BC0" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">错误处理层</text>
+    <text x="30" y="510" font-family="Arial, sans-serif" font-size="11" fill="white">• 重试机制</text>
+    <text x="30" y="525" font-family="Arial, sans-serif" font-size="11" fill="white">• 故障转移</text>
+    <text x="30" y="540" font-family="Arial, sans-serif" font-size="11" fill="white">• 降级策略</text>
+  </g>
+  
+  <!-- 网络传输区域 -->
+  <g>
+    <rect x="320" y="200" width="260" height="200" fill="url(#networkGradient)" stroke="#FF5722" stroke-width="2" rx="10"/>
+    <text x="450" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">网络传输层</text>
+    
+    <!-- 协议栈 -->
+    <rect x="340" y="240" width="100" height="140" fill="#FF7043" stroke="#FF5722" stroke-width="1" rx="5"/>
+    <text x="390" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">协议栈</text>
+    <text x="350" y="280" font-family="Arial, sans-serif" font-size="10" fill="white">• TCP/UDP</text>
+    <text x="350" y="295" font-family="Arial, sans-serif" font-size="10" fill="white">• HTTP/2</text>
+    <text x="350" y="310" font-family="Arial, sans-serif" font-size="10" fill="white">• gRPC</text>
+    <text x="350" y="325" font-family="Arial, sans-serif" font-size="10" fill="white">• WebSocket</text>
+    <text x="350" y="340" font-family="Arial, sans-serif" font-size="10" fill="white">• RDMA</text>
+    <text x="350" y="355" font-family="Arial, sans-serif" font-size="10" fill="white">• InfiniBand</text>
+    
+    <!-- 优化技术 -->
+    <rect x="460" y="240" width="100" height="140" fill="#FF7043" stroke="#FF5722" stroke-width="1" rx="5"/>
+    <text x="510" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">优化技术</text>
+    <text x="470" y="280" font-family="Arial, sans-serif" font-size="10" fill="white">• 数据压缩</text>
+    <text x="470" y="295" font-family="Arial, sans-serif" font-size="10" fill="white">• 批量传输</text>
+    <text x="470" y="310" font-family="Arial, sans-serif" font-size="10" fill="white">• 流水线</text>
+    <text x="470" y="325" font-family="Arial, sans-serif" font-size="10" fill="white">• 负载均衡</text>
+    <text x="470" y="340" font-family="Arial, sans-serif" font-size="10" fill="white">• QoS控制</text>
+    <text x="470" y="355" font-family="Arial, sans-serif" font-size="10" fill="white">• 带宽管理</text>
+  </g>
+  
+  <!-- 服务端区域 -->
+  <g>
+    <rect x="650" y="70" width="250" height="550" fill="url(#serverGradient)" stroke="#4CAF50" stroke-width="2" rx="10"/>
+    <text x="775" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">服务端 (Server)</text>
+    
+    <!-- 请求处理层 -->
+    <rect x="670" y="110" width="210" height="80" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">请求处理层</text>
+    <text x="680" y="150" font-family="Arial, sans-serif" font-size="11" fill="white">• 请求路由</text>
+    <text x="680" y="165" font-family="Arial, sans-serif" font-size="11" fill="white">• 负载均衡</text>
+    <text x="680" y="180" font-family="Arial, sans-serif" font-size="11" fill="white">• 认证授权</text>
+    
+    <!-- GPU资源管理层 -->
+    <rect x="670" y="200" width="210" height="80" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">GPU资源管理层</text>
+    <text x="680" y="240" font-family="Arial, sans-serif" font-size="11" fill="white">• 设备发现</text>
+    <text x="680" y="255" font-family="Arial, sans-serif" font-size="11" fill="white">• 资源分配</text>
+    <text x="680" y="270" font-family="Arial, sans-serif" font-size="11" fill="white">• 调度策略</text>
+    
+    <!-- 任务执行层 -->
+    <rect x="670" y="290" width="210" height="80" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">任务执行层</text>
+    <text x="680" y="330" font-family="Arial, sans-serif" font-size="11" fill="white">• CUDA运行时</text>
+    <text x="680" y="345" font-family="Arial, sans-serif" font-size="11" fill="white">• 内核执行</text>
+    <text x="680" y="360" font-family="Arial, sans-serif" font-size="11" fill="white">• 内存管理</text>
+    
+    <!-- 监控管理层 -->
+    <rect x="670" y="380" width="210" height="80" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">监控管理层</text>
+    <text x="680" y="420" font-family="Arial, sans-serif" font-size="11" fill="white">• 性能监控</text>
+    <text x="680" y="435" font-family="Arial, sans-serif" font-size="11" fill="white">• 资源统计</text>
+    <text x="680" y="450" font-family="Arial, sans-serif" font-size="11" fill="white">• 日志记录</text>
+    
+    <!-- 物理GPU层 -->
+    <rect x="670" y="470" width="210" height="80" fill="#66BB6A" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">物理GPU层</text>
+    <text x="680" y="510" font-family="Arial, sans-serif" font-size="11" fill="white">• GPU硬件</text>
+    <text x="680" y="525" font-family="Arial, sans-serif" font-size="11" fill="white">• 驱动程序</text>
+    <text x="680" y="540" font-family="Arial, sans-serif" font-size="11" fill="white">• 固件接口</text>
+  </g>
+  
+  <!-- 数据流箭头 -->
+  <g>
+    <!-- 请求流 -->
+    <line x1="250" y1="250" x2="320" y2="250" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="285" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">请求</text>
+    
+    <line x1="580" y1="250" x2="650" y2="250" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- 响应流 -->
+    <line x1="650" y1="350" x2="580" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="615" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">响应</text>
+    
+    <line x1="320" y1="350" x2="250" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  </g>
+  
+  <!-- 调用模式说明 -->
+  <g>
+    <text x="450" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">三种主要调用模式</text>
+    
+    <rect x="0" y="660" width="250" height="30" fill="#E8EAF6" stroke="#3F51B5" stroke-width="1" rx="5"/>
+    <text x="125" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#3F51B5">API代理模式：透明API转发</text>
+    
+    <rect x="325" y="660" width="250" height="30" fill="#FFEBEE" stroke="#FF5722" stroke-width="1" rx="5"/>
+    <text x="450" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#FF5722">虚拟设备模式：设备虚拟化</text>
+    
+    <rect x="650" y="660" width="250" height="30" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="775" y="680" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#4CAF50">分布式计算模式：任务分发</text>
+  </g>
+</svg>

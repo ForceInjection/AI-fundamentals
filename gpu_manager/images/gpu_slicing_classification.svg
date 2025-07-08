@@ -1,0 +1,137 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="spaceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64B5F6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hybridGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="400" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">GPU切分技术分类</text>
+  
+  <!-- 主分类框 -->
+  <rect x="50" y="60" width="700" height="520" fill="none" stroke="#333" stroke-width="2" rx="10"/>
+  
+  <!-- 时间切分 -->
+  <g>
+    <rect x="80" y="100" width="200" height="150" fill="url(#timeGradient)" stroke="#4CAF50" stroke-width="2" rx="8"/>
+    <text x="180" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">时间切分</text>
+    <text x="180" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Time Slicing</text>
+    
+    <!-- 时间切分子类 -->
+    <rect x="90" y="165" width="80" height="30" fill="#66BB6A" stroke="#4CAF50" rx="4"/>
+    <text x="130" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">时间片轮转</text>
+    
+    <rect x="180" y="165" width="80" height="30" fill="#66BB6A" stroke="#4CAF50" rx="4"/>
+    <text x="220" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">优先级调度</text>
+    
+    <rect x="90" y="205" width="80" height="30" fill="#66BB6A" stroke="#4CAF50" rx="4"/>
+    <text x="130" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">抢占式调度</text>
+    
+    <rect x="180" y="205" width="80" height="30" fill="#66BB6A" stroke="#4CAF50" rx="4"/>
+    <text x="220" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">协作式调度</text>
+  </g>
+  
+  <!-- 空间切分 -->
+  <g>
+    <rect x="300" y="100" width="200" height="150" fill="url(#spaceGradient)" stroke="#2196F3" stroke-width="2" rx="8"/>
+    <text x="400" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">空间切分</text>
+    <text x="400" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Space Partitioning</text>
+    
+    <!-- 空间切分子类 -->
+    <rect x="310" y="165" width="80" height="30" fill="#42A5F5" stroke="#2196F3" rx="4"/>
+    <text x="350" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">SM分区</text>
+    
+    <rect x="400" y="165" width="80" height="30" fill="#42A5F5" stroke="#2196F3" rx="4"/>
+    <text x="440" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">显存分区</text>
+    
+    <rect x="310" y="205" width="80" height="30" fill="#42A5F5" stroke="#2196F3" rx="4"/>
+    <text x="350" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">缓存分区</text>
+    
+    <rect x="400" y="205" width="80" height="30" fill="#42A5F5" stroke="#2196F3" rx="4"/>
+    <text x="440" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">带宽分区</text>
+  </g>
+  
+  <!-- 混合切分 -->
+  <g>
+    <rect x="520" y="100" width="200" height="150" fill="url(#hybridGradient)" stroke="#FF9800" stroke-width="2" rx="8"/>
+    <text x="620" y="125" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">混合切分</text>
+    <text x="620" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="white">Hybrid Slicing</text>
+    
+    <!-- 混合切分子类 -->
+    <rect x="530" y="165" width="80" height="30" fill="#FFA726" stroke="#FF9800" rx="4"/>
+    <text x="570" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">时空结合</text>
+    
+    <rect x="620" y="165" width="80" height="30" fill="#FFA726" stroke="#FF9800" rx="4"/>
+    <text x="660" y="183" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">动态调整</text>
+    
+    <rect x="530" y="205" width="80" height="30" fill="#FFA726" stroke="#FF9800" rx="4"/>
+    <text x="570" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">负载均衡</text>
+    
+    <rect x="620" y="205" width="80" height="30" fill="#FFA726" stroke="#FF9800" rx="4"/>
+    <text x="660" y="223" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">QoS保证</text>
+  </g>
+  
+  <!-- 特性对比 -->
+  <g>
+    <text x="400" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">技术特性对比</text>
+    
+    <!-- 时间切分特性 -->
+    <rect x="80" y="310" width="200" height="120" fill="#E8F5E8" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="180" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2E7D32">时间切分特性</text>
+    <text x="90" y="350" font-family="Arial, sans-serif" font-size="10" fill="#333">• 实现简单，兼容性好</text>
+    <text x="90" y="365" font-family="Arial, sans-serif" font-size="10" fill="#333">• 上下文切换开销</text>
+    <text x="90" y="380" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适合计算密集型任务</text>
+    <text x="90" y="395" font-family="Arial, sans-serif" font-size="10" fill="#333">• 资源利用率高</text>
+    <text x="90" y="410" font-family="Arial, sans-serif" font-size="10" fill="#333">• 延迟相对较高</text>
+    
+    <!-- 空间切分特性 -->
+    <rect x="300" y="310" width="200" height="120" fill="#E3F2FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="400" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1565C0">空间切分特性</text>
+    <text x="310" y="350" font-family="Arial, sans-serif" font-size="10" fill="#333">• 硬件隔离，安全性高</text>
+    <text x="310" y="365" font-family="Arial, sans-serif" font-size="10" fill="#333">• 无上下文切换开销</text>
+    <text x="310" y="380" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适合并发任务</text>
+    <text x="310" y="395" font-family="Arial, sans-serif" font-size="10" fill="#333">• 硬件依赖性强</text>
+    <text x="310" y="410" font-family="Arial, sans-serif" font-size="10" fill="#333">• 延迟低，性能稳定</text>
+    
+    <!-- 混合切分特性 -->
+    <rect x="520" y="310" width="200" height="120" fill="#FFF3E0" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="620" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#E65100">混合切分特性</text>
+    <text x="530" y="350" font-family="Arial, sans-serif" font-size="10" fill="#333">• 灵活性最高</text>
+    <text x="530" y="365" font-family="Arial, sans-serif" font-size="10" fill="#333">• 复杂度较高</text>
+    <text x="530" y="380" font-family="Arial, sans-serif" font-size="10" fill="#333">• 适应性强</text>
+    <text x="530" y="395" font-family="Arial, sans-serif" font-size="10" fill="#333">• 性能优化潜力大</text>
+    <text x="530" y="410" font-family="Arial, sans-serif" font-size="10" fill="#333">• 管理开销适中</text>
+  </g>
+  
+  <!-- 应用场景 -->
+  <g>
+    <text x="400" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">典型应用场景</text>
+    
+    <rect x="80" y="485" width="200" height="80" fill="#F1F8E9" stroke="#4CAF50" stroke-width="1" rx="5"/>
+    <text x="180" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2E7D32">时间切分应用</text>
+    <text x="90" y="520" font-family="Arial, sans-serif" font-size="10" fill="#333">• 云计算平台</text>
+    <text x="90" y="535" font-family="Arial, sans-serif" font-size="10" fill="#333">• 开发测试环境</text>
+    <text x="90" y="550" font-family="Arial, sans-serif" font-size="10" fill="#333">• 批处理任务</text>
+    
+    <rect x="300" y="485" width="200" height="80" fill="#E8F4FD" stroke="#2196F3" stroke-width="1" rx="5"/>
+    <text x="400" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1565C0">空间切分应用</text>
+    <text x="310" y="520" font-family="Arial, sans-serif" font-size="10" fill="#333">• 高性能计算</text>
+    <text x="310" y="535" font-family="Arial, sans-serif" font-size="10" fill="#333">• 实时推理服务</text>
+    <text x="310" y="550" font-family="Arial, sans-serif" font-size="10" fill="#333">• 安全隔离场景</text>
+    
+    <rect x="520" y="485" width="200" height="80" fill="#FFF8E1" stroke="#FF9800" stroke-width="1" rx="5"/>
+    <text x="620" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#E65100">混合切分应用</text>
+    <text x="530" y="520" font-family="Arial, sans-serif" font-size="10" fill="#333">• 企业级AI平台</text>
+    <text x="530" y="535" font-family="Arial, sans-serif" font-size="10" fill="#333">• 多租户环境</text>
+    <text x="530" y="550" font-family="Arial, sans-serif" font-size="10" fill="#333">• 弹性计算服务</text>
+  </g>
+</svg>
