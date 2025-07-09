@@ -1,0 +1,744 @@
+# CUDA MPS (Multi-Process Service) 配置
+# 包含MPS的部署、配置和管理脚本
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: cuda-mps-config
+data:
+    # MPS快速部署脚本
+    mps-deploy.sh: |
+        #!/bin/bash
+        # CUDA MPS快速部署脚本
+
+        set -e
+
+        # 颜色输出
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        BLUE='\033[0;34m'
+        NC='\033[0m'
+
+        # 配置变量
+        MPS_PIPE_DIRECTORY="/tmp/nvidia-mps"
+        MPS_LOG_DIRECTORY="/var/log/nvidia-mps"
+        MPS_USER="nvidia-mps"
+
+        # 日志函数
+        log_info() {
+            echo -e "${GREEN}[INFO]${NC} $1"
+        }
+
+        log_warn() {
+            echo -e "${YELLOW}[WARN]${NC} $1"
+        }
+
+        log_error() {
+            echo -e "${RED}[ERROR]${NC} $1"
+        }
+
+        log_debug() {
+            echo -e "${BLUE}[DEBUG]${NC} $1"
+        }
+
+        # 检查CUDA环境
+        check_cuda_environment() {
+            log_info "检查CUDA环境..."
+            
+            if ! command -v nvidia-smi &> /dev/null; then
+                log_error "nvidia-smi未找到，请安装NVIDIA驱动"
+                return 1
+            fi
+            
+            if ! command -v nvidia-cuda-mps-control &> /dev/null; then
+                log_error "nvidia-cuda-mps-control未找到，请安装CUDA Toolkit"
+                return 1
+            fi
+            
+            # 检查GPU支持
+            local gpu_count=$(nvidia-smi -L | wc -l)
+            log_info "检测到 $gpu_count 个GPU"
+            
+            # 检查计算能力
+            nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader | while read line; do
+                log_debug "GPU: $line"
+            done
+            
+            log_info "✅ CUDA环境检查完成"
+        }
+
+        # 创建MPS用户
+        create_mps_user() {
+            log_info "创建MPS用户..."
+            
+            if id "$MPS_USER" &>/dev/null; then
+                log_warn "用户 $MPS_USER 已存在"
+            else
+                useradd -r -s /bin/false -d /nonexistent $MPS_USER
+                log_info "✅ 用户 $MPS_USER 创建成功"
+            fi
+        }
+
+        # 设置MPS目录
+        setup_mps_directories() {
+            log_info "设置MPS目录..."
+            
+            # 创建管道目录
+            mkdir -p $MPS_PIPE_DIRECTORY
+            chown $MPS_USER:$MPS_USER $MPS_PIPE_DIRECTORY
+            chmod 755 $MPS_PIPE_DIRECTORY
+            
+            # 创建日志目录
+            mkdir -p $MPS_LOG_DIRECTORY
+            chown $MPS_USER:$MPS_USER $MPS_LOG_DIRECTORY
+            chmod 755 $MPS_LOG_DIRECTORY
+            
+            log_info "✅ MPS目录设置完成"
+        }
+
+        # 配置MPS环境变量
+        configure_mps_environment() {
+            log_info "配置MPS环境变量..."
+            
+            # 创建环境配置文件
+            cat > /etc/nvidia-mps.conf << EOF
+        # NVIDIA MPS配置
+        export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+        export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+        export CUDA_VISIBLE_DEVICES=0
+        EOF
+            
+            # 设置系统环境变量
+            echo "export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY" >> /etc/environment
+            echo "export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY" >> /etc/environment
+            
+            log_info "✅ MPS环境变量配置完成"
+        }
+
+        # 启动MPS守护进程
+        start_mps_daemon() {
+            log_info "启动MPS守护进程..."
+            
+            # 设置环境变量
+            export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+            export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+            
+            # 检查是否已经运行
+            if pgrep -f nvidia-cuda-mps-control > /dev/null; then
+                log_warn "MPS控制守护进程已在运行"
+            else
+                # 启动MPS控制守护进程
+                nvidia-cuda-mps-control -d
+                sleep 2
+                
+                if pgrep -f nvidia-cuda-mps-control > /dev/null; then
+                    log_info "✅ MPS控制守护进程启动成功"
+                else
+                    log_error "❌ MPS控制守护进程启动失败"
+                    return 1
+                fi
+            fi
+            
+            # 启动MPS服务器
+            echo "start_server -uid $(id -u $MPS_USER)" | nvidia-cuda-mps-control
+            sleep 2
+            
+            if pgrep -f nvidia-cuda-mps-server > /dev/null; then
+                log_info "✅ MPS服务器启动成功"
+            else
+                log_error "❌ MPS服务器启动失败"
+                return 1
+            fi
+        }
+
+        # 停止MPS服务
+        stop_mps_daemon() {
+            log_info "停止MPS服务..."
+            
+            # 设置环境变量
+            export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+            export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+            
+            # 停止MPS服务器
+            if pgrep -f nvidia-cuda-mps-server > /dev/null; then
+                echo "quit" | nvidia-cuda-mps-control
+                sleep 2
+                log_info "MPS服务器已停止"
+            fi
+            
+            # 停止MPS控制守护进程
+            if pgrep -f nvidia-cuda-mps-control > /dev/null; then
+                pkill -f nvidia-cuda-mps-control
+                sleep 2
+                log_info "MPS控制守护进程已停止"
+            fi
+            
+            log_info "✅ MPS服务停止完成"
+        }
+
+        # 检查MPS状态
+        check_mps_status() {
+            log_info "检查MPS状态..."
+            
+            # 设置环境变量
+            export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+            export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+            
+            echo "=== MPS进程状态 ==="
+            if pgrep -f nvidia-cuda-mps-control > /dev/null; then
+                echo "✅ MPS控制守护进程: 运行中"
+                ps aux | grep nvidia-cuda-mps-control | grep -v grep
+            else
+                echo "❌ MPS控制守护进程: 未运行"
+            fi
+            
+            if pgrep -f nvidia-cuda-mps-server > /dev/null; then
+                echo "✅ MPS服务器: 运行中"
+                ps aux | grep nvidia-cuda-mps-server | grep -v grep
+            else
+                echo "❌ MPS服务器: 未运行"
+            fi
+            
+            echo ""
+            echo "=== MPS客户端信息 ==="
+            if command -v nvidia-cuda-mps-control &> /dev/null; then
+                echo "get_server_list" | nvidia-cuda-mps-control 2>/dev/null || echo "无法获取服务器列表"
+            fi
+            
+            echo ""
+            echo "=== GPU状态 ==="
+            nvidia-smi
+        }
+
+        # 配置MPS资源限制
+        configure_mps_limits() {
+            local memory_limit=${1:-50}  # 默认50%内存限制
+            local compute_limit=${2:-50} # 默认50%计算限制
+            
+            log_info "配置MPS资源限制..."
+            log_info "内存限制: $memory_limit%"
+            log_info "计算限制: $compute_limit%"
+            
+            # 设置环境变量
+            export CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+            export CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+            
+            # 设置内存限制
+            echo "set_default_device_pinned_mem_limit 0 $(($memory_limit))%" | nvidia-cuda-mps-control
+            
+            # 设置计算限制
+            echo "set_default_active_thread_percentage $compute_limit" | nvidia-cuda-mps-control
+            
+            log_info "✅ MPS资源限制配置完成"
+        }
+
+        # 创建systemd服务
+        create_systemd_service() {
+            log_info "创建systemd服务..."
+            
+            cat > /etc/systemd/system/nvidia-mps.service << EOF
+        [Unit]
+        Description=NVIDIA CUDA Multi Process Service
+        After=network.target
+
+        [Service]
+        Type=forking
+        User=root
+        Environment=CUDA_MPS_PIPE_DIRECTORY=$MPS_PIPE_DIRECTORY
+        Environment=CUDA_MPS_LOG_DIRECTORY=$MPS_LOG_DIRECTORY
+        ExecStart=/usr/bin/nvidia-cuda-mps-control -d
+        ExecStartPost=/bin/bash -c 'echo start_server -uid $(id -u $MPS_USER) | /usr/bin/nvidia-cuda-mps-control'
+        ExecStop=/bin/bash -c 'echo quit | /usr/bin/nvidia-cuda-mps-control'
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+            
+            systemctl daemon-reload
+            systemctl enable nvidia-mps
+            
+            log_info "✅ systemd服务创建完成"
+        }
+
+        # 显示帮助信息
+        show_help() {
+            echo "CUDA MPS部署脚本"
+            echo "用法: $0 [命令] [选项]"
+            echo ""
+            echo "命令:"
+            echo "  install              安装和配置MPS"
+            echo "  start                启动MPS服务"
+            echo "  stop                 停止MPS服务"
+            echo "  restart              重启MPS服务"
+            echo "  status               检查MPS状态"
+            echo "  limits [mem] [comp]  配置资源限制"
+            echo "  uninstall            卸载MPS"
+            echo ""
+            echo "选项:"
+            echo "  --memory-limit NUM   内存限制百分比 (默认: 50)"
+            echo "  --compute-limit NUM  计算限制百分比 (默认: 50)"
+            echo ""
+            echo "示例:"
+            echo "  $0 install                    # 安装MPS"
+            echo "  $0 start                      # 启动MPS"
+            echo "  $0 limits 70 80              # 设置70%内存和80%计算限制"
+            echo "  $0 status                     # 检查状态"
+        }
+
+        # 卸载MPS
+        uninstall_mps() {
+            log_info "卸载MPS..."
+            
+            # 停止服务
+            stop_mps_daemon
+            
+            # 禁用systemd服务
+            systemctl disable nvidia-mps || true
+            rm -f /etc/systemd/system/nvidia-mps.service
+            systemctl daemon-reload
+            
+            # 删除用户
+            userdel $MPS_USER || true
+            
+            # 删除目录
+            rm -rf $MPS_PIPE_DIRECTORY
+            rm -rf $MPS_LOG_DIRECTORY
+            
+            # 删除配置文件
+            rm -f /etc/nvidia-mps.conf
+            
+            log_info "✅ MPS卸载完成"
+        }
+
+        # 主函数
+        main() {
+            if [[ $# -eq 0 ]]; then
+                show_help
+                exit 0
+            fi
+            
+            local command=$1
+            shift
+            
+            case $command in
+                "install")
+                    check_cuda_environment
+                    create_mps_user
+                    setup_mps_directories
+                    configure_mps_environment
+                    create_systemd_service
+                    start_mps_daemon
+                    check_mps_status
+                    ;;
+                "start")
+                    start_mps_daemon
+                    ;;
+                "stop")
+                    stop_mps_daemon
+                    ;;
+                "restart")
+                    stop_mps_daemon
+                    sleep 2
+                    start_mps_daemon
+                    ;;
+                "status")
+                    check_mps_status
+                    ;;
+                "limits")
+                    local mem_limit=${1:-50}
+                    local comp_limit=${2:-50}
+                    configure_mps_limits $mem_limit $comp_limit
+                    ;;
+                "uninstall")
+                    uninstall_mps
+                    ;;
+                "help"|"--help"|"h")
+                    show_help
+                    ;;
+                *)
+                    log_error "未知命令: $command"
+                    show_help
+                    exit 1
+                    ;;
+            esac
+        }
+
+        # 执行主函数
+        main "$@"
+
+    # MPS客户端测试程序
+    mps-client-test.cu: |
+        #include <cuda_runtime.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <unistd.h>
+        #include <sys/wait.h>
+        #include <time.h>
+
+        #define CHECK_CUDA(call) do { \
+            cudaError_t err = call; \
+            if (err != cudaSuccess) { \
+                printf("CUDA error: %s\n", cudaGetErrorString(err)); \
+                exit(1); \
+            } \
+        } while(0)
+
+        // GPU计算核函数
+        __global__ void computeKernel(float *data, int n, int iterations) {
+            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+            if (idx < n) {
+                float value = data[idx];
+                for (int i = 0; i < iterations; i++) {
+                    value = sinf(value) * cosf(value) + sqrtf(fabsf(value));
+                }
+                data[idx] = value;
+            }
+        }
+
+        // 单个客户端测试
+        void runClientTest(int clientId, int duration) {
+            printf("客户端 %d 开始测试 (持续 %d 秒)\n", clientId, duration);
+            
+            // 初始化CUDA
+            CHECK_CUDA(cudaSetDevice(0));
+            
+            // 分配内存
+            const int n = 1024 * 1024;
+            size_t size = n * sizeof(float);
+            
+            float *h_data, *d_data;
+            CHECK_CUDA(cudaMallocHost(&h_data, size));
+            CHECK_CUDA(cudaMalloc(&d_data, size));
+            
+            // 初始化数据
+            for (int i = 0; i < n; i++) {
+                h_data[i] = (float)rand() / RAND_MAX;
+            }
+            
+            CHECK_CUDA(cudaMemcpy(d_data, h_data, size, cudaMemcpyHostToDevice));
+            
+            // 计算参数
+            int blockSize = 256;
+            int gridSize = (n + blockSize - 1) / blockSize;
+            
+            // 运行测试
+            time_t start_time = time(NULL);
+            int iteration = 0;
+            
+            while (time(NULL) - start_time < duration) {
+                computeKernel<<<gridSize, blockSize>>>(d_data, n, 100);
+                CHECK_CUDA(cudaDeviceSynchronize());
+                
+                iteration++;
+                if (iteration % 10 == 0) {
+                    printf("客户端 %d: 完成 %d 次迭代\n", clientId, iteration);
+                }
+            }
+            
+            // 复制结果回主机
+            CHECK_CUDA(cudaMemcpy(h_data, d_data, size, cudaMemcpyDeviceToHost));
+            
+            printf("客户端 %d 完成，总迭代次数: %d\n", clientId, iteration);
+            
+            // 清理资源
+            CHECK_CUDA(cudaFreeHost(h_data));
+            CHECK_CUDA(cudaFree(d_data));
+        }
+
+        int main(int argc, char *argv[]) {
+            int numClients = 4;
+            int duration = 30; // 秒
+            
+            if (argc > 1) {
+                numClients = atoi(argv[1]);
+            }
+            if (argc > 2) {
+                duration = atoi(argv[2]);
+            }
+            
+            printf("MPS客户端测试\n");
+            printf("客户端数量: %d\n", numClients);
+            printf("测试持续时间: %d 秒\n", duration);
+            
+            // 检查CUDA设备
+            int deviceCount;
+            CHECK_CUDA(cudaGetDeviceCount(&deviceCount));
+            printf("检测到 %d 个CUDA设备\n", deviceCount);
+            
+            cudaDeviceProp prop;
+            CHECK_CUDA(cudaGetDeviceProperties(&prop, 0));
+            printf("使用设备: %s\n", prop.name);
+            
+            // 创建多个客户端进程
+            pid_t pids[numClients];
+            
+            for (int i = 0; i < numClients; i++) {
+                pids[i] = fork();
+                
+                if (pids[i] == 0) {
+                    // 子进程
+                    srand(time(NULL) + getpid());
+                    runClientTest(i + 1, duration);
+                    exit(0);
+                } else if (pids[i] < 0) {
+                    printf("创建客户端 %d 失败\n", i + 1);
+                    exit(1);
+                }
+            }
+            
+            // 等待所有客户端完成
+            for (int i = 0; i < numClients; i++) {
+                int status;
+                waitpid(pids[i], &status, 0);
+                printf("客户端 %d 已完成\n", i + 1);
+            }
+            
+            printf("\n✅ 所有MPS客户端测试完成\n");
+            return 0;
+        }
+
+    # MPS性能对比脚本
+    mps-benchmark.sh: |
+        #!/bin/bash
+        # MPS性能对比脚本
+
+        set -e
+
+        # 颜色输出
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        RED='\033[0;31m'
+        NC='\033[0m'
+
+        log_info() {
+            echo -e "${GREEN}[INFO]${NC} $1"
+        }
+
+        log_warn() {
+            echo -e "${YELLOW}[WARN]${NC} $1"
+        }
+
+        log_error() {
+            echo -e "${RED}[ERROR]${NC} $1"
+        }
+
+        # 编译测试程序
+        compile_test_program() {
+            log_info "编译MPS测试程序..."
+            
+            if [[ ! -f "mps-client-test.cu" ]]; then
+                log_error "测试程序源文件不存在"
+                return 1
+            fi
+            
+            nvcc -O3 -o mps-client-test mps-client-test.cu
+            
+            if [[ $? -eq 0 ]]; then
+                log_info "✅ 编译成功"
+            else
+                log_error "❌ 编译失败"
+                return 1
+            fi
+        }
+
+        # 测试无MPS性能
+        test_without_mps() {
+            log_info "测试无MPS性能..."
+            
+            # 确保MPS已停止
+            export CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps
+            echo "quit" | nvidia-cuda-mps-control 2>/dev/null || true
+            pkill -f nvidia-cuda-mps 2>/dev/null || true
+            sleep 2
+            
+            echo "=== 无MPS测试结果 ==="
+            time ./mps-client-test 4 20
+            echo ""
+        }
+
+        # 测试有MPS性能
+        test_with_mps() {
+            log_info "测试有MPS性能..."
+            
+            # 启动MPS
+            export CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps
+            export CUDA_MPS_LOG_DIRECTORY=/var/log/nvidia-mps
+            
+            mkdir -p $CUDA_MPS_PIPE_DIRECTORY
+            mkdir -p $CUDA_MPS_LOG_DIRECTORY
+            
+            nvidia-cuda-mps-control -d
+            sleep 2
+            echo "start_server -uid $(id -u)" | nvidia-cuda-mps-control
+            sleep 2
+            
+            echo "=== 有MPS测试结果 ==="
+            time ./mps-client-test 4 20
+            echo ""
+            
+            # 停止MPS
+            echo "quit" | nvidia-cuda-mps-control
+            sleep 2
+        }
+
+        # GPU利用率监控
+        monitor_gpu_utilization() {
+            local duration=${1:-30}
+            local output_file=${2:-"gpu_utilization.log"}
+            
+            log_info "监控GPU利用率 ($duration 秒)..."
+            
+            {
+                echo "时间戳,GPU利用率(%),内存利用率(%),温度(C),功耗(W)"
+                for ((i=0; i<duration; i++)); do
+                    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+                    local gpu_util=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits)
+                    local mem_util=$(nvidia-smi --query-gpu=utilization.memory --format=csv,noheader,nounits)
+                    local temp=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits)
+                    local power=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits)
+                    
+                    echo "$timestamp,$gpu_util,$mem_util,$temp,$power"
+                    sleep 1
+                done
+            } > "$output_file"
+            
+            log_info "GPU利用率数据保存到: $output_file"
+        }
+
+        # 综合性能测试
+        comprehensive_benchmark() {
+            log_info "开始综合性能测试..."
+            
+            # 编译测试程序
+            compile_test_program
+            
+            # 创建结果目录
+            local result_dir="mps_benchmark_$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "$result_dir"
+            
+            # 测试不同客户端数量
+            local client_counts=(1 2 4 8)
+            
+            for clients in "${client_counts[@]}"; do
+                log_info "测试 $clients 个客户端..."
+                
+                # 无MPS测试
+                log_info "无MPS测试 ($clients 客户端)"
+                {
+                    echo "=== 无MPS - $clients 客户端 ==="
+                    test_without_mps
+                } > "$result_dir/no_mps_${clients}_clients.log" 2>&1 &
+                
+                # 启动GPU监控
+                monitor_gpu_utilization 25 "$result_dir/no_mps_${clients}_clients_gpu.csv" &
+                local monitor_pid=$!
+                
+                wait
+                kill $monitor_pid 2>/dev/null || true
+                
+                sleep 5
+                
+                # 有MPS测试
+                log_info "有MPS测试 ($clients 客户端)"
+                {
+                    echo "=== 有MPS - $clients 客户端 ==="
+                    test_with_mps
+                } > "$result_dir/with_mps_${clients}_clients.log" 2>&1 &
+                
+                # 启动GPU监控
+                monitor_gpu_utilization 25 "$result_dir/with_mps_${clients}_clients_gpu.csv" &
+                local monitor_pid=$!
+                
+                wait
+                kill $monitor_pid 2>/dev/null || true
+                
+                sleep 5
+            done
+            
+            # 生成报告
+            generate_report "$result_dir"
+            
+            log_info "✅ 综合性能测试完成，结果保存在: $result_dir"
+        }
+
+        # 生成测试报告
+        generate_report() {
+            local result_dir=$1
+            local report_file="$result_dir/benchmark_report.md"
+            
+            log_info "生成测试报告..."
+            
+            cat > "$report_file" << EOF
+        # MPS性能测试报告
+
+        ## 测试环境
+        - 测试时间: $(date)
+        - GPU信息: $(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader)
+        - CUDA版本: $(nvcc --version | grep "release" | awk '{print $6}')
+
+        ## 测试结果
+
+        EOF
+            
+            # 分析每个测试结果
+            for log_file in "$result_dir"/*.log; do
+                if [[ -f "$log_file" ]]; then
+                    local filename=$(basename "$log_file" .log)
+                    echo "### $filename" >> "$report_file"
+                    echo '```' >> "$report_file"
+                    tail -10 "$log_file" >> "$report_file"
+                    echo '```' >> "$report_file"
+                    echo "" >> "$report_file"
+                fi
+            done
+            
+            log_info "测试报告生成完成: $report_file"
+        }
+
+        # 主函数
+        main() {
+            local action=${1:-"comprehensive"}
+            
+            case $action in
+                "compile")
+                    compile_test_program
+                    ;;
+                "no-mps")
+                    compile_test_program
+                    test_without_mps
+                    ;;
+                "with-mps")
+                    compile_test_program
+                    test_with_mps
+                    ;;
+                "monitor")
+                    local duration=${2:-30}
+                    monitor_gpu_utilization $duration
+                    ;;
+                "comprehensive")
+                    comprehensive_benchmark
+                    ;;
+                "help")
+                    echo "MPS性能测试脚本"
+                    echo "用法: $0 [action]"
+                    echo ""
+                    echo "Actions:"
+                    echo "  compile       - 编译测试程序"
+                    echo "  no-mps        - 测试无MPS性能"
+                    echo "  with-mps      - 测试有MPS性能"
+                    echo "  monitor [sec] - 监控GPU利用率"
+                    echo "  comprehensive - 综合性能测试"
+                    echo "  help          - 显示帮助"
+                    ;;
+                *)
+                    log_error "未知操作: $action"
+                    echo "使用 '$0 help' 查看帮助"
+                    exit 1
+                    ;;
+            esac
+        }
+
+        main "$@"

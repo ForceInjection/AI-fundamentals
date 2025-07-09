@@ -1,0 +1,578 @@
+# GPU网络优化配置
+# 包含GPU集群网络优化的各种配置和脚本
+
+---
+# RDMA网络配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: rdma-network-config
+data:
+    # RDMA网络接口配置
+    rdma-setup.sh: |
+        #!/bin/bash
+        # RDMA网络配置脚本
+
+        set -e
+
+        # 颜色输出
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        NC='\033[0m'
+
+        log_info() {
+            echo -e "${GREEN}[INFO]${NC} $1"
+        }
+
+        log_warn() {
+            echo -e "${YELLOW}[WARN]${NC} $1"
+        }
+
+        log_error() {
+            echo -e "${RED}[ERROR]${NC} $1"
+        }
+
+        # 检查RDMA设备
+        check_rdma_devices() {
+            log_info "检查RDMA设备..."
+            
+            if command -v ibstat &> /dev/null; then
+                ibstat
+            elif command -v rdma &> /dev/null; then
+                rdma link show
+            else
+                log_warn "未找到RDMA工具，安装必要软件包..."
+                if [[ -f /etc/redhat-release ]]; then
+                    yum install -y rdma-core libibverbs-utils
+                elif [[ -f /etc/debian_version ]]; then
+                    apt-get update && apt-get install -y rdma-core ibverbs-utils
+                fi
+            fi
+        }
+
+        # 配置RDMA网络
+        configure_rdma() {
+            log_info "配置RDMA网络..."
+            
+            # 加载RDMA模块
+            modprobe rdma_cm
+            modprobe ib_uverbs
+            modprobe rdma_ucm
+            
+            # 配置RDMA设备
+            if [[ -f /etc/rdma/rdma.conf ]]; then
+                sed -i 's/# IPOIB_LOAD=yes/IPOIB_LOAD=yes/' /etc/rdma/rdma.conf
+                sed -i 's/# SRP_LOAD=yes/SRP_LOAD=yes/' /etc/rdma/rdma.conf
+            fi
+            
+            # 启动RDMA服务
+            systemctl enable rdma
+            systemctl start rdma
+            
+            log_info "✅ RDMA网络配置完成"
+        }
+
+        # 优化RDMA性能
+        optimize_rdma() {
+            log_info "优化RDMA性能..."
+            
+            # 设置内核参数
+            cat >> /etc/sysctl.conf << EOF
+        # RDMA优化
+        net.core.rmem_default = 262144
+        net.core.rmem_max = 16777216
+        net.core.wmem_default = 262144
+        net.core.wmem_max = 16777216
+        net.core.netdev_max_backlog = 5000
+        net.ipv4.tcp_rmem = 4096 65536 16777216
+        net.ipv4.tcp_wmem = 4096 65536 16777216
+        EOF
+            
+            sysctl -p
+            
+            log_info "✅ RDMA性能优化完成"
+        }
+
+        # 主函数
+        main() {
+            check_rdma_devices
+            configure_rdma
+            optimize_rdma
+        }
+
+        main "$@"
+
+    # InfiniBand配置
+    infiniband-setup.sh: |
+        #!/bin/bash
+        # InfiniBand网络配置
+
+        set -e
+
+        log_info() {
+            echo -e "\033[0;32m[INFO]\033[0m $1"
+        }
+
+        # 安装InfiniBand驱动
+        install_ib_drivers() {
+            log_info "安装InfiniBand驱动..."
+            
+            if [[ -f /etc/redhat-release ]]; then
+                yum groupinstall -y "Infiniband Support"
+                yum install -y infiniband-diags perftest
+            elif [[ -f /etc/debian_version ]]; then
+                apt-get update
+                apt-get install -y infiniband-diags perftest ibutils
+            fi
+        }
+
+        # 配置InfiniBand接口
+        configure_ib_interface() {
+            local ib_device=${1:-"ib0"}
+            local ip_addr=${2:-"192.168.100.10"}
+            local netmask=${3:-"255.255.255.0"}
+            
+            log_info "配置InfiniBand接口 $ib_device..."
+            
+            # 配置IP地址
+            ip addr add $ip_addr/$netmask dev $ib_device
+            ip link set $ib_device up
+            
+            # 持久化配置
+            if [[ -f /etc/redhat-release ]]; then
+                cat > /etc/sysconfig/network-scripts/ifcfg-$ib_device << EOF
+        DEVICE=$ib_device
+        BOOTPROTO=static
+        IPADDR=$ip_addr
+        NETMASK=$netmask
+        ONBOOT=yes
+        TYPE=InfiniBand
+        EOF
+            elif [[ -f /etc/debian_version ]]; then
+                cat >> /etc/network/interfaces << EOF
+        auto $ib_device
+        iface $ib_device inet static
+            address $ip_addr
+            netmask $netmask
+        EOF
+            fi
+        }
+
+        # 测试InfiniBand连接
+        test_ib_connection() {
+            log_info "测试InfiniBand连接..."
+            
+            # 显示IB设备状态
+            ibstat
+            
+            # 测试IB性能
+            if command -v ib_send_bw &> /dev/null; then
+                log_info "运行带宽测试（需要远程主机配合）..."
+                echo "在远程主机运行: ib_send_bw"
+                echo "在本地运行: ib_send_bw <remote_host>"
+            fi
+        }
+
+        main() {
+            install_ib_drivers
+            configure_ib_interface "$@"
+            test_ib_connection
+        }
+
+        main "$@"
+
+---
+# 高性能网络配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: high-performance-network-config
+data:
+    # SR-IOV配置
+    sriov-setup.sh: |
+        #!/bin/bash
+        # SR-IOV网络配置
+
+        set -e
+
+        log_info() {
+            echo -e "\033[0;32m[INFO]\033[0m $1"
+        }
+
+        # 启用SR-IOV
+        enable_sriov() {
+            local pci_device=$1
+            local vf_count=${2:-4}
+            
+            log_info "在设备 $pci_device 上启用SR-IOV，创建 $vf_count 个VF..."
+            
+            # 启用SR-IOV
+            echo $vf_count > /sys/class/net/$pci_device/device/sriov_numvfs
+            
+            # 验证VF创建
+            local actual_vfs=$(cat /sys/class/net/$pci_device/device/sriov_numvfs)
+            if [[ $actual_vfs -eq $vf_count ]]; then
+                log_info "✅ 成功创建 $actual_vfs 个VF"
+            else
+                log_error "❌ VF创建失败"
+                return 1
+            fi
+            
+            # 显示VF信息
+            lspci | grep -i virtual
+        }
+
+        # 配置VF
+        configure_vf() {
+            local pf_device=$1
+            local vf_index=$2
+            local vlan_id=${3:-0}
+            local mac_addr=${4:-""}
+            
+            log_info "配置VF $vf_index..."
+            
+            # 设置VLAN
+            if [[ $vlan_id -gt 0 ]]; then
+                ip link set $pf_device vf $vf_index vlan $vlan_id
+            fi
+            
+            # 设置MAC地址
+            if [[ -n "$mac_addr" ]]; then
+                ip link set $pf_device vf $vf_index mac $mac_addr
+            fi
+            
+            # 启用VF
+            ip link set $pf_device vf $vf_index state enable
+        }
+
+        main() {
+            if [[ $# -lt 1 ]]; then
+                echo "用法: $0 <PF_DEVICE> [VF_COUNT] [VF_INDEX] [VLAN_ID] [MAC_ADDR]"
+                exit 1
+            fi
+            
+            enable_sriov "$@"
+            
+            if [[ $# -ge 3 ]]; then
+                configure_vf "$@"
+            fi
+        }
+
+        main "$@"
+
+    # DPDK配置
+    dpdk-setup.sh: |
+        #!/bin/bash
+        # DPDK网络配置
+
+        set -e
+
+        DPDK_VERSION="23.11"
+        DPDK_DIR="/opt/dpdk"
+
+        log_info() {
+            echo -e "\033[0;32m[INFO]\033[0m $1"
+        }
+
+        # 安装DPDK
+        install_dpdk() {
+            log_info "安装DPDK $DPDK_VERSION..."
+            
+            # 安装依赖
+            if [[ -f /etc/redhat-release ]]; then
+                yum install -y gcc make kernel-devel python3-pip meson ninja-build
+            elif [[ -f /etc/debian_version ]]; then
+                apt-get update
+                apt-get install -y gcc make linux-headers-$(uname -r) python3-pip meson ninja-build
+            fi
+            
+            pip3 install pyelftools
+            
+            # 下载和编译DPDK
+            mkdir -p $DPDK_DIR
+            cd $DPDK_DIR
+            
+            if [[ ! -f dpdk-$DPDK_VERSION.tar.xz ]]; then
+                wget https://fast.dpdk.org/rel/dpdk-$DPDK_VERSION.tar.xz
+                tar xf dpdk-$DPDK_VERSION.tar.xz
+            fi
+            
+            cd dpdk-$DPDK_VERSION
+            meson build
+            cd build
+            ninja
+            ninja install
+            ldconfig
+        }
+
+        # 配置大页内存
+        setup_hugepages() {
+            local hugepage_size=${1:-1024}
+            
+            log_info "配置大页内存 ($hugepage_size MB)..."
+            
+            # 设置大页数量
+            echo $hugepage_size > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+            
+            # 挂载大页文件系统
+            mkdir -p /mnt/huge
+            mount -t hugetlbfs nodev /mnt/huge
+            
+            # 持久化配置
+            if ! grep -q "/mnt/huge" /etc/fstab; then
+                echo "nodev /mnt/huge hugetlbfs defaults 0 0" >> /etc/fstab
+            fi
+            
+            # 验证大页配置
+            cat /proc/meminfo | grep Huge
+        }
+
+        # 绑定网卡到DPDK
+        bind_interface_to_dpdk() {
+            local interface=$1
+            
+            log_info "绑定网卡 $interface 到DPDK..."
+            
+            # 获取PCI地址
+            local pci_addr=$(ethtool -i $interface | grep bus-info | awk '{print $2}')
+            
+            # 停用网卡
+            ip link set $interface down
+            
+            # 绑定到DPDK驱动
+            $DPDK_DIR/dpdk-$DPDK_VERSION/usertools/dpdk-devbind.py --bind=vfio-pci $pci_addr
+            
+            # 显示绑定状态
+            $DPDK_DIR/dpdk-$DPDK_VERSION/usertools/dpdk-devbind.py --status
+        }
+
+        main() {
+            install_dpdk
+            setup_hugepages 2048
+            
+            if [[ $# -ge 1 ]]; then
+                bind_interface_to_dpdk $1
+            fi
+        }
+
+        main "$@"
+
+---
+# GPU网络优化配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: gpu-network-optimization
+data:
+    # GPUDirect RDMA配置
+    gpu-direct-rdma.sh: |
+        #!/bin/bash
+        # GPUDirect RDMA配置
+
+        set -e
+
+        log_info() {
+            echo -e "\033[0;32m[INFO]\033[0m $1"
+        }
+
+        # 检查GPUDirect支持
+        check_gpu_direct_support() {
+            log_info "检查GPUDirect RDMA支持..."
+            
+            # 检查NVIDIA驱动
+            if ! command -v nvidia-smi &> /dev/null; then
+                log_error "未找到NVIDIA驱动"
+                return 1
+            fi
+            
+            # 检查CUDA版本
+            local cuda_version=$(nvidia-smi | grep "CUDA Version" | awk '{print $9}')
+            log_info "CUDA版本: $cuda_version"
+            
+            # 检查GPU型号
+            nvidia-smi --query-gpu=name --format=csv,noheader
+            
+            # 检查RDMA设备
+            if command -v ibstat &> /dev/null; then
+                ibstat
+            else
+                log_warn "未找到RDMA设备"
+            fi
+        }
+
+        # 安装GPUDirect RDMA
+        install_gpu_direct_rdma() {
+            log_info "安装GPUDirect RDMA..."
+            
+            # 下载和安装nv_peer_mem模块
+            if [[ ! -d /opt/nvidia_peer_memory ]]; then
+                cd /opt
+                git clone https://github.com/Mellanox/nv_peer_memory.git nvidia_peer_memory
+                cd nvidia_peer_memory
+                make
+                make install
+            fi
+            
+            # 加载模块
+            modprobe nv_peer_mem
+            
+            # 验证安装
+            if lsmod | grep -q nv_peer_mem; then
+                log_info "✅ GPUDirect RDMA模块加载成功"
+            else
+                log_error "❌ GPUDirect RDMA模块加载失败"
+                return 1
+            fi
+        }
+
+        # 测试GPUDirect性能
+        test_gpu_direct_performance() {
+            log_info "测试GPUDirect RDMA性能..."
+            
+            # 编译测试程序
+            cat > /tmp/gpu_direct_test.cu << 'EOF'
+        #include <cuda_runtime.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        int main() {
+            int deviceCount;
+            cudaGetDeviceCount(&deviceCount);
+            
+            printf("Found %d CUDA devices\n", deviceCount);
+            
+            for (int i = 0; i < deviceCount; i++) {
+                cudaDeviceProp prop;
+                cudaGetDeviceProperties(&prop, i);
+                printf("Device %d: %s\n", i, prop.name);
+                printf("  Compute capability: %d.%d\n", prop.major, prop.minor);
+                printf("  Memory: %.2f GB\n", prop.totalGlobalMem / 1024.0 / 1024.0 / 1024.0);
+            }
+            
+            return 0;
+        }
+        EOF
+            
+            if command -v nvcc &> /dev/null; then
+                nvcc -o /tmp/gpu_direct_test /tmp/gpu_direct_test.cu
+                /tmp/gpu_direct_test
+            else
+                log_warn "nvcc未找到，跳过GPU测试"
+            fi
+        }
+
+        main() {
+            check_gpu_direct_support
+            install_gpu_direct_rdma
+            test_gpu_direct_performance
+        }
+
+        main "$@"
+
+    # 网络性能调优
+    network-tuning.sh: |
+        #!/bin/bash
+        # 网络性能调优脚本
+
+        set -e
+
+        log_info() {
+            echo -e "\033[0;32m[INFO]\033[0m $1"
+        }
+
+        # TCP/IP优化
+        optimize_tcp_ip() {
+            log_info "优化TCP/IP参数..."
+            
+            cat >> /etc/sysctl.conf << EOF
+        # 网络性能优化
+        net.core.rmem_default = 262144
+        net.core.rmem_max = 134217728
+        net.core.wmem_default = 262144
+        net.core.wmem_max = 134217728
+        net.core.netdev_max_backlog = 5000
+        net.core.netdev_budget = 600
+        net.ipv4.tcp_rmem = 4096 87380 134217728
+        net.ipv4.tcp_wmem = 4096 65536 134217728
+        net.ipv4.tcp_congestion_control = bbr
+        net.ipv4.tcp_mtu_probing = 1
+        net.ipv4.tcp_timestamps = 1
+        net.ipv4.tcp_sack = 1
+        net.ipv4.tcp_window_scaling = 1
+        EOF
+            
+            sysctl -p
+        }
+
+        # 网卡队列优化
+        optimize_network_queues() {
+            local interface=${1:-"eth0"}
+            
+            log_info "优化网卡 $interface 队列..."
+            
+            # 设置接收队列数量
+            ethtool -L $interface combined $(nproc)
+            
+            # 设置缓冲区大小
+            ethtool -G $interface rx 4096 tx 4096
+            
+            # 启用网卡特性
+            ethtool -K $interface gro on
+            ethtool -K $interface gso on
+            ethtool -K $interface tso on
+            
+            # 显示网卡配置
+            ethtool -l $interface
+            ethtool -g $interface
+        }
+
+        # CPU亲和性优化
+        optimize_cpu_affinity() {
+            local interface=${1:-"eth0"}
+            
+            log_info "优化网卡 $interface CPU亲和性..."
+            
+            # 获取网卡中断号
+            local irqs=$(grep $interface /proc/interrupts | awk -F: '{print $1}' | tr -d ' ')
+            
+            # 设置中断亲和性
+            local cpu_count=$(nproc)
+            local cpu_index=0
+            
+            for irq in $irqs; do
+                local cpu_mask=$((1 << cpu_index))
+                echo $cpu_mask > /proc/irq/$irq/smp_affinity
+                log_info "IRQ $irq 绑定到CPU $cpu_index"
+                cpu_index=$(((cpu_index + 1) % cpu_count))
+            done
+        }
+
+        # 内存优化
+        optimize_memory() {
+            log_info "优化内存参数..."
+            
+            cat >> /etc/sysctl.conf << EOF
+        # 内存优化
+        vm.swappiness = 1
+        vm.dirty_ratio = 15
+        vm.dirty_background_ratio = 5
+        vm.vfs_cache_pressure = 50
+        EOF
+            
+            sysctl -p
+        }
+
+        main() {
+            optimize_tcp_ip
+            optimize_memory
+            
+            if [[ $# -ge 1 ]]; then
+                optimize_network_queues $1
+                optimize_cpu_affinity $1
+            fi
+            
+            log_info "✅ 网络性能优化完成"
+        }
+
+        main "$@"

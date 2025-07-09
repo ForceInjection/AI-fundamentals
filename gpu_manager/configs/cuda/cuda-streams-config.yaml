@@ -1,0 +1,565 @@
+# CUDA流配置和管理
+# 包含CUDA流的各种配置模板和管理脚本
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: cuda-streams-config
+data:
+    # CUDA流基础配置
+    cuda-streams-basic.cu: |
+        #include <cuda_runtime.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <time.h>
+
+        #define CHECK_CUDA(call) do { \
+            cudaError_t err = call; \
+            if (err != cudaSuccess) { \
+                printf("CUDA error at %s:%d - %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+                exit(1); \
+            } \
+        } while(0)
+
+        // CUDA核函数示例
+        __global__ void vectorAdd(float *a, float *b, float *c, int n) {
+            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+            if (idx < n) {
+                c[idx] = a[idx] + b[idx];
+            }
+        }
+
+        // 矩阵乘法核函数
+        __global__ void matrixMul(float *a, float *b, float *c, int width) {
+            int row = blockIdx.y * blockDim.y + threadIdx.y;
+            int col = blockIdx.x * blockDim.x + threadIdx.x;
+            
+            if (row < width && col < width) {
+                float sum = 0.0f;
+                for (int k = 0; k < width; k++) {
+                    sum += a[row * width + k] * b[k * width + col];
+                }
+                c[row * width + col] = sum;
+            }
+        }
+
+        int main() {
+            printf("CUDA流基础示例\n");
+            
+            // 设备属性查询
+            int deviceCount;
+            CHECK_CUDA(cudaGetDeviceCount(&deviceCount));
+            printf("检测到 %d 个CUDA设备\n", deviceCount);
+            
+            cudaDeviceProp prop;
+            CHECK_CUDA(cudaGetDeviceProperties(&prop, 0));
+            printf("设备名称: %s\n", prop.name);
+            printf("并发内核数: %d\n", prop.concurrentKernels);
+            printf("异步引擎数: %d\n", prop.asyncEngineCount);
+            
+            // 创建CUDA流
+            const int numStreams = 4;
+            cudaStream_t streams[numStreams];
+            
+            for (int i = 0; i < numStreams; i++) {
+                CHECK_CUDA(cudaStreamCreate(&streams[i]));
+            }
+            
+            // 数据准备
+            const int n = 1024 * 1024;
+            size_t size = n * sizeof(float);
+            
+            float *h_a, *h_b, *h_c;
+            float *d_a, *d_b, *d_c;
+            
+            // 分配主机内存（页锁定）
+            CHECK_CUDA(cudaMallocHost(&h_a, size));
+            CHECK_CUDA(cudaMallocHost(&h_b, size));
+            CHECK_CUDA(cudaMallocHost(&h_c, size));
+            
+            // 分配设备内存
+            CHECK_CUDA(cudaMalloc(&d_a, size));
+            CHECK_CUDA(cudaMalloc(&d_b, size));
+            CHECK_CUDA(cudaMalloc(&d_c, size));
+            
+            // 初始化数据
+            for (int i = 0; i < n; i++) {
+                h_a[i] = (float)rand() / RAND_MAX;
+                h_b[i] = (float)rand() / RAND_MAX;
+            }
+            
+            // 计算网格和块大小
+            int blockSize = 256;
+            int gridSize = (n + blockSize - 1) / blockSize;
+            
+            // 创建CUDA事件用于计时
+            cudaEvent_t start, stop;
+            CHECK_CUDA(cudaEventCreate(&start));
+            CHECK_CUDA(cudaEventCreate(&stop));
+            
+            // 同步执行（基准）
+            printf("\n=== 同步执行 ===\n");
+            CHECK_CUDA(cudaEventRecord(start));
+            
+            CHECK_CUDA(cudaMemcpy(d_a, h_a, size, cudaMemcpyHostToDevice));
+            CHECK_CUDA(cudaMemcpy(d_b, h_b, size, cudaMemcpyHostToDevice));
+            vectorAdd<<<gridSize, blockSize>>>(d_a, d_b, d_c, n);
+            CHECK_CUDA(cudaMemcpy(h_c, d_c, size, cudaMemcpyDeviceToHost));
+            
+            CHECK_CUDA(cudaEventRecord(stop));
+            CHECK_CUDA(cudaEventSynchronize(stop));
+            
+            float syncTime;
+            CHECK_CUDA(cudaEventElapsedTime(&syncTime, start, stop));
+            printf("同步执行时间: %.2f ms\n", syncTime);
+            
+            // 异步执行（使用流）
+            printf("\n=== 异步执行（多流） ===\n");
+            CHECK_CUDA(cudaEventRecord(start));
+            
+            // 将数据分割到多个流中
+            int elementsPerStream = n / numStreams;
+            size_t sizePerStream = elementsPerStream * sizeof(float);
+            
+            for (int i = 0; i < numStreams; i++) {
+                int offset = i * elementsPerStream;
+                
+                // 异步内存拷贝和核函数执行
+                CHECK_CUDA(cudaMemcpyAsync(d_a + offset, h_a + offset, sizePerStream, 
+                                         cudaMemcpyHostToDevice, streams[i]));
+                CHECK_CUDA(cudaMemcpyAsync(d_b + offset, h_b + offset, sizePerStream, 
+                                         cudaMemcpyHostToDevice, streams[i]));
+                
+                int streamGridSize = (elementsPerStream + blockSize - 1) / blockSize;
+                vectorAdd<<<streamGridSize, blockSize, 0, streams[i]>>>
+                         (d_a + offset, d_b + offset, d_c + offset, elementsPerStream);
+                
+                CHECK_CUDA(cudaMemcpyAsync(h_c + offset, d_c + offset, sizePerStream, 
+                                         cudaMemcpyDeviceToHost, streams[i]));
+            }
+            
+            // 等待所有流完成
+            for (int i = 0; i < numStreams; i++) {
+                CHECK_CUDA(cudaStreamSynchronize(streams[i]));
+            }
+            
+            CHECK_CUDA(cudaEventRecord(stop));
+            CHECK_CUDA(cudaEventSynchronize(stop));
+            
+            float asyncTime;
+            CHECK_CUDA(cudaEventElapsedTime(&asyncTime, start, stop));
+            printf("异步执行时间: %.2f ms\n", asyncTime);
+            printf("性能提升: %.2fx\n", syncTime / asyncTime);
+            
+            // 流优先级示例
+            printf("\n=== 流优先级示例 ===\n");
+            
+            // 获取优先级范围
+            int leastPriority, greatestPriority;
+            CHECK_CUDA(cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority));
+            printf("流优先级范围: %d (最低) 到 %d (最高)\n", leastPriority, greatestPriority);
+            
+            // 创建不同优先级的流
+            cudaStream_t highPriorityStream, lowPriorityStream;
+            CHECK_CUDA(cudaStreamCreateWithPriority(&highPriorityStream, cudaStreamNonBlocking, greatestPriority));
+            CHECK_CUDA(cudaStreamCreateWithPriority(&lowPriorityStream, cudaStreamNonBlocking, leastPriority));
+            
+            printf("高优先级流创建成功\n");
+            printf("低优先级流创建成功\n");
+            
+            // 清理资源
+            for (int i = 0; i < numStreams; i++) {
+                CHECK_CUDA(cudaStreamDestroy(streams[i]));
+            }
+            CHECK_CUDA(cudaStreamDestroy(highPriorityStream));
+            CHECK_CUDA(cudaStreamDestroy(lowPriorityStream));
+            
+            CHECK_CUDA(cudaEventDestroy(start));
+            CHECK_CUDA(cudaEventDestroy(stop));
+            
+            CHECK_CUDA(cudaFreeHost(h_a));
+            CHECK_CUDA(cudaFreeHost(h_b));
+            CHECK_CUDA(cudaFreeHost(h_c));
+            
+            CHECK_CUDA(cudaFree(d_a));
+            CHECK_CUDA(cudaFree(d_b));
+            CHECK_CUDA(cudaFree(d_c));
+            
+            printf("\n✅ CUDA流示例完成\n");
+            return 0;
+        }
+
+    # CUDA流高级配置
+    cuda-streams-advanced.cu: |
+        #include <cuda_runtime.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <vector>
+        #include <chrono>
+
+        #define CHECK_CUDA(call) do { \
+            cudaError_t err = call; \
+            if (err != cudaSuccess) { \
+                printf("CUDA error: %s\n", cudaGetErrorString(err)); \
+                exit(1); \
+            } \
+        } while(0)
+
+        // 复杂计算核函数
+        __global__ void complexComputation(float *data, int n, int iterations) {
+            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+            if (idx < n) {
+                float value = data[idx];
+                for (int i = 0; i < iterations; i++) {
+                    value = sinf(value) * cosf(value) + sqrtf(fabsf(value));
+                }
+                data[idx] = value;
+            }
+        }
+
+        // 流依赖管理类
+        class StreamManager {
+        private:
+            std::vector<cudaStream_t> streams;
+            std::vector<cudaEvent_t> events;
+            int numStreams;
+            
+        public:
+            StreamManager(int num) : numStreams(num) {
+                streams.resize(numStreams);
+                events.resize(numStreams);
+                
+                for (int i = 0; i < numStreams; i++) {
+                    CHECK_CUDA(cudaStreamCreate(&streams[i]));
+                    CHECK_CUDA(cudaEventCreate(&events[i]));
+                }
+            }
+            
+            ~StreamManager() {
+                for (int i = 0; i < numStreams; i++) {
+                    cudaStreamDestroy(streams[i]);
+                    cudaEventDestroy(events[i]);
+                }
+            }
+            
+            cudaStream_t getStream(int index) {
+                return streams[index % numStreams];
+            }
+            
+            cudaEvent_t getEvent(int index) {
+                return events[index % numStreams];
+            }
+            
+            void recordEvent(int streamIndex) {
+                CHECK_CUDA(cudaEventRecord(events[streamIndex], streams[streamIndex]));
+            }
+            
+            void waitForEvent(int waitingStream, int eventIndex) {
+                CHECK_CUDA(cudaStreamWaitEvent(streams[waitingStream], events[eventIndex], 0));
+            }
+            
+            void synchronizeAll() {
+                for (int i = 0; i < numStreams; i++) {
+                    CHECK_CUDA(cudaStreamSynchronize(streams[i]));
+                }
+            }
+        };
+
+        // 流水线处理示例
+        void pipelineExample() {
+            printf("\n=== 流水线处理示例 ===\n");
+            
+            const int numBatches = 8;
+            const int batchSize = 1024 * 1024;
+            const int numStreams = 3;
+            
+            StreamManager streamMgr(numStreams);
+            
+            // 分配内存
+            std::vector<float*> h_data(numBatches);
+            std::vector<float*> d_data(numBatches);
+            
+            size_t size = batchSize * sizeof(float);
+            
+            for (int i = 0; i < numBatches; i++) {
+                CHECK_CUDA(cudaMallocHost(&h_data[i], size));
+                CHECK_CUDA(cudaMalloc(&d_data[i], size));
+                
+                // 初始化数据
+                for (int j = 0; j < batchSize; j++) {
+                    h_data[i][j] = (float)rand() / RAND_MAX;
+                }
+            }
+            
+            // 计算参数
+            int blockSize = 256;
+            int gridSize = (batchSize + blockSize - 1) / blockSize;
+            
+            auto start = std::chrono::high_resolution_clock::now();
+            
+            // 流水线执行
+            for (int i = 0; i < numBatches; i++) {
+                int streamId = i % numStreams;
+                cudaStream_t stream = streamMgr.getStream(streamId);
+                
+                // 阶段1: H2D传输
+                CHECK_CUDA(cudaMemcpyAsync(d_data[i], h_data[i], size, 
+                                         cudaMemcpyHostToDevice, stream));
+                
+                // 阶段2: 计算
+                complexComputation<<<gridSize, blockSize, 0, stream>>>
+                                  (d_data[i], batchSize, 100);
+                
+                // 阶段3: D2H传输
+                CHECK_CUDA(cudaMemcpyAsync(h_data[i], d_data[i], size, 
+                                         cudaMemcpyDeviceToHost, stream));
+            }
+            
+            streamMgr.synchronizeAll();
+            
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            
+            printf("流水线处理时间: %ld ms\n", duration.count());
+            
+            // 清理内存
+            for (int i = 0; i < numBatches; i++) {
+                cudaFreeHost(h_data[i]);
+                cudaFree(d_data[i]);
+            }
+        }
+
+        // 流依赖示例
+        void streamDependencyExample() {
+            printf("\n=== 流依赖示例 ===\n");
+            
+            const int numStreams = 4;
+            StreamManager streamMgr(numStreams);
+            
+            const int n = 1024 * 1024;
+            size_t size = n * sizeof(float);
+            
+            float *d_data1, *d_data2, *d_result;
+            CHECK_CUDA(cudaMalloc(&d_data1, size));
+            CHECK_CUDA(cudaMalloc(&d_data2, size));
+            CHECK_CUDA(cudaMalloc(&d_result, size));
+            
+            int blockSize = 256;
+            int gridSize = (n + blockSize - 1) / blockSize;
+            
+            // 流0: 处理数据1
+            complexComputation<<<gridSize, blockSize, 0, streamMgr.getStream(0)>>>
+                              (d_data1, n, 50);
+            streamMgr.recordEvent(0);
+            
+            // 流1: 处理数据2
+            complexComputation<<<gridSize, blockSize, 0, streamMgr.getStream(1)>>>
+                              (d_data2, n, 50);
+            streamMgr.recordEvent(1);
+            
+            // 流2: 等待流0和流1完成，然后合并结果
+            streamMgr.waitForEvent(2, 0);  // 等待流0
+            streamMgr.waitForEvent(2, 1);  // 等待流1
+            
+            // 简单的向量加法作为合并操作
+            // vectorAdd<<<gridSize, blockSize, 0, streamMgr.getStream(2)>>>
+            //           (d_data1, d_data2, d_result, n);
+            
+            streamMgr.synchronizeAll();
+            
+            printf("流依赖执行完成\n");
+            
+            CHECK_CUDA(cudaFree(d_data1));
+            CHECK_CUDA(cudaFree(d_data2));
+            CHECK_CUDA(cudaFree(d_result));
+        }
+
+        int main() {
+            printf("CUDA流高级示例\n");
+            
+            // 设备信息
+            cudaDeviceProp prop;
+            CHECK_CUDA(cudaGetDeviceProperties(&prop, 0));
+            printf("设备: %s\n", prop.name);
+            printf("并发内核支持: %s\n", prop.concurrentKernels ? "是" : "否");
+            printf("异步引擎数: %d\n", prop.asyncEngineCount);
+            
+            // 运行示例
+            pipelineExample();
+            streamDependencyExample();
+            
+            printf("\n✅ 高级CUDA流示例完成\n");
+            return 0;
+        }
+
+    # CUDA流编译和运行脚本
+    compile-and-run.sh: |
+        #!/bin/bash
+        # CUDA流示例编译和运行脚本
+
+        set -e
+
+        # 颜色输出
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        RED='\033[0;31m'
+        NC='\033[0m'
+
+        log_info() {
+            echo -e "${GREEN}[INFO]${NC} $1"
+        }
+
+        log_warn() {
+            echo -e "${YELLOW}[WARN]${NC} $1"
+        }
+
+        log_error() {
+            echo -e "${RED}[ERROR]${NC} $1"
+        }
+
+        # 检查CUDA环境
+        check_cuda_environment() {
+            log_info "检查CUDA环境..."
+            
+            if ! command -v nvcc &> /dev/null; then
+                log_error "nvcc未找到，请安装CUDA Toolkit"
+                return 1
+            fi
+            
+            if ! command -v nvidia-smi &> /dev/null; then
+                log_error "nvidia-smi未找到，请安装NVIDIA驱动"
+                return 1
+            fi
+            
+            local cuda_version=$(nvcc --version | grep "release" | awk '{print $6}' | cut -c2-)
+            log_info "CUDA版本: $cuda_version"
+            
+            nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader
+        }
+
+        # 编译CUDA程序
+        compile_cuda_program() {
+            local source_file=$1
+            local output_file=${2:-"${source_file%.*}"}
+            
+            log_info "编译 $source_file..."
+            
+            # 检查源文件是否存在
+            if [[ ! -f "$source_file" ]]; then
+                log_error "源文件 $source_file 不存在"
+                return 1
+            fi
+            
+            # 编译参数
+            local nvcc_flags="-O3 -std=c++11 -arch=sm_70 -lcuda -lcudart"
+            
+            # 检测GPU架构
+            local gpu_arch=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader,nounits | head -1 | tr -d '.')
+            if [[ -n "$gpu_arch" ]]; then
+                nvcc_flags="-O3 -std=c++11 -arch=sm_$gpu_arch -lcuda -lcudart"
+                log_info "检测到GPU架构: sm_$gpu_arch"
+            fi
+            
+            # 编译
+            if nvcc $nvcc_flags -o "$output_file" "$source_file"; then
+                log_info "✅ 编译成功: $output_file"
+            else
+                log_error "❌ 编译失败"
+                return 1
+            fi
+        }
+
+        # 运行CUDA程序
+        run_cuda_program() {
+            local program=$1
+            
+            log_info "运行 $program..."
+            
+            if [[ ! -f "$program" ]]; then
+                log_error "程序文件 $program 不存在"
+                return 1
+            fi
+            
+            if [[ ! -x "$program" ]]; then
+                chmod +x "$program"
+            fi
+            
+            echo "==========================================="
+            ./$program
+            echo "==========================================="
+        }
+
+        # 性能分析
+        profile_cuda_program() {
+            local program=$1
+            
+            log_info "性能分析 $program..."
+            
+            if command -v nvprof &> /dev/null; then
+                log_info "使用nvprof进行性能分析..."
+                nvprof --print-gpu-trace ./$program
+            elif command -v nsys &> /dev/null; then
+                log_info "使用nsys进行性能分析..."
+                nsys profile --trace=cuda,nvtx --output=${program}_profile ./$program
+                log_info "分析报告保存为: ${program}_profile.nsys-rep"
+            else
+                log_warn "未找到性能分析工具（nvprof或nsys）"
+            fi
+        }
+
+        # 主函数
+        main() {
+            local action=${1:-"all"}
+            local source_file=${2:-"cuda-streams-basic.cu"}
+            
+            case $action in
+                "check")
+                    check_cuda_environment
+                    ;;
+                "compile")
+                    if [[ -z "$source_file" ]]; then
+                        log_error "请指定源文件"
+                        exit 1
+                    fi
+                    check_cuda_environment
+                    compile_cuda_program "$source_file"
+                    ;;
+                "run")
+                    local program=${source_file%.*}
+                    run_cuda_program "$program"
+                    ;;
+                "profile")
+                    local program=${source_file%.*}
+                    profile_cuda_program "$program"
+                    ;;
+                "all")
+                    check_cuda_environment
+                    compile_cuda_program "$source_file"
+                    local program=${source_file%.*}
+                    run_cuda_program "$program"
+                    ;;
+                "help")
+                    echo "用法: $0 [action] [source_file]"
+                    echo "Actions:"
+                    echo "  check    - 检查CUDA环境"
+                    echo "  compile  - 编译CUDA程序"
+                    echo "  run      - 运行CUDA程序"
+                    echo "  profile  - 性能分析"
+                    echo "  all      - 编译并运行（默认）"
+                    echo "  help     - 显示帮助"
+                    echo ""
+                    echo "示例:"
+                    echo "  $0 compile cuda-streams-basic.cu"
+                    echo "  $0 run cuda-streams-basic"
+                    echo "  $0 all cuda-streams-advanced.cu"
+                    ;;
+                *)
+                    log_error "未知操作: $action"
+                    echo "使用 '$0 help' 查看帮助"
+                    exit 1
+                    ;;
+            esac
+        }
+
+        main "$@"

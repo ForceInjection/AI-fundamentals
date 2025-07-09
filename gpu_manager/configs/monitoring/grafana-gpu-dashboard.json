@@ -1,0 +1,400 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "GPU Cluster Monitoring Dashboard",
+    "tags": ["gpu", "nvidia", "hami", "kubernetes"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "node",
+          "type": "query",
+          "query": "label_values(DCGM_FI_DEV_GPU_UTIL, kubernetes_node)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          }
+        },
+        {
+          "name": "gpu",
+          "type": "query",
+          "query": "label_values(DCGM_FI_DEV_GPU_UTIL{kubernetes_node=~\"$node\"}, gpu)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          }
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "GPU Cluster Overview",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "count(count by (kubernetes_node, gpu)(DCGM_FI_DEV_GPU_UTIL))",
+            "legendFormat": "Total GPUs",
+            "refId": "A"
+          },
+          {
+            "expr": "count(count by (kubernetes_node)(DCGM_FI_DEV_GPU_UTIL))",
+            "legendFormat": "GPU Nodes",
+            "refId": "B"
+          },
+          {
+            "expr": "avg(DCGM_FI_DEV_GPU_UTIL)",
+            "legendFormat": "Avg GPU Utilization (%)",
+            "refId": "C"
+          },
+          {
+            "expr": "avg(DCGM_FI_DEV_GPU_TEMP)",
+            "legendFormat": "Avg GPU Temperature (°C)",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "GPU Utilization by Node",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_GPU_UTIL{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 3,
+        "title": "GPU Memory Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "expr": "(DCGM_FI_DEV_FB_USED{kubernetes_node=~\"$node\", gpu=~\"$gpu\"} / DCGM_FI_DEV_FB_TOTAL{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}) * 100",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 4,
+        "title": "GPU Temperature",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_GPU_TEMP{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "celsius",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 5,
+        "title": "GPU Power Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_POWER_USAGE{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "watt",
+            "min": 0
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "table", "placement": "bottom"}
+        }
+      },
+      {
+        "id": 6,
+        "title": "HAMi GPU Slice Usage",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "hami_gpu_slice_memory_used_bytes",
+            "legendFormat": "",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "hami_gpu_slice_memory_total_bytes",
+            "legendFormat": "",
+            "refId": "B",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "hami_gpu_slice_cores_used",
+            "legendFormat": "",
+            "refId": "C",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "hami_gpu_slice_cores_total",
+            "legendFormat": "",
+            "refId": "D",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true
+              },
+              "indexByName": {
+                "kubernetes_node": 0,
+                "slice_id": 1,
+                "pod_name": 2,
+                "Value #A": 3,
+                "Value #B": 4,
+                "Value #C": 5,
+                "Value #D": 6
+              },
+              "renameByName": {
+                "kubernetes_node": "Node",
+                "slice_id": "Slice ID",
+                "pod_name": "Pod",
+                "Value #A": "Memory Used (MB)",
+                "Value #B": "Memory Total (MB)",
+                "Value #C": "Cores Used (%)",
+                "Value #D": "Cores Total (%)"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "displayMode": "auto",
+              "filterable": true
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Memory Used (MB)"},
+              "properties": [
+                {"id": "unit", "value": "bytes"},
+                {"id": "custom.displayMode", "value": "color-background"}
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Memory Total (MB)"},
+              "properties": [
+                {"id": "unit", "value": "bytes"}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 7,
+        "title": "GPU Error Rates",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "rate(DCGM_FI_DEV_ECC_SBE_VOL_TOTAL{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}[5m])",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}} SBE",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(DCGM_FI_DEV_ECC_DBE_VOL_TOTAL{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}[5m])",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}} DBE",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "ops",
+            "min": 0
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["B", "5m", "now"]},
+              "reducer": {"params": [], "type": "last"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "1m",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "GPU Double-bit ECC Errors",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 8,
+        "title": "GPU Clock Speeds",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 28},
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_SM_CLOCK{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}} SM Clock",
+            "refId": "A"
+          },
+          {
+            "expr": "DCGM_FI_DEV_MEM_CLOCK{kubernetes_node=~\"$node\", gpu=~\"$gpu\"}",
+            "legendFormat": "{{kubernetes_node}}-GPU{{gpu}} Memory Clock",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "hertz",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "HAMi Scheduler Metrics",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 34},
+        "targets": [
+          {
+            "expr": "rate(hami_scheduler_schedule_attempts_total[5m])",
+            "legendFormat": "Schedule Attempts/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(hami_scheduler_schedule_success_total[5m])",
+            "legendFormat": "Successful Schedules/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(hami_scheduler_failed_total[5m])",
+            "legendFormat": "Failed Schedules/sec",
+            "refId": "C"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(hami_scheduler_scheduling_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th Percentile Latency (s)",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short",
+            "min": 0
+          }
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "name": "GPU Alerts",
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"GPU.*\"}",
+          "iconColor": "red",
+          "titleFormat": "{{alertname}}",
+          "textFormat": "{{instance}}: {{description}}"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "GPU Node Details",
+        "url": "/d/gpu-node-details/gpu-node-details?var-node=$node",
+        "type": "dashboards"
+      },
+      {
+        "title": "HAMi Management",
+        "url": "/d/hami-management/hami-management",
+        "type": "dashboards"
+      }
+    ]
+  },
+  "overwrite": true
+}

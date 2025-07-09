@@ -1,0 +1,455 @@
+# Docker GPU运行模式配置
+# 包含各种Docker GPU运行场景的配置和脚本
+
+# Docker Compose配置 - GPU服务
+version: "3.8"
+services:
+  # 基础GPU容器
+  gpu-basic:
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: nvidia-smi
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+  # GPU训练服务
+  gpu-training:
+    image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+    command: >
+      bash -c "
+        python -c '
+        import torch
+        print(f"CUDA available: {torch.cuda.is_available()}")
+        print(f"GPU count: {torch.cuda.device_count()}")
+        if torch.cuda.is_available():
+            print(f"GPU name: {torch.cuda.get_device_name()}")
+            # 简单的GPU计算测试
+            x = torch.randn(1000, 1000).cuda()
+            y = torch.randn(1000, 1000).cuda()
+            z = torch.mm(x, y)
+            print("GPU computation completed")
+        '
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+    working_dir: /workspace
+    shm_size: "2gb"
+
+  # GPU推理服务
+  gpu-inference:
+    image: tensorflow/tensorflow:2.13.0-gpu
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+        python -c '
+        import tensorflow as tf
+        print("TensorFlow version:", tf.__version__)
+        print("GPU devices:", tf.config.list_physical_devices("GPU"))
+        
+        # 简单的HTTP推理服务
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        import json
+        import numpy as np
+        
+        class InferenceHandler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == "/health":
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    response = {
+                        "status": "healthy",
+                        "gpu_available": len(tf.config.list_physical_devices("GPU")) > 0,
+                        "tensorflow_version": tf.__version__
+                    }
+                    self.wfile.write(json.dumps(response).encode())
+                elif self.path == "/predict":
+                    # 模拟推理
+                    with tf.device("/GPU:0"):
+                        x = tf.random.normal([100, 100])
+                        y = tf.matmul(x, x)
+                    
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    response = {"prediction": "completed", "shape": y.shape.as_list()}
+                    self.wfile.write(json.dumps(response).encode())
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+        
+        server = HTTPServer(("0.0.0.0", 8080), InferenceHandler)
+        print("Starting inference server on port 8080...")
+        server.serve_forever()
+        '
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TF_FORCE_GPU_ALLOW_GROWTH=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 多GPU训练服务
+  multi-gpu-training:
+    image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+    command: >
+      bash -c "
+        python -c '
+        import torch
+        import torch.nn as nn
+        import torch.optim as optim
+        from torch.nn.parallel import DataParallel
+        
+        print(f"Available GPUs: {torch.cuda.device_count()}")
+        
+        if torch.cuda.device_count() > 1:
+            print("Setting up multi-GPU training...")
+            
+            # 创建简单模型
+            model = nn.Linear(1000, 1000)
+            model = model.cuda()
+            model = DataParallel(model)
+            
+            optimizer = optim.SGD(model.parameters(), lr=0.01)
+            criterion = nn.MSELoss()
+            
+            # 训练循环
+            for epoch in range(5):
+                data = torch.randn(64, 1000).cuda()
+                target = torch.randn(64, 1000).cuda()
+                
+                optimizer.zero_grad()
+                output = model(data)
+                loss = criterion(output, target)
+                loss.backward()
+                optimizer.step()
+                
+                print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
+            
+            print("Multi-GPU training completed!")
+        else:
+            print("Single GPU detected")
+        '
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - ./data:/workspace/data
+    working_dir: /workspace
+    shm_size: "4gb"
+
+  # GPU监控服务
+  gpu-monitor:
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: >
+      bash -c "
+        apt-get update && apt-get install -y python3 python3-pip curl
+        pip3 install gpustat psutil
+        
+        python3 -c '
+        import time
+        import subprocess
+        import json
+        from datetime import datetime
+        
+        def get_gpu_info():
+            try:
+                result = subprocess.run([
+                    "nvidia-smi", 
+                    "--query-gpu=index,name,temperature.gpu,utilization.gpu,memory.used,memory.total,power.draw",
+                    "--format=csv,noheader,nounits"
+                ], capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split("\n")
+                    gpus = []
+                    for line in lines:
+                        if line.strip():
+                            parts = [p.strip() for p in line.split(",")]
+                            if len(parts) >= 7:
+                                gpus.append({
+                                    "index": parts[0],
+                                    "name": parts[1],
+                                    "temperature": parts[2],
+                                    "utilization": parts[3],
+                                    "memory_used": parts[4],
+                                    "memory_total": parts[5],
+                                    "power_draw": parts[6]
+                                })
+                    return gpus
+            except Exception as e:
+                print(f"Error: {e}")
+            return []
+        
+        print("Starting GPU monitoring...")
+        while True:
+            timestamp = datetime.now().isoformat()
+            gpus = get_gpu_info()
+            
+            print(f"\n[{timestamp}] GPU Status:")
+            for gpu in gpus:
+                print(f"GPU {gpu["index"]} ({gpu["name"]}): "
+                      f"Temp={gpu["temperature"]}°C, "
+                      f"Util={gpu["utilization"]}%, "
+                      f"Mem={gpu["memory_used"]}/{gpu["memory_total"]}MB, "
+                      f"Power={gpu["power_draw"]}W")
+            
+            time.sleep(10)
+        '
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+  # Jupyter GPU开发环境
+  jupyter-gpu:
+    image: jupyter/tensorflow-notebook:latest
+    ports:
+      - "8888:8888"
+    command: >
+      bash -c "
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+        start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    working_dir: /home/jovyan/work
+
+---
+# Docker运行脚本配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docker-gpu-scripts
+data:
+  # 基础GPU容器运行脚本
+  run-basic-gpu.sh: |
+    #!/bin/bash
+    # 运行基础GPU容器
+    docker run --rm --gpus all \
+      nvidia/cuda:12.2-runtime-ubuntu20.04 \
+      nvidia-smi
+
+  # GPU训练容器运行脚本
+  run-training-gpu.sh: |
+    #!/bin/bash
+    # 运行GPU训练容器
+    docker run --rm --gpus all \
+      -v $(pwd)/data:/workspace/data \
+      -v $(pwd)/models:/workspace/models \
+      -w /workspace \
+      --shm-size=2g \
+      pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime \
+      python train.py
+
+  # GPU推理服务运行脚本
+  run-inference-gpu.sh: |
+    #!/bin/bash
+    # 运行GPU推理服务
+    docker run -d --name gpu-inference \
+      --gpus all \
+      -p 8080:8080 \
+      -e NVIDIA_VISIBLE_DEVICES=0 \
+      -e TF_FORCE_GPU_ALLOW_GROWTH=true \
+      tensorflow/tensorflow:2.13.0-gpu \
+      python inference_server.py
+
+  # 多GPU训练脚本
+  run-multi-gpu.sh: |
+    #!/bin/bash
+    # 运行多GPU训练
+    docker run --rm --gpus all \
+      -v $(pwd)/data:/workspace/data \
+      -w /workspace \
+      --shm-size=4g \
+      -e NVIDIA_VISIBLE_DEVICES=all \
+      pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime \
+      python -m torch.distributed.launch \
+      --nproc_per_node=$(nvidia-smi -L | wc -l) \
+      train_distributed.py
+
+  # GPU开发环境脚本
+  run-dev-gpu.sh: |
+    #!/bin/bash
+    # 运行GPU开发环境
+    docker run -it --rm --gpus all \
+      -v $(pwd):/workspace \
+      -w /workspace \
+      -p 8888:8888 \
+      --name gpu-dev \
+      pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel \
+      /bin/bash
+
+  # GPU基准测试脚本
+  run-benchmark-gpu.sh: |
+    #!/bin/bash
+    # 运行GPU基准测试
+    docker run --rm --gpus all \
+      -v $(pwd)/results:/results \
+      nvidia/cuda:12.2-devel-ubuntu20.04 \
+      bash -c "
+        apt-get update && apt-get install -y python3 python3-pip
+        pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+        python3 /results/benchmark.py
+      "
+
+  # GPU监控脚本
+  run-monitor-gpu.sh: |
+    #!/bin/bash
+    # 运行GPU监控
+    docker run -d --name gpu-monitor \
+      --gpus all \
+      --restart unless-stopped \
+      -v /var/log/gpu:/var/log/gpu \
+      nvidia/cuda:12.2-runtime-ubuntu20.04 \
+      bash -c "
+        apt-get update && apt-get install -y python3 python3-pip
+        pip3 install gpustat psutil
+        while true; do
+          echo \"[\$(date)] GPU Status:\" >> /var/log/gpu/monitor.log
+          nvidia-smi --query-gpu=timestamp,name,temperature.gpu,utilization.gpu,memory.used,memory.total,power.draw --format=csv >> /var/log/gpu/monitor.log
+          sleep 60
+        done
+      "
+
+  # Docker Swarm GPU服务部署
+  deploy-swarm-gpu.sh: |
+    #!/bin/bash
+    # 在Docker Swarm中部署GPU服务
+
+    # 创建GPU训练服务
+    docker service create \
+      --name gpu-training \
+      --generic-resource "NVIDIA-GPU=1" \
+      --mount type=bind,source=$(pwd)/data,target=/workspace/data \
+      --workdir /workspace \
+      pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime \
+      python train.py
+
+    # 创建GPU推理服务
+    docker service create \
+      --name gpu-inference \
+      --generic-resource "NVIDIA-GPU=1" \
+      --publish 8080:8080 \
+      --replicas 2 \
+      tensorflow/tensorflow:2.13.0-gpu \
+      python inference_server.py
+
+  # GPU容器健康检查脚本
+  gpu-healthcheck.sh: |
+    #!/bin/bash
+    # GPU容器健康检查
+
+    check_gpu_health() {
+      local container_name=$1
+      
+      echo "Checking GPU health for container: $container_name"
+      
+      # 检查容器是否运行
+      if ! docker ps | grep -q $container_name; then
+        echo "❌ Container $container_name is not running"
+        return 1
+      fi
+      
+      # 检查GPU访问
+      if docker exec $container_name nvidia-smi &> /dev/null; then
+        echo "✅ GPU access OK"
+      else
+        echo "❌ GPU access failed"
+        return 1
+      fi
+      
+      # 检查GPU利用率
+      local gpu_util=$(docker exec $container_name nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits)
+      echo "GPU Utilization: $gpu_util%"
+      
+      # 检查GPU内存
+      local gpu_mem=$(docker exec $container_name nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits)
+      echo "GPU Memory: $gpu_mem"
+      
+      echo "✅ GPU health check passed"
+      return 0
+    }
+
+    # 检查所有GPU容器
+    for container in $(docker ps --format "table {{.Names}}" | grep -E "gpu|cuda|pytorch|tensorflow"); do
+      check_gpu_health $container
+      echo "---"
+    done
+
+  # GPU资源清理脚本
+  cleanup-gpu.sh: |
+    #!/bin/bash
+    # 清理GPU资源
+
+    echo "Cleaning up GPU containers and resources..."
+
+    # 停止所有GPU容器
+    docker ps --format "table {{.Names}}" | grep -E "gpu|cuda|pytorch|tensorflow" | xargs -r docker stop
+
+    # 删除停止的GPU容器
+    docker ps -a --format "table {{.Names}}" | grep -E "gpu|cuda|pytorch|tensorflow" | xargs -r docker rm
+
+    # 清理未使用的GPU镜像
+    docker images | grep -E "nvidia|pytorch|tensorflow" | awk '{print $3}' | xargs -r docker rmi
+
+    # 清理Docker系统
+    docker system prune -f
+
+    echo "✅ GPU resources cleanup completed"

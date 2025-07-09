@@ -1,0 +1,572 @@
+# HAMi GPU管理系统部署配置
+# 基于HAMi v2.6.0官方最佳实践
+# 参考: https://github.com/Project-HAMi/HAMi
+# 官方文档: https://project-hami.io/docs/
+# 推荐使用Helm部署: helm install hami hami-charts/hami -n kube-system
+# 包含HAMi调度器、设备插件、webhook和监控组件
+# 注意：HAMi官方推荐部署在kube-system命名空间
+# 如需使用自定义命名空间，请确保所有组件的namespace字段一致
+# HAMi命名空间（可选，官方推荐使用kube-system）
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hami-system
+  labels:
+    name: hami-system
+    app.kubernetes.io/name: hami
+    app.kubernetes.io/version: "v2.6.0"
+
+---
+# HAMi调度器ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hami-scheduler
+  namespace: hami-system
+
+---
+# HAMi调度器ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hami-scheduler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["scheduling.k8s.io"]
+    resources: ["priorityclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+# HAMi调度器ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hami-scheduler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hami-scheduler
+subjects:
+  - kind: ServiceAccount
+    name: hami-scheduler
+    namespace: hami-system
+
+---
+# HAMi调度器ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hami-scheduler-config
+  namespace: hami-system
+data:
+  config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta3
+    kind: KubeSchedulerConfiguration
+    profiles:
+    - schedulerName: hami-scheduler
+      plugins:
+        filter:
+          enabled:
+          - name: NodeResourcesFit
+          - name: NodeAffinity
+          - name: NodePorts
+          - name: VolumeRestrictions
+          - name: EBSLimits
+          - name: GCEPDLimits
+          - name: NodeVolumeLimits
+          - name: AzureDiskLimits
+          - name: VolumeBinding
+          - name: VolumeZone
+          - name: PodTopologySpread
+          - name: InterPodAffinity
+        score:
+          enabled:
+          - name: NodeResourcesFit
+          - name: NodeAffinity
+          - name: PodTopologySpread
+          - name: InterPodAffinity
+          - name: NodePreferAvoidPods
+          - name: TaintToleration
+          - name: ImageLocality
+      pluginConfig:
+      - name: NodeResourcesFit
+        args:
+          scoringStrategy:
+            type: LeastAllocated
+            resources:
+            - name: cpu
+              weight: 1
+            - name: memory
+              weight: 1
+            - name: nvidia.com/gpu
+              weight: 5
+    leaderElection:
+      leaderElect: true
+      leaseDuration: 15s
+      renewDeadline: 10s
+      retryPeriod: 2s
+      resourceLock: leases
+      resourceName: hami-scheduler
+      resourceNamespace: hami-system
+
+---
+# HAMi调度器Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hami-scheduler
+  namespace: hami-system
+  labels:
+    app: hami-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hami-scheduler
+  template:
+    metadata:
+      labels:
+        app: hami-scheduler
+    spec:
+      serviceAccountName: hami-scheduler
+      containers:
+        - name: kube-scheduler
+          image: k8s.gcr.io/kube-scheduler:v1.28.5
+          command:
+            - kube-scheduler
+            - --config=/etc/kubernetes/scheduler-config.yaml
+            - --webhook-config=/etc/hami/webhook-config.yaml
+            - --v=2
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HOOK_URL
+              value: "http://127.0.0.1:8443/webhook"
+            - name: DEVICE_MEMORY_SCALING
+              value: "1.0"
+            - name: DEVICE_SPLIT_COUNT
+              value: "10"
+            - name: DISABLE_CORE_LIMIT
+              value: "false"
+            - name: MIG_STRATEGY
+              value: "none"
+            - name: DEFAULT_GPU_NUM
+              value: "1"
+            - name: SCHEDULER_POLICY
+              value: "binpack" # 可选: binpack, spread
+          volumeMounts:
+            - name: config
+              mountPath: /etc/kubernetes
+              readOnly: true
+            - name: webhook-config
+              mountPath: /etc/hami
+              readOnly: true
+          ports:
+            - containerPort: 8443
+              name: webhook
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 10259
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            timeoutSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 10259
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: hami-scheduler-config
+            items:
+              - key: config.yaml
+                path: scheduler-config.yaml
+        - name: webhook-config
+          configMap:
+            name: hami-webhook-config
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+
+---
+# HAMi Webhook ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hami-webhook-config
+  namespace: hami-system
+data:
+  webhook-config.yaml: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        server: http://127.0.0.1:8443
+      name: webhook
+    contexts:
+    - context:
+        cluster: webhook
+      name: webhook
+    current-context: webhook
+
+---
+# HAMi设备插件ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hami-device-plugin
+  namespace: hami-system
+
+---
+# HAMi设备插件ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hami-device-plugin
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+# HAMi设备插件ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hami-device-plugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hami-device-plugin
+subjects:
+  - kind: ServiceAccount
+    name: hami-device-plugin
+    namespace: hami-system
+
+---
+# HAMi设备插件DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hami-device-plugin
+  namespace: hami-system
+  labels:
+    app: hami-device-plugin
+spec:
+  selector:
+    matchLabels:
+      app: hami-device-plugin
+  template:
+    metadata:
+      labels:
+        app: hami-device-plugin
+    spec:
+      serviceAccountName: hami-device-plugin
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: hami-device-plugin
+          image: projecthami/hami:v2.6.0
+          command:
+            - /usr/bin/hami-device-plugin
+          args:
+            - --logtostderr=true
+            - --stderrthreshold=INFO
+            - --v=5
+            - --enable-register=true
+            - --node-name=$(NODE_NAME)
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: "compute,utility"
+            - name: DEVICE_MEMORY_SCALING
+              value: "1.0"
+            - name: DEVICE_SPLIT_COUNT
+              value: "10"
+            - name: DISABLE_CORE_LIMIT
+              value: "false"
+            - name: MIG_STRATEGY
+              value: "none"
+            - name: HOOK_URL
+              value: "http://hami-scheduler.hami-system.svc.cluster.local:8443/webhook"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+            - name: dev
+              mountPath: /dev
+            - name: sys
+              mountPath: /sys
+            - name: proc
+              mountPath: /proc
+            - name: nvidia-install-dir
+              mountPath: /usr/local/nvidia
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: nvidia-install-dir
+          hostPath:
+            path: /usr/local/nvidia
+      nodeSelector:
+        gpu: "on" # HAMi官方推荐的GPU节点标签
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+
+# HAMi Webhook配置 (可选，需要集群支持admission controllers)
+# 如果集群不支持，可以注释掉此部分
+# apiVersion: admissionregistration.k8s.io/v1
+# kind: MutatingAdmissionWebhookConfiguration
+# metadata:
+#   name: hami-webhook
+# webhooks:
+# - name: hami.io
+#   clientConfig:
+#     service:
+#       name: hami-webhook
+#       namespace: hami-system
+#       path: "/webhook"
+#   rules:
+#   - operations: ["CREATE"]
+#     apiGroups: [""]
+#     apiVersions: ["v1"]
+#     resources: ["pods"]
+#   admissionReviewVersions: ["v1", "v1beta1"]
+#   sideEffects: None
+#   failurePolicy: Ignore
+
+---
+# HAMi Webhook Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hami-webhook
+  namespace: hami-system
+  labels:
+    app: hami-scheduler
+spec:
+  selector:
+    app: hami-scheduler
+  ports:
+    - name: webhook
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+  type: ClusterIP
+
+---
+# HAMi监控Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hami-metrics
+  namespace: hami-system
+  labels:
+    app: hami-device-plugin
+spec:
+  selector:
+    app: hami-device-plugin
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: monitor
+      port: 31993
+      targetPort: 31993
+      protocol: TCP
+      nodePort: 31993
+  type: NodePort
+
+# HAMi部署说明和最佳实践
+#
+# 1. 部署前准备:
+#    - 确保Kubernetes版本 >= 1.16
+#    - 安装NVIDIA驱动和nvidia-docker
+#    - 为GPU节点添加标签: kubectl label nodes <node-name> gpu=on
+#    - 安装nvidia-device-plugin (如果未安装)
+#
+# 2. 部署命令:
+#    kubectl apply -f hami-deployment.yaml
+#
+# 3. 验证部署:
+#    kubectl get pods -n hami-system
+#    kubectl logs -n hami-system -l app=hami-scheduler
+#    kubectl logs -n hami-system -l app=hami-device-plugin
+#
+# 4. 访问WebUI:
+#    http://<node-ip>:30080
+#
+# 5. 监控访问:
+#    http://<node-ip>:31993
+#
+# 6. 推荐使用Helm部署 (更简单):
+#    helm repo add hami-charts https://project-hami.github.io/HAMi/
+#    helm install hami hami-charts/hami -n kube-system
+#
+# 7. 支持的设备类型:
+#    - NVIDIA GPU (Tesla, GeForce, Quadro)
+#    - AMD GPU (部分型号)
+#    - 华为昇腾 NPU
+#    - 寒武纪 MLU
+#    - 海光 DCU
+#
+# 8. 重要配置参数:
+#    - DEVICE_MEMORY_SCALING: GPU内存缩放比例
+#    - DEVICE_SPLIT_COUNT: GPU最大切分数量
+#    - SCHEDULER_POLICY: 调度策略 (binpack/spread)
+#    - MIG_STRATEGY: MIG策略 (none/single/mixed)
+#
+# 9. 故障排查:
+#    - 检查节点标签: kubectl get nodes --show-labels
+#    - 查看设备插件日志: kubectl logs -n hami-system daemonset/hami-device-plugin
+#    - 验证GPU资源: kubectl describe node <gpu-node>
+#
+# 10. 卸载:
+#     kubectl delete -f hami-deployment.yaml
+#     kubectl delete namespace hami-system  # 改为NodePort以便外部访问监控
+
+---
+# HAMi WebUI Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hami-webui
+  namespace: hami-system
+  labels:
+    app: hami-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hami-webui
+  template:
+    metadata:
+      labels:
+        app: hami-webui
+    spec:
+      serviceAccountName: hami-scheduler
+      containers:
+        - name: hami-webui
+          image: projecthami/hami-webui:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: KUBE_CONFIG
+              value: "/etc/kubernetes/admin.conf"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+---
+# HAMi WebUI Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hami-webui
+  namespace: hami-system
+  labels:
+    app: hami-webui
+spec:
+  selector:
+    app: hami-webui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+      nodePort: 30080
+  type: NodePort

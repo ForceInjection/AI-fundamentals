@@ -1,0 +1,316 @@
+# 通用GPU Pod模板配置文件
+# 包含多种GPU工作负载的Pod模板
+
+---
+# 基础GPU测试Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-test-basic
+  labels:
+    app: gpu-test
+    type: basic
+spec:
+  containers:
+  - name: gpu-test
+    image: nvidia/cuda:12.4-runtime-ubuntu22.04
+    command: ["nvidia-smi"]
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+        memory: "2Gi"
+        cpu: "1"
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  restartPolicy: Never
+
+---
+# TensorFlow GPU训练Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tensorflow-gpu-training
+  labels:
+    app: tensorflow
+    type: training
+spec:
+  containers:
+  - name: tensorflow-gpu
+    image: tensorflow/tensorflow:2.13.0-gpu
+    command: ["python", "-c"]
+    args:
+      - |
+        import tensorflow as tf
+        import numpy as np
+        print("TensorFlow version:", tf.__version__)
+        print("GPU devices:", tf.config.list_physical_devices('GPU'))
+        
+        # 简单的神经网络训练示例
+        with tf.device('/GPU:0'):
+          # 生成训练数据
+          X = tf.random.normal([1000, 20])
+          y = tf.random.normal([1000, 1])
+          
+          # 创建模型
+          model = tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu', input_shape=(20,)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1)
+          ])
+          
+          model.compile(optimizer='adam', loss='mse')
+          
+          # 训练模型
+          print("开始训练...")
+          history = model.fit(X, y, epochs=10, batch_size=32, verbose=1)
+          print("训练完成！")
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+        memory: "4Gi"
+        cpu: "2"
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0"
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  restartPolicy: Never
+
+---
+# PyTorch GPU训练Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pytorch-gpu-training
+  labels:
+    app: pytorch
+    type: training
+spec:
+  containers:
+  - name: pytorch-gpu
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+    command: ["python", "-c"]
+    args:
+      - |
+        import torch
+        import torch.nn as nn
+        import torch.optim as optim
+        import numpy as np
+        
+        print(f"PyTorch version: {torch.__version__}")
+        print(f"CUDA available: {torch.cuda.is_available()}")
+        print(f"CUDA device count: {torch.cuda.device_count()}")
+        
+        if torch.cuda.is_available():
+          device = torch.device('cuda:0')
+          print(f"Using device: {device}")
+          print(f"Device name: {torch.cuda.get_device_name(0)}")
+          
+          # 简单的神经网络
+          class SimpleNet(nn.Module):
+            def __init__(self):
+              super(SimpleNet, self).__init__()
+              self.fc1 = nn.Linear(20, 64)
+              self.fc2 = nn.Linear(64, 32)
+              self.fc3 = nn.Linear(32, 1)
+              self.relu = nn.ReLU()
+              
+            def forward(self, x):
+              x = self.relu(self.fc1(x))
+              x = self.relu(self.fc2(x))
+              x = self.fc3(x)
+              return x
+          
+          # 创建模型和数据
+          model = SimpleNet().to(device)
+          X = torch.randn(1000, 20).to(device)
+          y = torch.randn(1000, 1).to(device)
+          
+          criterion = nn.MSELoss()
+          optimizer = optim.Adam(model.parameters(), lr=0.001)
+          
+          # 训练循环
+          print("开始训练...")
+          for epoch in range(10):
+            optimizer.zero_grad()
+            outputs = model(X)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
+            print(f"Epoch {epoch+1}/10, Loss: {loss.item():.4f}")
+          
+          print("训练完成！")
+        else:
+          print("CUDA不可用")
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+        memory: "4Gi"
+        cpu: "2"
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0"
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  restartPolicy: Never
+
+---
+# 多GPU并行训练Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-gpu-training
+  labels:
+    app: multi-gpu
+    type: distributed-training
+spec:
+  containers:
+  - name: multi-gpu-trainer
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+    command: ["python", "-c"]
+    args:
+      - |
+        import torch
+        import torch.nn as nn
+        import torch.distributed as dist
+        import torch.multiprocessing as mp
+        from torch.nn.parallel import DistributedDataParallel as DDP
+        
+        print(f"PyTorch version: {torch.__version__}")
+        print(f"CUDA available: {torch.cuda.is_available()}")
+        print(f"CUDA device count: {torch.cuda.device_count()}")
+        
+        if torch.cuda.device_count() > 1:
+          print(f"使用 {torch.cuda.device_count()} 个GPU进行训练")
+          
+          # 简单的数据并行示例
+          class SimpleNet(nn.Module):
+            def __init__(self):
+              super(SimpleNet, self).__init__()
+              self.fc1 = nn.Linear(20, 64)
+              self.fc2 = nn.Linear(64, 32)
+              self.fc3 = nn.Linear(32, 1)
+              self.relu = nn.ReLU()
+              
+            def forward(self, x):
+              x = self.relu(self.fc1(x))
+              x = self.relu(self.fc2(x))
+              x = self.fc3(x)
+              return x
+          
+          model = SimpleNet()
+          if torch.cuda.device_count() > 1:
+            model = nn.DataParallel(model)
+          model = model.cuda()
+          
+          # 创建数据
+          X = torch.randn(1000, 20).cuda()
+          y = torch.randn(1000, 1).cuda()
+          
+          criterion = nn.MSELoss()
+          optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+          
+          # 训练
+          print("开始多GPU训练...")
+          for epoch in range(5):
+            optimizer.zero_grad()
+            outputs = model(X)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
+            print(f"Epoch {epoch+1}/5, Loss: {loss.item():.4f}")
+          
+          print("多GPU训练完成！")
+        else:
+          print("只有一个GPU，使用单GPU训练")
+    resources:
+      limits:
+        nvidia.com/gpu: "2"
+        memory: "8Gi"
+        cpu: "4"
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0,1"
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  restartPolicy: Never
+
+---
+# GPU推理服务Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-inference-service
+  labels:
+    app: inference
+    type: service
+spec:
+  containers:
+  - name: inference-server
+    image: nvidia/tritonserver:23.10-py3
+    command: ["tritonserver"]
+    args:
+      - "--model-repository=/models"
+      - "--strict-model-config=false"
+      - "--log-verbose=1"
+    ports:
+    - containerPort: 8000
+      name: http
+    - containerPort: 8001
+      name: grpc
+    - containerPort: 8002
+      name: metrics
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+        memory: "4Gi"
+        cpu: "2"
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0"
+    volumeMounts:
+    - name: model-repository
+      mountPath: /models
+    readinessProbe:
+      httpGet:
+        path: /v2/health/ready
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /v2/health/live
+        port: 8000
+      initialDelaySeconds: 60
+      periodSeconds: 30
+  volumes:
+  - name: model-repository
+    emptyDir: {}
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  restartPolicy: Always

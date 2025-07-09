@@ -1,0 +1,375 @@
+# Prometheus GPU监控配置
+# 包含GPU指标收集和告警规则
+
+---
+# Prometheus ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-gpu-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'gpu-cluster'
+        region: 'us-west-2'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+
+    scrape_configs:
+      # Kubernetes API Server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+      
+      # Kubernetes Nodes
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+      
+      # Kubernetes Pods
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+      
+      # NVIDIA GPU Metrics (DCGM Exporter)
+      - job_name: 'dcgm-exporter'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: dcgm-exporter
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: 9400
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: kubernetes_node
+      
+      # HAMi Device Plugin Metrics
+      - job_name: 'hami-device-plugin'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: hami-device-plugin
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: 8080
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: kubernetes_node
+      
+      # Node Exporter
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: node-exporter
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: 9100
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: kubernetes_node
+      
+      # cAdvisor
+      - job_name: 'kubernetes-cadvisor'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'container_(cpu|memory|network|fs)_.*'
+          action: keep
+        - source_labels: [container]
+          regex: ''
+          action: drop
+        - source_labels: [__name__]
+          regex: 'container_.*'
+          target_label: __tmp_container_name
+        - source_labels: [__tmp_container_name]
+          regex: '(.*)'
+          target_label: container_name
+          replacement: '${1}'
+        - regex: __tmp_container_name
+          action: labeldrop
+
+  gpu-alerts.yml: |
+    groups:
+    - name: gpu.rules
+      rules:
+      # GPU利用率告警
+      - alert: GPUHighUtilization
+        expr: DCGM_FI_DEV_GPU_UTIL > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU utilization is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.kubernetes_node }} has been running at {{ $value }}% utilization for more than 5 minutes."
+      
+      # GPU内存使用率告警
+      - alert: GPUHighMemoryUsage
+        expr: (DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_TOTAL) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU memory usage is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.kubernetes_node }} memory usage is {{ $value }}%."
+      
+      # GPU温度告警
+      - alert: GPUHighTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 80
+        for: 2m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "GPU temperature is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.kubernetes_node }} temperature is {{ $value }}°C."
+      
+      # GPU功耗告警
+      - alert: GPUHighPowerUsage
+        expr: DCGM_FI_DEV_POWER_USAGE > 250
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "GPU power usage is high"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.kubernetes_node }} power usage is {{ $value }}W."
+      
+      # GPU错误率告警
+      - alert: GPUErrorRate
+        expr: rate(DCGM_FI_DEV_ECC_DBE_VOL_TOTAL[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "GPU has double-bit ECC errors"
+          description: "GPU {{ $labels.gpu }} on node {{ $labels.kubernetes_node }} is experiencing ECC errors."
+      
+      # HAMi GPU切片资源告警
+      - alert: HAMiGPUSliceHighUsage
+        expr: hami_gpu_slice_memory_used_bytes / hami_gpu_slice_memory_total_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: hami
+        annotations:
+          summary: "HAMi GPU slice memory usage is high"
+          description: "GPU slice {{ $labels.slice_id }} on node {{ $labels.kubernetes_node }} memory usage is over 90%."
+      
+      # HAMi调度失败告警
+      - alert: HAMiSchedulingFailure
+        expr: increase(hami_scheduler_failed_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          component: hami
+        annotations:
+          summary: "HAMi scheduler is failing frequently"
+          description: "HAMi scheduler has failed {{ $value }} times in the last 5 minutes."
+      
+      # 节点GPU不可用告警
+      - alert: NodeGPUUnavailable
+        expr: up{job="dcgm-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "Node GPU metrics unavailable"
+          description: "GPU metrics from node {{ $labels.kubernetes_node }} are unavailable."
+      
+      # GPU节点资源不足告警
+      - alert: GPUNodeResourceExhaustion
+        expr: |
+          (
+            sum by (kubernetes_node) (DCGM_FI_DEV_FB_USED) /
+            sum by (kubernetes_node) (DCGM_FI_DEV_FB_TOTAL)
+          ) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "GPU node resources nearly exhausted"
+          description: "Node {{ $labels.kubernetes_node }} GPU memory usage is over 95%."
+
+---
+# DCGM Exporter DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dcgm-exporter
+  namespace: monitoring
+  labels:
+    app: dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: dcgm-exporter
+  template:
+    metadata:
+      labels:
+        app: dcgm-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9400"
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: dcgm-exporter
+          image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.0-3.2.0-ubuntu22.04
+          ports:
+            - name: metrics
+              containerPort: 9400
+              hostPort: 9400
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+          env:
+            - name: DCGM_EXPORTER_LISTEN
+              value: ":9400"
+            - name: DCGM_EXPORTER_KUBERNETES
+              value: "true"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9400
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9400
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+          operator: Exists

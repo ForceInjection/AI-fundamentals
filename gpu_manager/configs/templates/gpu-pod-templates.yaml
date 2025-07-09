@@ -1,0 +1,537 @@
+# GPU Pod配置模板集合
+# 包含各种GPU工作负载的Pod配置模板
+
+---
+# 基础GPU Pod模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: basic-gpu-pod
+  labels:
+    app: gpu-workload
+    type: basic
+spec:
+  restartPolicy: Never
+  containers:
+  - name: gpu-container
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: ["nvidia-smi"]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        memory: "4Gi"
+        cpu: "2"
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU训练工作负载模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-training-pod
+  labels:
+    app: gpu-training
+    type: training
+spec:
+  restartPolicy: Never
+  containers:
+  - name: training-container
+    image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      python -c "
+      import torch
+      print(f'CUDA available: {torch.cuda.is_available()}')
+      print(f'CUDA devices: {torch.cuda.device_count()}')
+      if torch.cuda.is_available():
+          print(f'Current device: {torch.cuda.current_device()}')
+          print(f'Device name: {torch.cuda.get_device_name()}')
+          # 简单的GPU计算测试
+          x = torch.randn(1000, 1000).cuda()
+          y = torch.randn(1000, 1000).cuda()
+          z = torch.mm(x, y)
+          print(f'Matrix multiplication completed on GPU')
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        memory: "8Gi"
+        cpu: "4"
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0"
+    volumeMounts:
+    - name: shm
+      mountPath: /dev/shm
+  volumes:
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "2Gi"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU推理服务模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-inference-pod
+  labels:
+    app: gpu-inference
+    type: inference
+spec:
+  containers:
+  - name: inference-container
+    image: tensorflow/tensorflow:2.13.0-gpu
+    ports:
+    - containerPort: 8080
+      name: http
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      python -c "
+      import tensorflow as tf
+      print('TensorFlow version:', tf.__version__)
+      print('GPU available:', tf.config.list_physical_devices('GPU'))
+      
+      # 简单的HTTP服务器
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json
+      
+      class InferenceHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path == '/health':
+                  self.send_response(200)
+                  self.send_header('Content-type', 'application/json')
+                  self.end_headers()
+                  response = {'status': 'healthy', 'gpu_available': len(tf.config.list_physical_devices('GPU')) > 0}
+                  self.wfile.write(json.dumps(response).encode())
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+      
+      server = HTTPServer(('0.0.0.0', 8080), InferenceHandler)
+      print('Starting inference server on port 8080...')
+      server.serve_forever()
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        memory: "6Gi"
+        cpu: "3"
+      requests:
+        memory: "3Gi"
+        cpu: "1.5"
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 5
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# 多GPU训练模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-gpu-training-pod
+  labels:
+    app: multi-gpu-training
+    type: distributed-training
+spec:
+  restartPolicy: Never
+  containers:
+  - name: multi-gpu-container
+    image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      python -c "
+      import torch
+      import torch.distributed as dist
+      import torch.nn as nn
+      import torch.optim as optim
+      from torch.nn.parallel import DistributedDataParallel as DDP
+      
+      print(f'CUDA devices available: {torch.cuda.device_count()}')
+      
+      if torch.cuda.device_count() > 1:
+          print('Starting multi-GPU training...')
+          # 简单的多GPU训练示例
+          device_ids = list(range(torch.cuda.device_count()))
+          print(f'Using devices: {device_ids}')
+          
+          # 创建简单模型
+          model = nn.Linear(1000, 1000)
+          if torch.cuda.is_available():
+              model = model.cuda()
+              if len(device_ids) > 1:
+                  model = nn.DataParallel(model, device_ids=device_ids)
+          
+          # 训练循环
+          optimizer = optim.SGD(model.parameters(), lr=0.01)
+          for epoch in range(5):
+              data = torch.randn(64, 1000)
+              target = torch.randn(64, 1000)
+              if torch.cuda.is_available():
+                  data, target = data.cuda(), target.cuda()
+              
+              optimizer.zero_grad()
+              output = model(data)
+              loss = nn.MSELoss()(output, target)
+              loss.backward()
+              optimizer.step()
+              
+              print(f'Epoch {epoch+1}, Loss: {loss.item():.4f}')
+          
+          print('Multi-GPU training completed!')
+      else:
+          print('Single GPU detected, running single GPU training...')
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 2
+        memory: "16Gi"
+        cpu: "8"
+      requests:
+        memory: "8Gi"
+        cpu: "4"
+    env:
+    - name: CUDA_VISIBLE_DEVICES
+      value: "0,1"
+    volumeMounts:
+    - name: shm
+      mountPath: /dev/shm
+  volumes:
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "4Gi"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU内存限制模板（HAMi）
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-memory-limit-pod
+  labels:
+    app: gpu-memory-limit
+    type: hami
+spec:
+  restartPolicy: Never
+  containers:
+  - name: memory-limit-container
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      echo "GPU Memory Limit Test"
+      nvidia-smi
+      echo "Available GPU memory:"
+      nvidia-smi --query-gpu=memory.total,memory.used,memory.free --format=csv,noheader,nounits
+      
+      # 测试内存分配
+      python3 -c "
+      import subprocess
+      import sys
+      
+      try:
+          import cupy as cp
+          print('Testing GPU memory allocation with CuPy...')
+          # 尝试分配指定大小的GPU内存
+          memory_size = 2 * 1024**3  # 2GB
+          gpu_array = cp.zeros(memory_size // 4, dtype=cp.float32)
+          print(f'Successfully allocated {memory_size / 1024**3:.1f}GB GPU memory')
+          del gpu_array
+      except ImportError:
+          print('CuPy not available, installing...')
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'cupy-cuda12x'])
+      except Exception as e:
+          print(f'Memory allocation test failed: {e}')
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        nvidia.com/gpumem: 4096  # HAMi GPU内存限制 (MB)
+        nvidia.com/gpucores: 50  # HAMi GPU核心限制 (%)
+        memory: "4Gi"
+        cpu: "2"
+      requests:
+        memory: "2Gi"
+        cpu: "1"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU时间切片模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-time-slicing-pod
+  labels:
+    app: gpu-time-slicing
+    type: time-slicing
+spec:
+  restartPolicy: Never
+  containers:
+  - name: time-slicing-container
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      echo "GPU Time Slicing Test"
+      echo "Container ID: $HOSTNAME"
+      nvidia-smi
+      
+      # 运行GPU计算任务
+      python3 -c "
+      import time
+      import subprocess
+      import sys
+      
+      print('Starting GPU computation...')
+      start_time = time.time()
+      
+      # 简单的GPU计算循环
+      for i in range(10):
+          print(f'Iteration {i+1}/10')
+          # 使用nvidia-smi进行GPU查询
+          result = subprocess.run(['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits'], 
+                                capture_output=True, text=True)
+          if result.returncode == 0:
+              gpu_util = result.stdout.strip()
+              print(f'GPU Utilization: {gpu_util}%')
+          
+          time.sleep(2)
+      
+      end_time = time.time()
+      print(f'Computation completed in {end_time - start_time:.2f} seconds')
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1  # 时间切片共享GPU
+        memory: "2Gi"
+        cpu: "1"
+      requests:
+        memory: "1Gi"
+        cpu: "0.5"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU基准测试模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-benchmark-pod
+  labels:
+    app: gpu-benchmark
+    type: benchmark
+spec:
+  restartPolicy: Never
+  containers:
+  - name: benchmark-container
+    image: nvidia/cuda:12.2-devel-ubuntu20.04
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      echo "GPU Benchmark Test"
+      nvidia-smi
+      
+      # 安装必要工具
+      apt-get update && apt-get install -y python3 python3-pip git
+      pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+      
+      # 运行PyTorch基准测试
+      python3 -c "
+      import torch
+      import time
+      import torch.nn as nn
+      
+      print('PyTorch GPU Benchmark')
+      print(f'PyTorch version: {torch.__version__}')
+      print(f'CUDA available: {torch.cuda.is_available()}')
+      
+      if torch.cuda.is_available():
+          device = torch.device('cuda')
+          print(f'GPU: {torch.cuda.get_device_name()}')
+          
+          # 矩阵乘法基准测试
+          sizes = [1000, 2000, 4000]
+          for size in sizes:
+              print(f'\nMatrix multiplication benchmark ({size}x{size}):')
+              
+              # CPU测试
+              a_cpu = torch.randn(size, size)
+              b_cpu = torch.randn(size, size)
+              
+              start_time = time.time()
+              c_cpu = torch.mm(a_cpu, b_cpu)
+              cpu_time = time.time() - start_time
+              
+              # GPU测试
+              a_gpu = a_cpu.to(device)
+              b_gpu = b_cpu.to(device)
+              
+              # 预热
+              torch.mm(a_gpu, b_gpu)
+              torch.cuda.synchronize()
+              
+              start_time = time.time()
+              c_gpu = torch.mm(a_gpu, b_gpu)
+              torch.cuda.synchronize()
+              gpu_time = time.time() - start_time
+              
+              speedup = cpu_time / gpu_time
+              print(f'CPU time: {cpu_time:.4f}s')
+              print(f'GPU time: {gpu_time:.4f}s')
+              print(f'Speedup: {speedup:.2f}x')
+          
+          # 内存带宽测试
+          print('\nMemory bandwidth test:')
+          size = 100 * 1024 * 1024  # 100M elements
+          data = torch.randn(size, device=device)
+          
+          start_time = time.time()
+          for _ in range(10):
+              result = data * 2.0
+          torch.cuda.synchronize()
+          bandwidth_time = time.time() - start_time
+          
+          bandwidth = (size * 4 * 10 * 2) / bandwidth_time / 1e9  # GB/s
+          print(f'Memory bandwidth: {bandwidth:.2f} GB/s')
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        memory: "8Gi"
+        cpu: "4"
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+---
+# GPU监控模板
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-monitoring-pod
+  labels:
+    app: gpu-monitoring
+    type: monitoring
+spec:
+  containers:
+  - name: monitoring-container
+    image: nvidia/cuda:12.2-runtime-ubuntu20.04
+    command: ["/bin/bash"]
+    args:
+    - -c
+    - |
+      echo "GPU Monitoring Service"
+      
+      # 安装监控工具
+      apt-get update && apt-get install -y python3 python3-pip curl
+      pip3 install psutil gpustat
+      
+      # 持续监控GPU状态
+      python3 -c "
+      import time
+      import subprocess
+      import json
+      from datetime import datetime
+      
+      def get_gpu_stats():
+          try:
+              result = subprocess.run([
+                  'nvidia-smi', 
+                  '--query-gpu=index,name,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.used,memory.free,power.draw,power.limit',
+                  '--format=csv,noheader,nounits'
+              ], capture_output=True, text=True)
+              
+              if result.returncode == 0:
+                  lines = result.stdout.strip().split('\n')
+                  stats = []
+                  for line in lines:
+                      if line.strip():
+                          parts = [p.strip() for p in line.split(',')]
+                          if len(parts) >= 10:
+                              stats.append({
+                                  'index': parts[0],
+                                  'name': parts[1],
+                                  'temperature': parts[2],
+                                  'gpu_util': parts[3],
+                                  'mem_util': parts[4],
+                                  'mem_total': parts[5],
+                                  'mem_used': parts[6],
+                                  'mem_free': parts[7],
+                                  'power_draw': parts[8],
+                                  'power_limit': parts[9]
+                              })
+                  return stats
+          except Exception as e:
+              print(f'Error getting GPU stats: {e}')
+          return []
+      
+      print('Starting GPU monitoring...')
+      while True:
+          timestamp = datetime.now().isoformat()
+          stats = get_gpu_stats()
+          
+          if stats:
+              print(f'\n[{timestamp}] GPU Status:')
+              for gpu in stats:
+                  print(f'GPU {gpu["index"]} ({gpu["name"]}): '
+                        f'Temp={gpu["temperature"]}°C, '
+                        f'GPU={gpu["gpu_util"]}%, '
+                        f'Mem={gpu["mem_util"]}%, '
+                        f'Power={gpu["power_draw"]}W/{gpu["power_limit"]}W')
+          else:
+              print(f'[{timestamp}] No GPU data available')
+          
+          time.sleep(10)
+      "
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        memory: "1Gi"
+        cpu: "0.5"
+      requests:
+        memory: "512Mi"
+        cpu: "0.1"
+  tolerations:
+  - operator: Exists
+    effect: NoSchedule
