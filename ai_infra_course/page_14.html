@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>NVIDIA GPU架构演进</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .timeline-node {
+            position: relative;
+            padding-bottom: 30px;
+        }
+
+        .timeline-node::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 70px;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(237, 137, 54, 0.8), rgba(237, 137, 54, 0.2));
+            transform: translateX(-50%);
+        }
+
+        .timeline-node:last-child::after {
+            display: none;
+        }
+
+        .architecture-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #ed8936;
+        }
+
+        .architecture-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .component-box {
+            transition: all 0.3s ease;
+        }
+
+        .component-box:hover {
+            transform: scale(1.03);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .highlight-pulse {
+            animation: highlightPulse 2s infinite;
+        }
+
+        @keyframes highlightPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(237, 137, 54, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(237, 137, 54, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(237, 137, 54, 0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 200px; width: 30%;"></div>
+        <div class="circuit-line" style="top: 400px; left: 700px; width: 30%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 400px; left: 700px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 550px; left: 200px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                NVIDIA <span class="text-[#ed8936]">GPU架构</span>演进
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <div class="flex">
+                <!-- Left side: Architecture evolution timeline -->
+                <div class="w-3/5 pr-8">
+                    <div class="flex justify-between">
+                        <!-- Tesla -->
+                        <div class="timeline-node w-1/4 fade-in" style="animation-delay: 0.2s;">
+                            <div class="architecture-card bg-[#1e293b] bg-opacity-70 rounded-lg p-4 mb-3">
+                                <div
+                                    class="flex items-center justify-center h-12 w-12 rounded-full bg-[#ed8936] bg-opacity-20 mx-auto mb-3">
+                                    <i class="fas fa-microchip text-[#ed8936] text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white text-center">Tesla</h3>
+                                <p class="text-[#ed8936] text-sm text-center">2006</p>
+                                <div class="mt-3">
+                                    <ul class="text-gray-300 text-sm space-y-2">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>首个CUDA架构</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>奠定并行计算基础</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Volta -->
+                        <div class="timeline-node w-1/4 fade-in" style="animation-delay: 0.4s;">
+                            <div class="architecture-card bg-[#1e293b] bg-opacity-70 rounded-lg p-4 mb-3">
+                                <div
+                                    class="flex items-center justify-center h-12 w-12 rounded-full bg-[#ed8936] bg-opacity-20 mx-auto mb-3">
+                                    <i class="fas fa-microchip text-[#ed8936] text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white text-center">Volta</h3>
+                                <p class="text-[#ed8936] text-sm text-center">2017</p>
+                                <div class="mt-3">
+                                    <ul class="text-gray-300 text-sm space-y-2">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>引入Tensor Core</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>AI计算突破</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Ampere -->
+                        <div class="timeline-node w-1/4 fade-in" style="animation-delay: 0.6s;">
+                            <div class="architecture-card bg-[#1e293b] bg-opacity-70 rounded-lg p-4 mb-3">
+                                <div
+                                    class="flex items-center justify-center h-12 w-12 rounded-full bg-[#ed8936] bg-opacity-20 mx-auto mb-3">
+                                    <i class="fas fa-microchip text-[#ed8936] text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white text-center">Ampere</h3>
+                                <p class="text-[#ed8936] text-sm text-center">2020</p>
+                                <div class="mt-3">
+                                    <ul class="text-gray-300 text-sm space-y-2">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>第2代Tensor Core</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>6,912核心</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Hopper -->
+                        <div class="timeline-node w-1/4 fade-in" style="animation-delay: 0.8s;">
+                            <div
+                                class="architecture-card bg-[#1e293b] bg-opacity-70 rounded-lg p-4 mb-3 border-2 border-[#ed8936]">
+                                <div
+                                    class="flex items-center justify-center h-12 w-12 rounded-full bg-[#ed8936] bg-opacity-30 mx-auto mb-3">
+                                    <i class="fas fa-microchip text-[#ed8936] text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white text-center">Hopper</h3>
+                                <p class="text-[#ed8936] text-sm text-center">2022</p>
+                                <div class="mt-3">
+                                    <ul class="text-gray-300 text-sm space-y-2">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>16,896核心</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-[#ed8936] text-xs mt-1 mr-2"></i>
+                                            <span>Transformer引擎</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Technical breakthroughs -->
+                    <div class="mt-8 bg-[#1e293b] bg-opacity-50 rounded-lg p-5 fade-in" style="animation-delay: 1s;">
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                            技术突破
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div
+                                class="bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936] highlight-pulse">
+                                <h4 class="text-lg font-semibold text-white mb-2">并行计算</h4>
+                                <p class="text-gray-300 text-sm">从240核心发展到16,896核心，提升70倍</p>
+                            </div>
+                            <div
+                                class="bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936] highlight-pulse">
+                                <h4 class="text-lg font-semibold text-white mb-2">AI优化</h4>
+                                <p class="text-gray-300 text-sm">专用Tensor Core，性能提升100倍</p>
+                            </div>
+                            <div
+                                class="bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936] highlight-pulse">
+                                <h4 class="text-lg font-semibold text-white mb-2">内存带宽</h4>
+                                <p class="text-gray-300 text-sm">从传统GDDR到HBM3，带宽提升300%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right side: Core components -->
+                <div class="w-2/5 fade-in" style="animation-delay: 1.2s;">
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-5 flex items-center">
+                            <i class="fas fa-puzzle-piece text-[#ed8936] mr-2"></i>
+                            核心组件
+                        </h3>
+                        <div class="space-y-5">
+                            <div
+                                class="component-box bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border border-[#ed8936] border-opacity-30">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                        <i class="fas fa-stream text-[#ed8936]"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white">流式多处理器 (SM)</h4>
+                                        <p class="text-gray-300 text-sm">H100拥有132个SM单元，每个单元包含多个CUDA核心</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="component-box bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border border-[#ed8936] border-opacity-30">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                        <i class="fas fa-calculator text-[#ed8936]"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white">CUDA Core</h4>
+                                        <p class="text-gray-300 text-sm">基础计算单元，执行浮点和整数运算</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="component-box bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border border-[#ed8936] border-opacity-30">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                        <i class="fas fa-brain text-[#ed8936]"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white">Tensor Core</h4>
+                                        <p class="text-gray-300 text-sm">AI专用计算单元，支持混合精度，从Volta引入</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="component-box bg-[#1e293b] bg-opacity-70 rounded-lg p-4 border border-[#ed8936] border-opacity-30">
+                                <div class="flex items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                        <i class="fas fa-memory text-[#ed8936]"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white">HBM内存</h4>
+                                        <p class="text-gray-300 text-sm">高带宽内存，H100达3.35 TB/s</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第14页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

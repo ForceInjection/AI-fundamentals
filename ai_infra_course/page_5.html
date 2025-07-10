@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>DeepSeek模型架构演进</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 60px;
+            height: 69px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .version-card {
+            transition: all 0.3s ease;
+        }
+
+        .version-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .timeline-connector {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, #4299e1, #ed8936);
+            top: 50%;
+            z-index: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #ed8936;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            box-shadow: 0 0 0 4px rgba(237, 137, 54, 0.3);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.8s ease-out forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 800px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 150px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">DeepSeek</span>模型架构演进
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <!-- Timeline visualization -->
+            <div class="relative h-96 mt-4">
+                <!-- Timeline connector -->
+                <div class="timeline-connector" style="left: 100px; width: 1060px;"></div>
+                <!-- Timeline dots -->
+                <div class="timeline-dot" style="left: 100px;"></div>
+                <div class="timeline-dot" style="left: 580px;"></div>
+                <div class="timeline-dot" style="left: 1060px;"></div>
+                <!-- Version cards -->
+                <div class="flex justify-between relative z-10">
+                    <!-- V1 -->
+                    <div class="version-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-[360px] slide-in-right"
+                        style="animation-delay: 0.2s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#2b6cb0] flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">V1</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-white">2023</h3>
+                            </div>
+                            <div class="px-3 py-1 bg-[#2b6cb0] bg-opacity-30 rounded-full text-sm text-gray-200">
+                                初代产品
+                            </div>
+                        </div>
+                        <h4 class="text-[#ed8936] font-semibold mb-3">专业化模型</h4>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <span>Coder：代码生成与理解</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <span>Math：数学问题解决</span>
+                            </li>
+                        </ul>
+                        <div class="mt-4 pt-4 border-t border-gray-600">
+                            <h4 class="text-[#ed8936] font-semibold mb-2">关键成果</h4>
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="text-gray-300">专业化能力</div>
+                                <div class="text-white font-medium">行业领先</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- V2 -->
+                    <div class="version-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-[360px] slide-in-right"
+                        style="animation-delay: 0.4s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#4299e1] flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">V2</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-white">2024</h3>
+                            </div>
+                            <div class="px-3 py-1 bg-[#4299e1] bg-opacity-30 rounded-full text-sm text-gray-200">
+                                架构创新
+                            </div>
+                        </div>
+                        <h4 class="text-[#ed8936] font-semibold mb-3">核心技术创新</h4>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-lightbulb text-[#4299e1] mt-1 mr-2"></i>
+                                <span><strong class="text-white">MLA注意力机制</strong>：大幅降低推理内存需求</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-memory text-[#4299e1] mt-1 mr-2"></i>
+                                <span>内存效率提升<strong class="text-[#ed8936]">75%</strong></span>
+                            </li>
+                        </ul>
+                        <div class="mt-4 pt-4 border-t border-gray-600">
+                            <h4 class="text-[#ed8936] font-semibold mb-2">性能突破</h4>
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="text-gray-300">代码生成效率</div>
+                                <div class="text-white font-medium">显著提升</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- R1 -->
+                    <div class="version-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-[360px] slide-in-right"
+                        style="animation-delay: 0.6s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#ed8936] flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">R1</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-white">2025</h3>
+                            </div>
+                            <div class="px-3 py-1 bg-[#ed8936] bg-opacity-30 rounded-full text-sm text-gray-200">
+                                思维突破
+                            </div>
+                        </div>
+                        <h4 class="text-[#ed8936] font-semibold mb-3">推理能力突破</h4>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-brain text-[#ed8936] mt-1 mr-2"></i>
+                                <span><strong class="text-white">MoE架构</strong>：64专家模型，激活效率优化</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-robot text-[#ed8936] mt-1 mr-2"></i>
+                                <span><strong class="text-white">强化学习训练</strong>：推理时间计算，质量提升</span>
+                            </li>
+                        </ul>
+                        <div class="mt-4 pt-4 border-t border-gray-600">
+                            <h4 class="text-[#ed8936] font-semibold mb-2">性能突破</h4>
+                            <ul class="space-y-1 text-sm">
+                                <li class="flex justify-between">
+                                    <div class="text-gray-300">数学推理 (AIME)</div>
+                                    <div class="text-white font-medium">79.8%</div>
+                                </li>
+                                <li class="flex justify-between">
+                                    <div class="text-gray-300">代码生成 (HumanEval)</div>
+                                    <div class="text-white font-medium">96.3%</div>
+                                </li>
+                                <li class="flex justify-between">
+                                    <div class="text-gray-300">推理成本降低</div>
+                                    <div class="text-white font-medium">90%</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Bottom summary -->
+            <div class="bg-[#1e293b] bg-opacity-50 rounded-lg p-5 mt-6 fade-in" style="animation-delay: 0.8s;">
+                <div class="flex items-center">
+                    <i class="fas fa-star text-[#ed8936] text-xl mr-3"></i>
+                    <h3 class="text-xl font-bold text-white">开源策略与行业影响</h3>
+                </div>
+                <div class="flex mt-3">
+                    <div class="flex-1 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-[#1e293b] flex items-center justify-center mr-3">
+                            <i class="fas fa-code-branch text-[#4299e1]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">完全开源</h4>
+                            <p class="text-gray-300 text-sm">推动行业发展与创新</p>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-[#1e293b] flex items-center justify-center mr-3">
+                            <i class="fas fa-graduation-cap text-[#4299e1]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">教育与研究</h4>
+                            <p class="text-gray-300 text-sm">免费提供教学与研究资源</p>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-[#1e293b] flex items-center justify-center mr-3">
+                            <i class="fas fa-industry text-[#4299e1]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">企业合作</h4>
+                            <p class="text-gray-300 text-sm">与多家AI企业建立深度合作</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第5页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // D3.js could be used here for more complex data visualizations if needed
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

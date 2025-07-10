@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>量化技术与推理引擎</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 12px;
+            color: #e2e8f0;
+            font-size: 14px;
+            line-height: 1.5;
+            border-left: 3px solid #ed8936;
+        }
+
+        .bar {
+            fill: #ed8936;
+            transition: fill 0.3s ease;
+        }
+
+        .bar:hover {
+            fill: #f97316;
+        }
+
+        .axis text {
+            fill: #94a3b8;
+            font-size: 12px;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #475569;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">量化技术</span>与推理引擎
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6 flex">
+            <!-- Left side: Quantization techniques -->
+            <div class="w-1/2 pr-6 fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-layer-group text-[#ed8936] mr-3"></i>
+                    量化技术分类
+                </h2>
+                <div class="space-y-4">
+                    <!-- PTQ -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-cog text-[#ed8936] mr-2"></i>
+                            训练后量化 (PTQ)
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">INT8量化</span>：权重和激活都量化到8位</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">动态量化</span>：权重静态量化，激活动态量化</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">校准数据集</span>：使用代表性数据校准量化参数</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- QAT -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-code-branch text-[#ed8936] mr-2"></i>
+                            量化感知训练 (QAT)
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">伪量化</span>：训练时模拟量化过程</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">直通估计器</span>：梯度传播的近似方法</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">量化调度</span>：逐步降低精度的训练策略</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Extreme Quantization -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-compress-arrows-alt text-[#ed8936] mr-2"></i>
+                            极端量化
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">INT4/INT2量化</span>：更激进的量化策略</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">混合精度</span>：不同层使用不同精度</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">非均匀量化</span>：非线性量化映射</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+            <!-- Right side: Inference engines comparison -->
+            <div class="w-1/2 pl-6 fade-in" style="animation-delay: 0.4s;">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-rocket text-[#ed8936] mr-3"></i>
+                    主流推理引擎对比
+                </h2>
+                <!-- Comparison table -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 mb-4">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-600">
+                                <th class="text-left py-1 text-gray-300">推理引擎</th>
+                                <th class="text-left py-1 text-gray-300">主要特性</th>
+                                <th class="text-left py-1 text-gray-300">性能</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-200">
+                            <tr class="border-b border-gray-700">
+                                <td class="py-1 font-medium text-white">vLLM</td>
+                                <td class="py-1">PagedAttention内存优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-1 font-medium text-white">TensorRT-LLM</td>
+                                <td class="py-1">NVIDIA高度优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 font-medium text-white">Text Generation Inference</td>
+                                <td class="py-1">Hugging Face易用性</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Performance metrics -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4">
+                    <h3 class="text-xl font-semibold text-white mb-2 flex items-center">
+                        <i class="fas fa-chart-bar text-[#ed8936] mr-2"></i>
+                        性能基准数据 (Llama-7B模型)
+                    </h3>
+                    <div class="h-32 w-full" id="performance-chart"></div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2">
+                            <div class="text-sm text-gray-300">吞吐量提升</div>
+                            <div class="text-lg font-bold text-white">3-4倍</div>
+                            <div class="text-xs text-gray-400">相比原生PyTorch</div>
+                        </div>
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2">
+                            <div class="text-sm text-gray-300">内存效率</div>
+                            <div class="text-lg font-bold text-white">80%</div>
+                            <div class="text-xs text-gray-400">KV Cache优化</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第28页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // Performance chart data from DOC
+        const performanceData = [
+            { engine: "vLLM", throughput: 2500 },
+            { engine: "TensorRT-LLM", throughput: 3200 },
+            { engine: "原生PyTorch", throughput: 800 }
+        ];
+
+        // Create performance chart
+        const margin = { top: 20, right: 20, bottom: 30, left: 60 };
+        const width = document.getElementById('performance-chart').clientWidth - margin.left - margin.right;
+        const height = document.getElementById('performance-chart').clientHeight - margin.top - margin.bottom;
+
+        const svg = d3.select("#performance-chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // X scale
+        const x = d3.scaleBand()
+            .domain(performanceData.map(d => d.engine))
+            .range([0, width])
+            .padding(0.3);
+
+        // Y scale
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(performanceData, d => d.throughput) * 1.1])
+            .range([height, 0]);
+
+        // Add X axis
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+        // Add Y axis
+        svg.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(y).ticks(5));
+
+        // Add Y axis label
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .style("fill", "#94a3b8")
+            .style("font-size", "12px")
+            .text("吞吐量 (tokens/sec)");
+
+        // Add bars
+        svg.selectAll(".bar")
+            .data(performanceData)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.engine))
+            .attr("width", x.bandwidth())
+            .attr("y", height)
+            .attr("height", 0)
+            .transition()
+            .duration(800)
+            .delay((d, i) => i * 200)
+            .attr("y", d => y(d.throughput))
+            .attr("height", d => height - y(d.throughput));
+
+        // Add value labels on top of bars
+        svg.selectAll(".label")
+            .data(performanceData)
+            .enter()
+            .append("text")
+            .attr("class", "label")
+            .attr("x", d => x(d.engine) + x.bandwidth() / 2)
+            .attr("y", d => y(d.throughput) - 5)
+            .attr("text-anchor", "middle")
+            .style("fill", "#ffffff")
+            .style("font-size", "12px")
+            .style("opacity", 0)
+            .text(d => d.throughput)
+            .transition()
+            .duration(800)
+            .delay((d, i) => i * 200 + 400)
+            .style("opacity", 1);
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

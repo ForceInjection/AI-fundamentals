@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>主流AI编程工具对比</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 60px;
+            height: 69px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .tool-card {
+            transition: all 0.3s ease;
+            height: 380px;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-item {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 8px;
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ed8936;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 500px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 500px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 150px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">主流</span>AI编程工具对比
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <div class="flex justify-between space-x-6">
+                <!-- GitHub Copilot -->
+                <div class="tool-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-1/3 fade-in"
+                    style="animation-delay: 0.2s; border-top: 3px solid #6e5494;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-[#6e5494] bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fab fa-github text-2xl text-white"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">GitHub Copilot</h2>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-star-of-life text-[#ed8936] mr-2"></i>特色
+                        </h3>
+                        <div class="feature-item text-gray-300">代码补全专家</div>
+                        <div class="feature-item text-gray-300">VS Code深度集成</div>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-plus-circle text-[#ed8936] mr-2"></i>优势
+                        </h3>
+                        <div class="mb-2">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">代码接受率</span>
+                                <span class="text-white font-medium">46%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-[#6e5494]" style="width: 46%;"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">开发效率提升</span>
+                                <span class="text-white font-medium">55%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-[#6e5494]" style="width: 55%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-tag text-[#ed8936] mr-2"></i>定价
+                        </h3>
+                        <div class="flex items-center">
+                            <i class="fas fa-dollar-sign text-[#6e5494] mr-2"></i>
+                            <span class="text-white font-medium">$10-19/月</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Cursor -->
+                <div class="tool-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-1/3 fade-in"
+                    style="animation-delay: 0.4s; border-top: 3px solid #8b5cf6;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-[#8b5cf6] bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-code text-2xl text-white"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Cursor</h2>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-star-of-life text-[#ed8936] mr-2"></i>特色
+                        </h3>
+                        <div class="feature-item text-gray-300">AI原生编辑器</div>
+                        <div class="feature-item text-gray-300">项目级理解</div>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-plus-circle text-[#ed8936] mr-2"></i>优势
+                        </h3>
+                        <div class="mb-2">
+                            <div class="text-gray-300 mb-1">自然语言编程</div>
+                            <div class="text-gray-300 mb-1">大型代码库分析</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-tag text-[#ed8936] mr-2"></i>定价
+                        </h3>
+                        <div class="flex items-center">
+                            <span class="text-white font-medium mr-2">免费版</span>
+                            <span class="mx-2 text-gray-400">+</span>
+                            <i class="fas fa-dollar-sign text-[#8b5cf6] mr-2"></i>
+                            <span class="text-white font-medium">Pro $20/月</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Trae AI -->
+                <div class="tool-card bg-[#1e293b] bg-opacity-70 rounded-lg p-6 w-1/3 fade-in"
+                    style="animation-delay: 0.6s; border-top: 3px solid #3b82f6;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-[#3b82f6] bg-opacity-30 flex items-center justify-center mr-3">
+                            <i class="fas fa-robot text-2xl text-white"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Trae AI</h2>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-star-of-life text-[#ed8936] mr-2"></i>特色
+                        </h3>
+                        <div class="feature-item text-gray-300">多模态AI助手</div>
+                        <div class="feature-item text-gray-300">agentic架构</div>
+                    </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-plus-circle text-[#ed8936] mr-2"></i>优势
+                        </h3>
+                        <div class="mb-2">
+                            <div class="text-gray-300 mb-1">智能项目管理</div>
+                            <div class="text-gray-300 mb-1">实时协作编程</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-tag text-[#ed8936] mr-2"></i>定价
+                        </h3>
+                        <div class="flex items-center">
+                            <i class="fas fa-building text-[#3b82f6] mr-2"></i>
+                            <span class="text-white font-medium">企业级解决方案</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Recommendation section -->
+            <div class="mt-8 bg-[#1e293b] bg-opacity-50 rounded-lg p-5 fade-in" style="animation-delay: 0.8s;">
+                <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                    <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                    选择建议
+                </h3>
+                <div class="flex justify-between">
+                    <div class="flex items-center w-1/3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#6e5494] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-xl text-[#6e5494]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">个人开发者</h4>
+                            <p class="text-gray-300 text-sm">GitHub Copilot</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center w-1/3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#8b5cf6] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-users text-xl text-[#8b5cf6]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">团队协作</h4>
+                            <p class="text-gray-300 text-sm">Cursor</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center w-1/3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#3b82f6] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-building text-xl text-[#3b82f6]"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium">企业级项目</h4>
+                            <p class="text-gray-300 text-sm">Trae AI</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第8页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

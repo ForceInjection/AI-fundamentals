@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AIBrix：技术创新与企业级部署</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            line-height: 1.5;
+            color: #e6e6e6;
+        }
+
+        .code-block .keyword {
+            color: #ed8936;
+        }
+
+        .code-block .string {
+            color: #48bb78;
+        }
+
+        .code-block .comment {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .code-block .function {
+            color: #4299e1;
+        }
+
+        .code-block .variable {
+            color: #ed64a6;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .highlight-text {
+            background: linear-gradient(to right, rgba(237, 137, 54, 0.2), rgba(237, 137, 54, 0));
+            padding: 0 2px;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[774px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 600px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 600px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-8 px-12">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">AIBrix</span>：技术创新与企业级部署
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-12 py-6 grid grid-cols-12 gap-6">
+            <!-- Left column: Technical features -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-star text-[#ed8936] mr-3"></i>
+                        技术特色与创新点
+                    </h2>
+                    <ul class="space-y-3 text-gray-200">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">开源vLLM Kubernetes服务栈</span>：完全开源（Apache 2.0）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">云原生设计</span>：Kubernetes原生，CRD自定义资源</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">生产就绪</span>：企业级特性，7x24小时支持</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">模型适配器支持</span>：数千个模型适配器</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">版本管理</span>：模型版本控制，A/B测试支持</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">热更新</span>：零停机模型更新</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">多租户</span>：租户隔离，资源配额管理</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">成本优化</span>：资源共享，智能调度，Spot实例</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Middle column: Deployment architecture -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-code-branch text-[#ed8936] mr-3"></i>
+                        部署架构示例
+                    </h2>
+                    <div class="code-block text-sm">
+                        <pre>apiVersion: aibrix.io/v1
+kind: LLMService
+metadata:
+  name: chatbot-service
+spec:
+  baseModel: &#34;llama2-7b&#34;
+  adapters:
+    - name: &#34;customer-service&#34;
+      replicas: 3
+    - name: &#34;technical-support&#34;
+      replicas: 2
+  resources:
+    gpu: &#34;1&#34;
+    memory: &#34;16Gi&#34;
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 10
+    targetGPUUtilization: 70</pre>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="text-lg font-semibold text-white">部署优势：</h3>
+                        <ul class="mt-2 space-y-2 text-gray-200">
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>基础模型权重共享，节省90%+显存</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>LoRA适配器热更新，零停机部署</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>基于成本的调度策略，优化资源分配</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Right column: Enterprise features -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.6s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-shield-alt text-[#ed8936] mr-3"></i>
+                        企业级特性
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-lock text-[#ed8936] mr-2"></i>
+                                安全性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• RBAC权限控制，多因子认证</li>
+                                <li>• 传输加密（TLS）+ 存储加密（AES-256）</li>
+                                <li>• 完整审计日志记录</li>
+                                <li>• SOC2、ISO27001、GDPR合规</li>
+                            </ul>
+                        </div>
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
+                                可观测性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• Prometheus + Grafana监控栈</li>
+                                <li>• Jaeger分布式追踪</li>
+                                <li>• ELK Stack日志分析</li>
+                                <li>• 多渠道告警机制</li>
+                            </ul>
+                        </div>
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-heartbeat text-[#ed8936] mr-2"></i>
+                                高可用性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• 跨可用区容灾部署</li>
+                                <li>• 自动故障检测和恢复</li>
+                                <li>• 定期备份和恢复测试</li>
+                                <li>• 99.9%可用性承诺</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第31页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

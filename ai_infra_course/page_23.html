@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>HAMi的企业级特性</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            padding: 16px;
+            color: #e2e8f0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow: auto;
+            max-height: 250px;
+        }
+
+        .yaml-highlight {
+            color: #f0f9ff;
+        }
+
+        .yaml-key {
+            color: #ed8936;
+        }
+
+        .yaml-value {
+            color: #a3bffa;
+        }
+
+        .yaml-comment {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 300px; left: 0; width: 80%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 300px; left: 600px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
+        <div class="hexagon" style="top: 200px; left: 900px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">HAMi</span>的企业级特性
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6 grid grid-cols-12 gap-6">
+            <!-- Left side: Enterprise features -->
+            <div class="col-span-5">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-shield-alt text-[#ed8936] mr-3"></i>
+                    企业级特性
+                </h2>
+                <div class="space-y-4">
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936] fade-in"
+                        style="animation-delay: 0.2s;">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
+                            监控与可观测性
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>实时监控GPU利用率、显存使用、温度</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>Grafana集成可视化监控面板</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936] fade-in"
+                        style="animation-delay: 0.4s;">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
+                            资源配额管理
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>命名空间配额：基于Kubernetes的资源限制</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>用户配额：基于用户的资源使用限制</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936] fade-in"
+                        style="animation-delay: 0.6s;">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-lock text-[#ed8936] mr-2"></i>
+                            安全与隔离
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>进程隔离：确保不同容器间的GPU进程隔离</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>权限控制：基于RBAC的GPU资源访问控制</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936] fade-in"
+                        style="animation-delay: 0.8s;">
+                        <h3 class="text-xl font-semibold text-white flex items-center">
+                            <i class="fas fa-sitemap text-[#ed8936] mr-2"></i>
+                            架构特性
+                        </h3>
+                        <ul class="mt-2 text-gray-300 space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>统一的MutatingWebhook：自动注入GPU资源配置</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>调度器扩展：智能GPU拓扑感知调度</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                <span>设备插件：多厂商异构设备统一管理</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Right side: Deployment examples -->
+            <div class="col-span-7">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-server text-[#ed8936] mr-3"></i>
+                    异构GPU支持
+                </h2>
+                <div class="space-y-4">
+                    <!-- Supported Devices -->
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in" style="animation-delay: 0.2s;">
+                        <h3 class="text-lg font-semibold text-white flex items-center mb-3">
+                            <i class="fas fa-microchip text-[#ed8936] mr-2"></i>
+                            支持的异构设备
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3 text-sm">
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-green-300 font-bold mb-1">NVIDIA GPU</div>
+                                <div class="text-gray-300 text-xs">• Tesla V100/A100/H100<br>• GeForce RTX系列<br>• 支持MIG分区</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-blue-300 font-bold mb-1">寒武纪 MLU</div>
+                                <div class="text-gray-300 text-xs">• MLU270/MLU370<br>• 智能推理加速<br>• 训练优化</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-purple-300 font-bold mb-1">华为昇腾 NPU</div>
+                                <div class="text-gray-300 text-xs">• Ascend 910/310<br>• 昇思MindSpore<br>• CANN框架</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-orange-300 font-bold mb-1">海光 DCU</div>
+                                <div class="text-gray-300 text-xs">• DCU Z100<br>• ROCm生态<br>• HIP编程</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-cyan-300 font-bold mb-1">天数智芯 GPU</div>
+                                <div class="text-gray-300 text-xs">• Iluvatar CoreX<br>• CUDA兼容<br>• 高性能计算</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-red-300 font-bold mb-1">摩尔线程 GPU</div>
+                                <div class="text-gray-300 text-xs">• MTT S4000<br>• 国产GPU<br>• 图形渲染</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+
+                     
+                     <!-- Core Advantages -->
+                     <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in" style="animation-delay: 0.8s;">
+                         <h3 class="text-lg font-semibold text-white flex items-center mb-3">
+                             <i class="fas fa-star text-[#ed8936] mr-2"></i>
+                             核心优势
+                         </h3>
+                         <div class="grid grid-cols-2 gap-3 text-sm">
+                             <div class="bg-gradient-to-r from-green-900 to-green-800 bg-opacity-30 rounded p-3">
+                                 <div class="text-green-300 font-bold mb-2 flex items-center">
+                                     <i class="fas fa-bolt mr-2"></i>零代码改动
+                                 </div>
+                                 <div class="text-gray-300 text-xs">现有应用无需修改即可享受GPU虚拟化能力</div>
+                             </div>
+                             <div class="bg-gradient-to-r from-blue-900 to-blue-800 bg-opacity-30 rounded p-3">
+                                 <div class="text-blue-300 font-bold mb-2 flex items-center">
+                                     <i class="fas fa-layer-group mr-2"></i>硬件隔离
+                                 </div>
+                                 <div class="text-gray-300 text-xs">真正的硬件级别资源隔离，确保性能稳定</div>
+                             </div>
+                             <div class="bg-gradient-to-r from-purple-900 to-purple-800 bg-opacity-30 rounded p-3">
+                                 <div class="text-purple-300 font-bold mb-2 flex items-center">
+                                     <i class="fas fa-network-wired mr-2"></i>拓扑感知
+                                 </div>
+                                 <div class="text-gray-300 text-xs">智能识别GPU拓扑结构，优化调度决策</div>
+                             </div>
+                             <div class="bg-gradient-to-r from-orange-900 to-orange-800 bg-opacity-30 rounded p-3">
+                                 <div class="text-orange-300 font-bold mb-2 flex items-center">
+                                     <i class="fas fa-puzzle-piece mr-2"></i>统一接口
+                                 </div>
+                                 <div class="text-gray-300 text-xs">屏蔽不同厂商差异，提供统一管理接口</div>
+                             </div>
+                         </div>
+                     </div>
+                     
+
+                </div>
+            </div>
+        </main>
+        
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第23页 / 共37页
+        </footer>
+    </div>
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

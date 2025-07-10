@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>训练规模数据</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chart-container {
+            position: relative;
+        }
+
+        .bar-label {
+            position: absolute;
+            font-size: 12px;
+            fill: #e2e8f0;
+            text-anchor: middle;
+        }
+
+        .axis-label {
+            position: absolute;
+            font-size: 10px;
+            fill: #a0aec0;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">训练规模</span>数据
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <div class="flex flex-wrap">
+                <!-- Left column: Parameter comparison -->
+                <div class="w-1/2 pr-4 fade-in" style="animation-delay: 0.2s;">
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-[300px]">
+                        <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                            <i class="fas fa-database mr-2 text-[#ed8936]"></i>
+                            主流大模型参数量对比
+                        </h2>
+                        <div class="chart-container h-[220px]" id="param-chart"></div>
+                    </div>
+                    <div class="mt-4 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.6s;">
+                        <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-[#ed8936]"></i>
+                            规模效应
+                        </h2>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-arrow-trend-up text-[#ed8936] mt-1 mr-2"></i>
+                                <span>参数量增长：从1B → 175B → 1.7T</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-arrow-trend-up text-[#ed8936] mt-1 mr-2"></i>
+                                <span>成本增长：从万级 → 千万级 → 亿级</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-lightbulb text-[#ed8936] mt-1 mr-2"></i>
+                                <span>能力跃升：每个数量级带来质的飞跃</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Right column: Training costs and resource requirements -->
+                <div class="w-1/2 pl-4 fade-in" style="animation-delay: 0.4s;">
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-[300px]">
+                        <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                            <i class="fas fa-dollar-sign mr-2 text-[#ed8936]"></i>
+                            训练成本对比
+                        </h2>
+                        <div class="chart-container h-[220px]" id="cost-chart"></div>
+                    </div>
+                    <div class="mt-4 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.8s;">
+                        <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                            <i class="fas fa-server mr-2 text-[#ed8936]"></i>
+                            资源需求
+                        </h2>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-[#2d3748] bg-opacity-50 p-4 rounded-lg text-center">
+                                <i class="fas fa-microchip text-[#ed8936] text-2xl mb-2"></i>
+                                <h3 class="text-white font-medium">GPU集群</h3>
+                                <p class="text-[#ed8936] font-bold text-lg mt-1">1000+ A100卡</p>
+                            </div>
+                            <div class="bg-[#2d3748] bg-opacity-50 p-4 rounded-lg text-center">
+                                <i class="fas fa-clock text-[#ed8936] text-2xl mb-2"></i>
+                                <h3 class="text-white font-medium">训练时间</h3>
+                                <p class="text-[#ed8936] font-bold text-lg mt-1">2-6个月</p>
+                            </div>
+                            <div class="bg-[#2d3748] bg-opacity-50 p-4 rounded-lg text-center">
+                                <i class="fas fa-hdd text-[#ed8936] text-2xl mb-2"></i>
+                                <h3 class="text-white font-medium">数据规模</h3>
+                                <p class="text-[#ed8936] font-bold text-lg mt-1">TB级文本数据</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Tooltip for charts -->
+        <div class="tooltip" id="tooltip"></div>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第4页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // Data from the document
+        const modelData = [
+            { name: "GPT-3", parameters: 175, cost: 4.6 },
+            { name: "PaLM", parameters: 540, cost: 12 },
+            { name: "GPT-4", parameters: 1700, cost: 100 }
+        ];
+
+        // Parameters chart
+        function createParamChart() {
+            const width = 500;
+            const height = 220;
+            const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+
+            const svg = d3.select("#param-chart")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const x = d3.scaleBand()
+                .domain(modelData.map(d => d.name))
+                .range([margin.left, width - margin.right])
+                .padding(0.3);
+
+            const y = d3.scaleLog()
+                .domain([10, 2000])
+                .range([height - margin.bottom, margin.top]);
+
+            // Y-axis with custom ticks
+            const yAxis = d3.axisLeft(y)
+                .tickValues([10, 100, 1000, 2000])
+                .tickFormat(d => d >= 1000 ? `${d / 1000}T` : `${d}B`);
+
+            svg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(yAxis)
+                .attr("color", "#718096")
+                .selectAll("text")
+                .attr("fill", "#a0aec0");
+
+            // X-axis
+            svg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x))
+                .attr("color", "#718096")
+                .selectAll("text")
+                .attr("fill", "#a0aec0");
+
+            // Bars
+            svg.selectAll(".bar")
+                .data(modelData)
+                .join("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.name))
+                .attr("y", d => y(d.parameters))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - margin.bottom - y(d.parameters))
+                .attr("fill", "#ed8936")
+                .attr("opacity", 0.8)
+                .attr("rx", 4)
+                .on("mouseover", function (event, d) {
+                    d3.select(this).attr("opacity", 1);
+                    d3.select("#tooltip")
+                        .style("opacity", 1)
+                        .html(`${d.name}<br>参数量: ${d.parameters}B`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 20) + "px");
+                })
+                .on("mouseout", function () {
+                    d3.select(this).attr("opacity", 0.8);
+                    d3.select("#tooltip").style("opacity", 0);
+                });
+
+            // Parameter labels
+            svg.selectAll(".param-label")
+                .data(modelData)
+                .join("text")
+                .attr("class", "bar-label")
+                .attr("x", d => x(d.name) + x.bandwidth() / 2)
+                .attr("y", d => y(d.parameters) - 5)
+                .text(d => `${d.parameters}B`);
+
+            // Y-axis label
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -(height / 2))
+                .attr("y", 20)
+                .attr("text-anchor", "middle")
+                .text("参数量 (对数刻度)");
+        }
+
+        // Cost chart
+        function createCostChart() {
+            const width = 500;
+            const height = 220;
+            const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+
+            const svg = d3.select("#cost-chart")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const x = d3.scaleBand()
+                .domain(modelData.map(d => d.name))
+                .range([margin.left, width - margin.right])
+                .padding(0.3);
+
+            const y = d3.scaleLinear()
+                .domain([0, 120])
+                .range([height - margin.bottom, margin.top]);
+
+            // Y-axis
+            svg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y))
+                .attr("color", "#718096")
+                .selectAll("text")
+                .attr("fill", "#a0aec0");
+
+            // X-axis
+            svg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x))
+                .attr("color", "#718096")
+                .selectAll("text")
+                .attr("fill", "#a0aec0");
+
+            // Bars
+            svg.selectAll(".bar")
+                .data(modelData)
+                .join("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.name))
+                .attr("y", d => y(d.cost))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - margin.bottom - y(d.cost))
+                .attr("fill", "#ed8936")
+                .attr("opacity", 0.8)
+                .attr("rx", 4)
+                .on("mouseover", function (event, d) {
+                    d3.select(this).attr("opacity", 1);
+                    d3.select("#tooltip")
+                        .style("opacity", 1)
+                        .html(`${d.name}<br>训练成本: $${d.cost}M`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 20) + "px");
+                })
+                .on("mouseout", function () {
+                    d3.select(this).attr("opacity", 0.8);
+                    d3.select("#tooltip").style("opacity", 0);
+                });
+
+            // Cost labels
+            svg.selectAll(".cost-label")
+                .data(modelData)
+                .join("text")
+                .attr("class", "bar-label")
+                .attr("x", d => x(d.name) + x.bandwidth() / 2)
+                .attr("y", d => y(d.cost) - 5)
+                .text(d => `$${d.cost}M`);
+
+            // Y-axis label
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -(height / 2))
+                .attr("y", 20)
+                .attr("text-anchor", "middle")
+                .text("训练成本 (百万美元)");
+        }
+
+        // Initialize charts when the page loads
+        window.onload = function () {
+            createParamChart();
+            createCostChart();
+        };
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

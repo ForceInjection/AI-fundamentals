@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程效率提升数据</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        .bar {
+            fill: #ed8936;
+            transition: all 0.3s ease;
+        }
+
+        .bar:hover {
+            fill: #f97316;
+        }
+
+        .gauge-bg {
+            fill: #1e293b;
+        }
+
+        .gauge-fill {
+            fill: #ed8936;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">AI编程</span>效率提升数据
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <div class="flex flex-wrap -mx-4">
+                <!-- Left column - Core metrics -->
+                <div class="w-1/2 px-4">
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-6 h-[520px] metric-card fade-in">
+                        <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-rocket text-[#ed8936] mr-3"></i>
+                            核心效率指标
+                        </h2>
+                        <div class="chart-container mb-6">
+                            <div id="core-metrics-chart"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mt-8">
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-4 text-center">
+                                <div class="text-[#ed8936] text-4xl font-bold mb-2">55%</div>
+                                <div class="text-white text-sm">开发速度提升</div>
+                                <div class="text-gray-400 text-xs mt-1">基于88,000名开发者</div>
+                            </div>
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-4 text-center">
+                                <div class="text-[#ed8936] text-4xl font-bold mb-2">60%</div>
+                                <div class="text-white text-sm">学习效率提升</div>
+                                <div class="text-gray-400 text-xs mt-1">新技术学习时间减少</div>
+                            </div>
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-4 text-center">
+                                <div class="text-[#ed8936] text-4xl font-bold mb-2">31%</div>
+                                <div class="text-white text-sm">代码质量提升</div>
+                                <div class="text-gray-400 text-xs mt-1">Bug修复时间减少</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right column - Detailed metrics -->
+                <div class="w-1/2 px-4">
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-6 mb-4 metric-card fade-in"
+                        style="animation-delay: 0.2s;">
+                        <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-chart-line text-[#ed8936] mr-3"></i>
+                            代码接受与任务完成
+                        </h2>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-1/2">
+                                <div class="text-white text-lg mb-1">代码接受率</div>
+                                <div class="text-[#ed8936] text-4xl font-bold">46%</div>
+                            </div>
+                            <div class="w-1/2">
+                                <div class="text-white text-lg mb-1">每天节省时间</div>
+                                <div class="text-[#ed8936] text-4xl font-bold">1.2小时</div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-4 mt-4">
+                            <div class="bg-[#ed8936] h-4 rounded-full" style="width: 46%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-6 metric-card fade-in"
+                        style="animation-delay: 0.4s;">
+                        <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-search text-[#ed8936] mr-3"></i>
+                            API文档与代码审查
+                        </h2>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="w-1/2">
+                                <div class="text-white text-lg mb-1">API文档查阅</div>
+                                <div class="text-[#ed8936] text-4xl font-bold">73%</div>
+                                <div class="text-gray-400 text-sm">查阅次数减少</div>
+                            </div>
+                            <div class="w-1/2">
+                                <div class="text-white text-lg mb-1">代码审查通过率</div>
+                                <div class="text-[#ed8936] text-4xl font-bold">23%</div>
+                                <div class="text-gray-400 text-sm">通过率提升</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-3 flex-1 text-center">
+                                <i class="fas fa-check-circle text-[#ed8936] text-xl mb-2"></i>
+                                <div class="text-white text-sm">提高代码质量</div>
+                            </div>
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-3 flex-1 text-center">
+                                <i class="fas fa-clock text-[#ed8936] text-xl mb-2"></i>
+                                <div class="text-white text-sm">加速开发流程</div>
+                            </div>
+                            <div class="bg-[#2563eb] bg-opacity-20 rounded-lg p-3 flex-1 text-center">
+                                <i class="fas fa-user-check text-[#ed8936] text-xl mb-2"></i>
+                                <div class="text-white text-sm">降低学习曲线</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第10页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // Core metrics chart
+        document.addEventListener('DOMContentLoaded', function () {
+            // Data for core metrics
+            const coreMetricsData = [
+                { label: "开发速度", value: 55, color: "#ed8936" },
+                { label: "学习效率", value: 60, color: "#ed8936" },
+                { label: "代码质量", value: 31, color: "#ed8936" }
+            ];
+
+            // Create SVG container
+            const svg = d3.select("#core-metrics-chart")
+                .append("svg")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .attr("viewBox", "0 0 600 200");
+
+            // Create scales
+            const xScale = d3.scaleBand()
+                .domain(coreMetricsData.map(d => d.label))
+                .range([50, 550])
+                .padding(0.3);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, 100])
+                .range([150, 20]);
+
+            // Create axes
+            const xAxis = d3.axisBottom(xScale)
+                .tickSize(0);
+
+            const yAxis = d3.axisLeft(yScale)
+                .ticks(5)
+                .tickSize(-450)
+                .tickFormat(d => d + "%");
+
+            // Add axes to SVG
+            svg.append("g")
+                .attr("transform", "translate(0, 150)")
+                .call(xAxis)
+                .selectAll("text")
+                .attr("fill", "#e2e8f0")
+                .style("font-size", "14px")
+                .style("font-weight", "bold");
+
+            svg.append("g")
+                .attr("transform", "translate(50, 0)")
+                .call(yAxis)
+                .selectAll("text")
+                .attr("fill", "#e2e8f0")
+                .style("font-size", "12px");
+
+            // Add grid lines
+            svg.selectAll(".grid-line")
+                .data(yScale.ticks(5))
+                .enter()
+                .append("line")
+                .attr("class", "grid-line")
+                .attr("x1", 50)
+                .attr("x2", 550)
+                .attr("y1", d => yScale(d))
+                .attr("y2", d => yScale(d))
+                .attr("stroke", "#334155")
+                .attr("stroke-width", 1);
+
+            // Create bars
+            svg.selectAll(".bar")
+                .data(coreMetricsData)
+                .enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", d => xScale(d.label))
+                .attr("y", d => yScale(d.value))
+                .attr("width", xScale.bandwidth())
+                .attr("height", d => 150 - yScale(d.value))
+                .attr("rx", 6)
+                .attr("ry", 6)
+                .attr("fill", d => d.color)
+                .attr("opacity", 0)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 200)
+                .attr("opacity", 1);
+
+            // Add value labels
+            svg.selectAll(".value-label")
+                .data(coreMetricsData)
+                .enter()
+                .append("text")
+                .attr("class", "value-label")
+                .attr("x", d => xScale(d.label) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.value) - 10)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#ffffff")
+                .style("font-weight", "bold")
+                .style("font-size", "16px")
+                .text(d => d.value + "%")
+                .attr("opacity", 0)
+                .transition()
+                .duration(800)
+                .delay((d, i) => i * 200 + 300)
+                .attr("opacity", 1);
+
+            // Add title
+            svg.append("text")
+                .attr("x", 300)
+                .attr("y", 180)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#e2e8f0")
+                .style("font-size", "14px")
+                .text("AI编程效率提升对比");
+        });
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>大模型工作原理</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .attention-line {
+            stroke: #ed8936;
+            stroke-width: 1.5;
+            stroke-opacity: 0.8;
+        }
+
+        .attention-circle {
+            fill: #ed8936;
+            opacity: 0.8;
+        }
+
+        .flow-arrow {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(237, 137, 54, 0.7), rgba(237, 137, 54, 1));
+        }
+
+        .flow-arrow::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid rgba(237, 137, 54, 1);
+        }
+
+        .component-box {
+            transition: all 0.3s ease;
+        }
+
+        .component-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(237, 137, 54, 0.3);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[812px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 200px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 500px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 200px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 500px; left: 900px;"></div>
+        <div class="hexagon" style="top: 150px; left: 100px;"></div>
+        <div class="hexagon" style="top: 550px; left: 1100px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">大模型</span>工作原理
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6 grid grid-cols-12 gap-6">
+            <!-- Left side: Transformer Architecture -->
+            <div class="col-span-7">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full fade-in" style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-sitemap mr-3 text-[#ed8936]"></i>
+                        Transformer架构核心组件
+                    </h2>
+                    <!-- Encoder-Decoder Architecture -->
+                    <div class="flex mb-6">
+                        <!-- Encoder -->
+                        <div class="w-1/2 pr-3">
+                            <div
+                                class="bg-blue-900 bg-opacity-30 rounded-lg p-4 border-l-4 border-blue-500 component-box">
+                                <h3 class="text-xl font-semibold text-white flex items-center mb-3">
+                                    <i class="fas fa-arrow-down text-blue-400 mr-2"></i>
+                                    编码器（Encoder）
+                                </h3>
+                                <ul class="space-y-2 text-gray-300">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                        <span><span class="text-white font-medium">自注意力层：</span>计算词与词关联度</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                        <span><span class="text-white font-medium">前馈神经网络：</span>特征变换</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                        <span><span class="text-white font-medium">残差连接：</span>保持信息流动</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Decoder -->
+                        <div class="w-1/2 pl-3">
+                            <div
+                                class="bg-orange-900 bg-opacity-30 rounded-lg p-4 border-l-4 border-orange-500 component-box">
+                                <h3 class="text-xl font-semibold text-white flex items-center mb-3">
+                                    <i class="fas fa-arrow-up text-orange-400 mr-2"></i>
+                                    解码器（Decoder）
+                                </h3>
+                                <ul class="space-y-2 text-gray-300">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-orange-400 mt-1 mr-2"></i>
+                                        <span><span class="text-white font-medium">掩码自注意力：</span>只能看到前面的词</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-orange-400 mt-1 mr-2"></i>
+                                        <span><span class="text-white font-medium">编码器-解码器注意力：</span>关注输入信息</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Technical Details -->
+                    <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold text-white mb-2">技术细节（GPT-1模型参数）</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
+                                <span class="text-gray-300">12层Transformer</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-network-wired text-[#ed8936] mr-2"></i>
+                                <span class="text-gray-300">768维隐藏层</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-brain text-[#ed8936] mr-2"></i>
+                                <span class="text-gray-300">12个注意力头</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-book text-[#ed8936] mr-2"></i>
+                                <span class="text-gray-300">40,478个token</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-400 italic">
+                            * 参数配置来源：OpenAI GPT-1 (2018)
+                        </div>
+                    </div>
+                    <!-- Text Generation Process -->
+                    <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-white mb-3">
+                            <i class="fas fa-magic mr-2 text-[#ed8936]"></i>
+                            文本生成过程
+                        </h3>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                输入文本
+                            </div>
+                            <i class="fas fa-arrow-right text-[#ed8936]"></i>
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                词嵌入
+                            </div>
+                            <i class="fas fa-arrow-right text-[#ed8936]"></i>
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                位置编码
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                多层Transformer
+                            </div>
+                            <i class="fas fa-arrow-right text-[#ed8936]"></i>
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                输出概率分布
+                            </div>
+                            <i class="fas fa-arrow-right text-[#ed8936]"></i>
+                            <div class="bg-gray-700 bg-opacity-70 rounded px-3 py-1 text-sm text-white">
+                                采样下一个词
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right side: Attention Mechanism -->
+            <div class="col-span-5">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full fade-in" style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-lightbulb mr-3 text-[#ed8936]"></i>
+                        注意力机制详解
+                    </h2>
+                    <!-- Attention Mechanism Explanation -->
+                    <div class="mb-6">
+                        <p class="text-gray-300 mb-4">
+                            注意力机制是Transformer模型的核心，通过计算词与词之间的关联度，捕捉上下文关系。
+                        </p>
+                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-lg font-semibold text-white mb-2">核心概念</h3>
+                            <div class="flex items-center mb-2">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-30 flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">Q</span>
+                                </div>
+                                <span class="text-white">Query（查询）：当前词</span>
+                            </div>
+                            <div class="flex items-center mb-2">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-green-500 bg-opacity-30 flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">K</span>
+                                </div>
+                                <span class="text-white">Key（键）：上下文词</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-orange-500 bg-opacity-30 flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">V</span>
+                                </div>
+                                <span class="text-white">Value（值）：词向量</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Attention Example -->
+                    <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-white mb-3">注意力计算示例</h3>
+                        <p class="text-gray-300 mb-3">&#34;我喜欢吃苹果，它很甜&#34; → 模型计算&#34;它&#34;与&#34;苹果&#34;的关联度为0.95</p>
+                        <!-- Attention Heat Map -->
+                        <div class="relative h-32 mb-2" id="attention-heatmap">
+                            <!-- D3.js will render heat map here -->
+                        </div>
+                        <div class="text-center text-sm text-gray-400">
+                            红色背景表示高关联度，黄色边框突出关键词汇
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第3页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // D3.js script for attention heat map
+        document.addEventListener('DOMContentLoaded', function () {
+            // Attention heat map
+            const heatmapContainer = d3.select("#attention-heatmap");
+            const width = heatmapContainer.node().getBoundingClientRect().width;
+            const height = heatmapContainer.node().getBoundingClientRect().height;
+
+            // Create SVG
+            const svg = heatmapContainer.append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // Create heat map
+            const tokens = ["我", "喜欢", "吃", "苹果", "，", "它", "很", "甜"];
+            const tokenPositions = tokens.map((_, i) => i);
+
+            // Create horizontal grid layout
+            const cellWidth = width / tokens.length;
+            const cellHeight = height;
+
+            // Create color scale for backgrounds
+            const colorScale = d3.scaleLinear()
+                .domain([0, 0.5, 1])
+                .range(["rgba(255, 255, 255, 0.1)", "#ff6b35", "#ff4444"]);
+
+            // Draw grid cells (horizontal layout)
+            svg.selectAll("rect")
+                .data(tokens)
+                .enter()
+                .append("rect")
+                .attr("x", (d, i) => i * cellWidth)
+                .attr("y", 0)
+                .attr("width", cellWidth)
+                .attr("height", cellHeight)
+                .attr("fill", (d, i) => {
+                    // Highlight "苹果" and "它" with high attention
+                    if (d === "苹果" || d === "它") {
+                        return colorScale(0.95);
+                    }
+                    // Medium attention for surrounding words
+                    if (Math.abs(tokens.indexOf("苹果") - i) <= 2 ||
+                        Math.abs(tokens.indexOf("它") - i) <= 2) {
+                        return colorScale(0.6);
+                    }
+                    // Low attention for distant words
+                    return colorScale(0.2);
+                })
+                .attr("stroke", "#1a365d")
+                .attr("stroke-width", 1)
+                .attr("rx", 4)
+                .attr("ry", 4);
+
+            // Add text labels (all white for better contrast)
+            svg.selectAll("text")
+                .data(tokens)
+                .enter()
+                .append("text")
+                .attr("x", (d, i) => i * cellWidth + cellWidth / 2)
+                .attr("y", cellHeight / 2)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", "14px")
+                .attr("font-weight", "bold")
+                .attr("fill", "white")
+                .text(d => d);
+
+            // Add subtle glow effect for high attention words
+            svg.selectAll(".glow-effect")
+                .data(["苹果", "它"])
+                .enter()
+                .append("rect")
+                .attr("x", (d, i) => {
+                    const index = tokens.indexOf(d);
+                    return index * cellWidth + 2;
+                })
+                .attr("y", 2)
+                .attr("width", cellWidth - 4)
+                .attr("height", cellHeight - 4)
+                .attr("fill", "none")
+                .attr("stroke", "#ffff00")
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 0.8)
+                .attr("rx", 6)
+                .attr("ry", 6)
+                .attr("class", "glow-effect");
+        });
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

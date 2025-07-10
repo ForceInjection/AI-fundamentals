@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>多模态AI的全面发展</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .modality-card {
+            transition: all 0.3s ease;
+        }
+
+        .modality-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .application-card {
+            transition: all 0.3s ease;
+        }
+
+        .application-card:hover {
+            transform: translateX(5px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 700px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 560px; left: 300px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">多模态</span>AI的全面发展
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <!-- Evolution visualization -->
+            <div class="mb-8 fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-2xl font-semibold text-white mb-4">
+                    <i class="fas fa-arrow-trend-up text-[#ed8936] mr-2"></i>
+                    从单一到多元的发展历程
+                </h2>
+                <div class="flex justify-center items-center">
+                    <div class="relative h-32 w-full" id="modality-evolution">
+                        <!-- D3.js visualization will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <!-- Application scenarios -->
+            <div class="fade-in" style="animation-delay: 0.6s;">
+                <h2 class="text-2xl font-semibold text-white mb-4">
+                    <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
+                    多模态应用场景
+                </h2>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="application-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936]">
+                        <div class="flex items-start">
+                            <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                                <i class="fas fa-image text-[#ed8936] text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">图文理解与生成</h3>
+                                <p class="text-gray-300 mt-2">文本描述生成对应图像，图像分析提取关键信息，实现跨模态内容创作</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="application-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936]">
+                        <div class="flex items-start">
+                            <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                                <i class="fas fa-comments text-[#ed8936] text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">语音交互</h3>
+                                <p class="text-gray-300 mt-2">语音识别、语义理解与生成，实现自然语言对话和语音控制</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="application-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936]">
+                        <div class="flex items-start">
+                            <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                                <i class="fas fa-video text-[#ed8936] text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">视频分析</h3>
+                                <p class="text-gray-300 mt-2">视频内容理解、关键帧提取、行为识别与异常检测</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="application-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936]">
+                        <div class="flex items-start">
+                            <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                                <i class="fas fa-code text-[#ed8936] text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">代码生成</h3>
+                                <p class="text-gray-300 mt-2">文本描述生成代码，理解上下文自动补全，智能调试与文档生成</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Center circle connecting all modalities -->
+            <div class="absolute" style="top: 360px; left: 640px; transform: translate(-50%, -50%);">
+                <div
+                    class="w-24 h-24 rounded-full bg-[#ed8936] bg-opacity-20 border-2 border-[#ed8936] border-opacity-50 flex items-center justify-center pulse">
+                    <div class="text-white text-center">
+                        <i class="fas fa-brain text-xl mb-1"></i>
+                        <div class="text-sm font-bold">统一AI模型</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第7页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // D3.js visualization for modality evolution
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = d3.select("#modality-evolution");
+            const width = container.node().getBoundingClientRect().width;
+            const height = container.node().getBoundingClientRect().height;
+
+            // Create SVG
+            const svg = container.append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("class", "overflow-visible");
+
+            // Define modalities
+            const modalities = [
+                { name: "文本", icon: "fa-file-lines", color: "#60a5fa" },
+                { name: "图像", icon: "fa-image", color: "#34d399" },
+                { name: "音频", icon: "fa-volume-high", color: "#a78bfa" },
+                { name: "视频", icon: "fa-video", color: "#f87171" }
+            ];
+
+            // Calculate positions
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 100;
+
+            // Create central node
+            svg.append("circle")
+                .attr("cx", centerX)
+                .attr("cy", centerY)
+                .attr("r", 30)
+                .attr("fill", "#1e293b")
+                .attr("stroke", "#ed8936")
+                .attr("stroke-width", 2)
+                .attr("class", "pulse");
+
+            svg.append("text")
+                .attr("x", centerX)
+                .attr("y", centerY + 5)
+                .attr("text-anchor", "middle")
+                .attr("fill", "white")
+                .attr("class", "text-sm font-bold")
+                .text("多模态融合");
+
+            // Create modality nodes
+            modalities.forEach((modality, i) => {
+                const angle = (i / modalities.length) * 2 * Math.PI;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                // Connection line
+                svg.append("line")
+                    .attr("x1", centerX)
+                    .attr("y1", centerY)
+                    .attr("x2", x)
+                    .attr("y2", y)
+                    .attr("stroke", modality.color)
+                    .attr("stroke-width", 2)
+                    .attr("stroke-opacity", 0.6)
+                    .attr("stroke-dasharray", "4,4");
+
+                // Modality circle
+                const modalityGroup = svg.append("g")
+                    .attr("class", "modality-card")
+                    .attr("transform", `translate(${x}, ${y})`);
+
+                modalityGroup.append("circle")
+                    .attr("r", 25)
+                    .attr("fill", "#1e293b")
+                    .attr("stroke", modality.color)
+                    .attr("stroke-width", 2);
+
+                // Icon
+                modalityGroup.append("text")
+                    .attr("class", `fa ${modality.icon}`)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "central")
+                    .attr("fill", modality.color)
+                    .attr("font-size", "16px")
+                    .text(function (d) { return '\uf15b'; }); // Placeholder, Font Awesome will override it
+
+                // Label
+                modalityGroup.append("text")
+                    .attr("y", 40)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "white")
+                    .attr("class", "text-sm")
+                    .text(modality.name);
+            });
+        });
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

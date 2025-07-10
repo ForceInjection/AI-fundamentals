@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>RAG系统架构</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 60px;
+            height: 69px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .component-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .flow-arrow {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(237, 137, 54, 0.7), rgba(237, 137, 54, 1));
+        }
+
+        .flow-arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid rgba(237, 137, 54, 1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 180px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 900px;"></div>
+        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 400px; left: 150px;"></div>
+        <div class="hexagon" style="top: 600px; left: 900px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">RAG</span>系统架构：检索增强生成的企业级实践
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6">
+            <div class="flex justify-between mt-4">
+                <!-- Document Processing Pipeline -->
+                <div class="w-[30%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-file-alt text-[#ed8936] text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">文档处理管道</h2>
+                    </div>
+                    <ul class="space-y-3 text-gray-200">
+                        <li class="flex items-start">
+                            <i class="fas fa-upload text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">文档摄取：</span>
+                                <span class="text-sm">支持PDF、Word、PPT等多格式，OCR识别，结构化提取</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-broom text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">文本预处理：</span>
+                                <span class="text-sm">清洗规则、分块策略、元数据提取、质量评估</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">处理性能：</span>
+                                <span class="text-sm">每小时处理1000+文档，准确率&gt;98%，支持50+格式</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Vector Database Architecture -->
+                <div class="w-[30%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-database text-[#ed8936] text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">向量数据库架构</h2>
+                    </div>
+                    <ul class="space-y-3 text-gray-200">
+                        <li class="flex items-start">
+                            <i class="fas fa-cube text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">技术选型：</span>
+                                <span class="text-sm">Milvus、Pinecone、Weaviate、Qdrant等主流方案</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-sitemap text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">索引优化：</span>
+                                <span class="text-sm">HNSW、IVF索引，PQ量化，混合索引策略</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-tachometer-alt text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">性能指标：</span>
+                                <span class="text-sm">查询延迟&lt;10ms，召回率&gt;95%，吞吐量&gt;10K QPS</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Retrieval-Enhanced Generation Process -->
+                <div class="w-[30%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-center mb-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-cogs text-[#ed8936] text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">检索增强生成流程</h2>
+                    </div>
+                    <ul class="space-y-3 text-gray-200">
+                        <li class="flex items-start">
+                            <i class="fas fa-search text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">查询理解：</span>
+                                <span class="text-sm">意图识别、实体抽取、查询扩展、查询重写</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-filter text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">检索策略：</span>
+                                <span class="text-sm">多路召回、重排序、多样性保证、时效性优化</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-magic text-[#ed8936] mt-1 mr-2"></i>
+                            <div>
+                                <span class="font-semibold">生成优化：</span>
+                                <span class="text-sm">动态上下文、引用标注、事实检查、安全过滤</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Flow diagram -->
+            <div class="relative mt-8 h-[180px] fade-in" style="animation-delay: 0.8s;">
+                <!-- Document flow -->
+                <div class="flow-arrow" style="top: 30px; left: 150px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 80px; left: 150px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 130px; left: 150px; width: 200px;"></div>
+                <!-- Vector database flow -->
+                <div class="flow-arrow" style="top: 30px; left: 550px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 80px; left: 550px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 130px; left: 550px; width: 200px;"></div>
+                <!-- Generation flow -->
+                <div class="flow-arrow" style="top: 30px; left: 950px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 80px; left: 950px; width: 200px;"></div>
+                <div class="flow-arrow" style="top: 130px; left: 950px; width: 200px;"></div>
+                <!-- Document processing steps -->
+                <div class="absolute top-0 left-[40px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">文档摄取</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-file-import text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[50px] left-[30px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">文本预处理</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-broom text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[100px] left-[55px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">向量化</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-vector-square text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <!-- Vector database steps -->
+                <div class="absolute top-0 left-[445px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">索引构建</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-database text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[50px] left-[435px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">相似度搜索</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-search text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[100px] left-[460px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">重排序</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-sort-amount-up text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <!-- Generation steps -->
+                <div class="absolute top-0 left-[850px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">查询理解</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-lightbulb text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[50px] left-[838px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">上下文构建</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
+                        <i class="fas fa-puzzle-piece text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <div class="absolute top-[100px] left-[850px] w-[120px] flex items-center">
+                    <div class="text-white text-xs mr-3">生成回答</div>
+                    <div
+                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center pulse">
+                        <i class="fas fa-check-circle text-[#ed8936]"></i>
+                    </div>
+                </div>
+                <!-- Enterprise benefits -->
+                <div class="absolute bottom-[-80px] left-0 right-0 bg-[#1e293b] bg-opacity-60 rounded-lg p-4 mx-16 fade-in"
+                    style="animation-delay: 1s;">
+                    <h3 class="text-xl font-bold text-white mb-2 flex items-center">
+                        <i class="fas fa-building mr-2 text-[#ed8936]"></i>
+                        企业级实践经验
+                    </h3>
+                    <div class="flex justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-[#ed8936] mr-2"></i>
+                            <span class="text-gray-200 text-sm">安全合规保障</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-tachometer-alt text-[#ed8936] mr-2"></i>
+                            <span class="text-gray-200 text-sm">高吞吐处理能力</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
+                            <span class="text-gray-200 text-sm">成本效益优化</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-sync text-[#ed8936] mr-2"></i>
+                            <span class="text-gray-200 text-sm">实时更新与维护</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第33页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI Infra 最新进展 - PPT模式</title>
+    <link href="https://picture-search.tiangong.cn/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1280px;
+            width: 100%;
+            min-height: 720px;
+            margin: 0 auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .page-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .page-card:hover {
+            transform: translateY(-5px);
+            border-left-color: #3b82f6;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2);
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: scale(1.05);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(249, 115, 22, 0.2));
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white">
+    <div class="course-container mx-auto p-8">
+        <!-- 头部标题 -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 text-blue-500">AI Infra 最新进展</h1>
+            <h2 class="text-3xl font-semibold mb-6 text-orange-500">什么是 AI Infra 以及目前的最新进展</h2>
+            <p class="text-xl text-gray-400">PPT演示模式 - 交互式课程体验</p>
+        </div>
+
+        <!-- 课程大纲 -->
+        <div class="bg-slate-800 rounded-lg p-8">
+            <h3 class="text-2xl font-semibold mb-6 text-center text-blue-500">
+                <i class="fas fa-list-ul mr-3"></i>
+                课程大纲
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 页面列表将通过JavaScript动态生成 -->
+                <div id="page-list" class="col-span-full">
+                    <!-- 页面卡片将在这里生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷键说明 -->
+        <div class="mt-12 bg-slate-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold mb-4 text-orange-500">
+                <i class="fas fa-keyboard mr-2"></i>
+                快捷键说明
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">F5</kbd>
+                    <span>切换PPT模式</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">← →</kbd>
+                    <span>上一页/下一页</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">Space</kbd>
+                    <span>下一页</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">F11</kbd>
+                    <span>全屏切换</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">O</kbd>
+                    <span>页面概览</span>
+                </div>
+                <div class="flex items-center">
+                    <kbd class="bg-slate-700 px-2 py-1 rounded mr-2">ESC</kbd>
+                    <span>退出模式</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 版权信息 -->
+        <div class="text-center mt-8 text-gray-500">
+            <p>© 2025 星环科技 | 演讲者：Grissom</p>
+        </div>
+    </div>
+
+    <script>
+        // 页面信息配置
+        const pageInfo = [
+            // 封面和议程 (1-2)
+            { num: 1, title: "AI Infra 最新进展", desc: "什么是 AI Infra 以及目前的最新进展", category: "课程导入" },
+            { num: 2, title: "议程概览", desc: "课程内容和时间安排", category: "课程导入" },
+
+            // 第一部分：大模型原理与最新进展 (3-7)
+            { num: 3, title: "大模型工作原理", desc: "Transformer架构和注意力机制详解", category: "大模型原理与最新进展" },
+            { num: 4, title: "训练规模数据", desc: "大模型训练规模与成本分析", category: "大模型原理与最新进展" },
+            { num: 5, title: "DeepSeek模型架构演进", desc: "开源大模型的技术突破与架构创新", category: "大模型原理与最新进展" },
+            { num: 6, title: "能力涌现现象", desc: "规模带来的能力突破", category: "大模型原理与最新进展" },
+            { num: 7, title: "多模态AI的全面发展", desc: "从单一到多元的AI发展趋势", category: "大模型原理与最新进展" },
+
+            // 第二部分：AI 编程 (8-12)
+            { num: 8, title: "主流AI编程工具对比", desc: "主流AI编程工具功能对比分析", category: "AI 编程" },
+            { num: 9, title: "AI编程的四大应用场景", desc: "AI编程在不同场景下的应用实践", category: "AI 编程" },
+            { num: 10, title: "AI编程效率提升数据", desc: "开发效率提升的量化分析", category: "AI 编程" },
+            { num: 11, title: "企业级应用与投资回报", desc: "AI编程在企业中的实际应用与ROI分析", category: "AI 编程" },
+            { num: 12, title: "AI编程的核心价值", desc: "AI编程带来的核心价值与最佳实践", category: "AI 编程" },
+
+            // 第三部分：GPU 架构与CUDA编程 (13-23)
+            { num: 13, title: "GPU vs CPU：并行计算革命的技术基础", desc: "GPU和CPU架构对比分析", category: "GPU 架构与CUDA编程" },
+            { num: 14, title: "NVIDIA GPU架构演进", desc: "从Kepler到Hopper的技术发展", category: "GPU 架构与CUDA编程" },
+            { num: 15, title: "CUDA编程基础", desc: "CUDA编程模型和基本概念", category: "GPU 架构与CUDA编程" },
+            { num: 16, title: "CUDA编程模型", desc: "向量计算、矩阵计算编程模型", category: "GPU 架构与CUDA编程" },
+            { num: 17, title: "CUDA矩阵计算编程实战", desc: "共享内存优化、线程块配置实战", category: "GPU 架构与CUDA编程" },
+            { num: 18, title: "CUDA性能优化要点", desc: "CUDA性能优化的关键要点", category: "GPU 架构与CUDA编程" },
+            { num: 19, title: "CUDA应用案例与分析工具", desc: "CUDA在实际应用中的案例和分析工具", category: "GPU 架构与CUDA编程" },
+            { num: 20, title: "GPU虚拟化技术对比", desc: "不同GPU虚拟化技术的对比分析", category: "GPU 架构与CUDA编程" },
+            { num: 21, title: "HAMi：异构 AI 计算虚拟化中间件", desc: "HAMi异构AI计算虚拟化中间件介绍", category: "GPU 架构与CUDA编程" },
+            { num: 22, title: "HAMi的GPU虚拟化方案", desc: "HAMi用户态GPU虚拟化方案详解", category: "GPU 架构与CUDA编程" },
+            { num: 23, title: "HAMi的企业级特性", desc: "HAMi企业级特性与应用场景", category: "GPU 架构与CUDA编程" },
+
+            // 第四部分：云原生与 AI Infra 融合架构深度解析 (24-35)
+            { num: 24, title: "现代AI基础设施架构", desc: "完整的AI基础设施技术栈", category: "云原生与 AI Infra 融合架构" },
+            { num: 25, title: "训练集群 vs 推理集群", desc: "训练集群与推理集群的架构差异", category: "云原生与 AI Infra 融合架构" },
+            { num: 26, title: "大模型推理优化：KV Cache", desc: "KV Cache技术在大模型推理中的优化", category: "云原生与 AI Infra 融合架构" },
+            { num: 27, title: "高级推理优化", desc: "并行策略、PD分离、连续批处理、投机解码", category: "云原生与 AI Infra 融合架构" },
+            { num: 28, title: "量化技术与推理引擎", desc: "模型量化技术和推理引擎优化", category: "云原生与 AI Infra 融合架构" },
+            { num: 29, title: "AIBrix：云原生推理引擎核心组件", desc: "推理引擎的核心技术组件", category: "云原生与 AI Infra 融合架构" },
+            { num: 30, title: "AIBrix：智能扩缩容与分布式缓存系统", desc: "智能扩缩容和分布式缓存技术", category: "云原生与 AI Infra 融合架构" },
+            { num: 31, title: "AIBrix：技术创新与企业级部署", desc: "技术创新和企业级部署实践", category: "云原生与 AI Infra 融合架构" },
+            { num: 32, title: "云原生带来的四大优势", desc: "云原生技术在AI领域的核心优势", category: "云原生与 AI Infra 融合架构" },
+            { num: 33, title: "RAG系统架构", desc: "检索增强生成系统的实际架构实现", category: "云原生与 AI Infra 融合架构" },
+            { num: 34, title: "Agent系统架构：智能体协作与工具调用", desc: "智能代理系统的架构设计与实现", category: "云原生与 AI Infra 融合架构" },
+            { num: 35, title: "AI系统监控运维", desc: "AI系统的监控和运维体系", category: "云原生与 AI Infra 融合架构" },
+
+            // 第五部分：课程总结与展望 (35-37)
+            { num: 36, title: "AI Infra学习路径：核心收获总结", desc: "AI基础设施学习的核心要点总结", category: "课程总结与展望" },
+            { num: 37, title: "未来展望与职业发展", desc: "AI基础设施领域的职业发展建议", category: "课程总结与展望" }
+        ];
+
+        // 生成页面列表
+        function generatePageList() {
+            const pageList = document.getElementById('page-list');
+
+            // 按模块分组
+            const moduleGroups = {};
+            pageInfo.forEach(page => {
+                if (!moduleGroups[page.category]) {
+                    moduleGroups[page.category] = [];
+                }
+                moduleGroups[page.category].push(page);
+            });
+
+            // 为每个模块创建分组
+            Object.keys(moduleGroups).forEach(category => {
+                // 创建模块标题
+                const moduleTitle = document.createElement('div');
+                moduleTitle.className = 'mb-4 mt-8 first:mt-0';
+                moduleTitle.innerHTML = `
+                    <h3 class="text-xl font-bold mb-2 border-b-2 border-blue-500 pb-2">
+                        ${category}
+                    </h3>
+                `;
+                pageList.appendChild(moduleTitle);
+
+                // 创建该模块的页面网格
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6';
+
+                moduleGroups[category].forEach(page => {
+                    const pageCard = document.createElement('div');
+                    pageCard.className = 'page-card bg-slate-700 p-4 rounded-lg cursor-pointer';
+                    pageCard.innerHTML = `
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-600 text-white px-2 py-1 rounded text-sm font-semibold mr-3">
+                                ${page.num}
+                            </span>
+                            <h4 class="font-semibold text-white">${page.title}</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm">${page.desc}</p>
+                        <div class="mt-2">
+                            <span class="inline-block bg-gray-600 text-gray-300 px-2 py-1 rounded-full text-xs">
+                                ${page.category}
+                            </span>
+                        </div>
+                    `;
+                    pageCard.addEventListener('click', () => goToPage(page.num));
+                    gridContainer.appendChild(pageCard);
+                });
+
+                pageList.appendChild(gridContainer);
+            });
+        }
+
+        // 跳转到指定页面
+        function goToPage(pageNum) {
+            window.location.href = `page_${pageNum}.html`;
+        }
+
+        // 开始演示
+        function startPresentation() {
+            window.location.href = 'page_1.html';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            generatePageList();
+        });
+    </script>
+</body>
+
+</html>

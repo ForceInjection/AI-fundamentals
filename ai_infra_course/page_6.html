@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>能力涌现现象</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+            z-index: 1;
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+            z-index: 1;
+        }
+
+        .ability-card {
+            transition: all 0.3s ease;
+        }
+
+        .ability-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .emergence-point {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            z-index: 20;
+        }
+
+        .emergence-point svg {
+            position: relative;
+            z-index: 25;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 500px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 500px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 0;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16" style="position: relative; z-index: 5;">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">能力涌现</span>现象
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-6" style="position: relative; z-index: 5;">
+            <div class="mb-6 fade-in" style="animation-delay: 0.2s;">
+                <p class="text-xl text-gray-200 leading-relaxed">
+                    当大模型规模达到<span
+                        class="text-[#ed8936] font-bold">临界点</span>时，突然涌现出无法从小模型预测的新能力。这些能力在模型规模较小时并不明显，但随着规模增长而突然出现。
+                </p>
+            </div>
+            <!-- Emergence visualization -->
+            <div class="emergence-point mb-8 fade-in" id="emergence-viz" style="animation-delay: 0.4s; margin-left: 50px;"></div>
+            <!-- Abilities grid -->
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Reasoning ability -->
+                <div class="ability-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-start">
+                        <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                            <i class="fas fa-brain text-2xl text-[#ed8936]"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">推理能力</h3>
+                            <p class="text-gray-300">
+                                模型能够进行逻辑推理、问题分析和决策制定，解决复杂的问题场景，类似人类思维过程。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Programming ability -->
+                <div class="ability-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.8s;">
+                    <div class="flex items-start">
+                        <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                            <i class="fas fa-code text-2xl text-[#ed8936]"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">编程能力</h3>
+                            <p class="text-gray-300">
+                                自动生成正确且高效的代码，理解编程语言语义，能够开发新功能并修复复杂代码问题。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mathematical ability -->
+                <div class="ability-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 1s;">
+                    <div class="flex items-start">
+                        <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                            <i class="fas fa-square-root-alt text-2xl text-[#ed8936]"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">数学解题</h3>
+                            <p class="text-gray-300">
+                                解决数学问题、几何证明和代数方程，能够理解数学概念和逻辑，类似人类数学能力。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Creative writing ability -->
+                <div class="ability-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-l-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 1.2s;">
+                    <div class="flex items-start">
+                        <div class="bg-[#ed8936] bg-opacity-20 p-3 rounded-full mr-4">
+                            <i class="fas fa-feather-alt text-2xl text-[#ed8936]"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">创意写作</h3>
+                            <p class="text-gray-300">
+                                生成连贯且富有创造性的文本，撰写故事、脚本、诗歌，甚至能够模仿特定的写作风格。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第6页 / 共37页
+        </footer>
+    </div>
+    <script>
+        // D3.js visualization for ability emergence concept
+        document.addEventListener('DOMContentLoaded', function () {
+            const width = 1000;
+            const height = 180;
+            const margin = { top: 30, right: 30, bottom: 40, left: 80 };
+
+            // Create SVG
+            const svg = d3.select("#emergence-viz")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("style", "max-width: 100%; height: auto;");
+
+            // X axis - Model Scale
+            const x = d3.scaleLinear()
+                .domain([0, 100])
+                .range([margin.left, width - margin.right]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).ticks(5))
+                .attr("color", "#94a3b8")
+                .append("text")
+                .attr("x", width - margin.right)
+                .attr("y", 35)
+                .attr("fill", "white")
+                .attr("text-anchor", "end")
+                .text("模型规模");
+
+            // Y axis - Ability
+            const y = d3.scalePoint()
+                .domain(["无能力", "能力涌现"])
+                .range([height - margin.bottom, margin.top]);
+
+            svg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).tickSize(0))
+                .attr("color", "#94a3b8")
+                .selectAll("text")
+                .attr("fill", "white")
+                .attr("font-size", "14px");
+
+            // Critical point line
+            svg.append("line")
+                .attr("x1", x(30))
+                .attr("y1", margin.top)
+                .attr("x2", x(30))
+                .attr("y2", height - margin.bottom)
+                .attr("stroke", "#ed8936")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5");
+
+            // Critical point label
+            svg.append("text")
+                .attr("x", x(30))
+                .attr("y", margin.top + 20)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#ed8936")
+                .attr("font-weight", "bold")
+                .text("临界点");
+
+            // Ability curve
+            const line = d3.line()
+                .x(d => d.x)
+                .y(d => d.y)
+                .curve(d3.curveStepAfter);
+
+            const points = [
+                { x: x(0), y: y("无能力") },
+                { x: x(25), y: y("无能力") },
+                { x: x(30), y: y("能力涌现") },
+                { x: x(50), y: y("能力涌现") },
+                { x: x(75), y: y("能力涌现") },
+                { x: x(100), y: y("能力涌现") }
+            ];
+
+            svg.append("path")
+                .datum(points)
+                .attr("fill", "none")
+                .attr("stroke", "#ed8936")
+                .attr("stroke-width", 3)
+                .attr("d", line);
+
+            // Ability dots
+            svg.selectAll(".ability-dot")
+                .data(points.slice(2))
+                .enter()
+                .append("circle")
+                .attr("class", "ability-dot")
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .attr("r", 6)
+                .attr("fill", "#ed8936")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+
+            // Annotations for ability types
+            const annotations = [
+                { x: x(50), y: y("能力涌现") - 20, text: "推理能力", icon: "brain" },
+                { x: x(65), y: y("能力涌现") - 40, text: "编程能力", icon: "code" },
+                { x: x(75), y: y("能力涌现") - 20, text: "数学解题", icon: "square-root-alt" },
+                { x: x(85), y: y("能力涌现") - 40, text: "创意写作", icon: "feather-alt" }
+            ];
+
+            // Add annotation lines
+            svg.selectAll(".annotation-line")
+                .data(annotations)
+                .enter()
+                .append("line")
+                .attr("class", "annotation-line")
+                .attr("x1", d => d.x)
+                .attr("y1", d => d.y + 10)
+                .attr("x2", d => d.x)
+                .attr("y2", d => d.y + 40)
+                .attr("stroke", "#ed8936")
+                .attr("stroke-width", 1.5);
+
+            // Add annotation circles
+            svg.selectAll(".annotation-circle")
+                .data(annotations)
+                .enter()
+                .append("circle")
+                .attr("class", "annotation-circle")
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y + 40)
+                .attr("r", 12)
+                .attr("fill", "#1e293b")
+                .attr("stroke", "#ed8936")
+                .attr("stroke-width", 1.5);
+
+            // Add text labels
+            svg.selectAll(".annotation-text")
+                .data(annotations)
+                .enter()
+                .append("text")
+                .attr("class", "annotation-text")
+                .attr("x", d => d.x)
+                .attr("y", d => d.y + 70)
+                .attr("text-anchor", "middle")
+                .attr("fill", "white")
+                .attr("font-size", "12px")
+                .text(d => d.text);
+        });
+    </script>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

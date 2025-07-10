@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>现代AI基础设施架构</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .layer-card {
+            transition: all 0.3s ease;
+        }
+
+        .layer-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .flow-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .flow-arrow-right {
+            border-width: 10px 0 10px 16px;
+            border-color: transparent transparent transparent #ed8936;
+        }
+
+        .flow-arrow-down {
+            border-width: 16px 10px 0 10px;
+            border-color: #ed8936 transparent transparent transparent;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[820px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 250px; left: 200px; width: 50%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 500px; width: 30%;"></div>
+        <div class="circuit-line" style="top: 550px; left: 300px; width: 40%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 250px; left: 500px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 550px; left: 700px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
+        <div class="hexagon" style="top: 300px; left: 900px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-8 px-12">
+            <h1 class="text-4xl font-bold text-white">
+                现代<span class="text-[#ed8936]">AI基础设施</span>架构
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-12 py-4">
+            <div class="flex space-x-4 mb-6">
+                <!-- Hardware Layer -->
+                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-blue-500 fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-microchip text-blue-400"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">硬件层（Infrastructure Layer）</h2>
+                    </div>
+                    <ul class="space-y-2 text-gray-200 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-server text-blue-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">GPU集群：</span>NVIDIA DGX系列（A100/H100），支持大规模并行计算</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-hdd text-blue-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">存储系统：</span>高性能NVMe SSD + 分布式存储（Ceph/GlusterFS）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-network-wired text-blue-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">网络架构：</span>InfiniBand高速互联 + 以太网存储网络</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Platform Layer -->
+                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-green-500 fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-cubes text-green-400"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">平台层（Platform Layer）</h2>
+                    </div>
+                    <ul class="space-y-2 text-gray-200 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-docker text-green-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">容器编排：</span>Kubernetes + GPU Operator，支持GPU资源调度</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-tasks text-green-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">资源调度：</span>多租户调度器（Volcano、Yunikorn），支持优先级和公平调度</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-project-diagram text-green-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">服务网格：</span>Istio微服务管理 + Prometheus监控告警</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-database text-green-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">存储编排：</span>CSI动态存储 + Rook云原生存储</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Application Layer -->
+                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-orange-500 fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-orange-500 bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-code-branch text-orange-400"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">应用层（Application Layer）</h2>
+                    </div>
+                    <ul class="space-y-2 text-gray-200 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-brain text-orange-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">训练框架：</span>PyTorch、TensorFlow、JAX +
+                                分布式训练（Horovod、DeepSpeed）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-rocket text-orange-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">推理服务：</span>TensorRT、Triton Inference
+                                Server、vLLM、AIBrix</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-cube text-orange-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">模型管理：</span>MLflow生命周期管理 + Kubeflow工作流</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-tools text-orange-400 mt-1 mr-2"></i>
+                            <span><span class="font-semibold">开发工具：</span>JupyterHub、VSCode Server、实验跟踪工具</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Data Flow Section -->
+            <div class="flex space-x-4 fade-in" style="animation-delay: 0.8s;">
+                <div class="w-3/4 bg-[#1e293b] bg-opacity-40 rounded-lg p-4">
+                    <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-random text-[#ed8936] mr-2"></i>
+                        数据流核心环节
+                    </h2>
+                    <div class="flex justify-between relative">
+                        <!-- Data Processing -->
+                        <div class="w-1/4 px-2">
+                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
+                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                    <i class="fas fa-database text-blue-400 mr-2"></i>
+                                    数据处理
+                                </h3>
+                                <ul class="text-sm text-gray-300 space-y-1">
+                                    <li>流式摄取（Kafka）</li>
+                                    <li>分布式处理（Spark）</li>
+                                    <li>特征存储</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Flow Arrow 1 -->
+                        <div class="flex items-center justify-center w-8">
+                            <div class="flow-arrow flow-arrow-right"></div>
+                        </div>
+                        <!-- Model Training -->
+                        <div class="w-1/4 px-2">
+                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
+                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                    <i class="fas fa-cogs text-green-400 mr-2"></i>
+                                    模型训练
+                                </h3>
+                                <ul class="text-sm text-gray-300 space-y-1">
+                                    <li>数据加载</li>
+                                    <li>分布式训练</li>
+                                    <li>检查点保存</li>
+                                    <li>实验跟踪</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Flow Arrow 2 -->
+                        <div class="flex items-center justify-center w-8">
+                            <div class="flow-arrow flow-arrow-right"></div>
+                        </div>
+                        <!-- Model Deployment -->
+                        <div class="w-1/4 px-2">
+                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
+                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                    <i class="fas fa-cloud-upload-alt text-purple-400 mr-2"></i>
+                                    模型部署
+                                </h3>
+                                <ul class="text-sm text-gray-300 space-y-1">
+                                    <li>格式转换</li>
+                                    <li>容器化</li>
+                                    <li>A/B测试</li>
+                                    <li>监控告警</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- Flow Arrow 3 -->
+                        <div class="flex items-center justify-center w-8">
+                            <div class="flow-arrow flow-arrow-right"></div>
+                        </div>
+                        <!-- Online Inference -->
+                        <div class="w-1/4 px-2">
+                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
+                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                    <i class="fas fa-bolt text-orange-400 mr-2"></i>
+                                    在线推理
+                                </h3>
+                                <ul class="text-sm text-gray-300 space-y-1">
+                                    <li>请求路由</li>
+                                    <li>模型预热</li>
+                                    <li>结果缓存</li>
+                                    <li>反馈收集</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Key Performance Indicators -->
+                <div class="w-1/4 bg-[#1e293b] bg-opacity-40 rounded-lg p-4">
+                    <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
+                        关键性能指标
+                    </h2>
+                    <div class="space-y-4">
+                        <!-- Performance -->
+                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
+                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                <i class="fas fa-tachometer-alt text-green-400 mr-2"></i>
+                                性能
+                            </h3>
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>训练吞吐量 &gt; 1000 samples/sec/GPU</li>
+                                <li>推理延迟 &lt; 100ms</li>
+                            </ul>
+                        </div>
+                        <!-- Reliability -->
+                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
+                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
+                                可靠性
+                            </h3>
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>系统可用性 99.95%</li>
+                                <li>故障恢复 &lt; 5分钟</li>
+                            </ul>
+                        </div>
+                        <!-- Efficiency -->
+                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
+                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
+                                <i class="fas fa-leaf text-green-400 mr-2"></i>
+                                效益
+                            </h3>
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>TCO降低 40-60%</li>
+                                <li>资源利用率提升 2-3倍</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第24页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

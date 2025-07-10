@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>训练集群 vs 推理集群</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .comparison-card {
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .feature-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+
+        .training-icon {
+            background-color: rgba(237, 137, 54, 0.2);
+            color: #ed8936;
+        }
+
+        .inference-icon {
+            background-color: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 250px; left: 200px; width: 30%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 700px; width: 30%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 250px; left: 500px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 900px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">训练集群</span> vs <span class="text-[#4ade80]">推理集群</span>
+            </h1>
+            <div class="w-32 h-1 bg-gradient-to-r from-[#ed8936] to-[#4ade80]" mt-3"=""></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-8">
+            <div class="flex space-x-6 mb-6">
+                <!-- Training Cluster -->
+                <div class="w-1/2 comparison-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                        <i class="fas fa-server mr-3 text-[#ed8936]"></i>
+                        训练集群特点
+                    </h2>
+                    <div class="space-y-1">
+                        <div class="feature-item">
+                            <div class="feature-icon training-icon">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">高性能GPU</h3>
+                                <p class="text-gray-300 text-sm">A100/H100系列，高算力需求</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon training-icon">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">大内存配置</h3>
+                                <p class="text-gray-300 text-sm">高容量显存，支持大型模型训练</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon training-icon">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">高速网络互联</h3>
+                                <p class="text-gray-300 text-sm">InfiniBand或高速以太网</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon training-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">性能优化</h3>
+                                <p class="text-gray-300 text-sm">侧重计算密集型任务处理能力</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Inference Cluster -->
+                <div class="w-1/2 comparison-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#4ade80] fade-in"
+                    style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                        <i class="fas fa-cloud mr-3 text-[#4ade80]"></i>
+                        推理集群特点
+                    </h2>
+                    <div class="space-y-1">
+                        <div class="feature-item">
+                            <div class="feature-icon inference-icon">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">成本优化GPU</h3>
+                                <p class="text-gray-300 text-sm">V100等成本效益型GPU</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon inference-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">低延迟优化</h3>
+                                <p class="text-gray-300 text-sm">优先考虑首token延迟</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon inference-icon">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">弹性扩缩容</h3>
+                                <p class="text-gray-300 text-sm">按需扩展，灵活资源分配</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon inference-icon">
+                                <i class="fas fa-compress-arrows-alt"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-medium">内存效率</h3>
+                                <p class="text-gray-300 text-sm">通过KV Cache优化，节省90%+显存</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Bottom section: Necessity of separation -->
+            <div class="bg-[#1e293b] bg-opacity-40 rounded-lg p-6 fade-in" style="animation-delay: 0.6s;">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-puzzle-piece mr-2 text-[#ed8936]"></i>
+                    架构分离的必要性
+                </h3>
+                <div class="flex space-x-6">
+                    <div class="w-1/3">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-tasks text-[#ed8936] text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">训练和推理任务的资源需求差异显著</p>
+                        </div>
+                        <div class="flex items-center">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-chart-line text-[#ed8936] text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">训练集群需要高带宽和大量显存</p>
+                        </div>
+                    </div>
+                    <div class="w-1/3">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-bolt text-[#4ade80] text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">推理集群对延迟和成本更加敏感</p>
+                        </div>
+                        <div class="flex items-center">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-users text-[#4ade80] text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">能够支持大规模并发用户请求</p>
+                        </div>
+                    </div>
+                    <div class="w-1/3">
+                        <div class="flex items-center mb-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-gradient-to-r from-[#ed8936] to-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-puzzle-piece text-white text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">专业化分工提升整体系统效率</p>
+                        </div>
+                        <div class="flex items-center">
+                            <div
+                                class="w-6 h-6 rounded-full bg-gradient-to-r from-[#ed8936] to-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
+                                <i class="fas fa-cogs text-white text-sm"></i>
+                            </div>
+                            <p class="text-gray-200 text-sm">独立扩展和优化不同集群</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第25页 / 共37页
+        </footer>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>AI编程的四大应用场景</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://picture-search.tiangong.cn/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            width: 1280px;
+            min-height: 720px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .slide {
+            width: 1280px;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .circuit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(237, 137, 54, 0.8);
+        }
+
+        .hexagon {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
+            opacity: 0.15;
+        }
+
+        .scenario-card {
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .scenario-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(237, 137, 54, 0.3);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon-container {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 2rem;
+            height: 450px;
+        }
+    </style>
+</head>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+        <!-- Background decorative elements -->
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 150px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 1000px;"></div>
+        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 400px; left: 150px;"></div>
+        <div class="hexagon" style="top: 600px; left: 900px;"></div>
+        <!-- Grid pattern -->
+        <div class="absolute inset-0" style="
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        "></div>
+        <!-- Header -->
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">AI编程</span>的四大应用场景
+            </h1>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+        </header>
+        <!-- Main content -->
+        <main class="px-16 py-8">
+            <div class="grid-layout">
+                <!-- Scenario 1: Code Generation -->
+                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex items-start">
+                        <div
+                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
+                            <i class="fas fa-code text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">代码生成</h2>
+                            <p class="text-gray-300 mb-3">将自然语言描述转化为可执行代码，提高开发效率</p>
+                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-arrow-right text-[#ed8936] mr-2"></i>
+                                    <span class="text-white font-medium">流程转化</span>
+                                </div>
+                                <div class="text-gray-400 text-sm">
+                                    自然语言 → 代码理解 → 逻辑设计 → 代码生成
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
+                                        高效开发</span>
+                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 降低学习曲线</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Scenario 2: Code Debugging -->
+                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex items-start">
+                        <div
+                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
+                            <i class="fas fa-bug text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">代码调试</h2>
+                            <p class="text-gray-300 mb-3">自动诊断错误并提供修复建议，提高调试效率</p>
+                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-search text-[#ed8936] mr-2"></i>
+                                    <span class="text-white font-medium">智能诊断</span>
+                                </div>
+                                <div class="text-gray-400 text-sm">
+                                    错误定位 → 原因分析 → 修复建议 → 自动修复
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
+                                        快速定位</span>
+                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 减少修复时间</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Scenario 3: Code Refactoring -->
+                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-start">
+                        <div
+                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
+                            <i class="fas fa-sync-alt text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">代码重构</h2>
+                            <p class="text-gray-300 mb-3">优化代码结构和性能，提高代码质量和可维护性</p>
+                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-exchange-alt text-[#ed8936] mr-2"></i>
+                                    <span class="text-white font-medium">结构优化</span>
+                                </div>
+                                <div class="text-gray-400 text-sm">
+                                    代码分析 → 结构优化 → 性能提升 → 可读性增强
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
+                                        提升性能</span>
+                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 增加可读性</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Scenario 4: Documentation Generation -->
+                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.8s;">
+                    <div class="flex items-start">
+                        <div
+                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
+                            <i class="fas fa-file-alt text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">文档生成</h2>
+                            <p class="text-gray-300 mb-3">自动生成注释和文档，提高文档质量和一致性</p>
+                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-pen-to-square text-[#ed8936] mr-2"></i>
+                                    <span class="text-white font-medium">智能文档</span>
+                                </div>
+                                <div class="text-gray-400 text-sm">
+                                    代码分析 → 注释生成 → 文档撰写 → 维护更新
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
+                                        高效文档</span>
+                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 保持同步</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- Footer -->
+        <div class="absolute bottom-6 left-16 right-16 flex justify-between items-center">
+            <div class="text-gray-400 text-sm">
+                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                AI编程工具能显著提升开发效率，降低学习门槛，提高代码质量
+            </div>
+            <div class="text-gray-400 text-sm">
+                第9页 / 共37页
+            </div>
+        </div>
+    </div>
+
+<script src="ppt-mode.js"></script>
+</body>
+
+</html>
