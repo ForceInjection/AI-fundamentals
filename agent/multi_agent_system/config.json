@@ -1,0 +1,208 @@
+{
+  "system": {
+    "name": "Enterprise Multi-Agent AI System",
+    "version": "1.0.0",
+    "environment": "development",
+    "debug": true,
+    "log_level": "INFO"
+  },
+  "tracing": {
+    "enabled": true,
+    "langsmith_api_key": null,
+    "langsmith_api_url": "https://api.smith.langchain.com",
+    "sampling_rate": 1.0,
+    "error_sampling_rate": 1.0,
+    "batch_size": 100,
+    "batch_timeout": 5.0,
+    "max_events": 10000
+  },
+  "message_bus": {
+    "max_queue_size": 10000,
+    "worker_count": 4,
+    "retry_attempts": 3,
+    "retry_delay": 1.0,
+    "dead_letter_queue": true,
+    "message_ttl": 3600
+  },
+  "agents": {
+    "max_concurrent_tasks": 10,
+    "default_timeout": 300,
+    "performance_tracking": true,
+    "auto_scaling": {
+      "enabled": false,
+      "min_agents": 1,
+      "max_agents": 10,
+      "scale_up_threshold": 0.8,
+      "scale_down_threshold": 0.3
+    },
+    "health_check": {
+      "enabled": true,
+      "interval": 60,
+      "timeout": 10
+    }
+  },
+  "workflows": {
+    "max_parallel_executions": 5,
+    "state_persistence": true,
+    "checkpoint_interval": 60,
+    "execution_timeout": 1800,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_factor": 2.0,
+      "max_delay": 300
+    }
+  },
+  "customer_service": {
+    "enabled": true,
+    "max_agents": 10,
+    "auto_scaling": true,
+    "response_time_target": 30,
+    "escalation_threshold": {
+      "sentiment_score": -0.7,
+      "wait_time_minutes": 10,
+      "complexity_score": 0.8
+    },
+    "knowledge_base": {
+      "enabled": true,
+      "update_interval": 3600,
+      "similarity_threshold": 0.7
+    }
+  },
+  "research_agent": {
+    "max_search_results": 20,
+    "search_timeout": 30,
+    "analysis_depth": "comprehensive",
+    "confidence_threshold": 0.7,
+    "sources": {
+      "web_search": true,
+      "academic_papers": false,
+      "news_articles": true,
+      "social_media": false
+    }
+  },
+  "analysis_agent": {
+    "max_data_points": 100000,
+    "statistical_significance": 0.05,
+    "visualization": {
+      "enabled": true,
+      "max_charts": 10,
+      "chart_types": ["line", "bar", "scatter", "histogram"]
+    },
+    "anomaly_detection": {
+      "enabled": true,
+      "sensitivity": 0.1,
+      "methods": ["isolation_forest", "statistical"]
+    }
+  },
+  "monitoring": {
+    "performance_thresholds": {
+      "max_duration_ms": 30000,
+      "max_error_rate": 0.05,
+      "max_memory_mb": 1000,
+      "max_cpu_percent": 80
+    },
+    "alerts": {
+      "enabled": true,
+      "channels": ["log", "console"],
+      "severity_levels": ["warning", "error", "critical"]
+    },
+    "metrics_collection": {
+      "interval": 60,
+      "retention_days": 30,
+      "aggregation_window": 300
+    }
+  },
+  "security": {
+    "authentication": {
+      "enabled": false,
+      "method": "api_key",
+      "token_expiry": 3600
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "burst_size": 20
+    },
+    "data_encryption": {
+      "enabled": false,
+      "algorithm": "AES-256"
+    }
+  },
+  "storage": {
+    "type": "memory",
+    "redis": {
+      "host": "localhost",
+      "port": 6379,
+      "db": 0,
+      "password": null,
+      "connection_pool_size": 10
+    },
+    "postgresql": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "multi_agent_system",
+      "username": "postgres",
+      "password": null,
+      "pool_size": 10
+    }
+  },
+  "api": {
+    "enabled": false,
+    "host": "0.0.0.0",
+    "port": 8000,
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    },
+    "documentation": {
+      "enabled": true,
+      "path": "/docs"
+    }
+  },
+  "web_ui": {
+    "enabled": false,
+    "host": "0.0.0.0",
+    "port": 8501,
+    "theme": "light",
+    "features": {
+      "agent_dashboard": true,
+      "workflow_designer": true,
+      "performance_monitor": true,
+      "log_viewer": true
+    }
+  },
+  "deployment": {
+    "mode": "standalone",
+    "docker": {
+      "image_name": "multi-agent-system",
+      "tag": "latest",
+      "registry": null
+    },
+    "kubernetes": {
+      "namespace": "multi-agent-system",
+      "replicas": 1,
+      "resources": {
+        "requests": {
+          "cpu": "500m",
+          "memory": "1Gi"
+        },
+        "limits": {
+          "cpu": "2",
+          "memory": "4Gi"
+        }
+      }
+    }
+  },
+  "development": {
+    "hot_reload": true,
+    "debug_mode": true,
+    "test_data": {
+      "enabled": true,
+      "sample_size": 100
+    },
+    "profiling": {
+      "enabled": false,
+      "output_dir": "./profiling"
+    }
+  }
+}
