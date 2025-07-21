@@ -52,83 +52,69 @@
 - [第三部分：资源管理与优化篇](gpu_manager/第三部分：资源管理与优化篇.md) - GPU切分与资源调度算法
 - [第四部分：实践应用篇](gpu_manager/第四部分：实践应用篇.md) - 部署、运维、性能调优实践
 
-### 5. GPU 资源管理工具
+ **HAMi：**
 
 - [HAMi GPU 资源管理指南](hami/hmai-gpu-resources-guide.md) - 基于 HAMi 的 GPU 资源管理与调度
 
-### 6. 分布式存储系统
+### 5. 分布式存储系统
 
 - [JuiceFS 文件修改机制分析](juicefs/JuiceFS%20文件修改机制分析.md) - 分布式文件系统的修改机制深度解析
-
-### 7. AI 智能体记忆系统
-
-**理论与实践：**
-
-- [AI 智能体记忆系统：理论与实践](memory/AI%20智能体记忆系统：理论与实践.md) - 记忆系统的设计原理与实现
-- [如何设计支持多轮指代消解的对话系统](memory/如何设计支持多轮指代消解的对话系统.md) - 对话系统中的指代消解技术
-
-**代码实现：**
-
-- [记忆系统代码实现](memory/code/) - 包含记忆管理、向量存储、对话处理等核心组件
-
-### 8. Trae 编程实战课程
-
-**完整的 Trae 编程学习体系：**
-
-- [《Trae 编程实战》课程提纲](trae/《Trae%20编程实战》课程提纲.md) - 完整课程规划
-
-**第一部分：基础入门篇：**
-
-- [第一章-Trae简介与环境搭建](trae/第一部分-基础入门篇/第一章-Trae简介与环境搭建.md)
-- [第二章-Trae核心概念](trae/第一部分-基础入门篇/第二章-Trae核心概念.md)
-- [第三章-基础语法与数据类型](trae/第一部分-基础入门篇/第三章-基础语法与数据类型.md)
-- [第四章-控制流与函数](trae/第一部分-基础入门篇/第四章-控制流与函数.md)
-
-**第二部分：进阶特性篇：**
-
-- [第五章-面向对象编程](trae/第二部分-进阶特性篇/第五章-面向对象编程.md)
-- [第六章-模块与包管理](trae/第二部分-进阶特性篇/第六章-模块与包管理.md)
-- [第七章-异常处理与调试](trae/第二部分-进阶特性篇/第七章-异常处理与调试.md)
-- [第八章-并发与异步编程](trae/第二部分-进阶特性篇/第八章-并发与异步编程.md)
-
-**第三部分：高级应用篇：**
-
-- [第九章-数据库操作](trae/第三部分-高级应用篇/第九章-数据库操作.md)
-- [第十章-网络编程](trae/第三部分-高级应用篇/第十章-网络编程.md)
-- [第十一章-Web开发](trae/第三部分-高级应用篇/第十一章-Web开发.md)
-- [第十二章-API设计与开发](trae/第三部分-高级应用篇/第十二章-API设计与开发.md)
-
-**第四部分：工程实践篇：**
-
-- [第十三章-测试驱动开发](trae/第四部分-工程实践篇/第十三章-测试驱动开发.md)
-- [第十四章-代码质量管理](trae/第四部分-工程实践篇/第十四章-代码质量管理.md)
-- [第十五章-性能优化](trae/第四部分-工程实践篇/第十五章-性能优化.md)
-- [第十六章-安全编程](trae/第四部分-工程实践篇/第十六章-安全编程.md)
-
-**第五部分：综合项目实战：**
-
-- [第十七章-项目架构设计](trae/第五部分-综合项目实战/第十七章-项目架构设计.md)
-- [第十八章-微服务架构](trae/第五部分-综合项目实战/第十八章-微服务架构.md)
-- [第十九章-容器化与编排](trae/第五部分-综合项目实战/第十九章-容器化与编排.md)
-- [第二十章-部署运维](trae/第五部分-综合项目实战/第二十章-部署运维.md)
-
-### 9. 企业级多智能体系统
-
-- [企业级多智能体系统实现指南](agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 完整的企业级多智能体系统架构设计与实现
 
 ---
 
 ## 第二部分：编程与开发
 
-### 1. CUDA 学习材料
+### 1. Trae 编程实战课程
 
-#### 1.1 快速入门
+**完整的 Trae 编程学习体系：**
+
+- [《Trae 编程实战》课程提纲（对外）](trae/《Trae%20编程实战》课程提纲（对外）.md) - 完整课程规划
+
+**第一部分：Trae基础入门：**
+
+- [第一章-Trae简介与环境配置](trae/第一部分-Trae基础入门/第一章-Trae简介与环境配置.md)
+- [第二章-基础交互模式](trae/第一部分-Trae基础入门/第二章-基础交互模式.md)
+- [第三章-实战练习-HelloWorld项目](trae/第一部分-Trae基础入门/第三章-实战练习-HelloWorld项目.md)
+- [第四章-第一部分总结与进阶准备](trae/第一部分-Trae基础入门/第四章-第一部分总结与进阶准备.md)
+
+**第二部分：常见编程场景实战：**
+
+- [第五章-现代前端开发实战](trae/第二部分-常见编程场景实战/第五章-现代前端开发实战.md)
+- [第六章-web开发实战](trae/第二部分-常见编程场景实战/第六章-web开发实战.md)
+- [第六章-高性能后端API开发](trae/第二部分-常见编程场景实战/第六章-高性能后端API开发.md)
+- [第七章-数据库设计与优化](trae/第二部分-常见编程场景实战/第七章-数据库设计与优化.md)
+- [第八章-安全认证与权限管理](trae/第二部分-常见编程场景实战/第八章-安全认证与权限管理.md)
+
+**第三部分：高级应用场景：**
+
+- [第九章-AI模型集成与智能应用开发](trae/第三部分-高级应用场景/第九章-AI模型集成与智能应用开发.md)
+- [第十章-实时通信与消息系统](trae/第三部分-高级应用场景/第十章-实时通信与消息系统.md)
+- [第十一章-数据分析与智能可视化](trae/第三部分-高级应用场景/第十一章-数据分析与智能可视化.md)
+- [第十二章-微服务架构与服务治理](trae/第三部分-高级应用场景/第十二章-微服务架构与服务治理.md)
+
+**第四部分：团队协作与最佳实践：**
+
+- [第十四章-代码质量管理](trae/第四部分-团队协作与最佳实践/第十四章-代码质量管理.md)
+- [第十五章-项目管理与协作](trae/第四部分-团队协作与最佳实践/第十五章-项目管理与协作.md)
+- [第十六章-性能优化与调试](trae/第四部分-团队协作与最佳实践/第十六章-性能优化与调试.md)
+- [第十七章-云平台部署与DevOps实践](trae/第四部分-团队协作与最佳实践/第十七章-云平台部署与DevOps实践.md)
+
+**第五部分：综合项目实战：**
+
+- [第十七章-项目规划与架构设计](trae/第五部分-综合项目实战/第十七章-项目规划与架构设计.md)
+- [第十八章-核心功能开发](trae/第五部分-综合项目实战/第十八章-核心功能开发.md)
+- [第十九章-高级功能实现](trae/第五部分-综合项目实战/第十九章-高级功能实现.md)
+- [第二十章-部署运维](trae/第五部分-综合项目实战/第二十章-部署运维.md)
+
+### 2. CUDA 学习材料
+
+#### 2.1 快速入门
 
 - [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
 - [CUDA 并发编程之 Stream 介绍](cuda/cuda_streams.md)
 
-#### 1.2 参考资料
+#### 2.2 参考资料
 
 - [CUDA Reading Group 相关讲座](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
 - [《CUDA C++ Programming Guide》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
@@ -142,11 +128,11 @@
 - [Multi GPU Programming Models](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [CUDA Processing Streams](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
-#### 1.3 专业选手
+#### 2.3 专业选手
 
 [**CUDA-Learn-Notes**](https://github.com/xlite-dev/CUDA-Learn-Notes)：📚Modern CUDA Learn Notes: 200+ Tensor/CUDA Cores Kernels🎉, HGEMM, FA2 via MMA and CuTe, 98~100% TFLOPS of cuBLAS/FA2.
 
-### 2. 监控与运维
+### 3. 监控与运维
 
 - [nvidia-smi 入门](ops/nvidia-smi.md)
 - [nvtop 入门](ops/nvtop.md)
@@ -156,12 +142,12 @@
 - [Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)](https://arthurchiao.art/blog/understanding-gpu-performance/)
 - [GPU 利用率是一个误导性指标](ops/GPU%20利用率是一个误导性指标.md)
 
-### 3. 性能分析与调优
+### 4. 性能分析与调优
 
 - [使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
 - [CUDA Kernel Profiling using Nvidia Nsight Compute](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)
 
-### 4. AI 编程入门
+### 5. AI 编程入门
 
 完整的AI编程入门教程，帮助开发者掌握AI编程工具的使用方法和技巧：
 
@@ -181,108 +167,23 @@
 
 ## 第三部分：机器学习基础
 
-### 1. 机器学习理论基础
-
-#### 1.1 核心概念与算法
+### 1. 好书推荐
 
 - [《机器学习系统：设计和实现》](https://openmlsys.github.io/index.html)
 - [《动手学深度学习》](https://zh.d2l.ai/)
 - [大模型时代为什么需要一本深度学习教科书？揭秘《深度学习：基础与概念》的独特价值](https://mp.weixin.qq.com/s/890mBdrIqzo3Of9RefsMxg)
 
-#### 1.2 数学基础
+### 2. 动手学机器学习
 
-- **线性代数**：矩阵运算、特征值分解、奇异值分解
-- **概率论与统计**：贝叶斯定理、概率分布、统计推断
-- **微积分**：梯度、偏导数、链式法则
-- **优化理论**：梯度下降、随机梯度下降、Adam优化器
-
-### 2. 深度学习框架与实践
-
-#### 2.1 主流框架对比
-
-- **PyTorch**：动态图、研究友好、灵活性强
-- **TensorFlow**：静态图、生产部署、生态完善
-- **JAX**：函数式编程、自动微分、高性能计算
-- **PaddlePaddle**：国产框架、产业应用、易用性强
-
-#### 2.2 模型训练技巧
-
-- **数据预处理**：归一化、数据增强、特征工程
-- **模型设计**：网络架构、激活函数、正则化
-- **训练策略**：学习率调度、批量大小、早停机制
-- **调试技巧**：梯度检查、可视化、性能分析
-
-### 3. 计算机视觉
-
-#### 3.1 基础算法
-
-- **卷积神经网络（CNN）**：LeNet、AlexNet、VGG、ResNet
-- **目标检测**：YOLO、R-CNN系列、SSD
-- **图像分割**：FCN、U-Net、Mask R-CNN
-- **生成模型**：GAN、VAE、扩散模型
-
-#### 3.2 实际应用
-
-- **图像分类**：ImageNet竞赛、迁移学习
-- **人脸识别**：特征提取、相似度计算
-- **医学影像**：病灶检测、影像分析
-- **自动驾驶**：环境感知、路径规划
-
-### 4. 自然语言处理
-
-#### 4.1 传统方法
-
-- **文本预处理**：分词、词性标注、命名实体识别
-- **特征表示**：词袋模型、TF-IDF、Word2Vec
-- **序列模型**：RNN、LSTM、GRU
-- **注意力机制**：Attention、Self-Attention
-
-#### 4.2 现代方法
-
-- **预训练模型**：BERT、GPT、T5
-- **多模态模型**：CLIP、DALL-E、GPT-4V
-- **对话系统**：检索式、生成式、混合式
-- **知识图谱**：实体关系抽取、知识推理
-
-### 5. 强化学习
-
-#### 5.1 基础理论
-
-- **马尔可夫决策过程**：状态、动作、奖励、策略
-- **价值函数**：状态价值、动作价值、贝尔曼方程
-- **策略梯度**：REINFORCE、Actor-Critic、PPO
-- **深度强化学习**：DQN、DDPG、SAC
-
-#### 5.2 应用场景
-
-- **游戏AI**：围棋、电子竞技、策略游戏
-- **机器人控制**：运动规划、操作控制
-- **推荐系统**：个性化推荐、广告投放
-- **金融交易**：算法交易、风险管理
-
-### 6. 机器学习工程
-
-#### 6.1 MLOps实践
-
-- **实验管理**：MLflow、Weights & Biases、TensorBoard
-- **版本控制**：DVC、Git LFS、模型版本管理
-- **自动化流水线**：Kubeflow、MLflow、Airflow
-- **模型监控**：数据漂移、模型性能、A/B测试
-
-#### 6.2 部署与优化
-
-- **模型压缩**：剪枝、量化、知识蒸馏
-- **推理优化**：TensorRT、ONNX、OpenVINO
-- **边缘计算**：移动端部署、IoT设备
-- **云端部署**：容器化、微服务、弹性扩缩
+- [动手学机器学习](https://github.com/ForceInjection/hands-on-ML) - 一个全面的机器学习学习资源库，包含理论讲解、代码实现和实战案例。
 
 ---
 
 ## 第四部分：大语言模型
 
-### 1. LLM 基础理论
+### 4.1 大模型基础知识
 
-#### 1.1 核心概念
+#### 4.1.1 核心概念
 
 - [Andrej Karpathy：Deep Dive into LLMs like ChatGPT（B站视频）](https://www.bilibili.com/video/BV16cNEeXEer)
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181)
@@ -298,10 +199,8 @@
 - [混合专家系统（MoE）图解指南](llm/A%20Visual%20Guide%20to%20Mixture%20of%20Experts%20(MoE).zh-CN.md)
 - [量化技术可视化指南](llm/A%20Visual%20Guide%20to%20Quantization.zh-CN.md)
 - [基于大型语言模型的意图检测](llm/Intent%20Detection%20using%20LLM.zh-CN.md)
-- [Mooncake 架构详解：以 KV 缓存为中心的高效 LLM 推理系统设计](llm/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)
-- [vLLM + LWS：Kubernetes 上的多机多卡推理方案](llm/lws_intro.md)
 
-#### 1.2 参考书籍
+#### 4.1.2 参考书籍
 
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
@@ -313,31 +212,49 @@
 - [《百面大模型》打通大模型求职与实战的关键一书](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA)
 - [《图解大模型：生成式AI原理与实践》](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg)
 
-### 2. LLM 训练
+### 4.2 大模型训练与推理
 
-#### 2.1 微调技术
+#### 4.2.1 模型训练
+
+**微调技术：**
 
 - [**Qwen 2 大模型指令微调入门实战**](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA)
   - [配套代码](llm/fine-tuning/train_qwen2.ipynb)
 - [一文入门垂域模型SFT微调](llm/一文入门垂域模型SFT微调.md)
 
-#### 2.2 从零开始训练大模型
+**从零开始训练大模型：**
 
 - [Training a 70B model from scratch: open-source tools, evaluation datasets, and learnings](https://imbue.com/research/70b-intro/)
 - [Sanitized open-source datasets for natural language and code understanding: how we evaluated our 70B model](https://imbue.com/research/70b-evals/)
 - [From bare metal to a 70B model: infrastructure set-up and scripts](https://imbue.com/research/70b-infrastructure/)
 - [Open-sourcing CARBS: how we used our hyperparameter optimizer to scale up to a 70B-parameter language model](https://imbue.com/research/70b-carbs/)
 
-### 3. LLM 应用开发
+#### 4.2.2 模型推理
 
-#### 3.1 RAG 技术
+**推理系统架构：**
+
+- [Mooncake 架构详解：以 KV 缓存为中心的高效 LLM 推理系统设计](llm/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)
+- [vLLM + LWS：Kubernetes 上的多机多卡推理方案](llm/lws_intro.md)
+
+**模型部署实践：**
+
+- [动手部署 ollama](llm/ollama/README.md)
+- [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
+- [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
+- [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
+
+### 4.3 大模型 Agent 开发
+
+#### 4.3.1 RAG 技术
 
 - [**从0到1快速搭建RAG应用**](https://mp.weixin.qq.com/s/89-bwZ4aPor4ySj5U3n5zw)
   - [配套代码](llm/rag/lession2.ipynb)
 - [Evaluating Chunking Strategies for Retrieval 总结](llm/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
 - [中文RAG系统Embedding模型选型技术文档](llm/rag/中文RAG系统Embedding模型选型技术文档.md)
 
-#### 3.2 AI Agent 开发
+#### 4.3.2 AI Agent 框架与工具
+
+**Python 生态：**
 
 - [**LangChain + 模型上下文协议（MCP）：AI 智能体 Demo**](llm/agent/README.md)
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](llm/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)
@@ -346,11 +263,25 @@
 - [使用 n8n 构建多智能体系统的实践指南](llm/n8n_multi_agent_guide.md)
 - [开源大模型应用编排平台：Dify、AnythingLLM、Ragflow 与 n8n 的功能与商用许可对比分析](llm/开源大模型应用编排平台：Dify、AnythingLLM、Ragflow%20与%20n8n%20的功能与商用许可对比分析.md)
 
+**Java 生态：**
+
+- [使用 Spring AI 构建高效 LLM 代理](java_ai/spring_ai_cn.md) - 使用 Spring AI 构建高效 LLM 代理
+
+#### 4.3.3 AI 智能体记忆系统
+
+- [AI 智能体记忆系统：理论与实践](memory/AI%20智能体记忆系统：理论与实践.md) - 记忆系统的设计原理与实现
+- [如何设计支持多轮指代消解的对话系统](memory/如何设计支持多轮指代消解的对话系统.md) - 对话系统中的指代消解技术
+- [记忆系统代码实现](memory/code/) - 包含记忆管理、向量存储、对话处理等核心组件
+
 ---
 
 ## 第五部分：实践案例
 
-### 1. AI 推理优化技术
+### 5.1 企业级多智能体系统
+
+- [企业级多智能体系统实现指南](agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 完整的企业级多智能体系统架构设计与实现
+
+### 5.2 AI 推理优化技术
 
 完整的AI推理优化技术文档系列，涵盖从小型到大型集群的推理优化策略：
 
@@ -370,21 +301,21 @@
 - [实施检查清单](inference/13-实施检查清单.md)
 - [总结与展望](inference/14-总结与展望.md)
 
-### 2. 模型部署与推理
+### 5.3 模型部署与推理
 
 - [动手部署 ollama](llm/ollama/README.md)
 - [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
 - [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
 - [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
 
-### 3. 文档处理工具
+### 5.4 文档处理工具
 
 - [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
 - [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
 - [Markitdown 入门](llm/markitdown/README.md)
 - [DeepWiki 使用方法与技术原理深度分析](llm/DeepWiki%20使用方法与技术原理深度分析.md)
 
-### 4. 特定领域应用
+### 5.5 特定领域应用
 
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/scenario/traditional-chinese-medicine.md)
 - [中国大陆合同审核要点清单](llm/scenario/中国大陆合同审核要点清单.md)
@@ -394,7 +325,7 @@
 
 ## 第六部分：工具与资源
 
-### 1. AI 系统学习资源
+### 6.1 AI 系统学习资源
 
 [**AISystem**](AISystem/README.md) - 完整的AI系统学习资源，包含：
 
@@ -404,16 +335,9 @@
 - [推理优化](AISystem/04Inference/README.md) - 模型推理加速技术
 - [框架设计](AISystem/05Framework/README.md) - AI框架架构与并行计算
 
-### 2. Java AI 开发
+### 6.2 AI 基础设施专业课程
 
-- [使用 Spring AI 构建高效 LLM 代理](java_ai/spring_ai_cn.md) - 使用 Spring AI 构建高效 LLM 代理
-
-### 4. AI 基础设施专业课程
-
-#### 4.1 大模型原理与最新进展
-
-- [AI Infra 课程 PPT 大纲](ai_infra_course/AI%20Infra%20课程%20PPT%20大纲.md) - 完整的AI基础设施课程设计
-- [课程讲稿](ai_infra_course/讲稿.md) - 详细的演讲内容和技术要点
+- [大模型原理与最新进展](ai_infra_course/index.html)
 - **学习目标**：深入理解大模型工作原理和最新技术进展
 - **核心内容**：
   - **Transformer架构**：编码器-解码器结构、注意力机制、文本生成过程
@@ -421,41 +345,7 @@
   - **DeepSeek模型演进**：V1/V2/R1三代技术突破、MLA架构创新、MoE优化
   - **能力涌现现象**：规模效应、临界点突破、多模态发展趋势
 
-#### 4.2 AI编程工具与应用
-
-- **学习目标**：掌握AI编程工具的使用和应用场景
-- **核心内容**：
-  - **主流工具对比**：GitHub Copilot、Cursor、Trae AI的特色和优势
-  - **应用场景**：代码生成、调试、重构、文档生成四大核心应用
-  - **效率数据**：开发速度提升55%、学习时间减少60%、Bug修复时间减少31%
-  - **企业案例**：Microsoft、Shopify等成功案例，ROI达1200%-3000%
-
-#### 4.3 GPU架构与CUDA编程
-
-- **学习目标**：理解GPU架构设计和CUDA编程模型
-- **核心内容**：
-  - **GPU vs CPU对比**：架构差异、性能对比、适用场景分析
-  - **NVIDIA架构演进**：Tesla到Hopper的技术发展历程
-  - **CUDA编程模型**：线程层次、内存模型、核函数设计
-  - **性能优化**：内存访问优化、并行度调优、瓶颈分析
-
-#### 4.4 云原生与AI Infra融合架构
-
-- **学习目标**：构建现代化的AI基础设施架构
-- **核心内容**：
-  - **容器化技术**：Docker、Kubernetes在AI场景的应用
-  - **资源管理**：GPU集群管理、资源调度、弹性扩缩容
-  - **存储系统**：分布式存储、数据湖架构、缓存策略
-  - **监控运维**：性能监控、日志管理、故障处理
-
-#### 4.5 课程资源与实践
-
-- **PPT演示文件**：包含37个HTML页面的完整课程演示
-- **视频资源**：《流言终结者》GPU与CPU对比演示视频
-- **实践指导**：基于真实项目的技术实践和案例分析
-- **学习路径**：从基础理论到前沿实践的完整技术栈覆盖
-
-### 5. 开源项目推荐
+### 6.3 开源项目推荐
 
 - [unstructured](https://github.com/Unstructured-IO/unstructured): Open source libraries and APIs to build custom preprocessing pipelines for labeling, training, or production machine learning pipelines.
 - [MinerU](https://github.com/opendatalab/MinerU): A high-quality tool for convert PDF to Markdown and JSON.

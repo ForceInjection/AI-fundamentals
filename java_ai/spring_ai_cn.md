@@ -10,7 +10,7 @@
 
 [`agentic-patterns`](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns) 项目实现了下文讨论的模式。
 
-## 代理系统
+## 1. 代理系统
 
 该研究论文在架构上区分了两种类型的代理系统：
 
@@ -21,7 +21,7 @@
 
 让我们通过五种基本模式来研究 `Spring AI` 如何实现这些概念，每种模式服务于特定用例：
 
-### 1. [链式工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/chain-workflow)
+### 1.1 [链式工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/chain-workflow)
 
 链式工作流模式体现了将复杂任务分解为更简单、更易管理的步骤的原则。
 
@@ -61,7 +61,7 @@ public class ChainWorkflow {
 * 一个步骤的输出成为下一个步骤的输入
 * 链易于扩展和维护
 
-### 2. [并行化工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/parallelization-worflow)
+### 1.2 [并行化工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/parallelization-worflow)
 
 `LLM` 可以同时处理任务，并通过程序化方式聚合其输出。并行化工作流体现为两种关键变体：
 
@@ -96,7 +96,7 @@ List<String> parallelResponse = new ParallelizationWorkflow(chatClient)
 
 此示例演示了利益相关者分析的并行处理，其中每个利益相关者群体被并发分析。
 
-### 3. [路由工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/routing-workflow)
+### 1.3 [路由工作流](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/routing-workflow)
 
 路由模式实现了智能任务分发，支持对不同类型输入进行专门处理。
 
@@ -131,7 +131,7 @@ String input = "My account was charged twice last week";
 String response = workflow.route(input, routes);
 ```
 
-### 4. [协调器-工作者](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/orchestrator-workers-workflow)
+### 1.4 [协调器-工作者](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/orchestrator-workers-workflow)
 
 此模式展示了如何在保持控制的同时实现更复杂的类代理行为：
 
@@ -164,7 +164,7 @@ public class OrchestratorWorkersWorkflow {
 }
 ```
 
-#### 使用示例
+#### 1.4.1 使用示例
 
 ```java
 ChatClient chatClient = // ... initialize chat client
@@ -180,7 +180,7 @@ System.out.println("Analysis: " + response.analysis());
 System.out.println("Worker Outputs: " + response.workerResponses());
 ```
 
-### 5. [评估器-优化器](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/evaluator-optimizer-workflow)
+### 1.5 [评估器-优化器](https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/evaluator-optimizer-workflow)
 
 评估器-优化器模式实现了一个双 `LLM` 过程，其中一个模型生成响应，另一个在迭代循环中提供评估和反馈，类似于人类作者的改进过程。该模式包含两个主要组件：
 
@@ -214,7 +214,7 @@ public class EvaluatorOptimizerWorkflow {
 }
 ```
 
-#### 使用示例
+#### 1.5.1 使用示例
 
 ```java
 ChatClient chatClient = // ... initialize chat client
@@ -230,11 +230,11 @@ System.out.println("Final Solution: " + response.solution());
 System.out.println("Evolution: " + response.chainOfThought());
 ```
 
-## Spring AI 的实现优势
+## 2. Spring AI 的实现优势
 
 `Spring AI` 对这些模式的实现提供了与 `Anthropic` 建议一致的多个优势：
 
-1. **[模型可移植性](https://docs.spring.io/spring-ai/reference/api/chat/comparison.html)**
+### 2.1 [模型可移植性](https://docs.spring.io/spring-ai/reference/api/chat/comparison.html)
 
 ```xml
 <!-- 通过依赖项轻松切换模型 -->
@@ -244,7 +244,7 @@ System.out.println("Evolution: " + response.chainOfThought());
 </dependency>
 ```
 
-2. **[结构化输出](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html)**
+### 2.2 [结构化输出](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html)
 
 ```java
 // LLM 响应的类型安全处理
@@ -253,51 +253,51 @@ EvaluationResponse response = chatClient.prompt(prompt)
     .entity(EvaluationResponse.class);
 ```
 
-3. **[一致 API](https://docs.spring.io/spring-ai/reference/api/chatclient.html)**
+### 2.3 [一致 API](https://docs.spring.io/spring-ai/reference/api/chatclient.html)
 
 * 跨不同 `LLM` 提供商的统一接口
 * 内置错误处理和重试
 * 灵活的提示管理
 
-## 最佳实践与建议
+## 3. 最佳实践与建议
 
 基于 `Anthropic` 的研究和 `Spring AI` 的实现，以下是构建高效基于 `LLM` 系统的关键建议：
 
-* **从简单开始**
+### 3.1 从简单开始
 
-  * 在添加复杂性之前从基本工作流入手
-  * 使用满足需求的最简单模式
-  * 仅在需要时增加复杂度
+* 在添加复杂性之前从基本工作流入手
+* 使用满足需求的最简单模式
+* 仅在需要时增加复杂度
 
-* **为可靠性设计**
+### 3.2 为可靠性设计
 
-  * 实现清晰的错误处理
-  * 尽可能使用类型安全响应
-  * 在每个步骤中构建验证
+* 实现清晰的错误处理
+* 尽可能使用类型安全响应
+* 在每个步骤中构建验证
 
-* **权衡考虑**
+### 3.3 权衡考虑
 
-  * 平衡延迟与准确性
-  * 评估何时使用并行处理
-  * 在固定工作流与动态代理之间选择
+* 平衡延迟与准确性
+* 评估何时使用并行处理
+* 在固定工作流与动态代理之间选择
 
-## 未来工作
+## 4. 未来工作
 
 在本系列的第二部分中，我们将探索如何通过结合这些基础模式与高级功能来构建更先进的代理：
 
-**模式组合:**
+### 4.1 模式组合
 
 * 组合多个模式以创建更强大的工作流
 * 构建利用每种模式优势的混合系统
 * 创建适应不断变化需求的灵活架构
 
-**高级代理内存管理:**
+### 4.2 高级代理内存管理
 
 * 实现跨对话的持久内存
 * 高效管理上下文窗口
 * 开发长期知识保留策略
 
-**工具与模型上下文协议（MCP）集成:**
+### 4.3 工具与模型上下文协议（MCP）集成
 
 * 通过标准化接口利用外部工具
 * 实现 `MCP` 以增强模型交互

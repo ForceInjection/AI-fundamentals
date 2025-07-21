@@ -12,7 +12,7 @@
 
 ## AI Agent 相关
 
-- [AI Agents for Beginners 课程之 AI Agent及使用场景简介](AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md) 
+- [AI Agents for Beginners 课程之 AI Agent及使用场景简介](AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)
 - [使用 n8n 构建多智能体系统的实践指南](n8n_multi_agent_guide.md)
 - [MCP 智能体演示项目](agent/README.md)
 
@@ -24,8 +24,8 @@
 
 ## RAG 检索增强生成
 
-- [Evaluating Chunking Strategies for Retrieval 总结](rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md) 
-- [中文 RAG 系统 Embedding 模型选型技术文档](rag/中文RAG系统Embedding模型选型技术文档.md) 
+- [Evaluating Chunking Strategies for Retrieval 总结](rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
+- [中文 RAG 系统 Embedding 模型选型技术文档](rag/中文RAG系统Embedding模型选型技术文档.md)
 
 ## 嵌入技术
 
