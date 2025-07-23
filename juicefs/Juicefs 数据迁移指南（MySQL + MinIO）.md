@@ -22,7 +22,7 @@ kubectl exec -it your-business-pod -- \
 mysqldump -h [mysql_host] -u [username] -p[password] [database_name] > juicefs_meta_backup_$(date +%F).sql
 ```
 
-> 示例：`mysqldump -h 192.168.1.100 -u juicefs -p'yourpass' juicefs_meta > backup.sql`
+> 示例：`mysqldump -h [mysql_host] -u [username] -p'[password]' [database_name] > backup.sql`
 
 ### 1.3 验证新 MinIO 集群连通性
 
@@ -365,7 +365,7 @@ juicefs info "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_nam
 ### 4.1 重新挂载文件系统
 
 ```bash
-juicefs mount -d "mysql://user:pass@tcp(192.168.1.100:3306)/db" /mnt/juicefs
+juicefs mount -d "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_name]" /mnt/juicefs
 ```
 
 ### 4.2 功能验证
@@ -390,7 +390,7 @@ tail /mnt/juicefs/existing-file.log
 在所有客户端机器执行：  
 
 ```bash
-juicefs mount -d "mysql://user:pass@tcp(192.168.1.100:3306)/db" /your/mountpoint
+juicefs mount -d "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_name]" /your/mountpoint
 ```
 
 ### 5.2 监控关键指标
@@ -410,33 +410,67 @@ grep 'ERROR' /var/log/juicefs.log
 使用 JuiceFS CSI Mount Pod 模式时，需要更新 Kubernetes 中的 Secret 配置：
 
 ```bash
-# 查看当前 Secret
-kubectl get secret juicefs-secret -o yaml
+# 查看当前 Secret（根据实际部署调整命名空间和名称）
+kubectl get secret juicefs-sc-secret -n juicefs -o yaml
 
-# 创建新的 Secret 配置文件
-cat > juicefs-secret-new.yaml << EOF
+# 备份当前 Secret
+kubectl get secret juicefs-sc-secret -n juicefs -o yaml > juicefs-secret-backup.yaml
+
+# 方式1：直接编辑现有 Secret
+kubectl edit secret juicefs-sc-secret -n juicefs
+
+# 方式2：创建新的 Secret 配置文件
+cat > juicefs-secret-updated.yaml << EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: juicefs-secret
-  namespace: default
+  name: juicefs-sc-secret
+  namespace: juicefs
+  annotations:
+    meta.helm.sh/release-name: juicefs
+    meta.helm.sh/release-namespace: juicefs
+  labels:
+    app.kubernetes.io/instance: juicefs
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: juicefs-csi-driver
+    app.kubernetes.io/version: 0.22.0
+    helm.sh/chart: juicefs-csi-driver-0.18.0
 type: Opaque
 stringData:
-  name: "your-juicefs-name"
-  metaurl: "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_name]"
+  # JuiceFS 文件系统名称
+  name: "juicefstest"
+  # MySQL 元数据库连接（需要更新为实际值）
+  metaurl: "mysql://[username]:[password]@([mysql_host]:3306)/[database_name]"
+  # 存储类型
   storage: "s3"
-  # 需要更新的关键字段
-  bucket: "juicefs-bucket"                    # 存储桶名称
-  endpoint: "http://new-minio-endpoint:9000"  # 新的MinIO端点
-  access-key: "NEW_MINIO_ACCESS_KEY"          # 新的访问密钥
-  secret-key: "NEW_MINIO_SECRET_KEY"          # 新的密钥
+  # 需要更新的关键字段 - 新 MinIO 配置
+  bucket: "NEW_MINIO_ENDPOINT:PORT/BUCKET_NAME"     # 新的MinIO端点和存储桶
+  access-key: "NEW_MINIO_ACCESS_KEY"                # 新的访问密钥
+  secret-key: "NEW_MINIO_SECRET_KEY"                # 新的密钥
 EOF
 
 # 应用新配置
-kubectl apply -f juicefs-secret-new.yaml
+kubectl apply -f juicefs-secret-updated.yaml
 ```
 
-#### 5.3.2 更新 ConfigMap（如果使用）
+**重要说明**：
+
+- **Secret 名称**：根据实际部署，可能是 `juicefs-sc-secret`、`juicefs-secret` 等
+- **命名空间**：根据实际部署，可能是 `juicefs`、`kube-system`、`default` 等
+- **bucket 字段格式**：当前格式为 `endpoint:port/bucket`，更新时保持相同格式
+- **metaurl**：MySQL 连接字符串，通常不需要修改
+
+#### 5.3.2 验证 Secret 更新
+
+```bash
+# 验证 Secret 更新是否成功
+kubectl get secret juicefs-sc-secret -n juicefs -o jsonpath='{.data}' | jq -r 'to_entries[] | "\(.key): \(.value | @base64d)"'
+
+# 或者查看特定字段
+echo "存储类型: $(kubectl get secret juicefs-sc-secret -n juicefs -o jsonpath='{.data.storage}' | base64 -d)"
+echo "存储桶: $(kubectl get secret juicefs-sc-secret -n juicefs -o jsonpath='{.data.bucket}' | base64 -d)"
+echo "访问密钥: $(kubectl get secret juicefs-sc-secret -n juicefs -o jsonpath='{.data.access-key}' | base64 -d)"
+```
 
 如果使用 ConfigMap 存储非敏感配置：
 
@@ -471,20 +505,36 @@ kubectl apply -f juicefs-configmap-new.yaml
 更新配置后，需要重启 CSI 组件并清理现有 Mount Pod：
 
 ```bash
-# 重启 JuiceFS CSI 组件
-kubectl rollout restart daemonset/juicefs-csi-node -n kube-system
-kubectl rollout restart deployment/juicefs-csi-controller -n kube-system
+# 查看当前 JuiceFS CSI 组件状态
+kubectl get pods -n juicefs
 
-# 查看现有的 Mount Pod
-kubectl get pods -A -l app.kubernetes.io/name=juicefs-mount
+# 重启 JuiceFS CSI 组件
+# 重启 CSI Node DaemonSet
+kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
+
+# 重启 CSI Controller StatefulSet
+kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
+
+# 查看现有的 Mount Pod（JuiceFS 应用 Pod）
+kubectl get pods -n juicefs | grep juicefs-app
 
 # 删除现有 Mount Pod 以强制重新创建（使用新配置）
-kubectl delete pods -A -l app.kubernetes.io/name=juicefs-mount
+# 注意：这会导致短暂的服务中断，请在维护窗口执行
+kubectl delete pods -n juicefs -l app.kubernetes.io/name=juicefs-mount
 
 # 等待 CSI 组件重启完成
-kubectl rollout status daemonset/juicefs-csi-node -n kube-system
-kubectl rollout status deployment/juicefs-csi-controller -n kube-system
+kubectl rollout status daemonset/juicefs-csi-node -n juicefs
+kubectl rollout status statefulset/juicefs-csi-controller -n juicefs
+
+# 验证 CSI 组件状态
+kubectl get pods -n juicefs
 ```
+
+**重要提示**：
+
+- CSI Controller 使用 StatefulSet 部署，不是 Deployment
+- Mount Pod 删除会导致短暂的服务中断，建议在维护窗口执行
+- 重启后 Mount Pod 会自动重新创建并使用新的存储配置
 
 #### 5.3.4 验证 CSI 挂载状态
 
@@ -683,7 +733,7 @@ kubectl exec -it your-pod-name -- cat /mnt/juicefs/test-file
 ### 6.1 删除测试文件系统
 
 ```bash
-juicefs destroy "mysql://user:pass@tcp(mysql_host:3306)/db" temp-fs
+juicefs destroy "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_name]" temp-fs
 ```
 
 ### 6.2 最终一致性检查
@@ -782,7 +832,7 @@ mc mirror --parallel 32 old-minio/bucket new-minio/bucket
 ### 8.1 连接字符串格式
 
 必须使用标准格式：  
-`"mysql://user:password@tcp(host:port)/database_name"`  
+`"mysql://[username]:[password]@tcp([host]:[port])/[database_name]"`  
 
 - 特殊字符需 URL 编码
 - 确保客户端能访问 MySQL 端口
