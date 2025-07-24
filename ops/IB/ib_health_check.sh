@@ -46,6 +46,25 @@ InfiniBand 网卡相关健康检查脚本 v${VERSION}
   -s, --summary   仅显示摘要信息
   --no-color      禁用彩色输出
 
+运行模式说明:
+  【完整模式】(默认)
+    • 执行所有 10 项检查 (硬件、驱动、网络、优化等)
+    • 显示详细的检查过程和结果
+    • 提供完整的优化建议和故障排查指导
+    • 适用于: 全面诊断、初次部署、故障排查
+
+  【静默模式】(-q)
+    • 执行所有 10 项检查
+    • 仅显示警告和错误信息，隐藏正常状态
+    • 适用于: 自动化监控、脚本集成、快速问题识别
+    • 输出特点: 无输出表示一切正常，有输出表示需要关注
+
+  【摘要模式】(-s)
+    • 仅执行 4 项关键检查 (依赖、硬件、端口、性能计数器)
+    • 显示简洁的总结报告
+    • 适用于: 快速健康检查、定期巡检、状态概览
+    • 输出特点: 重点关注网络基本功能，不包含优化建议
+
 功能:
   • 检查 InfiniBand 硬件状态
   • 验证 OFED 驱动和内核模块
@@ -54,16 +73,23 @@ InfiniBand 网卡相关健康检查脚本 v${VERSION}
   • 评估系统优化配置
   • 提供详细的优化建议
 
-示例:
-  sudo $0                    # 完整检查
-  sudo $0 -q                 # 静默模式
-  sudo $0 -s                 # 仅显示摘要
-  sudo $0 --no-color         # 无彩色输出
+使用场景示例:
+  sudo $0                    # 新环境部署后的全面检查
+  sudo $0 -q                 # 监控脚本中的异常检测
+  sudo $0 -s                 # 日常巡检的快速状态确认
+  sudo $0 --no-color         # 在不支持彩色的终端中运行
+
+检查项目对比:
+  完整模式: 系统信息 + IB硬件 + OFED驱动 + 端口状态 + 网络拓扑 + 
+           性能计数器 + 网络接口 + 性能工具 + 系统优化 + 优化建议
+  摘要模式: 依赖检查 + IB硬件 + 端口状态 + 性能计数器
 
 注意:
   • 此脚本需要 root 权限运行
   • 脚本仅进行检查和提供建议，不会修改系统配置
   • 所有优化操作需要用户手工执行
+  • 静默模式下无输出表示系统状态良好
+  • 摘要模式专注于核心功能，不检查优化配置
 
 EOF
 }
@@ -159,6 +185,9 @@ log_warning() {
     WARNING_COUNT=$((WARNING_COUNT + 1))
     if [ "$SUMMARY_ONLY" = false ]; then
         log "${YELLOW}[WARN]${NC} $1"
+    elif [ "$QUIET_MODE" = false ]; then
+        # 摘要模式下仍显示警告到终端
+        echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"
     else
         echo -e "${YELLOW}[WARN]${NC} $1" >> "$LOG_FILE"
     fi
@@ -177,6 +206,9 @@ log_error() {
     ERROR_COUNT=$((ERROR_COUNT + 1))
     if [ "$SUMMARY_ONLY" = false ]; then
         log "${RED}[FAIL]${NC} $1"
+    elif [ "$QUIET_MODE" = false ]; then
+        # 摘要模式下仍显示错误到终端
+        echo -e "${RED}[FAIL]${NC} $1" | tee -a "$LOG_FILE"
     else
         echo -e "${RED}[FAIL]${NC} $1" >> "$LOG_FILE"
     fi
@@ -191,6 +223,15 @@ log_header() {
         echo "" >> "$LOG_FILE"
         echo -e "${PURPLE}=== $1 ===${NC}" >> "$LOG_FILE"
         echo "" >> "$LOG_FILE"
+    fi
+}
+
+# 摘要模式专用日志函数
+log_summary() {
+    if [ "$QUIET_MODE" = false ]; then
+        echo -e "$1" | tee -a "$LOG_FILE"
+    else
+        echo -e "$1" >> "$LOG_FILE"
     fi
 }
 
@@ -567,9 +608,9 @@ check_network_interfaces() {
             log_info "    MTU: $mtu"
             
             if [ "$mtu" -eq 2044 ]; then
-                log_warning "    MTU为标准值，建议优化为65520"
+            log_warning "    MTU为数据报模式标准值，建议优化为连接模式65520"
             elif [ "$mtu" -eq 65520 ]; then
-                log_success "    MTU已优化为Jumbo Frame"
+            log_success "    MTU已优化为连接模式Jumbo Frame"
             else
                 log_info "    MTU为自定义值"
             fi
@@ -624,22 +665,30 @@ check_performance_tools() {
 check_system_optimization() {
     log_header "系统优化检查"
     
-    # 检查内核参数
-    log_info "检查网络内核参数:"
+    # 检查内核参数 (仅在IPoIB场景下有意义)
+    local ipoib_interfaces=$(ip link show | grep -E "ib[0-9]|ibp[0-9]" | awk -F: '{print $2}' | xargs)
     
-    local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
-    local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
-    
-    if [ "$rmem_max" -ge 134217728 ]; then
-        log_success "  net.core.rmem_max: $rmem_max (已优化)"
+    if [ -n "$ipoib_interfaces" ]; then
+        log_info "检查网络内核参数 (适用于IPoIB场景):"
+        
+        local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
+        local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
+        
+        if [ "$rmem_max" -ge 134217728 ]; then
+            log_success "  net.core.rmem_max: $rmem_max (已优化)"
+        else
+            log_warning "  net.core.rmem_max: $rmem_max (建议设置为134217728)"
+        fi
+        
+        if [ "$wmem_max" -ge 134217728 ]; then
+            log_success "  net.core.wmem_max: $wmem_max (已优化)"
+        else
+            log_warning "  net.core.wmem_max: $wmem_max (建议设置为134217728)"
+        fi
     else
-        log_warning "  net.core.rmem_max: $rmem_max (建议设置为134217728)"
-    fi
-    
-    if [ "$wmem_max" -ge 134217728 ]; then
-        log_success "  net.core.wmem_max: $wmem_max (已优化)"
-    else
-        log_warning "  net.core.wmem_max: $wmem_max (建议设置为134217728)"
+        log_info "网络内核参数检查:"
+        log_info "  未检测到IPoIB接口，跳过网络内核参数检查"
+        log_info "  注意: 如果GPU直接使用IB网络(RDMA)，网络内核参数无关紧要"
     fi
     
     # 检查CPU频率调节器
@@ -686,50 +735,61 @@ generate_recommendations() {
         for interface in $ipoib_interfaces; do
             local mtu=$(ip link show "$interface" | grep -o "mtu [0-9]*" | awk '{print $2}')
             if [ "$mtu" -eq 2044 ]; then
-                has_recommendations=true
-                log_recommendation "发现 $interface MTU 未优化 (当前: $mtu)"
-                log_info "建议优化命令:"
-                log_info "  # 临时设置 (重启后失效)"
-                log_info "  sudo ip link set $interface mtu 65520"
-                log_info "  # 永久设置 (编辑网络配置文件)"
-                log_info "  sudo vim /etc/netplan/01-netcfg.yaml"
-                log_info "  # 或者编辑 /etc/network/interfaces"
-                log_info ""
+            has_recommendations=true
+            log_recommendation "发现 $interface MTU 为数据报模式标准值 (当前: $mtu)"
+            log_info "建议优化命令:"
+            log_info "  # 临时设置 (重启后失效)"
+            log_info "  sudo ip link set $interface mtu 65520"
+            log_info "  # 永久设置 (编辑网络配置文件)"
+            log_info "  sudo vim /etc/netplan/01-netcfg.yaml"
+            log_info "  # 或者编辑 /etc/network/interfaces"
+            log_info "  # 注意: 连接模式 MTU 65520 需要特殊配置支持"
             fi
         done
     fi
     
-    # 内核参数优化
-    local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
-    local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
-    
-    if [ "$rmem_max" -lt 134217728 ] || [ "$wmem_max" -lt 134217728 ]; then
-        has_recommendations=true
-        log_recommendation "网络内核参数未优化"
-        log_info "当前设置:"
-        log_info "  net.core.rmem_max = $rmem_max (建议: 268435456)"
-        log_info "  net.core.wmem_max = $wmem_max (建议: 268435456)"
-        log_info ""
-        log_info "优化命令:"
-        log_info "  # 创建优化配置文件"
-        log_info "  sudo tee /etc/sysctl.d/99-ib-network.conf << EOF"
-        log_info "# InfiniBand 网络优化参数"
-        log_info "net.core.rmem_max = 268435456"
-        log_info "net.core.wmem_max = 268435456"
-        log_info "net.core.rmem_default = 67108864"
-        log_info "net.core.wmem_default = 67108864"
-        log_info "net.core.netdev_max_backlog = 5000"
-        log_info "EOF"
-        log_info "  # 应用配置"
-        log_info "  sudo sysctl -p /etc/sysctl.d/99-ib-network.conf"
+    # 内核参数优化 (仅适用于IPoIB场景)
+    if [ -n "$ipoib_interfaces" ]; then
+        local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
+        local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
+        
+        if [ "$rmem_max" -lt 134217728 ] || [ "$wmem_max" -lt 134217728 ]; then
+            has_recommendations=true
+            log_recommendation "网络内核参数未优化 (适用于IPoIB场景)"
+            log_info "适用场景: 仅当使用IPoIB网络接口时需要优化"
+            log_info "注意: 如果GPU直接使用IB网络(RDMA)，则无需修改这些参数"
+            log_info ""
+            log_info "当前设置:"
+            log_info "  net.core.rmem_max = $rmem_max (建议: 268435456)"
+            log_info "  net.core.wmem_max = $wmem_max (建议: 268435456)"
+            log_info ""
+            log_info "优化命令 (仅在使用IPoIB时执行):"
+            log_info "  # 创建优化配置文件"
+            log_info "  sudo tee /etc/sysctl.d/99-ipoib-network.conf << EOF"
+            log_info "# IPoIB 网络优化参数 (仅适用于IP over InfiniBand)"
+            log_info "net.core.rmem_max = 268435456"
+            log_info "net.core.wmem_max = 268435456"
+            log_info "net.core.rmem_default = 67108864"
+            log_info "net.core.wmem_default = 67108864"
+            log_info "net.core.netdev_max_backlog = 5000"
+            log_info "EOF"
+            log_info "  # 应用配置"
+            log_info "  sudo sysctl -p /etc/sysctl.d/99-ipoib-network.conf"
+            log_info ""
+        fi
+    else
+        log_info "内核参数优化建议:"
+        log_info "  未检测到IPoIB接口，无需修改网络内核参数"
+        log_info "  注意: 如果GPU直接使用IB网络(RDMA)，内核网络参数优化无效"
         log_info ""
     fi
     
-    # CPU调节器优化
+    # CPU调节器优化 (通用HPC优化)
     local governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)
     if [ "$governor" != "performance" ] && [ -n "$governor" ]; then
         has_recommendations=true
         log_recommendation "CPU调节器未设置为性能模式 (当前: $governor)"
+        log_info "适用场景: 所有高性能计算场景 (包括GPU计算、IPoIB网络等)"
         log_info "优化命令:"
         log_info "  # 临时设置 (重启后失效)"
         log_info "  echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
@@ -740,18 +800,23 @@ generate_recommendations() {
         log_info ""
     fi
     
-    # NUMA亲和性检查建议
+    # NUMA亲和性优化建议 (通用HPC优化)
     if command -v numactl >/dev/null 2>&1; then
         local numa_nodes=$(numactl --hardware | grep "available:" | awk '{print $2}')
         if [ "$numa_nodes" -gt 1 ]; then
             has_recommendations=true
             log_info "NUMA亲和性优化建议:"
+            log_info "适用场景: 所有高性能计算场景 (GPU计算、IB网络、高性能应用)"
             log_info "  # 检查IB设备的NUMA节点"
             log_info "  cat /sys/class/infiniband/*/device/numa_node"
+            log_info "  # 检查GPU设备的NUMA节点 (如果有GPU)"
+            log_info "  nvidia-smi topo -m"
             log_info "  # 检查CPU NUMA拓扑"
             log_info "  numactl --hardware"
             log_info "  # 绑定应用到特定NUMA节点 (示例)"
             log_info "  numactl --cpunodebind=0 --membind=0 your_application"
+            log_info "  # GPU应用NUMA绑定示例"
+            log_info "  numactl --cpunodebind=0 --membind=0 python gpu_training.py"
             log_info ""
         fi
     fi
@@ -801,46 +866,93 @@ generate_recommendations() {
 
 # 生成总结报告
 generate_summary() {
-    log_header "检查总结"
-    
-    log_info "检查完成时间: $(date)"
-    log_info "总检查项目: $TOTAL_CHECKS"
-    
-    # 计算通过的检查模块数量
-    local passed_modules=$((TOTAL_CHECKS - ERROR_COUNT))
-    if [ "$passed_modules" -lt 0 ]; then
-        passed_modules=0
-    fi
-    
-    log_success "通过模块: $passed_modules/$TOTAL_CHECKS"
-    log_info "警告事件: $WARNING_COUNT"
-    log_info "失败事件: $ERROR_COUNT"
-    log_info "详细日志: $LOG_FILE"
-    
-    log_info ""
-    if [ "$ERROR_COUNT" -eq 0 ] && [ "$WARNING_COUNT" -eq 0 ]; then
-        log_success "🎉 所有检查项目均通过！InfiniBand网络状态优秀。"
-    elif [ "$ERROR_COUNT" -eq 0 ]; then
-        log_info "⚠️  检查完成，有 $WARNING_COUNT 个警告事件需要关注。"
+    if [ "$SUMMARY_ONLY" = true ]; then
+        # 摘要模式：使用专用日志函数确保输出到终端
+        log_summary ""
+        log_summary "${PURPLE}=== 检查总结 ===${NC}"
+        log_summary ""
+        
+        log_summary "${BLUE}[INFO]${NC} 检查完成时间: $(date)"
+        log_summary "${BLUE}[INFO]${NC} 总检查项目: $TOTAL_CHECKS"
+        
+        # 计算通过的检查模块数量
+        local passed_modules=$((TOTAL_CHECKS - ERROR_COUNT))
+        if [ "$passed_modules" -lt 0 ]; then
+            passed_modules=0
+        fi
+        
+        log_summary "${GREEN}[PASS]${NC} 通过模块: $passed_modules/$TOTAL_CHECKS"
+        log_summary "${BLUE}[INFO]${NC} 警告事件: $WARNING_COUNT"
+        log_summary "${BLUE}[INFO]${NC} 失败事件: $ERROR_COUNT"
+        log_summary "${BLUE}[INFO]${NC} 详细日志: $LOG_FILE"
+        
+        log_summary ""
+        if [ "$ERROR_COUNT" -eq 0 ] && [ "$WARNING_COUNT" -eq 0 ]; then
+            log_summary "${GREEN}[PASS]${NC} 🎉 所有检查项目均通过！InfiniBand网络状态优秀。"
+        elif [ "$ERROR_COUNT" -eq 0 ]; then
+            log_summary "${BLUE}[INFO]${NC} ⚠️  检查完成，有 $WARNING_COUNT 个警告事件需要关注。"
+        else
+            log_summary "${RED}[FAIL]${NC} ❌ 检查发现 $ERROR_COUNT 个严重问题，需要立即处理。"
+        fi
+        
+        log_summary ""
+        log_summary "${BLUE}[INFO]${NC} 建议:"
+        if [ "$ERROR_COUNT" -gt 0 ]; then
+            log_summary "${BLUE}[INFO]${NC} 1. 优先解决失败项目"
+            log_summary "${BLUE}[INFO]${NC} 2. 检查OFED驱动安装"
+            log_summary "${BLUE}[INFO]${NC} 3. 验证硬件连接"
+        fi
+        if [ "$WARNING_COUNT" -gt 0 ]; then
+            log_summary "${BLUE}[INFO]${NC} 1. 查看优化建议章节"
+            log_summary "${BLUE}[INFO]${NC} 2. 考虑性能调优"
+            log_summary "${BLUE}[INFO]${NC} 3. 定期监控网络状态"
+        fi
+        
+        log_summary ""
+        log_summary "${BLUE}[INFO]${NC} 如需技术支持，请提供日志文件: $LOG_FILE"
     else
-        log_error "❌ 检查发现 $ERROR_COUNT 个严重问题，需要立即处理。"
+        # 完整模式：使用原有日志函数
+        log_header "检查总结"
+        
+        log_info "检查完成时间: $(date)"
+        log_info "总检查项目: $TOTAL_CHECKS"
+        
+        # 计算通过的检查模块数量
+        local passed_modules=$((TOTAL_CHECKS - ERROR_COUNT))
+        if [ "$passed_modules" -lt 0 ]; then
+            passed_modules=0
+        fi
+        
+        log_success "通过模块: $passed_modules/$TOTAL_CHECKS"
+        log_info "警告事件: $WARNING_COUNT"
+        log_info "失败事件: $ERROR_COUNT"
+        log_info "详细日志: $LOG_FILE"
+        
+        log_info ""
+        if [ "$ERROR_COUNT" -eq 0 ] && [ "$WARNING_COUNT" -eq 0 ]; then
+            log_success "🎉 所有检查项目均通过！InfiniBand网络状态优秀。"
+        elif [ "$ERROR_COUNT" -eq 0 ]; then
+            log_info "⚠️  检查完成，有 $WARNING_COUNT 个警告事件需要关注。"
+        else
+            log_error "❌ 检查发现 $ERROR_COUNT 个严重问题，需要立即处理。"
+        fi
+        
+        log_info ""
+        log_info "建议:"
+        if [ "$ERROR_COUNT" -gt 0 ]; then
+            log_info "1. 优先解决失败项目"
+            log_info "2. 检查OFED驱动安装"
+            log_info "3. 验证硬件连接"
+        fi
+        if [ "$WARNING_COUNT" -gt 0 ]; then
+            log_info "1. 查看优化建议章节"
+            log_info "2. 考虑性能调优"
+            log_info "3. 定期监控网络状态"
+        fi
+        
+        log_info ""
+        log_info "如需技术支持，请提供日志文件: $LOG_FILE"
     fi
-    
-    log_info ""
-    log_info "建议:"
-    if [ "$ERROR_COUNT" -gt 0 ]; then
-        log_info "1. 优先解决失败项目"
-        log_info "2. 检查OFED驱动安装"
-        log_info "3. 验证硬件连接"
-    fi
-    if [ "$WARNING_COUNT" -gt 0 ]; then
-        log_info "1. 查看优化建议章节"
-        log_info "2. 考虑性能调优"
-        log_info "3. 定期监控网络状态"
-    fi
-    
-    log_info ""
-    log_info "如需技术支持，请提供日志文件: $LOG_FILE"
 }
 
 # 主函数
