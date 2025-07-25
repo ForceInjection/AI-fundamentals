@@ -69,7 +69,7 @@ juicefs config "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_n
 juicefs status "mysql://[username]:[password]@tcp([mysql_host]:3306)/[database_name]"
 ```
 
-### 步骤3：更新 CSI Secret 并重启组件
+### 步骤3：更新 CSI Secret
 
 通过 `kubectl patch` 命令更新 Secret 配置：
 
@@ -86,9 +86,9 @@ kubectl patch secret juicefs-sc-secret -n juicefs --type='json' \
     {\"op\": \"replace\", \"path\": \"/data/secret-key\", \"value\": \"${SECRET_KEY}\"}
   ]"
 
-# 重启 CSI 组件
-kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
-kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
+# Juicefs CSI Driver 作者 @zwwhdls：更新 Secret 不需要重启 CSI 相关组件
+# kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
+# kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
 ```
 
 ---
@@ -140,9 +140,9 @@ mysql -h [mysql_host] -u [username] -p [database_name] < backup_[timestamp].sql
 # 方式2：从备份恢复 Secret
 kubectl apply -f secret-backup_[timestamp].yaml
 
-# 重启 CSI 组件
-kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
-kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
+# Juicefs CSI Driver 作者 @zwwhdls：更新 Secret 不需要重启 CSI 相关组件
+# kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
+# kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
 ```
 
 ### 4.2 常见问题检查
