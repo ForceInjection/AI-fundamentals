@@ -24,7 +24,7 @@
 # =============================================================================
 
 # 版本信息
-VERSION="1.0"
+VERSION="1.1"
 SCRIPT_NAME="IB Health Check"
 
 # 默认选项
@@ -340,7 +340,7 @@ check_ib_hardware() {
             elif [[ $line == *"fw_ver"* ]]; then
                 log_info "    固件版本: $(echo $line | cut -d: -f2 | xargs)"
             elif [[ $line == *"node_guid"* ]]; then
-                log_info "    Node GUID: $(echo $line | cut -d: -f2 | xargs)"
+                log_info "    Node GUID: $(echo $line | cut -d: -f2- | xargs)"
             elif [[ $line == *"state"* ]]; then
                 local state=$(echo $line | awk '{print $NF}')
                 if [ "$state" = "PORT_ACTIVE" ]; then
@@ -410,12 +410,12 @@ check_port_status() {
     local total_ports=0
     
     log_info "端口状态详情:"
-    ibstat 2>/dev/null | grep -E "(CA|Port|State|Rate|Physical state)" | while read line; do
+    ibstat 2>/dev/null | grep -E "(CA|Port|State|Rate|Physical state|Port GUID)" | while read line; do
         if [[ $line == *"CA '"* ]]; then
             local ca_name=$(echo "$line" | sed "s/CA '\(.*\)'/\1/")
             log_info "  设备: $ca_name"
-        elif [[ $line == *"Port "* ]]; then
-            local port_num=$(echo "$line" | awk '{print $2}')
+        elif [[ $line == *"Port "* ]] && [[ $line != *"Port GUID"* ]]; then
+            local port_num=$(echo "$line" | awk '{print $2}' | sed 's/:$//')
             log_info "    端口 $port_num:"
         elif [[ $line == *"State:"* ]]; then
             local state=$(echo "$line" | awk '{print $2}')
@@ -440,6 +440,15 @@ check_port_status() {
                 log_info "      速率良好 (EDR)"
             else
                 log_warning "      速率较低"
+            fi
+        elif [[ $line == *"Port GUID:"* ]]; then
+            # 清理行首空白字符并提取GUID
+            local cleaned_line=$(echo "$line" | sed 's/^[[:space:]]*//')
+            local port_guid=$(echo "$cleaned_line" | awk '{print $3}')
+            if [[ $port_guid =~ ^0x[0-9a-fA-F]{16}$ ]]; then
+                log_info "      端口 GUID: $port_guid"
+            else
+                log_warning "      端口 GUID: 格式异常"
             fi
         fi
     done
@@ -471,8 +480,10 @@ check_network_topology() {
     
     if [ $? -eq 0 ] && [ -n "$topology_output" ]; then
         local node_count=$(echo "$topology_output" | wc -l)
-        local switch_count=$(echo "$topology_output" | grep -c "switch")
-        local ca_count=$(echo "$topology_output" | grep -c "CA")
+        # 基于唯一交换机 ID 进行准确计数
+        local switch_count=$(echo "$topology_output" | awk '$1 == "SW" {switches[$2]=1} END {print length(switches)}')
+        # 只计算以 CA 开头的行，避免计算 SW 行中的 CA 连接
+        local ca_count=$(echo "$topology_output" | grep -c "^CA")
         
         log_success "网络拓扑发现成功"
         log_info "  总节点数: $node_count"
@@ -674,16 +685,16 @@ check_system_optimization() {
         local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
         local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
         
-        if [ "$rmem_max" -ge 134217728 ]; then
+        if [ "$rmem_max" -ge 268435456 ]; then
             log_success "  net.core.rmem_max: $rmem_max (已优化)"
         else
-            log_warning "  net.core.rmem_max: $rmem_max (建议设置为134217728)"
+            log_warning "  net.core.rmem_max: $rmem_max (建议设置为268435456)"
         fi
         
-        if [ "$wmem_max" -ge 134217728 ]; then
+        if [ "$wmem_max" -ge 268435456 ]; then
             log_success "  net.core.wmem_max: $wmem_max (已优化)"
         else
-            log_warning "  net.core.wmem_max: $wmem_max (建议设置为134217728)"
+            log_warning "  net.core.wmem_max: $wmem_max (建议设置为268435456)"
         fi
     else
         log_info "网络内核参数检查:"
@@ -753,7 +764,7 @@ generate_recommendations() {
         local rmem_max=$(sysctl -n net.core.rmem_max 2>/dev/null)
         local wmem_max=$(sysctl -n net.core.wmem_max 2>/dev/null)
         
-        if [ "$rmem_max" -lt 134217728 ] || [ "$wmem_max" -lt 134217728 ]; then
+        if [ "$rmem_max" -lt 268435456 ] || [ "$wmem_max" -lt 268435456 ]; then
             has_recommendations=true
             log_recommendation "网络内核参数未优化 (适用于IPoIB场景)"
             log_info "适用场景: 仅当使用IPoIB网络接口时需要优化"
