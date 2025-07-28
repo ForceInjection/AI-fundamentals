@@ -404,7 +404,7 @@ create_nccl_test() {
     local test_script="/tmp/nccl_ib_test.py"
     
     # ========== 动态计算测试数据大小 ==========
-    # 将用户友好的大小表示（如 1M, 100M, 1G）转换为张量元素数量
+    # 将用户友好的大小表示（如 1M, 100M, 1G, 10G）转换为张量元素数量
     # 假设使用 float32 数据类型（4 字节/元素）
     local tensor_elements
     case "$TEST_SIZE" in
@@ -420,8 +420,12 @@ create_nccl_test() {
         "1G"|"1g")
             tensor_elements=268435456  # 1GB / 4 bytes = 268435456 elements
             ;;
+        "10G"|"10g")
+            tensor_elements=2684354560  # 10GB / 4 bytes = 2684354560 elements
+            ;;
         *)
             log_warning "未知的测试大小: $TEST_SIZE，使用默认值 1M"
+            log_info "支持的大小格式: 1M, 10M, 100M, 1G, 10G"
             tensor_elements=262144
             ;;
     esac
@@ -475,7 +479,7 @@ def test_nccl_allreduce():
     
     功能说明：
     1. 创建测试张量并检查 GPU 内存容量
-    2. 执行 AllReduce 操作并测量性能
+    2. 执行持续的 AllReduce 操作并测量性能
     3. 验证计算结果的正确性
     4. 计算并报告性能指标
     
@@ -519,62 +523,109 @@ def test_nccl_allreduce():
     # 这对于准确的性能测量至关重要
     dist.barrier()
     
-    # ========== NCCL AllReduce 执行和性能测量 ==========
-    # 使用高精度计时器测量 AllReduce 操作的端到端延迟
-    start_time = time.time()
+    # ========== 预热阶段 ==========
+    # 执行几次预热操作，确保 NCCL 初始化完成
+    print(f"[Rank {rank}] 开始预热阶段...")
+    warmup_tensor = tensor.clone()
+    for i in range(3):
+        dist.all_reduce(warmup_tensor, op=dist.ReduceOp.SUM)
+        torch.cuda.synchronize()
     
-    # 执行 AllReduce SUM 操作
-    # 所有 rank 的张量将被求和，结果广播到所有 rank
-    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    # 重置张量为初始值
+    tensor.fill_(rank + 1)
+    dist.barrier()
+    print(f"[Rank {rank}] 预热完成")
     
-    # 确保 GPU 操作完全完成
-    # 这对于准确测量异步 GPU 操作的时间至关重要
-    torch.cuda.synchronize()
-    end_time = time.time()
+    # ========== 持续性能测试 ==========
+    # 执行多次 AllReduce 操作以产生持续的网络流量
+    test_duration = $TEST_DURATION  # 从脚本参数获取测试时长
+    iterations = max(10, test_duration // 2)  # 至少10次迭代，或每2秒一次
     
-    # ========== 结果验证 ==========
-    # AllReduce SUM 的预期结果：sum(1, 2, ..., world_size)
-    # 例如：3个rank时，预期结果 = 1 + 2 + 3 = 6
-    expected_sum = sum(range(1, world_size + 1))
-    actual_result = tensor[0].item()
-    duration_ms = (end_time - start_time) * 1000
+    print(f"[Rank {rank}] 开始持续性能测试 (迭代次数: {iterations})")
     
-    print(f"[Rank {rank}] AllReduce 结果: {actual_result}")
-    print(f"[Rank {rank}] 预期结果: {expected_sum}")
-    print(f"[Rank {rank}] 耗时: {duration_ms:.2f} ms")
+    # 记录所有迭代的性能数据
+    latencies = []
+    throughputs = []
     
-    # ========== 性能指标计算 ==========
-    # 计算数据吞吐量（注意：这是应用层吞吐量，不等同于网络带宽）
-    # 吞吐量 = 数据量 / 时间，单位转换为 Gbps
-    data_size_mb = tensor.numel() * tensor.element_size() / 1024 / 1024
-    throughput_gbps = (data_size_mb * 8) / (duration_ms / 1000) / 1000  # MB -> Gb -> Gbps
-    print(f"[Rank {rank}] 数据吞吐量: {throughput_gbps:.2f} Gbps (注意：非网络带宽)")
-    print(f"[Rank {rank}] 数据大小: {data_size_mb:.2f} MB")
-    
-    # ========== AllReduce 算法效率分析 ==========
-    if world_size > 1:
-        # Ring AllReduce 理论传输量计算
-        # 公式：2 * (N-1) / N * data_size
-        # 其中 N 是参与的 GPU 数量
-        # 
-        # 算法原理：
-        # 1. Reduce-Scatter 阶段：每个 GPU 发送 (N-1)/N 的数据
-        # 2. AllGather 阶段：每个 GPU 再次发送 (N-1)/N 的数据
-        # 3. 总传输量：2 * (N-1)/N * data_size
-        theoretical_transfer_mb = 2 * (world_size - 1) / world_size * data_size_mb
-        print(f"[Rank {rank}] 理论传输量: {theoretical_transfer_mb:.2f} MB (Ring AllReduce)")
+    for iteration in range(iterations):
+        # 重置张量
+        test_tensor = tensor.clone()
         
-        # 网络效率分析
-        # 实际传输效率 = 理论传输量 / 测量的数据吞吐量对应的数据量
-        network_efficiency = theoretical_transfer_mb / data_size_mb
-        print(f"[Rank {rank}] 网络传输倍数: {network_efficiency:.2f}x (相对于数据大小)")
-    else:
-        print(f"[Rank {rank}] 单GPU测试，无网络传输")
+        # 同步所有进程
+        dist.barrier()
+        
+        # 测量单次 AllReduce 性能
+        start_time = time.time()
+        dist.all_reduce(test_tensor, op=dist.ReduceOp.SUM)
+        torch.cuda.synchronize()
+        end_time = time.time()
+        
+        # 计算性能指标
+        duration_ms = (end_time - start_time) * 1000
+        data_size_mb = test_tensor.numel() * test_tensor.element_size() / 1024 / 1024
+        throughput_gbps = (data_size_mb * 8) / (duration_ms / 1000) / 1000
+        
+        latencies.append(duration_ms)
+        throughputs.append(throughput_gbps)
+        
+        # 验证结果（仅第一次和最后一次）
+        if iteration == 0 or iteration == iterations - 1:
+            expected_sum = sum(range(1, world_size + 1))
+            actual_result = test_tensor[0].item()
+            
+            if abs(actual_result - expected_sum) > 1e-6:
+                print(f"[Rank {rank}] 错误: 迭代 {iteration} 结果验证失败")
+                print(f"[Rank {rank}] 预期: {expected_sum}, 实际: {actual_result}")
+                return False
+        
+        # 输出进度（每10次迭代或最后一次）
+        if (iteration + 1) % 10 == 0 or iteration == iterations - 1:
+            print(f"[Rank {rank}] 迭代 {iteration + 1}/{iterations}: {duration_ms:.2f}ms, {throughput_gbps:.2f}Gbps")
+        
+        # 在迭代之间添加短暂延迟，确保网络监控能捕获到流量
+        if iteration < iterations - 1:
+            time.sleep(0.1)
     
-    # ========== 结果正确性验证 ==========
-    # 使用浮点数比较的容差检查
-    # 1e-6 的容差足以处理浮点运算的精度误差
-    return abs(actual_result - expected_sum) < 1e-6
+    # ========== 性能统计分析 ==========
+    dist.barrier()
+    
+    if rank == 0:
+        print(f"\n=== 性能统计分析 ===")
+        
+        # 计算统计指标
+        avg_latency = sum(latencies) / len(latencies)
+        min_latency = min(latencies)
+        max_latency = max(latencies)
+        avg_throughput = sum(throughputs) / len(throughputs)
+        max_throughput = max(throughputs)
+        
+        print(f"延迟统计:")
+        print(f"  平均延迟: {avg_latency:.2f} ms")
+        print(f"  最小延迟: {min_latency:.2f} ms")
+        print(f"  最大延迟: {max_latency:.2f} ms")
+        
+        print(f"吞吐量统计:")
+        print(f"  平均吞吐量: {avg_throughput:.2f} Gbps")
+        print(f"  峰值吞吐量: {max_throughput:.2f} Gbps")
+        
+        # ========== AllReduce 算法效率分析 ==========
+        if world_size > 1:
+            data_size_mb = tensor.numel() * tensor.element_size() / 1024 / 1024
+            theoretical_transfer_mb = 2 * (world_size - 1) / world_size * data_size_mb
+            network_efficiency = theoretical_transfer_mb / data_size_mb
+            
+            print(f"网络传输分析:")
+            print(f"  数据大小: {data_size_mb:.2f} MB")
+            print(f"  理论传输量: {theoretical_transfer_mb:.2f} MB (Ring AllReduce)")
+            print(f"  网络传输倍数: {network_efficiency:.2f}x")
+            
+            # 估算网络带宽利用率
+            estimated_network_bw = avg_throughput * network_efficiency
+            print(f"  估算网络带宽: {estimated_network_bw:.2f} Gbps")
+        else:
+            print(f"单GPU测试，无网络传输")
+    
+    return True
 
 def main():
     try:
@@ -818,10 +869,12 @@ analyze_nccl_output() {
     log_info "性能信息分析:"
     
     # 分别提取延迟、吞吐量和数据大小信息
-    local latency_lines=$(grep -E "耗时.*ms" "$output_file" 2>/dev/null)
-    local throughput_lines=$(grep -E "数据吞吐量.*Gbps" "$output_file" 2>/dev/null)
-    local data_size_lines=$(grep -E "数据大小.*MB" "$output_file" 2>/dev/null)
-    local transfer_lines=$(grep -E "理论传输量.*MB" "$output_file" 2>/dev/null)
+    # 更新正则表达式以匹配实际输出格式
+    local latency_lines=$(grep -E "(延迟|latency|ms)" "$output_file" 2>/dev/null | grep -E "[0-9]+\.[0-9]+.*ms")
+    local throughput_lines=$(grep -E "(吞吐量|throughput|Gbps)" "$output_file" 2>/dev/null | grep -E "[0-9]+\.[0-9]+.*Gbps")
+    local data_size_lines=$(grep -E "(数据大小|张量大小|elements.*MB)" "$output_file" 2>/dev/null)
+    local transfer_lines=$(grep -E "(理论传输量|网络传输|传输倍数)" "$output_file" 2>/dev/null)
+    local performance_stats=$(grep -E "(平均|峰值|最小|最大)" "$output_file" 2>/dev/null)
     
     if [ -n "$latency_lines" ]; then
         log_info "  延迟信息:"
@@ -835,6 +888,13 @@ analyze_nccl_output() {
         while IFS= read -r line; do
             log_info "    $line"
         done <<< "$throughput_lines"
+    fi
+    
+    if [ -n "$performance_stats" ]; then
+        log_info "  性能统计:"
+        while IFS= read -r line; do
+            log_info "    $line"
+        done <<< "$performance_stats"
     fi
     
     if [ -n "$data_size_lines" ]; then
@@ -851,8 +911,21 @@ analyze_nccl_output() {
         done
     fi
     
-    if [ -z "$latency_lines" ] && [ -z "$throughput_lines" ]; then
+    # 检查是否找到了任何性能相关信息
+    if [ -z "$latency_lines" ] && [ -z "$throughput_lines" ] && [ -z "$performance_stats" ]; then
         log_warning "未找到性能信息"
+        log_info "尝试查找其他性能指标..."
+        
+        # 尝试查找迭代输出
+        local iteration_lines=$(grep -E "迭代.*[0-9]+.*ms.*Gbps" "$output_file" 2>/dev/null | head -3)
+        if [ -n "$iteration_lines" ]; then
+            log_info "  找到迭代性能数据:"
+            while IFS= read -r line; do
+                log_info "    $line"
+            done <<< "$iteration_lines"
+        else
+            log_info "  建议检查测试是否正常完成"
+        fi
     fi
     
     # 环境变量检查
