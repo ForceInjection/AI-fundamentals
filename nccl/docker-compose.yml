@@ -1,0 +1,85 @@
+# NCCL 容器化测试环境配置文件
+# 用于 Docker Compose 部署多节点 NCCL 测试
+
+version: '3.8'
+
+services:
+  nccl-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
+    runtime: nvidia
+    network_mode: host
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WORLD_SIZE=2
+      - RANK=0
+      - LOCAL_RANK=0
+      - MASTER_ADDR=localhost
+      - MASTER_PORT=29500
+      - NCCL_DEBUG=${NCCL_DEBUG:-INFO}
+      - NCCL_BACKEND=nccl
+      - TENSOR_ELEMENTS=262144
+      - TEST_DURATION=${TEST_DURATION:-30}
+      - NCCL_IB_DISABLE=0
+      - NCCL_NET_GDR_LEVEL=3
+      - NCCL_IB_HCA=^lo
+      - NCCL_IB_GID_INDEX=3
+      - NCCL_IB_TIMEOUT=23
+      - NCCL_IB_RETRY_CNT=7
+    volumes:
+      - .:/workspace/host
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    command: >
+      bash -c "
+        echo 'Master 节点 (Host Network 模式) 等待 Worker 节点启动...' &&
+        sleep 10 &&
+        python3 /workspace/nccl_test/nccl_python_template.py
+      "
+
+  nccl-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
+    runtime: nvidia
+    network_mode: host
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WORLD_SIZE=2
+      - RANK=1
+      - LOCAL_RANK=0
+      - MASTER_ADDR=localhost
+      - MASTER_PORT=29501
+      - NCCL_DEBUG=${NCCL_DEBUG:-INFO}
+      - NCCL_BACKEND=nccl
+      - TENSOR_ELEMENTS=262144
+      - TEST_DURATION=${TEST_DURATION:-30}
+      - NCCL_IB_DISABLE=0
+      - NCCL_NET_GDR_LEVEL=3
+      - NCCL_IB_HCA=^lo
+      - NCCL_IB_GID_INDEX=3
+      - NCCL_IB_TIMEOUT=23
+      - NCCL_IB_RETRY_CNT=7
+    volumes:
+      - .:/workspace/host
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    depends_on:
+      - nccl-master
+    command: >
+      bash -c "
+        echo 'Worker 节点 (Host Network 模式) 启动，等待 Master 节点...' &&
+        sleep 5 &&
+        python3 /workspace/nccl_test/nccl_python_template.py
+      "
+
+volumes:
+  nccl-logs:
+    driver: local
