@@ -27,7 +27,7 @@
 
 #### 2.1 GPU 架构和编程模型介绍
 
-- [GPU Architecture and Programming — An Introduction](gpu_programming/gpu_programming_introduction.md)
+- [GPU Architecture and Programming — An Introduction](gpu_programming/gpu_programming_introduction.md) - GPU架构与编程模型的全面介绍
 
 #### 2.2 CUDA 核心技术
 
@@ -44,6 +44,7 @@
 **原理文档：**
 
 - [GPU虚拟化与切分技术原理解析](gpu_manager/GPU虚拟化与切分技术原理解析.md) - 技术原理深入
+- [GPU 管理相关技术深度解析 - 虚拟化、切分及远程调用](gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md) - 全面的GPU管理技术指南
 
 **详解文档：**
 
@@ -59,6 +60,7 @@
 ### 5. 分布式存储系统
 
 - [JuiceFS 文件修改机制分析](juicefs/JuiceFS%20文件修改机制分析.md) - 分布式文件系统的修改机制深度解析
+- [JuiceFS 后端存储变更手册](juicefs/JuiceFS%20后端存储变更手册.md) - JuiceFS 后端存储迁移和变更操作指南
 
 ---
 
@@ -153,6 +155,8 @@
 
 - [**AI 编程入门完整教程**](coding/AI%20编程入门.md) - 从大语言模型基础到实际应用的完整指南
 - [**在线演示版本**](coding/index.html) - 交互式课程演示（包含26个页面的完整课程内容）
+- [AI 编程工具对比分析](coding/AI编程工具对比分析.md) - 主流AI编程工具的功能特性、性能表现和使用场景对比
+- [AI 编程工具实战指南](coding/AI编程工具实战指南.md) - AI编程工具的实际应用技巧和最佳实践
 
 **课程内容概览：**
 
@@ -200,7 +204,13 @@
 - [量化技术可视化指南](llm/A%20Visual%20Guide%20to%20Quantization.zh-CN.md)
 - [基于大型语言模型的意图检测](llm/Intent%20Detection%20using%20LLM.zh-CN.md)
 
-#### 4.1.2 参考书籍
+#### 4.1.2 上下文工程
+
+- [上下文工程原理](context/上下文工程原理.md) - 上下文工程的核心概念和实践方法
+- [上下文工程原理简介](context/上下文工程原理简介.md) - 上下文工程快速入门指南
+- [基于上下文工程的 LangChain 智能体应用](context/langchain_with_context_engineering.md) - 使用LangChain和LangGraph实施上下文工程的完整指南
+
+#### 4.1.3 参考书籍
 
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
@@ -265,7 +275,7 @@
 
 **Java 生态：**
 
-- [使用 Spring AI 构建高效 LLM 代理](java_ai/spring_ai_cn.md) - 使用 Spring AI 构建高效 LLM 代理
+- [使用 Spring AI 构建高效 LLM 代理](java_ai/spring_ai_cn.md)
 
 #### 4.3.3 AI 智能体记忆系统
 
@@ -279,6 +289,7 @@
 
 ### 5.1 企业级多智能体系统
 
+- [多智能体AI系统基础：理论与框架](agent/Part1-Multi-Agent-AI-Fundamentals.md) - 多智能体系统的核心理论、技术框架和LangGraph/LangSmith深度解析
 - [企业级多智能体系统实现指南](agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 完整的企业级多智能体系统架构设计与实现
 
 ### 5.2 AI 推理优化技术
@@ -301,21 +312,37 @@
 - [实施检查清单](inference/13-实施检查清单.md)
 - [总结与展望](inference/14-总结与展望.md)
 
-### 5.3 模型部署与推理
+### 5.3 AI 编程入门
+
+- [**AI 编程入门完整教程**](coding/AI%20编程入门.md) - 从大语言模型基础到实际应用的完整指南
+- [**在线演示版本**](coding/index.html) - 交互式课程演示（包含26个页面的完整课程内容）
+- [AI 编程工具对比分析](coding/AI编程工具对比分析.md) - 主流AI编程工具的功能特性、性能表现和使用场景对比
+- [AI 编程工具实战指南](coding/AI编程工具实战指南.md) - AI编程工具的实际应用技巧和最佳实践
+
+**课程内容概览：**
+
+- **大语言模型基础认知**：理解AI的工作原理和能力边界
+- **AI编程革命**：从传统编程到AI辅助编程的转变
+- **主流工具对比**：GitHub Copilot、Cursor、Trae AI等工具的特点和使用场景
+- **Prompt Engineering**：编写高效编程提示词的技巧和最佳实践
+- **实战案例**：代码生成、调试、重构、文档编写等实际应用
+- **最佳实践**：安全性、团队协作、质量保证等注意事项
+
+### 5.4 模型部署与推理
 
 - [动手部署 ollama](llm/ollama/README.md)
 - [在 Mac 上运行 DeepSeek-R1 模型](deepseek/mac-deepseek-r1.md)
 - [DeepSeek r1 蒸馏模型和满血模型对比](deepseek/deepseek-r1-cmp.md)
 - [Deepseek 3FS（ Fire-Flyer File System）设计笔记](deepseek/deepseek_3fs_design_notes.zh-CN.md)
 
-### 5.4 文档处理工具
+### 5.5 文档处理工具
 
 - [深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](llm/marker.zh-CN.md)
 - [上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取](llm/minerU_intro.md)
 - [Markitdown 入门](llm/markitdown/README.md)
 - [DeepWiki 使用方法与技术原理深度分析](llm/DeepWiki%20使用方法与技术原理深度分析.md)
 
-### 5.5 特定领域应用
+### 5.6 特定领域应用
 
 - [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](llm/scenario/traditional-chinese-medicine.md)
 - [中国大陆合同审核要点清单](llm/scenario/中国大陆合同审核要点清单.md)
@@ -338,12 +365,16 @@
 ### 6.2 AI 基础设施专业课程
 
 - [大模型原理与最新进展](ai_infra_course/index.html)
+- [AI Infra 课程演讲稿](ai_infra_course/讲稿.md) - 完整的课程演讲内容和技术要点
 - **学习目标**：深入理解大模型工作原理和最新技术进展
 - **核心内容**：
   - **Transformer架构**：编码器-解码器结构、注意力机制、文本生成过程
   - **训练规模数据**：GPT-3/4、PaLM等主流模型的参数量、成本和资源需求
   - **DeepSeek模型演进**：V1/V2/R1三代技术突破、MLA架构创新、MoE优化
   - **能力涌现现象**：规模效应、临界点突破、多模态发展趋势
+  - **AI编程工具**：GitHub Copilot、Cursor、Trae AI等工具对比和应用实践
+  - **GPU架构与CUDA**：硬件基础、并行计算原理、性能优化策略
+  - **云原生AI架构**：现代化AI基础设施设计与部署实践
 
 ### 6.3 开源项目推荐
 
