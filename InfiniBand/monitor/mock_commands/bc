@@ -1,0 +1,14 @@
+#!/bin/bash
+# 简单的 bc 模拟
+while read -r line; do
+    # 简单的数学计算模拟
+    if [[ "$line" =~ scale=2 ]]; then
+        # 提取表达式
+        expr=$(echo "$line" | sed 's/scale=2;//')
+        # 使用 awk 进行计算
+        result=$(echo "$expr" | awk '{print $0}' | awk 'BEGIN{print '"$expr"'}' 2>/dev/null || echo "0")
+        echo "$result"
+    else
+        echo "$line" | awk '{print $0}' 2>/dev/null || echo "0"
+    fi
+done

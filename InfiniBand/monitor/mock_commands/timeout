@@ -1,0 +1,5 @@
+#!/bin/bash
+duration="$1"
+shift
+# 直接执行命令，忽略超时
+exec "$@"

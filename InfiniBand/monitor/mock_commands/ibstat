@@ -1,0 +1,64 @@
+#!/bin/bash
+device="$1"
+port="$2"
+
+case "$device" in
+    "mlx5_0")
+        if [ -z "$port" ]; then
+            echo "CA 'mlx5_0'"
+            echo "        CA type: MT4123"
+            echo "        Number of ports: 1"
+            echo "        Firmware version: 20.31.1014"
+            echo "        Hardware version: 0"
+            echo "        Node GUID: 0x506b4b0300ca2e20"
+            echo "        System image GUID: 0x506b4b0300ca2e20"
+        elif [ "$port" = "1" ]; then
+            echo "CA 'mlx5_0'"
+            echo "        Port 1:"
+            echo "                State: Active"
+            echo "                Physical state: LinkUp"
+            echo "                Rate: 100"
+            echo "                Base lid: 1"
+            echo "                LMC: 0"
+            echo "                SM lid: 1"
+            echo "                Capability mask: 0x2651e848"
+            echo "                Port GUID: 0x506b4b0300ca2e21"
+            echo "                Link layer: InfiniBand"
+        else
+            exit 1
+        fi
+        ;;
+    "mlx5_1")
+        if [ -z "$port" ]; then
+            echo "CA 'mlx5_1'"
+            echo "        CA type: MT4123"
+            echo "        Number of ports: 1"
+            echo "        Firmware version: 20.31.1014"
+            echo "        Hardware version: 0"
+            echo "        Node GUID: 0x506b4b0300ca2e22"
+            echo "        System image GUID: 0x506b4b0300ca2e22"
+        elif [ "$port" = "1" ]; then
+            echo "CA 'mlx5_1'"
+            echo "        Port 1:"
+            echo "                State: Active"
+            echo "                Physical state: LinkUp"
+            echo "                Rate: 100"
+            echo "                Base lid: 2"
+            echo "                LMC: 0"
+            echo "                SM lid: 1"
+            echo "                Capability mask: 0x2651e848"
+            echo "                Port GUID: 0x506b4b0300ca2e23"
+            echo "                Link layer: InfiniBand"
+        else
+            exit 1
+        fi
+        ;;
+    "-l")
+        echo "mlx5_0"
+        echo "mlx5_1"
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+exit 0

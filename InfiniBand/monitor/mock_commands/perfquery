@@ -1,0 +1,47 @@
+#!/bin/bash
+device=""
+port=""
+
+# 解析参数
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -C)
+            device="$2"
+            shift 2
+            ;;
+        -P)
+            port="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# 模拟性能计数器输出
+if [ -n "$device" ] && [ -n "$port" ]; then
+    echo "# Port counters: Lid 1 port $port (CapMask: 0x2651E848)"
+    echo "PortSelect:.......................$port"
+    echo "CounterSelect:...................0xFF"
+    echo "PortXmitData:....................1000000"
+    echo "PortRcvData:.....................2000000"
+    echo "PortXmitPkts:....................5000"
+    echo "PortRcvPkts:.....................10000"
+    echo "PortXmitDiscards:................0"
+    echo "PortRcvDiscards:.................0"
+    echo "PortXmitConstraintErrors:........0"
+    echo "PortRcvConstraintErrors:.........0"
+    echo "PortRcvSwitchRelayErrors:........0"
+    echo "PortXmitWait:....................0"
+    echo "PortRcvRemotePhysicalErrors:.....0"
+    echo "PortLocalPhysicalErrors:.........0"
+    echo "PortMalformedPktErrors:..........0"
+    echo "PortBufferOverrunErrors:.........0"
+    echo "PortDLIDMappingErrors:...........0"
+    echo "PortVLMappingErrors:.............0"
+    echo "PortLoopingErrors:...............0"
+    exit 0
+else
+    exit 1
+fi
