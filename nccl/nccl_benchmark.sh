@@ -1351,21 +1351,22 @@ analyze_nccl_output() {
     fi
     
     # 2. 分析性能数据判断网络类型
-    local avg_throughput=$(grep -E "平均吞吐量.*GB/s" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+')
-    local min_latency=$(grep -E "最小延迟.*ms" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+')
+    local avg_throughput=$(grep -E "平均吞吐量.*GB/s" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
+    local min_latency=$(grep -E "最小延迟.*ms" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
     
     if [ -n "$avg_throughput" ] && [ -n "$min_latency" ]; then
         # NVLink 性能特征：高吞吐量 (>100 GB/s) + 低延迟 (<0.1 ms)
         # PCIe P2P 性能特征：中等吞吐量 (30-80 GB/s) + 中等延迟 (0.03-0.1 ms)
         # Socket/Ethernet 性能特征：低吞吐量 (<30 GB/s) + 高延迟 (>0.1 ms)
         
-        local throughput_int=$(echo "$avg_throughput" | cut -d. -f1)
-        local latency_float=$(echo "$min_latency")
+        # 使用 bc 进行浮点数比较，避免整数转换问题
+        local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
+        local latency_float=$(echo "$min_latency" | tr -d ' ')
         
-        if [ "$throughput_int" -gt 100 ] && [ "$(echo "$latency_float < 0.05" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
+        if [ "$(echo "$throughput_float > 100" | bc -l 2>/dev/null || echo 0)" = "1" ] && [ "$(echo "$latency_float < 0.05" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
             nvlink_performance_indicators=true
             log_info "📊 性能指标显示 NVLink 特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
-        elif [ "$throughput_int" -ge 30 ] && [ "$throughput_int" -le 100 ]; then
+        elif [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ] && [ "$(echo "$throughput_float <= 100" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
             log_info "📊 性能指标显示 PCIe P2P 特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
         else
             log_info "📊 性能指标显示网络传输特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
@@ -1423,8 +1424,9 @@ analyze_nccl_output() {
             log_warning "🧠 智能推断: PCIe P2P 通信 (NVLink 配置但性能不符)"
             log_warning "   💡 可能原因: NVLink 硬件不可用，NCCL 回退到 PCIe P2P"
         elif [ -n "$avg_throughput" ]; then
-            local throughput_int=$(echo "$avg_throughput" | cut -d. -f1)
-            if [ "$throughput_int" -ge 30 ]; then
+            # 使用 bc 进行浮点数比较
+            local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
+            if [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
                 actual_network="pcie"
                 network_detected=true
                 log_info "🧠 智能推断: PCIe P2P 通信 (基于性能特征)"
@@ -1481,10 +1483,11 @@ analyze_nccl_output() {
                 fi
                 
                 if [ -n "$avg_throughput" ]; then
-                    local throughput_int=$(echo "$avg_throughput" | cut -d. -f1)
-                    if [ "$throughput_int" -gt 100 ]; then
+                    # 使用 bc 进行浮点数比较
+                    local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
+                    if [ "$(echo "$throughput_float > 100" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
                         log_success "   ✅ 性能指标符合 NVLink 特征 (${avg_throughput} GB/s)"
-                    elif [ "$throughput_int" -ge 30 ]; then
+                    elif [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
                         log_warning "   ⚠️  性能指标显示 PCIe P2P 特征 (${avg_throughput} GB/s)"
                         log_warning "       这表明 NCCL 回退到了 PCIe P2P 通信"
                     else
