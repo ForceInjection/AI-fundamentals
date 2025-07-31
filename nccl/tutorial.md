@@ -661,11 +661,80 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 
 ### 3.1 多节点测试概述
 
-多节点 NCCL 测试用于验证跨节点的分布式通信性能，是大规模训练环境的重要验证手段。本工具支持通过专用的启动脚本简化多节点测试配置。
+多节点 NCCL 测试用于验证跨节点的分布式通信性能，是大规模训练环境的重要验证手段。本工具提供两种多节点测试方案：
+
+#### 3.1.1 原生多节点部署
+
+使用 `nccl_multinode_launcher.sh` 脚本进行传统的裸机多节点部署：
+
+- **适用场景**：传统 HPC 环境、裸机部署
+- **优势**：配置简单、直接控制
+- **劣势**：手动管理、扩展性有限
+
+#### 3.1.2 Kubernetes 多节点部署（推荐）
+
+使用 `k8s/deploy.sh` 脚本进行现代化的容器编排部署：
+
+- **适用场景**：云原生环境、生产环境
+- **优势**：自动调度、资源管理、故障恢复、易扩展
+- **劣势**：需要 Kubernetes 集群
+
+**推荐使用 Kubernetes 方案**，特别是在生产环境和云环境中。
 
 ### 3.2 快速开始
 
-#### 3.2.1 基础2节点测试
+#### 3.2.1 方案选择
+
+根据你的环境选择合适的部署方案：
+
+**Kubernetes 方案（推荐）**：
+
+```bash
+# 进入 Kubernetes 配置目录
+cd k8s/
+
+# 快速部署（使用默认配置）
+./deploy.sh deploy
+
+# 查看部署状态
+./deploy.sh status
+
+# 查看测试日志
+./deploy.sh logs
+
+# 清理资源
+./deploy.sh cleanup
+```
+
+**原生方案**：
+
+```bash
+# 节点1 (主节点 - 192.168.1.100)
+./nccl_multinode_launcher.sh 0 192.168.1.100
+
+# 节点2 (工作节点 - 192.168.1.101)  
+./nccl_multinode_launcher.sh 1 192.168.1.100
+```
+
+#### 3.2.2 Kubernetes 自定义配置
+
+```bash
+# 自定义 GPU 数量和测试参数
+./deploy.sh deploy --gpus 4 --test-size 1G --test-duration 120
+
+# 指定命名空间和作业名称
+./deploy.sh deploy --namespace nccl-test --job-name my-nccl-test
+
+# 指定网络后端
+./deploy.sh deploy --network-backend ib --test-size 500M
+
+# 查看所有可用参数
+./deploy.sh --help
+```
+
+#### 3.2.3 原生部署基础配置
+
+**基础2节点测试**：
 
 ```bash
 # 节点1 (主节点 - 192.168.1.100)
@@ -682,7 +751,7 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 - 当使用以太网时，使用以太网网卡 (如 `eth0`) 上的 IP 地址
 - 所有节点都需要指定相同的主节点 IP 地址进行协调
 
-#### 3.2.2 自定义配置测试
+**自定义配置测试**：
 
 ```bash
 # 4节点8GPU高性能测试
@@ -692,7 +761,7 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 ./nccl_multinode_launcher.sh 0 192.168.1.100 --network ib -w 4 -n 2
 ```
 
-#### 3.2.3 网络类型指定
+**网络类型指定**：
 
 `nccl_multinode_launcher.sh` 脚本支持通过 `--network` 参数指定网络后端：
 
@@ -721,9 +790,178 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 - 所有节点必须使用相同的网络后端配置
 - 网络后端会传递给底层的 `nccl_benchmark.sh` 脚本
 
-### 3.3 脚本参数详解
+### 3.3 Kubernetes 多节点部署（推荐）
 
-#### 3.3.1 完整参数列表
+#### 3.3.1 Kubernetes 方案概述
+
+Kubernetes 方案提供了现代化的容器编排多节点部署，具有以下优势：
+
+- **自动化部署**: 一键部署多节点测试环境
+- **资源管理**: 自动调度和资源分配
+- **故障恢复**: 自动重启失败的 Pod
+- **配置管理**: 统一的配置管理和版本控制
+- **监控集成**: 与 Kubernetes 生态系统无缝集成
+
+#### 3.3.2 快速开始
+
+**部署测试环境**：
+
+```bash
+# 进入 Kubernetes 目录
+cd k8s/
+
+# 一键部署多节点测试
+./deploy.sh
+
+# 查看部署状态
+kubectl get pods -l app=nccl-test
+
+# 查看测试日志
+kubectl logs -l app=nccl-test -f
+
+# 清理资源
+kubectl delete -f nccl-multinode-job.yaml
+kubectl delete -f nccl-service.yaml
+kubectl delete configmap nccl-config
+```
+
+#### 3.3.3 自定义配置
+
+**修改测试参数**：
+
+```bash
+# 编辑配置文件
+vim k8s/nccl-configmap.yaml
+
+# 示例配置
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nccl-config
+data:
+  WORLD_SIZE: "4"
+  NPROC_PER_NODE: "2"
+  TEST_SIZE: "100M"
+  TEST_TIME: "120"
+  NETWORK_TYPE: "ib"
+```
+
+**修改节点数量**：
+
+```bash
+# 编辑 Job 配置
+vim k8s/nccl-multinode-job.yaml
+
+# 修改 replicas 字段
+spec:
+  parallelism: 2    # 并行运行的 Pod 数量
+  completions: 2    # 总共需要完成的 Pod 数量
+```
+
+#### 3.3.4 高级配置
+
+**GPU 资源配置**：
+
+```yaml
+# 在 nccl-multinode-job.yaml 中配置
+resources:
+  limits:
+    nvidia.com/gpu: 2    # 每个 Pod 使用的 GPU 数量
+  requests:
+    nvidia.com/gpu: 2
+```
+
+**网络配置**：
+
+```yaml
+# 使用 InfiniBand 网络
+spec:
+  template:
+    spec:
+      hostNetwork: true    # 使用主机网络
+      dnsPolicy: ClusterFirstWithHostNet
+```
+
+**存储配置**：
+
+```yaml
+# 挂载共享存储
+volumeMounts:
+- name: shared-data
+  mountPath: /shared
+volumes:
+- name: shared-data
+  nfs:
+    server: nfs-server.example.com
+    path: /shared/nccl-data
+```
+
+#### 3.3.5 监控和调试
+
+**查看集群状态**：
+
+```bash
+# 查看节点状态
+kubectl get nodes -o wide
+
+# 查看 GPU 资源
+kubectl describe nodes | grep nvidia.com/gpu
+
+# 查看网络插件状态
+kubectl get pods -n kube-system | grep network
+```
+
+**调试测试问题**：
+
+```bash
+# 查看 Pod 详细信息
+kubectl describe pod <pod-name>
+
+# 进入 Pod 调试
+kubectl exec -it <pod-name> -- /bin/bash
+
+# 查看事件日志
+kubectl get events --sort-by=.metadata.creationTimestamp
+```
+
+#### 3.3.6 性能优化
+
+**节点亲和性配置**：
+
+```yaml
+# 确保 Pod 分布在不同节点
+spec:
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - nccl-test
+            topologyKey: kubernetes.io/hostname
+```
+
+**优先级和抢占**：
+
+```yaml
+# 设置高优先级
+spec:
+  template:
+    spec:
+      priorityClassName: high-priority
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+```
+
+### 3.4 脚本参数详解
+
+#### 3.4.1 完整参数列表
 
 `nccl_multinode_launcher.sh` 脚本支持以下参数：
 
@@ -748,7 +986,7 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 | `-t` | `--time` | 90 | 测试时长 (秒) |
 | `-h` | `--help` | - | 显示帮助信息 |
 
-#### 3.3.2 参数使用示例
+#### 3.4.2 参数使用示例
 
 ```bash
 # 查看帮助信息
@@ -775,7 +1013,7 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
   -w 2 -n 1 --network socket -s 10M -t 30
 ```
 
-#### 3.3.3 参数验证规则
+#### 3.4.3 参数验证规则
 
 脚本会自动验证参数的有效性：
 
@@ -786,22 +1024,22 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 - `master_port` 必须是有效的端口号
 - `network` 必须是支持的网络类型
 
-### 3.4 测试步骤
+### 3.5 测试步骤
 
-#### 3.4.1 环境准备
+#### 3.5.1 环境准备
 
 - ✅ 确保所有节点网络连通
 - ✅ 同步所有节点时间
 - ✅ 开放防火墙端口 (29500)
 - ✅ 验证GPU和NCCL环境
 
-#### 3.4.2 启动测试
+#### 3.5.2 启动测试
 
 1. **先启动主节点** (node_rank=0)
 2. **再启动工作节点** (node_rank=1,2,3...)
 3. **使用相同参数** 在所有节点
 
-#### 3.4.3 监控测试
+#### 3.5.3 监控测试
 
 ```bash
 # 监控网络流量
@@ -811,7 +1049,7 @@ watch -n 1 'ibstat | grep -A 5 "Port 1"'
 watch -n 1 nvidia-smi
 ```
 
-### 3.5 常用配置
+### 3.6 常用配置
 
 | 场景 | 节点数 | GPU数 | 网络类型 | 命令示例 |
 |------|--------|-------|----------|----------|
@@ -829,9 +1067,9 @@ watch -n 1 nvidia-smi
 - `-t, --time`: 测试时长 (秒)
 - `--network`: 网络后端类型 (ib/ethernet/socket)
 
-### 3.6 网络配置要求
+### 3.7 网络配置要求
 
-#### 3.6.1 IP over InfiniBand (IPoIB) 地址要求
+#### 3.7.1 IP over InfiniBand (IPoIB) 地址要求
 
 **重要**: 当使用 IPoIB 时，指定的 IP 地址**必须是 InfiniBand 网卡上配置的地址**，而非以太网网卡地址。
 
@@ -850,7 +1088,7 @@ ibstat ib0
 lsmod | grep ib_ipoib
 ```
 
-#### 3.6.2 网络接口配置示例
+#### 3.7.2 网络接口配置示例
 
 ```bash
 # 配置 IPoIB 接口 (Ubuntu/Debian)
@@ -873,7 +1111,7 @@ EOF
 sudo systemctl restart network
 ```
 
-#### 3.6.3 地址类型对比
+#### 3.7.3 地址类型对比
 
 | 网络类型 | 接口名称 | 地址示例 | MTU | 用途 |
 |----------|----------|----------|-----|------|
@@ -881,7 +1119,7 @@ sudo systemctl restart network
 | IPoIB | ib0, ib1 | 192.168.1.100 | 2044/65520 | 高性能数据传输 |
 | RoCE | eth0 (IB功能) | 192.168.1.100 | 1500 | 以太网上的IB |
 
-#### 3.6.4 网络验证命令
+#### 3.7.4 网络验证命令
 
 ```bash
 # 验证 IB 接口配置
@@ -897,11 +1135,11 @@ ping -I ib0 192.168.1.101
 ibstatus
 ```
 
-#### 3.6.5 IPoIB 与原生 IB 的共存
+#### 3.7.5 IPoIB 与原生 IB 的共存
 
 **重要概念**: IPoIB 和原生 InfiniBand 可以在同一硬件上共存，NCCL 会自动选择最优通信方式。
 
-##### 3.6.5.1 共存机制原理
+##### 3.7.5.1 共存机制原理
 
 ```bash
 # 同一个 IB 设备的双重身份
@@ -914,7 +1152,7 @@ ip addr show ib0
 # 两者使用相同的物理硬件，但协议栈不同
 ```
 
-##### 3.6.5.2 NCCL 网络选择优先级
+##### 3.7.5.2 NCCL 网络选择优先级
 
 NCCL 按以下优先级自动选择通信方式：
 
@@ -925,7 +1163,7 @@ NCCL 按以下优先级自动选择通信方式：
 | 3 | IPoIB (Datagram Mode) | 延迟 ~5μs, 中等带宽 | 网络配置简单时 |
 | 4 (最低) | 以太网 TCP | 延迟 ~10μs, 标准带宽 | 回退选项 |
 
-##### 3.6.5.3 强制使用原生 IB 的配置
+##### 3.7.5.3 强制使用原生 IB 的配置
 
 ```bash
 # 方法1: 通过环境变量强制使用原生 IB
@@ -942,7 +1180,7 @@ export NCCL_DEBUG=INFO
 # 查看日志中的 "NET/" 信息确认使用原生 IB
 ```
 
-##### 3.6.5.4 网络类型验证方法
+##### 3.7.5.4 网络类型验证方法
 
 ```bash
 # 运行测试并检查网络选择
@@ -953,7 +1191,7 @@ export NCCL_DEBUG=INFO
 # 这表明使用了原生 IB (NET/IB) 而非 TCP (NET/Socket)
 ```
 
-##### 3.6.5.5 性能对比测试
+##### 3.7.5.5 性能对比测试
 
 ```bash
 # 测试1:# 强制使用原生 IB
@@ -968,7 +1206,7 @@ export NCCL_SOCKET_IFNAME=ib0
 # 比较两次测试的延迟和带宽差异
 ```
 
-##### 3.6.5.6 最佳实践建议
+##### 3.7.5.6 最佳实践建议
 
 1. **默认配置**: 让 NCCL 自动选择，通常会选择原生 IB
 2. **性能优先**: 明确配置使用原生 IB Verbs
@@ -983,9 +1221,9 @@ export NCCL_IB_HCA=mlx5_0          # 指定设备
 export NCCL_DEBUG=INFO             # 启用日志验证
 ```
 
-### 3.7 多节点故障排除
+### 3.8 多节点故障排除
 
-#### 3.7.1 连接问题
+#### 3.8.1 连接问题
 
 ```bash
 # 检查网络连通性 (使用正确的接口)
@@ -1002,7 +1240,7 @@ ibstat
 ibv_devinfo
 ```
 
-#### 3.7.2 性能问题
+#### 3.8.2 性能问题
 
 ```bash
 # 检查网络类型
@@ -1015,27 +1253,27 @@ nvidia-smi
 ibstat
 ```
 
-### 3.8 性能基准
+### 3.9 性能基准
 
-#### 3.8.1 InfiniBand (100Gbps / 12.5 GB/s)
+#### 3.9.1 InfiniBand (100Gbps / 12.5 GB/s)
 
 - 2节点4GPU: 10-11.25 GB/s (80-90 Gbps)
 - 4节点8GPU: 8.75-10.6 GB/s (70-85 Gbps)
 - 8节点16GPU: 7.5-10 GB/s (60-80 Gbps)
 
-#### 3.8.2 以太网 (25Gbps / 3.125 GB/s)
+#### 3.9.2 以太网 (25Gbps / 3.125 GB/s)
 
 - 2节点4GPU: 2.5-2.9 GB/s (20-23 Gbps)
 - 4节点8GPU: 2.25-2.75 GB/s (18-22 Gbps)
 - 8节点16GPU: 1.9-2.5 GB/s (15-20 Gbps)
 
-### 3.9 相关文件
+### 3.10 相关文件
 
 - `nccl_benchmark.sh` - 主测试脚本
 - `nccl_multinode_launcher.sh` - 多节点启动脚本
 - `/tmp/nccl_test_output.log` - 测试输出日志
 
-### 3.10 多节点最佳实践
+### 3.11 多节点最佳实践
 
 1. **测试前**: 先运行单节点测试验证环境
 2. **启动顺序**: 主节点 → 工作节点 (间隔10-15秒)
@@ -1231,9 +1469,9 @@ detect_network_type() {
 | 网络层 | IB Verbs | Ethernet + IB Verbs | 底层传输协议不同 |
 | 性能特征 | 超低延迟 | 较低延迟，更好兼容性 | 硬件和协议栈差异 |
 
-### 6.4 性能测试核心代码解析
+### 4.4 性能测试核心代码解析
 
-#### 6.4.1 动态张量大小计算
+#### 4.4.1 动态张量大小计算
 
 ```python
 # 脚本生成的 Python 测试代码关键部分
@@ -1279,7 +1517,7 @@ def check_gpu_memory_safety(tensor_size, device):
     return True
 ```
 
-#### 6.4.2 性能指标计算详解
+#### 4.4.2 性能指标计算详解
 
 ```python
 def calculate_performance_metrics(tensor, duration_ms, world_size):
@@ -1326,9 +1564,9 @@ def calculate_performance_metrics(tensor, duration_ms, world_size):
     }
 ```
 
-### 6.5 调试和诊断技术
+### 4.5 调试和诊断技术
 
-#### 6.5.1 NCCL 调试级别详解
+#### 4.5.1 NCCL 调试级别详解
 
 ```bash
 # NCCL 调试级别配置
@@ -1348,7 +1586,7 @@ export NCCL_DEBUG_SUBSYS=TUNING     # 性能调优信息
 #     组件  级别  消息内容
 ```
 
-#### 6.5.2 性能瓶颈诊断流程
+#### 4.5.2 性能瓶颈诊断流程
 
 ```bash
 # 1. 网络连通性检查
@@ -1593,7 +1831,3 @@ diff before.txt after.txt
 - 定期运行测试以监控系统性能变化
 - 建立性能基线，及时发现性能退化
 - 记录配置变更对性能的影响
-
----
-
-**注意**: 本工具专为 NCCL InfiniBand 环境设计，建议在生产环境部署前进行充分测试。

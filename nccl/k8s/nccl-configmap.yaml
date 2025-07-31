@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nccl-config
+  namespace: default
+data:
+  nccl.conf: |
+    # NCCL 配置文件
+    NCCL_DEBUG=INFO
+    NCCL_IB_DISABLE=0
+    NCCL_NET_GDR_LEVEL=3
+    NCCL_IB_HCA=^lo
+    NCCL_IB_GID_INDEX=3
+    NCCL_IB_TIMEOUT=23
+    NCCL_IB_RETRY_CNT=7
+    NCCL_SOCKET_IFNAME=^lo,docker
+    NCCL_P2P_DISABLE=0
+    NCCL_SHM_DISABLE=0
+  
+  test-params.env: |
+    # 测试参数配置
+    TEST_SIZE=100M
+    TEST_DURATION=60
+    NETWORK_BACKEND=ib
+    LOG_LEVEL=INFO

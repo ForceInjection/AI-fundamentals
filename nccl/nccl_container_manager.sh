@@ -1,16 +1,18 @@
 #!/bin/bash
 # =============================================================================
 # NCCL 容器化测试脚本
-# 功能: 使用 Docker 容器运行 NCCL 测试，支持单节点和多节点模式
+# 功能: 使用 Docker 容器运行 NCCL 单节点测试
 # 作者: Grissom
-# 版本: 1.0
+# 版本: 2.0
+# 
+# 注意: 多节点测试请使用 Kubernetes 方案 (./k8s/deploy.sh)
 # =============================================================================
 
 set -e
 
 # 脚本配置
 SCRIPT_NAME="NCCL Container Test"
-VERSION="1.0"
+VERSION="2.0"
 CONTAINER_NAME="nccl-test"
 IMAGE_NAME="nccl-test:latest"
 
@@ -18,9 +20,6 @@ IMAGE_NAME="nccl-test:latest"
 GPU_COUNT="all"
 TEST_SIZE="1M"
 TEST_DURATION=30
-MULTI_NODE_MODE=false
-MASTER_ADDR="localhost"
-MASTER_PORT="29500"
 NETWORK_BACKEND="auto"
 CLEANUP=true
 INTERACTIVE=false
@@ -74,9 +73,6 @@ $SCRIPT_NAME v$VERSION
                           0,1,2   - 指定特定 GPU ID
   -s, --size SIZE         测试数据大小 [默认: 1M]
   -t, --time SECONDS      测试持续时间 [默认: 30]
-  -m, --multi-node        多节点模式
-  --master-addr ADDR      主节点地址 [默认: localhost]
-  --master-port PORT      主节点端口 [默认: 29500]
   --network BACKEND       网络后端 [默认: auto]
   --log-level LEVEL       日志级别 [默认: INFO]
   --no-cleanup            测试后不清理容器
@@ -99,20 +95,31 @@ $SCRIPT_NAME v$VERSION
   # 单节点测试 (使用 4 个 GPU，NVLink 后端)
   $0 --gpus 4 --size 1G --network nvlink
   
-  # 多节点测试 (InfiniBand 后端)
-  $0 --multi-node --master-addr 192.168.1.100 --gpus 8 --network ib
-  
   # 交互模式 (调试用)
   $0 --interactive
   
   # 自定义配置
   $0 --gpus 2 --size 500M --time 120 --network ib --log-level DEBUG
 
+多节点测试:
+  对于多节点 NCCL 测试，请使用 Kubernetes 方案:
+  
+  # 部署多节点测试到 Kubernetes
+  ./k8s/deploy.sh deploy --world-size 8 --gpus-per-node 4
+  
+  # 查看测试状态
+  ./k8s/deploy.sh status
+  
+  # 查看测试日志
+  ./k8s/deploy.sh logs
+  
+  # 清理资源
+  ./k8s/deploy.sh cleanup
+
 前置条件:
   • 安装 Docker 和 NVIDIA Container Toolkit
   • 确保 GPU 驱动正常工作
   • 镜像已预先构建 (docker build -t nccl-test:latest .)
-  • 对于多节点测试，确保网络连通性
   • 需要 root 权限或 Docker 组成员身份
   • 确保 nccl_benchmark.sh 脚本在当前目录
 
@@ -245,9 +252,6 @@ run_nccl_test() {
     [ "$TEST_SIZE" != "1M" ] && nccl_test_args+=("-s" "$TEST_SIZE")
     [ "$TEST_DURATION" != "30" ] && nccl_test_args+=("-t" "$TEST_DURATION")
     [ "$NETWORK_BACKEND" != "auto" ] && nccl_test_args+=("--network" "$NETWORK_BACKEND")
-    [ "$MULTI_NODE_MODE" = true ] && nccl_test_args+=("-m")
-    [ "$MASTER_ADDR" != "localhost" ] && nccl_test_args+=("--master-addr" "$MASTER_ADDR")
-    [ "$MASTER_PORT" != "29500" ] && nccl_test_args+=("--master-port" "$MASTER_PORT")
     
     # 启动容器并运行 nccl_benchmark.sh
     log_info "启动测试容器 (privileged + host network 模式)..."
@@ -308,26 +312,6 @@ parse_arguments() {
                 TEST_DURATION="$2"
                 shift 2
                 ;;
-            -m|--multi-node)
-                MULTI_NODE_MODE=true
-                shift
-                ;;
-            --master-addr)
-                if [[ -z "$2" || "$2" == -* ]]; then
-                    log_error "选项 $1 需要一个参数"
-                    exit 1
-                fi
-                MASTER_ADDR="$2"
-                shift 2
-                ;;
-            --master-port)
-                if [[ -z "$2" || "$2" == -* ]]; then
-                    log_error "选项 $1 需要一个参数"
-                    exit 1
-                fi
-                MASTER_PORT="$2"
-                shift 2
-                ;;
             --network)
                 if [[ -z "$2" || "$2" == -* ]]; then
                     log_error "选项 $1 需要一个参数"
@@ -373,32 +357,6 @@ parse_arguments() {
     done
 }
 
-# 运行多节点测试
-run_multinode_test() {
-    log_header "运行多节点测试"
-    
-    if [ ! -f "docker-compose.yml" ]; then
-        log_error "docker-compose.yml 文件不存在"
-        exit 1
-    fi
-    
-    log_info "使用 Docker Compose 启动多节点测试..."
-    log_info "配置文件: docker-compose.yml"
-    log_info "运行模式: Privileged (完整设备访问)"
-    
-    # 设置环境变量
-    export NCCL_DEBUG="$LOG_LEVEL"
-    export TEST_SIZE="$TEST_SIZE"
-    export TEST_DURATION="$TEST_DURATION"
-    export NETWORK_BACKEND="$NETWORK_BACKEND"
-    
-    log_info "多节点测试将以 privileged 模式运行"
-    log_info "提供完整的系统访问权限，包括 InfiniBand/NVLink 设备"
-    
-    # 启动服务
-    docker-compose up --build
-}
-
 # 主函数
 main() {
     log_header "$SCRIPT_NAME v$VERSION"
@@ -415,8 +373,6 @@ main() {
     # 运行模式
     if [ "$INTERACTIVE" = true ]; then
         run_interactive
-    elif [ "$MULTI_NODE_MODE" = true ]; then
-        run_multinode_test
     else
         run_nccl_test
     fi

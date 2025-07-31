@@ -1,0 +1,125 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nccl-multinode-test
+  namespace: default
+spec:
+  parallelism: 2  # 节点数量
+  completions: 2  # 需要完成的任务数
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: nccl-test
+        job-name: nccl-multinode-test
+    spec:
+      restartPolicy: Never
+      hostNetwork: true  # 使用主机网络，支持 InfiniBand
+      hostIPC: true      # 共享主机 IPC
+      containers:
+      - name: nccl-worker
+        image: nccl-test:latest
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true  # 特权模式，访问 GPU 和网络设备
+          capabilities:
+            add:
+            - SYS_ADMIN
+            - IPC_LOCK
+        resources:
+          requests:
+            nvidia.com/gpu: 2  # 每个 Pod 请求 2 个 GPU
+          limits:
+            nvidia.com/gpu: 2
+            memory: "16Gi"
+            cpu: "8"
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NCCL_DEBUG
+          value: "INFO"
+        - name: NCCL_IB_DISABLE
+          value: "0"
+        - name: NCCL_NET_GDR_LEVEL
+          value: "3"
+        - name: NCCL_IB_HCA
+          value: "^lo"
+        - name: NCCL_IB_GID_INDEX
+          value: "3"
+        - name: NCCL_IB_TIMEOUT
+          value: "23"
+        - name: NCCL_IB_RETRY_CNT
+          value: "7"
+        - name: WORLD_SIZE
+          value: "4"  # 总 GPU 数量 (2 节点 × 2 GPU)
+        - name: NPROC_PER_NODE
+          value: "2"  # 每节点 GPU 数量
+        - name: MASTER_ADDR
+          value: "nccl-master-service"  # 使用 Service 名称
+        - name: MASTER_PORT
+          value: "29500"
+        - name: NODE_RANK
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        volumeMounts:
+        - name: dev-shm
+          mountPath: /dev/shm
+        - name: nccl-logs
+          mountPath: /workspace/logs
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "=== NCCL Kubernetes 多节点测试 ==="
+          echo "Pod: $HOSTNAME"
+          echo "Node Rank: $NODE_RANK"
+          echo "World Size: $WORLD_SIZE"
+          echo "Master Addr: $MASTER_ADDR"
+          
+          # 等待主节点服务可用
+          echo "等待主节点服务..."
+          until nslookup $MASTER_ADDR; do
+            echo "等待 DNS 解析 $MASTER_ADDR..."
+            sleep 2
+          done
+          
+          # 节点协调：错时启动
+          if [ "$NODE_RANK" = "0" ]; then
+            echo "主节点等待 10 秒..."
+            sleep 10
+          else
+            wait_time=$((NODE_RANK * 15 + 20))
+            echo "工作节点等待 $wait_time 秒..."
+            sleep $wait_time
+          fi
+          
+          # 启动 NCCL 测试
+          cd /workspace/nccl_test
+          echo "启动 NCCL 测试..."
+          ./nccl_benchmark.sh \
+            -m \
+            --master-addr $MASTER_ADDR \
+            --master-port $MASTER_PORT \
+            --network ib \
+            -s 100M \
+            -t 60 \
+            2>&1 | tee /workspace/logs/nccl-test-node-$NODE_RANK.log
+          
+          echo "测试完成，节点 $NODE_RANK"
+      volumes:
+      - name: dev-shm
+        hostPath:
+          path: /dev/shm
+          type: Directory
+      - name: nccl-logs
+        hostPath:
+          path: /tmp/nccl-logs
+          type: DirectoryOrCreate
+      nodeSelector:
+        nvidia.com/gpu.present: "true"  # 只调度到有 GPU 的节点
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
