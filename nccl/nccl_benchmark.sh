@@ -13,7 +13,7 @@
 
 # 版本信息
 VERSION="2.0"
-SCRIPT_NAME="NCCL IB Test"
+SCRIPT_NAME="NCCL Benchmark"
 
 # 全局变量
 LOG_FILE="/tmp/nccl_test_$(date +%Y%m%d_%H%M%S).log"
@@ -23,9 +23,11 @@ QUIET_MODE=false
 TEST_SIZE="1M"  # 测试数据大小: 1M, 10M, 100M, 1G
 TEST_DURATION=30  # 测试持续时间(秒)
 MULTI_NODE_MODE=false
-MASTER_ADDR="localhost"
+MASTER_ADDR=""  # 多节点模式下必须明确指定
 MASTER_PORT="29500"
 NETWORK_BACKEND="auto"  # 网络后端: auto, ib, ethernet, socket
+OPTIMIZATION_LEVEL="balanced"  # 优化级别: conservative, balanced, aggressive
+DRY_RUN=false
 
 # 颜色定义
 RED='\033[0;31m'
@@ -65,6 +67,330 @@ log_header() {
     [ "$QUIET_MODE" = false ] && log ""
 }
 
+# =============================================================================
+# 统一配置管理器 - 消除重复代码和提升维护性
+# =============================================================================
+
+# NCCL 配置管理器 - 统一管理所有配置项
+declare -A NCCL_CONFIG_CACHE
+declare -A SYSTEM_INFO_CACHE
+
+# 缓存系统信息，避免重复调用
+cache_system_info() {
+    if [ -z "${SYSTEM_INFO_CACHE[gpu_count]:-}" ]; then
+        if command -v nvidia-smi >/dev/null 2>&1; then
+            SYSTEM_INFO_CACHE[gpu_count]=$(nvidia-smi -L 2>/dev/null | wc -l)
+        else
+            SYSTEM_INFO_CACHE[gpu_count]=0
+        fi
+    fi
+    
+    if [ -z "${SYSTEM_INFO_CACHE[nvlink_available]:-}" ]; then
+        SYSTEM_INFO_CACHE[nvlink_available]=false
+        SYSTEM_INFO_CACHE[nvlink_count]=0
+        if [ "${SYSTEM_INFO_CACHE[gpu_count]}" -gt 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
+            # 统一使用 nvidia-smi nvlink --status 命令，与主检测逻辑保持一致
+            if nvidia-smi nvlink --status &>/dev/null; then
+                # 检测显示带宽的NVLink（如 "26.562 GB/s"）
+                local nvlink_count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null || echo "0")
+                nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
+                if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
+                    SYSTEM_INFO_CACHE[nvlink_available]=true
+                    SYSTEM_INFO_CACHE[nvlink_count]=$nvlink_count
+                fi
+            fi
+        fi
+    fi
+    
+    if [ -z "${SYSTEM_INFO_CACHE[ib_available]:-}" ]; then
+        SYSTEM_INFO_CACHE[ib_available]=false
+        if command -v ibv_devinfo >/dev/null 2>&1; then
+            local ib_output
+            if ib_output=$(ibv_devinfo 2>/dev/null) && echo "$ib_output" | grep -q "hca_id:"; then
+                SYSTEM_INFO_CACHE[ib_available]=true
+            fi
+        fi
+    fi
+}
+
+# 统一的 NCCL 配置设置器
+set_nccl_config() {
+    local key="$1"
+    local value="$2"
+    local description="${3:-}"
+    
+    export "NCCL_$key"="$value"
+    NCCL_CONFIG_CACHE["$key"]="$value"
+    
+    if [ -n "$description" ]; then
+        log_info "设置 NCCL_$key=$value ($description)"
+    fi
+}
+
+# 批量设置 NCCL 配置
+set_nccl_configs() {
+    local -n config_array=$1
+    local description="${2:-}"
+    
+    if [ -n "$description" ]; then
+        log_info "$description"
+    fi
+    
+    for key in "${!config_array[@]}"; do
+        set_nccl_config "$key" "${config_array[$key]}"
+    done
+}
+
+# 设置通用的 NCCL 基础配置
+setup_common_nccl_config() {
+    log_info "设置通用 NCCL 基础配置"
+    
+    # 缓存系统信息
+    cache_system_info
+    
+    # 基础配置组
+    declare -A base_config=(
+        ["DEBUG"]="INFO"
+        ["DEBUG_SUBSYS"]="INIT,NET"
+        ["IGNORE_CPU_AFFINITY"]="1"
+        ["BUFFSIZE"]="8388608"
+        ["CROSS_NIC"]="0"
+        ["NET_GDR_LEVEL"]="0"
+    )
+    
+    set_nccl_configs base_config "基础配置: 调试、性能优化、GPUDirect"
+}
+
+# 网络配置预设
+setup_network_config() {
+    local network_type="$1"
+    
+    case "$network_type" in
+        "ib_enable")
+            declare -A ib_config=(
+                ["IB_DISABLE"]="0"
+                ["NET_GDR_LEVEL"]="2"
+                ["P2P_DISABLE"]="0"
+                ["P2P_LEVEL"]="PIX"
+            )
+            set_nccl_configs ib_config "启用 InfiniBand 配置"
+            ;;
+        "ib_disable")
+            set_nccl_config "IB_DISABLE" "1" "禁用 InfiniBand"
+            ;;
+        "p2p_nvlink")
+            declare -A nvlink_config=(
+                ["P2P_LEVEL"]="NVL"
+                ["NVLS_ENABLE"]="1"
+                ["P2P_DISABLE"]="0"
+                ["IB_DISABLE"]="1"
+                ["NET_DISABLE"]="1"
+            )
+            set_nccl_configs nvlink_config "NVLink P2P 配置"
+            ;;
+        "p2p_pcie")
+            declare -A pcie_config=(
+                ["P2P_LEVEL"]="PIX"
+                ["NVLS_ENABLE"]="0"
+                ["P2P_DISABLE"]="0"
+                ["IB_DISABLE"]="1"
+            )
+            set_nccl_configs pcie_config "PCIe P2P 配置"
+            ;;
+        "p2p_disable")
+            declare -A no_p2p_config=(
+                ["P2P_DISABLE"]="1"
+                ["P2P_LEVEL"]="0"
+                ["NVLS_ENABLE"]="0"
+            )
+            set_nccl_configs no_p2p_config "禁用 P2P 配置"
+            ;;
+        "socket_only")
+            declare -A socket_config=(
+                ["IB_DISABLE"]="1"
+                ["P2P_DISABLE"]="1"
+                ["SHM_DISABLE"]="1"
+                ["NET_DISABLE"]="0"
+            )
+            set_nccl_configs socket_config "Socket 传输配置"
+            ;;
+    esac
+}
+
+# 性能优化配置预设
+setup_performance_config() {
+    local perf_type="$1"
+    local opt_level="${2:-balanced}"  # 默认平衡模式
+    
+    case "$perf_type" in
+        "nvlink_optimized")
+            case "$opt_level" in
+                "conservative")
+                    # 保守配置（原有配置，保持兼容性）
+                    declare -A nvlink_perf=(
+                        ["ALGO"]="Ring,Tree"
+                        ["PROTO"]="Simple"
+                        ["NTHREADS"]="256"
+                        ["MIN_NCHANNELS"]="16"
+                        ["MAX_NCHANNELS"]="32"
+                        ["TREE_THRESHOLD"]="0"
+                        ["CUMEM_ENABLE"]="0"
+                        ["NVLS_ENABLE"]="1"
+                        ["NET_GDR_LEVEL"]="1"
+                    )
+                    set_nccl_configs nvlink_perf "NVLink 保守配置"
+                    ;;
+                "balanced")
+                    # 平衡优化配置（推荐）
+                    declare -A nvlink_perf=(
+                        ["NTHREADS"]="384"
+                        ["BUFFSIZE"]="12582912"  # 12MB
+                        ["MIN_NCHANNELS"]="16"
+                        ["MAX_NCHANNELS"]="32"
+                        ["NVLS_ENABLE"]="1"
+                        ["NET_GDR_LEVEL"]="2"
+                        ["TREE_THRESHOLD"]="0"
+                    )
+                    set_nccl_configs nvlink_perf "NVLink 平衡配置"
+                    # 移除部分限制性配置，启用自动选择
+                    unset NCCL_ALGO NCCL_PROTO
+                    log_info "✓ 启用算法和协议自动选择"
+                    ;;
+                "aggressive")
+                    # 激进优化配置（最大性能）
+                    declare -A nvlink_perf=(
+                        ["NTHREADS"]="512"
+                        ["BUFFSIZE"]="16777216"  # 16MB
+                        ["MIN_NCHANNELS"]="16"
+                        ["MAX_NCHANNELS"]="32"
+                        ["NVLS_ENABLE"]="1"
+                        ["NVLS_CHUNKSIZE"]="1048576"  # 1MB
+                        ["NET_GDR_LEVEL"]="2"
+                        ["CROSS_NIC"]="1"
+                        ["CHECK_POINTERS"]="1"
+                        ["TREE_THRESHOLD"]="0"
+                    )
+                    set_nccl_configs nvlink_perf "NVLink 激进配置"
+                    # 完全移除限制性配置，启用 NCCL 完全自动优化
+                    unset NCCL_ALGO NCCL_PROTO NCCL_CUMEM_ENABLE 
+                    unset NCCL_TREE_THRESHOLD NCCL_NET_DISABLE
+                    log_success "✓ 移除所有算法限制，启用 NCCL 完全自动优化"
+                    ;;
+            esac
+            ;;
+        "pcie_optimized")
+            declare -A pcie_perf=(
+                ["ALGO"]="Ring"
+                ["MAX_NCHANNELS"]="16"
+                ["MIN_NCHANNELS"]="1"
+                ["NTHREADS"]="128"
+                ["P2P_NET_CHUNKSIZE"]="131072"
+                ["CUMEM_ENABLE"]="0"
+                ["DMABUF_ENABLE"]="1"
+                ["REG_CACHE_ENABLE"]="1"
+                ["BUFFSIZE"]="8388608"  # 8MB
+                ["NET_GDR_LEVEL"]="1"
+            )
+            set_nccl_configs pcie_perf "PCIe 性能优化"
+            ;;
+        "ib_optimized")
+            declare -A ib_perf=(
+                ["IB_TC"]="136"
+                ["IB_SL"]="0"
+                ["IB_TIMEOUT"]="22"
+                ["IB_RETRY_CNT"]="7"
+                ["IB_GID_INDEX"]="0"
+                ["IB_PKEY"]="0"
+                ["NET_GDR_LEVEL"]="2"
+                ["BUFFSIZE"]="8388608"  # 8MB
+            )
+            set_nccl_configs ib_perf "InfiniBand 性能优化"
+            ;;
+        "ethernet_optimized")
+            declare -A eth_perf=(
+                ["NTHREADS"]="64"
+                ["BUFFSIZE"]="4194304"  # 4MB
+                ["MIN_NCHANNELS"]="1"
+                ["MAX_NCHANNELS"]="8"
+                ["NET_GDR_LEVEL"]="0"
+                ["SOCKET_NTHREADS"]="8"
+                ["NSOCKS_PERTHREAD"]="1"
+            )
+            set_nccl_configs eth_perf "以太网性能优化"
+            ;;
+        "shm_optimized")
+            declare -A shm_perf=(
+                ["NTHREADS"]="32"
+                ["BUFFSIZE"]="2097152"  # 2MB
+                ["MIN_NCHANNELS"]="1"
+                ["MAX_NCHANNELS"]="4"
+                ["NET_GDR_LEVEL"]="0"
+                ["SHM_DISABLE"]="0"
+                ["CUMEM_ENABLE"]="0"
+            )
+            set_nccl_configs shm_perf "共享内存性能优化"
+            ;;
+    esac
+}
+
+# 智能网络接口配置
+setup_network_interface() {
+    local interface_type="$1"
+    
+    case "$interface_type" in
+        "auto_ethernet")
+            if [ "$MULTI_NODE_MODE" = true ]; then
+                local available_interfaces=""
+                if command -v ip >/dev/null 2>&1; then
+                    available_interfaces=$(ip link show up | grep -E "^[0-9]+: (eth|en|ib)" | head -3 | cut -d: -f2 | tr -d ' ' | tr '\n' ',' | sed 's/,$//')
+                fi
+                
+                if [ -n "$available_interfaces" ]; then
+                    set_nccl_config "SOCKET_IFNAME" "$available_interfaces" "多节点以太网接口"
+                else
+                    set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr" "排除虚拟接口"
+                fi
+            else
+                unset NCCL_SOCKET_IFNAME
+                log_info "单节点模式: 使用 NCCL 自动接口选择"
+            fi
+            ;;
+        "loopback_only")
+            set_nccl_config "SOCKET_IFNAME" "lo" "仅使用回环接口"
+            ;;
+        "exclude_virtual")
+            set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr" "排除虚拟接口"
+            ;;
+        "clear_interface")
+            set_nccl_config "SOCKET_IFNAME" "" "清除接口限制"
+            ;;
+    esac
+}
+
+# 统一检测 GPU 拓扑 (使用缓存系统)
+detect_gpu_topology() {
+    # 确保系统信息已缓存
+    cache_system_info
+    
+    # 从缓存获取信息
+    DETECTED_GPU_COUNT=${SYSTEM_INFO_CACHE[gpu_count]}
+    DETECTED_NVLINK_COUNT=${SYSTEM_INFO_CACHE[nvlink_count]}
+    DETECTED_NVLINK_AVAILABLE=${SYSTEM_INFO_CACHE[nvlink_available]}
+    
+    log_info "GPU 拓扑检测: $DETECTED_GPU_COUNT 个GPU, $DETECTED_NVLINK_COUNT 个NVLink连接"
+}
+
+# 设置调试文件路径
+setup_debug_files() {
+    local network_type="$1"
+    
+    export NCCL_TOPO_DUMP_FILE="/tmp/nccl_topo_${network_type}.xml"
+    export NCCL_GRAPH_DUMP_FILE="/tmp/nccl_graph_${network_type}.xml"
+    export NCCL_DEBUG_FILE="/tmp/nccl_debug_${network_type}.%h.%p.log"
+    
+    log_info "调试文件: topo=${NCCL_TOPO_DUMP_FILE}, debug=${NCCL_DEBUG_FILE}"
+}
+
 # 显示帮助信息
 show_help() {
     cat << EOF
@@ -92,10 +418,15 @@ NCCL InfiniBand 测试验证脚本 v${VERSION}
                                    多节点: InfiniBand > 以太网
                           ib       - 强制使用 InfiniBand/RoCE
                           nvlink   - 强制使用 NVLink (单节点多GPU)
+                          pcie     - 强制使用 PCIe P2P (单节点多GPU)
+                          shm      - 强制使用共享内存 (单节点多GPU)
                           ethernet - 强制使用以太网 (TCP/IP)
                           socket   - 强制使用 Socket 传输
-  --check-only            仅检查 NCCL 环境，不运行测试
-  --env-only              仅设置环境变量并显示配置
+  --optimization-level LEVEL 优化级别 [默认: balanced]
+                          conservative - 保守配置，稳定性优先
+                          balanced     - 平衡配置，性能与稳定性兼顾 (推荐)
+                          aggressive   - 激进配置，最大性能优化
+  --dry-run               Dry-run 模式：检查环境、配置变量但不执行测试
 
 功能:
   • 检查 NCCL 和 PyTorch 环境
@@ -124,8 +455,7 @@ NCCL InfiniBand 测试验证脚本 v${VERSION}
 示例:
   # 基础测试 (推荐使用 auto 模式)
   $0                                    # 自动检测最佳通信路径 (推荐)
-  $0 --check-only                      # 仅检查环境
-  $0 --env-only                        # 仅显示环境配置
+  $0 --dry-run                         # Dry-run 模式：检查环境和配置但不执行测试
   
   # 单节点测试 (auto 模式会按优先级自动选择)
   $0 --network auto -s 1G -t 60        # 自动选择最佳路径，1GB 数据，60秒 (推荐)
@@ -200,25 +530,27 @@ validate_arguments() {
     
     # 验证网络后端
     case "$NETWORK_BACKEND" in
-        auto|ib|nvlink|pcie|ethernet|socket)
+        auto|ib|nvlink|pcie|shm|ethernet|socket)
             log_success "网络后端: $NETWORK_BACKEND"
             ;;
         *)
             log_error "无效的网络后端: $NETWORK_BACKEND"
-            log_info "支持的网络后端: auto, ib, nvlink, pcie, ethernet, socket"
+            log_info "支持的网络后端: auto, ib, nvlink, pcie, shm, ethernet, socket"
             validation_failed=true
             ;;
     esac
     
-    # 检查互斥选项
-    local exclusive_count=0
-    [ "$CHECK_ONLY" = true ] && ((exclusive_count++))
-    [ "$ENV_ONLY" = true ] && ((exclusive_count++))
-    
-    if [ $exclusive_count -gt 1 ]; then
-        log_error "不能同时使用 --check-only 和 --env-only 选项"
-        validation_failed=true
-    fi
+    # 验证优化级别
+    case "$OPTIMIZATION_LEVEL" in
+        conservative|balanced|aggressive)
+            log_success "优化级别: $OPTIMIZATION_LEVEL"
+            ;;
+        *)
+            log_error "无效的优化级别: $OPTIMIZATION_LEVEL"
+            log_info "支持的优化级别: conservative, balanced, aggressive"
+            validation_failed=true
+            ;;
+    esac
     
     if [ "$validation_failed" = true ]; then
         log_error "参数验证失败，请检查并修正参数"
@@ -288,12 +620,16 @@ parse_arguments() {
                 NETWORK_BACKEND="$2"
                 shift 2
                 ;;
-            --check-only)
-                CHECK_ONLY=true
-                shift
+            --optimization-level)
+                if [ -z "$2" ]; then
+                    log_error "--optimization-level 选项需要参数"
+                    exit 1
+                fi
+                OPTIMIZATION_LEVEL="$2"
+                shift 2
                 ;;
-            --env-only)
-                ENV_ONLY=true
+            --dry-run)
+                DRY_RUN=true
                 shift
                 ;;
             *)
@@ -319,6 +655,7 @@ check_nccl_dependencies() {
         log_success "Python3 可用"
     else
         log_error "Python3 未安装"
+        log_error "请安装 Python3: sudo apt-get install python3 (Ubuntu) 或 brew install python3 (macOS)"
         deps_ok=false
     fi
     
@@ -333,6 +670,7 @@ check_nccl_dependencies() {
             log_success "CUDA 支持可用，版本: $cuda_version"
         else
             log_error "PyTorch CUDA 支持不可用"
+            log_error "请安装支持 CUDA 的 PyTorch 版本"
             deps_ok=false
         fi
         
@@ -341,10 +679,12 @@ check_nccl_dependencies() {
             local nccl_version=$(python3 -c "import torch; print(torch.cuda.nccl.version())" 2>/dev/null)
             log_success "NCCL 版本: $nccl_version"
         else
-            log_warning "无法获取 NCCL 版本信息"
+            log_error "无法获取 NCCL 版本信息，NCCL 可能未正确安装"
+            deps_ok=false
         fi
     else
         log_error "PyTorch 未安装或不可用"
+        log_error "请安装 PyTorch: pip3 install torch"
         deps_ok=false
     fi
     
@@ -352,38 +692,52 @@ check_nccl_dependencies() {
     if command -v nvidia-smi >/dev/null 2>&1; then
         if nvidia-smi &>/dev/null; then
             local gpu_count=$(nvidia-smi -L | wc -l)
-            log_success "检测到 $gpu_count 个 NVIDIA GPU"
-            if [ "$QUIET_MODE" = false ]; then
-                nvidia-smi -L | while read line; do
-                    log_info "  $line"
-                done
+            if [ "$gpu_count" -eq 0 ]; then
+                log_error "未检测到 NVIDIA GPU"
+                deps_ok=false
+            else
+                log_success "检测到 $gpu_count 个 NVIDIA GPU"
+                if [ "$QUIET_MODE" = false ]; then
+                    nvidia-smi -L | while read line; do
+                        log_info "  $line"
+                    done
+                fi
             fi
         else
-            log_error "nvidia-smi 执行失败"
+            log_error "nvidia-smi 执行失败，可能是驱动问题"
+            log_error "请检查 NVIDIA 驱动安装: nvidia-smi"
             deps_ok=false
         fi
     else
         log_error "nvidia-smi 命令不可用"
+        log_error "请安装 NVIDIA 驱动和 CUDA 工具包"
         deps_ok=false
     fi
     
-    # 简单检查 InfiniBand 可用性
-    if command -v ibstat >/dev/null 2>&1; then
-        if ibstat &>/dev/null; then
-            log_success "InfiniBand 设备可用"
+    # 检查 InfiniBand 硬件可用性（仅警告，不强制退出）
+    if command -v ibv_devinfo >/dev/null 2>&1; then
+        local ib_output
+        if ib_output=$(ibv_devinfo 2>/dev/null) && [ -n "$ib_output" ]; then
+            # 检查是否有实际的IB设备
+            if echo "$ib_output" | grep -q "hca_id:"; then
+                log_success "InfiniBand 设备可用"
+            else
+                log_warning "InfiniBand 工具可用但未检测到硬件设备"
+            fi
         else
             log_warning "InfiniBand 设备不可用 (可能影响性能)"
         fi
     else
-        log_warning "ibstat 命令不可用 (建议先运行 ib_health_check.sh)"
+        log_warning "InfiniBand 工具未安装 (建议先运行 ib_health_check.sh)"
     fi
     
     if [ "$deps_ok" = true ]; then
         log_success "NCCL 环境依赖检查通过"
         return 0
     else
-        log_error "NCCL 环境依赖检查失败"
-        return 1
+        log_error "NCCL 环境依赖检查失败，无法继续执行"
+        log_error "请解决上述环境问题后重新运行脚本"
+        exit 1
     fi
 }
 
@@ -410,6 +764,9 @@ setup_nccl_env() {
             ;;
         "pcie")
             setup_pcie_network
+            ;;
+        "shm")
+            setup_shm_network
             ;;
         "ethernet")
             setup_ethernet_network
@@ -458,7 +815,8 @@ setup_auto_network() {
                 # 方法1：检测活跃的NVLink连接（动态状态）- 这是最可靠的方法
                 if nvidia-smi nvlink --status &>/dev/null; then
                     # 检测显示带宽的NVLink（如 "26.562 GB/s"）
-                    local nvlink_count=$(nvidia-smi nvlink --status | grep -c "GB/s" 2>/dev/null || echo "0")
+                    local nvlink_count=$(nvidia-smi nvlink --status | grep -c "GB/s" 2>/dev/null)
+    nvlink_count=${nvlink_count:-0}
                     # 清理可能的空格和换行符
                     nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
                     # 确保是数字
@@ -469,7 +827,7 @@ setup_auto_network() {
                         local avg_bandwidth=$(nvidia-smi nvlink --status | grep "GB/s" | head -1 | grep -oE "[0-9]+\.[0-9]+ GB/s" | head -1)
                         log_success "检测到 $nvlink_count 个活跃的 NVLink 连接 (带宽: $avg_bandwidth)"
                         log_success "自动选择 NVLink 网络 (最高优先级)"
-                        configure_nvlink_settings
+                        configure_nvlink_settings "$OPTIMIZATION_LEVEL"
                         return 0
                     fi
                 fi
@@ -494,18 +852,42 @@ setup_auto_network() {
     # ========== 第二优先级：检测 PCIe P2P (仅单节点) ==========
     if [ "$MULTI_NODE_MODE" = false ]; then
         local p2p_available=false
+        local p2p_verified=false
         if command -v nvidia-smi >/dev/null 2>&1; then
             local gpu_count=$(nvidia-smi -L | wc -l)
             if [ "$gpu_count" -gt 1 ]; then
-                # 简单检测：如果有多个GPU且没有NVLink，假设有PCIe P2P
-                p2p_available=true
-                log_info "检测到多GPU环境，PCIe P2P 可能可用"
-                log_success "自动选择 PCIe P2P 通信 (第二优先级)"
-                configure_pcie_p2p_settings
-                return 0
+                log_info "检测到 $gpu_count 个 GPU，检查 PCIe P2P 支持..."
+                
+                # 尝试检查 P2P 拓扑
+                if nvidia-smi topo -p2p r >/dev/null 2>&1; then
+                    local p2p_matrix=$(nvidia-smi topo -p2p r 2>/dev/null)
+                    if echo "$p2p_matrix" | grep -q "OK"; then
+                        p2p_available=true
+                        p2p_verified=true
+                        log_success "PCIe P2P 拓扑验证成功"
+                    else
+                        log_warning "PCIe P2P 拓扑检查显示不支持 P2P"
+                    fi
+                else
+                    # 如果无法检查拓扑，基于 GPU 型号进行推测
+                    local gpu_model=$(nvidia-smi -L | head -1 | grep -oE "Tesla|Quadro|RTX|GTX|A[0-9]+|H[0-9]+|V[0-9]+")
+                    if echo "$gpu_model" | grep -qE "Tesla|Quadro|A[0-9]+|H[0-9]+|V[0-9]+"; then
+                        p2p_available=true
+                        log_info "检测到企业级 GPU ($gpu_model)，假设支持 PCIe P2P"
+                    else
+                        log_warning "检测到消费级 GPU ($gpu_model)，P2P 支持不确定"
+                        p2p_available=true  # 仍然尝试，让 NCCL 自己决定
+                    fi
+                fi
+                
+                if [ "$p2p_available" = true ]; then
+                    log_success "自动选择 PCIe P2P 通信 (第二优先级)"
+                    configure_pcie_p2p_settings
+                    return 0
+                fi
             fi
         fi
-        log_info "PCIe P2P 检测: $([ "$p2p_available" = true ] && echo "可用" || echo "不可用")"
+        log_info "PCIe P2P 检测: $([ "$p2p_available" = true ] && echo "可用" || echo "不可用")$([ "$p2p_verified" = true ] && echo " (已验证)" || echo "")"
     else
         log_info "多节点模式: 跳过 PCIe P2P 检测"
     fi
@@ -525,18 +907,35 @@ setup_auto_network() {
     local has_ib=false
     local network_type="未知"
     local is_roce=false
+    local ib_error=""
     
-    if command -v ibv_devinfo >/dev/null 2>&1; then
-        local link_layer=$(ibv_devinfo | grep "link_layer:" | head -1 | awk '{print $2}')
-        if [ "$link_layer" = "Ethernet" ]; then
-            has_ib=true
-            is_roce=true
-            network_type="RoCE (Ethernet over IB)"
-            log_info "检测到 RoCE 环境"
-        elif [ "$link_layer" = "InfiniBand" ]; then
-            has_ib=true
-            network_type="原生 InfiniBand"
-            log_info "检测到原生 IB 环境"
+    # 检查 InfiniBand 工具是否可用
+    if ! command -v ibv_devinfo >/dev/null 2>&1; then
+        ib_error="ibv_devinfo 命令不可用"
+        log_info "InfiniBand 检测: $ib_error"
+    else
+        # 尝试获取 IB 设备信息
+        local ib_output
+        if ib_output=$(ibv_devinfo 2>/dev/null); then
+            if [ -n "$ib_output" ]; then
+                local link_layer=$(echo "$ib_output" | grep "link_layer:" | head -1 | awk '{print $2}')
+                if [ "$link_layer" = "Ethernet" ]; then
+                    has_ib=true
+                    is_roce=true
+                    network_type="RoCE (Ethernet over IB)"
+                    log_info "检测到 RoCE 环境"
+                elif [ "$link_layer" = "InfiniBand" ]; then
+                    has_ib=true
+                    network_type="原生 InfiniBand"
+                    log_info "检测到原生 IB 环境"
+                else
+                    ib_error="未识别的链路层类型: $link_layer"
+                fi
+            else
+                ib_error="未找到 InfiniBand 设备"
+            fi
+        else
+            ib_error="ibv_devinfo 执行失败"
         fi
     fi
     
@@ -544,7 +943,7 @@ setup_auto_network() {
         log_success "自动选择 InfiniBand 网络 (网络传输最高优先级)"
         configure_infiniband_settings "$is_roce" "$network_type"
     else
-        log_warning "未检测到 InfiniBand 设备，回退到以太网"
+        log_warning "InfiniBand 不可用: $ib_error，回退到以太网"
         log_success "自动选择以太网传输 (网络传输备选)"
         configure_ethernet_settings
     fi
@@ -554,20 +953,78 @@ setup_auto_network() {
 setup_infiniband_network() {
     log_info "强制使用 InfiniBand 网络..."
     
-    # 检测 IB 类型
+    # ========== 硬件检查 ==========
+    local has_ib=false
     local is_roce=false
     local network_type="InfiniBand (强制)"
+    local ib_error=""
     
-    if command -v ibv_devinfo >/dev/null 2>&1; then
-        local link_layer=$(ibv_devinfo | grep "link_layer:" | head -1 | awk '{print $2}')
-        if [ "$link_layer" = "Ethernet" ]; then
-            is_roce=true
-            network_type="RoCE (强制)"
-        elif [ "$link_layer" = "InfiniBand" ]; then
-            network_type="原生 InfiniBand (强制)"
+    # 检查 InfiniBand 工具是否可用
+    if ! command -v ibv_devinfo >/dev/null 2>&1; then
+        ib_error="ibv_devinfo 命令不可用，请安装 InfiniBand 驱动和工具"
+        log_error "硬件检查失败: $ib_error"
+        log_error "无法强制使用 InfiniBand 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 InfiniBand 驱动: apt-get install infiniband-diags"
+        log_info "  2. 或使用其他网络后端: --network ethernet 或 --network auto"
+        exit 1
+    fi
+    
+    # 尝试获取 IB 设备信息
+    local ib_output
+    if ib_output=$(ibv_devinfo 2>/dev/null); then
+        if [ -n "$ib_output" ]; then
+            local link_layer=$(echo "$ib_output" | grep "link_layer:" | head -1 | awk '{print $2}')
+            if [ "$link_layer" = "Ethernet" ]; then
+                has_ib=true
+                is_roce=true
+                network_type="RoCE (强制)"
+                log_success "检测到 RoCE 设备"
+            elif [ "$link_layer" = "InfiniBand" ]; then
+                has_ib=true
+                network_type="原生 InfiniBand (强制)"
+                log_success "检测到原生 InfiniBand 设备"
+            else
+                ib_error="未识别的链路层类型: $link_layer"
+            fi
+        else
+            ib_error="未找到 InfiniBand 设备"
         fi
     else
-        log_warning "无法检测 IB 设备信息，使用默认 IB 配置"
+        ib_error="ibv_devinfo 执行失败，可能没有 InfiniBand 硬件"
+    fi
+    
+    # 如果没有检测到 IB 设备，直接退出
+    if [ "$has_ib" = false ]; then
+
+        log_error "硬件检查失败: $ib_error"
+        log_error "无法强制使用 InfiniBand 网络"
+        log_info "解决方案:"
+        log_info "  1. 检查 InfiniBand 硬件是否正确安装"
+        log_info "  2. 检查 InfiniBand 驱动是否正确加载"
+        log_info "  3. 或使用其他网络后端: --network ethernet 或 --network auto"
+        exit 1
+    fi
+    
+    # 额外检查：验证 HCA 设备状态
+    if command -v ibstat >/dev/null 2>&1; then
+        local ibstat_output
+        if ibstat_output=$(ibstat 2>/dev/null); then
+            if ! echo "$ibstat_output" | grep -q "State: Active"; then
+                log_error "InfiniBand 设备未处于活跃状态"
+                log_error "当前设备状态:"
+                echo "$ibstat_output" | grep "State:" | head -3 | while read line; do
+                    log_info "  $line"
+                done
+                log_info "解决方案:"
+                log_info "  1. 检查 InfiniBand 网络连接"
+                log_info "  2. 重启 InfiniBand 服务: systemctl restart openibd"
+                log_info "  3. 或使用其他网络后端: --network ethernet"
+                exit 1
+            else
+                log_success "InfiniBand 设备状态正常"
+            fi
+        fi
     fi
     
     configure_infiniband_settings "$is_roce" "$network_type"
@@ -577,25 +1034,156 @@ setup_infiniband_network() {
 setup_nvlink_network() {
     log_info "强制使用 NVLink 传输..."
     
+    # ========== 基础条件检查 ==========
     # NVLink 仅适用于单节点多GPU场景
     if [ "$MULTI_NODE_MODE" = true ]; then
         log_error "NVLink 仅支持单节点多GPU模式，不支持多节点"
-        log_info "建议使用 --network ib 或 --network ethernet 进行多节点通信"
-        return 1
+        log_error "无法强制使用 NVLink 网络"
+        log_info "解决方案:"
+        log_info "  1. 使用单节点模式 (移除 -m 或 --multi-node 参数)"
+        log_info "  2. 或使用多节点兼容的网络后端: --network ib 或 --network ethernet"
+        exit 1
     fi
     
-    configure_nvlink_settings
+    # ========== 硬件检查 ==========
+    local nvlink_available=false
+    local nvlink_active=false
+    local gpu_count=0
+    local nvlink_error=""
+    
+    # 检查 nvidia-smi 是否可用
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+        nvlink_error="nvidia-smi 命令不可用，请安装 NVIDIA 驱动"
+        log_error "硬件检查失败: $nvlink_error"
+        log_error "无法强制使用 NVLink 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 NVIDIA 驱动"
+        log_info "  2. 或使用其他网络后端: --network auto 或 --network ethernet"
+        exit 1
+    fi
+    
+    # 检查 GPU 数量
+    if ! gpu_count=$(nvidia-smi -L | wc -l 2>/dev/null); then
+        nvlink_error="无法获取 GPU 信息"
+        log_error "硬件检查失败: $nvlink_error"
+        log_error "无法强制使用 NVLink 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 NVIDIA 驱动"
+        log_info "  2. 或使用其他网络后端: --network auto 或 --network pcie"
+        exit 1
+    fi
+    
+    if [ "$gpu_count" -lt 2 ]; then
+        nvlink_error="检测到 $gpu_count 个 GPU，NVLink 需要至少 2 个 GPU"
+        log_error "硬件检查失败: $nvlink_error"
+        log_error "无法强制使用 NVLink 网络"
+        log_info "解决方案:"
+        log_info "  1. 使用多 GPU 系统"
+        log_info "  2. 或使用单 GPU 兼容的网络后端: --network ethernet"
+        exit 1
+    fi
+    
+    log_success "检测到 $gpu_count 个 GPU"
+    
+    # 检查 NVLink 硬件可用性
+    if nvidia-smi nvlink --status &>/dev/null; then
+        # 检测活跃的 NVLink 连接
+        local nvlink_count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null)
+        nvlink_count=${nvlink_count:-0}
+        nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
+        
+        if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
+            nvlink_available=true
+            nvlink_active=true
+            local avg_bandwidth=$(nvidia-smi nvlink --status 2>/dev/null | grep "GB/s" | head -1 | grep -oE "[0-9]+\.[0-9]+ GB/s" | head -1)
+            log_success "检测到 $nvlink_count 个活跃的 NVLink 连接 (带宽: $avg_bandwidth)"
+        else
+            # 检查 NVLink 硬件拓扑
+            local topo_output=$(nvidia-smi topo -m 2>/dev/null || echo "")
+            if [ -n "$topo_output" ] && echo "$topo_output" | grep -qE "NV[0-9]+"; then
+                nvlink_available=true
+                nvlink_error="NVLink 硬件可用但当前未激活，可能被其他进程占用或需要GPU负载触发"
+                log_warning "$nvlink_error"
+                nvlink_error="未检测到 NVLink 硬件拓扑"
+            fi
+        fi
+    else
+        nvlink_error="nvidia-smi nvlink 命令执行失败，可能不支持 NVLink"
+    fi
+    
+    # 如果 NVLink 不可用，直接退出
+    if [ "$nvlink_available" = false ] || [ "$nvlink_active" = false ]; then
+        log_error "硬件检查失败: $nvlink_error"
+        log_error "无法强制使用 NVLink 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 NVIDIA 驱动"
+        log_info "  2. 检查 NVLink 硬件连接"
+        log_info "  3. 或使用其他网络后端: --network auto 或 --network pcie"
+        exit 1
+    fi
+    
+    configure_nvlink_settings "$OPTIMIZATION_LEVEL"
 }
 
 # 强制使用 PCIe P2P 传输
 setup_pcie_network() {
     log_info "强制使用 PCIe P2P 传输..."
     
+    # ========== 基础条件检查 ==========
     # PCIe P2P 仅适用于单节点多GPU场景
     if [ "$MULTI_NODE_MODE" = true ]; then
         log_error "PCIe P2P 仅支持单节点多GPU模式，不支持多节点"
-        log_info "建议使用 --network ib 或 --network ethernet 进行多节点通信"
-        return 1
+        log_error "无法强制使用 PCIe P2P 网络"
+        log_info "解决方案:"
+        log_info "  1. 使用单节点模式 (移除 -m 或 --multi-node 参数)"
+        log_info "  2. 或使用多节点兼容的网络后端: --network ib 或 --network ethernet"
+        exit 1
+    fi
+    
+    # ========== 硬件检查 ==========
+    local gpu_count=0
+    local pcie_error=""
+    
+    # 检查 nvidia-smi 是否可用
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+        pcie_error="nvidia-smi 命令不可用，请安装 NVIDIA 驱动"
+        log_error "硬件检查失败: $pcie_error"
+        log_error "无法强制使用 PCIe P2P 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 NVIDIA 驱动"
+        log_info "  2. 或使用其他网络后端: --network auto 或 --network ethernet"
+        exit 1
+    fi
+    
+    # 检查 GPU 数量
+    if ! gpu_count=$(nvidia-smi -L | wc -l 2>/dev/null); then
+        pcie_error="无法获取 GPU 信息"
+        log_error "硬件检查失败: $pcie_error"
+        log_error "无法强制使用 PCIe P2P 网络"
+        exit 1
+    fi
+    
+    if [ "$gpu_count" -lt 2 ]; then
+        pcie_error="检测到 $gpu_count 个 GPU，PCIe P2P 需要至少 2 个 GPU"
+        log_error "硬件检查失败: $pcie_error"
+        log_error "无法强制使用 PCIe P2P 网络"
+        log_info "解决方案:"
+        log_info "  1. 使用多 GPU 系统"
+        log_info "  2. 或使用单 GPU 兼容的网络后端: --network ethernet"
+        exit 1
+    fi
+    
+    log_success "检测到 $gpu_count 个 GPU，PCIe P2P 通信可用"
+    
+    # 检查是否有 NVLink 连接（如果有 NVLink，建议使用 NVLink 而不是 PCIe）
+    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi nvlink --status &>/dev/null; then
+        local nvlink_count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null)
+        nvlink_count=${nvlink_count:-0}
+        if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
+            log_warning "检测到 $nvlink_count 个活跃的 NVLink 连接"
+            log_warning "建议使用 --network nvlink 以获得更好的性能"
+            log_info "继续使用 PCIe P2P (性能可能不如 NVLink)..."
+        fi
     fi
     
     configure_pcie_p2p_settings
@@ -604,12 +1192,94 @@ setup_pcie_network() {
 # 强制使用以太网
 setup_ethernet_network() {
     log_info "强制使用以太网 (TCP/IP)..."
+    
+    # ========== 硬件检查 ==========
+    local ethernet_error=""
+    local available_interfaces=""
+    
+    # 检查网络接口是否可用 (支持 Linux 和 macOS)
+    if ! command -v ip >/dev/null 2>&1; then
+        # 如果 ip 命令不可用，尝试使用 ifconfig (macOS/BSD)
+        if ! command -v ifconfig >/dev/null 2>&1; then
+            ethernet_error="ip 和 ifconfig 命令都不可用，无法检查网络接口"
+            log_error "硬件检查失败: $ethernet_error"
+            log_error "无法强制使用以太网"
+            exit 1
+        fi
+        
+        # 使用 ifconfig 检查网络接口 (macOS/BSD)
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS: 查找 en* 接口
+            available_interfaces=$(ifconfig -l | tr ' ' '\n' | grep -E "^en[0-9]+" | head -5)
+        else
+            # 其他 BSD 系统: 查找 eth*, en*, em* 接口
+            available_interfaces=$(ifconfig -l | tr ' ' '\n' | grep -E "^(eth|en|em)[0-9]+" | head -5)
+        fi
+    else
+        # 使用 ip 命令检查网络接口 (Linux)
+        if ! available_interfaces=$(ip link show up 2>/dev/null | grep -E "^[0-9]+: (eth|en|ib)" | cut -d: -f2 | cut -d@ -f1 | tr -d ' ' 2>/dev/null); then
+            ethernet_error="无法获取网络接口信息"
+            log_error "硬件检查失败: $ethernet_error"
+            log_error "无法强制使用以太网"
+            exit 1
+        fi
+    fi
+    
+    # 检查是否有物理网络接口
+    if [ -z "$available_interfaces" ]; then
+        ethernet_error="未检测到可用的物理网络接口 (eth*, en*, ib*)"
+        log_error "硬件检查失败: $ethernet_error"
+        log_error "无法强制使用以太网"
+        log_info "解决方案:"
+        log_info "  1. 检查网络接口是否启用"
+        log_info "  2. 或使用其他网络后端: --network socket"
+        exit 1
+    fi
+    
+    log_success "检测到可用的网络接口: $(echo $available_interfaces | tr '\n' ' ')"
+    
     configure_ethernet_settings
 }
 
 # 强制使用 Socket 传输
 setup_socket_network() {
     log_info "强制使用 Socket 传输..."
+    
+    # Socket 传输基本上在所有系统上都可用，只需检查 loopback 接口
+    local socket_error=""
+    
+    # 检查 loopback 接口
+    if ! command -v ip >/dev/null 2>&1; then
+        # 如果 ip 命令不可用，尝试使用 ifconfig
+        if ! command -v ifconfig >/dev/null 2>&1; then
+            log_warning "ip 和 ifconfig 命令都不可用，无法检查 loopback 接口"
+            log_warning "假设 loopback 接口可用并继续..."
+        else
+            # 使用 ifconfig 检查 loopback 接口 (支持 Linux 和 macOS)
+            local lo_interface="lo"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                lo_interface="lo0"
+            fi
+            
+            if ! ifconfig "$lo_interface" >/dev/null 2>&1; then
+                socket_error="loopback 接口不可用"
+                log_error "硬件检查失败: $socket_error"
+                log_error "无法强制使用 Socket 传输"
+                exit 1
+            fi
+        fi
+    else
+        # 使用 ip 命令检查 loopback 接口
+        if ! ip link show lo up >/dev/null 2>&1; then
+            socket_error="loopback 接口不可用"
+            log_error "硬件检查失败: $socket_error"
+            log_error "无法强制使用 Socket 传输"
+            exit 1
+        fi
+    fi
+    
+    log_success "Socket 传输可用"
+    
     configure_socket_settings
 }
 
@@ -620,78 +1290,52 @@ configure_infiniband_settings() {
     
     log_info "配置 InfiniBand 设置: $network_type"
     
-    # ========== 基础 InfiniBand 配置 ==========
-    export NCCL_IB_DISABLE=0
-    log_info "设置 NCCL_IB_DISABLE=0 (启用 InfiniBand)"
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    setup_debug_files "ib"
+    setup_network_config "ib_enable"
     
-    # ========== GPUDirect RDMA 配置 ==========
-    export NCCL_NET_GDR_LEVEL=2
-    log_info "设置 NCCL_NET_GDR_LEVEL=2 (启用 GPUDirect RDMA)"
-    
-    # ========== HCA 设备配置 ==========
+    # HCA 设备自动检测
+    local hca_name=""
     if command -v ibstat >/dev/null 2>&1; then
-        local hca_name=$(ibstat | grep "CA '" | head -1 | awk '{print $2}' | tr -d "'")
-        if [ -n "$hca_name" ]; then
-            export NCCL_IB_HCA="$hca_name"
-            log_info "设置 NCCL_IB_HCA=$hca_name"
-        else
-            log_warning "无法获取 HCA 设备名"
-        fi
+        hca_name=$(ibstat 2>/dev/null | grep "CA '" | head -1 | awk '{print $2}' | tr -d "'")
     fi
     
-    # ========== 根据 IB 类型配置参数 ==========
-    if [ "$is_roce" = true ]; then
-        # RoCE 配置
-        export NCCL_IB_GID_INDEX=3
-        export NCCL_IB_TC=136
-        export NCCL_IB_SL=0
-        export NCCL_SOCKET_IFNAME=""
-        log_info "RoCE 配置: GID_INDEX=3, TC=136, SL=0"
+    if [ -n "$hca_name" ]; then
+        set_nccl_config "IB_HCA" "$hca_name" "HCA 设备"
     else
-        # 原生 IB 配置
-        export NCCL_IB_GID_INDEX=0
-        export NCCL_IB_TC=136
-        export NCCL_IB_SL=0
-        log_info "原生 IB 配置: GID_INDEX=0, TC=136, SL=0"
+        log_warning "无法获取 HCA 设备名，使用 NCCL 自动检测"
     fi
     
-    # ========== IB 性能优化参数 ==========
-    export NCCL_IB_TIMEOUT=22
-    export NCCL_IB_RETRY_CNT=7
-    log_info "IB 性能参数: TIMEOUT=22, RETRY_CNT=7"
+    # 根据 IB 类型配置参数
+    if [ "$is_roce" = true ]; then
+        set_nccl_config "IB_GID_INDEX" "3" "RoCE 配置"
+        setup_network_interface "clear_interface"
+    else
+        set_nccl_config "IB_GID_INDEX" "0" "原生 IB 配置"
+    fi
     
-    # 禁用其他传输方式
-    export NCCL_P2P_DISABLE=0  # 启用 P2P
-    log_info "启用 GPU P2P 通信"
+    # IB 性能优化
+    setup_performance_config "ib_optimized"
 }
 
 # 配置以太网设置
 configure_ethernet_settings() {
     log_info "配置以太网 (TCP/IP) 设置"
     
-    # ========== 禁用 InfiniBand ==========
-    export NCCL_IB_DISABLE=1
-    log_info "设置 NCCL_IB_DISABLE=1 (禁用 InfiniBand)"
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    setup_debug_files "ethernet"
+    setup_network_config "ib_disable"
     
-    # ========== 启用 Socket 传输 ==========
-    # 让 NCCL 自动选择可用的以太网接口
-    if [ "$MULTI_NODE_MODE" = true ]; then
-        # 多节点模式：排除虚拟接口
-        export NCCL_SOCKET_IFNAME=^docker0,lo,virbr
-        log_info "多节点以太网: 排除虚拟接口"
-    else
-        # 单节点模式：可以使用 localhost
-        unset NCCL_SOCKET_IFNAME
-        log_info "单节点以太网: 使用默认接口选择"
-    fi
+    # 智能网络接口配置
+    setup_network_interface "auto_ethernet"
     
-    # ========== 禁用 GPUDirect RDMA ==========
-    export NCCL_NET_GDR_LEVEL=0
-    log_info "设置 NCCL_NET_GDR_LEVEL=0 (禁用 GPUDirect RDMA)"
+    # P2P 配置
+    setup_network_config "p2p_pcie"
     
-    # ========== P2P 配置 ==========
-    export NCCL_P2P_DISABLE=0  # 仍然启用 GPU P2P（通过 PCIe）
-    log_info "启用 GPU P2P 通信 (PCIe)"
+    # 以太网性能优化
+    setup_performance_config "ethernet_optimized"
     
     log_success "以太网配置完成 - 将使用 TCP/IP 进行节点间通信"
 }
@@ -700,296 +1344,178 @@ configure_ethernet_settings() {
 configure_socket_settings() {
     log_info "配置 Socket 传输设置"
     
-    # ========== 禁用所有硬件加速 ==========
-    export NCCL_IB_DISABLE=1
-    export NCCL_NET_GDR_LEVEL=0
-    export NCCL_P2P_DISABLE=1  # 也禁用 P2P
-    log_info "禁用所有硬件加速 (IB, GDR, P2P)"
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    setup_debug_files "socket"
+    setup_network_config "socket_only"
     
-    # ========== 强制使用 Socket ==========
+    # 配置 Socket 接口
     if [ "$MULTI_NODE_MODE" = true ]; then
-        export NCCL_SOCKET_IFNAME=^docker0,lo,virbr
-        log_info "多节点 Socket: 排除虚拟接口"
+        setup_network_interface "exclude_virtual"
     else
-        export NCCL_SOCKET_IFNAME=lo
-        log_info "单节点 Socket: 使用 loopback 接口"
+        setup_network_interface "loopback_only"
     fi
     
+    # 容器环境特殊配置
+    if [ -f /.dockerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+        log_warning "检测到容器环境，应用额外的 Socket 强制配置"
+        declare -A container_config=(
+            ["NET_DISABLE"]="0"
+            ["SOCKET_FORCE"]="1"
+            ["IGNORE_DISABLED_P2P"]="1"
+            ["CUMEM_ENABLE"]="0"
+        )
+        set_nccl_configs container_config "容器环境 Socket 配置"
+    fi
+    
+    # 使用标准输出进行调试
+    set_nccl_config "DEBUG_FILE" "" "使用标准输出调试"
+    set_nccl_config "CHECK_DISABLE" "0" "启用检查"
+    
     log_warning "Socket 传输模式 - 性能可能较低，主要用于调试"
+    log_info "预期性能: <1 GB/s 吞吐量（受网络栈限制）"
+}
+
+# 强制使用共享内存网络
+setup_shm_network() {
+    log_info "强制使用共享内存传输..."
+    
+    # 检查是否为单节点模式
+    if [ "$MULTI_NODE_MODE" = true ]; then
+        log_error "共享内存传输仅支持单节点模式"
+        log_error "多节点环境无法使用共享内存进行跨节点通信"
+        log_info "解决方案:"
+        log_info "  1. 使用 --network ethernet 进行多节点通信"
+        log_info "  2. 使用 --network ib 进行 InfiniBand 通信"
+        exit 1
+    fi
+    
+    # 检查 GPU 数量
+    local gpu_count=0
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        gpu_count=$(nvidia-smi -L | wc -l)
+        if [ "$gpu_count" -lt 2 ]; then
+            log_warning "检测到 $gpu_count 个 GPU，共享内存通信需要至少 2 个 GPU"
+            log_warning "单 GPU 环境下共享内存测试意义有限"
+        else
+            log_success "检测到 $gpu_count 个 GPU，适合共享内存通信测试"
+        fi
+    else
+        log_warning "nvidia-smi 不可用，无法检查 GPU 数量"
+    fi
+    
+    # 检查共享内存可用性
+    local shm_available=false
+    local shm_error=""
+    
+    # 检查 /dev/shm 挂载点
+    if [ -d "/dev/shm" ] && [ -w "/dev/shm" ]; then
+        # 检查 /dev/shm 的大小
+        local shm_size
+        if command -v df >/dev/null 2>&1; then
+            shm_size=$(df -h /dev/shm 2>/dev/null | tail -1 | awk '{print $2}')
+            if [ -n "$shm_size" ]; then
+                log_success "共享内存可用: /dev/shm ($shm_size)"
+                shm_available=true
+            else
+                shm_error="/dev/shm 大小检查失败"
+            fi
+        else
+            log_warning "df 命令不可用，无法检查 /dev/shm 大小"
+            shm_available=true  # 假设可用
+        fi
+    else
+        shm_error="/dev/shm 不可用或不可写"
+    fi
+    
+    if [ "$shm_available" = false ]; then
+        log_error "硬件检查失败: $shm_error"
+        log_error "无法强制使用共享内存传输"
+        exit 1
+    fi
+    
+    log_success "共享内存传输可用"
+    
+    configure_shm_settings
 }
 
 # 配置 NVLink 传输设置
 configure_nvlink_settings() {
-    log_info "配置 NVLink 传输设置（强制启用模式）"
+    local opt_level="${1:-balanced}"  # 默认平衡模式
+    log_info "配置 NVLink 传输设置（优化级别: $opt_level）"
     
-    # ========== 检查 NVLink 可用性 ==========
-    local nvlink_available=false
-    local nvlink_count=0
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    detect_gpu_topology
+    setup_debug_files "nvlink"
+    setup_network_config "p2p_nvlink"
+    setup_network_interface "loopback_only"
+    setup_performance_config "nvlink_optimized" "$opt_level"
     
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        # 检查是否有多个 GPU
-        local gpu_count=$(nvidia-smi -L | wc -l)
-        if [ "$gpu_count" -gt 1 ]; then
-            # 检查 NVLink 连接
-            if nvidia-smi nvlink --status &>/dev/null; then
-                nvlink_count=$(nvidia-smi nvlink --status | grep -c "GB/s" 2>/dev/null || echo "0")
-                # 清理可能的空格和换行符
-                nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
-                # 确保是数字
-                if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
-                    nvlink_available=true
-                    log_success "检测到 $nvlink_count 个活跃的 NVLink 连接"
-                else
-                    log_warning "未检测到活跃的 NVLink 连接"
-                fi
-            else
-                log_warning "无法检查 NVLink 状态"
-            fi
-        else
-            log_warning "检测到 $gpu_count 个 GPU，NVLink 需要多个 GPU"
-        fi
+    # 结果总结
+    if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+        log_success "✅ NVLink 配置完成 - 检测到 $DETECTED_NVLINK_COUNT 个活跃连接"
+        case "$opt_level" in
+            "conservative")
+                log_success "🔒 保守模式: 稳定性优先, 预期性能: ~200 GB/s"
+                ;;
+            "balanced")
+                log_success "⚖️  平衡模式: 性能与稳定性兼顾, 预期性能: ~400 GB/s"
+                ;;
+            "aggressive")
+                log_success "🚀 激进模式: 最大性能优化, 预期性能: >600 GB/s"
+                ;;
+        esac
     else
-        log_warning "nvidia-smi 不可用，无法检查 NVLink 状态"
-        # 检查是否有本地 nvlink 状态文件
-        if [ -f "nvlink-smi_status.txt" ]; then
-            nvlink_count=$(grep -c "GB/s" nvlink-smi_status.txt 2>/dev/null || echo "0")
-            if [ "$nvlink_count" -gt 0 ]; then
-                nvlink_available=true
-                log_success "从本地文件检测到 $nvlink_count 个活跃的 NVLink 连接"
-            fi
-        fi
+        log_warning "⚠️  NVLink 强制配置完成 - 硬件检测失败，NCCL 将尝试回退"
     fi
-    
-    # ========== 核心 NVLink 配置（强制启用）==========
-    export NCCL_P2P_LEVEL=NVL          # 强制使用 NVLink
-    export NCCL_NVLS_ENABLE=1          # 启用 NVLink SHARP
-    export NCCL_P2P_DISABLE=0          # 确保 P2P 启用
-    log_success "核心配置: NCCL_P2P_LEVEL=NVL, NCCL_NVLS_ENABLE=1, NCCL_P2P_DISABLE=0"
-    
-    # ========== 禁用其他网络后端 ==========
-    export NCCL_IB_DISABLE=1           # 禁用 InfiniBand
-    export NCCL_NET_DISABLE=1          # 禁用网络传输
-    export NCCL_SOCKET_IFNAME=lo       # 仅使用本地回环
-    log_info "网络禁用: NCCL_IB_DISABLE=1, NCCL_NET_DISABLE=1, NCCL_SOCKET_IFNAME=lo"
-    
-    # ========== 调试配置 ==========
-    export NCCL_DEBUG=INFO             # 详细日志
-    export NCCL_DEBUG_SUBSYS=INIT,NET,GRAPH,ENV  # 调试子系统
-    log_info "调试配置: NCCL_DEBUG=INFO, NCCL_DEBUG_SUBSYS=INIT,NET,GRAPH,ENV"
-    
-    # ========== H100 优化配置 ==========
-    export NCCL_ALGO=Ring,Tree         # 算法选择
-    export NCCL_PROTO=Simple           # 协议选择
-    export NCCL_BUFFSIZE=8388608       # 8MB 缓冲区
-    export NCCL_NTHREADS=256           # 线程数
-    log_info "H100 优化: NCCL_ALGO=Ring,Tree, NCCL_PROTO=Simple"
-    log_info "性能优化: NCCL_BUFFSIZE=8388608, NCCL_NTHREADS=256"
-    
-    # ========== 额外的 NVLink 优化 ==========
-    export NCCL_MIN_NCHANNELS=32       # 最小通道数
-    export NCCL_MAX_NCHANNELS=32       # 最大通道数
-    export NCCL_TREE_THRESHOLD=0       # 强制使用 Ring 算法
-    export NCCL_CROSS_NIC=0            # 单节点不需要跨网卡
-    export NCCL_IGNORE_CPU_AFFINITY=1  # 忽略 CPU 亲和性限制
-    export NCCL_CUMEM_ENABLE=0         # 禁用 CUDA 统一内存，确保 NVLink 路径
-    log_info "通道优化: NCCL_MIN_NCHANNELS=32, NCCL_MAX_NCHANNELS=32"
-    log_info "高级优化: NCCL_TREE_THRESHOLD=0, NCCL_IGNORE_CPU_AFFINITY=1"
-    
-    # ========== GPUDirect 配置 ==========
-    export NCCL_NET_GDR_LEVEL=0        # 禁用网络 GDR，使用 NVLink
-    log_info "GPUDirect: NCCL_NET_GDR_LEVEL=0 (禁用网络 GPUDirect)"
-    
-    # ========== 拓扑检测和诊断 ==========
-    export NCCL_TOPO_DUMP_FILE="/tmp/nccl_topo_nvlink.xml"
-    export NCCL_GRAPH_DUMP_FILE="/tmp/nccl_graph_nvlink.xml"
-    export NCCL_DEBUG_FILE="/tmp/nccl_debug_nvlink.%h.%p.log"
-    log_info "拓扑文件: $NCCL_TOPO_DUMP_FILE"
-    log_info "图文件: $NCCL_GRAPH_DUMP_FILE"
-    log_info "调试日志: $NCCL_DEBUG_FILE"
-    
-    # ========== 结果总结 ==========
-    if [ "$nvlink_available" = true ]; then
-        log_success "✅ NVLink 强制启用配置完成 - 检测到 $nvlink_count 个活跃连接"
-        log_success "🚀 预期性能: >300 GB/s 吞吐量, <0.02 ms 延迟"
-        log_info "💡 查找日志关键词确认: 'Using network NVLink', 'P2P level: NVL', 'NVLS enabled'"
-    else
-        log_warning "⚠️  NVLink 强制启用配置完成 - 但硬件检测失败"
-        log_warning "🔧 NCCL 将尝试使用 NVLink，如果硬件不支持将自动回退"
-        log_info "📊 如果性能不佳，请检查硬件连接或使用 --network auto 重新测试"
-    fi
-    
-    # ========== 环境变量验证 ==========
-    log_info "🔍 关键环境变量验证:"
-    log_info "  NCCL_P2P_LEVEL: ${NCCL_P2P_LEVEL}"
-    log_info "  NCCL_NVLS_ENABLE: ${NCCL_NVLS_ENABLE}"
-    log_info "  NCCL_IB_DISABLE: ${NCCL_IB_DISABLE}"
-    log_info "  NCCL_NET_DISABLE: ${NCCL_NET_DISABLE}"
-    log_info "  NCCL_BUFFSIZE: ${NCCL_BUFFSIZE}"
-    log_info "  NCCL_NTHREADS: ${NCCL_NTHREADS}"
 }
 
 # 配置 PCIe P2P 传输设置（智能检测 NVLink 和 PCIe）
 configure_pcie_p2p_settings() {
     log_info "配置 GPU 间高速传输设置（智能检测 NVLink/PCIe P2P）"
     
-    # ========== 检查 GPU 和连接可用性 ==========
-    local p2p_available=false
-    local nvlink_available=false
-    local gpu_count=0
-    local nvlink_count=0
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    detect_gpu_topology
+    setup_network_config "ib_disable"
     
-    if command -v nvidia-smi >/dev/null 2>&1; then
-        gpu_count=$(nvidia-smi -L | wc -l)
-        if [ "$gpu_count" -gt 1 ]; then
-            p2p_available=true
-            log_success "检测到 $gpu_count 个 GPU，GPU 间通信可用"
-            
-            # 检查 NVLink 连接
-            if nvidia-smi nvlink -s >/dev/null 2>&1; then
-                nvlink_count=$(nvidia-smi nvlink -s 2>/dev/null | grep -c "Active" || echo "0")
-                if [ "$nvlink_count" -gt 0 ]; then
-                    nvlink_available=true
-                    log_success "检测到 $nvlink_count 个活跃的 NVLink 连接"
-                else
-                    log_info "未检测到活跃的 NVLink 连接，将使用 PCIe P2P"
-                fi
-            else
-                log_info "NVLink 状态查询失败，假设使用 PCIe P2P"
-            fi
-        else
-            log_warning "检测到 $gpu_count 个 GPU，P2P 通信需要多个 GPU"
-        fi
+    # 智能配置 P2P 级别
+    if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+        setup_network_config "p2p_nvlink"
+        set_nccl_config "NVLS_CHUNKSIZE" "524288" "NVLink 块大小"
+        set_nccl_config "ALGO" "Auto" "自动算法选择"
+        set_nccl_config "MAX_NCHANNELS" "32" "最大通道数"
+        setup_debug_files "nvlink"
+        log_success "设置 NCCL_P2P_LEVEL=NVL (优先 NVLink，检测到 $DETECTED_NVLINK_COUNT 个连接)"
     else
-        log_warning "nvidia-smi 不可用，无法检查 GPU 状态"
-    fi
-    
-    # ========== 强制禁用所有网络传输 ==========
-    export NCCL_IB_DISABLE=1
-    export NCCL_NET_DISABLE=1  # 强制禁用所有网络传输
-    export NCCL_SOCKET_FAMILY=AF_UNSPEC  # 禁用 Socket 协议族
-    log_info "设置 NCCL_IB_DISABLE=1 (禁用 InfiniBand)"
-    log_info "设置 NCCL_NET_DISABLE=1 (强制禁用所有网络传输)"
-    log_info "设置 NCCL_SOCKET_FAMILY=AF_UNSPEC (禁用 Socket 协议族)"
-    
-    # ========== 智能配置 P2P 级别 ==========
-    export NCCL_P2P_DISABLE=0
-    if [ "$nvlink_available" = true ]; then
-        export NCCL_P2P_LEVEL=NVL  # 优先使用 NVLink
-        export NCCL_NVLS_ENABLE=1  # 启用 NVLink Switch（H100 支持）
-        export NCCL_NVLS_CHUNKSIZE=524288  # NVLink Switch 块大小优化
-        log_success "设置 NCCL_P2P_LEVEL=NVL (优先 NVLink，检测到 $nvlink_count 个连接)"
-        log_info "设置 NCCL_NVLS_ENABLE=1 (启用 NVLink Switch for H100)"
-        log_info "设置 NCCL_NVLS_CHUNKSIZE=524288 (NVLink Switch 优化)"
-    else
-        export NCCL_P2P_LEVEL=PIX  # 回退到 PCIe
-        export NCCL_NVLS_ENABLE=0  # 禁用 NVLink Switch
+        setup_network_config "p2p_pcie"
+        set_nccl_config "ALGO" "Ring" "Ring 算法"
+        set_nccl_config "MAX_NCHANNELS" "16" "最大通道数"
+        setup_debug_files "pcie"
         log_info "设置 NCCL_P2P_LEVEL=PIX (使用 PCIe P2P)"
-        log_info "设置 NCCL_NVLS_ENABLE=0 (禁用 NVLink Switch)"
     fi
     
-    export NCCL_SHM_DISABLE=1  # 禁用共享内存，强制使用 P2P
-    log_info "设置 NCCL_P2P_DISABLE=0, NCCL_SHM_DISABLE=1 (强制 P2P 路径)"
+    # P2P 优化配置
+    setup_performance_config "pcie_optimized"
     
-    # ========== 强制禁用网络 Socket 传输 ==========
-    export NCCL_SOCKET_IFNAME=""  # 明确禁用 Socket 网络
-    export NCCL_SOCKET_NTHREADS=0  # 禁用 Socket 线程
-    log_info "设置 NCCL_SOCKET_IFNAME=\"\" (明确禁用网络 Socket)"
-    log_info "设置 NCCL_SOCKET_NTHREADS=0 (禁用 Socket 线程)"
-    
-    # ========== GPUDirect 配置 ==========
-    export NCCL_NET_GDR_LEVEL=0  # 禁用网络 GDR，使用 GPU 间直连
-    log_info "设置 NCCL_NET_GDR_LEVEL=0 (禁用网络 GPUDirect)"
-    
-    # ========== 性能优化配置 ==========
-    export NCCL_CROSS_NIC=0    # 单节点不需要跨网卡
-    if [ "$nvlink_available" = true ]; then
-        export NCCL_ALGO=Auto  # NVLink 使用自动算法选择
-        export NCCL_MIN_NCHANNELS=1
-        export NCCL_MAX_NCHANNELS=32  # NVLink 支持更多通道
-        log_info "NVLink 优化: ALGO=Auto, MAX_NCHANNELS=32"
-    else
-        export NCCL_ALGO=Ring  # PCIe 使用 Ring 算法
-        export NCCL_MIN_NCHANNELS=1
-        export NCCL_MAX_NCHANNELS=16  # PCIe 通道限制
-        log_info "PCIe 优化: ALGO=Ring, MAX_NCHANNELS=16"
-    fi
-    
-    # ========== 通用 P2P 优化 ==========
-    export NCCL_IGNORE_CPU_AFFINITY=1  # 忽略 CPU 亲和性限制
-    export NCCL_BUFFSIZE=8388608  # 增大缓冲区大小
-    export NCCL_NTHREADS=16  # 设置线程数
-    export NCCL_MAX_NRINGS=8  # 最大环数
-    log_info "通用优化: IGNORE_CPU_AFFINITY=1, BUFFSIZE=8388608"
-    
-    # ========== 调试和诊断配置 ==========
-    if [ "$nvlink_available" = true ]; then
-        export NCCL_DEBUG_SUBSYS="INIT,P2P,GRAPH,NVLS,ENV"  # 包含 NVLink 调试
-        export NCCL_DEBUG_FILE="/tmp/nccl_debug_nvlink.%h.%p.log"
-        log_info "NVLink 调试: NCCL_DEBUG_SUBSYS=$NCCL_DEBUG_SUBSYS"
-    else
-        export NCCL_DEBUG_SUBSYS="INIT,P2P,GRAPH,ENV,TUNING"  # PCIe 调试
-        export NCCL_DEBUG_FILE="/tmp/nccl_debug_pcie.%h.%p.log"
-        log_info "PCIe 调试: NCCL_DEBUG_SUBSYS=$NCCL_DEBUG_SUBSYS"
-    fi
-    log_info "调试日志: $NCCL_DEBUG_FILE"
-    
-    # ========== 拓扑检测和验证 ==========
-    if [ "$nvlink_available" = true ]; then
-        export NCCL_TOPO_DUMP_FILE="/tmp/nccl_topo_nvlink.xml"
-        export NCCL_GRAPH_DUMP_FILE="/tmp/nccl_graph_nvlink.xml"
-    else
-        export NCCL_TOPO_DUMP_FILE="/tmp/nccl_topo_pcie.xml"
-        export NCCL_GRAPH_DUMP_FILE="/tmp/nccl_graph_pcie.xml"
-    fi
-    log_info "拓扑文件: $NCCL_TOPO_DUMP_FILE"
-    log_info "图文件: $NCCL_GRAPH_DUMP_FILE"
-    
-    # ========== 高级优化配置 ==========
-    export NCCL_P2P_NET_CHUNKSIZE=131072  # P2P网络块大小优化
-    export NCCL_CUMEM_ENABLE=0  # 禁用CUDA统一内存，确保P2P路径
-    export NCCL_DMABUF_ENABLE=1  # 启用DMA-BUF支持（如果可用）
-    export NCCL_REG_CACHE_ENABLE=1  # 启用注册缓存
-    log_info "高级优化: NET_CHUNKSIZE=131072, CUMEM_ENABLE=0"
-    log_info "内存优化: DMABUF_ENABLE=1, REG_CACHE_ENABLE=1"
-    
-    # ========== ACS 检测和警告 ==========
+    # ACS 检测和警告
     if command -v lspci >/dev/null 2>&1; then
         local acs_enabled=$(sudo lspci -vvv 2>/dev/null | grep "ACSCtl.*SrcValid+" | wc -l || echo "0")
         if [ "$acs_enabled" -gt 0 ]; then
-            log_warning "检测到 ACS (Access Control Services) 可能已启用"
-            log_warning "这可能严重影响 P2P 性能，建议："
-            log_info "  1. 在 BIOS 中禁用 VT-d/IOMMU"
-            log_info "  2. 或使用: sudo setpci -s <GPU_BUS> CAP_EXP+28.w=0000"
+            log_warning "检测到 ACS 可能已启用，可能影响 P2P 性能"
         fi
     fi
     
-    # ========== 配置完成总结 ==========
-    if [ "$p2p_available" = true ]; then
-        if [ "$nvlink_available" = true ]; then
-            log_success "NVLink 配置完成 - 使用 NVLink 进行 GPU 间高速通信"
-            log_info "预期带宽: ~900 GB/s (18 链路 × 26.562 GB/s × 双向)"
-            log_info "预期延迟: < 1 μs"
+    # 配置完成总结
+    if [ "$DETECTED_GPU_COUNT" -gt 1 ]; then
+        if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+            log_success "NVLink 配置完成 - 预期带宽: ~900 GB/s, 延迟: < 1 μs"
         else
-            log_success "PCIe P2P 配置完成 - 使用 PCIe 进行 GPU 间通信"
-            log_info "预期带宽: ~64 GB/s (PCIe 5.0 x16)"
-            log_info "预期延迟: 2-5 μs"
-        fi
-        
-        # 验证建议
-        log_info ""
-        log_info "建议运行以下命令验证配置："
-        log_info "  ./diagnose_topology.sh  # 深度拓扑诊断"
-        log_info "  nvidia-smi topo -mp     # 查看GPU拓扑"
-        log_info "  nvidia-smi nvlink -s    # 检查NVLink状态"
-        if command -v nvbandwidth >/dev/null 2>&1; then
-            log_info "  nvbandwidth             # 测试实际带宽"
-        else
-            log_info "  建议安装 nvbandwidth 工具进行带宽测试"
+            log_success "PCIe P2P 配置完成 - 预期带宽: ~64 GB/s, 延迟: 2-5 μs"
         fi
     else
         log_warning "GPU 间通信配置完成 - 但可能回退到共享内存通信"
-        log_info "建议检查 GPU 数量和系统配置"
-        log_warning "注意：消费级GPU（RTX 30/40系列）可能不支持P2P"
     fi
 }
 
@@ -997,27 +1523,15 @@ configure_pcie_p2p_settings() {
 configure_shm_settings() {
     log_info "配置共享内存传输设置"
     
-    # ========== 禁用所有网络传输 ==========
-    export NCCL_IB_DISABLE=1
-    export NCCL_P2P_DISABLE=1  # 也禁用 P2P，强制使用共享内存
-    log_info "禁用网络传输和 P2P (IB, P2P)"
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    setup_debug_files "shm"
+    setup_network_config "ib_disable"
+    setup_network_config "p2p_disable"
+    setup_network_interface "clear_interface"
     
-    # ========== 启用共享内存 ==========
-    # NCCL 会自动回退到共享内存传输
-    export NCCL_SOCKET_IFNAME=""  # 明确禁用 Socket 网络
-    log_info "设置 NCCL_SOCKET_IFNAME=\"\" (禁用网络，使用共享内存)"
-    
-    # ========== GPUDirect 配置 ==========
-    export NCCL_NET_GDR_LEVEL=0  # 禁用网络 GDR
-    log_info "设置 NCCL_NET_GDR_LEVEL=0 (禁用网络 GPUDirect)"
-    
-    # ========== 共享内存优化 ==========
-    export NCCL_CROSS_NIC=0    # 单节点不需要跨网卡
-    log_info "共享内存优化: CROSS_NIC=0"
-    
-    # ========== 拓扑检测 ==========
-    export NCCL_TOPO_DUMP_FILE="/tmp/nccl_topo_shm.xml"
-    log_info "拓扑文件: $NCCL_TOPO_DUMP_FILE"
+    # 共享内存性能优化
+    setup_performance_config "shm_optimized"
     
     log_success "共享内存配置完成 - 将使用共享内存进行 GPU 间通信"
     log_warning "共享内存传输性能较低，主要用于兼容性测试"
@@ -1027,99 +1541,29 @@ configure_shm_settings() {
 display_nccl_config_summary() {
     log_info ""
     log_success "NCCL 环境变量配置完成"
-    log_info "配置摘要:"
-    log_info "  网络后端: $NETWORK_BACKEND"
+    log_info "配置摘要: 网络后端: $NETWORK_BACKEND"
     
-    # 基础网络配置
-    log_info "  NCCL_IB_DISABLE: ${NCCL_IB_DISABLE:-未设置}"
-    log_info "  NCCL_NET_DISABLE: ${NCCL_NET_DISABLE:-未设置}"
-    log_info "  NCCL_NET_GDR_LEVEL: ${NCCL_NET_GDR_LEVEL:-未设置}"
-    log_info "  NCCL_IB_HCA: ${NCCL_IB_HCA:-未设置}"
-    log_info "  NCCL_IB_GID_INDEX: ${NCCL_IB_GID_INDEX:-未设置}"
-    
-    # P2P 和 NVLink 配置
-    log_info "  NCCL_P2P_DISABLE: ${NCCL_P2P_DISABLE:-未设置}"
-    log_info "  NCCL_P2P_LEVEL: ${NCCL_P2P_LEVEL:-未设置}"
-    log_info "  NCCL_SHM_DISABLE: ${NCCL_SHM_DISABLE:-未设置}"
-    log_info "  NCCL_NVLS_ENABLE: ${NCCL_NVLS_ENABLE:-未设置}"
-    log_info "  NCCL_NVLS_CHUNKSIZE: ${NCCL_NVLS_CHUNKSIZE:-未设置}"
-    
-    # Socket 配置
-    log_info "  NCCL_SOCKET_IFNAME: ${NCCL_SOCKET_IFNAME:-未设置}$([ "${NCCL_SOCKET_IFNAME+x}" = "x" ] && [ -z "$NCCL_SOCKET_IFNAME" ] && echo " (空字符串-禁用)" || echo "")"
-    log_info "  NCCL_SOCKET_NTHREADS: ${NCCL_SOCKET_NTHREADS:-未设置}"
-    log_info "  NCCL_SOCKET_FAMILY: ${NCCL_SOCKET_FAMILY:-未设置}"
-    
-    # 性能优化配置
-    log_info "  NCCL_ALGO: ${NCCL_ALGO:-未设置}"
-    log_info "  NCCL_MIN_NCHANNELS: ${NCCL_MIN_NCHANNELS:-未设置}"
-    log_info "  NCCL_MAX_NCHANNELS: ${NCCL_MAX_NCHANNELS:-未设置}"
-    log_info "  NCCL_IGNORE_CPU_AFFINITY: ${NCCL_IGNORE_CPU_AFFINITY:-未设置}"
-    log_info "  NCCL_BUFFSIZE: ${NCCL_BUFFSIZE:-未设置}"
-    log_info "  NCCL_NTHREADS: ${NCCL_NTHREADS:-未设置}"
-    log_info "  NCCL_MAX_NRINGS: ${NCCL_MAX_NRINGS:-未设置}"
-    log_info "  NCCL_CROSS_NIC: ${NCCL_CROSS_NIC:-未设置}"
-    
-    # 调试和诊断配置
-    log_info "  NCCL_DEBUG: $NCCL_DEBUG"
-    log_info "  NCCL_DEBUG_SUBSYS: ${NCCL_DEBUG_SUBSYS:-未设置}"
-    log_info "  NCCL_DEBUG_FILE: ${NCCL_DEBUG_FILE:-未设置}"
-    log_info "  NCCL_TOPO_DUMP_FILE: ${NCCL_TOPO_DUMP_FILE:-未设置}"
-    log_info "  NCCL_GRAPH_DUMP_FILE: ${NCCL_GRAPH_DUMP_FILE:-未设置}"
-    
-    # 高级优化配置
-    log_info "  NCCL_P2P_NET_CHUNKSIZE: ${NCCL_P2P_NET_CHUNKSIZE:-未设置}"
-    log_info "  NCCL_CUMEM_ENABLE: ${NCCL_CUMEM_ENABLE:-未设置}"
-    log_info "  NCCL_DMABUF_ENABLE: ${NCCL_DMABUF_ENABLE:-未设置}"
-    log_info "  NCCL_REG_CACHE_ENABLE: ${NCCL_REG_CACHE_ENABLE:-未设置}"
-    
-    # 多节点配置
-    log_info "  多节点模式: $([ "$MULTI_NODE_MODE" = true ] && echo "是" || echo "否")"
-    
-    # 配置状态检查
-    log_info ""
-    log_info "配置状态检查:"
-    
-    # P2P 状态检查
+    # 关键配置状态检查
     if [ "${NCCL_P2P_DISABLE:-1}" = "0" ]; then
         if [ "${NCCL_P2P_LEVEL:-}" = "NVL" ]; then
             log_success "✓ 已启用 NVLink P2P 通信"
-            if [ "${NCCL_NVLS_ENABLE:-0}" = "1" ]; then
-                log_success "✓ 已启用 NVLink Switch（H100 优化）"
-            fi
         elif [ "${NCCL_P2P_LEVEL:-}" = "PIX" ]; then
             log_success "✓ 已启用 PCIe P2P 通信"
         else
-            log_info "✓ 已启用 P2P 通信（级别：${NCCL_P2P_LEVEL:-自动}）"
+            log_info "✓ 已启用 P2P 通信"
         fi
     else
         log_warning "⚠ P2P 通信已禁用"
     fi
     
-    # 网络传输状态检查
-    if [ "${NCCL_IB_DISABLE:-0}" = "1" ] && [ "${NCCL_NET_DISABLE:-0}" = "1" ]; then
-        log_success "✓ 已禁用网络传输，强制使用 GPU 间直连"
-    elif [ "${NCCL_IB_DISABLE:-0}" = "1" ]; then
-        log_info "✓ 已禁用 InfiniBand，使用其他传输方式"
-    elif [ "${NCCL_NET_DISABLE:-0}" = "1" ]; then
-        log_info "✓ 已禁用网络传输，使用本地传输"
-    else
-        log_warning "⚠ 网络传输未完全禁用，可能影响 P2P 性能"
+    # 网络传输状态
+    if [ "${NCCL_IB_DISABLE:-0}" = "1" ]; then
+        log_info "✓ 已禁用 InfiniBand"
     fi
     
-    # 算法优化检查
-    if [ "${NCCL_ALGO:-}" = "Auto" ]; then
-        log_success "✓ 使用自动算法选择（适合 NVLink）"
-    elif [ "${NCCL_ALGO:-}" = "Ring" ]; then
-        log_info "✓ 使用 Ring 算法（适合 PCIe）"
-    fi
-    
-    # 调试配置检查
+    # 调试配置
     if [ -n "${NCCL_DEBUG_FILE:-}" ]; then
-        log_success "✓ 已配置调试日志文件: ${NCCL_DEBUG_FILE}"
-    fi
-    
-    if [ -n "${NCCL_TOPO_DUMP_FILE:-}" ]; then
-        log_success "✓ 已配置拓扑转储文件: ${NCCL_TOPO_DUMP_FILE}"
+        log_success "✓ 调试日志: ${NCCL_DEBUG_FILE}"
     fi
 }
 
@@ -1229,12 +1673,7 @@ run_single_node_test() {
     
     # 多节点模式配置
     if [ "$MULTI_NODE_MODE" = true ]; then
-        if [ -n "$MASTER_ADDR" ]; then
-            master_addr="$MASTER_ADDR"
-        else
-            log_error "多节点模式需要指定 --master-addr 参数"
-            return 1
-        fi
+        master_addr="$MASTER_ADDR"
         
         if [ -n "$MASTER_PORT" ]; then
             master_port="$MASTER_PORT"
@@ -1269,13 +1708,16 @@ run_single_node_test() {
         # 使用新的 torchrun 命令（如果可用）
         if command -v torchrun >/dev/null 2>&1; then
             log_info "使用 torchrun 启动分布式测试"
-            if torchrun \
+            # 强制刷新输出缓冲区，确保NCCL调试信息被捕获
+            export PYTHONUNBUFFERED=1
+            export NCCL_DEBUG_FILE=""  # 清除文件输出，使用标准输出
+            if stdbuf -oL -eL torchrun \
                 --nproc_per_node="$gpu_count" \
                 --nnodes="$nnodes" \
                 --node_rank="$node_rank" \
                 --master_addr="$master_addr" \
                 --master_port="$master_port" \
-                "$test_script" 2>&1 | tee "$output_file"; then
+                "$test_script" > >(tee "$output_file") 2>&1; then
                 log_success "NCCL 测试执行完成"
             else
                 log_error "NCCL 测试执行失败"
@@ -1284,13 +1726,16 @@ run_single_node_test() {
         else
             # 使用传统的 torch.distributed.launch
             log_info "使用 torch.distributed.launch 启动分布式测试"
-            if python3 -m torch.distributed.launch \
+            # 强制刷新输出缓冲区，确保NCCL调试信息被捕获
+            export PYTHONUNBUFFERED=1
+            export NCCL_DEBUG_FILE=""  # 清除文件输出，使用标准输出
+            if stdbuf -oL -eL python3 -m torch.distributed.launch \
                 --nproc_per_node="$gpu_count" \
                 --nnodes="$nnodes" \
                 --node_rank="$node_rank" \
                 --master_addr="$master_addr" \
                 --master_port="$master_port" \
-                "$test_script" 2>&1 | tee "$output_file"; then
+                "$test_script" > >(tee "$output_file") 2>&1; then
                 log_success "NCCL 测试执行完成"
             else
                 log_error "NCCL 测试执行失败"
@@ -1333,234 +1778,31 @@ analyze_nccl_output() {
     fi
     
     log_info ""
-    log_info "NCCL 网络选择分析与验证:"
+    log_info "NCCL 关键信息摘要:"
     
-    # 检测实际使用的网络类型
-    local actual_network="unknown"
-    local network_detected=false
-    
-    # 智能网络检测逻辑 - 结合环境变量、性能数据和日志关键词
-    local nvlink_env_configured=false
-    local nvlink_performance_indicators=false
-    local explicit_network_logs=""
-    
-    # 1. 检查 NCCL 环境变量配置
-    if grep -q "NCCL_P2P_LEVEL.*NVL" "$output_file" && grep -q "NCCL_NVLS_ENABLE.*1" "$output_file"; then
-        nvlink_env_configured=true
-        log_info "🔧 检测到 NVLink 环境变量配置: NCCL_P2P_LEVEL=NVL, NCCL_NVLS_ENABLE=1"
-    fi
-    
-    # 2. 分析性能数据判断网络类型
-    local avg_throughput=$(grep -E "平均吞吐量.*GB/s" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
-    local min_latency=$(grep -E "最小延迟.*ms" "$output_file" | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
-    
-    if [ -n "$avg_throughput" ] && [ -n "$min_latency" ]; then
-        # NVLink 性能特征：高吞吐量 (>100 GB/s) + 低延迟 (<0.1 ms)
-        # PCIe P2P 性能特征：中等吞吐量 (30-80 GB/s) + 中等延迟 (0.03-0.1 ms)
-        # Socket/Ethernet 性能特征：低吞吐量 (<30 GB/s) + 高延迟 (>0.1 ms)
-        
-        # 使用 bc 进行浮点数比较，避免整数转换问题
-        local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
-        local latency_float=$(echo "$min_latency" | tr -d ' ')
-        
-        if [ "$(echo "$throughput_float > 100" | bc -l 2>/dev/null || echo 0)" = "1" ] && [ "$(echo "$latency_float < 0.05" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-            nvlink_performance_indicators=true
-            log_info "📊 性能指标显示 NVLink 特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
-        elif [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ] && [ "$(echo "$throughput_float <= 100" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-            log_info "📊 性能指标显示 PCIe P2P 特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
-        else
-            log_info "📊 性能指标显示网络传输特征: 吞吐量 ${avg_throughput} GB/s, 延迟 ${min_latency} ms"
-        fi
-    fi
-    
-    # 3. 检测明确的网络日志信息
-    if grep -q "Using network InfiniBand" "$output_file"; then
-        actual_network="ib"
-        network_detected=true
-        explicit_network_logs="Using network InfiniBand"
-        log_info "🔍 明确检测到: InfiniBand 网络"
-    elif grep -q "NET/IB" "$output_file"; then
-        actual_network="ib"
-        network_detected=true
-        explicit_network_logs="NET/IB"
-        log_info "🔍 明确检测到: InfiniBand 网络 (NET/IB)"
-    elif grep -q "RoCE" "$output_file"; then
-        actual_network="ib"
-        network_detected=true
-        explicit_network_logs="RoCE"
-        log_info "🔍 明确检测到: RoCE (Ethernet over IB) 网络"
-    elif grep -q "NET/Socket" "$output_file"; then
-        actual_network="socket"
-        network_detected=true
-        explicit_network_logs="NET/Socket"
-        log_info "🔍 明确检测到: Socket 网络传输"
-    elif grep -q "NET/SHM" "$output_file"; then
-        actual_network="shm"
-        network_detected=true
-        explicit_network_logs="NET/SHM"
-        log_info "🔍 明确检测到: 共享内存通信"
-    elif grep -q "NET/NVL" "$output_file" || grep -q "NVLink.*enabled" "$output_file"; then
-        actual_network="nvlink"
-        network_detected=true
-        explicit_network_logs="NET/NVL or NVLink enabled"
-        log_info "🔍 明确检测到: NVLink 通信"
-    elif grep -q "Ethernet" "$output_file" && ! grep -q "RoCE" "$output_file"; then
-        actual_network="ethernet"
-        network_detected=true
-        explicit_network_logs="Ethernet"
-        log_info "🔍 明确检测到: 以太网传输"
-    fi
-    
-    # 4. 智能推断网络类型（当没有明确日志时）
-    if [ "$network_detected" = false ]; then
-        if [ "$nvlink_env_configured" = true ] && [ "$nvlink_performance_indicators" = true ]; then
-            actual_network="nvlink"
-            network_detected=true
-            log_success "🧠 智能推断: NVLink 通信 (基于环境配置 + 性能特征)"
-        elif [ "$nvlink_env_configured" = true ]; then
-            # 环境变量配置了 NVLink，但性能不符合，可能是 PCIe P2P
-            actual_network="pcie"
-            network_detected=true
-            log_warning "🧠 智能推断: PCIe P2P 通信 (NVLink 配置但性能不符)"
-            log_warning "   💡 可能原因: NVLink 硬件不可用，NCCL 回退到 PCIe P2P"
-        elif [ -n "$avg_throughput" ]; then
-            # 使用 bc 进行浮点数比较
-            local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
-            if [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-                actual_network="pcie"
-                network_detected=true
-                log_info "🧠 智能推断: PCIe P2P 通信 (基于性能特征)"
-            else
-                actual_network="socket"
-                network_detected=true
-                log_info "🧠 智能推断: Socket 网络传输 (基于性能特征)"
-            fi
-        else
-            # 最后的关键词检测
-            if grep -q -i "pcie\|p2p" "$output_file"; then
-                actual_network="pcie"
-                network_detected=true
-                log_info "🔍 关键词检测到: PCIe P2P 通信"
-            fi
-        fi
-    fi
-    
-    # 比较期望值与实际值
-    log_info ""
-    log_info "网络配置验证结果:"
-    
-    if [ "$network_detected" = false ]; then
-        log_warning "⚠️  无法明确检测到网络类型"
-        actual_network="unknown"
-    fi
-    
-    # 验证网络选择是否符合期望
-    case "$expected_network" in
-        "auto")
-            log_success "✅ 自动模式: NCCL 选择了 $actual_network 网络"
-            log_info "ℹ️  自动模式下，NCCL 按优先级选择最佳网络路径"
-            ;;
-        "ib")
-            if [ "$actual_network" = "ib" ]; then
-                log_success "✅ 网络配置匹配: 期望 InfiniBand，实际使用 InfiniBand"
-            else
-                log_error "❌ 网络配置不匹配: 期望 InfiniBand，实际使用 $actual_network"
-                log_warning "💡 可能原因: IB 设备不可用、配置错误或被其他网络覆盖"
-            fi
-            ;;
-        "nvlink")
-            if [ "$actual_network" = "nvlink" ]; then
-                log_success "✅ 网络配置匹配: 期望 NVLink，实际使用 NVLink"
-            else
-                log_error "❌ 网络配置不匹配: 期望 NVLink，实际使用 $actual_network"
-                log_warning "💡 NVLink 配置诊断:"
-                
-                # 详细的 NVLink 诊断
-                if [ "$nvlink_env_configured" = true ]; then
-                    log_success "   ✅ NCCL 环境变量配置正确 (NCCL_P2P_LEVEL=NVL, NCCL_NVLS_ENABLE=1)"
-                else
-                    log_error "   ❌ NCCL 环境变量配置缺失或错误"
-                fi
-                
-                if [ -n "$avg_throughput" ]; then
-                    # 使用 bc 进行浮点数比较
-                    local throughput_float=$(echo "$avg_throughput" | tr -d ' ')
-                    if [ "$(echo "$throughput_float > 100" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-                        log_success "   ✅ 性能指标符合 NVLink 特征 (${avg_throughput} GB/s)"
-                    elif [ "$(echo "$throughput_float >= 30" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-                        log_warning "   ⚠️  性能指标显示 PCIe P2P 特征 (${avg_throughput} GB/s)"
-                        log_warning "       这表明 NCCL 回退到了 PCIe P2P 通信"
-                    else
-                        log_error "   ❌ 性能指标过低 (${avg_throughput} GB/s)，可能使用网络传输"
-                    fi
-                fi
-                
-                # 提供具体的解决建议
-                log_warning "   🔧 可能的解决方案:"
-                if [ "$actual_network" = "pcie" ]; then
-                    log_warning "      1. 检查 GPU 拓扑: 确认 GPU 之间有 NVLink 连接"
-                    log_warning "      2. 检查 NCCL 版本: 确保支持当前 GPU 的 NVLink"
-                    log_warning "      3. 检查系统配置: 确认 NVLink 驱动和固件正常"
-                    log_warning "      4. 尝试设置 NCCL_DEBUG=INFO 获取更多调试信息"
-                elif [ "$actual_network" = "socket" ]; then
-                    log_warning "      1. 检查 NCCL_P2P_DISABLE 是否被意外设置为 1"
-                    log_warning "      2. 检查 GPU 可见性: 确认所有 GPU 对 NCCL 可见"
-                    log_warning "      3. 检查 CUDA 版本兼容性"
-                else
-                    log_warning "      1. 检查硬件支持: 确认 GPU 型号支持 NVLink"
-                    log_warning "      2. 检查物理连接: 确认 NVLink 线缆连接正常"
-                    log_warning "      3. 检查系统状态: 重启后重试"
+    # 1. 提取通信路径信息（仅展示，不做判断）
+    log_info "📋 通信路径信息:"
+    if grep -E "NCCL INFO Channel.*via" "$output_file" >/dev/null 2>&1; then
+        local channel_paths=$(grep -E "NCCL INFO Channel.*via" "$output_file")
+        echo "$channel_paths" | while read -r line; do
+            if [ -n "$line" ]; then
+                # 提取关键信息: Channel X : A[X] -> B[X] via PATH
+                local path_info=$(echo "$line" | sed -n 's/.*NCCL INFO \(Channel [^:]*\) : \([^:]*\) via \(.*\)/\1: \2 via \3/p')
+                if [ -n "$path_info" ]; then
+                    log_info "   $path_info"
                 fi
             fi
-            ;;
-        "pcie")
-            if [ "$actual_network" = "pcie" ]; then
-                log_success "✅ 网络配置匹配: 期望 PCIe P2P，实际使用 PCIe P2P"
-            else
-                log_error "❌ 网络配置不匹配: 期望 PCIe P2P，实际使用 $actual_network"
-                log_warning "💡 可能原因: PCIe P2P 不可用或被其他网络覆盖"
-            fi
-            ;;
-        "ethernet")
-            if [ "$actual_network" = "ethernet" ]; then
-                log_success "✅ 网络配置匹配: 期望以太网，实际使用以太网"
-            else
-                log_warning "⚠️  网络配置不完全匹配: 期望以太网，实际使用 $actual_network"
-                if [ "$actual_network" = "ib" ]; then
-                    log_info "ℹ️  检测到 InfiniBand/RoCE，这通常比以太网性能更好"
-                fi
-            fi
-            ;;
-        "socket")
-            if [ "$actual_network" = "socket" ]; then
-                log_success "✅ 网络配置匹配: 期望 Socket，实际使用 Socket"
-            else
-                log_warning "⚠️  网络配置不匹配: 期望 Socket，实际使用 $actual_network"
-                log_info "ℹ️  NCCL 选择了更高性能的网络路径"
-            fi
-            ;;
-        *)
-            log_info "ℹ️  未知期望网络类型: $expected_network，实际使用: $actual_network"
-            ;;
-    esac
-    
-    # 额外的网络状态检查
-    if [ "$actual_network" = "socket" ] && [ "$expected_network" != "socket" ]; then
-        log_warning "⚠️  NCCL 回退到 Socket 网络，可能存在以下问题:"
-        log_warning "   • InfiniBand 设备配置错误"
-        log_warning "   • GPU P2P 通信被禁用"
-        log_warning "   • 网络环境变量配置不当"
-    fi
-    
-    if [ "$actual_network" = "shm" ] && [ "$MULTI_NODE_MODE" = true ]; then
-        log_warning "⚠️  多节点模式下使用共享内存，这可能不是期望的行为"
-    fi
-    
-    # 检查 GPUDirect RDMA
-    if grep -q "GDR" "$output_file" || grep -q "GPUDirect" "$output_file"; then
-        log_success "✅ GPUDirect RDMA 已启用"
+        done
     else
-        log_warning "⚠️  未检测到 GPUDirect RDMA"
+        log_info "   未找到 Channel 通信路径信息"
+    fi
+    
+    # 2. 显示 GPUDirect RDMA 状态（仅展示）
+    log_info "🔗 GPUDirect RDMA:"
+    if grep -q "GDR" "$output_file" || grep -q "GPUDirect" "$output_file"; then
+        log_info "   已启用"
+    else
+        log_info "   未检测到"
     fi
     
     # 检查 NCCL 初始化信息
@@ -1705,7 +1947,8 @@ analyze_nccl_output() {
         fi
         
         # 统计迭代完成情况
-        local completed_iterations=$(grep -c "已完成.*次迭代" "$output_file" 2>/dev/null || echo "0")
+        local completed_iterations=$(grep -c "已完成.*次迭代" "$output_file" 2>/dev/null)
+    completed_iterations=${completed_iterations:-0}
         if [ "$completed_iterations" -gt 0 ]; then
             log_info "    📈 完成迭代统计: $completed_iterations 个里程碑"
         fi
@@ -1756,6 +1999,113 @@ analyze_nccl_output() {
     log_info ""
     log_info "详细日志位置: $output_file"
     log_info "查看完整日志: cat $output_file"
+}
+
+# 展示当前 NCCL 环境变量的值
+display_nccl_environment_variables() {
+    log_header "当前 NCCL 环境变量"
+    
+    # 定义需要展示的 NCCL 环境变量列表
+    local nccl_vars=(
+        "NCCL_DEBUG"
+        "NCCL_DEBUG_SUBSYS"
+        "NCCL_IB_DISABLE"
+        "NCCL_NET_DISABLE"
+        "NCCL_P2P_DISABLE"
+        "NCCL_SHM_DISABLE"
+        "NCCL_NET_GDR_LEVEL"
+        "NCCL_IB_HCA"
+        "NCCL_IB_GID_INDEX"
+        "NCCL_IB_TIMEOUT"
+        "NCCL_IB_RETRY_CNT"
+        "NCCL_SOCKET_IFNAME"
+        "NCCL_P2P_LEVEL"
+        "NCCL_NVLS_ENABLE"
+        "NCCL_ALGO"
+        "NCCL_MAX_NCHANNELS"
+        "NCCL_MIN_NCHANNELS"
+        "NCCL_NVLS_CHUNKSIZE"
+        "NCCL_TREE_THRESHOLD"
+        "NCCL_RING_THRESHOLD"
+        "NCCL_BUFFSIZE"
+        "NCCL_NTHREADS"
+        "NCCL_CHECKS_DISABLE"
+        "NCCL_CHECK_POINTERS"
+        "NCCL_LAUNCH_MODE"
+    )
+    
+    log_info "核心配置变量:"
+    local core_vars=("NCCL_DEBUG" "NCCL_DEBUG_SUBSYS" "NCCL_IB_DISABLE" "NCCL_NET_DISABLE" "NCCL_P2P_DISABLE" "NCCL_SHM_DISABLE")
+    for var in "${core_vars[@]}"; do
+        local value="${!var:-未设置}"
+        if [ "$value" != "未设置" ]; then
+            log_success "  $var = $value"
+        else
+            log_info "  $var = $value"
+        fi
+    done
+    
+    log_info ""
+    log_info "网络配置变量:"
+    local network_vars=("NCCL_NET_GDR_LEVEL" "NCCL_IB_HCA" "NCCL_IB_GID_INDEX" "NCCL_IB_TIMEOUT" "NCCL_IB_RETRY_CNT" "NCCL_SOCKET_IFNAME")
+    for var in "${network_vars[@]}"; do
+        local value="${!var:-未设置}"
+        if [ "$value" != "未设置" ]; then
+            log_success "  $var = $value"
+        else
+            log_info "  $var = $value"
+        fi
+    done
+    
+    log_info ""
+    log_info "性能优化变量:"
+    local perf_vars=("NCCL_P2P_LEVEL" "NCCL_NVLS_ENABLE" "NCCL_ALGO" "NCCL_MAX_NCHANNELS" "NCCL_MIN_NCHANNELS" "NCCL_NVLS_CHUNKSIZE")
+    for var in "${perf_vars[@]}"; do
+        local value="${!var:-未设置}"
+        if [ "$value" != "未设置" ]; then
+            log_success "  $var = $value"
+        else
+            log_info "  $var = $value"
+        fi
+    done
+    
+    log_info ""
+    log_info "其他配置变量:"
+    local other_vars=("NCCL_TREE_THRESHOLD" "NCCL_RING_THRESHOLD" "NCCL_BUFFSIZE" "NCCL_NTHREADS" "NCCL_CHECKS_DISABLE" "NCCL_CHECK_POINTERS" "NCCL_LAUNCH_MODE")
+    for var in "${other_vars[@]}"; do
+        local value="${!var:-未设置}"
+        if [ "$value" != "未设置" ]; then
+            log_success "  $var = $value"
+        else
+            log_info "  $var = $value"
+        fi
+    done
+    
+    # 统计已设置的变量数量
+    local set_count=0
+    local total_count=${#nccl_vars[@]}
+    for var in "${nccl_vars[@]}"; do
+        if [ -n "${!var:-}" ]; then
+            ((set_count++))
+        fi
+    done
+    
+    log_info ""
+    log_info "环境变量统计: $set_count/$total_count 个变量已设置"
+    
+    # 如果有自定义的 NCCL 环境变量（不在预定义列表中）
+    log_info ""
+    log_info "检查其他 NCCL 环境变量:"
+    local custom_vars=$(env | grep "^NCCL_" | grep -v -E "^($(IFS='|'; echo "${nccl_vars[*]}"))" | cut -d= -f1 | sort)
+    if [ -n "$custom_vars" ]; then
+        log_warning "发现额外的 NCCL 环境变量:"
+        echo "$custom_vars" | while read var; do
+            local value="${!var:-}"
+            log_warning "  $var = $value"
+        done
+    else
+        log_info "  未发现额外的 NCCL 环境变量"
+    fi
 }
 
 
@@ -1853,25 +2203,6 @@ main() {
     log_info "日志文件: $LOG_FILE"
     log ""
     
-    # 仅显示环境配置
-    if [ "$ENV_ONLY" = true ]; then
-        log_info "仅显示网络配置 (跳过依赖检查)"
-        setup_nccl_env
-        log_success "网络配置显示完成"
-        exit 0
-    fi
-    
-    # 仅检查环境
-    if [ "$CHECK_ONLY" = true ]; then
-        if check_nccl_dependencies; then
-            log_success "环境检查通过"
-        else
-            log_error "环境检查失败"
-            exit 1
-        fi
-        exit 0
-    fi
-    
     # 完整测试流程
     local step_failed=false
     
@@ -1884,8 +2215,18 @@ main() {
     # 2. 设置 NCCL 环境
     if ! $step_failed; then
         setup_nccl_env
+        
+        # 展示 NCCL 环境变量的值
+        display_nccl_environment_variables
     fi
-    
+
+    # 3. 判断是否是 dry run，如果是则跳过测试创建和运行
+    if [ "$DRY_RUN" = true ]; then
+        log_success "Dry-run 完成：环境检查和配置均正常"
+        log_info "如需执行实际测试，请移除 --dry-run 选项"
+        exit 0
+    fi
+
     # 3. 创建并运行测试
     if ! $step_failed; then
         if create_nccl_test; then

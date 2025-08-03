@@ -93,12 +93,10 @@ COPY nccl_benchmark.sh /workspace/nccl_test/
 # 设置权限
 RUN chmod +x /workspace/nccl_test/*.sh /workspace/nccl_test/*.py
 
-# 设置 NCCL 环境变量 (运行时可覆盖)
+# 设置 NCCL 调试环境变量 (运行时可覆盖)
+# 注意: 不设置功能性环境变量，让 nccl_benchmark.sh 脚本完全控制 NCCL 配置
 ENV NCCL_DEBUG=INFO \
-    NCCL_DEBUG_SUBSYS=INIT,NET \
-    NCCL_IB_DISABLE=0 \
-    NCCL_NET_GDR_LEVEL=3 \
-    NCCL_P2P_LEVEL=NVL
+    NCCL_DEBUG_SUBSYS=INIT,NET
 
 # 设置默认命令
 CMD ["/bin/bash"]

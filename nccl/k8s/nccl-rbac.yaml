@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nccl-service-account
+  namespace: nccl
+  labels:
+    app: nccl-multinode
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: nccl
+  name: nccl-pod-reader
+  labels:
+    app: nccl-multinode
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nccl-pod-reader-binding
+  namespace: nccl
+  labels:
+    app: nccl-multinode
+subjects:
+- kind: ServiceAccount
+  name: nccl-service-account
+  namespace: nccl
+roleRef:
+  kind: Role
+  name: nccl-pod-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# ClusterRole for node access (nodes are cluster-scoped resources)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nccl-node-reader
+  labels:
+    app: nccl-multinode
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nccl-node-reader-binding
+  labels:
+    app: nccl-multinode
+subjects:
+- kind: ServiceAccount
+  name: nccl-service-account
+  namespace: nccl
+roleRef:
+  kind: ClusterRole
+  name: nccl-node-reader
+  apiGroup: rbac.authorization.k8s.io

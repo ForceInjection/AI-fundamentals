@@ -1,5 +1,11 @@
 # NCCL InfiniBand 测试验证工具说明文档
 
+> 注意：**性能部分指标的解释和计算方法可能会根据具体的硬件配置和网络环境而有所不同。建议在实际测试中根据自己的环境进行调整和优化**。
+
+---
+
+> 目前进展：单节点测试基本验证OK。
+
 ## 1. 概述与系统要求
 
 ### 1.1 NCCL 测试背景
@@ -43,12 +49,57 @@
 
 ### 1.2 工具概述
 
-`nccl_benchmark.sh` 是一个专业的 NCCL InfiniBand 网络测试验证工具，专门设计用于：
+本工具套件提供了完整的 NCCL 测试和部署解决方案，包含以下核心工具：
+
+#### 1.2.1 核心测试工具
+
+**`nccl_benchmark.sh`** - 主要的 NCCL 性能测试工具，专门设计用于：
 
 - **性能基准测试**：测量真实的NCCL通信性能
 - **配置验证**：验证NCCL环境变量和网络配置
 - **问题诊断**：识别性能瓶颈和配置问题
 - **环境优化**：提供最佳实践配置建议
+
+**`gpu_topology_detector.sh`** - GPU 拓扑检测工具：
+
+- **硬件拓扑分析**：检测 GPU 间的连接方式（NVLink、PCIe）
+- **NCCL 通信路径验证**：确认 NCCL 实际使用的通信路径
+- **性能预测**：基于硬件拓扑预测通信性能
+- **配置建议**：提供最优的网络后端配置建议
+
+#### 1.2.2 容器化部署工具
+
+**`nccl_container_manager.sh`** - 容器化测试管理工具：
+
+- **单节点容器测试**：使用 Docker 容器运行 NCCL 测试
+- **环境隔离**：提供干净的测试环境，避免主机环境干扰
+- **特权模式支持**：完整的硬件访问权限（GPU、InfiniBand）
+- **配置灵活性**：支持多种网络后端和测试参数
+
+#### 1.2.3 多节点部署工具
+
+**`nccl_multinode_launcher.sh`** - 传统多节点部署工具：
+
+- **裸机多节点测试**：直接在物理机上运行分布式测试
+- **节点协调**：自动处理主节点和工作节点的启动顺序
+- **参数同步**：确保所有节点使用一致的测试参数
+- **故障恢复**：提供重试机制和错误处理
+
+**`k8s/deploy.sh`** - Kubernetes 多节点部署工具：
+
+- **云原生部署**：在 Kubernetes 集群中部署 NCCL 测试
+- **StatefulSet 管理**：提供稳定的 Pod 命名和有序启动
+- **资源管理**：自动管理 GPU 资源分配和调度
+- **扩展性**：支持大规模多节点测试部署
+
+#### 1.2.4 辅助工具
+
+**`nccl_python_template.py`** - Python 测试模板：
+
+- **自定义测试脚本**：提供可定制的 NCCL 测试代码模板
+- **性能监控**：详细的延迟和吞吐量统计
+- **调试支持**：丰富的日志输出和错误处理
+- **多进程协调**：支持分布式测试的进程同步
 
 ### 1.3 主要功能
 
@@ -657,13 +708,272 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 
 ---
 
-## 3. 多节点测试
+## 3. 容器化测试
 
-### 3.1 多节点测试概述
+### 3.1 容器化测试概述
+
+`nccl_container_manager.sh` 提供了基于 Docker 容器的 NCCL 测试解决方案，具有以下优势：
+
+#### 3.1.1 容器化的优势
+
+**环境隔离**：
+
+- 避免主机环境依赖冲突
+- 提供一致的测试环境
+- 简化部署和维护
+
+**硬件访问**：
+
+- 特权模式提供完整的硬件访问权限
+- 支持 GPU、InfiniBand、NVLink 等设备
+- Host Network 模式避免网络性能损失
+
+**配置灵活性**：
+
+- 支持多种网络后端配置
+- 可定制的测试参数
+- 交互模式用于调试
+
+#### 3.1.2 技术特性
+
+**网络模式**：
+
+- **Host Network**：直接使用主机网络，无 Docker 网络层开销
+- **特权模式**：完整的设备访问权限，无需手动挂载设备
+
+**GPU 支持**：
+
+- NVIDIA Container Toolkit 集成
+- 支持指定 GPU 数量和 ID
+- 完整的 CUDA 和 NCCL 支持
+
+**存储挂载**：
+
+- 自动挂载必要的系统目录
+- 日志文件持久化到主机
+- 配置文件共享
+
+### 3.2 前置条件
+
+#### 3.2.1 软件要求
+
+```bash
+# 1. 安装 Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# 2. 安装 NVIDIA Container Toolkit
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+sudo apt-get update && sudo apt-get install -y nvidia-docker2
+sudo systemctl restart docker
+
+# 3. 验证 GPU 容器支持
+docker run --rm --gpus all nvidia/cuda:11.8-base-ubuntu20.04 nvidia-smi
+```
+
+#### 3.2.2 构建测试镜像
+
+```bash
+# 构建 NCCL 测试镜像
+docker build -t nccl-test:latest .
+
+# 验证镜像构建成功
+docker images | grep nccl-test
+```
+
+### 3.3 基本使用
+
+#### 3.3.1 快速测试
+
+```bash
+# 基础测试（使用所有 GPU）
+./nccl_container_manager.sh --gpus all --size 100M --time 60
+
+# Dry-run 模式（检查配置但不执行测试）
+./nccl_container_manager.sh --dry-run --gpus all --size 100M
+
+# 交互模式（进入容器调试）
+./nccl_container_manager.sh --interactive
+```
+
+#### 3.3.2 网络后端测试
+
+```bash
+# 自动选择最佳网络后端
+./nccl_container_manager.sh --gpus 4 --network auto --size 1G
+
+# 强制使用 NVLink（单节点多GPU）
+./nccl_container_manager.sh --gpus 4 --network nvlink --size 500M
+
+# 强制使用 InfiniBand
+./nccl_container_manager.sh --gpus 2 --network ib --size 100M
+
+# 使用以太网
+./nccl_container_manager.sh --gpus 2 --network ethernet --size 50M
+
+# 使用共享内存
+./nccl_container_manager.sh --gpus 2 --network shm --size 10M
+```
+
+#### 3.3.3 GPU 配置选项
+
+```bash
+# 使用所有可用 GPU
+./nccl_container_manager.sh --gpus all
+
+# 使用指定数量的 GPU
+./nccl_container_manager.sh --gpus 4
+
+# 使用特定 GPU ID
+./nccl_container_manager.sh --gpus 0,1,2,3
+
+# 使用单个 GPU（测试基础功能）
+./nccl_container_manager.sh --gpus 1
+```
+
+### 3.4 高级配置
+
+#### 3.4.1 自定义容器配置
+
+```bash
+# 自定义容器名称和镜像
+./nccl_container_manager.sh \
+    --container-name my-nccl-test \
+    --image-name my-nccl:v1.0 \
+    --gpus 4 --size 1G
+
+# 保留容器用于调试
+./nccl_container_manager.sh \
+    --no-cleanup \
+    --gpus 2 --size 100M
+
+# 启用详细日志
+./nccl_container_manager.sh \
+    --log-level DEBUG \
+    --gpus 4 --size 500M
+```
+
+#### 3.4.2 性能测试套件
+
+```bash
+# 延迟测试套件
+echo "=== 延迟测试套件 ==="
+for backend in nvlink ib ethernet; do
+    echo "测试 $backend 延迟..."
+    ./nccl_container_manager.sh \
+        --gpus 2 --network $backend \
+        --size 1M --time 30
+done
+
+# 带宽测试套件
+echo "=== 带宽测试套件 ==="
+for size in 100M 500M 1G; do
+    echo "测试数据大小: $size"
+    ./nccl_container_manager.sh \
+        --gpus 4 --network auto \
+        --size $size --time 120
+done
+
+# 扩展性测试套件
+echo "=== 扩展性测试套件 ==="
+for gpus in 1 2 4 8; do
+    echo "测试 GPU 数量: $gpus"
+    ./nccl_container_manager.sh \
+        --gpus $gpus --network nvlink \
+        --size 100M --time 60
+done
+```
+
+### 3.5 故障排除
+
+#### 3.5.1 常见问题
+
+**Docker 权限问题**：
+
+```bash
+# 将用户添加到 docker 组
+sudo usermod -aG docker $USER
+# 重新登录或执行
+newgrp docker
+```
+
+**NVIDIA Container Toolkit 问题**：
+
+```bash
+# 检查 NVIDIA 运行时
+docker info | grep nvidia
+
+# 测试 GPU 访问
+docker run --rm --gpus all nvidia/cuda:11.8-base-ubuntu20.04 nvidia-smi
+```
+
+**镜像构建失败**：
+
+```bash
+# 检查 Dockerfile 是否存在
+ls -la Dockerfile
+
+# 手动构建并查看详细输出
+docker build -t nccl-test:latest . --no-cache --progress=plain
+```
+
+#### 3.5.2 调试技巧
+
+**交互模式调试**：
+
+```bash
+# 进入容器进行手动调试
+./nccl_container_manager.sh --interactive
+
+# 在容器内手动运行测试
+cd /workspace/nccl_test
+./nccl_benchmark.sh --network auto --size 100M
+```
+
+**日志分析**：
+
+```bash
+# 查看容器日志
+docker logs nccl-test
+
+# 查看详细的 NCCL 日志
+./nccl_container_manager.sh --log-level DEBUG --gpus 2 --size 100M
+```
+
+### 3.6 最佳实践
+
+#### 3.6.1 性能优化
+
+- **使用 Host Network**：避免 Docker 网络层开销
+- **特权模式**：确保完整的硬件访问权限
+- **GPU 亲和性**：在多 GPU 系统中合理分配 GPU
+- **内存管理**：确保容器有足够的内存用于大规模测试
+
+#### 3.6.2 安全考虑
+
+- **特权模式风险**：仅在受信任的环境中使用特权模式
+- **网络隔离**：在生产环境中考虑网络安全策略
+- **资源限制**：根据需要设置 CPU 和内存限制
+
+#### 3.6.3 生产部署建议
+
+- **镜像管理**：使用私有镜像仓库管理测试镜像
+- **配置管理**：使用配置文件管理复杂的测试参数
+- **监控集成**：集成监控系统跟踪测试性能
+- **自动化**：结合 CI/CD 流水线进行自动化测试
+
+---
+
+## 4. 多节点测试
+
+### 4.1 多节点测试概述
 
 多节点 NCCL 测试用于验证跨节点的分布式通信性能，是大规模训练环境的重要验证手段。本工具提供两种多节点测试方案：
 
-#### 3.1.1 原生多节点部署
+#### 4.1.1 原生多节点部署
 
 使用 `nccl_multinode_launcher.sh` 脚本进行传统的裸机多节点部署：
 
@@ -671,7 +981,7 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 - **优势**：配置简单、直接控制
 - **劣势**：手动管理、扩展性有限
 
-#### 3.1.2 Kubernetes 多节点部署（推荐）
+#### 4.1.2 Kubernetes 多节点部署（推荐）
 
 使用 `k8s/deploy.sh` 脚本进行现代化的容器编排部署：
 
@@ -681,9 +991,9 @@ echo "基准测试完成，结果保存在 baseline_*.log 文件中"
 
 **推荐使用 Kubernetes 方案**，特别是在生产环境和云环境中。
 
-### 3.2 快速开始
+### 4.2 快速开始
 
-#### 3.2.1 方案选择
+#### 4.2.1 方案选择
 
 根据你的环境选择合适的部署方案：
 
@@ -716,7 +1026,7 @@ cd k8s/
 ./nccl_multinode_launcher.sh 1 192.168.1.100
 ```
 
-#### 3.2.2 Kubernetes 自定义配置
+#### 4.2.2 Kubernetes 自定义配置
 
 ```bash
 # 自定义 GPU 数量和测试参数
@@ -732,7 +1042,7 @@ cd k8s/
 ./deploy.sh --help
 ```
 
-#### 3.2.3 原生部署基础配置
+#### 4.2.3 原生部署基础配置
 
 **基础2节点测试**：
 
@@ -790,9 +1100,9 @@ cd k8s/
 - 所有节点必须使用相同的网络后端配置
 - 网络后端会传递给底层的 `nccl_benchmark.sh` 脚本
 
-### 3.3 Kubernetes 多节点部署（推荐）
+### 4.3 Kubernetes 多节点部署（推荐）
 
-#### 3.3.1 Kubernetes 方案概述
+#### 4.3.1 Kubernetes 方案概述
 
 Kubernetes 方案提供了现代化的容器编排多节点部署，具有以下优势：
 
@@ -802,7 +1112,7 @@ Kubernetes 方案提供了现代化的容器编排多节点部署，具有以下
 - **配置管理**: 统一的配置管理和版本控制
 - **监控集成**: 与 Kubernetes 生态系统无缝集成
 
-#### 3.3.2 快速开始
+#### 4.3.2 快速开始
 
 **部署测试环境**：
 
@@ -825,7 +1135,7 @@ kubectl delete -f nccl-service.yaml
 kubectl delete configmap nccl-config
 ```
 
-#### 3.3.3 自定义配置
+#### 4.3.3 自定义配置
 
 **修改测试参数**：
 
@@ -1283,11 +1593,11 @@ ibstat
 
 ---
 
-## 4. 关键技术说明
+## 5. 关键技术说明
 
-### 4.1 NCCL AllReduce 算法原理
+### 5.1 NCCL AllReduce 算法原理
 
-#### 4.1.1 Ring AllReduce 算法
+#### 5.1.1 Ring AllReduce 算法
 
 NCCL 默认使用 Ring AllReduce 算法，该算法具有以下特点：
 
@@ -1331,7 +1641,7 @@ def ring_allreduce(data, rank, world_size):
 - **时间复杂度**: 2 × (N-1)/N × (数据传输时间)
 - **带宽利用率**: 接近 100% (理论最优)
 
-#### 4.1.2 理论传输量计算
+#### 5.1.2 理论传输量计算
 
 ```python
 def calculate_theoretical_transfer(data_size_mb, world_size):
@@ -1354,9 +1664,9 @@ def calculate_theoretical_transfer(data_size_mb, world_size):
 # 4个GPU，100MB数据: 2 × (4-1)/4 × 100 = 150MB 理论传输量
 ```
 
-### 4.2 GPUDirect RDMA 技术原理
+### 5.2 GPUDirect RDMA 技术原理
 
-#### 4.2.1 传统数据路径 vs GPUDirect RDMA
+#### 5.2.1 传统数据路径 vs GPUDirect RDMA
 
 ```bash
 # 传统数据路径 (无 GPUDirect RDMA)
@@ -1369,7 +1679,7 @@ GPU1 Memory → Network → GPU2 Memory
 #           ↑ 直接连接，零拷贝，低延迟
 ```
 
-#### 4.2.2 NCCL 环境变量技术细节
+#### 5.2.2 NCCL 环境变量技术细节
 
 ```bash
 # 关键环境变量及其技术含义
@@ -1421,9 +1731,9 @@ export NCCL_IB_RETRY_CNT=7    # 重试次数
 #   - 过小值可能导致误报，过大值影响故障检测
 ```
 
-### 4.3 网络类型自动检测机制
+### 5.3 网络类型自动检测机制
 
-#### 4.3.1 检测算法实现
+#### 5.3.1 检测算法实现
 
 ```bash
 # 脚本中的网络类型检测逻辑
@@ -1460,7 +1770,7 @@ detect_network_type() {
 }
 ```
 
-#### 6.3.2 配置差异对比
+#### 5.3.2 配置差异对比
 
 | 参数 | 原生 InfiniBand | RoCE v2 | 技术说明 |
 |------|----------------|---------|----------|
@@ -1469,9 +1779,9 @@ detect_network_type() {
 | 网络层 | IB Verbs | Ethernet + IB Verbs | 底层传输协议不同 |
 | 性能特征 | 超低延迟 | 较低延迟，更好兼容性 | 硬件和协议栈差异 |
 
-### 4.4 性能测试核心代码解析
+### 5.4 性能测试核心代码解析
 
-#### 4.4.1 动态张量大小计算
+#### 5.4.1 动态张量大小计算
 
 ```python
 # 脚本生成的 Python 测试代码关键部分
@@ -1517,7 +1827,7 @@ def check_gpu_memory_safety(tensor_size, device):
     return True
 ```
 
-#### 4.4.2 性能指标计算详解
+#### 5.4.2 性能指标计算详解
 
 ```python
 def calculate_performance_metrics(tensor, duration_ms, world_size):
@@ -1564,9 +1874,9 @@ def calculate_performance_metrics(tensor, duration_ms, world_size):
     }
 ```
 
-### 4.5 调试和诊断技术
+### 5.5 调试和诊断技术
 
-#### 4.5.1 NCCL 调试级别详解
+#### 5.5.1 NCCL 调试级别详解
 
 ```bash
 # NCCL 调试级别配置
@@ -1586,7 +1896,7 @@ export NCCL_DEBUG_SUBSYS=TUNING     # 性能调优信息
 #     组件  级别  消息内容
 ```
 
-#### 4.5.2 性能瓶颈诊断流程
+#### 5.5.2 性能瓶颈诊断流程
 
 ```bash
 # 1. 网络连通性检查
@@ -1632,19 +1942,443 @@ gpu_memory_test() {
 
 ---
 
-## 5. 配置说明
+## 6. Python 测试模板
 
-### 5.1 NCCL 环境变量
+### 6.1 Python 测试模板概述
+
+`nccl_python_template.py` 提供了一个简洁高效的 NCCL 分布式通信测试模板，专注于核心性能测试功能：
+
+#### 6.1.1 功能特性
+
+**系统信息收集**：
+
+- 自动检测和显示系统硬件信息（Python版本、PyTorch版本、CUDA版本、GPU信息）
+- NCCL 版本信息和环境变量配置展示
+- 本机IP地址获取
+- GPU内存信息显示
+
+**性能测试**：
+
+- NCCL AllReduce 操作的持续性能测试
+- 基于时间的测试控制（默认30秒）
+- 实时延迟和吞吐量测量
+- 详细的性能统计分析
+
+**核心特点**：
+
+- 使用环境变量进行参数配置
+- 支持多进程分布式测试
+- 固定使用float32数据类型
+- 自动进程同步和资源清理
+
+#### 6.1.2 技术架构
+
+**分布式初始化**：
+
+- 使用 PyTorch 分布式后端（torch.distributed）
+- 支持 NCCL 后端的 GPU 通信
+- 基于环境变量的进程组管理
+- 完善的错误处理和超时机制
+
+**测试执行流程**：
+
+- 系统信息检测和环境验证
+- 分布式环境初始化和设备分配
+- 预热阶段（5次AllReduce操作）
+- 基于时间的持续性能测试
+- 统计数据收集和结果输出
+
+**性能监控**：
+
+- 毫秒级精确时间测量
+- 实时吞吐量计算（GB/s）
+- 延迟统计（平均值、最小值、最大值）
+- AllReduce理论传输量计算
+
+### 6.2 环境要求
+
+#### 6.2.1 软件依赖
+
+```bash
+# Python 环境要求
+Python >= 3.7
+
+# 核心依赖包（必需）
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 注意：模板仅使用标准库和PyTorch，无需额外依赖包
+```
+
+#### 6.2.2 硬件要求
+
+- **GPU**: NVIDIA GPU with CUDA support
+- **NCCL**: NCCL 2.0+ (通常随 PyTorch 安装)
+- **网络**: InfiniBand, Ethernet, 或 NVLink
+- **内存**: 足够的 GPU 内存用于测试数据
+
+### 6.3 基本使用
+
+**重要说明**：该模板通过环境变量进行配置，通常由 `nccl_benchmark.sh` 脚本调用，不支持命令行参数。
+
+#### 6.3.1 环境变量配置
+
+```bash
+# 分布式配置（必需）
+export RANK=0                    # 进程排名
+export WORLD_SIZE=2              # 总进程数
+export LOCAL_RANK=0              # 本地GPU排名
+export MASTER_ADDR=localhost     # 主节点地址
+export MASTER_PORT=29500         # 主节点端口
+
+# 测试参数配置（可选）
+export TENSOR_ELEMENTS=1000000   # 张量元素数量（默认1M）
+export TEST_DURATION=30          # 测试时长（秒，默认30）
+export NCCL_BACKEND=nccl         # 后端类型（默认nccl）
+
+# 运行测试
+python nccl_python_template.py
+```
+
+#### 6.3.2 单节点多GPU测试
+
+```bash
+# 2 GPU测试示例
+export WORLD_SIZE=2
+export MASTER_ADDR=localhost
+export MASTER_PORT=29500
+
+# 启动第一个进程
+export RANK=0
+export LOCAL_RANK=0
+python nccl_python_template.py &
+
+# 启动第二个进程
+export RANK=1
+export LOCAL_RANK=1
+python nccl_python_template.py &
+
+wait  # 等待所有进程完成
+```
+
+#### 6.3.3 多节点分布式测试
+
+```bash
+# 节点1 (192.168.1.100) - 运行2个进程
+export WORLD_SIZE=4
+export MASTER_ADDR=192.168.1.100
+export MASTER_PORT=29500
+
+# 节点1的第一个进程
+export RANK=0
+export LOCAL_RANK=0
+python nccl_python_template.py &
+
+# 节点1的第二个进程
+export RANK=1
+export LOCAL_RANK=1
+python nccl_python_template.py &
+
+# 节点2 (192.168.1.101) - 运行2个进程
+export WORLD_SIZE=4
+export MASTER_ADDR=192.168.1.100
+export MASTER_PORT=29500
+
+# 节点2的第一个进程
+export RANK=2
+export LOCAL_RANK=0
+python nccl_python_template.py &
+
+# 节点2的第二个进程
+export RANK=3
+export LOCAL_RANK=1
+python nccl_python_template.py &
+```
+
+### 6.4 高级配置
+
+#### 6.4.1 测试参数调整
+
+```bash
+# 大数据量测试（10M元素，约40MB）
+export TENSOR_ELEMENTS=10000000
+export TEST_DURATION=60
+python nccl_python_template.py
+
+# 小数据量延迟测试（100K元素，约400KB）
+export TENSOR_ELEMENTS=100000
+export TEST_DURATION=30
+python nccl_python_template.py
+
+# 长时间稳定性测试
+export TENSOR_ELEMENTS=1000000
+export TEST_DURATION=300  # 5分钟
+python nccl_python_template.py
+```
+
+#### 6.4.2 NCCL环境变量配置
+
+```bash
+# NCCL 调试配置
+export NCCL_DEBUG=INFO
+export NCCL_DEBUG_SUBSYS=ALL
+
+# 网络配置
+export NCCL_IB_DISABLE=0
+export NCCL_NET_GDR_LEVEL=5
+export NCCL_SOCKET_IFNAME=^docker0,lo
+
+# 性能优化
+export NCCL_BUFFSIZE=8388608
+export NCCL_NTHREADS=16
+
+# 运行测试
+export RANK=0
+export WORLD_SIZE=2
+export LOCAL_RANK=0
+python nccl_python_template.py
+```
+
+#### 6.4.3 批量测试脚本
+
+```bash
+#!/bin/bash
+# batch_test.sh - 批量性能测试脚本
+
+# 测试不同数据大小（以元素数量为单位）
+tensor_sizes=(100000 1000000 10000000)  # 100K, 1M, 10M 元素
+world_sizes=(2 4 8)
+
+echo "开始批量性能测试..."
+echo "时间戳: $(date)"
+
+export MASTER_ADDR=localhost
+export MASTER_PORT=29500
+export TEST_DURATION=30
+
+for size in "${tensor_sizes[@]}"; do
+    for ws in "${world_sizes[@]}"; do
+        echo "测试配置: ${ws} 进程, 张量大小: ${size} 元素"
+        
+        export TENSOR_ELEMENTS=$size
+        export WORLD_SIZE=$ws
+        
+        # 启动多个进程
+        for ((rank=0; rank<ws; rank++)); do
+            export RANK=$rank
+            export LOCAL_RANK=$((rank % $(nvidia-smi -L | wc -l)))
+            python nccl_python_template.py > "log_${ws}proc_${size}elem_rank${rank}.txt" 2>&1 &
+        done
+        
+        wait  # 等待所有进程完成
+        echo "完成: ${ws} 进程, ${size} 元素"
+        sleep 5
+    done
+done
+
+echo "批量测试完成"
+```
+
+### 6.5 输出解读
+
+#### 6.5.1 系统信息输出
+
+模板首先输出系统环境信息：
+
+```bash
+=== 系统信息 ===
+Python 版本: 3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:09:17) [GCC 11.2.0]
+PyTorch 版本: 2.7.0+cu126
+CUDA 版本: 12.6
+NCCL 版本: (2, 26, 2)
+可用 GPU 数量: 3
+GPU 0: NVIDIA GPU (79.2 GB)
+GPU 1: NVIDIA GPU (79.2 GB)
+GPU 2: NVIDIA GPU (79.2 GB)
+本机 IP: 192.168.1.100
+
+=== NCCL 环境信息 ===
+NCCL 版本: (2, 26, 2)
+NCCL 环境变量:
+  NCCL_IB_DISABLE: 1
+  NCCL_NET_DISABLE: 1
+  NCCL_NET_GDR_LEVEL: 0
+  NCCL_IB_HCA: 未设置
+  NCCL_IB_GID_INDEX: 未设置
+  NCCL_DEBUG: INFO
+  NCCL_DEBUG_SUBSYS: INIT,NET
+  NCCL_P2P_DISABLE: 0
+  NCCL_P2P_LEVEL: NVL
+  NCCL_NVLS_ENABLE: 1
+  NCCL_SOCKET_IFNAME: lo
+  NCCL_IB_TIMEOUT: 未设置
+  NCCL_IB_RETRY_CNT: 未设置
+  NCCL_SHM_DISABLE: 未设置
+  NCCL_SOCKET_FAMILY: 未设置
+  NCCL_SOCKET_NTHREADS: 未设置
+```
+
+#### 6.5.2 测试配置输出
+
+```bash
+[Rank 0] 开始初始化分布式环境...
+[Rank 0] 后端: nccl
+[Rank 0] 世界大小: 3
+[Rank 0] 本地排名: 0
+[Rank 0] 张量大小: 262144 个元素 (1.00 MB)
+[Rank 0] 分布式环境初始化成功
+[Rank 0] 使用设备: cuda:0
+[Rank 0] GPU: NVIDIA GPU
+
+[Rank 1] 开始初始化分布式环境...
+[Rank 1] 后端: nccl
+[Rank 1] 世界大小: 3
+[Rank 1] 本地排名: 1
+[Rank 1] 张量大小: 262144 个元素 (1.00 MB)
+[Rank 1] 分布式环境初始化成功
+[Rank 1] 使用设备: cuda:1
+[Rank 1] GPU: NVIDIA GPU
+
+[Rank 2] 开始初始化分布式环境...
+[Rank 2] 后端: nccl
+[Rank 2] 世界大小: 3
+[Rank 2] 本地排名: 2
+[Rank 2] 张量大小: 262144 个元素 (1.00 MB)
+[Rank 2] 分布式环境初始化成功
+[Rank 2] 使用设备: cuda:2
+[Rank 2] GPU: NVIDIA GPU
+```
+
+#### 6.5.3 性能测试结果
+
+```bash
+=== 性能测试开始 ===
+[Rank 0] 迭代 100: 0.05 ms, 74.47 GB/s
+[Rank 1] 迭代 100: 0.05 ms, 73.47 GB/s
+[Rank 2] 迭代 100: 0.05 ms, 74.81 GB/s
+
+[Rank 0] 迭代 200: 0.05 ms, 75.16 GB/s
+[Rank 1] 迭代 200: 0.05 ms, 74.81 GB/s
+[Rank 2] 迭代 200: 0.05 ms, 75.50 GB/s
+
+...
+
+[Rank 0] 迭代 374200: 0.05 ms, 75.16 GB/s
+[Rank 1] 迭代 374200: 0.05 ms, 74.81 GB/s
+[Rank 2] 迭代 374200: 0.05 ms, 75.50 GB/s
+
+[Rank 0] 测试时间到达，设置停止标志
+[Rank 0] 收到停止信号，退出测试循环
+[Rank 1] 收到停止信号，退出测试循环
+[Rank 2] 收到停止信号，退出测试循环
+
+=== 测试完成 ===
+[Rank 0] 总迭代次数: 374250
+[Rank 0] 总测试时间: 30.01 秒
+[Rank 0] 平均延迟: 0.08 ms
+[Rank 0] 最小延迟: 0.05 ms
+[Rank 0] 最大延迟: 21.14 ms
+[Rank 0] 平均吞吐量: 48.71 GB/s
+[Rank 0] 数据大小: 262144 个元素 (1.00 MB)
+[Rank 0] 理论传输量: 1461.91 GB
+[Rank 0] 网络传输倍数: 4.0x
+
+[Rank 1] 总迭代次数: 374250
+[Rank 1] 总测试时间: 30.01 秒
+[Rank 1] 平均延迟: 0.08 ms
+[Rank 1] 最小延迟: 0.05 ms
+[Rank 1] 最大延迟: 21.74 ms
+[Rank 1] 平均吞吐量: 48.71 GB/s
+
+[Rank 2] 总迭代次数: 374250
+[Rank 2] 总测试时间: 30.01 秒
+[Rank 2] 平均延迟: 0.08 ms
+[Rank 2] 最小延迟: 0.05 ms
+[Rank 2] 最大延迟: 21.51 ms
+[Rank 2] 平均吞吐量: 48.71 GB/s
+
+✅ NCCL AllReduce 测试成功完成
+```
+
+#### 6.5.4 指标含义
+
+- **总迭代次数**: 在指定时间内完成的AllReduce操作次数
+- **总测试时间**: 实际测试运行的总时长
+- **平均延迟**: 单次AllReduce操作的平均耗时（毫秒）
+- **最小延迟**: 测试期间记录的最低延迟
+- **最大延迟**: 测试期间记录的最高延迟（包含初始化开销）
+- **平均吞吐量**: 数据传输的平均速率（GB/s）
+- **数据大小**: 每次传输的数据量（元素数量，1.00 MB）
+- **理论传输量**: 测试期间的总数据传输量
+- **网络传输倍数**: AllReduce操作的网络传输倍数（通常为 2×(n-1)/n，其中n为GPU数量）
+
+### 6.6 注意事项
+
+#### 6.6.1 环境要求
+
+- **PyTorch版本**: 确保安装了支持NCCL的PyTorch版本
+- **CUDA环境**: 需要正确配置CUDA环境变量
+- **分布式环境**: 多节点测试需要配置SSH免密登录
+- **网络连通**: 确保节点间网络连通性
+
+#### 6.6.2 常见问题
+
+**环境变量未设置**：
+
+```bash
+# 检查必需的环境变量
+echo $RANK $WORLD_SIZE $LOCAL_RANK $MASTER_ADDR $MASTER_PORT
+
+# 设置默认值
+export RANK=0
+export WORLD_SIZE=1
+export LOCAL_RANK=0
+export MASTER_ADDR=localhost
+export MASTER_PORT=29500
+```
+
+**GPU内存不足**：
+
+```bash
+# 减少张量大小
+export TENSOR_ELEMENTS=100000  # 减少到100K元素
+
+# 检查GPU内存使用
+nvidia-smi
+```
+
+**分布式初始化超时**：
+
+```bash
+# 增加超时时间（代码中已设置为300秒）
+# 检查网络连通性
+ping $MASTER_ADDR
+
+# 检查端口是否被占用
+netstat -an | grep $MASTER_PORT
+```
+
+#### 6.6.3 调试建议
+
+- **单进程测试**: 先在单进程环境下验证代码正确性
+- **逐步扩展**: 从单节点多GPU扩展到多节点测试
+- **日志分析**: 查看每个进程的输出日志
+- **性能对比**: 与官方nccl-tests结果进行对比
+
+---
+
+## 7. 配置说明
+
+### 7.1 NCCL 环境变量
 
 脚本会自动配置以下关键的 NCCL 环境变量：
 
-#### 5.1.1 基础配置
+#### 7.1.1 基础配置
 
 - `NCCL_IB_DISABLE=0`: 启用 InfiniBand 支持
 - `NCCL_NET_GDR_LEVEL=2`: 启用 GPUDirect RDMA
 - `NCCL_IB_HCA`: 自动检测并设置 HCA 设备名
 
-#### 5.1.2 网络类型特定配置
+#### 7.1.2 网络类型特定配置
 
 **原生 InfiniBand**:
 
@@ -1659,54 +2393,606 @@ gpu_memory_test() {
 - `NCCL_IB_SL=0`: 服务级别
 - `NCCL_SOCKET_IFNAME=""`: 禁用 Socket 接口
 
-### 5.2 调试和性能优化
+### 7.2 调试和性能优化
 
 - `NCCL_DEBUG=INFO`: 启用详细日志
 - `NCCL_DEBUG_SUBSYS=INIT,NET`: 网络初始化调试
 - `NCCL_IB_TIMEOUT=22`: IB 超时设置
 - `NCCL_IB_RETRY_CNT=7`: 重试次数
 
+### 7.3 不同网络模式下的 NCCL 环境变量配置
+
+脚本支持 7 种网络后端模式，每种模式都有特定的 NCCL 环境变量配置策略和严格的硬件检查机制。脚本会根据选择的网络模式进行相应的硬件验证，如果硬件不支持或配置不当，会直接退出并提供详细的解决方案。
+
+**支持的网络模式**：
+
+- **auto**: 自动检测最优网络（按 NCCL 优先级）
+- **ib**: 强制使用 InfiniBand（包括原生 IB 和 RoCE）
+- **nvlink**: 强制使用 NVLink（仅单节点多GPU）
+- **pcie**: 强制使用 PCIe P2P（仅单节点多GPU）
+- **ethernet**: 使用标准以太网
+- **socket**: 强制使用 TCP Socket
+- **shm**: 仅使用共享内存（仅单节点）
+
+**重要特性**：
+
+- **硬件检查**: 每种强制模式都会验证硬件支持
+- **错误处理**: 硬件不匹配时提供详细的解决方案
+- **配置冲突检测**: 防止多节点模式使用单节点专用网络
+- **环境变量展示**: 实时显示当前 NCCL 环境变量配置
+
+以下是各种模式的详细配置说明：
+
+#### 7.3.1 Auto 模式 (`--network auto`)
+
+**配置策略**: 按照 NCCL 优先级自动检测并选择最优网络
+
+Auto 模式实现了智能的硬件检测和配置选择，严格按照 NCCL 的性能优先级进行检测：
+
+**检测优先级和逻辑**:
+
+1. **NVLink 检测** (最高优先级，仅单节点多GPU)
+
+   ```bash
+   # 检测活跃的 NVLink 连接
+   nvidia-smi nvlink --status | grep "GB/s"
+   # 验证带宽信息（如 "26.562 GB/s"）
+   # 备选：检测 GPU 拓扑中的 NVLink 硬件
+   nvidia-smi topo -m | grep "NV[0-9]+"
+   ```
+
+2. **PCIe P2P 检测** (第二优先级，仅单节点多GPU)
+
+   ```bash
+   # 检查 P2P 拓扑矩阵
+   nvidia-smi topo -p2p r | grep "OK"
+   # 基于 GPU 型号推测（Tesla/Quadro/A系列/H系列支持）
+   ```
+
+3. **共享内存** (第三优先级，仅单节点)
+   - 单节点模式下自动可用，无需额外检测
+
+4. **网络传输** (最低优先级)
+
+   ```bash
+   # InfiniBand 优先检测
+   ibv_devinfo | grep "link_layer"
+   # 区分原生 InfiniBand 和 RoCE
+   # 以太网备选：InfiniBand 不可用时回退
+   ```
+
+**环境变量设置**: 根据检测结果调用对应的配置函数
+
+```bash
+# 通用调试配置（所有检测到的模式）
+NCCL_DEBUG=INFO                    # 启用调试信息
+NCCL_DEBUG_SUBSYS=INIT,NET        # 初始化和网络子系统调试
+
+# 多节点配置（如果启用多节点模式）
+NCCL_SOCKET_IFNAME=^docker0,lo     # 排除容器接口
+
+# 具体的环境变量配置取决于检测结果：
+# - 检测到 NVLink → 调用 configure_nvlink_settings
+# - 检测到 PCIe P2P → 调用 configure_pcie_p2p_settings  
+# - 单节点无高速互连 → 调用 configure_shm_settings
+# - 检测到 InfiniBand → 调用 configure_infiniband_settings
+# - 回退到以太网 → 调用 configure_ethernet_settings
+```
+
+**检测日志示例**:
+
+```bash
+[INFO] 自动检测网络环境 (按 NCCL 优先级: NVLink > PCIe P2P > 共享内存 > 网络传输)...
+[SUCCESS] 检测到 4 个活跃的 NVLink 连接 (带宽: 25.781 GB/s)
+[SUCCESS] 自动选择 NVLink 网络 (最高优先级)
+```
+
+#### 7.3.2 InfiniBand 模式 (`--network ib`)
+
+**配置策略**: 强制使用 InfiniBand 网络，包含严格的硬件检查
+
+InfiniBand 模式会进行全面的硬件验证，确保 InfiniBand 环境可用：
+
+**硬件检查流程**:
+
+1. **工具可用性检查**
+
+   ```bash
+   # 验证 ibv_devinfo 命令可用性
+   command -v ibv_devinfo >/dev/null 2>&1
+   # 失败时提供安装指导：apt-get install infiniband-diags
+   ```
+
+2. **设备检测和类型识别**
+
+   ```bash
+   # 检测 InfiniBand 设备
+   ibv_devinfo | grep "link_layer:"
+   # 区分链路层类型：
+   # - "InfiniBand" → 原生 InfiniBand
+   # - "Ethernet" → RoCE (RDMA over Converged Ethernet)
+   ```
+
+3. **设备状态验证**
+
+   ```bash
+   # 验证 HCA 设备状态（如果 ibstat 可用）
+   ibstat | grep "State: Active"
+   # 确保设备处于活跃状态
+   ```
+
+**环境变量设置**:
+
+```bash
+# 核心 InfiniBand 配置
+NCCL_IB_DISABLE=0                  # 启用 InfiniBand
+NCCL_SOCKET_DISABLE=1              # 禁用 Socket 传输
+NCCL_NET_GDR_LEVEL=5               # 最高级别的 GPUDirect RDMA
+
+# InfiniBand 特定参数
+NCCL_IB_HCA=mlx5_0                 # HCA 设备（自动检测）
+NCCL_IB_GID_INDEX=3                # GID 索引（RoCE 使用 3，原生 IB 使用 0）
+NCCL_IB_TIMEOUT=22                 # 超时设置
+NCCL_IB_RETRY_CNT=7                # 重试次数
+
+# 性能优化
+NCCL_IB_USE_CUDA_MEM=1             # 启用 CUDA 内存
+NCCL_IB_CUDA_SUPPORT=1             # 启用 CUDA 支持
+NCCL_BUFFSIZE=8388608              # 8MB 缓冲区
+
+# 调试和监控
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_ib.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_ib.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**错误处理**: 硬件检查失败时会直接退出并提供解决方案：
+
+```bash
+[ERROR] 硬件检查失败: ibv_devinfo 命令不可用，请安装 InfiniBand 驱动和工具
+[ERROR] 无法强制使用 InfiniBand 网络
+[INFO] 解决方案:
+[INFO]   1. 安装 InfiniBand 驱动: apt-get install infiniband-diags
+[INFO]   2. 或使用其他网络后端: --network ethernet 或 --network auto
+```
+
+#### 7.3.3 NVLink 模式 (`--network nvlink`)
+
+**配置策略**: 强制使用 NVLink 传输，仅支持单节点多GPU
+
+NVLink 模式包含严格的硬件检查和配置限制：
+
+**基础条件检查**:
+
+1. **节点模式验证**
+
+   ```bash
+   # NVLink 仅适用于单节点多GPU场景
+   if [ "$MULTI_NODE_MODE" = true ]; then
+       # 直接退出，提供解决方案
+   fi
+   ```
+
+2. **GPU 数量检查**
+
+   ```bash
+   # 检查 nvidia-smi 可用性
+   command -v nvidia-smi >/dev/null 2>&1
+   # 验证 GPU 数量（至少 2 个）
+   gpu_count=$(nvidia-smi -L | wc -l)
+   ```
+
+**NVLink 硬件检测**:
+
+1. **活跃连接检测**（主要方法）
+
+   ```bash
+   # 检测活跃的 NVLink 连接
+   nvidia-smi nvlink --status | grep -c "GB/s"
+   # 验证带宽信息（如 "26.562 GB/s"）
+   ```
+
+2. **硬件拓扑检测**（备选方法）
+
+   ```bash
+   # 检查 NVLink 硬件拓扑
+   nvidia-smi topo -m | grep -E "NV[0-9]+"
+   ```
+
+**环境变量设置**:
+
+```bash
+# NVLink 核心配置
+NCCL_NET_DISABLE=1                 # 禁用网络传输
+NCCL_P2P_DISABLE=0                 # 启用 P2P 传输
+NCCL_SHM_DISABLE=1                 # 禁用共享内存
+
+# NVLink 特定参数
+NCCL_NVLS_ENABLE=1                 # 启用 NVLink Sharp
+NCCL_NVLS_CHUNKSIZE=524288         # 块大小 (512KB)
+NCCL_ALGO=NVLS,Tree,Ring           # 算法优先级
+
+# 性能优化
+NCCL_MAX_NCHANNELS=16              # 最大通道数
+NCCL_MIN_NCHANNELS=8               # 最小通道数
+
+# 调试配置
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_nvlink.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_nvlink.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**错误处理**: 不满足条件时会直接退出并提供解决方案：
+
+```bash
+[ERROR] NVLink 仅支持单节点多GPU模式，不支持多节点
+[ERROR] 无法强制使用 NVLink 网络
+[INFO] 解决方案:
+[INFO]   1. 使用单节点模式 (移除 -m 或 --multi-node 参数)
+[INFO]   2. 或使用多节点兼容的网络后端: --network ib 或 --network ethernet
+```
+
+#### 7.3.4 PCIe 模式 (`--network pcie`)
+
+**配置策略**: 强制使用 PCIe P2P 传输，仅支持单节点多GPU
+
+PCIe 模式与 NVLink 模式类似，包含严格的硬件检查和配置限制：
+
+**基础条件检查**:
+
+1. **节点模式验证**
+
+   ```bash
+   # PCIe P2P 仅适用于单节点多GPU场景
+   if [ "$MULTI_NODE_MODE" = true ]; then
+       # 直接退出，提供解决方案
+   fi
+   ```
+
+2. **GPU 数量和 P2P 支持检查**
+
+   ```bash
+   # 验证 GPU 数量（至少 2 个）
+   gpu_count=$(nvidia-smi -L | wc -l)
+   # 检查 P2P 拓扑可用性
+   nvidia-smi topo -p2p r | grep "OK"
+   ```
+
+**PCIe P2P 硬件检测**:
+
+1. **P2P 拓扑验证**
+
+   ```bash
+   # 检查 P2P 拓扑矩阵
+   nvidia-smi topo -p2p r | grep "OK"
+   ```
+
+2. **ACS 状态检测**
+
+   ```bash
+   # 检测 Access Control Services (ACS) 状态
+   # ACS 启用可能阻止 P2P 通信
+   ```
+
+3. **GPU 型号推测**
+
+   ```bash
+   # 基于 GPU 型号推测 P2P 支持
+   # Tesla/Quadro/A系列/H系列通常支持 P2P
+   ```
+
+**环境变量设置**:
+
+```bash
+# PCIe P2P 核心配置
+NCCL_NET_DISABLE=1                 # 禁用网络传输
+NCCL_P2P_DISABLE=0                 # 启用 P2P 传输
+NCCL_SHM_DISABLE=1                 # 禁用共享内存
+
+# PCIe 特定参数
+NCCL_P2P_LEVEL=SYS                 # 系统级别 P2P
+NCCL_ALGO=Tree,Ring                # 算法选择
+
+# 性能优化
+NCCL_MAX_NCHANNELS=8               # 最大通道数
+NCCL_MIN_NCHANNELS=4               # 最小通道数
+
+# 调试配置
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_pcie.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_pcie.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**错误处理**: 不满足条件时会直接退出并提供解决方案：
+
+```bash
+[ERROR] PCIe P2P 仅支持单节点多GPU模式，不支持多节点
+[ERROR] 无法强制使用 PCIe P2P 网络
+[INFO] 解决方案:
+[INFO]   1. 使用单节点模式 (移除 -m 或 --multi-node 参数)
+[INFO]   2. 或使用多节点兼容的网络后端: --network ib 或 --network ethernet
+```
+
+#### 7.3.5 以太网模式 (`--network ethernet`)
+
+**配置策略**: 使用标准以太网进行通信（兼容性模式）
+
+以太网模式提供最大的兼容性，适用于各种网络环境：
+
+**网络接口检测**:
+
+1. **可用接口检测**
+
+   ```bash
+   # 检测可用的以太网接口
+   ip link show | grep "state UP" | grep -v "lo\|docker"
+   # 排除回环和虚拟接口
+   ```
+
+2. **接口状态验证**
+
+   ```bash
+   # 验证接口状态和连通性
+   # 选择第一个可用的以太网接口
+   ```
+
+**环境变量设置**:
+
+```bash
+# 以太网核心配置
+NCCL_NET_DISABLE=0                 # 启用网络传输
+NCCL_IB_DISABLE=1                  # 禁用 InfiniBand
+NCCL_SOCKET_DISABLE=0              # 启用 Socket 传输
+
+# 网络接口配置
+NCCL_SOCKET_IFNAME=eth0            # 指定以太网接口（自动检测）
+NCCL_SOCKET_NTHREADS=4             # Socket 线程数
+
+# 性能配置
+NCCL_NET_GDR_LEVEL=0               # 禁用 GPUDirect（以太网不支持）
+NCCL_BUFFSIZE=8388608              # 8MB 缓冲区
+
+# 调试配置
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_ethernet.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_ethernet.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**特点**:
+
+- **高兼容性**: 适用于所有有以太网的环境
+- **自动检测**: 自动选择可用的以太网接口
+- **性能适中**: 性能低于 InfiniBand 但高于 Socket 模式
+- **多节点支持**: 支持多节点分布式训练
+
+#### 7.3.6 Socket 模式 (`--network socket`)
+
+**配置策略**: 强制使用 TCP Socket 进行通信（调试和测试模式）
+
+Socket 模式强制使用 TCP Socket 传输，主要用于调试和兼容性测试：
+
+**配置特点**:
+
+- **强制 Socket**: 禁用所有其他传输方式
+- **容器友好**: 自动排除容器网络接口
+- **调试优化**: 适合网络问题排查
+
+**环境变量设置**:
+
+```bash
+# Socket 核心配置
+NCCL_NET_DISABLE=0                 # 启用网络传输
+NCCL_IB_DISABLE=1                  # 禁用 InfiniBand
+NCCL_SOCKET_DISABLE=0              # 启用 Socket 传输
+NCCL_SOCKET_FORCE=1                # 强制使用 Socket
+
+# 容器环境适配
+NCCL_SOCKET_IFNAME=^docker0,lo     # 排除容器接口（多节点）
+# 或单节点时使用 loopback
+
+# 性能配置
+NCCL_NET_GDR_LEVEL=0               # 禁用 GPUDirect
+NCCL_BUFFSIZE=8388608              # 8MB 缓冲区
+NCCL_CHECK_DISABLE=0               # 启用检查
+
+# 调试配置
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_socket.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_socket.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**使用场景**:
+
+- **网络调试**: 排查网络配置问题
+- **兼容性测试**: 验证基础 TCP 连通性
+- **容器环境**: 容器化部署的备选方案
+- **开发测试**: 开发环境的简单配置
+
+#### 7.3.7 共享内存模式 (`--network shm`)
+
+**配置策略**: 仅使用共享内存进行 GPU 间通信（仅单节点）
+
+共享内存模式是最基础的传输方式，仅适用于单节点环境：
+
+**限制检查**:
+
+1. **节点模式验证**
+
+   ```bash
+   # 共享内存仅适用于单节点
+   if [ "$MULTI_NODE_MODE" = true ]; then
+       # 直接退出，提供解决方案
+   fi
+   ```
+
+2. **性能警告**
+
+   ```bash
+   # 警告性能限制
+   log_warning "共享内存模式性能有限，建议使用 NVLink 或 PCIe P2P"
+   ```
+
+**环境变量设置**:
+
+```bash
+# 共享内存核心配置
+NCCL_NET_DISABLE=1                 # 禁用网络传输
+NCCL_P2P_DISABLE=1                 # 禁用 P2P 传输
+NCCL_SHM_DISABLE=0                 # 启用共享内存
+
+# 禁用高级功能
+NCCL_NET_GDR_LEVEL=0               # 禁用 GPUDirect
+NCCL_NVLS_ENABLE=0                 # 禁用 NVLink SHARP
+
+# 性能配置
+NCCL_BUFFSIZE=8388608              # 8MB 缓冲区
+
+# 网络接口清理
+NCCL_SOCKET_IFNAME=                # 清除接口限制
+
+# 调试配置
+NCCL_DEBUG=INFO
+NCCL_DEBUG_SUBSYS=INIT,NET
+NCCL_GRAPH_DUMP_FILE=/tmp/nccl_graph_shm.xml
+NCCL_TOPO_DUMP_FILE=/tmp/nccl_topo_shm.xml
+
+# 其他配置
+NCCL_IGNORE_CPU_AFFINITY=1
+NCCL_CROSS_NIC=0
+```
+
+**特点和限制**:
+
+- **仅单节点**: 不支持多节点分布式训练
+- **性能最低**: 所有传输方式中性能最低
+- **高兼容性**: 适用于所有单节点环境
+- **调试用途**: 主要用于排查硬件问题
+
+**错误处理**: 多节点模式下会直接退出：
+
+```bash
+[ERROR] 共享内存模式仅支持单节点，不支持多节点
+[ERROR] 无法使用共享内存网络
+[INFO] 解决方案:
+[INFO]   1. 使用单节点模式 (移除 -m 或 --multi-node 参数)
+[INFO]   2. 或使用多节点兼容的网络后端: --network ib 或 --network ethernet
+```
+
+#### 7.3.8 环境变量优先级和覆盖规则
+
+**配置流程**:
+
+1. **网络模式选择**: 根据 `--network` 参数选择配置策略
+2. **硬件检查**: 验证硬件支持（强制模式下）
+3. **环境变量配置**: 调用对应的配置函数
+4. **通用配置**: 应用调试和多节点配置
+5. **环境变量展示**: 实时显示当前配置
+
+**优先级顺序**:
+
+1. **命令行参数** (`--network` 选项) - 最高优先级
+2. **脚本配置函数** (基于硬件检测和模式选择)
+3. **通用配置** (调试、多节点等)
+4. **NCCL 默认值** - 最低优先级
+
+**重要特性**:
+
+- **不覆盖用户变量**: 脚本不会覆盖用户预设的 NCCL 环境变量
+- **配置一致性**: 每种模式都有独立的配置函数，确保配置一致
+- **错误处理**: 硬件不匹配时直接退出，避免错误配置
+- **实时展示**: 配置完成后立即显示环境变量状态
+
+**环境变量展示功能**:
+
+脚本在配置完成后会调用 `display_nccl_environment_variables` 函数，提供：
+
+- **分类展示**: 按核心配置、网络配置、性能优化、调试配置分类
+- **状态标识**:
+  - `[SUCCESS]` - 已设置的变量
+  - `[INFO] 未设置` - 未设置的变量  
+  - `[WARNING]` - 额外的变量（非预定义但已设置）
+- **统计信息**: 显示已设置变量的数量和比例
+- **实时更新**: 反映当前环境的实际状态
+
+**验证方法**:
+
+```bash
+# 查看配置过程和环境变量
+./nccl_benchmark.sh --network auto --dry-run
+
+# 查看特定模式的配置
+./nccl_benchmark.sh --network ib --dry-run
+
+# 启用详细日志查看硬件检测过程
+./nccl_benchmark.sh --network nvlink --verbose --dry-run
+```
+
 ---
 
-## 6. 输出文件
+## 8. 测试结果与运维指南
 
-### 6.1 日志文件
+### 8.1 输出文件说明
+
+#### 8.1.1 日志文件
 
 - **位置**: `/tmp/nccl_test_YYYYMMDD_HHMMSS.log`
 - **内容**: 详细的执行日志，包括所有检查、配置和测试过程
 
-### 6.2 测试输出
+#### 8.1.2 测试输出
 
 - **位置**: `/tmp/nccl_test_output.log`
 - **内容**: NCCL 测试的原始输出，包含性能数据和调试信息
 
-### 6.3 测试报告
+#### 8.1.3 测试报告
 
 - **位置**: `/tmp/nccl_test_report_YYYYMMDD_HHMMSS.txt`
 - **内容**: 格式化的测试报告，包含系统信息、配置参数、测试结果
 
-### 6.4 临时文件
+#### 8.1.4 临时文件
 
 - `/tmp/nccl_test.py`: 动态生成的 NCCL 测试脚本
 
----
+### 8.2 性能指标说明
 
-## 7. 性能指标说明
-
-### 7.1 延迟 (Latency)
+#### 8.2.1 延迟 (Latency)
 
 - **单位**: 毫秒 (ms)
 - **含义**: AllReduce 操作的端到端延迟
 - **典型值**: 0.1-2.0 ms (取决于数据大小和网络配置)
 
-### 7.2 数据吞吐量 (Data Throughput)
+#### 8.2.2 数据吞吐量 (Data Throughput)
 
 - **单位**: Gbps (比特每秒)
 - **含义**: NCCL 操作的数据处理速率
 - **注意**: 这不等同于网络带宽，包含了算法开销
 - **换算**: 1 Gbps = 0.125 GB/s (字节每秒)
 
-### 7.3 理论传输量 (Theoretical Transfer)
+#### 8.2.3 理论传输量 (Theoretical Transfer)
 
 - **单位**: MB
 - **计算公式**: Ring AllReduce: `2 * (N-1) / N * data_size`
@@ -1714,11 +3000,11 @@ gpu_memory_test() {
 
 ---
 
-## 8. 故障排除
+### 8.3 故障排除
 
-### 8.1 常见问题
+#### 8.3.1 常见问题
 
-#### 8.1.1 依赖检查失败
+##### 8.3.1.1 依赖检查失败
 
 ```bash
 [ERROR] Python3 未安装
@@ -1727,7 +3013,7 @@ gpu_memory_test() {
 
 **解决方案**: 安装缺失的依赖包
 
-#### 8.1.2 InfiniBand 设备不可用
+##### 8.3.1.2 InfiniBand 设备不可用
 
 ```bash
 [ERROR] InfiniBand 设备不可用或未配置
@@ -1739,7 +3025,7 @@ gpu_memory_test() {
 - 确认 IB 网卡硬件连接正常
 - 运行 `ibstat` 检查设备状态
 
-#### 8.1.3 NCCL 测试失败
+##### 8.3.1.3 NCCL 测试失败
 
 ```bash
 [ERROR] NCCL 测试执行失败
@@ -1751,7 +3037,7 @@ gpu_memory_test() {
 - 确认 NCCL 环境变量配置正确
 - 查看详细日志文件排查具体错误
 
-#### 8.1.4 网络性能不佳
+##### 8.3.1.4 网络性能不佳
 
 ```bash
 [WARNING] 数据吞吐量低于预期
@@ -1763,9 +3049,9 @@ gpu_memory_test() {
 - 验证 GPUDirect RDMA 是否启用
 - 调整 NCCL 参数优化性能
 
-### 8.2 调试技巧
+#### 8.3.2 调试技巧
 
-#### 8.2.1 启用详细日志
+##### 8.3.2.1 启用详细日志
 
 ```bash
 export NCCL_DEBUG=TRACE
@@ -1773,7 +3059,7 @@ export NCCL_DEBUG_SUBSYS=ALL
 ./nccl_benchmark.sh --network auto -s 1M -t 30
 ```
 
-#### 8.2.2 检查 IB 状态
+##### 8.3.2.2 检查 IB 状态
 
 ```bash
 # 查看 IB 设备状态
@@ -1786,7 +3072,7 @@ ibv_devinfo
 perfquery -a
 ```
 
-#### 8.2.3 监控网络流量
+##### 8.3.2.3 监控网络流量
 
 ```bash
 # 在测试前后比较计数器
@@ -1798,35 +3084,35 @@ diff before.txt after.txt
 
 ---
 
-## 9. 最佳实践
+### 8.4 最佳实践
 
-### 9.1 测试前准备
+#### 8.4.1 测试前准备
 
 - 建议先运行 `../InfiniBand/health/ib_health_check.sh` 确保 InfiniBand 网络正常
-- 使用 `../InfiniBand/monitoring/ib_bandwidth_monitor.sh` 监控测试期间的网络性能
+- 使用 `../InfiniBand/monitor/ib_bandwidth_monitor.sh` 监控测试期间的网络性能
 - 确保所有节点的时间同步
 - 确保所有 GPU 可用且内存充足
 - 验证 InfiniBand 网络连接正常
 - 关闭不必要的后台进程
 
-### 9.2 性能监控
+#### 8.4.2 性能监控
 
 - 在测试期间，可以使用专门的 `ib_bandwidth_monitor.sh` 脚本监控 InfiniBand 网络性能
 - 建议在另一个终端窗口运行监控脚本：
 
   ```bash
   # 在测试期间监控网络性能 (需要先安装 InfiniBand 工具包)
-  # 脚本位置: ../InfiniBand/monitoring/ib_bandwidth_monitor.sh
-  ../InfiniBand/monitoring/ib_bandwidth_monitor.sh -d mlx5_0 -p 1 -t 300
+  # 脚本位置: ../InfiniBand/monitor/ib_bandwidth_monitor.sh
+  ../InfiniBand/monitor/ib_bandwidth_monitor.sh -d mlx5_0 -p 1 -t 300
   ```
 
-### 9.3 性能优化
+#### 8.4.3 性能优化
 
 - 使用多 GPU 环境进行测试
 - 确保 GPUDirect RDMA 正确配置
 - 根据网络类型调整 NCCL 参数
 
-### 9.4 定期监控
+#### 8.4.4 定期监控
 
 - 定期运行测试以监控系统性能变化
 - 建立性能基线，及时发现性能退化

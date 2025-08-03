@@ -8,8 +8,6 @@
 # 注意: 多节点测试请使用 Kubernetes 方案 (./k8s/deploy.sh)
 # =============================================================================
 
-set -e
-
 # 脚本配置
 SCRIPT_NAME="NCCL Container Test"
 VERSION="2.0"
@@ -24,6 +22,7 @@ NETWORK_BACKEND="auto"
 CLEANUP=true
 INTERACTIVE=false
 LOG_LEVEL="INFO"
+DRY_RUN=false
 
 # 颜色定义
 RED='\033[0;31m'
@@ -74,7 +73,17 @@ $SCRIPT_NAME v$VERSION
   -s, --size SIZE         测试数据大小 [默认: 1M]
   -t, --time SECONDS      测试持续时间 [默认: 30]
   --network BACKEND       网络后端 [默认: auto]
+                          auto     - 自动检测并选择最佳网络 (按NCCL优先级)
+                                   单节点: NVLink > PCIe P2P > 共享内存 > 网络传输
+                                   多节点: InfiniBand > 以太网
+                          ib       - 强制使用 InfiniBand/RoCE
+                          nvlink   - 强制使用 NVLink (单节点多GPU)
+                          pcie     - 强制使用 PCIe P2P (单节点多GPU)
+                          shm      - 强制使用共享内存 (单节点多GPU)
+                          ethernet - 强制使用以太网 (TCP/IP)
+                          socket   - 强制使用 Socket 传输
   --log-level LEVEL       日志级别 [默认: INFO]
+  --dry-run               Dry-run 模式：检查环境、配置变量但不执行测试
   --no-cleanup            测试后不清理容器
   --container-name NAME   自定义容器名称 [默认: nccl-test]
   --image-name NAME       自定义镜像名称 [默认: nccl-test:latest]
@@ -89,11 +98,20 @@ $SCRIPT_NAME v$VERSION
   • 调用 nccl_benchmark.sh 进行 NCCL 环境配置和测试
 
 示例:
+  # Dry-run 模式 (检查环境和配置但不执行测试)
+  $0 --dry-run --gpus all --size 100M --network auto
+  
   # 单节点测试 (使用所有 GPU)
   $0 --gpus all --size 100M --time 60
   
   # 单节点测试 (使用 4 个 GPU，NVLink 后端)
   $0 --gpus 4 --size 1G --network nvlink
+  
+  # 单节点测试 (使用 PCIe P2P 通信)
+  $0 --gpus 2 --size 100M --network pcie
+  
+  # 单节点测试 (使用共享内存通信)
+  $0 --gpus 2 --size 10M --network shm
   
   # 交互模式 (调试用)
   $0 --interactive
@@ -244,20 +262,28 @@ run_nccl_test() {
     log_info "  测试大小: $TEST_SIZE"
     log_info "  测试时长: $TEST_DURATION 秒"
     log_info "  网络后端: $NETWORK_BACKEND"
+    log_info "  运行模式: $([ "$DRY_RUN" = true ] && echo "Dry-run (仅检查环境和配置)" || echo "正常测试模式")"
     log_info "  网络模式: Host (直接访问主机网络设备)"
-    log_info "  运行模式: Privileged (完整设备访问)"
+    log_info "  容器模式: Privileged (完整设备访问)"
     
     # 构建 nccl_benchmark.sh 参数
     local nccl_test_args=()
     [ "$TEST_SIZE" != "1M" ] && nccl_test_args+=("-s" "$TEST_SIZE")
     [ "$TEST_DURATION" != "30" ] && nccl_test_args+=("-t" "$TEST_DURATION")
     [ "$NETWORK_BACKEND" != "auto" ] && nccl_test_args+=("--network" "$NETWORK_BACKEND")
+    [ "$DRY_RUN" = true ] && nccl_test_args+=("--dry-run")
     
     # 启动容器并运行 nccl_benchmark.sh
-    log_info "启动测试容器 (privileged + host network 模式)..."
+    if [ "$DRY_RUN" = true ]; then
+        log_info "启动 Dry-run 容器 (privileged + host network 模式)..."
+        log_info "Dry-run 模式: 仅检查环境、配置变量，不执行实际 NCCL 测试"
+    else
+        log_info "启动测试容器 (privileged + host network 模式)..."
+    fi
     log_info "Host Network: 直接访问主机网络设备，无网络层开销"
     log_info "Privileged 模式: 自动获得完整系统设备访问权限"
-    log_info "调用容器内 nccl_benchmark.sh 进行 NCCL 环境配置和测试"
+    log_info "挂载主机 /tmp 目录: 容器内 NCCL 输出直接保存到主机"
+    log_info "调用容器内 nccl_benchmark.sh 进行 NCCL 环境配置$([ "$DRY_RUN" = true ] && echo "检查" || echo "和测试")"
     
     docker run --rm \
         $gpu_option \
@@ -267,9 +293,44 @@ run_nccl_test() {
         --ipc=host \
         --ulimit memlock=-1 \
         --ulimit stack=67108864 \
+        -v "/tmp:/tmp" \
         -e NCCL_DEBUG="$LOG_LEVEL" \
         "$IMAGE_NAME" \
         bash -c "cd /workspace/nccl_test && ./nccl_benchmark.sh ${nccl_test_args[*]}"
+    
+    # 检查并报告保存的文件 (仅在非 dry-run 模式下执行)
+    if [ "$DRY_RUN" != true ]; then
+        if [ -f "/tmp/nccl_test_output.log" ]; then
+            log_success "NCCL 原始输出已保存到: /tmp/nccl_test_output.log"
+            log_info "查看完整 NCCL 原始输出: cat /tmp/nccl_test_output.log"
+            
+            # 简单分析保存的原始输出
+            local file_size=$(wc -l < "/tmp/nccl_test_output.log" 2>/dev/null || echo "0")
+            if [ "$file_size" -gt 10 ]; then
+                log_info "原始输出文件大小: $file_size 行"
+                # 检查是否包含真实的 NCCL 日志
+                if grep -q "NCCL INFO" "/tmp/nccl_test_output.log" 2>/dev/null; then
+                    log_success "✅ 检测到真实的 NCCL 原始日志"
+                    # 显示网络类型信息
+                    local net_info=$(grep -E "NCCL INFO.*NET/" "/tmp/nccl_test_output.log" 2>/dev/null | head -3)
+                    if [ -n "$net_info" ]; then
+                        log_info "🔍 NCCL 网络信息预览:"
+                        echo "$net_info" | while read line; do
+                            log_info "    $line"
+                        done
+                    fi
+                else
+                    log_warning "⚠️  文件不包含 NCCL 原始日志，可能是错误信息"
+                fi
+            else
+                log_warning "⚠️  原始输出文件过小 ($file_size 行)，可能测试失败"
+            fi
+        else
+            log_warning "⚠️  未能保存 NCCL 原始输出文件到 /tmp/nccl_test_output.log"
+        fi
+    else
+        log_info "Dry-run 模式: 跳过输出文件检查和分析"
+    fi
 }
 
 # 解析命令行参数
@@ -327,6 +388,10 @@ parse_arguments() {
                 fi
                 LOG_LEVEL="$2"
                 shift 2
+                ;;
+            --dry-run)
+                DRY_RUN=true
+                shift
                 ;;
             --no-cleanup)
                 CLEANUP=false
