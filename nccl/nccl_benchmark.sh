@@ -340,15 +340,20 @@ setup_network_interface() {
     case "$interface_type" in
         "auto_ethernet")
             if [ "$MULTI_NODE_MODE" = true ]; then
+                # 智能检测物理网络接口
                 local available_interfaces=""
                 if command -v ip >/dev/null 2>&1; then
-                    available_interfaces=$(ip link show up | grep -E "^[0-9]+: (eth|en|ib)" | head -3 | cut -d: -f2 | tr -d ' ' | tr '\n' ',' | sed 's/,$//')
+                    # 优先选择物理接口：eno*, eth*, enp*, ib*
+                    available_interfaces=$(ip link show up | grep -E "^[0-9]+: (eno|eth|enp|ib)[0-9]+" | head -3 | cut -d: -f2 | cut -d@ -f1 | tr -d ' ' | tr '\n' ',' | sed 's/,$//')
                 fi
                 
                 if [ -n "$available_interfaces" ]; then
-                    set_nccl_config "SOCKET_IFNAME" "$available_interfaces" "多节点以太网接口"
+                    set_nccl_config "SOCKET_IFNAME" "$available_interfaces" "多节点物理接口: $available_interfaces"
+                    log_info "检测到物理网络接口: $available_interfaces"
                 else
-                    set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr" "排除虚拟接口"
+                    # 如果没有检测到物理接口，使用排除模式
+                    set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr0,veth,br-" "排除所有虚拟接口"
+                    log_warning "未检测到物理接口，使用虚拟接口排除模式"
                 fi
             else
                 unset NCCL_SOCKET_IFNAME
@@ -359,7 +364,8 @@ setup_network_interface() {
             set_nccl_config "SOCKET_IFNAME" "lo" "仅使用回环接口"
             ;;
         "exclude_virtual")
-            set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr" "排除虚拟接口"
+            # 更全面的虚拟接口排除列表
+            set_nccl_config "SOCKET_IFNAME" "^docker0,lo,virbr0,veth,br-,antrea-,kube-,vxlan" "排除所有虚拟接口"
             ;;
         "clear_interface")
             set_nccl_config "SOCKET_IFNAME" "" "清除接口限制"
@@ -793,8 +799,15 @@ setup_nccl_env() {
     
     # 多节点配置
     if [ "$MULTI_NODE_MODE" = true ]; then
-        export NCCL_SOCKET_IFNAME=^docker0,lo
-        log_info "多节点模式: 排除 docker0 和 lo 接口"
+        # 检查是否已经设置了特定的物理接口
+        if [ -n "${NCCL_SOCKET_IFNAME:-}" ] && [[ ! "${NCCL_SOCKET_IFNAME}" =~ ^\^ ]]; then
+            # 已经设置了物理接口，保持不变
+            log_info "多节点模式: 保持已配置的物理接口 ($NCCL_SOCKET_IFNAME)"
+        else
+            # 未设置物理接口或使用排除模式，应用默认排除配置
+            export NCCL_SOCKET_IFNAME=^docker0,lo,virbr0,veth,br-,antrea-,kube-,vxlan
+            log_info "多节点模式: 排除虚拟接口 (docker0,lo,virbr0,veth,br-,antrea-,kube-,vxlan)"
+        fi
     fi
     
     # 显示最终配置摘要

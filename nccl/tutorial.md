@@ -1,10 +1,10 @@
-# NCCL InfiniBand 测试验证工具说明文档
+# NCCL 测试验证工具说明文档
 
 > 注意：**性能部分指标的解释和计算方法可能会根据具体的硬件配置和网络环境而有所不同。建议在实际测试中根据自己的环境进行调整和优化**。
 
 ---
 
-> 目前进展：单节点测试基本验证OK。
+> **目前进展**：单节点测试基本验证OK（Nvlink,Pcie,IB,SHM,Ethernet,Socket），多节点基于以太网验证OK。
 
 ## 1. 概述与系统要求
 
@@ -17,7 +17,7 @@
 - **硬件配置**：GPU型号、内存带宽、PCIe拓扑结构
 - **网络环境**：InfiniBand、RoCE、以太网的配置和性能
 - **软件栈**：CUDA版本、驱动程序、NCCL库版本的兼容性
-- **环境变量**：数百个NCCL参数的正确配置
+- **环境变量**：数百个NCCL参数的正确配置（现已通过统一配置管理器自动化）
 
 不当的配置可能导致：
 
@@ -56,7 +56,9 @@
 **`nccl_benchmark.sh`** - 主要的 NCCL 性能测试工具，专门设计用于：
 
 - **性能基准测试**：测量真实的NCCL通信性能
-- **配置验证**：验证NCCL环境变量和网络配置
+- **智能配置管理**：统一配置管理器自动化NCCL环境变量设置
+- **多级优化策略**：提供保守、平衡、激进三种优化级别（**仅适用于 NVLink 网络后端**）
+- **自动路径检测**：按NCCL优先级自动选择最佳通信路径
 - **问题诊断**：识别性能瓶颈和配置问题
 - **环境优化**：提供最佳实践配置建议
 
@@ -110,8 +112,13 @@
 
 #### 1.3.2 环境配置
 
+- **统一配置管理器**: 消除重复代码，统一管理所有NCCL配置项
+- **智能缓存系统**: 缓存系统信息，避免重复检测，提升性能
 - **自动网络类型检测**: 智能识别原生 IB 或 RoCE 环境
-- **NCCL 环境变量配置**: 自动设置最优的 NCCL 参数
+- **批量配置设置**: 支持配置组的批量设置和管理
+- **网络配置预设**: 提供多种网络配置模板（IB、PCIe、以太网等）
+- **性能优化配置**: 三级优化策略（保守、平衡、激进）
+- **智能网络接口配置**: 自动检测和配置物理网络接口
 - **GPUDirect RDMA 支持**: 启用高性能 GPU 直接内存访问
 
 #### 1.3.3 性能测试
@@ -537,10 +544,31 @@ although single node environment, GPU interconnection via network transmission h
     - 教学和演示用途
   - **性能特点**：性能最低，但兼容性最好
 
+**优化级别配置**（仅适用于 NVLink 网络后端）：
+
+> **重要说明**: `--optimization-level` 参数仅对 NVLink 网络后端有效。其他网络后端（InfiniBand、以太网、PCIe、Socket）使用固定的优化配置，不支持动态优化级别调整。
+
+- `--optimization-level conservative`: **保守配置**（仅 NVLink）
+  - 稳定性优先，兼容性最好
+  - 适用于生产环境和关键任务
+  - 使用经过验证的参数组合
+  
+- `--optimization-level balanced`: **平衡配置**（仅 NVLink，推荐）
+  - 性能与稳定性兼顾
+  - 启用算法和协议自动选择
+  - 适用于大多数应用场景
+  
+- `--optimization-level aggressive`: **激进配置**（仅 NVLink）
+  - 最大性能优化
+  - 移除所有算法限制
+  - 启用NCCL完全自动优化
+  - 适用于性能测试和基准测试
+
 **调试选项**：
 
 - `--check-only`: 仅检查环境，不运行测试
 - `--env-only`: 显示环境变量配置
+- `--dry-run`: Dry-run模式，检查环境和配置但不执行测试
 - `-q, --quiet`: 静默模式
 
 ### 2.4 单节点测试实践
@@ -551,43 +579,59 @@ although single node environment, GPU interconnection via network transmission h
 # 基础环境检查
 ./nccl_benchmark.sh --check-only
 
-# 快速性能测试（1MB数据，30秒）
-./nccl_benchmark.sh
+# Dry-run模式：检查环境和配置但不执行测试
+./nccl_benchmark.sh --dry-run
+
+# 快速性能测试（1MB数据，30秒，平衡优化）
+./nccl_benchmark.sh --optimization-level balanced
 
 # 查看环境配置
 ./nccl_benchmark.sh --env-only
+
+# 不同优化级别测试（仅适用于 NVLink 网络后端）
+./nccl_benchmark.sh --network nvlink --optimization-level conservative -s 100M -t 60  # 保守配置
+./nccl_benchmark.sh --network nvlink --optimization-level balanced -s 1G -t 60        # 平衡配置（推荐）
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive -s 1G -t 60      # 激进配置
 ```
 
-#### 2.4.2 NCCL环境变量配置
+#### 2.4.2 统一配置管理器
 
-**强制指定通信路径**：
+**新版本特性**：脚本现在使用统一配置管理器自动化NCCL环境变量设置，无需手动配置。
+
+**自动配置功能**：
 
 ```bash
-# 1. 强制使用InfiniBand（非典型，仅用于测试IB网卡）
-export NCCL_IB_DISABLE=0
-export NCCL_NET_GDR_LEVEL=2    # 启用GPUDirect RDMA
-export NCCL_IB_GID_INDEX=0     # 原生IB使用GID 0，RoCE使用GID 3
-export NCCL_IB_TC=136          # Traffic Class
-export NCCL_IB_SL=0            # Service Level
-export NCCL_IB_TIMEOUT=22      # IB超时设置
-export NCCL_IB_RETRY_CNT=7     # 重试次数
-./nccl_benchmark.sh --network ib -s 100M -t 30
+# 1. 自动检测和配置（推荐）
+./nccl_benchmark.sh --network auto --optimization-level balanced
 
-# 2. 禁用特定通信方式
-export NCCL_P2P_DISABLE=1      # 禁用PCIe P2P
-export NCCL_IB_DISABLE=1       # 禁用InfiniBand
-export NCCL_NET_GDR_LEVEL=0    # 禁用GPUDirect RDMA
+# 2. 查看自动配置的环境变量
+./nccl_benchmark.sh --env-only
 
-# 3. 调试和性能调优
+# 3. 不同网络后端的自动配置
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive  # NVLink优化（支持优化级别）
+./nccl_benchmark.sh --network ib                                      # InfiniBand优化（固定配置）
+./nccl_benchmark.sh --network pcie                                    # PCIe优化（固定配置）
+```
+
+**配置管理器功能**：
+
+- **批量配置设置**：支持配置组的统一管理
+- **智能缓存系统**：避免重复检测，提升配置效率
+- **网络配置预设**：提供多种预设配置模板
+- **性能优化配置**：三级优化策略自动调整参数
+
+**手动配置（高级用户）**：
+
+```bash
+# 仍然支持手动环境变量配置（如需要）
 export NCCL_DEBUG=INFO         # 详细调试信息
 export NCCL_DEBUG_SUBSYS=INIT,NET  # 初始化和网络子系统调试
-export NCCL_ALGO=Ring          # 强制使用Ring算法
-export NCCL_PROTO=Simple       # 使用Simple协议
 
-# 4. 清理环境变量
-unset NCCL_IB_DISABLE NCCL_P2P_DISABLE NCCL_NET_GDR_LEVEL
-unset NCCL_DEBUG NCCL_DEBUG_SUBSYS NCCL_ALGO NCCL_PROTO
-unset NCCL_IB_GID_INDEX NCCL_IB_TC NCCL_IB_SL NCCL_IB_TIMEOUT NCCL_IB_RETRY_CNT
+# 运行测试
+./nccl_benchmark.sh --network auto
+
+# 清理环境变量
+unset NCCL_DEBUG NCCL_DEBUG_SUBSYS
 ```
 
 **重要说明**：
@@ -1026,6 +1070,22 @@ cd k8s/
 ./nccl_multinode_launcher.sh 1 192.168.1.100
 ```
 
+**直接使用 nccl_benchmark.sh 进行多节点测试**：
+
+```bash
+# 基础多节点测试（自动网络检测）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100
+
+# 指定网络后端（优化级别仅适用于 NVLink）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib
+
+# 大数据量长时间测试
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 -s 100M -t 120
+
+# Dry-run 模式验证配置
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --dry-run
+```
+
 #### 4.2.2 Kubernetes 自定义配置
 
 ```bash
@@ -1054,6 +1114,26 @@ cd k8s/
 ./nccl_multinode_launcher.sh 1 192.168.1.100
 ```
 
+**直接使用 nccl_benchmark.sh 进行多节点测试**：
+
+```bash
+# 在每个节点上运行（自动网络检测）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100
+
+# 指定网络后端
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ethernet
+
+# 配置优化级别（仅在单节点 NVLink 环境下有效，多节点环境会自动忽略）
+# 注意：多节点环境下，优化级别参数会被忽略，因为多节点通信主要使用 InfiniBand 或以太网
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --optimization-level conservative  # 参数会被忽略
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --optimization-level balanced     # 参数会被忽略
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --optimization-level aggressive   # 参数会被忽略
+
+# 自定义测试参数
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 -s 100M -t 120 --network ib
+```
+
 **IP 地址说明**:
 
 - `192.168.1.100` 是示例主节点 IP 地址，**实际使用时需要替换为真实的主节点 IP**
@@ -1073,31 +1153,46 @@ cd k8s/
 
 **网络类型指定**：
 
-`nccl_multinode_launcher.sh` 脚本支持通过 `--network` 参数指定网络后端：
+`nccl_benchmark.sh` 和 `nccl_multinode_launcher.sh` 脚本都支持通过 `--network` 参数指定网络后端：
 
 ```bash
 # 使用 InfiniBand (推荐，默认)
-./nccl_multinode_launcher.sh 0 192.168.1.100 --network ib
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib
 
 # 使用以太网
-./nccl_multinode_launcher.sh 0 192.168.1.100 --network ethernet
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ethernet
 
 # 使用 Socket (调试用)
-./nccl_multinode_launcher.sh 0 192.168.1.100 --network socket
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network socket
+
+# 自动检测（推荐）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
 ```
 
 **网络后端说明**:
 
 | 网络类型 | 参数值 | 性能特征 | 适用场景 |
 |----------|--------|----------|----------|
+| **自动检测** | `auto` | 智能选择最优网络 | **推荐使用** |
 | **InfiniBand** | `ib` | 延迟 < 1μs, 带宽最高 | **生产环境推荐** |
 | 以太网 | `ethernet` | 延迟 ~10μs, 标准带宽 | 无 IB 环境 |
 | Socket | `socket` | 延迟较高, 兼容性最好 | 调试和测试 |
 
+**优化级别配置**（仅适用于 NVLink 网络后端）:
+
+| 优化级别 | 参数值 | 特征 | 适用场景 | 网络后端支持 |
+|----------|--------|------|----------|-------------|
+| **保守模式** | `conservative` | 稳定性优先，兼容性最好 | 生产环境初期验证 | **仅 NVLink** |
+| **平衡模式** | `balanced` | 性能与稳定性平衡 | **推荐使用** | **仅 NVLink** |
+| **激进模式** | `aggressive` | 性能优先，最大化吞吐量 | 高性能计算环境 | **仅 NVLink** |
+
+> **重要**: InfiniBand、以太网、PCIe、Socket 等网络后端使用固定的优化配置，不支持 `--optimization-level` 参数。
+
 **重要**:
 
-- 默认使用 `ib` 网络后端，提供最佳性能
-- 所有节点必须使用相同的网络后端配置
+- 默认使用 `auto` 网络检测，自动选择最优网络后端
+- 所有节点必须使用相同的网络后端和优化级别配置
+- 支持 `--dry-run` 模式验证配置而不实际运行测试
 - 网络后端会传递给底层的 `nccl_benchmark.sh` 脚本
 
 ### 4.3 Kubernetes 多节点部署（推荐）
@@ -1533,7 +1628,33 @@ export NCCL_DEBUG=INFO             # 启用日志验证
 
 ### 3.8 多节点故障排除
 
-#### 3.8.1 连接问题
+#### 3.8.1 使用 nccl_benchmark.sh 进行故障诊断
+
+**Dry-run 模式验证配置**：
+
+```bash
+# 验证多节点配置而不实际运行测试
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --dry-run
+
+# 验证特定网络后端配置
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib --dry-run
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ethernet --dry-run
+
+# 验证优化级别配置（仅在单节点 NVLink 环境下有效）
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive --dry-run
+```
+
+**自动网络检测诊断**：
+
+```bash
+# 使用自动检测模式查看网络选择过程
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
+
+# 启用详细日志进行诊断
+NCCL_DEBUG=INFO ./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
+```
+
+#### 3.8.2 连接问题
 
 ```bash
 # 检查网络连通性 (使用正确的接口)
@@ -1548,9 +1669,12 @@ sudo ufw status
 # 验证 IB 设备状态
 ibstat
 ibv_devinfo
+
+# 使用 nccl_benchmark.sh 验证网络配置
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib --dry-run
 ```
 
-#### 3.8.2 性能问题
+#### 3.8.3 性能问题
 
 ```bash
 # 检查网络类型
@@ -1561,6 +1685,42 @@ nvidia-smi
 
 # 检查IB状态
 ibstat
+
+# 使用不同优化级别进行性能对比（仅适用于单节点 NVLink 环境）
+# 注意：多节点环境下，这些参数会被忽略，因为多节点通信不使用 NVLink
+./nccl_benchmark.sh --network nvlink --optimization-level conservative  # 单节点 NVLink 测试
+./nccl_benchmark.sh --network nvlink --optimization-level balanced     # 单节点 NVLink 测试
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive   # 单节点 NVLink 测试
+
+# 检查统一配置管理器的配置应用
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto -q
+```
+
+#### 3.8.4 常见错误及解决方案
+
+**网络后端冲突**：
+
+```bash
+# 错误: 多节点模式使用单节点专用网络
+[ERROR] NVLink 仅支持单节点多GPU模式，不支持多节点
+[ERROR] PCIe P2P 仅支持单节点多GPU模式，不支持多节点
+
+# 解决方案: 使用多节点兼容的网络后端
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ethernet
+```
+
+**配置验证失败**：
+
+```bash
+# 错误: 参数验证失败
+[ERROR] 多节点模式需要指定 --master-addr 参数
+
+# 解决方案: 确保提供必要参数
+./nccl_benchmark.sh -m --master-addr 192.168.1.100
+
+# 验证所有参数
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --dry-run
 ```
 
 ### 3.9 性能基准
@@ -1585,11 +1745,89 @@ ibstat
 
 ### 3.11 多节点最佳实践
 
+#### 3.11.1 基于 nccl_benchmark.sh 的最佳实践
+
+**1. 配置验证优先**：
+
+```bash
+# 在实际测试前，先使用 dry-run 模式验证配置
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --dry-run
+
+# 验证不同网络后端的配置
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto --dry-run
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib --dry-run
+```
+
+**2. 渐进式测试策略**：
+
+```bash
+# 步骤1: 单节点测试验证环境
+./nccl_benchmark.sh --network auto
+
+# 步骤2: 保守模式单节点 NVLink 测试
+./nccl_benchmark.sh --network nvlink --optimization-level conservative
+
+# 步骤3: 平衡模式单节点 NVLink 测试
+./nccl_benchmark.sh --network nvlink --optimization-level balanced
+
+# 步骤4: 激进模式单节点 NVLink 测试
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive
+
+# 步骤5: 多节点测试（优化级别参数不适用）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
+```
+
+**3. 自动化配置管理**：
+
+```bash
+# 利用统一配置管理器自动优化（多节点环境）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
+
+# 静默模式减少日志输出
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto -q
+```
+
+#### 3.11.2 传统最佳实践
+
 1. **测试前**: 先运行单节点测试验证环境
 2. **启动顺序**: 主节点 → 工作节点 (间隔10-15秒)
 3. **参数一致**: 所有节点使用完全相同的参数
 4. **监控**: 同时监控网络和GPU使用情况
 5. **日志**: 保存所有节点的测试日志用于分析
+
+#### 3.11.3 高级优化建议
+
+**网络后端选择策略**：
+
+```bash
+# 生产环境推荐: 自动检测（多节点）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network auto
+
+# 高性能计算环境: 强制 IB（多节点）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ib
+
+# 兼容性优先: 以太网（多节点）
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network ethernet
+
+# 单节点 NVLink 优化级别测试
+./nccl_benchmark.sh --network nvlink --optimization-level aggressive  # 仅单节点有效
+```
+
+**性能基准建立**：
+
+```bash
+# 建立不同配置的性能基准（单节点 NVLink 环境）
+for opt_level in conservative balanced aggressive; do
+    echo "测试 NVLink 优化级别: $opt_level"
+    ./nccl_benchmark.sh --network nvlink --optimization-level $opt_level -s 100M -t 60
+done
+
+# 多节点网络后端性能基准
+for network in auto ib ethernet; do
+    echo "测试多节点网络后端: $network"
+    ./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network $network -s 100M -t 60
+done
+```
 
 ---
 
@@ -2117,17 +2355,35 @@ python nccl_python_template.py
 
 #### 6.4.2 NCCL环境变量配置
 
+**推荐方式：使用 nccl_benchmark.sh 统一配置管理器：**
+
+```bash
+# 自动配置所有NCCL环境变量（推荐）
+./nccl_benchmark.sh --network auto --dry-run
+
+# 查看配置后的环境变量
+./nccl_benchmark.sh --network ib --dry-run | grep "export"
+
+# 应用配置到当前环境
+source <(./nccl_benchmark.sh --network ib --dry-run | grep "export")
+
+# NVLink 优化级别配置（仅单节点有效）
+./nccl_benchmark.sh --network nvlink --optimization-level balanced --dry-run | grep "export"
+```
+
+**手动配置方式（仅在特殊需求时使用）：**
+
 ```bash
 # NCCL 调试配置
 export NCCL_DEBUG=INFO
 export NCCL_DEBUG_SUBSYS=ALL
 
-# 网络配置
+# 网络配置（由统一配置管理器自动设置）
 export NCCL_IB_DISABLE=0
 export NCCL_NET_GDR_LEVEL=5
 export NCCL_SOCKET_IFNAME=^docker0,lo
 
-# 性能优化
+# 性能优化（由优化级别自动设置）
 export NCCL_BUFFSIZE=8388608
 export NCCL_NTHREADS=16
 
@@ -2137,6 +2393,16 @@ export WORLD_SIZE=2
 export LOCAL_RANK=0
 python nccl_python_template.py
 ```
+
+**统一配置管理器的优势**：
+
+- **自动化配置**：根据硬件环境自动选择最优配置
+- **智能缓存**：避免重复检测，提高配置效率
+- **批量设置**：一次性配置所有相关环境变量
+- **网络预设**：针对不同网络类型的优化配置
+- **优化级别**：保守、平衡、激进三种性能策略（**仅适用于 NVLink 网络后端**）
+
+> **重要说明**: 优化级别参数（`--optimization-level`）仅对 NVLink 网络后端有效。InfiniBand、以太网、PCIe、Socket 等其他网络后端使用固定的优化配置。
 
 #### 6.4.3 批量测试脚本
 

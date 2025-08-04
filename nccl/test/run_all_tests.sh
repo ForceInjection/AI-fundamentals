@@ -110,6 +110,7 @@ $SCRIPT_NAME v$VERSION
   nvlink              NVLink 计数测试
   dns                 DNS 解析逻辑测试
   optimization        优化级别测试
+  network-fix         网络配置修复验证
   performance         性能基准测试
   integration         集成测试
 
@@ -140,6 +141,7 @@ list_test_suites() {
         "nvlink:NVLink 计数测试:test_nvlink_count.sh"
         "dns:DNS 解析逻辑测试:test_dns_resolution.sh"
         "optimization:优化级别测试:test_optimization_levels.sh"
+        "network-fix:网络配置修复验证:test_network_config_fix.sh"
         "performance:性能基准测试:test_performance_benchmark.sh"
     )
     
@@ -305,6 +307,18 @@ run_optimization_tests() {
     fi
     
     run_test_suite "optimization" "test_optimization_levels.sh" "优化级别测试"
+}
+
+# 运行网络配置修复测试
+run_network_fix_tests() {
+    if [ "$PERFORMANCE_MODE" = true ]; then
+        return 0
+    fi
+    
+    # 设置测试模式环境变量
+    export TEST_MODE=true
+    run_test_suite "network-fix" "test_network_config_fix.sh" "网络配置修复验证测试"
+    unset TEST_MODE
 }
 
 # 运行性能测试
@@ -486,6 +500,7 @@ main() {
             nvlink) run_nvlink_tests ;;
             dns) run_dns_tests ;;
             optimization) run_optimization_tests ;;
+            network-fix) run_network_fix_tests ;;
             performance) run_performance_tests ;;
             integration) run_integration_tests ;;
             *)
@@ -508,6 +523,7 @@ main() {
         run_mock_tests
         run_dns_tests
         run_optimization_tests
+        run_network_fix_tests
         run_performance_tests
         run_integration_tests
     fi

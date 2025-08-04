@@ -14,9 +14,8 @@ test/
 ├── test_nvlink_count.sh               # NVLink 计数测试
 ├── test_dns_resolution.sh             # DNS 解析测试
 ├── test_optimization_levels.sh        # 优化级别测试
+├── test_network_config_fix.sh         # 网络配置修复验证测试
 ├── test_performance_benchmark.sh      # 性能基准测试
-├── TEST_RENAME_PLAN.md                # 重命名计划文档
-├── RENAME_COMPLETION_SUMMARY.md       # 重命名完成总结
 └── results/                           # 测试结果目录（自动生成）
 ```
 
@@ -50,6 +49,9 @@ test/
 # 运行 Mock 测试
 ./run_all_tests.sh --suite mock
 
+# 运行网络配置修复测试
+./run_all_tests.sh --suite network-fix
+
 # 运行性能测试
 ./run_all_tests.sh --suite performance
 
@@ -69,6 +71,7 @@ test/
 | nvlink | test_nvlink_count.sh | ✅ 可用 | ~30秒 | NVLink 计数测试 |
 | dns | test_dns_resolution.sh | ✅ 可用 | ~1分钟 | DNS 解析逻辑测试 |
 | optimization | test_optimization_levels.sh | ✅ 可用 | ~1分钟 | 优化级别功能测试 |
+| network-fix | test_network_config_fix.sh | ✅ 可用 | ~30秒 | 网络配置修复验证测试 |
 | performance | test_performance_benchmark.sh | ✅ 可用 | ~5-10分钟 | 性能基准测试 |
 
 ---
@@ -139,7 +142,19 @@ test/
   - 无效参数处理
 - **运行时间**: ~1 分钟
 
-### 4.7 性能基准测试 (`test_performance_benchmark.sh`)
+### 4.7 网络配置修复验证测试 (`test_network_config_fix.sh`)
+
+- **目的**: 验证 NCCL 网络接口配置修复是否有效
+- **覆盖范围**:
+  - 物理接口配置保持验证
+  - 默认排除配置测试
+  - 排除模式配置保持验证
+  - 修复前后对比分析
+  - Mac 环境模拟测试
+- **运行时间**: ~30 秒
+- **特性**: 支持 Mac 环境模拟，自动检测运行环境
+
+### 4.8 性能基准测试 (`test_performance_benchmark.sh`)
 
 - **目的**: 测试优化后脚本的性能改进效果
 - **覆盖范围**:
@@ -162,6 +177,7 @@ test/
 - test_config_manager.sh
 - test_nvlink_count.sh
 - test_optimization_levels.sh
+- test_network_config_fix.sh
 
 ### 5.2 完整模式 (`--all` 或默认)
 
@@ -173,6 +189,7 @@ test/
 - test_nvlink_count.sh
 - test_dns_resolution.sh
 - test_optimization_levels.sh
+- test_network_config_fix.sh
 - test_performance_benchmark.sh
 
 ### 5.3 性能模式 (`--performance`)
@@ -188,6 +205,7 @@ test/
 - test_mock_environment.sh
 - test_config_manager.sh
 - test_dns_resolution.sh
+- test_network_config_fix.sh
 
 ---
 
@@ -197,13 +215,13 @@ test/
 
 ```bash
 📊 测试统计:
-   总测试数: 17
-   通过测试: 17
+   总测试数: 8
+   通过测试: 8
    失败测试: 0
    成功率: 100%
 
 🎉 测试套件执行完成！
-详细日志: ./results/test_results_20250803_005611.log
+详细日志: ./results/test_results_20250804_115621.log
 ```
 
 ---
@@ -239,6 +257,7 @@ export TEST_TIMEOUT=300
 ./run_all_tests.sh --suite syntax
 ./run_all_tests.sh --suite config
 ./run_all_tests.sh --suite mock
+./run_all_tests.sh --suite network-fix
 ```
 
 ---

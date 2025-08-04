@@ -315,7 +315,7 @@ case "$interface_type" in
         [ "\$NCCL_SOCKET_IFNAME" = "lo" ] && echo "INTERFACE_TEST_PASS" || echo "INTERFACE_TEST_FAIL"
         ;;
     "exclude_virtual")
-        [ "\$NCCL_SOCKET_IFNAME" = "^docker0,lo,virbr" ] && echo "INTERFACE_TEST_PASS" || echo "INTERFACE_TEST_FAIL"
+        [ "\$NCCL_SOCKET_IFNAME" = "^docker0,lo,virbr0,veth,br-,antrea-,kube-,vxlan" ] && echo "INTERFACE_TEST_PASS" || echo "INTERFACE_TEST_FAIL"
         ;;
     "clear_interface")
         [ "\$NCCL_SOCKET_IFNAME" = "" ] && echo "INTERFACE_TEST_PASS" || echo "INTERFACE_TEST_FAIL"
