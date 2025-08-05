@@ -15,6 +15,10 @@ NCCL_MOCK_SCRIPT="$TEST_DIR/nccl_benchmark_mock.sh"
 TEST_RESULTS_DIR="/tmp/nccl_test_results_$(date +%Y%m%d_%H%M%S)"
 MAIN_LOG="$TEST_RESULTS_DIR/test_suite.log"
 
+# Mock 配置
+MOCK_SCENARIO=""
+USE_MOCK_MODE=true
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -102,6 +106,8 @@ $SCRIPT_NAME v$VERSION
   -i, --integration       仅运行集成测试
   --list                  列出所有可用的测试套件
   --suite SUITE_NAME      运行指定的测试套件
+  --mock-scenario SCENARIO 设置 Mock 测试场景
+  --no-mock               禁用 Mock 模式，使用原始脚本
 
 测试套件:
   syntax              语法和基础功能验证
@@ -115,12 +121,20 @@ $SCRIPT_NAME v$VERSION
   performance         性能基准测试
   integration         集成测试
 
+Mock 场景:
+  single_gpu              单 GPU 环境
+  multi_gpu_nvlink        多 GPU + NVLink 环境
+  multi_gpu_pcie          多 GPU + PCIe 环境
+  cluster_ib              集群 + InfiniBand 环境
+
 示例:
-  $0                      # 运行所有测试套件
+  $0                      # 运行所有测试套件 (默认 Mock 模式)
   $0 --quick              # 快速测试模式
   $0 --suite syntax       # 仅运行语法测试
   $0 --performance        # 仅运行性能测试
   $0 --verbose            # 详细输出模式
+  $0 --mock-scenario=multi_gpu_nvlink  # 使用特定 Mock 场景
+  $0 --no-mock            # 禁用 Mock，使用真实环境
 
 EOF
 }
@@ -172,25 +186,40 @@ setup_test_environment() {
         exit 1
     fi
     
-    # 检查 mock 脚本
-    if [ ! -f "$NCCL_MOCK_SCRIPT" ]; then
-        log_error "Mock 脚本不存在: $NCCL_MOCK_SCRIPT"
-        exit 1
+    # 根据配置选择测试脚本
+    if [ "$USE_MOCK_MODE" = true ]; then
+        # 检查增强版 mock 脚本
+        if [ ! -f "$NCCL_MOCK_SCRIPT" ]; then
+            log_error "增强版 Mock 脚本不存在: $NCCL_MOCK_SCRIPT"
+            exit 1
+        fi
+        
+        # 确保 mock 脚本可执行
+        chmod +x "$NCCL_MOCK_SCRIPT" 2>/dev/null || {
+            log_error "无法设置 mock 脚本执行权限"
+            exit 1
+        }
+        
+        # 构建 mock 脚本参数
+        NCCL_TEST_SCRIPT="$NCCL_MOCK_SCRIPT"
+        if [ -n "$MOCK_SCENARIO" ]; then
+            NCCL_TEST_SCRIPT="$NCCL_MOCK_SCRIPT --mock-scenario=$MOCK_SCENARIO"
+        fi
+        
+        log_success "测试环境初始化完成 (Mock 模式)"
+        log_info "Mock 脚本: $NCCL_MOCK_SCRIPT"
+        if [ -n "$MOCK_SCENARIO" ]; then
+            log_info "Mock 场景: $MOCK_SCENARIO"
+        fi
+    else
+        # 使用原始脚本
+        NCCL_TEST_SCRIPT="$NCCL_SCRIPT_PATH"
+        log_success "测试环境初始化完成 (原始脚本模式)"
     fi
     
-    # 确保 mock 脚本可执行
-    chmod +x "$NCCL_MOCK_SCRIPT" 2>/dev/null || {
-        log_error "无法设置 mock 脚本执行权限"
-        exit 1
-    }
-    
-    # 使用 mock 脚本进行测试
-    NCCL_TEST_SCRIPT="$NCCL_MOCK_SCRIPT"
-    
-    log_success "测试环境初始化完成"
     log_info "测试结果目录: $TEST_RESULTS_DIR"
     log_info "原始脚本: $NCCL_SCRIPT_PATH"
-    log_info "测试脚本: $NCCL_TEST_SCRIPT (Mock 模式)"
+    log_info "测试脚本: $NCCL_TEST_SCRIPT"
     log_info "主日志文件: $MAIN_LOG"
 }
 
@@ -481,6 +510,24 @@ parse_arguments() {
                 SINGLE_SUITE="$2"
                 shift 2
                 ;;
+            --mock-scenario)
+                if [ -z "$2" ]; then
+                    log_error "--mock-scenario 选项需要参数"
+                    exit 1
+                fi
+                MOCK_SCENARIO="$2"
+                USE_MOCK_MODE=true
+                shift 2
+                ;;
+            --mock-scenario=*)
+                MOCK_SCENARIO="${1#*=}"
+                USE_MOCK_MODE=true
+                shift
+                ;;
+            --no-mock)
+                USE_MOCK_MODE=false
+                shift
+                ;;
             *)
                 log_error "未知选项: $1"
                 echo "使用 '$0 --help' 查看帮助信息"
@@ -501,6 +548,10 @@ main() {
     log_header "开始 NCCL Benchmark 测试套件"
     log_info "测试模式: $([ "$QUICK_MODE" = true ] && echo "快速" || echo "完整")"
     log_info "详细输出: $([ "$VERBOSE_MODE" = true ] && echo "启用" || echo "禁用")"
+    log_info "Mock 模式: $([ "$USE_MOCK_MODE" = true ] && echo "启用" || echo "禁用")"
+    if [ "$USE_MOCK_MODE" = true ] && [ -n "$MOCK_SCENARIO" ]; then
+        log_info "Mock 场景: $MOCK_SCENARIO"
+    fi
     
     # 运行指定的单个测试套件
     if [ -n "${SINGLE_SUITE:-}" ]; then

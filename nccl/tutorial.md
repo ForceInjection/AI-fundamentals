@@ -480,11 +480,13 @@ PXN (Parallel eXecution Network) 模式是 NCCL 的高级网络优化功能，�
 # 基础 PXN 测试
 ./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn
 
-# 指定优化级别
-./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --optimization-level balanced
+# 指定优化级别 (PXN 模式支持三种优化级别)
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --optimization-level conservative  # 保守模式
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --optimization-level balanced     # 平衡模式 (推荐)
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --optimization-level aggressive   # 激进模式
 
 # 大规模测试
-./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --size 1G --time 300
+./nccl_benchmark.sh -m --master-addr 192.168.1.100 --network pxn --size 1G --time 300 --optimization-level balanced
 ```
 
 ---
@@ -531,12 +533,23 @@ GPU Memory → Network Adapter (直接访问)
 
 ### 5.3 网络类型自动检测机制
 
-脚本实现智能网络检测算法：
+脚本实现智能网络检测算法，按照 NCCL 推荐的优先级自动选择最佳通信路径：
 
-1. **硬件检测**：检查可用的网络硬件
+**单节点模式优先级**：
+
+1. **NVLink** > 2. **PCIe P2P** > 3. **共享内存** > 4. **网络传输** (InfiniBand > 以太网)
+
+**多节点模式优先级**：
+
+1. **InfiniBand** > 2. **PXN (Process Exchange Network)** > 3. **以太网**
+
+**检测流程**：
+
+1. **硬件检测**：检查可用的网络硬件和 GPU 拓扑
 2. **性能评估**：评估各网络后端的性能潜力
 3. **优先级排序**：按 NCCL 推荐优先级选择最佳后端
-4. **配置应用**：自动应用最优配置
+4. **智能回退**：如果高优先级后端不可用，自动回退到下一级
+5. **配置应用**：自动应用最优配置和性能优化参数
 
 ### 5.4 NCCL 算法深度解析
 
@@ -1599,7 +1612,7 @@ NCCL_MIN_NCHANNELS=6               # 最小通道数
 NCCL_MAX_NCHANNELS=16              # 最大通道数
 NCCL_P2P_NET_CHUNKSIZE=262144      # P2P 网络块大小 (256KB)
 
-# 激进模式
+# 激进模式 (启用完全自动优化)
 NCCL_NTHREADS=512                  # 线程数
 NCCL_BUFFSIZE=16777216             # 缓冲区大小 (16MB)
 NCCL_MIN_NCHANNELS=8               # 最小通道数
@@ -1608,6 +1621,7 @@ NCCL_P2P_NET_CHUNKSIZE=524288      # P2P 网络块大小 (512KB)
 NCCL_CHECK_POINTERS=1              # 启用指针检查
 NCCL_SOCKET_NTHREADS=16            # Socket 线程数
 NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
+# 注意：激进模式会移除 NCCL_ALGO 和 NCCL_PROTO 限制，启用 NCCL 完全自动优化
 ```
 
 **参数含义详解**：
@@ -1616,16 +1630,27 @@ NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
   - `NVL`: 当检测到 NVLink 时自动选择，提供 ~900 GB/s 带宽，< 1 μs 延迟
   - `PIX`: 当未检测到 NVLink 时回退选择，提供 ~64 GB/s 带宽，2-5 μs 延迟
   - 智能选择确保在不同硬件配置下都能获得最佳节点内通信性能
+  - 脚本会自动检测 NVLink 连接数量并在日志中显示检测结果
 
 - **NCCL_COLLNET_NODE_THRESHOLD**: 启用集合通信的最小节点数
 - **NCCL_COLLNET_CHAIN_THRESHOLD**: 链式通信的阈值
 - **NCCL_PXN_DISABLE**: 控制 PXN 功能的启用/禁用
 
+**优化级别差异**：
+
+- **保守模式 (conservative)**: 使用固定的算法和协议配置，稳定性优先
+- **平衡模式 (balanced)**: 部分启用自动选择，平衡性能与稳定性
+- **激进模式 (aggressive)**: 完全移除算法和协议限制，启用 NCCL 完全自动优化
+
 **性能优势**：
 
 - 🚀 **节点内优化**: 自动利用最快的节点内通信路径 (NVLink > PCIe P2P)
+  - NVLink 环境下可达 ~900 GB/s 带宽，< 1 μs 延迟
+  - PCIe 环境下可达 ~64 GB/s 带宽，2-5 μs 延迟
 - 🌐 **节点间优化**: 使用 PXN 集合通信算法优化多节点通信
 - ⚡ **混合架构**: 完美适配异构集群 (部分节点有 NVLink，部分没有)
+- 🎯 **自适应算法选择**: 激进模式下启用 NCCL 完全自动优化，根据数据大小和网络拓扑动态选择最佳算法
+- 📊 **多级缓存优化**: 优化数据传输路径，减少内存拷贝开销
 
 ### 7.3 通用 NCCL 参数详解
 

@@ -88,6 +88,7 @@ cache_system_info() {
     if [ -z "${SYSTEM_INFO_CACHE[nvlink_available]:-}" ]; then
         SYSTEM_INFO_CACHE[nvlink_available]=false
         SYSTEM_INFO_CACHE[nvlink_count]=0
+        
         if [ "${SYSTEM_INFO_CACHE[gpu_count]}" -gt 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
             # 统一使用 nvidia-smi nvlink --status 命令，与主检测逻辑保持一致
             if nvidia-smi nvlink --status &>/dev/null; then
@@ -215,21 +216,6 @@ setup_network_config() {
             set_nccl_configs socket_config "Socket 传输配置"
             ;;
         "pxn_enable")
-            declare -A pxn_config=(
-                ["ALGO"]="Ring,Tree,CollNet"
-                ["PROTO"]="Simple,LL,LL128"
-                ["NET_GDR_LEVEL"]="2"
-                ["P2P_DISABLE"]="0"
-                ["P2P_LEVEL"]="PIX"
-                ["IB_DISABLE"]="0"
-                ["CROSS_NIC"]="1"
-                ["BUFFSIZE"]="8388608"
-                ["MIN_NCHANNELS"]="4"
-                ["MAX_NCHANNELS"]="16"
-            )
-            set_nccl_configs pxn_config "PXN 多节点高性能配置"
-            ;;
-        "pxn_enable_smart")
             # 智能选择 P2P_LEVEL：优先使用 NVLink，回退到 PCIe
             local p2p_level="PIX"  # 默认 PCIe P2P
             if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
@@ -239,7 +225,7 @@ setup_network_config() {
                 log_info "PXN 模式: 未检测到 NVLink，设置 P2P_LEVEL=PIX (节点内 PCIe P2P)"
             fi
             
-            declare -A pxn_smart_config=(
+            declare -A pxn_config=(
                 ["ALGO"]="Ring,Tree,CollNet"
                 ["PROTO"]="Simple,LL,LL128"
                 ["NET_GDR_LEVEL"]="2"
@@ -251,7 +237,7 @@ setup_network_config() {
                 ["MIN_NCHANNELS"]="4"
                 ["MAX_NCHANNELS"]="16"
             )
-            set_nccl_configs pxn_smart_config "PXN 智能 P2P 配置 (P2P_LEVEL=$p2p_level)"
+            set_nccl_configs pxn_config "PXN 智能 P2P 配置 (P2P_LEVEL=$p2p_level)"
             ;;
     esac
 }
@@ -1612,7 +1598,7 @@ configure_pxn_settings() {
     detect_gpu_topology
     
     # 应用 PXN 网络配置预设（智能 P2P 配置）
-    setup_network_config "pxn_enable_smart"
+    setup_network_config "pxn_enable"
     
     # 应用 PXN 性能优化配置
     setup_performance_config "pxn_optimized" "$OPTIMIZATION_LEVEL"
