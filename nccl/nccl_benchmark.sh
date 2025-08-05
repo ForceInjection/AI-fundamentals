@@ -229,6 +229,30 @@ setup_network_config() {
             )
             set_nccl_configs pxn_config "PXN 多节点高性能配置"
             ;;
+        "pxn_enable_smart")
+            # 智能选择 P2P_LEVEL：优先使用 NVLink，回退到 PCIe
+            local p2p_level="PIX"  # 默认 PCIe P2P
+            if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+                p2p_level="NVL"  # 使用 NVLink
+                log_success "PXN 模式: 检测到 NVLink，设置 P2P_LEVEL=NVL (节点内 $DETECTED_NVLINK_COUNT 个连接)"
+            else
+                log_info "PXN 模式: 未检测到 NVLink，设置 P2P_LEVEL=PIX (节点内 PCIe P2P)"
+            fi
+            
+            declare -A pxn_smart_config=(
+                ["ALGO"]="Ring,Tree,CollNet"
+                ["PROTO"]="Simple,LL,LL128"
+                ["NET_GDR_LEVEL"]="2"
+                ["P2P_DISABLE"]="0"
+                ["P2P_LEVEL"]="$p2p_level"
+                ["IB_DISABLE"]="0"
+                ["CROSS_NIC"]="1"
+                ["BUFFSIZE"]="8388608"
+                ["MIN_NCHANNELS"]="4"
+                ["MAX_NCHANNELS"]="16"
+            )
+            set_nccl_configs pxn_smart_config "PXN 智能 P2P 配置 (P2P_LEVEL=$p2p_level)"
+            ;;
     esac
 }
 
@@ -1584,8 +1608,11 @@ configure_pxn_settings() {
     setup_common_nccl_config
     setup_debug_files "pxn"
     
-    # 应用 PXN 网络配置预设
-    setup_network_config "pxn_enable"
+    # 检测 GPU 拓扑以智能选择 P2P_LEVEL
+    detect_gpu_topology
+    
+    # 应用 PXN 网络配置预设（智能 P2P 配置）
+    setup_network_config "pxn_enable_smart"
     
     # 应用 PXN 性能优化配置
     setup_performance_config "pxn_optimized" "$OPTIMIZATION_LEVEL"
@@ -1610,21 +1637,32 @@ configure_pxn_settings() {
     
     # 结果总结
     log_success "✅ PXN 配置完成 - 多节点高性能通信模式"
+    
+    # 显示智能 P2P 选择结果
+    if [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+        log_success "节点内通信: NVLink (P2P_LEVEL=NVL, $DETECTED_NVLINK_COUNT 个连接)"
+        log_info "节点内预期带宽: ~900 GB/s, 延迟: < 1 μs"
+    else
+        log_info "节点内通信: PCIe P2P (P2P_LEVEL=PIX)"
+        log_info "节点内预期带宽: ~64 GB/s, 延迟: 2-5 μs"
+    fi
+    log_info "节点间通信: PXN 集合通信 + 高速网络"
+    
     case "$OPTIMIZATION_LEVEL" in
         "conservative")
-            log_success "🔒 保守模式: 稳定性优先, 预期性能: ~50 GB/s"
+            log_success "保守模式: 稳定性优先, 预期性能: ~50 GB/s"
             ;;
         "balanced")
-            log_success "⚖️  平衡模式: 性能与稳定性兼顾, 预期性能: ~100 GB/s"
+            log_success "平衡模式: 性能与稳定性兼顾, 预期性能: ~100 GB/s"
             ;;
         "aggressive")
-            log_success "🚀 激进模式: 最大性能优化, 预期性能: >200 GB/s"
+            log_success "激进模式: 最大性能优化, 预期性能: >200 GB/s"
             ;;
     esac
-    log_info "📊 优化级别: $OPTIMIZATION_LEVEL"
-    log_info "🌐 主节点: $MASTER_ADDR:$MASTER_PORT"
-    log_info "🔗 支持算法: Ring, Tree, CollNet"
-    log_info "💾 缓冲区大小: $(echo $NCCL_BUFFSIZE | numfmt --to=iec 2>/dev/null || echo $NCCL_BUFFSIZE)"
+    log_info "优化级别: $OPTIMIZATION_LEVEL"
+    log_info "主节点: $MASTER_ADDR:$MASTER_PORT"
+    log_info "支持算法: Ring, Tree, CollNet"
+    log_info "缓冲区大小: $(echo $NCCL_BUFFSIZE | numfmt --to=iec 2>/dev/null || echo $NCCL_BUFFSIZE)"
     
     # 特殊提示
     log_warning "⚠️  PXN 模式需要在所有参与节点上运行此脚本"
@@ -1713,13 +1751,13 @@ configure_nvlink_settings() {
         log_success "✅ NVLink 配置完成 - 检测到 $DETECTED_NVLINK_COUNT 个活跃连接"
         case "$opt_level" in
             "conservative")
-                log_success "🔒 保守模式: 稳定性优先, 预期性能: ~200 GB/s"
+                log_success "保守模式: 稳定性优先, 预期性能: ~200 GB/s"
                 ;;
             "balanced")
-                log_success "⚖️  平衡模式: 性能与稳定性兼顾, 预期性能: ~400 GB/s"
+                log_success "平衡模式: 性能与稳定性兼顾, 预期性能: ~400 GB/s"
                 ;;
             "aggressive")
-                log_success "🚀 激进模式: 最大性能优化, 预期性能: >600 GB/s"
+                log_success "激进模式: 最大性能优化, 预期性能: >600 GB/s"
                 ;;
         esac
     else

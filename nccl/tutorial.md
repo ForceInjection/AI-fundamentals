@@ -1562,6 +1562,12 @@ NCCL_CUMEM_ENABLE=0                # 禁用 CUDA 内存管理
 
 **适用场景**：多节点高性能通信，Process Exchange Network
 
+**智能 P2P 配置**：PXN 模式现在支持智能选择节点内 P2P 通信级别：
+
+- **自动检测 NVLink**：如果检测到 NVLink 连接，自动设置 `NCCL_P2P_LEVEL=NVL`
+- **PCIe 回退**：如果未检测到 NVLink，回退到 `NCCL_P2P_LEVEL=PIX`
+- **节点间通信**：始终使用 PXN 集合通信 + 高速网络 (InfiniBand/以太网)
+
 **NCCL 参数配置**：
 
 ```bash
@@ -1570,7 +1576,7 @@ NCCL_ALGO=Ring,Tree,CollNet        # 支持的算法
 NCCL_PROTO=Simple,LL,LL128         # 支持的协议
 NCCL_NET_GDR_LEVEL=2               # GPUDirect RDMA
 NCCL_P2P_DISABLE=0                 # 启用 P2P 通信
-NCCL_P2P_LEVEL=PIX                 # P2P 级别
+NCCL_P2P_LEVEL=NVL|PIX             # 智能选择: NVL (NVLink) 或 PIX (PCIe)
 NCCL_IB_DISABLE=0                  # 启用 InfiniBand
 NCCL_CROSS_NIC=1                   # 启用跨网卡通信
 
@@ -1606,9 +1612,20 @@ NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
 
 **参数含义详解**：
 
+- **NCCL_P2P_LEVEL (智能选择)**: 节点内 P2P 通信级别
+  - `NVL`: 当检测到 NVLink 时自动选择，提供 ~900 GB/s 带宽，< 1 μs 延迟
+  - `PIX`: 当未检测到 NVLink 时回退选择，提供 ~64 GB/s 带宽，2-5 μs 延迟
+  - 智能选择确保在不同硬件配置下都能获得最佳节点内通信性能
+
 - **NCCL_COLLNET_NODE_THRESHOLD**: 启用集合通信的最小节点数
 - **NCCL_COLLNET_CHAIN_THRESHOLD**: 链式通信的阈值
 - **NCCL_PXN_DISABLE**: 控制 PXN 功能的启用/禁用
+
+**性能优势**：
+
+- 🚀 **节点内优化**: 自动利用最快的节点内通信路径 (NVLink > PCIe P2P)
+- 🌐 **节点间优化**: 使用 PXN 集合通信算法优化多节点通信
+- ⚡ **混合架构**: 完美适配异构集群 (部分节点有 NVLink，部分没有)
 
 ### 7.3 通用 NCCL 参数详解
 
