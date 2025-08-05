@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# NCCL InfiniBand 测试验证脚本
+# NCCL 测试验证脚本
 # 功能: 专注于 NCCL 分布式通信测试，验证 InfiniBand 网络性能
 # 作者: Grissom
 # 版本: 2.0
@@ -214,6 +214,21 @@ setup_network_config() {
             )
             set_nccl_configs socket_config "Socket 传输配置"
             ;;
+        "pxn_enable")
+            declare -A pxn_config=(
+                ["ALGO"]="Ring,Tree,CollNet"
+                ["PROTO"]="Simple,LL,LL128"
+                ["NET_GDR_LEVEL"]="2"
+                ["P2P_DISABLE"]="0"
+                ["P2P_LEVEL"]="PIX"
+                ["IB_DISABLE"]="0"
+                ["CROSS_NIC"]="1"
+                ["BUFFSIZE"]="8388608"
+                ["MIN_NCHANNELS"]="4"
+                ["MAX_NCHANNELS"]="16"
+            )
+            set_nccl_configs pxn_config "PXN 多节点高性能配置"
+            ;;
     esac
 }
 
@@ -330,6 +345,55 @@ setup_performance_config() {
             )
             set_nccl_configs shm_perf "共享内存性能优化"
             ;;
+        "pxn_optimized")
+            case "$opt_level" in
+                "conservative")
+                    declare -A pxn_perf=(
+                        ["ALGO"]="Ring,Tree"
+                        ["PROTO"]="Simple"
+                        ["NTHREADS"]="256"
+                        ["BUFFSIZE"]="8388608"  # 8MB
+                        ["MIN_NCHANNELS"]="4"
+                        ["MAX_NCHANNELS"]="12"
+                        ["NET_GDR_LEVEL"]="1"
+                        ["CROSS_NIC"]="0"
+                    )
+                    set_nccl_configs pxn_perf "PXN 保守配置"
+                    ;;
+                "balanced")
+                    declare -A pxn_perf=(
+                        ["ALGO"]="Ring,Tree,CollNet"
+                        ["PROTO"]="Simple,LL"
+                        ["NTHREADS"]="384"
+                        ["BUFFSIZE"]="12582912"  # 12MB
+                        ["MIN_NCHANNELS"]="6"
+                        ["MAX_NCHANNELS"]="16"
+                        ["NET_GDR_LEVEL"]="2"
+                        ["CROSS_NIC"]="1"
+                        ["P2P_NET_CHUNKSIZE"]="262144"
+                    )
+                    set_nccl_configs pxn_perf "PXN 平衡配置"
+                    ;;
+                "aggressive")
+                    declare -A pxn_perf=(
+                        ["NTHREADS"]="512"
+                        ["BUFFSIZE"]="16777216"  # 16MB
+                        ["MIN_NCHANNELS"]="8"
+                        ["MAX_NCHANNELS"]="20"
+                        ["NET_GDR_LEVEL"]="2"
+                        ["CROSS_NIC"]="1"
+                        ["P2P_NET_CHUNKSIZE"]="524288"
+                        ["CHECK_POINTERS"]="1"
+                        ["SOCKET_NTHREADS"]="16"
+                        ["NSOCKS_PERTHREAD"]="2"
+                    )
+                    set_nccl_configs pxn_perf "PXN 激进配置"
+                    # 启用完全自动优化
+                    unset NCCL_ALGO NCCL_PROTO
+                    log_success "✓ PXN 激进模式: 启用算法和协议自动选择"
+                    ;;
+            esac
+            ;;
     esac
 }
 
@@ -400,7 +464,7 @@ setup_debug_files() {
 # 显示帮助信息
 show_help() {
     cat << EOF
-NCCL InfiniBand 测试验证脚本 v${VERSION}
+NCCL 测试验证脚本 v${VERSION}
 
 用法: $0 [选项]
 
@@ -421,8 +485,9 @@ NCCL InfiniBand 测试验证脚本 v${VERSION}
   --network BACKEND       指定网络后端 [默认: auto]
                           auto     - 自动检测并选择最佳网络 (按NCCL优先级)
                                    单节点: NVLink > PCIe P2P > 共享内存 > 网络传输
-                                   多节点: InfiniBand > 以太网
+                                   多节点: InfiniBand > PXN > 以太网
                           ib       - 强制使用 InfiniBand/RoCE
+                          pxn      - 强制使用 PXN (Process Exchange Network) 多节点模式
                           nvlink   - 强制使用 NVLink (单节点多GPU)
                           pcie     - 强制使用 PCIe P2P (单节点多GPU)
                           shm      - 强制使用共享内存 (单节点多GPU)
@@ -449,10 +514,14 @@ NCCL InfiniBand 测试验证脚本 v${VERSION}
     • 适用于单机训练和推理场景
   
   多节点模式 (-m): 测试跨节点的 NCCL 通信 (需要在每个节点运行)
-    • 自动检测优先级: InfiniBand > 以太网
-    • 推荐网络后端: auto (自动选择) > ib > ethernet > socket
+    • 自动检测优先级: InfiniBand > PXN (Process Exchange Network) > 以太网
+    • 推荐网络后端: auto (自动选择) > ib > pxn > ethernet > socket
     • 主要测试网络带宽和延迟
     • 适用于分布式训练场景
+    • 必须设置环境变量: WORLD_SIZE, NODE_RANK, NPROC_PER_NODE
+      - WORLD_SIZE: 总进程数 (节点数 × 每节点GPU数)
+      - NODE_RANK: 当前节点编号 (0, 1, 2, ...)
+      - NPROC_PER_NODE: 每节点GPU数
 
 前置条件:
   • 建议先运行 ib_health_check.sh 确保 IB 网络正常
@@ -471,11 +540,23 @@ NCCL InfiniBand 测试验证脚本 v${VERSION}
   $0 --network ethernet -s 1M          # 以太网兼容性测试
   $0 --network socket -s 1M            # Socket 调试模式
   
-  # 多节点测试 (auto 模式会优先选择 IB)
+  # 多节点测试 (必须设置环境变量)
+  # 节点0 (主节点):
+  export WORLD_SIZE=8 NODE_RANK=0 NPROC_PER_NODE=4
   $0 -m --master-addr 192.168.1.100    # 自动选择网络 (推荐)
+  
+  # 节点1:
+  export WORLD_SIZE=8 NODE_RANK=1 NPROC_PER_NODE=4
   $0 -m --master-addr 192.168.1.100 --network ib     # 强制使用 InfiniBand
+  
+  # 其他示例:
+  export WORLD_SIZE=4 NODE_RANK=0 NPROC_PER_NODE=2
+  $0 -m --master-addr 192.168.1.100 --network pxn    # 强制使用 PXN 模式
   $0 -m --master-addr 192.168.1.100 --network ethernet # 强制使用以太网
   $0 -m --master-addr 192.168.1.100 -s 100M -t 120   # 大数据长时间测试
+  
+  # 或者使用 nccl_multinode_launcher.sh (自动设置环境变量):
+  ./nccl_multinode_launcher.sh --nodes 2 --gpus-per-node 4 --master-addr 192.168.1.100
 
 EOF
 }
@@ -483,7 +564,7 @@ EOF
 # 显示版本信息
 show_version() {
     echo "$SCRIPT_NAME v$VERSION"
-    echo "专注于 NCCL InfiniBand 通信测试"
+    echo "专注于 NCCL 通信测试"
 }
 
 # 验证参数
@@ -536,12 +617,12 @@ validate_arguments() {
     
     # 验证网络后端
     case "$NETWORK_BACKEND" in
-        auto|ib|nvlink|pcie|shm|ethernet|socket)
+        auto|ib|pxn|nvlink|pcie|shm|ethernet|socket)
             log_success "网络后端: $NETWORK_BACKEND"
             ;;
         *)
             log_error "无效的网络后端: $NETWORK_BACKEND"
-            log_info "支持的网络后端: auto, ib, nvlink, pcie, shm, ethernet, socket"
+            log_info "支持的网络后端: auto, ib, pxn, nvlink, pcie, shm, ethernet, socket"
             validation_failed=true
             ;;
     esac
@@ -765,6 +846,9 @@ setup_nccl_env() {
         "ib")
             setup_infiniband_network
             ;;
+        "pxn")
+            setup_pxn_network
+            ;;
         "nvlink")
             setup_nvlink_network
             ;;
@@ -816,7 +900,7 @@ setup_nccl_env() {
 
 # 自动检测网络配置 - 按照 NCCL 优先级
 setup_auto_network() {
-    log_info "自动检测网络环境 (按 NCCL 优先级: NVLink > PCIe P2P > 共享内存 > 网络传输)..."
+    log_info "自动检测网络环境 (按 NCCL 优先级: NVLink > PCIe P2P > 共享内存 > 网络传输 > PXN)..."
     
     # ========== 第一优先级：检测 NVLink (仅单节点) ==========
     if [ "$MULTI_NODE_MODE" = false ]; then
@@ -913,7 +997,7 @@ setup_auto_network() {
         return 0
     fi
     
-    # ========== 第四优先级：网络传输 (InfiniBand > 以太网) ==========
+    # ========== 第四优先级：网络传输 (InfiniBand > PXN > 以太网) ==========
     log_info "检测网络传输选项..."
     
     # 检测 InfiniBand 设备
@@ -956,7 +1040,40 @@ setup_auto_network() {
         log_success "自动选择 InfiniBand 网络 (网络传输最高优先级)"
         configure_infiniband_settings "$is_roce" "$network_type"
     else
-        log_warning "InfiniBand 不可用: $ib_error，回退到以太网"
+        log_warning "InfiniBand 不可用: $ib_error，检测 PXN 支持..."
+        
+        # ========== 第五优先级：PXN (Process Exchange Network) 多节点模式 ==========
+        if [ "$MULTI_NODE_MODE" = true ]; then
+            local pxn_available=false
+            local pxn_reason=""
+            
+            # 检查是否有高速网络接口支持 PXN
+            if command -v ip >/dev/null 2>&1; then
+                local high_speed_interfaces=$(ip link show up 2>/dev/null | grep -E "^[0-9]+: (eth|en|ib)[0-9]+" | head -3)
+                if [ -n "$high_speed_interfaces" ]; then
+                    # 检查是否配置了主节点地址
+                    if [ -n "$MASTER_ADDR" ]; then
+                        pxn_available=true
+                        pxn_reason="检测到高速网络接口且配置了主节点地址"
+                        log_success "自动选择 PXN 模式 (多节点高性能通信)"
+                        log_info "PXN 检测: $pxn_reason"
+                        configure_pxn_settings
+                        return 0
+                    else
+                        pxn_reason="缺少主节点地址配置 (--master-addr)"
+                    fi
+                else
+                    pxn_reason="未检测到高速网络接口"
+                fi
+            else
+                pxn_reason="无法检查网络接口状态"
+            fi
+            
+            log_info "PXN 检测: 不可用 ($pxn_reason)，回退到以太网"
+        else
+            log_info "单节点模式: 跳过 PXN 检测"
+        fi
+        
         log_success "自动选择以太网传输 (网络传输备选)"
         configure_ethernet_settings
     fi
@@ -1296,6 +1413,76 @@ setup_socket_network() {
     configure_socket_settings
 }
 
+# 强制使用 PXN (Process Exchange Network) 模式
+setup_pxn_network() {
+    log_info "强制使用 PXN (Process Exchange Network) 模式..."
+    
+    # ========== 基础条件检查 ==========
+    # PXN 仅适用于多节点场景
+    if [ "$MULTI_NODE_MODE" = false ]; then
+        log_error "PXN 模式仅支持多节点分布式训练，不支持单节点"
+        log_error "无法强制使用 PXN 网络"
+        log_info "解决方案:"
+        log_info "  1. 使用多节点模式 (添加 -m 或 --multi-node 参数)"
+        log_info "  2. 或使用单节点兼容的网络后端: --network nvlink 或 --network pcie"
+        exit 1
+    fi
+    
+    # ========== 硬件检查 ==========
+    local pxn_available=false
+    local pxn_error=""
+    local network_interfaces=""
+    
+    # 检查高速网络接口可用性 (InfiniBand 或高速以太网)
+    if command -v ibv_devinfo >/dev/null 2>&1; then
+        local ib_output
+        if ib_output=$(ibv_devinfo 2>/dev/null) && echo "$ib_output" | grep -q "hca_id:"; then
+            pxn_available=true
+            log_success "检测到 InfiniBand 设备，PXN 可使用 IB 作为底层传输"
+        fi
+    fi
+    
+    # 如果没有 InfiniBand，检查高速以太网接口
+    if [ "$pxn_available" = false ]; then
+        if command -v ip >/dev/null 2>&1; then
+            # 检查 10GbE 或更高速度的网络接口
+            network_interfaces=$(ip link show up 2>/dev/null | grep -E "^[0-9]+: (eth|en|ib)[0-9]+" | head -5)
+            if [ -n "$network_interfaces" ]; then
+                pxn_available=true
+                log_success "检测到高速网络接口，PXN 可使用以太网作为底层传输"
+            else
+                pxn_error="未检测到可用的高速网络接口"
+            fi
+        else
+            pxn_error="无法检查网络接口状态"
+        fi
+    fi
+    
+    # 检查 MASTER_ADDR 配置
+    if [ -z "$MASTER_ADDR" ]; then
+        pxn_error="PXN 模式需要指定主节点地址 (--master-addr)"
+        log_error "配置检查失败: $pxn_error"
+        log_error "无法启用 PXN 模式"
+        log_info "解决方案:"
+        log_info "  1. 指定主节点地址: --master-addr <IP地址>"
+        log_info "  2. 确保所有节点都能访问该地址"
+        exit 1
+    fi
+    
+    # 如果 PXN 不可用，直接退出
+    if [ "$pxn_available" = false ]; then
+        log_error "硬件检查失败: $pxn_error"
+        log_error "无法强制使用 PXN 网络"
+        log_info "解决方案:"
+        log_info "  1. 安装 InfiniBand 硬件和驱动"
+        log_info "  2. 配置高速以太网接口 (10GbE+)"
+        log_info "  3. 或使用其他网络后端: --network ib 或 --network ethernet"
+        exit 1
+    fi
+    
+    configure_pxn_settings
+}
+
 # 配置 InfiniBand 相关设置
 configure_infiniband_settings() {
     local is_roce="$1"
@@ -1387,6 +1574,62 @@ configure_socket_settings() {
     
     log_warning "Socket 传输模式 - 性能可能较低，主要用于调试"
     log_info "预期性能: <1 GB/s 吞吐量（受网络栈限制）"
+}
+
+# 配置 PXN (Process Exchange Network) 设置
+configure_pxn_settings() {
+    log_info "配置 PXN (Process Exchange Network) 设置"
+    
+    # 使用统一配置管理器
+    setup_common_nccl_config
+    setup_debug_files "pxn"
+    
+    # 应用 PXN 网络配置预设
+    setup_network_config "pxn_enable"
+    
+    # 应用 PXN 性能优化配置
+    setup_performance_config "pxn_optimized" "$OPTIMIZATION_LEVEL"
+    
+    # 智能网络接口配置 - PXN 需要高性能网络
+    setup_network_interface "auto_ethernet"
+    
+    # PXN 环境变量设置
+    export NCCL_PXN_DISABLE=0  # 确保 PXN 启用
+    export NCCL_COLLNET_NODE_THRESHOLD=2  # 2个或更多节点时启用集合通信
+    export NCCL_COLLNET_CHAIN_THRESHOLD=2  # 链式通信阈值
+    
+    # 多节点特定配置
+    if [ -n "$MASTER_ADDR" ]; then
+        log_info "PXN 主节点地址: $MASTER_ADDR:$MASTER_PORT"
+        # 设置分布式训练环境变量
+        export MASTER_ADDR="$MASTER_ADDR"
+        export MASTER_PORT="$MASTER_PORT"
+        export WORLD_SIZE="${WORLD_SIZE:-2}"  # 默认2个节点
+        export RANK="${RANK:-0}"  # 默认为主节点
+    fi
+    
+    # 结果总结
+    log_success "✅ PXN 配置完成 - 多节点高性能通信模式"
+    case "$OPTIMIZATION_LEVEL" in
+        "conservative")
+            log_success "🔒 保守模式: 稳定性优先, 预期性能: ~50 GB/s"
+            ;;
+        "balanced")
+            log_success "⚖️  平衡模式: 性能与稳定性兼顾, 预期性能: ~100 GB/s"
+            ;;
+        "aggressive")
+            log_success "🚀 激进模式: 最大性能优化, 预期性能: >200 GB/s"
+            ;;
+    esac
+    log_info "📊 优化级别: $OPTIMIZATION_LEVEL"
+    log_info "🌐 主节点: $MASTER_ADDR:$MASTER_PORT"
+    log_info "🔗 支持算法: Ring, Tree, CollNet"
+    log_info "💾 缓冲区大小: $(echo $NCCL_BUFFSIZE | numfmt --to=iec 2>/dev/null || echo $NCCL_BUFFSIZE)"
+    
+    # 特殊提示
+    log_warning "⚠️  PXN 模式需要在所有参与节点上运行此脚本"
+    log_warning "⚠️  确保所有节点的网络配置一致"
+    log_info "💡 建议: 配合 ib_bandwidth_monitor.sh 监控网络性能"
 }
 
 # 强制使用共享内存网络
@@ -1704,8 +1947,19 @@ run_single_node_test() {
             log_info "  NPROC_PER_NODE: $NPROC_PER_NODE"
             log_info "  计算得出 NNODES: $nnodes"
         else
-            log_warning "多节点模式建议设置环境变量: WORLD_SIZE, NODE_RANK, NPROC_PER_NODE"
-            log_info "当前使用默认配置 (单节点模式)"
+            log_error "多节点模式必须设置以下环境变量: WORLD_SIZE, NODE_RANK, NPROC_PER_NODE"
+            log_error "当前环境变量状态:"
+            log_error "  WORLD_SIZE: ${WORLD_SIZE:-未设置}"
+            log_error "  NODE_RANK: ${NODE_RANK:-未设置}"
+            log_error "  NPROC_PER_NODE: ${NPROC_PER_NODE:-未设置}"
+            log_error ""
+            log_error "请设置环境变量后重新运行，例如:"
+            log_error "  export WORLD_SIZE=2        # 总进程数 (节点数 × 每节点GPU数)"
+            log_error "  export NODE_RANK=0         # 当前节点编号 (0, 1, 2, ...)"
+            log_error "  export NPROC_PER_NODE=4    # 每节点GPU数"
+            log_error ""
+            log_error "或者使用 nccl_multinode_launcher.sh 脚本自动设置这些变量"
+            exit 1
         fi
     fi
     
@@ -2130,7 +2384,7 @@ generate_report() {
     local report_file="/tmp/nccl_test_report_$(date +%Y%m%d_%H%M%S).txt"
     
     cat > "$report_file" << EOF
-=== NCCL InfiniBand 测试报告 ===
+=== NCCL 测试报告 ===
 生成时间: $(date)
 脚本版本: $VERSION
 
@@ -2208,7 +2462,7 @@ main() {
     parse_arguments "$@"
     
     # 初始化日志
-    echo "NCCL InfiniBand 测试开始 - $(date)" > "$LOG_FILE"
+    echo "NCCL 测试开始 - $(date)" > "$LOG_FILE"
     
     # 显示脚本信息
     log_header "$SCRIPT_NAME v$VERSION"

@@ -76,7 +76,8 @@ VERSION="1.0.0"
 DEFAULT_WORLD_SIZE=4
 DEFAULT_NPROC_PER_NODE=2
 DEFAULT_MASTER_PORT=29500
-DEFAULT_NETWORK="ib"
+DEFAULT_NETWORK="auto"
+DEFAULT_OPTIMIZATION_LEVEL="balanced"
 DEFAULT_TEST_SIZE="50M"
 DEFAULT_TEST_DURATION=90
 
@@ -125,29 +126,41 @@ $SCRIPT_NAME v$VERSION - NCCL 多节点测试启动脚本
   -n, --nproc-per-node N  每节点GPU数 (默认: $DEFAULT_NPROC_PER_NODE)
   -p, --master-port PORT  主节点端口 (默认: $DEFAULT_MASTER_PORT)
   --network BACKEND       网络后端 (默认: $DEFAULT_NETWORK)
+  --optimization LEVEL    优化级别 (默认: $DEFAULT_OPTIMIZATION_LEVEL)
   -s, --size SIZE         测试数据大小 (默认: $DEFAULT_TEST_SIZE)
   -t, --time SECONDS      测试时长 (默认: $DEFAULT_TEST_DURATION)
   -h, --help              显示此帮助信息
 
 网络后端选项:
-  ib                      InfiniBand (推荐)
+  auto                    自动检测最佳网络 (InfiniBand > PXN > 以太网)
+  pxn                     PXN 模式 (多节点专用高性能通信)
+  ib                      InfiniBand
   ethernet                以太网
   socket                  Socket (调试用)
 
+优化级别选项 (适用于 PXN 和 NVLink):
+  conservative            保守配置 (稳定性优先)
+  balanced                平衡配置 (推荐)
+  aggressive              激进配置 (最大性能)
+
 示例:
-  # 2节点4GPU集群测试
+  # 2节点4GPU集群测试 (自动网络检测)
   # 主节点 (192.168.1.100):
   $0 0 192.168.1.100 -w 4 -n 2
   
   # 工作节点 (192.168.1.101):
   $0 1 192.168.1.100 -w 4 -n 2
   
-  # 4节点8GPU大规模测试
+  # PXN 模式高性能测试
   # 主节点:
-  $0 0 192.168.1.100 -w 8 -n 2 -s 100M -t 120
+  $0 0 192.168.1.100 -w 8 -n 2 --network pxn --optimization balanced -s 1G -t 120
   
   # 工作节点1:
-  $0 1 192.168.1.100 -w 8 -n 2 -s 100M -t 120
+  $0 1 192.168.1.100 -w 8 -n 2 --network pxn --optimization balanced -s 1G -t 120
+  
+  # PXN 激进模式 (最大性能)
+  # 主节点:
+  $0 0 192.168.1.100 -w 4 -n 2 --network pxn --optimization aggressive -s 500M -t 60
 
 注意事项:
   1. 所有节点必须使用相同的参数配置
@@ -184,6 +197,7 @@ parse_arguments() {
     NPROC_PER_NODE="$DEFAULT_NPROC_PER_NODE"
     MASTER_PORT="$DEFAULT_MASTER_PORT"
     NETWORK="$DEFAULT_NETWORK"
+    OPTIMIZATION_LEVEL="$DEFAULT_OPTIMIZATION_LEVEL"
     TEST_SIZE="$DEFAULT_TEST_SIZE"
     TEST_DURATION="$DEFAULT_TEST_DURATION"
     
@@ -207,6 +221,10 @@ parse_arguments() {
                 ;;
             --network)
                 NETWORK="$2"
+                shift 2
+                ;;
+            --optimization)
+                OPTIMIZATION_LEVEL="$2"
                 shift 2
                 ;;
             -s|--size)
@@ -272,6 +290,7 @@ show_config() {
     log_info ""
     log_info "测试配置:"
     log_info "  网络后端: $NETWORK"
+    log_info "  优化级别: $OPTIMIZATION_LEVEL"
     log_info "  测试数据大小: $TEST_SIZE"
     log_info "  测试时长: ${TEST_DURATION}秒"
 }
@@ -458,7 +477,7 @@ start_test() {
     # 启动测试
     log_info ""
     log_info "启动测试命令:"
-    local test_cmd="./nccl_benchmark.sh -m --master-addr $MASTER_ADDR --master-port $MASTER_PORT --network $NETWORK -s $TEST_SIZE -t $TEST_DURATION"
+    local test_cmd="./nccl_benchmark.sh -m --master-addr $MASTER_ADDR --master-port $MASTER_PORT --network $NETWORK --optimization-level $OPTIMIZATION_LEVEL -s $TEST_SIZE -t $TEST_DURATION"
     log_info "$test_cmd"
     
     log_info ""

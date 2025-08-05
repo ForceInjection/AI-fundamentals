@@ -289,7 +289,7 @@ test_help_function() {
     
     local help_output
     if help_output=$(bash "$NCCL_SCRIPT_PATH" --help 2>&1); then
-        if echo "$help_output" | grep -q "NCCL InfiniBand 测试验证脚本"; then
+        if echo "$help_output" | grep -q "NCCL 测试验证脚本"; then
             log_test_pass "帮助信息显示正常"
         else
             log_test_fail "帮助信息内容不完整"

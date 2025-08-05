@@ -4,31 +4,47 @@
 
 本目录提供了完整的 NCCL (NVIDIA Collective Communication Library) 分布式通信测试解决方案，支持单节点和多节点的 GPU 通信性能测试，包含容器化部署和原生环境部署两种方式。
 
+### 🚀 PXN 模式支持
+
+本测试套件现已全面支持 **PXN (高性能多节点通信) 模式**，提供针对多节点环境优化的高性能通信解决方案：
+
+- **🎯 专为多节点优化**：针对大规模分布式训练场景设计
+- **⚡ 三种优化级别**：保守、平衡、激进模式，满足不同性能需求
+- **🔧 智能网络检测**：自动选择最佳网络配置和通信路径
+- **📊 详细性能分析**：提供 PXN 模式专用的性能指标和优化建议
+- **🐳 全栈支持**：容器化、多节点原生、Kubernetes 部署全面支持
+
 ## 2. 文件结构
 
 ```text
 nccl/
 ├── 🔧 核心测试工具
-│   ├── nccl_benchmark.sh          # 主要的 NCCL 性能基准测试脚本
+│   ├── nccl_benchmark.sh          # 主要的 NCCL 性能基准测试脚本 (支持 PXN 模式)
 │   └── nccl_python_template.py    # Python 测试模板脚本
 ├── 🐳 容器化部署
 │   ├── Dockerfile                 # NCCL 测试容器镜像定义
-│   └── nccl_container_manager.sh  # 单节点容器化测试管理脚本
+│   └── nccl_container_manager.sh  # 容器化测试管理脚本 (支持 PXN 多节点)
 ├── 🌐 多节点部署
-│   ├── nccl_multinode_launcher.sh # 原生多节点测试启动器
+│   ├── nccl_multinode_launcher.sh # 原生多节点测试启动器 (支持 PXN 模式)
 │   └── k8s/                       # Kubernetes 多节点部署方案
-│       ├── deploy.sh              # Kubernetes 部署管理脚本
+│       ├── deploy.sh              # Kubernetes 部署管理脚本 (支持 PXN 模式)
 │       ├── nccl-multinode-job.yaml # NCCL 多节点 Job 配置
 │       ├── nccl-service.yaml      # NCCL 服务配置
 │       ├── nccl-configmap.yaml    # NCCL 配置映射
 │       └── README.md              # Kubernetes 部署指南
+├── 🚀 PXN 模式专用
+│   ├── demo_pxn_mode.sh           # PXN 模式演示脚本
+│   ├── PXN_MODE_GUIDE.md          # PXN 模式详细指南
+│   └── test_pxn_integration.sh    # PXN 集成测试脚本
 ├── 🔍 诊断工具
 │   └── gpu_topology_detector.sh   # GPU 拓扑检测工具
 ├── 📚 配置文件
 │   ├── requirements.txt           # Python 依赖包配置
 │   └── tutorial.md               # 详细使用教程和最佳实践
 └── 📁 测试数据
-    └── test/                      # 测试脚本和数据
+    └── test/                      # 测试脚本和数据 (包含 PXN 测试套件)
+        ├── test_pxn_mode.sh       # PXN 模式功能测试
+        └── run_all_tests.sh       # 全套测试运行器 (包含 PXN 测试)
 ```
 
 ## 3. 核心组件介绍
@@ -39,10 +55,15 @@ nccl/
 
 主要的 NCCL 性能基准测试脚本，提供以下功能：
 
-- **多网络后端支持**：NVLink、InfiniBand、Ethernet、Socket
-- **自动路径检测**：智能选择最佳通信路径
-- **性能分析**：延迟、带宽、吞吐量等详细指标
-- **环境验证**：自动检查依赖和配置
+- **多网络后端支持**：NVLink、InfiniBand、Ethernet、Socket、**PXN**
+- **PXN 模式优化**：专为多节点高性能通信设计的优化模式
+- **三种优化级别**：
+  - `conservative`: 保守模式，稳定性优先
+  - `balanced`: 平衡模式，性能与稳定性兼顾 (默认)
+  - `aggressive`: 激进模式，最大性能优化
+- **自动路径检测**：智能选择最佳通信路径，支持 PXN 自动检测
+- **性能分析**：延迟、带宽、吞吐量等详细指标，包含 PXN 专用指标
+- **环境验证**：自动检查依赖和配置，包含 PXN 环境验证
 
 #### 3.1.2 `nccl_python_template.py`
 
@@ -64,31 +85,39 @@ nccl/
 
 #### 3.2.2 `nccl_container_manager.sh`
 
-单节点容器化测试管理脚本：
+容器化测试管理脚本，现已支持多节点 PXN 模式：
 
 - **自动构建**：一键构建测试镜像
 - **灵活配置**：支持多种 GPU 和网络配置
+- **PXN 多节点支持**：支持容器化的多节点 PXN 测试
+- **优化级别配置**：支持 PXN 三种优化级别
+- **主从节点配置**：支持 `--master-addr`、`--master-port` 参数
 - **交互模式**：提供调试和开发环境
-- **专注单节点**：专门用于单节点容器测试
+- **单节点兼容**：保持原有单节点测试功能
 
 ### 3.3 多节点部署
 
 #### 3.3.1 `nccl_multinode_launcher.sh`
 
-原生多节点测试启动器：
+原生多节点测试启动器，现已全面支持 PXN 模式：
 
 - **简化部署**：一键启动多节点测试
-- **环境检查**：自动验证集群环境
-- **配置管理**：统一的节点配置
+- **PXN 模式支持**：完整的 PXN 高性能通信支持
+- **智能网络检测**：默认使用 `auto` 模式，自动选择最佳网络配置
+- **优化级别配置**：支持 `--optimization` 参数配置优化级别
+- **环境检查**：自动验证集群环境，包含 PXN 环境验证
+- **配置管理**：统一的节点配置，支持 PXN 参数传递
 - **原生环境**：适用于传统裸机部署
 
 #### 3.3.2 Kubernetes 多节点部署方案 (`k8s/`)
 
 现代化的容器编排多节点部署方案：
 
-**`deploy.sh`** - Kubernetes 部署管理脚本：
+**`deploy.sh`** - Kubernetes 部署管理脚本，现已支持 PXN 模式：
 
 - **一键部署**：自动化 Kubernetes 资源创建
+- **PXN 模式支持**：支持 `--network pxn` 参数启用 PXN 模式
+- **优化级别配置**：支持 `--optimization` 参数配置优化级别
 - **参数配置**：支持自定义 GPU 数量、测试参数
 - **状态监控**：实时查看部署状态和测试进度
 - **资源清理**：完整的资源生命周期管理
@@ -205,6 +234,9 @@ cd /path/to/nccl/
 # 基础性能测试
 ./nccl_container_manager.sh --gpus all --size 100M --time 60
 
+# PXN 模式单节点测试
+./nccl_container_manager.sh --gpus all --size 100M --time 60 --network pxn --optimization balanced
+
 # GPU 拓扑检测
 ./gpu_topology_detector.sh
 ```
@@ -216,11 +248,19 @@ cd /path/to/nccl/
 **方案一：原生多节点部署:**
 
 ```bash
+# 标准多节点测试
 # 在 Master 节点 (192.168.1.100) 上执行
 ./nccl_multinode_launcher.sh 0 192.168.1.100 --world-size 4 --nproc-per-node 2
 
 # 在 Worker 节点 (192.168.1.101) 上执行  
 ./nccl_multinode_launcher.sh 1 192.168.1.100 --world-size 4 --nproc-per-node 2
+
+# PXN 模式多节点测试（高性能）
+# 在 Master 节点上执行
+./nccl_multinode_launcher.sh 0 192.168.1.100 --world-size 4 --nproc-per-node 2 --network pxn --optimization aggressive
+
+# 在 Worker 节点上执行
+./nccl_multinode_launcher.sh 1 192.168.1.100 --world-size 4 --nproc-per-node 2 --network pxn --optimization aggressive
 ```
 
 **方案二：Kubernetes 多节点部署（推荐）:**
@@ -234,6 +274,12 @@ cd k8s/
 
 # 自定义部署
 ./deploy.sh deploy --gpus 4 --test-size 1G --test-duration 120
+
+# PXN 模式部署（高性能多节点）
+./deploy.sh deploy --gpus 4 --test-size 1G --test-duration 120 --network pxn --optimization balanced
+
+# PXN 激进模式部署（最大性能）
+./deploy.sh deploy --gpus 8 --test-size 2G --test-duration 180 --network pxn --optimization aggressive
 
 # 查看部署状态
 ./deploy.sh status
@@ -260,12 +306,16 @@ cd k8s/
 - 建立 GPU 通信性能基线
 - 验证硬件配置效果
 - 对比不同网络后端性能
+- **PXN 模式性能评估**：测试高性能多节点通信优化效果
+- **优化级别对比**：评估 conservative、balanced、aggressive 三种优化级别的性能差异
 
 ### 6.2 环境验证
 
 - 验证 NCCL 环境配置
 - 检查 GPU 拓扑结构
 - 诊断网络连接问题
+- **PXN 环境检测**：验证 PXN 模式的网络环境和配置
+- **智能网络检测**：自动检测最适合的网络后端（InfiniBand、以太网等）
 
 ### 6.3 生产部署准备
 
@@ -274,6 +324,8 @@ cd k8s/
 - 分布式训练环境准备
 - Kubernetes 集群 NCCL 性能验证
 - 云原生环境适配测试
+- **PXN 模式生产部署**：大规模多节点集群的 PXN 模式部署和优化
+- **多节点 PXN 调优**：针对不同硬件配置的 PXN 优化级别选择
 
 ### 6.4 云原生部署
 
@@ -281,6 +333,8 @@ cd k8s/
 - 容器编排环境性能基准
 - 多租户环境隔离验证
 - 自动化部署和监控
+- **云原生 PXN 部署**：Kubernetes 环境下的 PXN 模式自动化部署
+- **PXN 容器编排**：支持 PXN 模式的容器化多节点通信优化
 
 ## 7. 详细文档
 

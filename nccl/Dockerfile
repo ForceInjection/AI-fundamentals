@@ -107,7 +107,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # 添加标签信息
 LABEL maintainer="Grissom" \
-      description="NCCL InfiniBand 测试容器" \
+      description="NCCL 测试容器" \
       version="2.0" \
       cuda.version="${CUDA_VERSION}" \
       pytorch.version="${PYTORCH_VERSION}" \

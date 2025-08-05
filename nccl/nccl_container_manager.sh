@@ -19,10 +19,14 @@ GPU_COUNT="all"
 TEST_SIZE="1M"
 TEST_DURATION=30
 NETWORK_BACKEND="auto"
+OPTIMIZATION_LEVEL="balanced"
 CLEANUP=true
 INTERACTIVE=false
 LOG_LEVEL="INFO"
 DRY_RUN=false
+MULTI_NODE=false
+MASTER_ADDR=""
+MASTER_PORT="29500"
 
 # 颜色定义
 RED='\033[0;31m'
@@ -75,13 +79,21 @@ $SCRIPT_NAME v$VERSION
   --network BACKEND       网络后端 [默认: auto]
                           auto     - 自动检测并选择最佳网络 (按NCCL优先级)
                                    单节点: NVLink > PCIe P2P > 共享内存 > 网络传输
-                                   多节点: InfiniBand > 以太网
+                                   多节点: InfiniBand > PXN > 以太网
+                          pxn      - 强制使用 PXN 模式 (多节点专用高性能通信)
                           ib       - 强制使用 InfiniBand/RoCE
                           nvlink   - 强制使用 NVLink (单节点多GPU)
                           pcie     - 强制使用 PCIe P2P (单节点多GPU)
                           shm      - 强制使用共享内存 (单节点多GPU)
                           ethernet - 强制使用以太网 (TCP/IP)
                           socket   - 强制使用 Socket 传输
+  --optimization LEVEL    优化级别 [默认: balanced] (仅适用于 NVLink 和 PXN)
+                          conservative - 保守配置 (稳定性优先)
+                          balanced     - 平衡配置 (推荐)
+                          aggressive   - 激进配置 (最大性能)
+  -m, --multi-node        启用多节点模式 (需要配合 --master-addr)
+  --master-addr ADDR      主节点地址 (多节点模式必需)
+  --master-port PORT      主节点端口 [默认: 29500]
   --log-level LEVEL       日志级别 [默认: INFO]
   --dry-run               Dry-run 模式：检查环境、配置变量但不执行测试
   --no-cleanup            测试后不清理容器
@@ -105,13 +117,19 @@ $SCRIPT_NAME v$VERSION
   $0 --gpus all --size 100M --time 60
   
   # 单节点测试 (使用 4 个 GPU，NVLink 后端)
-  $0 --gpus 4 --size 1G --network nvlink
+  $0 --gpus 4 --size 1G --network nvlink --optimization balanced
   
   # 单节点测试 (使用 PCIe P2P 通信)
   $0 --gpus 2 --size 100M --network pcie
   
   # 单节点测试 (使用共享内存通信)
   $0 --gpus 2 --size 10M --network shm
+  
+  # PXN 模式多节点测试 (主节点)
+  $0 --multi-node --master-addr 192.168.1.100 --network pxn --optimization balanced --gpus 4 --size 1G
+  
+  # PXN 模式多节点测试 (工作节点)
+  $0 --multi-node --master-addr 192.168.1.100 --network pxn --optimization balanced --gpus 4 --size 1G
   
   # 交互模式 (调试用)
   $0 --interactive
@@ -262,6 +280,11 @@ run_nccl_test() {
     log_info "  测试大小: $TEST_SIZE"
     log_info "  测试时长: $TEST_DURATION 秒"
     log_info "  网络后端: $NETWORK_BACKEND"
+    log_info "  优化级别: $OPTIMIZATION_LEVEL"
+    log_info "  多节点模式: $([ "$MULTI_NODE" = true ] && echo "启用" || echo "禁用")"
+    if [ "$MULTI_NODE" = true ]; then
+        log_info "  主节点地址: $MASTER_ADDR:$MASTER_PORT"
+    fi
     log_info "  运行模式: $([ "$DRY_RUN" = true ] && echo "Dry-run (仅检查环境和配置)" || echo "正常测试模式")"
     log_info "  网络模式: Host (直接访问主机网络设备)"
     log_info "  容器模式: Privileged (完整设备访问)"
@@ -271,6 +294,10 @@ run_nccl_test() {
     [ "$TEST_SIZE" != "1M" ] && nccl_test_args+=("-s" "$TEST_SIZE")
     [ "$TEST_DURATION" != "30" ] && nccl_test_args+=("-t" "$TEST_DURATION")
     [ "$NETWORK_BACKEND" != "auto" ] && nccl_test_args+=("--network" "$NETWORK_BACKEND")
+    [ "$OPTIMIZATION_LEVEL" != "balanced" ] && nccl_test_args+=("--optimization-level" "$OPTIMIZATION_LEVEL")
+    [ "$MULTI_NODE" = true ] && nccl_test_args+=("--multi-node")
+    [ -n "$MASTER_ADDR" ] && nccl_test_args+=("--master-addr" "$MASTER_ADDR")
+    [ "$MASTER_PORT" != "29500" ] && nccl_test_args+=("--master-port" "$MASTER_PORT")
     [ "$DRY_RUN" = true ] && nccl_test_args+=("--dry-run")
     
     # 启动容器并运行 nccl_benchmark.sh
@@ -379,6 +406,34 @@ parse_arguments() {
                     exit 1
                 fi
                 NETWORK_BACKEND="$2"
+                shift 2
+                ;;
+            --optimization)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    log_error "选项 $1 需要一个参数"
+                    exit 1
+                fi
+                OPTIMIZATION_LEVEL="$2"
+                shift 2
+                ;;
+            -m|--multi-node)
+                MULTI_NODE=true
+                shift
+                ;;
+            --master-addr)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    log_error "选项 $1 需要一个参数"
+                    exit 1
+                fi
+                MASTER_ADDR="$2"
+                shift 2
+                ;;
+            --master-port)
+                if [[ -z "$2" || "$2" == -* ]]; then
+                    log_error "选项 $1 需要一个参数"
+                    exit 1
+                fi
+                MASTER_PORT="$2"
                 shift 2
                 ;;
             --log-level)

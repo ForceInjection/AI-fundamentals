@@ -13,6 +13,8 @@ NAMESPACE="default"
 STS_NAME="nccl-multinode"
 REPLICAS="2"
 GPUS_PER_NODE="2"
+NETWORK_BACKEND="auto"
+OPTIMIZATION_LEVEL="balanced"
 TEST_SIZE="100M"
 TEST_DURATION="60"
 SIMULATION_MODE="false"
@@ -68,6 +70,15 @@ NCCL 多节点测试部署脚本
     -n, --namespace <namespace>    指定 Kubernetes 命名空间 (默认: default)
     -r, --replicas <number>        指定副本数 (默认: 2)
     -g, --gpus <number>            每节点 GPU 数量 (默认: 2)
+    --network <backend>            网络后端 (默认: auto)
+                                   auto - 自动检测 (InfiniBand > PXN > 以太网)
+                                   pxn - PXN 模式 (多节点专用高性能通信)
+                                   ib - InfiniBand
+                                   ethernet - 以太网
+    --optimization <level>         优化级别 (默认: balanced)
+                                   conservative - 保守配置 (稳定性优先)
+                                   balanced - 平衡配置 (推荐)
+                                   aggressive - 激进配置 (最大性能)
     -s, --size <size>              测试数据大小 (默认: 100M)
     -t, --time <seconds>           测试持续时间 (默认: 60)
     --simulation                   启用模拟模式 (跳过 GPU 检查)
@@ -75,17 +86,20 @@ NCCL 多节点测试部署脚本
     -v, --version                  显示版本信息
 
 示例:
-    # 在默认命名空间部署 2 个副本
+    # 在默认命名空间部署 2 个副本 (自动网络检测)
     ./deploy.sh deploy
 
     # 在指定命名空间部署 4 个副本
     ./deploy.sh -n nccl-test -r 4 deploy
     
-    # 自定义每节点 GPU 数量和测试参数
-    ./deploy.sh -n nccl-test -r 4 -g 4 -s 1G -t 120 deploy
+    # PXN 模式高性能部署
+    ./deploy.sh -n nccl-test -r 4 -g 4 --network pxn --optimization balanced -s 1G -t 120 deploy
+    
+    # PXN 激进模式部署 (最大性能)
+    ./deploy.sh -n nccl-test -r 2 -g 8 --network pxn --optimization aggressive -s 500M -t 60 deploy
 
     # 模拟模式部署 (用于测试配置，无需 GPU)
-    ./deploy.sh --simulation -r 2 -g 4 deploy
+    ./deploy.sh --simulation -r 2 -g 4 --network pxn --optimization balanced deploy
 
     # 查看状态
     ./deploy.sh -n nccl-test status
@@ -173,6 +187,8 @@ deploy_test() {
     log_info "  • 副本数: $REPLICAS"
     log_info "  • 每节点 GPU 数量: $GPUS_PER_NODE"
     log_info "  • 总 GPU 数量: $((REPLICAS * GPUS_PER_NODE))"
+    log_info "  • 网络后端: $NETWORK_BACKEND"
+    log_info "  • 优化级别: $OPTIMIZATION_LEVEL"
     log_info "  • 测试数据大小: $TEST_SIZE"
     log_info "  • 测试持续时间: ${TEST_DURATION}秒"
     if [ "$SIMULATION_MODE" = "true" ]; then
@@ -196,6 +212,8 @@ deploy_test() {
     sed -e "s/\$REPLICAS/$REPLICAS/g" \
         -e "s/\$WORLD_SIZE/$world_size/g" \
         -e "s/\$NPROC_PER_NODE/$GPUS_PER_NODE/g" \
+        -e "s/\$NETWORK_BACKEND/$NETWORK_BACKEND/g" \
+        -e "s/\$OPTIMIZATION_LEVEL/$OPTIMIZATION_LEVEL/g" \
         -e "s/\$TEST_SIZE/$TEST_SIZE/g" \
         -e "s/\$TEST_DURATION/$TEST_DURATION/g" \
         ./nccl-multinode-sts.yaml | kubectl apply -f - -n "$NAMESPACE"
@@ -298,6 +316,14 @@ main() {
             ;;
         -g|--gpus)
             GPUS_PER_NODE="$2"
+            shift 2
+            ;;
+        --network)
+            NETWORK_BACKEND="$2"
+            shift 2
+            ;;
+        --optimization)
+            OPTIMIZATION_LEVEL="$2"
             shift 2
             ;;
         -s|--size)
