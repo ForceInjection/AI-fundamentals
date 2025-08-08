@@ -385,3 +385,11 @@
 - [ktransformers](https://github.com/kvcache-ai/ktransformers): A Flexible Framework for Experiencing Cutting-edge LLM Inference Optimizations
 
 ---
+
+## Buy Me a Coffee
+
+如果您觉得本项目对您有帮助，欢迎购买我一杯咖啡，支持我继续创作和维护。
+
+|微信|支付宝|
+|---|---|
+|<img src="./img/weixinpay.JPG" alt="wechat" width="200">|<img src="./img/alipay.JPG" alt="alipay" width="200">|
