@@ -223,7 +223,6 @@ sudo apt-get install nvidia-container-toolkit-base
 - **完整功能需求**：安装`nvidia-container-toolkit`
 - **仅CDI使用**：安装`nvidia-container-toolkit-base`
 - **开发调试**：安装`libnvidia-container-tools`
-wen d
 
 ### 2.4 工作流程概述
 
