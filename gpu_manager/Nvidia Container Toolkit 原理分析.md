@@ -1,5 +1,11 @@
 # NVIDIA Container Toolkit 原理分析与代码深度解析
 
+> 代码地址：<https://github.com/NVIDIA/nvidia-container-toolkit>
+>
+> 官方文档地址：<https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html>
+>
+> 本文地址：<https://github.com/ForceInjection/AI-fundermentals/blob/main/gpu_manager/Nvidia%20Container%20Toolkit%20%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90.md>
+
 ## 1. 引言与背景
 
 ### 1.1 容器化技术与GPU计算的融合
@@ -135,12 +141,91 @@ NVIDIA Container Toolkit采用分层架构设计，主要包含以下核心组�
 
 ### 2.2 核心组件功能概述
 
-1. **nvidia-container-runtime**：`OCI` 兼容的运行时 `shim`，负责拦截和修改容器创建请求
-2. **nvidia-container-toolkit**：核心工具集，提供设备发现、配置生成等功能
-3. **libnvidia-container**：底层 `C` 库，负责 `GPU` 设备的发现和管理
-4. **nvidia-ctk**：命令行工具，提供配置管理和CDI规范生成功能
+根据官方文档和代码结构，NVIDIA Container Toolkit包含以下核心组件：
 
-### 2.3 工作流程概述
+1. **nvidia-container-runtime**：`OCI` 兼容的运行时 `shim`，负责拦截和修改容器创建请求
+2. **nvidia-ctk** (v1.4.0+)：NVIDIA Container Toolkit CLI，提供配置管理和CDI规范生成功能
+3. **nvidia-cdi-hook**：CDI钩子程序，处理CDI规范的运行时钩子操作
+4. **nvidia-container-runtime-hook**：传统运行时钩子，用于Legacy模式的容器修改
+5. **nvidia-container-cli**：容器CLI工具，由libnvidia-container提供
+6. **libnvidia-container1**：底层 `C` 库，负责 `GPU` 设备的发现和管理
+
+> **组件说明**：
+>
+> - **nvidia-container-toolkit**：这是整个工具包的名称，而非单独的可执行文件
+> - **nvidia-ctk**：实际的命令行工具可执行文件
+> - **nvidia-cdi-hook**：专门处理CDI规范的钩子程序
+> - **nvidia-container-runtime-hook**：传统的运行时钩子程序
+>
+> **版本演进**：
+>
+> - **v1.4.0+**：引入nvidia-ctk命令行工具
+> - **v1.8.0+**：增加CDI规范生成功能
+> - **v1.11.0+**：添加运行时配置管理功能
+> - **v1.13.0+**：完善系统设备节点创建和配置验证功能
+
+### 2.3 包管理与依赖关系
+
+#### 2.3.1 主要软件包
+
+根据代码中的包管理配置，`NVIDIA Container Toolkit`主要包含以下软件包：
+
+- **nvidia-container-toolkit**：主包，包含所有核心功能和可执行文件
+- **nvidia-container-toolkit-base**：基础包，包含运行时和CLI工具的最小集合
+- **nvidia-container-toolkit-operator-extensions**：操作员扩展包（通常不发布）
+- **libnvidia-container-tools**：工具包，包含`nvidia-container-cli`
+- **libnvidia-container1**：核心库包，提供底层C库
+
+#### 2.3.2 包依赖关系
+
+```text
+├─ nvidia-container-toolkit (version)
+│  ├─ libnvidia-container-tools (>= version)
+│  └─ nvidia-container-toolkit-base (version)
+│     ├─ libnvidia-container-tools (version)
+│     └─ libnvidia-container1 (>= version)
+└─ libnvidia-container1 (version)
+```
+
+**依赖关系说明**：
+
+- **nvidia-container-toolkit**：完整安装包，适用于所有使用场景
+- **nvidia-container-toolkit-base**：最小安装包，适用于仅使用CDI的环境
+- **libnvidia-container-tools**：提供`nvidia-container-cli`命令行工具
+- **libnvidia-container1**：核心库，所有其他组件的基础依赖
+
+#### 2.3.3 废弃包说明
+
+> **重要提示**：以下包已被废弃，功能已合并到`nvidia-container-toolkit`包中：
+>
+> - **nvidia-docker2**：已废弃，功能合并到主包
+> - **nvidia-container-runtime**：作为独立包已废弃，现在是`nvidia-container-toolkit`的一部分
+> - **nvidia-container-runtime-hook**：作为独立包已废弃，现在包含在主包中
+>
+> 这些包可能仍然可用以确保向后兼容性，但建议使用`nvidia-container-toolkit`包。
+>
+> **注意**：`nvidia-container-runtime`和`nvidia-container-runtime-hook`仍然作为可执行文件存在于`nvidia-container-toolkit`包中。
+
+#### 2.3.4 安装建议
+
+**推荐安装方式**：
+
+```bash
+# 完整安装（推荐）
+sudo apt-get install nvidia-container-toolkit
+
+# 最小安装（仅CDI场景）
+sudo apt-get install nvidia-container-toolkit-base
+```
+
+**包选择指南**：
+
+- **完整功能需求**：安装`nvidia-container-toolkit`
+- **仅CDI使用**：安装`nvidia-container-toolkit-base`
+- **开发调试**：安装`libnvidia-container-tools`
+wen d
+
+### 2.4 工作流程概述
 
 当容器运行时创建一个需要GPU访问的容器时，`NVIDIA Container Toolkit`的工作流程如下：
 
@@ -163,11 +248,11 @@ Docker/containerd → nvidia-container-runtime → nvidia-container-toolkit
 
 ## 3. 核心组件深度解析
 
-### 3.1 libnvidia-container：底层设备管理
+### 3.1 libnvidia-container1：底层设备管理
 
 #### 3.1.1 架构设计与职责
 
-`libnvidia-container`是整个工具链的基础组件，采用C语言实现，提供了`GPU`**设备发现**、**驱动程序管理**和**容器环境配置**的核心功能。
+`libnvidia-container1`（库包名）是整个工具链的基础组件，采用C语言实现，提供了`GPU`**设备发现**、**驱动程序管理**和**容器环境配置**的核心功能。该库通过`libnvidia-container-tools`包提供`nvidia-container-cli`命令行工具。
 
 #### 3.1.2 设备发现机制
 
@@ -668,9 +753,16 @@ NVIDIA_VISIBLE_DEVICES=void
 
 `NVIDIA Container Toolkit`支持多种运行时模式，每种模式针对不同的使用场景和硬件平台进行了优化。
 
-#### 4.2.1 Legacy模式
+#### 4.2.1 Legacy模式 (v1.0.0+)
 
 **概述**：`Legacy`模式是传统的`GPU`容器化方式，基于`nvidia-docker v1`的设计理念，通过`nvidia-container-runtime-hook`实现`GPU`资源的注入。
+
+> **版本演进**：
+>
+> - **v1.0.0+**：引入基础Legacy模式，兼容nvidia-docker v1架构
+> - **v1.2.0+**：增强环境变量处理和错误恢复机制
+> - **v1.4.0+**：优化Hook执行性能和设备发现逻辑
+> - **v1.6.0+**：改进CUDA兼容性处理和库文件管理
 
 **配置方式**：
 
@@ -709,9 +801,11 @@ func (l *legacyRuntime) discoverDevices() error {
 - 需要与`nvidia-docker v1`兼容的场景
 - 简单的`GPU`容器化需求
 
-#### 4.2.2 CDI模式
+#### 4.2.2 CDI模式 (v1.12.0+)
 
 **概述**：`CDI`（`Container Device Interface`）模式是基于`CNCF`标准的现代化设备管理方式，提供了标准化、可扩展的设备接口。
+
+> **版本要求**：NVIDIA Container Toolkit v1.12.0+ 开始支持CDI规范生成
 
 **容器运行时支持版本**：
 
@@ -767,6 +861,101 @@ annotation-prefixes = ["cdi.k8s.io/"]
 spec-dirs = ["/etc/cdi", "/var/run/cdi"]
 ```
 
+**CDI规范生成与配置**：
+
+**1. 生成CDI规范文件**：
+
+```bash
+# 基础生成命令
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
+# 指定设备命名策略
+sudo nvidia-ctk cdi generate \
+  --device-name-strategy=index,uuid \
+  --output=/etc/cdi/nvidia.yaml
+
+# 自动检测模式（推荐）
+sudo nvidia-ctk cdi generate \
+  --mode=auto \
+  --output=/etc/cdi/nvidia.yaml
+
+# 指定库搜索路径
+sudo nvidia-ctk cdi generate \
+  --library-search-paths=/usr/lib/x86_64-linux-gnu \
+  --output=/etc/cdi/nvidia.yaml
+```
+
+**2. 查看可用CDI设备**：
+
+```bash
+# 列出所有CDI设备
+nvidia-ctk cdi list
+
+# 输出示例：
+# nvidia.com/gpu=0
+# nvidia.com/gpu=1
+# nvidia.com/gpu=all
+```
+
+**3. 配置容器运行时启用CDI**：
+
+```bash
+# Docker配置
+sudo nvidia-ctk runtime configure --runtime=docker --cdi.enabled
+
+# containerd配置
+sudo nvidia-ctk runtime configure --runtime=containerd --cdi.enabled
+
+# 重启服务
+sudo systemctl restart docker
+sudo systemctl restart containerd
+```
+
+**4. 使用CDI运行容器**：
+
+```bash
+# Docker (25.0.0+)
+docker run --rm --device=nvidia.com/gpu=0 ubuntu nvidia-smi
+
+# Podman
+podman run --rm --device=nvidia.com/gpu=0 ubuntu nvidia-smi
+
+# 使用所有GPU
+docker run --rm --device=nvidia.com/gpu=all ubuntu nvidia-smi
+```
+
+**5. 高级配置选项**：
+
+```bash
+# 指定vendor和class
+sudo nvidia-ctk cdi generate \
+  --vendor=nvidia.com \
+  --class=gpu \
+  --output=/etc/cdi/nvidia.yaml
+
+# 指定配置搜索路径
+sudo nvidia-ctk cdi generate \
+  --config-search-path=/etc/nvidia-container-runtime \
+  --output=/etc/cdi/nvidia.yaml
+
+# CSV模式下的CDI生成
+sudo nvidia-ctk cdi generate \
+  --mode=csv \
+  --csv.mount-spec-path=/etc/nvidia-container-runtime/host-files-for-container.d \
+  --output=/etc/cdi/nvidia.yaml
+```
+
+**6. 自动刷新CDI规范**：
+
+```bash
+# 启用systemd服务自动刷新
+sudo systemctl enable nvidia-cdi-refresh.service
+sudo systemctl start nvidia-cdi-refresh.service
+
+# 手动刷新
+sudo systemctl restart nvidia-cdi-refresh.service
+```
+
 **工作原理**：
 
 1. **规范化接口**：使用标准的`CDI`规范定义设备信息
@@ -819,9 +1008,16 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 - 多厂商设备混合部署
 - 云原生应用
 
-#### 4.2.3 CSV模式
+#### 4.2.3 CSV模式 (v1.0.0+)
 
 **概述**：`CSV`（`Comma-Separated Values`）模式专为`Tegra/Jetson`等嵌入式`GPU`系统设计，通过`CSV`文件静态定义设备挂载规范。
+
+**版本演进：**
+
+- **v1.0.0+**: 引入基础CSV文件解析和挂载功能
+- **v1.3.0+**: 增强CSV文件格式支持和错误处理
+- **v1.6.0+**: 优化Tegra平台兼容性和性能
+- **v1.10.0+**: 支持自定义CSV文件路径和动态加载
 
 **配置方式**：
 
@@ -979,12 +1175,19 @@ Legacy模式 < CSV模式 < CDI模式
 - 资源受限的环境
 - 静态设备配置场景
 
-**Auto模式（自动选择）**：
+**Auto模式（自动选择）(v1.8.0+)**：
 
 ```toml
 [nvidia-container-runtime]
 mode = "auto"
 ```
+
+> **版本演进**：
+>
+> - **v1.8.0+**：引入Auto模式自动选择机制
+> - **v1.10.0+**：增强平台检测和模式选择逻辑
+> - **v1.12.0+**：优化CDI规范文件检测和验证
+> - **v1.15.0+**：改进Tegra平台识别和兼容性处理
 
 `Auto`模式会根据系统环境自动选择最适合的模式：
 
@@ -1031,6 +1234,13 @@ type Interface interface {
 ### 5.1 OCI Hooks 概述
 
 `OCI`（`Open Container Initiative`）`Hooks` 是容器运行时规范中定义的扩展机制，允许在容器生命周期的特定阶段执行自定义操作。`NVIDIA Container Toolkit` 广泛使用 `Hooks` 机制来实现 `GPU` 设备的动态注入和配置。
+
+> **版本演进**：
+>
+> - **v1.0.0+**：引入基础Hook机制支持
+> - **v1.4.0+**：增强Hook错误处理和日志记录
+> - **v1.13.0+**：引入`nvidia-cdi-hook`独立程序
+> - **v1.14.0+**：优化Hook执行性能和稳定性
 
 #### 5.1.1 Hook 类型与执行时机
 
@@ -1240,9 +1450,16 @@ func (l *nvmllib) GetAllDeviceSpecs() ([]specs.Device, error) {
 }
 ```
 
-#### 5.4.2 MIG (Multi-Instance GPU) 支持
+#### 5.4.2 MIG (Multi-Instance GPU) 支持 (v1.5.0+)
 
-`MIG`技术允许将单个GPU分割为多个独立的GPU实例，`NVIDIA Container Toolkit`提供了完整的MIG支持：
+`MIG`技术允许将单个GPU分割为多个独立的GPU实例，`NVIDIA Container Toolkit`自v1.5.0版本开始提供完整的MIG支持：
+
+**版本演进：**
+
+- **v1.5.0+**: 引入基础MIG设备发现和CDI规范生成
+- **v1.8.0+**: 增强MIG设备命名策略和UUID支持
+- **v1.12.0+**: 完善MIG设备的CDI集成和自动发现
+- **v1.15.0+**: 优化MIG设备性能和资源管理
 
 ```go
 // pkg/nvcdi/lib-nvml.go
