@@ -8,6 +8,8 @@
 
 - **[GPU 管理相关技术深度解析 - 虚拟化、切分及远程调用.md](GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md)** - 综合技术概览
 - **[GPU虚拟化与切分技术原理解析.md](GPU虚拟化与切分技术原理解析.md)** - 虚拟化技术详解
+- **[Nvidia Container Toolkit 原理分析.md](Nvidia%20Container%20Toolkit%20原理分析.md)** - NVIDIA 容器工具包深度解析
+- **[nvidia-k8s-device-plugin-analysis.md](nvidia-k8s-device-plugin-analysis.md)** - Kubernetes GPU 设备插件原理与源码分析
 
 ### 1.2 分章节深度解析
 
@@ -63,24 +65,60 @@
 - **数据传输** - 优化的数据传输机制
 - **延迟优化** - 低延迟远程调用技术
 
+### 3.4 容器化 GPU 管理
+
+- **NVIDIA Container Toolkit** - 容器运行时 GPU 支持
+- **OCI 运行时集成** - 与 Docker、containerd、CRI-O 的无缝集成
+- **CDI 规范支持** - Container Device Interface 标准化设备接口
+- **设备隔离与安全** - 多租户环境下的 GPU 资源隔离
+
+### 3.5 Kubernetes GPU 编排
+
+- **Device Plugin 框架** - Kubernetes 设备插件标准化接口
+- **GPU 资源调度** - 智能的 GPU 资源分配与调度
+- **MIG 支持** - Multi-Instance GPU 的 Kubernetes 集成
+- **健康监控** - GPU 设备健康状态监控与故障恢复
+
 ## 4. 性能指标
 
 - **内存利用率提升** - 高达 80% 的内存利用率
 - **调度延迟** - 微秒级调度响应时间
+- **容器启动时间** - 秒级容器 GPU 初始化
+- **设备发现延迟** - 毫秒级 GPU 设备发现
 - **网络带宽** - 支持高带宽远程访问
 - **多租户隔离** - 完善的安全隔离机制
+- **MIG 实例切换** - 亚秒级 MIG 实例分配
+- **CDI 兼容性** - 100% OCI 规范兼容
 
 ## 5. 技术栈
 
 - **编程语言** - C/C++、Go、Python
-- **容器技术** - Docker、Kubernetes
-- **监控工具** - Prometheus、Grafana
+- **容器技术** - Docker、Kubernetes、containerd、CRI-O
+- **容器工具** - NVIDIA Container Toolkit、CDI (Container Device Interface)
+- **设备管理** - Kubernetes Device Plugin、NVIDIA K8s Device Plugin
+- **监控工具** - Prometheus、Grafana、DCGM
 - **云平台** - AWS、Azure、GCP
-- **GPU 技术** - CUDA、OpenCL、ROCm
+- **GPU 技术** - CUDA、OpenCL、ROCm、MIG (Multi-Instance GPU)
 - **通信库** - NCCL、MPI
+- **运行时规范** - OCI (Open Container Initiative)
 
 ## 6. 相关资源
+
+### 6.1 核心技术资源
 
 - [NCCL 通信优化](../nccl/README.md)
 - [AI 推理优化](../inference/README.md)
 - [运维监控工具](../ops/README.md)
+
+### 6.2 容器化与编排
+
+- [Kubernetes GPU 管理](../k8s/llm-d-intro.md)
+- [CUDA 编程基础](../cuda/README.md)
+- [GPU 架构原理](../gpu_architecture/README.md)
+
+### 6.3 官方文档
+
+- [NVIDIA Container Toolkit 官方文档](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/)
+- [Kubernetes Device Plugin 规范](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/device-plugins/)
+- [Container Device Interface (CDI) 规范](https://github.com/cncf-tags/container-device-interface)
+- [NVIDIA K8s Device Plugin](https://github.com/NVIDIA/k8s-device-plugin)
