@@ -366,7 +366,6 @@
 
 - [**模型推理**](llm/模型推理.md)
 - [**Mooncake 架构详解**](llm/Mooncake%20架构详解.md)
-- [**vLLM + LWS**](llm/vLLM%20+%20LWS.md)
 
 ### 6.2 模型部署实践
 
