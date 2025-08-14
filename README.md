@@ -197,74 +197,93 @@
 
 - [**线性代数的本质**](https://www.bilibili.com/video/BV1ys411472E) - 3Blue1Brown可视化教程
 - [**MIT 18.06 线性代数**](https://ocw.mit.edu/courses/mathematics/18-06-linear-algebra-spring-2010/) - Gilbert Strang经典课程
-- [**概率论与统计学基础**](https://github.com/ForceInjection/hands-on-ML) - 贝叶斯定理、概率分布、最大似然估计
+- [**概率论与统计学基础**](https://book.douban.com/subject/35798663/) - 贝叶斯定理、概率分布、最大似然估计
 
 ### 3.2 监督学习
 
 #### 3.2.1 基础算法
 
-- [**KNN算法**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/KNN/KNN.md) - K近邻算法理论与实现
-- [**线性回归**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/LinearRegression/LinearRegression.md) - 最小二乘法、正则化
-- [**逻辑回归**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/LogisticRegression/LogisticRegression.md) - 分类算法基础
-- [**决策树**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/DecisionTree/DecisionTree.md) - ID3、C4.5、CART算法
-- [**支持向量机**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/SVM/SVM.md) - 核技巧与软间隔
-- [**朴素贝叶斯**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/NaiveBayes/NaiveBayes.md) - 概率分类器
+- [**KNN算法**](hands-on-ML/nju_software/ch-03/动手学机器学习%20KNN%20算法.md) - K近邻算法理论与实现
+- [**线性回归**](hands-on-ML/nju_software/ch-03/动手学机器学习线性回归算法.md) - 最小二乘法、正则化
+- [**逻辑回归**](hands-on-ML/nju_software/ch-03/动手学机器学习逻辑回归算法.md) - 分类算法基础
+- [**决策树**](hands-on-ML/nju_software/ch-03/动手学机器学习决策树算法.md) - ID3、C4.5、CART算法
+- [**支持向量机**](hands-on-ML/nju_software/ch-03/动手学机器学习支持向量机算法.md) - 核技巧与软间隔
+- [**朴素贝叶斯**](hands-on-ML/nju_software/ch-03/动手学机器学习朴素贝叶斯算法.md) - 概率分类器
 
 #### 3.2.2 集成学习
 
-- [**随机森林**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/RandomForest/RandomForest.md) - Bagging集成方法
-- [**AdaBoost**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/Adaboost/Adaboost.md) - Boosting算法
-- [**GBDT**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/GBDT/GBDT.md) - 梯度提升决策树
-- [**Stacking**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/Stacking/Stacking.md) - 模型堆叠技术
+- [**随机森林**](hands-on-ML/nju_software/ch-04/动手学机器学习随机森林算法.md) - Bagging集成方法
+- [**AdaBoost**](hands-on-ML/nju_software/ch-04/Adaboost%20计算示例.md) - Boosting算法
+- [**GBDT**](hands-on-ML/nju_software/ch-04/一文读懂GBDT.md) - 梯度提升决策树
+- [**Stacking**](hands-on-ML/nju_software/ch-04/Kaggle房价预测中的集成技巧.md) - 模型堆叠技术
+- [**集成学习概述**](hands-on-ML/nju_software/ch-04/一文深入了解机器学习之集成学习.md) - 集成学习理论与方法
 
 ### 3.3 无监督学习
 
 #### 3.3.1 聚类算法
 
-- [**K-means聚类**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/Kmeans/Kmeans.md) - 基础聚类算法
-- [**层次聚类**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/HierarchicalClustering/HierarchicalClustering.md) - 凝聚与分裂聚类
-- [**DBSCAN**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/DBSCAN/DBSCAN.md) - 密度聚类算法
+- [**K-means聚类**](hands-on-ML/nju_software/ch-05/动手学机器学习%20Kmeans%20聚类算法.md) - 基础聚类算法
+- [**层次聚类**](hands-on-ML/nju_software/ch-05/动手学机器学习层次聚类算法.md) - 凝聚与分裂聚类
+- [**DBSCAN**](hands-on-ML/nju_software/ch-05/动手学机器学习：DBSCAN%20密度聚类算法.md) - 密度聚类算法
 
 #### 3.3.2 降维算法
 
-- [**PCA主成分分析**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/PCA/PCA.md) - 线性降维方法
-- [**LDA线性判别分析**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/LDA/LDA.md) - 监督降维技术
+- [**PCA主成分分析**](hands-on-ML/nju_software/ch-11/PCA降维算法详解.md) - 线性降维方法
+- [**LDA线性判别分析**](hands-on-ML/nju_software/ch-11/LDA降维算法详解.md) - 监督降维技术
+- [**PCA vs LDA比较**](hands-on-ML/nju_software/ch-11/PCA%20vs.%20LDA%20降维方法比较.md) - 降维方法对比分析
 
 #### 3.3.3 概率模型
 
-- [**EM算法**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/EM/EM.md) - 期望最大化算法
-- [**高斯混合模型**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/GMM/GMM.md) - GMM聚类方法
+- [**EM算法**](hands-on-ML/nju_software/ch-06/一文了解%20EM%20算法.md) - 期望最大化算法
+- [**高斯混合模型**](hands-on-ML/nju_software/ch-06/一文了解%20GMM%20算法.md) - GMM聚类方法
+- [**最大似然估计**](hands-on-ML/nju_software/ch-06/最大似然估计（MLE）简介.md) - MLE理论基础
 
 ### 3.4 特征工程与模型优化
 
 #### 3.4.1 特征工程
 
-- [**特征工程概述**](https://github.com/ForceInjection/hands-on-ML/blob/main/feature-engineering/README.md) - 数据预处理、特征选择与变换
-- [**特征选择方法**](https://github.com/ForceInjection/hands-on-ML/blob/main/feature-engineering/FeatureSelection/FeatureSelection.md) - 过滤法、包装法、嵌入法
-- [**GBDT特征提取**](https://github.com/ForceInjection/hands-on-ML/blob/main/feature-engineering/GBDT-FeatureExtraction/GBDT-FeatureExtraction.md) - 基于树模型的特征工程
+- [**特征工程概述**](hands-on-ML/nju_software/ch-07/特征工程.md) - 数据预处理、特征选择与变换
+- [**特征选择方法**](hands-on-ML/nju_software/ch-10/特征选择方法概述.md) - 过滤法、包装法、嵌入法
+- [**GBDT特征提取**](hands-on-ML/nju_software/ch-07/GBDT特征提取.md) - 基于树模型的特征工程
+- [**时间序列特征提取**](hands-on-ML/nju_software/ch-07/时间序列数据及特征提取.md) - 时间序列数据处理
+- [**词袋模型**](hands-on-ML/nju_software/ch-07/词袋模型介绍.md) - 文本特征工程
 
 #### 3.4.2 模型评估
 
-- [**模型评估方法**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/ModelEvaluation/ModelEvaluation.md) - 评估指标与交叉验证
-- [**ROC & AUC**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/ROC-AUC/ROC-AUC.md) - 分类模型性能评估
-- [**GridSearchCV**](https://github.com/ForceInjection/hands-on-ML/blob/main/let-us-machine-learning/GridSearchCV/GridSearchCV.md) - 超参数优化实践
+- [**模型评估方法**](hands-on-ML/nju_software/ch-08/图解机器学习-模型评估方法与准则.md) - 评估指标与交叉验证
+- [**混淆矩阵评价指标**](hands-on-ML/nju_software/混淆矩阵评价指标.md) - 分类模型性能评估
+- [**GridSearchCV**](hands-on-ML/nju_software/ch-09/gridsearchcv_intro.md) - 超参数优化实践
+- [**L1 L2正则化**](hands-on-ML/nju_software/ch-09/L1_L2_intro.md) - 正则化方法介绍
+- [**SMOTE采样**](hands-on-ML/nju_software/ch-09/SMOTE%20介绍.md) - 不平衡数据处理
 
 ### 3.5 推荐系统与概率图模型
 
-- [**推荐系统入门**](https://github.com/ForceInjection/hands-on-ML/blob/main/recommendation-system/README.md) - 协同过滤、内容推荐、矩阵分解
-- [**贝叶斯网络**](https://github.com/ForceInjection/hands-on-ML/blob/main/probabilistic-graphical-models/BayesianNetwork/BayesianNetwork.md) - 概率图模型基础
-- [**隐马尔可夫模型**](https://github.com/ForceInjection/hands-on-ML/blob/main/probabilistic-graphical-models/HMM/HMM.md) - 序列建模与状态推断
+#### 3.5.1 推荐系统
+
+- [**推荐系统入门**](hands-on-ML/nju_software/ch-12/recommendation_intro.md) - 推荐算法概述
+- [**协同过滤算法**](hands-on-ML/nju_software/ch-12/协同过滤推荐算法：原理、实现与分析.md) - 用户协同过滤与物品协同过滤
+- [**基于内容的推荐**](hands-on-ML/nju_software/ch-12/基于内容的推荐算法：原理与实践.md) - 内容推荐算法
+- [**矩阵分解推荐**](hands-on-ML/nju_software/ch-12/基于矩阵分解的推荐算法：原理与实践.md) - SVD推荐算法
+- [**关联规则挖掘**](hands-on-ML/nju_software/ch-12/使用%20Apriori%20算法进行关联分析：原理与示例.md) - Apriori算法
+
+#### 3.5.2 概率图模型
+
+- [**贝叶斯网络**](hands-on-ML/nju_software/ch-13/一文读懂贝叶斯网络.md) - 概率图模型基础
+- [**隐马尔可夫模型**](hands-on-ML/nju_software/ch-13/一文读懂隐马尔可夫模型（HMM）.md) - 序列建模与状态推断
+- [**马尔可夫模型**](hands-on-ML/nju_software/ch-13/马尔可夫模型简介.md) - 马尔可夫链基础
 
 ### 3.6 深度学习基础
 
-- [**神经网络基础**](https://github.com/ForceInjection/hands-on-ML/blob/main/deep-learning/NeuralNetwork/NeuralNetwork.md) - 感知机、多层感知机、反向传播
-- [**深度学习概述**](https://github.com/ForceInjection/hands-on-ML/blob/main/deep-learning/README.md) - 深度学习理论与实践指南
+- [**深度学习概述**](hands-on-ML/nju_software/ch-14/深度学习概述.md) - 深度学习理论与实践指南
+- [**神经网络基础**](hands-on-ML/nju_software/ch-14/神经网络示例.md) - 感知机、多层感知机、反向传播
+- [**什么是深度学习**](hands-on-ML/nju_software/ch-14/什么是深度学习？.md) - 深度学习入门介绍
 
 ### 3.7 实战项目
 
-- [**泰坦尼克号幸存者预测**](https://github.com/ForceInjection/hands-on-ML/tree/main/titanic) - 特征工程与分类实战
-- [**经典数据集项目**](https://github.com/ForceInjection/hands-on-ML) - 鸢尾花分类、波士顿房价预测
-- [**Kaggle竞赛案例**](https://github.com/ForceInjection/hands-on-ML) - 房价预测、用户行为分析
+- [**泰坦尼克号幸存者预测**](hands-on-ML/nju_software/ch-03/使用决策树对泰坦尼克号幸存者数据进行分类.md) - 特征工程与分类实战
+- [**朴素贝叶斯实例**](hands-on-ML/nju_software/ch-03/朴素贝叶斯计算：建筑工人打喷嚏后患感冒的概率.md) - 概率计算实例
+- [**RFM用户分析**](hands-on-ML/nju_software/ch-07/数据探索-根据历史订单信息求RFM值.md) - 用户价值分析
+- [**电影推荐系统**](hands-on-ML/nju_software/ch-12/movie-recommendation.ipynb) - 推荐算法实战
 
 ### 3.8 学习资源
 
@@ -276,8 +295,9 @@
 
 #### 3.8.2 在线资源
 
-- [**动手学机器学习**](https://github.com/ForceInjection/hands-on-ML) - 完整学习路径与代码实现
-- [**上海交大机器学习习题**](https://github.com/ForceInjection/hands-on-ML/tree/main/sjtu-hands-on-ML) - 配套习题解答
+- [**机器学习考试复习提纲**](hands-on-ML/nju_software/机器学习考试复习提纲.md) - 考试重点总结
+- [**梯度下降算法详解**](hands-on-ML/nju_software/梯度下降算法：从直觉到实践.md) - 优化算法理解
+- [**机器学习核心概念**](hands-on-ML/nju_software/通俗理解机器学习核心概念.md) - 概念通俗解释
 - [**Andrew Ng机器学习课程**](https://www.coursera.org/learn/machine-learning) - Coursera经典课程
 - [**CS229机器学习**](http://cs229.stanford.edu/) - 斯坦福大学课程
 
