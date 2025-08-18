@@ -183,22 +183,33 @@ KV ≈ concurrency × context × d_kv_eff × bytes × replication_factor
 ```bash
 vllm serve deepseek-v3 \
   --tensor-parallel-size 8 \
-  --expert-parallel-size 4 \
+  --enable-expert-parallel \
   --pipeline-parallel-size 1 \
   --data-parallel-size 1 \
   --max-model-len 32768 \
   --kv-cache-dtype fp16 \
-  --enable-moe true \
-  --moe-topk 8 \
-  --moe-capacity-factor 1.25 \
   --max-num-seqs 2048 \
+  --max-num-batched-tokens 16384 \
   --gpu-memory-utilization 0.92 \
+  --enable-chunked-prefill \
+  --enable-prefix-caching \
   --enforce-eager \
   --disable-log-stats false \
   --api-key <redacted>
 ```
 
-> 说明：`max-num-seqs` 与 `gpu-memory-utilization` 需结合压测逐步拉升；`--enforce-eager` 可与编译/内核优化二选一；如使用 `CUDA Graph`/`TensorRT‑LLM` 编译路径，则替换为对应开关。
+**关键参数说明**：
+
+* **并行配置**：`--tensor-parallel-size 8`（单节点TP）、`--enable-expert-parallel`（启用EP，自动计算EP=4）
+* **内存管理**：`--max-model-len 32768`（最大序列长度）、`--gpu-memory-utilization 0.92`（显存使用率）
+* **批处理优化**：`--max-num-seqs 2048`（最大并发序列）、`--max-num-batched-tokens 16384`（批处理 `token` 数）
+* **性能优化**：`--enable-chunked-prefill`（分块预填充降低TTFT）、`--enable-prefix-caching`（前缀缓存）
+* **执行模式**：`--enforce-eager`（即时执行，可替换为 `CUDA Graph` 优化）、`--kv-cache-dtype fp16`（`KV` 缓存精度）
+
+**调优策略**：
+
+* `max-num-seqs` 和 `gpu-memory-utilization` 需结合压测逐步优化；
+* `MoE` 相关参数由 `vLLM` 自动检测。
 
 ### 5.3 资源与亲和
 
