@@ -693,7 +693,7 @@ InfiniBand 网络需要子网管理器 (Subnet Manager, SM) 进行集中管理�
 # 启用自适应路由 (OpenSM)
 sudo opensm -R ftree -Q 1 -P 0x0001
 
-# 查看路由状态
+# 获取端口连接报告 (显示 LID、端口号、GUID、链路宽度、速度等信息)
 sudo ibnetdiscover -p | grep -E "Switch|CA"
 
 # 监控路径利用率
@@ -1275,7 +1275,7 @@ CA 'mlx5_0'
 # 发现网络拓扑
 ibnetdiscover
 
-# 生成拓扑图 (文本格式)
+# 获取端口连接报告 (显示 LID、端口号、GUID、链路宽度、速度等信息)
 ibnetdiscover -p
 
 # 显示所有节点
@@ -1715,8 +1715,10 @@ perfquery -a | grep -E "(Error|Discard)" | head -10
 
 # 检查连通性
 echo -e "\n4. 网络拓扑检查:"
-ibnetdiscover -p | wc -l
-echo "发现 $(ibnetdiscover -p | wc -l) 个网络节点"
+ibnodes | wc -l
+echo "发现 $(ibnodes | wc -l) 个网络节点"
+# 获取端口连接报告
+echo "端口连接数: $(ibnetdiscover -p | wc -l)"
 
 echo -e "\n=== 检查完成 ==="
 ```

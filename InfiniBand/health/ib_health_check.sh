@@ -459,20 +459,29 @@ check_network_topology() {
         return 1
     fi
     
-    log_info "正在发现网络拓扑..."
-    local topology_output=$(timeout 30 ibnetdiscover -p 2>/dev/null)
+    log_info "正在获取网络拓扑信息..."
     
-    if [ $? -eq 0 ] && [ -n "$topology_output" ]; then
-        local node_count=$(echo "$topology_output" | wc -l)
-        # 基于唯一交换机 ID 进行准确计数
-        local switch_count=$(echo "$topology_output" | awk '$1 == "SW" {switches[$2]=1} END {print length(switches)}')
-        # 只计算以 CA 开头的行，避免计算 SW 行中的 CA 连接
-        local ca_count=$(echo "$topology_output" | grep -c "^CA")
+    # 使用 ibnodes 获取准确的节点信息
+    local nodes_output=$(timeout 30 ibnodes 2>/dev/null)
+    local ports_output=$(timeout 30 ibnetdiscover -p 2>/dev/null)
+    
+    if [ $? -eq 0 ] && [ -n "$nodes_output" ]; then
+        # 从 ibnodes 输出中统计节点数量
+        local node_count=$(echo "$nodes_output" | wc -l)
+        local switch_count=$(echo "$nodes_output" | grep -c "Switch")
+        local ca_count=$(echo "$nodes_output" | grep -c "Ca")
+        
+        # 从端口连接报告中获取连接数
+        local port_connections=0
+        if [ -n "$ports_output" ]; then
+            port_connections=$(echo "$ports_output" | wc -l)
+        fi
         
         log_success "网络拓扑发现成功"
         log_info "  总节点数: $node_count"
         log_info "  交换机数: $switch_count"
         log_info "  计算节点数: $ca_count"
+        log_info "  端口连接数: $port_connections"
         
         if [ "$switch_count" -ge 2 ]; then
             log_success "检测到多交换机冗余设计"
@@ -483,11 +492,12 @@ check_network_topology() {
         fi
         
         # 检查子网管理器
-        local sm_count=$(echo "$topology_output" | grep -c "SM")
-        if [ "$sm_count" -gt 0 ]; then
-            log_success "检测到子网管理器"
+        local sm_output=$(timeout 10 sminfo 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$sm_output" ]; then
+            local sm_count=$(echo "$sm_output" | wc -l)
+            log_success "检测到 $sm_count 个子网管理器"
         else
-            log_warning "未检测到子网管理器"
+            log_warning "未检测到活跃的子网管理器"
         fi
     else
         log_error "网络拓扑发现失败或超时"

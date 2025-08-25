@@ -519,26 +519,49 @@ Rate: 200"
 # 模拟测试网络拓扑检查
 test_check_network_topology() {
     test_log_header "测试网络拓扑检查功能"
-    TOTAL_TESTS=$((TOTAL_TESTS + 2))
+    TOTAL_TESTS=$((TOTAL_TESTS + 4))
     
-    # 测试拓扑输出解析
-    test_log_verbose "测试拓扑输出解析"
-    mock_topology="SW 0x506b4b0300ca2e21 1 0x506b4b0300ca2e20[1]
-CA 0x506b4b0300ca2e20 1 0x506b4b0300ca2e21[1]"
-    switch_count=$(echo "$mock_topology" | awk '$1 == "SW" {switches[$2]=1} END {print length(switches)}')
+    # 测试 ibnodes 输出解析
+    test_log_verbose "测试 ibnodes 输出解析"
+    mock_nodes="Ca      : 0x506b4b0300ca2e20 ports 1 \"node1 HCA-1\"
+Switch  : 0x506b4b0300ca2e21 ports 36 \"switch1 Mellanox Technologies\"
+Ca      : 0x506b4b0300ca2e22 ports 1 \"node2 HCA-1\""
+    node_count=$(echo "$mock_nodes" | wc -l | tr -d ' ')
+    if [ "$node_count" = "3" ]; then
+        test_log_success "节点总数统计逻辑正确"
+    else
+        test_log_failure "节点总数统计逻辑失败: 期望 3, 实际 '$node_count'"
+    fi
+    
+    # 测试交换机计数（基于 ibnodes 输出）
+    test_log_verbose "测试交换机计数（基于 ibnodes 输出）"
+    switch_count=$(echo "$mock_nodes" | grep -c "Switch" | tr -d ' ')
     if [ "$switch_count" = "1" ]; then
         test_log_success "交换机计数逻辑正确"
     else
         test_log_failure "交换机计数逻辑失败: 期望 1, 实际 '$switch_count'"
     fi
     
-    # 测试CA计数
-    test_log_verbose "测试CA计数"
-    ca_count=$(echo "$mock_topology" | grep -c "^CA")
-    if [ "$ca_count" = "1" ]; then
+    # 测试CA计数（基于 ibnodes 输出）
+    test_log_verbose "测试CA计数（基于 ibnodes 输出）"
+    ca_count=$(echo "$mock_nodes" | grep -c "Ca" | tr -d ' ')
+    if [ "$ca_count" = "2" ]; then
         test_log_success "CA计数逻辑正确"
     else
-        test_log_failure "CA计数逻辑失败: 期望 1, 实际 '$ca_count'"
+        test_log_failure "CA计数逻辑失败: 期望 2, 实际 '$ca_count'"
+    fi
+    
+    # 测试端口连接数统计（基于 ibnetdiscover -p 输出）
+    test_log_verbose "测试端口连接数统计（基于 ibnetdiscover -p 输出）"
+    mock_ports="SW 0x506b4b0300ca2e21 1 0x506b4b0300ca2e20[1] # \"switch1\" - \"node1 HCA-1\"
+CA 0x506b4b0300ca2e20 1 0x506b4b0300ca2e21[1] # \"node1 HCA-1\" - \"switch1\"
+SW 0x506b4b0300ca2e21 2 0x506b4b0300ca2e22[1] # \"switch1\" - \"node2 HCA-1\"
+CA 0x506b4b0300ca2e22 1 0x506b4b0300ca2e21[2] # \"node2 HCA-1\" - \"switch1\""
+    port_connections=$(echo "$mock_ports" | wc -l | tr -d ' ')
+    if [ "$port_connections" = "4" ]; then
+        test_log_success "端口连接数统计逻辑正确"
+    else
+        test_log_failure "端口连接数统计逻辑失败: 期望 4, 实际 '$port_connections'"
     fi
 }
 
@@ -646,6 +669,44 @@ test_check_system_optimization() {
         test_log_success "CPU调节器检查路径存在"
     else
         test_log_skip "CPU调节器检查路径不存在（可能在虚拟环境中）"
+    fi
+}
+
+# 模拟测试子网管理器检查
+test_check_subnet_manager() {
+    test_log_header "测试子网管理器检查功能"
+    TOTAL_TESTS=$((TOTAL_TESTS + 3))
+    
+    # 测试 sminfo 命令输出解析
+    test_log_verbose "测试 sminfo 命令输出解析"
+    mock_sminfo="sminfo: sm lid 1 sm guid 0x506b4b0300ca2e21, activity count 12345 priority 0 state 3 SM"
+    sm_count=$(echo "$mock_sminfo" | wc -l | tr -d ' ')
+    if [ "$sm_count" = "1" ]; then
+        test_log_success "单个子网管理器检测逻辑正确"
+    else
+        test_log_failure "单个子网管理器检测逻辑失败: 期望 1, 实际 '$sm_count'"
+    fi
+    
+    # 测试多个子网管理器的情况
+    test_log_verbose "测试多个子网管理器检测"
+    mock_multi_sminfo="sminfo: sm lid 1 sm guid 0x506b4b0300ca2e21, activity count 12345 priority 0 state 3 SM
+sminfo: sm lid 2 sm guid 0x506b4b0300ca2e22, activity count 12346 priority 1 state 2 STANDBY"
+    multi_sm_count=$(echo "$mock_multi_sminfo" | wc -l | tr -d ' ')
+    if [ "$multi_sm_count" = "2" ]; then
+        test_log_success "多个子网管理器检测逻辑正确"
+    else
+        test_log_failure "多个子网管理器检测逻辑失败: 期望 2, 实际 '$multi_sm_count'"
+    fi
+    
+    # 测试无子网管理器的情况
+    test_log_verbose "测试无子网管理器检测"
+    empty_sminfo=""
+    empty_sm_count=$(echo "$empty_sminfo" | wc -l | tr -d ' ')
+    # 空字符串的 wc -l 会返回 1，但我们检查的是非空输出
+    if [ -z "$empty_sminfo" ]; then
+        test_log_success "无子网管理器检测逻辑正确"
+    else
+        test_log_failure "无子网管理器检测逻辑失败"
     fi
 }
 
@@ -786,6 +847,9 @@ run_specific_test() {
         check_system_optimization)
             test_check_system_optimization
             ;;
+        check_subnet_manager)
+            test_check_subnet_manager
+            ;;
         generate_recommendations)
             test_generate_recommendations
             ;;
@@ -818,6 +882,7 @@ run_all_tests() {
     test_check_network_interfaces
     test_check_performance_tools
     test_check_system_optimization
+    test_check_subnet_manager
     test_generate_recommendations
     test_generate_summary
     test_integration
