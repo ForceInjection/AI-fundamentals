@@ -214,7 +214,7 @@
   <text x="540" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">低 (5-10%)</text>
   
   <rect x="640" y="715" width="200" height="25" fill="#F3F9FF" stroke="#2196F3" stroke-width="1"/>
-  <text x="740" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">极低 (&lt;2%)</text>
+  <text x="740" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">极低</text>
   
   <rect x="840" y="715" width="200" height="25" fill="#F3E5F5" stroke="#9C27B0" stroke-width="1"/>
   <text x="940" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">虚拟化环境</text>
