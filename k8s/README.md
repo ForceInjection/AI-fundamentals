@@ -6,9 +6,6 @@
 
 ### 1.1 [NVIDIA Container Toolkit 原理分析](./Nvidia%20Container%20Toolkit%20原理分析.md)
 
-**技术深度**：⭐⭐⭐⭐⭐  
-**适用场景**：容器化 GPU 应用开发、运维工程师、系统架构师
-
 深入解析 NVIDIA Container Toolkit 的核心原理和实现机制，包括：
 
 - **容器化 GPU 计算的技术挑战**：设备隔离、驱动依赖、资源管理等核心问题
@@ -17,10 +14,7 @@
 - **源码级别的架构分析**：核心组件的实现原理和代码解析
 - **性能优化策略**：最小化容器化开销的技术手段
 
-### 1.2 [NVIDIA K8s Device Plugin 原理解析](./nvidia-k8s-device-plugin-analysis.md)
-
-**技术深度**：⭐⭐⭐⭐⭐  
-**适用场景**：Kubernetes 集群管理员、GPU 资源调度开发者
+### 1.2 [Nvidia K8s Device Plugin 原理解析和源码分析](./nvidia-k8s-device-plugin-analysis.md)
 
 全面分析 NVIDIA Kubernetes Device Plugin 的实现原理，涵盖：
 
@@ -33,9 +27,6 @@
 ## 2. 高级调度与资源管理
 
 ### 2.1 [Kueue + HAMi：Kubernetes 原生的 AI 工作负载管理与 GPU 虚拟化解决方案](./Kueue%20+%20HAMi.md)
-
-**技术深度**：⭐⭐⭐⭐  
-**适用场景**：AI 平台架构师、多租户 GPU 集群管理
 
 详细介绍 Kueue 作业队列系统与 HAMi GPU 虚拟化技术的集成方案：
 
@@ -58,9 +49,6 @@
 
 ### 3.1 [vLLM + LWS：Kubernetes 上的多机多卡推理方案](./lws_intro.md)
 
-**技术深度**：⭐⭐⭐⭐  
-**适用场景**：大模型推理服务部署、分布式系统架构师
-
 深入探讨 vLLM 推理引擎与 LeaderWorkerSet (LWS) 控制器的集成方案：
 
 - **LeaderWorkerSet (LWS) 控制器原理**：
@@ -79,9 +67,6 @@
   - 弹性伸缩和故障恢复策略
 
 ### 3.2 [云原生高性能分布式 LLM 推理框架 llm-d 介绍](./llm-d-intro.md)
-
-**技术深度**：⭐⭐⭐⭐⭐  
-**适用场景**：大规模 LLM 推理服务、云原生 AI 平台建设
 
 全面介绍 llm-d 分布式推理框架的技术架构和核心优势：
 
