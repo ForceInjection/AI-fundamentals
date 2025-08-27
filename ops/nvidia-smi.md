@@ -466,9 +466,11 @@ nvidia-smi [OPTION1 [ARG1]] [OPTION2 [ARG2]] ...
  BOOST SLIDER:
     boost-slider                Control and query boost sliders. "nvidia-smi boost-slider -h" for more information.
 
- POWER HINT:    power-hint                  Estimates GPU power usage. "nvidia-smi power-hint -h" for more information.
+ POWER HINT:
+    power-hint                  Estimates GPU power usage. "nvidia-smi power-hint -h" for more information.
 
- BASE CLOCKS:    base-clocks                 Query GPU base clocks. "nvidia-smi base-clocks -h" for more information.
+ BASE CLOCKS:
+    base-clocks                 Query GPU base clocks. "nvidia-smi base-clocks -h" for more information.
 
  CONFIDENTIAL COMPUTE:
     conf-compute                Control and query confidential compute. "nvidia-smi conf-compute -h" for more information.
@@ -478,5 +480,3 @@ nvidia-smi [OPTION1 [ARG1]] [OPTION2 [ARG2]] ...
 
 Please see the nvidia-smi(1) manual page for more detailed information.
 ```
-
----
