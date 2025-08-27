@@ -1,6 +1,3 @@
-[submodule "AISystem"]
-	path = AISystem
-	url = git@github.com:chenzomi12/AISystem.git
 [submodule "llm/agent/mcp-sse"]
 	path = llm/agent/mcp-sse
 	url = git@github.com:sidharthrajaram/mcp-sse.git
