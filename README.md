@@ -536,7 +536,7 @@
 
 ### 4.4 参考书籍
 
-- [**大模型技术30讲**](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg)  - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南
+- [**大模型技术 30 讲**](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg)  - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南
   - 第三方：[大模型技术30讲（英文&中文批注）](https://ningg.top/Machine-Learning-Q-and-AI)
 - [**大模型基础**](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
@@ -544,9 +544,9 @@
 - [**Hands-On Large Language Models**](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) <br>
  <img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
 
-- [**从零构建大模型**](https://mp.weixin.qq.com/s/FkBjsQmeXEPlsdFXETYSng)
-- [**百面大模型**](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA)
-- [**图解大模型：生成式 AI 原理与实践**](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg)
+- [**从零构建大模型**](https://mp.weixin.qq.com/s/FkBjsQmeXEPlsdFXETYSng) - 从理论到实践，手把手教你打造自己的大语言模型
+- [**百面大模型**](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA) - 打通大模型求职与实战的关键一书
+- [**图解大模型：生成式 AI 原理与实践**](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg) - 超过 300 幅全彩图示 × 实战级项目代码 × 中文独家 DeepSeek-R1 彩蛋内容，入门、进阶、实操、求职一步到位！
 
 ---
 
