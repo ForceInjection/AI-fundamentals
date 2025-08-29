@@ -536,7 +536,8 @@
 
 ### 4.4 参考书籍
 
-- [**大模型技术30讲**](https://ningg.top/Machine-Learning-Q-and-AI/) ， [30 Essential Questions and Answers on Machine Learning and AI](https://github.com/ningg/Machine-Learning-Q-and-AI?tab=readme-ov-file)
+- [**大模型技术30讲**](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg)  - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南
+  - 第三方：[大模型技术30讲（英文&中文批注）](https://ningg.top/Machine-Learning-Q-and-AI)
 - [**大模型基础**](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
 
