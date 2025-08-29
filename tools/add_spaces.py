@@ -20,6 +20,28 @@ def add_spaces_between_chinese_english(text):
     Returns:
         str: 处理后的文本
     """
+    # 保护特殊内容：避免在代码块、链接等地方添加不必要的空格
+    protected_blocks = []
+    def protect_block(match):
+        protected_blocks.append(match.group(0))
+        return f"__PROTECTED_BLOCK_{len(protected_blocks)-1}__"
+    
+    # 按优先级保护内容，确保完整性（在添加空格之前保护）
+    # 1. 保护代码块（最高优先级）
+    text = re.sub(r'```[\s\S]*?```', protect_block, text)
+    # 2. 保护行内代码
+    text = re.sub(r'`[^`]*?`', protect_block, text)
+    # 3. 保护完整的 Markdown 链接（包括链接文本和 URL）
+    text = re.sub(r'\[[^\]]*?\]\([^\)]*?\)', protect_block, text)
+    # 4. 保护图片链接
+    text = re.sub(r'!\[[^\]]*?\]\([^\)]*?\)', protect_block, text)
+    # 5. 保护 HTML 标签及其内容
+    text = re.sub(r'<[^>]*?>', protect_block, text)
+    # 6. 保护直接的 URL 链接
+    text = re.sub(r'https?://[^\s]*', protect_block, text)
+    # 7. 保护邮箱地址
+    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', protect_block, text)
+    
     # 中文字符范围（包括中文标点）
     chinese_pattern = r'[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]'
     # 英文字符范围（字母和数字）
@@ -31,25 +53,9 @@ def add_spaces_between_chinese_english(text):
     # 在英文后面跟中文的地方添加空格（如果没有空格的话）
     text = re.sub(f'({english_pattern})(?!\\s)({chinese_pattern})', r'\1 \2', text)
     
-    # 处理特殊情况：避免在代码块、链接等地方添加不必要的空格
-    # 保护代码块内容
-    code_blocks = []
-    def protect_code_block(match):
-        code_blocks.append(match.group(0))
-        return f"__CODE_BLOCK_{len(code_blocks)-1}__"
-    
-    # 保护行内代码
-    text = re.sub(r'`[^`]+`', protect_code_block, text)
-    # 保护代码块
-    text = re.sub(r'```[\s\S]*?```', protect_code_block, text)
-    # 保护链接
-    text = re.sub(r'\[[^\]]*\]\([^\)]*\)', protect_code_block, text)
-    # 保护图片
-    text = re.sub(r'!\[[^\]]*\]\([^\)]*\)', protect_code_block, text)
-    
     # 恢复保护的内容
-    for i, code_block in enumerate(code_blocks):
-        text = text.replace(f"__CODE_BLOCK_{i}__", code_block)
+    for i, protected_block in enumerate(protected_blocks):
+        text = text.replace(f"__PROTECTED_BLOCK_{i}__", protected_block)
     
     return text
 
