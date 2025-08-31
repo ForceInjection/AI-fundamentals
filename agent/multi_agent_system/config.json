@@ -147,7 +147,7 @@
     }
   },
   "api": {
-    "enabled": false,
+    "enabled": true,
     "host": "0.0.0.0",
     "port": 8000,
     "cors": {
@@ -204,5 +204,14 @@
       "enabled": false,
       "output_dir": "./profiling"
     }
+  },
+  "llm": {
+    "provider": "deepseek",
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key": "",
+    "model": "deepseek-chat",
+    "temperature": 0.7,
+    "max_tokens": 4000,
+    "timeout": 60
   }
 }
