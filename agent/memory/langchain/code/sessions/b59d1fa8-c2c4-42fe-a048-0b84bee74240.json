@@ -1,0 +1,40 @@
+{
+  "session_info": {
+    "session_id": "b59d1fa8-c2c4-42fe-a048-0b84bee74240",
+    "user_id": "user_002",
+    "created_at": "2025-09-01T11:43:04.699690",
+    "last_active": "2025-09-01T11:44:32.048324",
+    "message_count": 4,
+    "memory_type": "buffer",
+    "metadata": {
+      "user_name": "李四"
+    }
+  },
+  "memory_type": "buffer",
+  "performance_metrics": [
+    {
+      "response_time": 13.715441226959229,
+      "token_usage": 453,
+      "memory_size": 735,
+      "timestamp": "2025-09-01T11:43:25.635072"
+    },
+    {
+      "response_time": 13.067223072052002,
+      "token_usage": 380,
+      "memory_size": 1392,
+      "timestamp": "2025-09-01T11:43:50.408443"
+    },
+    {
+      "response_time": 10.982060194015503,
+      "token_usage": 329,
+      "memory_size": 1998,
+      "timestamp": "2025-09-01T11:44:09.182894"
+    },
+    {
+      "response_time": 18.33098316192627,
+      "token_usage": 604,
+      "memory_size": 2884,
+      "timestamp": "2025-09-01T11:44:32.048588"
+    }
+  ]
+}

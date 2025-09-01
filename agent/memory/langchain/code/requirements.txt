@@ -1,0 +1,45 @@
+# LangChain 核心包
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.0.20
+
+# OpenAI 支持
+langchain-openai>=0.0.5
+openai>=1.0.0
+
+# LangGraph (现代记忆管理)
+langgraph>=0.0.30
+
+# 本地模型支持
+# Ollama
+ollama>=0.1.0
+
+# HTTP 客户端
+requests>=2.28.0
+httpx>=0.24.0
+
+# 数据处理
+numpy>=1.21.0
+pandas>=1.3.0
+
+# 数据库支持
+# sqlite3 是 Python 标准库，无需安装
+
+# 异步支持
+aiohttp>=3.8.0
+aiofiles>=22.1.0
+
+# 工具库
+python-dotenv>=0.19.0  # 环境变量管理
+pydantic>=2.0.0  # 数据验证
+typing-extensions>=4.0.0  # 类型提示扩展
+
+# 可选：性能优化
+# tiktoken>=0.4.0  # OpenAI token 计算
+# faiss-cpu>=1.7.0  # 向量搜索（如果需要向量记忆）
+
+# 开发工具（可选）
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+# mypy>=1.0.0
