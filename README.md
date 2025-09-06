@@ -42,6 +42,18 @@
 
 - [**深入理解 NVIDIA CUDA 核心（vs. Tensor Cores vs. RT Cores）**](cuda/cuda_cores_cn.md)
 
+#### 1.2.3 GPGPU vs NPU 技术对比
+
+- [**GPGPU vs NPU：大模型推理与训练的算力选择指南**](gpu_architecture/GPGPU_vs_NPU_大模型推理训练对比.md) - 全面对比分析 GPGPU 和 NPU 在大模型场景下的技术特点、性能表现和应用选择
+
+**核心内容：**
+
+- **技术架构深度对比**：NVIDIA H100 vs 华为昇腾 910B 架构解析，计算模式差异分析
+- **大模型训练场景**：训练任务特点、GPGPU 生态优势、NPU 专用优化、成本效益分析
+- **大模型推理场景**：在线推理服务、批量推理处理、边缘推理部署的技术选型
+- **实用决策框架**：场景化决策矩阵、技术选型指导原则、混合部署策略
+- **发展趋势展望**：技术演进路线、生态建设、标准化进程
+
 ### 1.3 AI 基础设施架构
 
 - [**高性能 GPU 服务器硬件拓扑与集群组网**](https://arthurchiao.art/blog/gpu-advanced-notes-1-zh/)
