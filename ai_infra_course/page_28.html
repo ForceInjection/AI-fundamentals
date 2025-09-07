@@ -130,14 +130,14 @@
                     <i class="fas fa-layer-group text-[#ed8936] mr-3"></i>
                     量化技术分类
                 </h2>
-                <div class="space-y-4">
+                <div class="space-y-3">
                     <!-- PTQ -->
-                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                        <h3 class="text-xl font-semibold text-white flex items-center">
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
                             <i class="fas fa-cog text-[#ed8936] mr-2"></i>
                             训练后量化 (PTQ)
                         </h3>
-                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
                             <li class="flex items-start">
                                 <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
                                 <span><span class="text-white font-medium">INT8量化</span>：权重和激活都量化到8位</span>
@@ -153,12 +153,12 @@
                         </ul>
                     </div>
                     <!-- QAT -->
-                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                        <h3 class="text-xl font-semibold text-white flex items-center">
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
                             <i class="fas fa-code-branch text-[#ed8936] mr-2"></i>
                             量化感知训练 (QAT)
                         </h3>
-                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
                             <li class="flex items-start">
                                 <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
                                 <span><span class="text-white font-medium">伪量化</span>：训练时模拟量化过程</span>
@@ -174,12 +174,12 @@
                         </ul>
                     </div>
                     <!-- Extreme Quantization -->
-                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                        <h3 class="text-xl font-semibold text-white flex items-center">
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
                             <i class="fas fa-compress-arrows-alt text-[#ed8936] mr-2"></i>
                             极端量化
                         </h3>
-                        <ul class="mt-2 text-gray-300 space-y-1 pl-6">
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
                             <li class="flex items-start">
                                 <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
                                 <span><span class="text-white font-medium">INT4/INT2量化</span>：更激进的量化策略</span>
@@ -191,6 +191,27 @@
                             <li class="flex items-start">
                                 <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
                                 <span><span class="text-white font-medium">非均匀量化</span>：非线性量化映射</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- TensorRT Model Optimizer -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#38a169]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-magic text-[#38a169] mr-2"></i>
+                            TensorRT Model Optimizer
+                        </h3>
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">自动量化</span>：NVIDIA 2024年推出的自动优化工具</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">一体化优化</span>：支持剪枝、量化、蒸馏集成</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">易用性提升</span>：简化模型优化流程</span>
                             </li>
                         </ul>
                     </div>
@@ -224,10 +245,15 @@
                                 <td class="py-1">NVIDIA高度优化</td>
                                 <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
                             </tr>
-                            <tr>
+                            <tr class="border-b border-gray-700">
                                 <td class="py-1 font-medium text-white">Text Generation Inference</td>
                                 <td class="py-1">Hugging Face易用性</td>
                                 <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 font-medium text-white">NVIDIA Dynamo</td>
+                                <td class="py-1">动态编译优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
                             </tr>
                         </tbody>
                     </table>
@@ -264,6 +290,7 @@
         const performanceData = [
             { engine: "vLLM", throughput: 2500 },
             { engine: "TensorRT-LLM", throughput: 3200 },
+            { engine: "NVIDIA Dynamo", throughput: 2800 },
             { engine: "原生PyTorch", throughput: 800 }
         ];
 
