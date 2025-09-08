@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>AIBrix：智能扩缩容与分布式缓存系统</title>
+    <title>云原生带来的四大优势</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,21 +36,31 @@
 
         .hexagon {
             position: absolute;
-            width: 60px;
-            height: 69px;
+            width: 80px;
+            height: 92px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .feature-card {
+        .advantage-card {
             transition: all 0.3s ease;
-            border-left: 4px solid transparent;
+            height: 100%;
         }
 
-        .feature-card:hover {
-            transform: translateX(5px);
-            border-left-color: #ed8936;
+        .advantage-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
         }
 
         .fade-in {
@@ -60,7 +70,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
 
             to {
@@ -68,45 +78,24 @@
                 transform: translateY(0);
             }
         }
-
-        .code-block {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-            padding: 12px;
-            font-size: 14px;
-            line-height: 1.4;
-            color: #e2e8f0;
-            overflow-x: auto;
-        }
-
-        .code-block .keyword {
-            color: #ed8936;
-        }
-
-        .code-block .function {
-            color: #4299e1;
-        }
-
-        .code-block .comment {
-            color: #718096;
-            font-style: italic;
-        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[832px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 250px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 750px;"></div>
-        <div class="circuit-dot" style="top: 580px; left: 350px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
-        <div class="hexagon" style="top: 200px; left: 150px;"></div>
-        <div class="hexagon" style="top: 500px; left: 900px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 420px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 300px; left: 0; width: 80%;"></div>
+        <div class="circuit-line" style="top: 540px; left: 200px; width: 70%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 420px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 300px; left: 1000px;"></div>
+        <div class="circuit-dot" style="top: 540px; left: 200px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 580px; left: 200px;"></div>
+        <div class="hexagon" style="top: 250px; left: 80px;"></div>
+        <div class="hexagon" style="top: 450px; left: 1000px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -114,260 +103,137 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-8 px-16">
+        <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                AIBrix：<span class="text-[#ed8936]">智能扩缩容与分布式缓存系统</span>
+                <span class="text-[#ed8936]">云原生</span>带来的四大优势
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6 grid grid-cols-2 gap-6">
-            <!-- Left side: Scaling Engine -->
-            <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.2s;">
-                <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                    <i class="fas fa-expand-arrows-alt text-[#ed8936] mr-3"></i>
-                    自动扩缩容引擎
-                </h2>
-                <div class="space-y-4">
-                    <div class="feature-card p-3 bg-[#2d3748] bg-opacity-50 rounded">
-                        <h3 class="text-lg font-semibold text-white flex items-center">
-                            <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
-                            监控指标
-                        </h3>
-                        <ul class="mt-2 space-y-1 text-gray-300">
-                            <li class="flex items-center">
-                                <i class="fas fa-microchip text-sm mr-2"></i>
-                                <span>GPU利用率实时监控</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-tasks text-sm mr-2"></i>
-                                <span>请求队列长度跟踪</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-clock text-sm mr-2"></i>
-                                <span>响应延迟（P50/P95/P99）</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-memory text-sm mr-2"></i>
-                                <span>显存和系统内存使用情况</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="feature-card p-3 bg-[#2d3748] bg-opacity-50 rounded">
-                        <h3 class="text-lg font-semibold text-white flex items-center">
-                            <i class="fas fa-sliders-h text-[#ed8936] mr-2"></i>
-                            扩缩容策略
-                        </h3>
-                        <ul class="mt-2 space-y-1 text-gray-300">
-                            <li class="flex items-center">
-                                <i class="fas fa-arrows-alt-h text-sm mr-2"></i>
-                                <span>水平扩展（HPA）：基于CPU/GPU利用率</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-arrows-alt-v text-sm mr-2"></i>
-                                <span>垂直扩展（VPA）：动态调整资源配额</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-chart-bar text-sm mr-2"></i>
-                                <span>预测性扩容：基于历史数据预测流量</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-dollar-sign text-sm mr-2"></i>
-                                <span>成本优化：Spot实例使用，降低成本60%</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="code-block mt-4">
-                        <span class="comment"># 扩容算法示例</span><br />
-                        <span class="keyword">def</span> <span
-                            class="function">calculate_replicas</span>(current_replicas, metrics):<br />
-                          target_utilization = 0.7<br />
-                          current_utilization = metrics[<span class="keyword">&#39;gpu_utilization&#39;</span>]<br />
-                          <span class="keyword">if</span> current_utilization &gt; target_utilization:<br />
-                            scale_factor = current_utilization / target_utilization<br />
-                            <span class="keyword">return</span> min(current_replicas * scale_factor, max_replicas)<br />
-                          <span class="keyword">elif</span> current_utilization &lt; target_utilization * 0.5:<br />
-                            <span class="keyword">return</span> max(current_replicas * 0.5, min_replicas)<br />
-                          <span class="keyword">return</span> current_replicas
+        <main class="px-16 py-8">
+            <div class="grid grid-cols-2 gap-8 h-[500px]">
+                <!-- Advantage 1: Containerized Deployment -->
+                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex items-start">
+                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
+                            <i class="fas fa-cube text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">容器化部署</h2>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>标准化部署流程，版本管理与快速回滚</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>一致的运行环境，减少&#34;环境差异&#34;问题</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>自动化扩缩容，应对流量波动</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- Right side: Cache System -->
-            <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.4s;">
-                <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                    <i class="fas fa-database text-[#ed8936] mr-3"></i>
-                    分布式KV缓存系统
-                </h2>
-                <div class="space-y-4">
-                    <div class="feature-card p-3 bg-[#2d3748] bg-opacity-50 rounded">
-                        <h3 class="text-lg font-semibold text-white flex items-center">
-                            <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
-                            缓存架构
-                        </h3>
-                        <div class="mt-2 flex items-center justify-center">
-                            <div
-                                class="text-center px-4 py-1 bg-[#4299e1] bg-opacity-30 rounded border border-[#4299e1] border-opacity-50">
-                                <div class="text-white font-medium">L1</div>
-                                <div class="text-xs text-gray-300">本地内存</div>
-                            </div>
-                            <i class="fas fa-arrow-right mx-2 text-[#ed8936]"></i>
-                            <div
-                                class="text-center px-4 py-1 bg-[#4299e1] bg-opacity-20 rounded border border-[#4299e1] border-opacity-40">
-                                <div class="text-white font-medium">L2</div>
-                                <div class="text-xs text-gray-300">Redis集群</div>
-                            </div>
-                            <i class="fas fa-arrow-right mx-2 text-[#ed8936]"></i>
-                            <div
-                                class="text-center px-4 py-1 bg-[#4299e1] bg-opacity-10 rounded border border-[#4299e1] border-opacity-30">
-                                <div class="text-white font-medium">L3</div>
-                                <div class="text-xs text-gray-300">对象存储</div>
-                            </div>
+                <!-- Advantage 2: Microservice Architecture -->
+                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex items-start">
+                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
+                            <i class="fas fa-sitemap text-3xl text-[#ed8936]"></i>
                         </div>
-                        <ul class="mt-3 space-y-1 text-gray-300">
-                            <li class="flex items-center">
-                                <i class="fas fa-network-wired text-sm mr-2"></i>
-                                <span>一致性哈希：数据分片，支持动态扩容</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-copy text-sm mr-2"></i>
-                                <span>副本策略：3副本，跨AZ部署</span>
-                            </li>
-                            <li class="flex items-center">
-                                <i class="fas fa-hourglass-half text-sm mr-2"></i>
-                                <span>过期策略：TTL + LRU组合策略</span>
-                            </li>
-                        </ul>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">微服务架构</h2>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>独立扩展，按需分配资源</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>服务间松耦合，提高系统弹性</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>故障隔离，单个服务异常不影响整体系统</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="feature-card p-3 bg-[#2d3748] bg-opacity-50 rounded">
-                        <h3 class="text-lg font-semibold text-white flex items-center">
-                            <i class="fas fa-bolt text-[#ed8936] mr-2"></i>
-                            性能指标
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3 mt-3">
-                            <div>
-                                <div class="text-sm text-gray-400 mb-1">缓存命中率</div>
-                                <div class="text-white font-bold text-xl flex items-center">
-                                    <span>95%</span>
-                                    <span class="ml-1 text-xs text-green-400">（热点数据）</span>
+                </div>
+                <!-- Advantage 3: Cost Optimization -->
+                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-start">
+                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
+                            <i class="fas fa-coins text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">成本优化</h2>
+                            <ul class="space-y-2 text-gray-300 mb-4">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>按需分配资源，避免过度配置</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>支持Spot实例，进一步降低计算成本</span>
+                                </li>
+                            </ul>
+                            <div class="mt-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">推理成本降低</span>
+                                    <span class="text-[#ed8936] font-bold">40-60%</span>
                                 </div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-400 mb-1">访问延迟</div>
-                                <div class="text-white font-bold text-xl flex items-center">
-                                    <span>&lt;1ms</span>
-                                    <span class="ml-1 text-xs text-green-400">（本地缓存）</span>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-400 mb-1">吞吐量</div>
-                                <div class="text-white font-bold text-xl flex items-center">
-                                    <span>&gt;100万QPS</span>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-400 mb-1">可用性</div>
-                                <div class="text-white font-bold text-xl flex items-center">
-                                    <span>99.99%</span>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                                    <div class="bg-[#ed8936] h-2.5 rounded-full" style="width: 60%"></div>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-4">
-                            <div class="w-full h-24" id="performance-chart"></div>
+                    </div>
+                </div>
+                <!-- Advantage 4: Self-Healing -->
+                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.8s;">
+                    <div class="flex items-start">
+                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
+                            <i class="fas fa-heartbeat text-3xl text-[#ed8936]"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-2xl font-bold text-white mb-3">故障自愈</h2>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>自动检测异常，触发恢复机制</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>自动故障转移，确保高可用性</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                    <span>自愈算法持续优化，提高系统稳定性</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
         <!-- Footer -->
-        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第30页 / 共37页
-        </footer>
+        <div class="absolute bottom-6 left-16 right-16 flex justify-between items-center">
+            <div class="text-gray-400 text-sm">
+                <i class="fas fa-quote-left mr-2 text-[#ed8936]"></i>
+                云原生架构是AI基础设施现代化的关键
+            </div>
+            <div class="text-gray-400 text-sm">
+                第32页 / 共37页
+            </div>
+        </div>
     </div>
-    <script>
-        // Performance chart using D3.js
-        document.addEventListener('DOMContentLoaded', function () {
-            const data = [
-                { name: "吞吐量", value: 1000, color: "#4299e1" },
-                { name: "延迟降低", value: 60, color: "#ed8936" },
-                { name: "内存节省", value: 90, color: "#48bb78" },
-                { name: "成本降低", value: 50, color: "#9f7aea" }
-            ];
-
-            const width = document.getElementById('performance-chart').clientWidth;
-            const height = document.getElementById('performance-chart').clientHeight;
-            const margin = { top: 10, right: 10, bottom: 20, left: 40 };
-            const chartWidth = width - margin.left - margin.right;
-            const chartHeight = height - margin.top - margin.bottom;
-
-            const svg = d3.select('#performance-chart')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-
-            const x = d3.scaleBand()
-                .domain(data.map(d => d.name))
-                .range([0, chartWidth])
-                .padding(0.3);
-
-            const y = d3.scaleLinear()
-                .domain([0, 100])
-                .range([chartHeight, 0]);
-
-            // Add X axis
-            svg.append('g')
-                .attr('transform', `translate(0,${chartHeight})`)
-                .call(d3.axisBottom(x))
-                .selectAll('text')
-                .style('fill', '#a0aec0')
-                .style('font-size', '10px');
-
-            // Add Y axis
-            svg.append('g')
-                .call(d3.axisLeft(y).ticks(5))
-                .selectAll('text')
-                .style('fill', '#a0aec0')
-                .style('font-size', '10px');
-
-            // Add bars
-            svg.selectAll('rect')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('x', d => x(d.name))
-                .attr('y', chartHeight)
-                .attr('width', x.bandwidth())
-                .attr('height', 0)
-                .attr('fill', d => d.color)
-                .attr('rx', 3)
-                .attr('ry', 3)
-                .transition()
-                .duration(800)
-                .delay((d, i) => i * 200)
-                .attr('y', d => y(d.value))
-                .attr('height', d => chartHeight - y(d.value));
-
-            // Add value labels
-            svg.selectAll('.value-label')
-                .data(data)
-                .enter()
-                .append('text')
-                .attr('class', 'value-label')
-                .attr('x', d => x(d.name) + x.bandwidth() / 2)
-                .attr('y', d => y(d.value) - 5)
-                .attr('text-anchor', 'middle')
-                .style('fill', '#ffffff')
-                .style('font-size', '12px')
-                .style('font-weight', 'bold')
-                .text(d => `${d.value}%`)
-                .style('opacity', 0)
-                .transition()
-                .duration(800)
-                .delay((d, i) => i * 200 + 400)
-                .style('opacity', 1);
-        });
-    </script>
 
 <script src="ppt-mode.js"></script>
 </body>

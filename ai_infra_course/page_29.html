@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>AIBrix：云原生推理引擎核心组件</title>
+    <title>AIBrix：技术创新与企业级部署</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,37 +43,44 @@
             opacity: 0.15;
         }
 
-        .component-card {
-            background: rgba(30, 41, 59, 0.7);
-            border-left: 4px solid #ed8936;
+        .feature-card {
             transition: all 0.3s ease;
         }
 
-        .component-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .feature-item {
-            transition: all 0.2s ease;
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+            line-height: 1.5;
+            color: #e6e6e6;
         }
 
-        .feature-item:hover {
-            transform: translateX(5px);
+        .code-block .keyword {
+            color: #ed8936;
         }
 
-        .connector {
-            position: absolute;
-            background: linear-gradient(90deg, rgba(237, 137, 54, 0.8), rgba(237, 137, 54, 0.3));
-            height: 2px;
-            z-index: 0;
+        .code-block .string {
+            color: #48bb78;
         }
 
-        .connector-vertical {
-            position: absolute;
-            background: linear-gradient(180deg, rgba(237, 137, 54, 0.8), rgba(237, 137, 54, 0.3));
-            width: 2px;
-            z-index: 0;
+        .code-block .comment {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .code-block .function {
+            color: #4299e1;
+        }
+
+        .code-block .variable {
+            color: #ed64a6;
         }
 
         .fade-in {
@@ -92,42 +99,22 @@
             }
         }
 
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
-
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
+        .highlight-text {
+            background: linear-gradient(to right, rgba(237, 137, 54, 0.2), rgba(237, 137, 54, 0));
+            padding: 0 2px;
         }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[738px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[774px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
         <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 480px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 240px; left: 300px; width: 200px; transform: rotate(45deg);"></div>
-        <div class="circuit-line" style="top: 360px; left: 800px; width: 150px; transform: rotate(-45deg);"></div>
-        <div class="circuit-dot" style="top: 120px; left: 200px;"></div>
-        <div class="circuit-dot" style="top: 480px; left: 800px;"></div>
-        <div class="circuit-dot" style="top: 240px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 360px; left: 800px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 560px; left: 200px;"></div>
+        <div class="circuit-line" style="top: 600px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 600px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -135,244 +122,157 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-10 px-16">
+        <header class="pt-8 px-12">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">AIBrix</span>：云原生推理引擎核心组件
+                <span class="text-[#ed8936]">AIBrix</span>：技术创新与企业级部署
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6 relative">
-            <!-- Architecture diagram -->
-            <div class="flex justify-center mb-6 fade-in" style="animation-delay: 0.2s;">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 w-4/5 text-center">
-                    <div class="flex justify-center items-center space-x-6">
-                        <div
-                            class="bg-[#1e293b] bg-opacity-80 rounded-lg p-3 w-48 border border-[#ed8936] border-opacity-30 pulse">
-                            <div class="text-[#ed8936] text-3xl mb-2">
-                                <i class="fas fa-cloud"></i>
-                            </div>
-                            <h3 class="text-white font-bold">Kubernetes</h3>
-                            <p class="text-gray-300 text-sm mt-1">容器编排平台</p>
-                        </div>
-                        <div class="text-[#ed8936] text-2xl">
-                            <i class="fas fa-plus"></i>
-                        </div>
-                        <div
-                            class="bg-[#1e293b] bg-opacity-80 rounded-lg p-3 w-48 border border-[#ed8936] border-opacity-30 pulse">
-                            <div class="text-[#ed8936] text-3xl mb-2">
-                                <i class="fas fa-memory"></i>
-                            </div>
-                            <h3 class="text-white font-bold">vLLM</h3>
-                            <p class="text-gray-300 text-sm mt-1">开源推理引擎</p>
-                        </div>
-                        <div class="text-[#ed8936] text-2xl">
-                            <i class="fas fa-plus"></i>
-                        </div>
-                        <div
-                            class="bg-[#1e293b] bg-opacity-80 rounded-lg p-3 w-48 border border-[#ed8936] border-opacity-30 pulse">
-                            <div class="text-[#ed8936] text-3xl mb-2">
-                                <i class="fas fa-layer-group"></i>
-                            </div>
-                            <h3 class="text-white font-bold">LoRA</h3>
-                            <p class="text-gray-300 text-sm mt-1">低秩适配器技术</p>
-                        </div>
-                        <div class="text-[#ed8936] text-2xl">
-                            <i class="fas fa-equals"></i>
-                        </div>
-                        <div
-                            class="bg-[#1e293b] bg-opacity-80 rounded-lg p-3 w-48 border border-[#ed8936] border-opacity-50 pulse">
-                            <div class="text-[#ed8936] text-3xl mb-2">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                            <h3 class="text-white font-bold">AIBrix</h3>
-                            <p class="text-gray-300 text-sm mt-1">云原生推理引擎</p>
-                        </div>
+        <main class="px-12 py-6 grid grid-cols-12 gap-6">
+            <!-- Left column: Technical features -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-star text-[#ed8936] mr-3"></i>
+                        技术特色与创新点
+                    </h2>
+                    <ul class="space-y-3 text-gray-200">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">开源vLLM Kubernetes服务栈</span>：完全开源（Apache 2.0）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">云原生设计</span>：Kubernetes原生，CRD自定义资源</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">生产就绪</span>：企业级特性，7x24小时支持</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">模型适配器支持</span>：数千个模型适配器</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">版本管理</span>：模型版本控制，A/B测试支持</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">热更新</span>：零停机模型更新</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">多租户</span>：租户隔离，资源配额管理</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span><span class="highlight-text">成本优化</span>：资源共享，智能调度，Spot实例</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Middle column: Deployment architecture -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-code-branch text-[#ed8936] mr-3"></i>
+                        部署架构示例
+                    </h2>
+                    <div class="code-block text-sm">
+                        <pre>apiVersion: aibrix.io/v1
+kind: LLMService
+metadata:
+  name: chatbot-service
+spec:
+  baseModel: &#34;llama2-7b&#34;
+  adapters:
+    - name: &#34;customer-service&#34;
+      replicas: 3
+    - name: &#34;technical-support&#34;
+      replicas: 2
+  resources:
+    gpu: &#34;1&#34;
+    memory: &#34;16Gi&#34;
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 10
+    targetGPUUtilization: 70</pre>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="text-lg font-semibold text-white">部署优势：</h3>
+                        <ul class="mt-2 space-y-2 text-gray-200">
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>基础模型权重共享，节省90%+显存</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>LoRA适配器热更新，零停机部署</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-angle-right text-[#ed8936] mr-2"></i>
+                                <span>基于成本的调度策略，优化资源分配</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
-            <!-- Core components -->
-            <div class="flex justify-between space-x-6">
-                <!-- Architecture overview -->
-                <div class="component-card rounded-lg p-5 w-1/3 fade-in" style="animation-delay: 0.4s;">
-                    <div class="flex items-center mb-3">
-                        <div class="text-[#ed8936] text-2xl mr-3">
-                            <i class="fas fa-sitemap"></i>
+            <!-- Right column: Enterprise features -->
+            <div class="col-span-4">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full feature-card fade-in"
+                    style="animation-delay: 0.6s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-shield-alt text-[#ed8936] mr-3"></i>
+                        企业级特性
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-lock text-[#ed8936] mr-2"></i>
+                                安全性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• RBAC权限控制，多因子认证</li>
+                                <li>• 传输加密（TLS）+ 存储加密（AES-256）</li>
+                                <li>• 完整审计日志记录</li>
+                                <li>• SOC2、ISO27001、GDPR合规</li>
+                            </ul>
                         </div>
-                        <h2 class="text-xl font-bold text-white">架构概览</h2>
-                    </div>
-                    <ul class="space-y-2">
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>基于vLLM的云原生大模型推理引擎</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>高密度、低成本、易扩展的云原生架构</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>完全开源，社区驱动，企业级支持</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>分布式缓存系统支持</span>
-                        </li>
-                    </ul>
-                    <div class="mt-4 bg-[#1e293b] bg-opacity-50 rounded p-3">
-                        <div class="text-sm text-gray-400 mb-1">设计理念</div>
-                        <div class="flex space-x-2">
-                            <div
-                                class="bg-[#ed8936] bg-opacity-20 rounded-full px-3 py-1 text-white text-xs flex items-center">
-                                <i class="fas fa-bullseye mr-1 text-[#ed8936]"></i>
-                                <span>高密度</span>
-                            </div>
-                            <div
-                                class="bg-[#ed8936] bg-opacity-20 rounded-full px-3 py-1 text-white text-xs flex items-center">
-                                <i class="fas fa-dollar-sign mr-1 text-[#ed8936]"></i>
-                                <span>低成本</span>
-                            </div>
-                            <div
-                                class="bg-[#ed8936] bg-opacity-20 rounded-full px-3 py-1 text-white text-xs flex items-center">
-                                <i class="fas fa-expand-arrows-alt mr-1 text-[#ed8936]"></i>
-                                <span>易扩展</span>
-                            </div>
-                            <div
-                                class="bg-[#ed8936] bg-opacity-20 rounded-full px-3 py-1 text-white text-xs flex items-center">
-                                <i class="fas fa-cloud mr-1 text-[#ed8936]"></i>
-                                <span>云原生</span>
-                            </div>
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
+                                可观测性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• Prometheus + Grafana监控栈</li>
+                                <li>• Jaeger分布式追踪</li>
+                                <li>• ELK Stack日志分析</li>
+                                <li>• 多渠道告警机制</li>
+                            </ul>
                         </div>
-                    </div>
-                </div>
-                <!-- High-density LoRA manager -->
-                <div class="component-card rounded-lg p-5 w-1/3 fade-in" style="animation-delay: 0.6s;">
-                    <div class="flex items-center mb-3">
-                        <div class="text-[#ed8936] text-2xl mr-3">
-                            <i class="fas fa-microchip"></i>
+                        <div class="border-l-4 border-[#ed8936] pl-3">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-heartbeat text-[#ed8936] mr-2"></i>
+                                高可用性
+                            </h3>
+                            <ul class="mt-1 space-y-1 text-gray-300 text-sm">
+                                <li>• 跨可用区容灾部署</li>
+                                <li>• 自动故障检测和恢复</li>
+                                <li>• 定期备份和恢复测试</li>
+                                <li>• 99.9%可用性承诺</li>
+                            </ul>
                         </div>
-                        <h2 class="text-xl font-bold text-white">高密度LoRA管理器</h2>
-                    </div>
-                    <ul class="space-y-2">
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>基于LoRA技术，单个基础模型+多个适配器，内存共享</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>节省90%+显存，加载时间&lt;100ms</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>支持1000+适配器动态加载</span>
-                        </li>
-                    </ul>
-                    <div class="mt-4 bg-[#1e293b] bg-opacity-50 rounded p-3">
-                        <div class="text-sm text-gray-400 mb-2">核心特性</div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs">
-                                <i class="fas fa-bolt text-[#ed8936] mr-1"></i>
-                                <span>动态加载</span>
-                            </div>
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs">
-                                <i class="fas fa-plug text-[#ed8936] mr-1"></i>
-                                <span>热插拔</span>
-                            </div>
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs">
-                                <i class="fas fa-sync text-[#ed8936] mr-1"></i>
-                                <span>LRU缓存</span>
-                            </div>
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs">
-                                <i class="fas fa-magic text-[#ed8936] mr-1"></i>
-                                <span>智能预加载</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- LLM gateway and intelligent routing -->
-                <div class="component-card rounded-lg p-5 w-1/3 fade-in" style="animation-delay: 0.8s;">
-                    <div class="flex items-center mb-3">
-                        <div class="text-[#ed8936] text-2xl mr-3">
-                            <i class="fas fa-network-wired"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-white">LLM网关与智能路由</h2>
-                    </div>
-                    <ul class="space-y-2">
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>OpenAI API兼容、身份认证、流量控制、多协议支持</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>负载均衡、模型路由、地域路由、故障转移</span>
-                        </li>
-                        <li class="feature-item flex items-start text-gray-300">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <span>加权轮询、健康检查、自动故障切换</span>
-                        </li>
-                    </ul>
-                    <div class="mt-4 bg-[#1e293b] bg-opacity-50 rounded p-3">
-                        <div class="text-sm text-gray-400 mb-2">路由策略</div>
-                        <div class="flex flex-wrap gap-2">
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs flex items-center">
-                                <i class="fas fa-balance-scale text-[#ed8936] mr-1"></i>
-                                <span>加权轮询</span>
-                            </div>
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs flex items-center">
-                                <i class="fas fa-heartbeat text-[#ed8936] mr-1"></i>
-                                <span>健康检查</span>
-                            </div>
-                            <div class="bg-[#1e293b] bg-opacity-70 rounded p-2 text-white text-xs flex items-center">
-                                <i class="fas fa-exchange-alt text-[#ed8936] mr-1"></i>
-                                <span>自动故障切换</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Bottom section: Data flow -->
-            <div class="mt-6 bg-[#1e293b] bg-opacity-40 rounded-lg p-4 fade-in" style="animation-delay: 1s;">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center">
-                        <div class="text-[#ed8936] text-xl mr-2">
-                            <i class="fas fa-code-branch"></i>
-                        </div>
-                        <h3 class="text-white font-bold">代码仓库</h3>
-                    </div>
-                    <i class="fas fa-arrow-right text-[#ed8936]"></i>
-                    <div class="flex items-center">
-                        <div class="text-[#ed8936] text-xl mr-2">
-                            <i class="fas fa-cogs"></i>
-                        </div>
-                        <h3 class="text-white font-bold">持续集成</h3>
-                    </div>
-                    <i class="fas fa-arrow-right text-[#ed8936]"></i>
-                    <div class="flex items-center">
-                        <div class="text-[#ed8936] text-xl mr-2">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                        </div>
-                        <h3 class="text-white font-bold">容器镜像</h3>
-                    </div>
-                    <i class="fas fa-arrow-right text-[#ed8936]"></i>
-                    <div class="flex items-center">
-                        <div class="text-[#ed8936] text-xl mr-2">
-                            <i class="fas fa-server"></i>
-                        </div>
-                        <h3 class="text-white font-bold">Kubernetes集群</h3>
-                    </div>
-                    <i class="fas fa-arrow-right text-[#ed8936]"></i>
-                    <div class="flex items-center">
-                        <div class="text-[#ed8936] text-xl mr-2">
-                            <i class="fas fa-rocket"></i>
-                        </div>
-                        <h3 class="text-white font-bold">AIBrix服务</h3>
                     </div>
                 </div>
             </div>
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第29页 / 共37页
+            第31页 / 共37页
         </footer>
     </div>
 

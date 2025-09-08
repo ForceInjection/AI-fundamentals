@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Agent系统架构：智能体协作与工具调用</title>
+    <title>AI Infra 知识体系总结</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,36 +43,14 @@
             opacity: 0.15;
         }
 
-        .card {
+        .learning-card {
             transition: all 0.3s ease;
+            height: 100%;
         }
 
-        .card:hover {
+        .learning-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .agent-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .connection-line {
-            stroke: rgba(237, 137, 54, 0.6);
-            stroke-width: 2;
-            fill: none;
-            stroke-dasharray: 5, 5;
-            animation: dash 30s linear infinite;
-        }
-
-        @keyframes dash {
-            to {
-                stroke-dashoffset: 1000;
-            }
         }
 
         .fade-in {
@@ -90,23 +68,34 @@
                 transform: translateY(0);
             }
         }
+
+        .skill-bar {
+            height: 12px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+
+        }
+
+        .skill-progress {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #ed8936, #f97316);
+        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[868px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[762px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 200px; width: 30%;"></div>
-        <div class="circuit-line" style="top: 400px; left: 700px; width: 30%;"></div>
-        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 520px; left: 800px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 500px;"></div>
-        <div class="circuit-dot" style="top: 400px; left: 900px;"></div>
-        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 600px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 360px; left: 0; width: 80%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 600px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 360px; left: 200px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
         <div class="hexagon" style="top: 550px; left: 200px;"></div>
-        <div class="hexagon" style="top: 250px; left: 600px;"></div>
+        <div class="hexagon" style="top: 200px; left: 900px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -116,305 +105,138 @@
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">Agent</span>系统架构：智能体协作与工具调用
+                AI Infra <span class="text-[#ed8936]">知识体系总结</span>
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6">
-            <div class="flex justify-between space-x-6">
-                <!-- Multi-agent collaboration framework -->
-                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
+        <main class="px-16 py-6 grid grid-cols-12 gap-6">
+            <!-- Learning cards -->
+            <div class="col-span-12 grid grid-cols-2 gap-6">
+                <!-- Large Model Principles Card -->
+                <div class="learning-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
                     style="animation-delay: 0.2s;">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                        <i class="fas fa-users-gear mr-3 text-[#ed8936]"></i>
-                        多Agent协作框架
-                    </h2>
-                    <div class="mb-5">
-                        <h3 class="text-xl text-[#ed8936] mb-2">Agent类型</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div class="agent-icon bg-blue-500 bg-opacity-20 mr-2">
-                                    <i class="fas fa-sitemap text-blue-400"></i>
-                                </div>
-                                <span class="text-gray-200">规划Agent</span>
-                            </div>
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div class="agent-icon bg-green-500 bg-opacity-20 mr-2">
-                                    <i class="fas fa-play text-green-400"></i>
-                                </div>
-                                <span class="text-gray-200">执行Agent</span>
-                            </div>
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div class="agent-icon bg-yellow-500 bg-opacity-20 mr-2">
-                                    <i class="fas fa-chart-line text-yellow-400"></i>
-                                </div>
-                                <span class="text-gray-200">监控Agent</span>
-                            </div>
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div class="agent-icon bg-purple-500 bg-opacity-20 mr-2">
-                                    <i class="fas fa-handshake text-purple-400"></i>
-                                </div>
-                                <span class="text-gray-200">协调Agent</span>
-                            </div>
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-brain text-[#ed8936] text-xl"></i>
                         </div>
+                        <h2 class="text-xl font-bold text-white">大模型原理</h2>
                     </div>
-                    <div>
-                        <h3 class="text-xl text-[#ed8936] mb-2">协作模式</h3>
-                        <ul class="space-y-2 text-gray-200">
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-right-arrow-left text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">流水线：</span>顺序执行，前一个Agent输出作为下一个Agent输入</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-network-wired text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">并行：</span>多个Agent同时执行，共享资源</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-sitemap text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">层次：</span>Agent按层级组织，上级协调下级</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-store text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">市场：</span>Agent通过市场机制竞争任务</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="mt-5">
-                        <h3 class="text-xl text-[#ed8936] mb-2">通信机制</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <span
-                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">消息队列</span>
-                            <span
-                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">事件总线</span>
-                            <span
-                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">共享内存</span>
-                            <span
-                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">API调用</span>
-                        </div>
-                    </div>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>Transformer架构与注意力机制深度理解</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>DeepSeek V3/R1系列技术突破与MLA架构创新</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>大模型训练规模效应与能力涌现现象</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>多模态AI发展路径与推理时间计算</span>
+                        </li>
+                    </ul>
                 </div>
-                <!-- Tool calling mechanism -->
-                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
+                <!-- AI Programming Card -->
+                <div class="learning-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
                     style="animation-delay: 0.4s;">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                        <i class="fas fa-tools mr-3 text-[#ed8936]"></i>
-                        工具调用机制
-                    </h2>
-                    <div class="mb-5">
-                        <h3 class="text-xl text-[#ed8936] mb-2">工具注册</h3>
-                        <ul class="space-y-2 text-gray-200">
-                            <li class="flex items-start">
-                                <i class="fas fa-code-signs text-[#ed8936] mt-1 mr-2"></i>
-                                <span>函数签名解析，自动提取参数信息</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-comment-dots text-[#ed8936] mt-1 mr-2"></i>
-                                <span>自然语言描述，增强人类可读性</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-shield-alt text-[#ed8936] mt-1 mr-2"></i>
-                                <span>权限控制，确保安全调用</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-code-branch text-[#ed8936] mt-1 mr-2"></i>
-                                <span>版本管理，支持多版本工具</span>
-                            </li>
-                        </ul>
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-code text-[#ed8936] text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">AI编程</h2>
                     </div>
-                    <div>
-                        <h3 class="text-xl text-[#ed8936] mb-2">调用执行</h3>
-                        <div class="bg-[#253859] bg-opacity-50 rounded p-3 mb-3">
-                            <div class="flex items-center mb-2">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
-                                    <i class="fas fa-gears text-[#ed8936]"></i>
-                                </div>
-                                <span class="text-white font-medium">参数解析</span>
-                            </div>
-                            <p class="text-gray-300 text-sm ml-10">将自然语言参数转换为工具所需格式</p>
-                        </div>
-                        <div class="bg-[#253859] bg-opacity-50 rounded p-3 mb-3">
-                            <div class="flex items-center mb-2">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
-                                    <i class="fas fa-box text-[#ed8936]"></i>
-                                </div>
-                                <span class="text-white font-medium">安全沙箱</span>
-                            </div>
-                            <p class="text-gray-300 text-sm ml-10">限制工具执行环境，防止未授权操作</p>
-                        </div>
-                        <div class="bg-[#253859] bg-opacity-50 rounded p-3">
-                            <div class="flex items-center mb-2">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
-                                    <i class="fas fa-clock text-[#ed8936]"></i>
-                                </div>
-                                <span class="text-white font-medium">超时控制</span>
-                            </div>
-                            <p class="text-gray-300 text-sm ml-10">设置合理执行时间，避免无限期等待</p>
-                        </div>
-                    </div>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>GitHub Copilot、Cursor、Trae AI工具对比</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>代码生成、调试、重构与文档自动生成</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>开发效率提升55%，ROI达1200%-3000%</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>企业级应用案例与最佳实践</span>
+                        </li>
+                    </ul>
                 </div>
-                <!-- State management system -->
-                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
+                <!-- GPU/CUDA Practices Card -->
+                <div class="learning-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
                     style="animation-delay: 0.6s;">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                        <i class="fas fa-database mr-3 text-[#ed8936]"></i>
-                        状态管理系统
-                    </h2>
-                    <div class="mb-5">
-                        <h3 class="text-xl text-[#ed8936] mb-2">状态存储</h3>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-20 flex items-center justify-center mr-3">
-                                    <i class="fas fa-memory text-blue-400"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-white font-medium">内存状态</h4>
-                                    <p class="text-gray-300 text-sm">Redis等高性能KV存储</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-3">
-                                    <i class="fas fa-database text-green-400"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-white font-medium">持久化</h4>
-                                    <p class="text-gray-300 text-sm">PostgreSQL等关系型数据库</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-purple-500 bg-opacity-20 flex items-center justify-center mr-3">
-                                    <i class="fas fa-network-wired text-purple-400"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-white font-medium">分布式</h4>
-                                    <p class="text-gray-300 text-sm">etcd等分布式KV存储</p>
-                                </div>
-                            </div>
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-microchip text-[#ed8936] text-xl"></i>
                         </div>
+                        <h2 class="text-xl font-bold text-white">GPU/CUDA实践</h2>
                     </div>
-                    <div>
-                        <h3 class="text-xl text-[#ed8936] mb-2">状态同步</h3>
-                        <ul class="space-y-2 text-gray-200">
-                            <li class="flex items-start">
-                                <i class="fas fa-history text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">事件溯源：</span>记录状态变更历史，支持回滚</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-camera text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">快照机制：</span>定期保存状态快照，提高恢复效率</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-arrows-up-down text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">增量同步：</span>只传输变化部分，减少网络开销</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-code-merge text-[#ed8936] mt-1 mr-2"></i>
-                                <span><span class="font-medium">冲突解决：</span>版本号或时间戳比较，确保数据一致性</span>
-                            </li>
-                        </ul>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>NVIDIA GPU架构演进：Tesla到Hopper</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>CUDA编程模型与性能优化技巧</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>GPU虚拟化：MIG、时间切片与HAMi对比</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>HAMi开源方案：显存隔离与算力分配</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Cloud-Native Architecture Card -->
+                <div class="learning-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.8s;">
+                    <div class="flex items-center mb-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                            <i class="fas fa-cloud text-[#ed8936] text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">云原生架构</h2>
                     </div>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>现代AI基础设施三层架构设计</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>大模型推理优化：KV Cache与量化技术</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>Agentic RAG系统与AIBrix核心架构</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <span>企业级监控运维与安全合规</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <!-- Agent collaboration visualization -->
-            <div class="mt-6 relative h-[120px] fade-in" style="animation-delay: 0.8s;">
-                <svg class="mx-auto" height="120" id="agent-flow" width="1200"></svg>
-            </div>
+
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第34页 / 共37页
+            第36页 / 共37页
         </footer>
     </div>
-    <script>
-        // Agent flow visualization
-        document.addEventListener('DOMContentLoaded', function () {
-            const svg = d3.select("#agent-flow");
-            const width = +svg.attr("width");
-            const height = +svg.attr("height");
-
-            // Define nodes
-            const nodes = [
-                { id: "planning", name: "规划Agent", x: 150, y: height / 2, color: "#3B82F6" },
-                { id: "execution", name: "执行Agent", x: 400, y: height / 2, color: "#10B981" },
-                { id: "monitoring", name: "监控Agent", x: 650, y: height / 2, color: "#FBBF24" },
-                { id: "coordination", name: "协调Agent", x: 900, y: height / 2, color: "#8B5CF6" }
-            ];
-
-            // Define links
-            const links = [
-                { source: "planning", target: "execution", type: "forward" },
-                { source: "execution", target: "monitoring", type: "forward" },
-                { source: "monitoring", target: "coordination", type: "forward" },
-                { source: "coordination", target: "planning", type: "feedback" }
-            ];
-
-            // Draw links
-            svg.selectAll(".link")
-                .data(links)
-                .enter()
-                .append("path")
-                .attr("class", "connection-line")
-                .attr("d", d => {
-                    const source = nodes.find(n => n.id === d.source);
-                    const target = nodes.find(n => n.id === d.target);
-
-                    if (d.type === "feedback") {
-                        // Curved path for feedback loop
-                        return `M${source.x},${source.y} C${source.x + 100},${source.y - 50} ${target.x - 100},${target.y - 50} ${target.x},${target.y}`;
-                    } else {
-                        // Straight path for forward connections
-                        return `M${source.x},${source.y} L${target.x},${target.y}`;
-                    }
-                });
-
-            // Draw nodes
-            const nodeGroups = svg.selectAll(".node")
-                .data(nodes)
-                .enter()
-                .append("g")
-                .attr("class", "node")
-                .attr("transform", d => `translate(${d.x},${d.y})`);
-
-            // Node circles
-            nodeGroups.append("circle")
-                .attr("r", 25)
-                .attr("fill", d => d.color)
-                .attr("fill-opacity", 0.2)
-                .attr("stroke", d => d.color)
-                .attr("stroke-width", 2);
-
-            // Node icons
-            nodeGroups.append("text")
-                .attr("text-anchor", "middle")
-                .attr("dy", "0.3em")
-                .attr("fill", "white")
-                .attr("class", d => {
-                    if (d.id === "planning") return "fas fa-sitemap";
-                    if (d.id === "execution") return "fas fa-play";
-                    if (d.id === "monitoring") return "fas fa-chart-line";
-                    if (d.id === "coordination") return "fas fa-handshake";
-                })
-                .text(d => {
-                    if (d.id === "planning") return "\uf0e8"; // sitemap icon
-                    if (d.id === "execution") return "\uf04b"; // play icon
-                    if (d.id === "monitoring") return "\uf201"; // chart-line icon
-                    if (d.id === "coordination") return "\uf2b5"; // handshake icon
-                });
-
-            // Node labels
-            nodeGroups.append("text")
-                .attr("text-anchor", "middle")
-                .attr("dy", 45)
-                .attr("fill", "white")
-                .text(d => d.name);
-        });
-    </script>
 
 <script src="ppt-mode.js"></script>
 </body>

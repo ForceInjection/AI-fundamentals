@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>现代AI基础设施架构</title>
+    <title>大模型推理优化：KV Cache</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,37 +36,20 @@
 
         .hexagon {
             position: absolute;
-            width: 80px;
-            height: 92px;
+            width: 60px;
+            height: 69px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .layer-card {
+        .feature-card {
             transition: all 0.3s ease;
         }
 
-        .layer-card:hover {
-            transform: translateY(-3px);
+        .feature-card:hover {
+            transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .flow-arrow {
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-style: solid;
-        }
-
-        .flow-arrow-right {
-            border-width: 10px 0 10px 16px;
-            border-color: transparent transparent transparent #ed8936;
-        }
-
-        .flow-arrow-down {
-            border-width: 16px 10px 0 10px;
-            border-color: #ed8936 transparent transparent transparent;
         }
 
         .fade-in {
@@ -84,25 +67,33 @@
                 transform: translateY(0);
             }
         }
+
+        .highlight-text {
+            color: #ed8936;
+            font-weight: bold;
+        }
+
+        .kv-cache-memory {
+            font-family: monospace;
+            background-color: rgba(26, 54, 93, 0.7);
+            border-radius: 4px;
+            padding: 0.5rem;
+        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[820px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 250px; left: 200px; width: 50%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 500px; width: 30%;"></div>
-        <div class="circuit-line" style="top: 550px; left: 300px; width: 40%;"></div>
-        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
-        <div class="circuit-dot" style="top: 250px; left: 500px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 800px;"></div>
-        <div class="circuit-dot" style="top: 450px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 550px; left: 700px;"></div>
-        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 500px; left: 200px;"></div>
-        <div class="hexagon" style="top: 300px; left: 900px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 480px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 380px; left: 0; width: 80%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 250px;"></div>
+        <div class="circuit-dot" style="top: 480px; left: 850px;"></div>
+        <div class="circuit-dot" style="top: 380px; left: 150px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1050px;"></div>
+        <div class="hexagon" style="top: 520px; left: 150px;"></div>
+        <div class="hexagon" style="top: 250px; left: 950px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -110,221 +101,118 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-8 px-12">
+        <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                现代<span class="text-[#ed8936]">AI基础设施</span>架构
+                大模型<span class="text-[#ed8936]">推理优化</span>：KV Cache
             </h1>
-            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+            <div class="w-40 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-12 py-4">
-            <div class="flex space-x-4 mb-6">
-                <!-- Hardware Layer -->
-                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-blue-500 fade-in"
-                    style="animation-delay: 0.2s;">
-                    <div class="flex items-center mb-3">
-                        <div
-                            class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-microchip text-blue-400"></i>
+        <main class="px-16 py-6 grid grid-cols-12 gap-6">
+            <!-- Left column: KV Cache principles -->
+            <div class="col-span-5">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full fade-in" style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-memory text-[#ed8936] mr-3"></i>
+                        KV Cache 优化原理
+                    </h2>
+                    <div class="space-y-4 text-gray-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <p>缓存Key-Value矩阵，避免重复计算</p>
                         </div>
-                        <h2 class="text-xl font-bold text-white">硬件层（Infrastructure Layer）</h2>
-                    </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-server text-blue-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">GPU集群：</span>NVIDIA DGX系列（A100/H100），支持大规模并行计算</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-hdd text-blue-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">存储系统：</span>高性能NVMe SSD + 分布式存储（Ceph/GlusterFS）</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-network-wired text-blue-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">网络架构：</span>InfiniBand高速互联 + 以太网存储网络</span>
-                        </li>
-                    </ul>
-                </div>
-                <!-- Platform Layer -->
-                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-green-500 fade-in"
-                    style="animation-delay: 0.4s;">
-                    <div class="flex items-center mb-3">
-                        <div
-                            class="w-10 h-10 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-cubes text-green-400"></i>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <p>自回归生成中，历史token的KV可复用</p>
                         </div>
-                        <h2 class="text-xl font-bold text-white">平台层（Platform Layer）</h2>
-                    </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-docker text-green-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">容器编排：</span>Kubernetes + GPU Operator，支持GPU资源调度</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-tasks text-green-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">资源调度：</span>多租户调度器（Volcano、Yunikorn），支持优先级和公平调度</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-project-diagram text-green-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">服务网格：</span>Istio微服务管理 + Prometheus监控告警</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-database text-green-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">存储编排：</span>CSI动态存储 + Rook云原生存储</span>
-                        </li>
-                    </ul>
-                </div>
-                <!-- Application Layer -->
-                <div class="w-1/3 layer-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-t-4 border-orange-500 fade-in"
-                    style="animation-delay: 0.6s;">
-                    <div class="flex items-center mb-3">
-                        <div
-                            class="w-10 h-10 rounded-full bg-orange-500 bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-code-branch text-orange-400"></i>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                            <p>内存占用：<span class="highlight-text">O(batch_size × seq_len × hidden_dim)</span></p>
                         </div>
-                        <h2 class="text-xl font-bold text-white">应用层（Application Layer）</h2>
                     </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-brain text-orange-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">训练框架：</span>PyTorch、TensorFlow、JAX +
-                                分布式训练（Horovod、DeepSpeed）</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-rocket text-orange-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">推理服务：</span>TensorRT、Triton Inference
-                                Server、vLLM、AIBrix</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-cube text-orange-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">模型管理：</span>MLflow生命周期管理 + Kubeflow工作流</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-tools text-orange-400 mt-1 mr-2"></i>
-                            <span><span class="font-semibold">开发工具：</span>JupyterHub、VSCode Server、实验跟踪工具</span>
-                        </li>
-                    </ul>
+                    <!-- KV Cache memory formula visualization -->
+                    <div class="mt-6 p-4 bg-[#1e293b] rounded-lg border border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-2">KV Cache 内存占用</h3>
+                        <div class="kv-cache-memory text-gray-200">
+                            <div class="mb-1">// batch_size: 批处理大小</div>
+                            <div class="mb-1">// seq_len: 序列长度</div>
+                            <div>// hidden_dim: 隐藏层维度</div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <div
+                            class="p-4 bg-[#ed8936] bg-opacity-20 rounded-lg border border-[#ed8936] border-opacity-30">
+                            <h3 class="text-lg font-semibold text-white mb-2 flex items-center">
+                                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                                核心优势
+                            </h3>
+                            <p class="text-gray-200">KV Cache优化是大模型推理加速的核心技术，通过缓存复用大幅降低内存需求和计算开销。</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- Data Flow Section -->
-            <div class="flex space-x-4 fade-in" style="animation-delay: 0.8s;">
-                <div class="w-3/4 bg-[#1e293b] bg-opacity-40 rounded-lg p-4">
-                    <h2 class="text-xl font-bold text-white mb-3 flex items-center">
-                        <i class="fas fa-random text-[#ed8936] mr-2"></i>
-                        数据流核心环节
+            <!-- Right column: Optimization strategies and performance -->
+            <div class="col-span-7">
+                <!-- Optimization strategies -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 mb-5 fade-in" style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-cogs text-[#ed8936] mr-3"></i>
+                        优化策略
                     </h2>
-                    <div class="flex justify-between relative">
-                        <!-- Data Processing -->
-                        <div class="w-1/4 px-2">
-                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
-                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                    <i class="fas fa-database text-blue-400 mr-2"></i>
-                                    数据处理
-                                </h3>
-                                <ul class="text-sm text-gray-300 space-y-1">
-                                    <li>流式摄取（Kafka）</li>
-                                    <li>分布式处理（Spark）</li>
-                                    <li>特征存储</li>
-                                </ul>
-                            </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
+                                分页注意力 (PagedAttention)
+                            </h3>
+                            <p class="text-gray-300 text-sm mt-2">将KV Cache分页存储，提高内存访问效率</p>
                         </div>
-                        <!-- Flow Arrow 1 -->
-                        <div class="flex items-center justify-center w-8">
-                            <div class="flow-arrow flow-arrow-right"></div>
+                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-random text-[#ed8936] mr-2"></i>
+                                动态批处理
+                            </h3>
+                            <p class="text-gray-300 text-sm mt-2">不同序列长度的智能批处理，提高吞吐量</p>
                         </div>
-                        <!-- Model Training -->
-                        <div class="w-1/4 px-2">
-                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
-                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                    <i class="fas fa-cogs text-green-400 mr-2"></i>
-                                    模型训练
-                                </h3>
-                                <ul class="text-sm text-gray-300 space-y-1">
-                                    <li>数据加载</li>
-                                    <li>分布式训练</li>
-                                    <li>检查点保存</li>
-                                    <li>实验跟踪</li>
-                                </ul>
-                            </div>
+                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-compress-arrows-alt text-[#ed8936] mr-2"></i>
+                                KV Cache 压缩
+                            </h3>
+                            <p class="text-gray-300 text-sm mt-2">低秩分解、量化压缩，降低内存占用</p>
                         </div>
-                        <!-- Flow Arrow 2 -->
-                        <div class="flex items-center justify-center w-8">
-                            <div class="flow-arrow flow-arrow-right"></div>
-                        </div>
-                        <!-- Model Deployment -->
-                        <div class="w-1/4 px-2">
-                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
-                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                    <i class="fas fa-cloud-upload-alt text-purple-400 mr-2"></i>
-                                    模型部署
-                                </h3>
-                                <ul class="text-sm text-gray-300 space-y-1">
-                                    <li>格式转换</li>
-                                    <li>容器化</li>
-                                    <li>A/B测试</li>
-                                    <li>监控告警</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <!-- Flow Arrow 3 -->
-                        <div class="flex items-center justify-center w-8">
-                            <div class="flow-arrow flow-arrow-right"></div>
-                        </div>
-                        <!-- Online Inference -->
-                        <div class="w-1/4 px-2">
-                            <div class="bg-[#2d3748] bg-opacity-60 rounded p-3 h-full">
-                                <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                    <i class="fas fa-bolt text-orange-400 mr-2"></i>
-                                    在线推理
-                                </h3>
-                                <ul class="text-sm text-gray-300 space-y-1">
-                                    <li>请求路由</li>
-                                    <li>模型预热</li>
-                                    <li>结果缓存</li>
-                                    <li>反馈收集</li>
-                                </ul>
-                            </div>
+                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <h3 class="text-lg font-semibold text-white flex items-center">
+                                <i class="fas fa-database text-[#ed8936] mr-2"></i>
+                                多级缓存
+                            </h3>
+                            <p class="text-gray-300 text-sm mt-2">GPU显存 + 系统内存 + SSD分层缓存</p>
                         </div>
                     </div>
                 </div>
-                <!-- Key Performance Indicators -->
-                <div class="w-1/4 bg-[#1e293b] bg-opacity-40 rounded-lg p-4">
-                    <h2 class="text-xl font-bold text-white mb-3 flex items-center">
-                        <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
-                        关键性能指标
+                <!-- Performance improvements -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.6s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-[#ed8936] mr-3"></i>
+                        性能提升
                     </h2>
-                    <div class="space-y-4">
-                        <!-- Performance -->
-                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
-                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                <i class="fas fa-tachometer-alt text-green-400 mr-2"></i>
-                                性能
-                            </h3>
-                            <ul class="text-sm text-gray-300 space-y-1">
-                                <li>训练吞吐量 &gt; 1000 samples/sec/GPU</li>
-                                <li>推理延迟 &lt; 100ms</li>
-                            </ul>
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <div class="h-32" id="performance-chart"></div>
                         </div>
-                        <!-- Reliability -->
-                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
-                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
-                                可靠性
-                            </h3>
-                            <ul class="text-sm text-gray-300 space-y-1">
-                                <li>系统可用性 99.95%</li>
-                                <li>故障恢复 &lt; 5分钟</li>
-                            </ul>
-                        </div>
-                        <!-- Efficiency -->
-                        <div class="bg-[#2d3748] bg-opacity-60 rounded p-3">
-                            <h3 class="text-md font-semibold text-white flex items-center mb-2">
-                                <i class="fas fa-leaf text-green-400 mr-2"></i>
-                                效益
-                            </h3>
-                            <ul class="text-sm text-gray-300 space-y-1">
-                                <li>TCO降低 40-60%</li>
-                                <li>资源利用率提升 2-3倍</li>
-                            </ul>
+                        <div class="space-y-3 text-gray-200">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                                <span class="text-sm">内存效率：<span class="highlight-text">节省80%+</span></span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#4A90E2] mr-2"></div>
+                                <span class="text-sm">吞吐量：<span class="highlight-text">提升2-4倍</span></span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#68D391] mr-2"></div>
+                                <span class="text-sm">延迟优化：<span class="highlight-text">降低50%</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -332,9 +220,80 @@
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第24页 / 共37页
+            第26页 / 共37页
         </footer>
     </div>
+    <script>
+        // Performance chart using D3.js
+        document.addEventListener('DOMContentLoaded', function () {
+            const data = [
+                { category: "内存", value: 80, color: "#ed8936" },
+                { category: "吞吐量", value: 300, color: "#4A90E2" }, // 2-4倍提升取中间值
+                { category: "延迟", value: 50, color: "#68D391" }
+            ];
+
+            const width = document.getElementById('performance-chart').clientWidth;
+            const height = document.getElementById('performance-chart').clientHeight;
+            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const svg = d3.select('#performance-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.category))
+                .range([0, chartWidth])
+                .padding(0.3);
+
+            const y = d3.scaleLinear()
+                .domain([0, 100])
+                .range([chartHeight, 0]);
+
+            // Add bars
+            svg.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d.category))
+                .attr('y', d => y(d.value))
+                .attr('width', x.bandwidth())
+                .attr('height', d => chartHeight - y(d.value))
+                .attr('fill', d => d.color)
+                .attr('rx', 4)
+                .attr('ry', 4);
+
+            // Add value labels
+            svg.selectAll('.label')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('class', 'label')
+                .attr('x', d => x(d.category) + x.bandwidth() / 2)
+                .attr('y', d => y(d.value) - 5)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'white')
+                .text(d => `${d.value}%`);
+
+            // Add x-axis labels
+            svg.selectAll('.x-label')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('class', 'x-label')
+                .attr('x', d => x(d.category) + x.bandwidth() / 2)
+                .attr('y', chartHeight + 20)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#A0AEC0')
+                .attr('font-size', '12px')
+                .text(d => d.category);
+        });
+    </script>
 
 <script src="ppt-mode.js"></script>
 </body>

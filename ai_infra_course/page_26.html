@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>大模型推理优化：KV Cache</title>
+    <title>量化技术与推理引擎</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,8 +36,8 @@
 
         .hexagon {
             position: absolute;
-            width: 60px;
-            height: 69px;
+            width: 80px;
+            height: 92px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
@@ -48,7 +48,7 @@
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
@@ -68,16 +68,34 @@
             }
         }
 
-        .highlight-text {
-            color: #ed8936;
-            font-weight: bold;
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 12px;
+            color: #e2e8f0;
+            font-size: 14px;
+            line-height: 1.5;
+            border-left: 3px solid #ed8936;
         }
 
-        .kv-cache-memory {
-            font-family: monospace;
-            background-color: rgba(26, 54, 93, 0.7);
-            border-radius: 4px;
-            padding: 0.5rem;
+        .bar {
+            fill: #ed8936;
+            transition: fill 0.3s ease;
+        }
+
+        .bar:hover {
+            fill: #f97316;
+        }
+
+        .axis text {
+            fill: #94a3b8;
+            font-size: 12px;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #475569;
         }
     </style>
 </head>
@@ -85,15 +103,12 @@
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 480px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 380px; left: 0; width: 80%;"></div>
-        <div class="circuit-dot" style="top: 180px; left: 250px;"></div>
-        <div class="circuit-dot" style="top: 480px; left: 850px;"></div>
-        <div class="circuit-dot" style="top: 380px; left: 150px;"></div>
-        <div class="hexagon" style="top: 120px; left: 1050px;"></div>
-        <div class="hexagon" style="top: 520px; left: 150px;"></div>
-        <div class="hexagon" style="top: 250px; left: 950px;"></div>
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -103,116 +118,163 @@
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                大模型<span class="text-[#ed8936]">推理优化</span>：KV Cache
+                <span class="text-[#ed8936]">量化技术</span>与推理引擎
             </h1>
-            <div class="w-40 h-1 bg-[#ed8936] mt-3"></div>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6 grid grid-cols-12 gap-6">
-            <!-- Left column: KV Cache principles -->
-            <div class="col-span-5">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full fade-in" style="animation-delay: 0.2s;">
-                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
-                        <i class="fas fa-memory text-[#ed8936] mr-3"></i>
-                        KV Cache 优化原理
-                    </h2>
-                    <div class="space-y-4 text-gray-200">
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <p>缓存Key-Value矩阵，避免重复计算</p>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <p>自回归生成中，历史token的KV可复用</p>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                            <p>内存占用：<span class="highlight-text">O(batch_size × seq_len × hidden_dim)</span></p>
-                        </div>
+        <main class="px-16 py-6 flex">
+            <!-- Left side: Quantization techniques -->
+            <div class="w-1/2 pr-6 fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-layer-group text-[#ed8936] mr-3"></i>
+                    量化技术分类
+                </h2>
+                <div class="space-y-3">
+                    <!-- PTQ -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-cog text-[#ed8936] mr-2"></i>
+                            训练后量化 (PTQ)
+                        </h3>
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">INT8量化</span>：权重和激活都量化到8位</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">动态量化</span>：权重静态量化，激活动态量化</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">校准数据集</span>：使用代表性数据校准量化参数</span>
+                            </li>
+                        </ul>
                     </div>
-                    <!-- KV Cache memory formula visualization -->
-                    <div class="mt-6 p-4 bg-[#1e293b] rounded-lg border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-2">KV Cache 内存占用</h3>
-                        <div class="kv-cache-memory text-gray-200">
-                            <div class="mb-1">// batch_size: 批处理大小</div>
-                            <div class="mb-1">// seq_len: 序列长度</div>
-                            <div>// hidden_dim: 隐藏层维度</div>
-                        </div>
+                    <!-- QAT -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-code-branch text-[#ed8936] mr-2"></i>
+                            量化感知训练 (QAT)
+                        </h3>
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">伪量化</span>：训练时模拟量化过程</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">直通估计器</span>：梯度传播的近似方法</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">量化调度</span>：逐步降低精度的训练策略</span>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="mt-6">
-                        <div
-                            class="p-4 bg-[#ed8936] bg-opacity-20 rounded-lg border border-[#ed8936] border-opacity-30">
-                            <h3 class="text-lg font-semibold text-white mb-2 flex items-center">
-                                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
-                                核心优势
-                            </h3>
-                            <p class="text-gray-200">KV Cache优化是大模型推理加速的核心技术，通过缓存复用大幅降低内存需求和计算开销。</p>
-                        </div>
+                    <!-- Extreme Quantization -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#ed8936]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-compress-arrows-alt text-[#ed8936] mr-2"></i>
+                            极端量化
+                        </h3>
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">INT4/INT2量化</span>：更激进的量化策略</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">混合精度</span>：不同层使用不同精度</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">非均匀量化</span>：非线性量化映射</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- TensorRT Model Optimizer -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 border-l-4 border-[#38a169]">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-magic text-[#38a169] mr-2"></i>
+                            TensorRT Model Optimizer
+                        </h3>
+                        <ul class="mt-1 text-gray-300 space-y-0.5 pl-6 text-sm">
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">自动量化</span>：NVIDIA 2024年推出的自动优化工具</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">一体化优化</span>：支持剪枝、量化、蒸馏集成</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-angle-right text-[#38a169] mt-1 mr-2"></i>
+                                <span><span class="text-white font-medium">易用性提升</span>：简化模型优化流程</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
+
             </div>
-            <!-- Right column: Optimization strategies and performance -->
-            <div class="col-span-7">
-                <!-- Optimization strategies -->
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 mb-5 fade-in" style="animation-delay: 0.4s;">
-                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
-                        <i class="fas fa-cogs text-[#ed8936] mr-3"></i>
-                        优化策略
-                    </h2>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                            <h3 class="text-lg font-semibold text-white flex items-center">
-                                <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
-                                分页注意力 (PagedAttention)
-                            </h3>
-                            <p class="text-gray-300 text-sm mt-2">将KV Cache分页存储，提高内存访问效率</p>
-                        </div>
-                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                            <h3 class="text-lg font-semibold text-white flex items-center">
-                                <i class="fas fa-random text-[#ed8936] mr-2"></i>
-                                动态批处理
-                            </h3>
-                            <p class="text-gray-300 text-sm mt-2">不同序列长度的智能批处理，提高吞吐量</p>
-                        </div>
-                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                            <h3 class="text-lg font-semibold text-white flex items-center">
-                                <i class="fas fa-compress-arrows-alt text-[#ed8936] mr-2"></i>
-                                KV Cache 压缩
-                            </h3>
-                            <p class="text-gray-300 text-sm mt-2">低秩分解、量化压缩，降低内存占用</p>
-                        </div>
-                        <div class="feature-card bg-[#213547] bg-opacity-70 rounded-lg p-4 border-l-4 border-[#ed8936]">
-                            <h3 class="text-lg font-semibold text-white flex items-center">
-                                <i class="fas fa-database text-[#ed8936] mr-2"></i>
-                                多级缓存
-                            </h3>
-                            <p class="text-gray-300 text-sm mt-2">GPU显存 + 系统内存 + SSD分层缓存</p>
-                        </div>
-                    </div>
+            <!-- Right side: Inference engines comparison -->
+            <div class="w-1/2 pl-6 fade-in" style="animation-delay: 0.4s;">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-rocket text-[#ed8936] mr-3"></i>
+                    主流推理引擎对比
+                </h2>
+                <!-- Comparison table -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 mb-4">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-600">
+                                <th class="text-left py-1 text-gray-300">推理引擎</th>
+                                <th class="text-left py-1 text-gray-300">主要特性</th>
+                                <th class="text-left py-1 text-gray-300">性能</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-200">
+                            <tr class="border-b border-gray-700">
+                                <td class="py-1 font-medium text-white">vLLM</td>
+                                <td class="py-1">PagedAttention内存优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-1 font-medium text-white">TensorRT-LLM</td>
+                                <td class="py-1">NVIDIA高度优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr class="border-b border-gray-700">
+                                <td class="py-1 font-medium text-white">Text Generation Inference</td>
+                                <td class="py-1">Hugging Face易用性</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 font-medium text-white">NVIDIA Dynamo</td>
+                                <td class="py-1">动态编译优化</td>
+                                <td class="py-1 text-[#ed8936] font-medium">⭐⭐⭐⭐⭐</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <!-- Performance improvements -->
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.6s;">
-                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
-                        <i class="fas fa-chart-line text-[#ed8936] mr-3"></i>
-                        性能提升
-                    </h2>
-                    <div class="flex space-x-4">
-                        <div class="flex-1">
-                            <div class="h-32" id="performance-chart"></div>
+                <!-- Performance metrics -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4">
+                    <h3 class="text-xl font-semibold text-white mb-2 flex items-center">
+                        <i class="fas fa-chart-bar text-[#ed8936] mr-2"></i>
+                        性能基准数据 (Llama-7B模型)
+                    </h3>
+                    <div class="h-32 w-full" id="performance-chart"></div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2">
+                            <div class="text-sm text-gray-300">吞吐量提升</div>
+                            <div class="text-lg font-bold text-white">3-4倍</div>
+                            <div class="text-xs text-gray-400">相比原生PyTorch</div>
                         </div>
-                        <div class="space-y-3 text-gray-200">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
-                                <span class="text-sm">内存效率：<span class="highlight-text">节省80%+</span></span>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-[#4A90E2] mr-2"></div>
-                                <span class="text-sm">吞吐量：<span class="highlight-text">提升2-4倍</span></span>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-[#68D391] mr-2"></div>
-                                <span class="text-sm">延迟优化：<span class="highlight-text">降低50%</span></span>
-                            </div>
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2">
+                            <div class="text-sm text-gray-300">内存效率</div>
+                            <div class="text-lg font-bold text-white">80%</div>
+                            <div class="text-xs text-gray-400">KV Cache优化</div>
                         </div>
                     </div>
                 </div>
@@ -220,79 +282,96 @@
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第26页 / 共37页
+            第28页 / 共37页
         </footer>
     </div>
     <script>
-        // Performance chart using D3.js
-        document.addEventListener('DOMContentLoaded', function () {
-            const data = [
-                { category: "内存", value: 80, color: "#ed8936" },
-                { category: "吞吐量", value: 300, color: "#4A90E2" }, // 2-4倍提升取中间值
-                { category: "延迟", value: 50, color: "#68D391" }
-            ];
+        // Performance chart data from DOC
+        const performanceData = [
+            { engine: "vLLM", throughput: 2500 },
+            { engine: "TensorRT-LLM", throughput: 3200 },
+            { engine: "NVIDIA Dynamo", throughput: 2800 },
+            { engine: "原生PyTorch", throughput: 800 }
+        ];
 
-            const width = document.getElementById('performance-chart').clientWidth;
-            const height = document.getElementById('performance-chart').clientHeight;
-            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-            const chartWidth = width - margin.left - margin.right;
-            const chartHeight = height - margin.top - margin.bottom;
+        // Create performance chart
+        const margin = { top: 20, right: 20, bottom: 30, left: 60 };
+        const width = document.getElementById('performance-chart').clientWidth - margin.left - margin.right;
+        const height = document.getElementById('performance-chart').clientHeight - margin.top - margin.bottom;
 
-            const svg = d3.select('#performance-chart')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
+        const svg = d3.select("#performance-chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            const x = d3.scaleBand()
-                .domain(data.map(d => d.category))
-                .range([0, chartWidth])
-                .padding(0.3);
+        // X scale
+        const x = d3.scaleBand()
+            .domain(performanceData.map(d => d.engine))
+            .range([0, width])
+            .padding(0.3);
 
-            const y = d3.scaleLinear()
-                .domain([0, 100])
-                .range([chartHeight, 0]);
+        // Y scale
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(performanceData, d => d.throughput) * 1.1])
+            .range([height, 0]);
 
-            // Add bars
-            svg.selectAll('.bar')
-                .data(data)
-                .enter()
-                .append('rect')
-                .attr('class', 'bar')
-                .attr('x', d => x(d.category))
-                .attr('y', d => y(d.value))
-                .attr('width', x.bandwidth())
-                .attr('height', d => chartHeight - y(d.value))
-                .attr('fill', d => d.color)
-                .attr('rx', 4)
-                .attr('ry', 4);
+        // Add X axis
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
 
-            // Add value labels
-            svg.selectAll('.label')
-                .data(data)
-                .enter()
-                .append('text')
-                .attr('class', 'label')
-                .attr('x', d => x(d.category) + x.bandwidth() / 2)
-                .attr('y', d => y(d.value) - 5)
-                .attr('text-anchor', 'middle')
-                .attr('fill', 'white')
-                .text(d => `${d.value}%`);
+        // Add Y axis
+        svg.append("g")
+            .attr("class", "axis")
+            .call(d3.axisLeft(y).ticks(5));
 
-            // Add x-axis labels
-            svg.selectAll('.x-label')
-                .data(data)
-                .enter()
-                .append('text')
-                .attr('class', 'x-label')
-                .attr('x', d => x(d.category) + x.bandwidth() / 2)
-                .attr('y', chartHeight + 20)
-                .attr('text-anchor', 'middle')
-                .attr('fill', '#A0AEC0')
-                .attr('font-size', '12px')
-                .text(d => d.category);
-        });
+        // Add Y axis label
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .style("fill", "#94a3b8")
+            .style("font-size", "12px")
+            .text("吞吐量 (tokens/sec)");
+
+        // Add bars
+        svg.selectAll(".bar")
+            .data(performanceData)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d.engine))
+            .attr("width", x.bandwidth())
+            .attr("y", height)
+            .attr("height", 0)
+            .transition()
+            .duration(800)
+            .delay((d, i) => i * 200)
+            .attr("y", d => y(d.throughput))
+            .attr("height", d => height - y(d.throughput));
+
+        // Add value labels on top of bars
+        svg.selectAll(".label")
+            .data(performanceData)
+            .enter()
+            .append("text")
+            .attr("class", "label")
+            .attr("x", d => x(d.engine) + x.bandwidth() / 2)
+            .attr("y", d => y(d.throughput) - 5)
+            .attr("text-anchor", "middle")
+            .style("fill", "#ffffff")
+            .style("font-size", "12px")
+            .style("opacity", 0)
+            .text(d => d.throughput)
+            .transition()
+            .duration(800)
+            .delay((d, i) => i * 200 + 400)
+            .style("opacity", 1);
     </script>
 
 <script src="ppt-mode.js"></script>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CUDA编程模型</title>
+    <title>CUDA性能优化要点</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,50 +43,29 @@
             opacity: 0.15;
         }
 
-        .code-block {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: #1e1e1e;
-            border-radius: 0.375rem;
-            padding: 1rem;
-            overflow: auto;
-            line-height: 1.5;
-            color: #d4d4d4;
+        .optimization-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
         }
 
-        .code-keyword {
-            color: #569cd6;
+        .optimization-card:hover {
+            transform: translateX(5px);
         }
 
-        .code-function {
-            color: #dcdcaa;
+        .memory-card {
+            border-color: #4299e1;
         }
 
-        .code-comment {
-            color: #6a9955;
+        .compute-card {
+            border-color: #ed8936;
         }
 
-        .code-string {
-            color: #ce9178;
-        }
-
-        .code-number {
-            color: #b5cea8;
-        }
-
-        .code-constant {
-            color: #dcdcaa;
-        }
-
-        .code-type {
-            color: #4ec9b0;
+        .goal-card {
+            border-color: #48bb78;
         }
 
         .fade-in {
             animation: fadeIn 0.8s ease-out forwards;
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.8s ease-out forwards;
         }
 
         @keyframes fadeIn {
@@ -101,50 +80,25 @@
             }
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(-85px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(-80px);
-            }
-        }
-
-        .optimization-card {
-            transition: all 0.3s ease;
-        }
-
-        .optimization-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .tool-icon {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1a365d, #2a4365);
-            color: white;
-            font-size: 20px;
+        .highlight-text {
+            color: #ed8936;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[736px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
-        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
-        <div class="hexagon" style="top: 580px; left: 300px;"></div>
+        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 700px;"></div>
+        <div class="circuit-dot" style="top: 580px; left: 400px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 400px; left: 200px;"></div>
+        <div class="hexagon" style="top: 600px; left: 1000px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -154,175 +108,194 @@
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">CUDA</span>编程模型
+                <span class="text-[#ed8936]">CUDA</span>性能优化要点
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-2 grid grid-cols-12 gap-6">
-            <!-- Left column: Basic examples -->
-            <div class="col-span-5 fade-in" style="animation-delay: 0.2s; height: calc(100% - 100px);">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-3 h-full">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-code mr-3 text-[#ed8936]"></i>
-                        基础示例
-                    </h2>
-                    <div class="mb-3">
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">向量加法</h3>
-                        <div class="code-block text-xs">
-                            <span class="code-keyword">__global__</span> <span class="code-keyword">void</span> <span
-                                class="code-function">vectorAdd</span>(<span class="code-type">float</span>* a, <span
-                                class="code-type">float</span>* b, <span class="code-type">float</span>* c, <span
-                                class="code-type">int</span> n) {<br />
-                              <span class="code-keyword">int</span> i = <span class="code-function">blockIdx.x</span> *
-                            <span class="code-function">blockDim.x</span> + <span
-                                class="code-function">threadIdx.x</span>;<br />
-                              <span class="code-keyword">if</span> (i &lt; n) c[i] = a[i] + b[i];<br />
-                            }
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">矩阵乘法</h3>
-                        <div class="code-block text-xs">
-                            <span class="code-keyword">__global__</span> <span class="code-keyword">void</span> <span
-                                class="code-function">matrixMul</span>(<span class="code-type">float</span>* A, <span
-                                class="code-type">float</span>* B, <span class="code-type">float</span>* C, <span
-                                class="code-type">int</span> N) {<br />
-                              <span class="code-keyword">int</span> row = <span class="code-function">blockIdx.y</span>
-                            * <span class="code-function">blockDim.y</span> + <span
-                                class="code-function">threadIdx.y</span>;<br />
-                              <span class="code-keyword">int</span> col = <span class="code-function">blockIdx.x</span>
-                            * <span class="code-function">blockDim.x</span> + <span
-                                class="code-function">threadIdx.x</span>;<br />
-                              <span class="code-keyword">if</span> (row &lt; N &amp;&amp; col &lt; N) {<br />
-                                <span class="code-keyword">float</span> sum = 0;<br />
-                                <span class="code-keyword">for</span> (<span class="code-keyword">int</span> k = 0; k &lt; N; k++)<br />
-                                  sum += A[row*N+k] * B[k*N+col];<br />
-                                C[row*N+col] = sum;<br />
-                              }<br />
-                            }
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <div class="flex items-center text-gray-300 text-xs">
-                            <i class="fas fa-info-circle text-[#ed8936] mr-2"></i>
-                            <span>线程索引: <code
-                                    class="bg-gray-800 px-1 rounded text-xs">blockIdx.x * blockDim.x + threadIdx.x</code></span>
+        <main class="px-16 py-6">
+            <div class="flex flex-wrap -mx-4">
+                <!-- Memory Optimization Section -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.2s;">
+                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card memory-card h-full">
+                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                            <i class="fas fa-memory text-[#4299e1] mr-3"></i>
+                            内存优化
+                        </h2>
+                        <ul class="space-y-3 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">合并访问</span>：连续线程访问连续内存，带宽利用率提升<span
+                                        class="highlight-text">90%+</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">共享内存</span>：缓存频繁访问数据，延迟降低<span
+                                        class="highlight-text">400倍</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">向量化访问</span>：使用float4等向量类型，提高内存访问效率
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">双缓冲</span>：计算和数据传输并行，提高总体吞吐量
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="mt-4 bg-[#2d3748] bg-opacity-50 p-3 rounded">
+                            <div class="text-sm text-gray-300 italic">
+                                <i class="fas fa-lightbulb text-[#4299e1] mr-2"></i>
+                                内存访问模式决定了GPU程序的性能瓶颈，优化内存布局和访问方式通常比优化计算逻辑更有效。
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Right column: CUDA Programming Model -->
-            <div class="col-span-7 fade-in-up" style="animation-delay: 0.4s; height: calc(100%); transform: translateY(-80px);">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-3 h-full">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-3" style="margin-left: -4px;">
-                        <i class="fas fa-layer-group mr-3 text-[#ed8936]"></i>
-                        CUDA编程模型
-                    </h2>
-                    
-                    <!-- Grid-Block-Thread Hierarchy -->
-                    <div class="mb-3">
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">线程层次结构</h3>
-                        <div class="grid grid-cols-3 gap-3 mb-3">
-                            <div class="bg-blue-900 bg-opacity-40 rounded-lg p-2 text-center">
-                                <div class="text-blue-300 text-sm font-bold mb-1">Grid</div>
-                                <div class="text-gray-300 text-xs">网格：包含所有Block</div>
-                                <div class="text-blue-200 text-xs mt-1">gridDim.x × gridDim.y</div>
-                            </div>
-                            <div class="bg-green-900 bg-opacity-40 rounded-lg p-2 text-center">
-                                <div class="text-green-300 text-sm font-bold mb-1">Block</div>
-                                <div class="text-gray-300 text-xs">线程块：共享内存</div>
-                                <div class="text-green-200 text-xs mt-1">blockDim.x × blockDim.y</div>
-                            </div>
-                            <div class="bg-orange-900 bg-opacity-40 rounded-lg p-2 text-center">
-                                <div class="text-orange-300 text-sm font-bold mb-1">Thread</div>
-                                <div class="text-gray-300 text-xs">线程：基本执行单元</div>
-                                <div class="text-orange-200 text-xs mt-1">threadIdx.x, y, z</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Visual Hierarchy Diagram -->
-                    <div class="mb-3">
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">层次结构图</h3>
-                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
-                            <svg width="100%" height="160" viewBox="0 0 600 160">
-                                <!-- Grid -->
-                                <rect x="10" y="10" width="580" height="140" fill="none" stroke="#3b82f6" stroke-width="2" rx="5"/>
-                                <text x="20" y="25" fill="#3b82f6" font-size="12" font-weight="bold">Grid (2×2)</text>
-                                
-                                <!-- Blocks -->
-                                <rect x="30" y="35" width="260" height="50" fill="none" stroke="#10b981" stroke-width="2" rx="3"/>
-                                <text x="40" y="48" fill="#10b981" font-size="10" font-weight="bold">Block (0,0)</text>
-                                
-                                <rect x="310" y="35" width="260" height="50" fill="none" stroke="#10b981" stroke-width="2" rx="3"/>
-                                <text x="320" y="48" fill="#10b981" font-size="10" font-weight="bold">Block (1,0)</text>
-                                
-                                <rect x="30" y="95" width="260" height="50" fill="none" stroke="#10b981" stroke-width="2" rx="3"/>
-                                <text x="40" y="108" fill="#10b981" font-size="10" font-weight="bold">Block (0,1)</text>
-                                
-                                <rect x="310" y="95" width="260" height="50" fill="none" stroke="#10b981" stroke-width="2" rx="3"/>
-                                <text x="320" y="108" fill="#10b981" font-size="10" font-weight="bold">Block (1,1)</text>
-                                
-                                <!-- Threads in first block -->
-                                <circle cx="60" cy="65" r="6" fill="#f59e0b" opacity="0.8"/>
-                                <text x="57" y="68" fill="white" font-size="7">T0</text>
-                                
-                                <circle cx="85" cy="65" r="6" fill="#f59e0b" opacity="0.8"/>
-                                <text x="82" y="68" fill="white" font-size="7">T1</text>
-                                
-                                <circle cx="110" cy="65" r="6" fill="#f59e0b" opacity="0.8"/>
-                                <text x="107" y="68" fill="white" font-size="7">T2</text>
-                                
-                                <circle cx="135" cy="65" r="6" fill="#f59e0b" opacity="0.8"/>
-                                <text x="132" y="68" fill="white" font-size="7">T3</text>
-                                
-                                <text x="160" y="68" fill="#f59e0b" font-size="8">...</text>
-                            </svg>
-                        </div>
-                    </div>
-                    
-                    <!-- Memory Hierarchy -->
-                    <div class="mb-3">
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">内存层次</h3>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="bg-red-900 bg-opacity-30 rounded-lg p-2 text-center">
-                                <div class="text-red-300 font-bold text-sm">全局内存</div>
-                                <div class="text-gray-300 text-xs">大容量，高延迟</div>
-                                <div class="text-red-200 text-xs">所有线程可访问</div>
-                            </div>
-                            <div class="bg-yellow-900 bg-opacity-30 rounded-lg p-2 text-center">
-                                <div class="text-yellow-300 font-bold text-sm">共享内存</div>
-                                <div class="text-gray-300 text-xs">小容量，低延迟</div>
-                                <div class="text-yellow-200 text-xs">Block内共享</div>
-                            </div>
-                            <div class="bg-purple-900 bg-opacity-30 rounded-lg p-2 text-center">
-                                <div class="text-purple-300 font-bold text-sm">寄存器</div>
-                                <div class="text-gray-300 text-xs">最快访问</div>
-                                <div class="text-purple-200 text-xs">线程私有</div>
+                <!-- Computational Optimization Section -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.4s;">
+                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card compute-card h-full">
+                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                            <i class="fas fa-microchip text-[#ed8936] mr-3"></i>
+                            计算优化
+                        </h2>
+                        <ul class="space-y-3 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">占用率最大化</span>：平衡寄存器和共享内存使用，提高SM利用率
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">避免分支发散</span>：warp内线程执行一致路径，减少控制流开销
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">指令级并行</span>：循环展开，多重累加器，提高指令吞吐量
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">混合精度</span>：FP16计算 + FP32累加，平衡精度和性能
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="mt-4 bg-[#2d3748] bg-opacity-50 p-3 rounded">
+                            <div class="text-sm text-gray-300 italic">
+                                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                                计算优化的核心是提高Occupancy（活跃warp数/最大warp数），通常通过平衡资源使用和控制流优化实现。
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Execution Configuration -->
-                    <div>
-                        <h3 class="text-base font-semibold text-[#ed8936] mb-2">执行配置</h3>
-                        <div class="code-block text-xs">
-                            <span class="code-comment">// 启动配置：&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;</span><br/>
-                            <span class="code-function">vectorAdd</span>&lt;&lt;&lt;<span class="code-number">256</span>, <span class="code-number">256</span>&gt;&gt;&gt;(d_a, d_b, d_c, n);<br/>
-                            <span class="code-comment">// Grid: 256个Block, 每个Block: 256个Thread</span><br/>
-                            <span class="code-comment">// 总线程数: 256 × 256 = 65,536</span>
+                </div>
+                <!-- Optimization Goals Section -->
+                <div class="w-full px-4 fade-in" style="animation-delay: 0.6s;">
+                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card goal-card">
+                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                            <i class="fas fa-bullseye text-[#48bb78] mr-3"></i>
+                            优化目标
+                        </h2>
+                        <div class="flex justify-between items-center">
+                            <div class="w-1/4 text-center">
+                                <div class="text-4xl font-bold text-[#48bb78] mb-2">80%+</div>
+                                <div class="text-gray-300">理论性能利用率</div>
+                                <div class="text-xs text-gray-400 mt-1">接近极限性能</div>
+                            </div>
+                            <div class="w-1/4 text-center">
+                                <div class="text-4xl font-bold text-[#48bb78] mb-2">70%+</div>
+                                <div class="text-gray-300">内存带宽利用率</div>
+                                <div class="text-xs text-gray-400 mt-1">最大化内存吞吐</div>
+                            </div>
+                            <div class="w-1/4 text-center">
+                                <div class="text-4xl font-bold text-[#48bb78] mb-2">60%+</div>
+                                <div class="text-gray-300">SM利用率</div>
+                                <div class="text-xs text-gray-400 mt-1">高效利用计算资源</div>
+                            </div>
+                            <div class="w-1/4 text-center">
+                                <div class="text-4xl font-bold text-[#48bb78] mb-2">50%+</div>
+                                <div class="text-gray-300">Occupancy</div>
+                                <div class="text-xs text-gray-400 mt-1">warp并行度</div>
+                            </div>
                         </div>
+                        <div class="mt-6 h-16 w-full" id="performance-gauge"></div>
                     </div>
                 </div>
             </div>
         </main>
-        
+        <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第16页 / 共37页
+            第18页 / 共37页
         </footer>
     </div>
+    <script>
+        // Simple D3.js visualization for performance metrics
+        document.addEventListener('DOMContentLoaded', function () {
+            const width = document.getElementById('performance-gauge').offsetWidth;
+            const height = document.getElementById('performance-gauge').offsetHeight;
+
+            const svg = d3.select('#performance-gauge')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            const metrics = [
+                { name: "理论性能", value: 80, color: "#48bb78" },
+                { name: "内存带宽", value: 70, color: "#4299e1" },
+                { name: "SM利用率", value: 60, color: "#ed8936" },
+                { name: "Occupancy", value: 50, color: "#9f7aea" }
+            ];
+
+            const barWidth = width / metrics.length - 20;
+
+            // Create bars
+            metrics.forEach((metric, i) => {
+                const x = i * (barWidth + 20);
+
+                // Background bar
+                svg.append('rect')
+                    .attr('x', x)
+                    .attr('y', 10)
+                    .attr('width', barWidth)
+                    .attr('height', 20)
+                    .attr('rx', 4)
+                    .attr('fill', '#2d3748');
+
+                // Progress bar
+                svg.append('rect')
+                    .attr('x', x)
+                    .attr('y', 10)
+                    .attr('width', 0)
+                    .attr('height', 20)
+                    .attr('rx', 4)
+                    .attr('fill', metric.color)
+                    .transition()
+                    .duration(1500)
+                    .delay(i * 300)
+                    .attr('width', metric.value / 100 * barWidth);
+
+                // Label
+                svg.append('text')
+                    .attr('x', x + barWidth / 2)
+                    .attr('y', 50)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', '#e2e8f0')
+                    .attr('font-size', '12px')
+                    .text(`${metric.name}: ${metric.value}%`);
+            });
+        });
+    </script>
+
 <script src="ppt-mode.js"></script>
 </body>
 

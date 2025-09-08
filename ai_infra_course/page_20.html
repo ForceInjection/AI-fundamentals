@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>GPU虚拟化技术对比</title>
+    <title>HAMi的GPU虚拟化方案</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,21 +36,35 @@
 
         .hexagon {
             position: absolute;
-            width: 80px;
-            height: 92px;
+            width: 60px;
+            height: 69px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .tech-card {
+        .feature-card {
             transition: all 0.3s ease;
-            height: 520px;
         }
 
-        .tech-card:hover {
+        .feature-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .comparison-table th {
+            background-color: rgba(26, 54, 93, 0.7);
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background-color: rgba(30, 41, 59, 0.4);
+        }
+
+        .comparison-table tr:nth-child(odd) {
+            background-color: rgba(30, 41, 59, 0.2);
+        }
+
+        .comparison-table td {
+            border-bottom: 1px solid rgba(237, 137, 54, 0.3);
         }
 
         .fade-in {
@@ -68,37 +82,21 @@
                 transform: translateY(0);
             }
         }
-
-        .feature-item {
-            position: relative;
-            padding-left: 28px;
-            margin-bottom: 6px;
-        }
-
-        .feature-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 6px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #ed8936;
-        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 150px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 1000px;"></div>
-        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 450px; left: 150px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 0; width: 70%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 250px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 150px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
+        <div class="hexagon" style="top: 250px; left: 150px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -106,192 +104,206 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-6 px-16">
-            <h1 class="text-3xl font-bold text-white">
-                <span class="text-[#ed8936]">GPU虚拟化技术</span>对比
+        <header class="pt-10 px-16">
+            <h1 class="text-4xl font-bold text-white">
+                <span class="text-[#ed8936]">HAMi</span>的GPU虚拟化方案
             </h1>
-            <div class="w-32 h-1 bg-[#ed8936] mt-2"></div>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-4">
-            <div class="flex justify-between space-x-6">
-                <!-- Hardware-level GPU Virtualization -->
-                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#4299e1] fade-in"
-                    style="animation-delay: 0.2s;">
-                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
-                        <i class="fas fa-microchip text-2xl text-[#4299e1]"></i>
-                    </div>
-                    <h2 class="text-xl font-bold text-white text-center mb-3">硬件级GPU虚拟化技术</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
-                                <i class="fas fa-cogs mr-2"></i>核心技术
-                            </h3>
-                            <p class="text-gray-300 text-sm mb-2">NVIDIA MIG、AMD SR-IOV、GPU Passthrough等硬件级虚拟化技术</p>
-                            <div class="feature-item text-gray-400 text-sm">
-                                硬件层面资源分割
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                需要特定硬件支持
+        <main class="px-16 py-6">
+            <div class="flex space-x-6">
+                <!-- Left side: HAMi core features -->
+                <div class="w-1/3 fade-in" style="animation-delay: 0.2s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-star-of-life text-[#ed8936] mr-2"></i>
+                        HAMi核心特性
+                    </h2>
+                    <div class="space-y-3">
+                        <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <div class="flex items-start">
+                                <div class="bg-[#ed8936] bg-opacity-20 p-2 rounded-full mr-3">
+                                    <i class="fas fa-shield-alt text-[#ed8936]"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-white">显存隔离</h3>
+                                    <p class="text-gray-300 text-sm mt-1">硬限制机制，防止OOM，确保资源安全</p>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
-                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                硬件级隔离，安全性最高
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                性能开销极小，接近原生性能
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                故障隔离能力强
+                        <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <div class="flex items-start">
+                                <div class="bg-[#ed8936] bg-opacity-20 p-2 rounded-full mr-3">
+                                    <i class="fas fa-microchip text-[#ed8936]"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-white">算力分配</h3>
+                                    <p class="text-gray-300 text-sm mt-1">基于时间片的调度机制，公平分配算力</p>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
-                                <i class="fas fa-check-circle mr-2"></i>适用场景
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                云服务提供商
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                多租户环境
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                对安全性和性能要求极高的场景
+                        <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <div class="flex items-start">
+                                <div class="bg-[#ed8936] bg-opacity-20 p-2 rounded-full mr-3">
+                                    <i class="fas fa-server text-[#ed8936]"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-white">多卡支持</h3>
+                                    <p class="text-gray-300 text-sm mt-1">跨卡资源聚合，支持NUMA感知调度</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <!-- Kernel-level GPU Virtualization -->
-                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#48bb78] fade-in"
-                    style="animation-delay: 0.4s;">
-                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
-                        <i class="fas fa-cogs text-2xl text-[#48bb78]"></i>
-                    </div>
-                    <h2 class="text-xl font-bold text-white text-center mb-3">内核态GPU虚拟化技术</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
-                                <i class="fas fa-cogs mr-2"></i>核心技术
-                            </h3>
-                            <p class="text-gray-300 text-sm mb-2">在操作系统内核层实现GPU虚拟化</p>
-                            <div class="feature-item text-gray-400 text-sm">
-                                调度器设计
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                资源管理器、上下文切换优化
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
-                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                性能开销较小
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                安全性较高
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                资源控制精确
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
-                                <i class="fas fa-check-circle mr-2"></i>适用场景
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                容器化环境
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                多租户云平台
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                高性能计算集群
+                        <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                            <div class="flex items-start">
+                                <div class="bg-[#ed8936] bg-opacity-20 p-2 rounded-full mr-3">
+                                    <i class="fab fa-kubernetes text-[#ed8936]"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-white">Kubernetes集成</h3>
+                                    <p class="text-gray-300 text-sm mt-1">原生支持容器化，简化部署与管理</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- User-Space GPU Virtualization -->
-                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.6s;">
-                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
-                        <i class="fas fa-layer-group text-2xl text-[#ed8936]"></i>
+                <!-- Middle: Comparison table -->
+                <div class="w-2/3 fade-in" style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
+                        三种方案多维度对比
+                    </h2>
+                    <div class="overflow-hidden rounded-lg">
+                        <table class="comparison-table w-full text-sm">
+                            <thead>
+                                <tr class="text-left">
+                                    <th class="px-4 py-3 text-white">特性</th>
+                                    <th class="px-4 py-3 text-white bg-blue-800 bg-opacity-50">
+                                        <div class="flex items-center">
+                                            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                            MIG
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-white bg-green-800 bg-opacity-50">
+                                        <div class="flex items-center">
+                                            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                            时间切片
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-white bg-orange-800 bg-opacity-50">
+                                        <div class="flex items-center">
+                                            <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                                            HAMi
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 font-medium">隔离程度</td>
+                                    <td class="px-4 py-3">硬件级</td>
+                                    <td class="px-4 py-3">软件级</td>
+                                    <td class="px-4 py-3">用户态</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium">性能稳定性</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-16 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                            <span>最高</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-2 bg-blue-400 rounded-full mr-2"></div>
+                                            <span>一般</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-14 h-2 bg-blue-600 rounded-full mr-2"></div>
+                                            <span>较高</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium">资源利用率</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-2 bg-green-500 rounded-full mr-2"></div>
+                                            <span>一般</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-16 h-2 bg-green-500 rounded-full mr-2"></div>
+                                            <span>最高</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-14 h-2 bg-green-600 rounded-full mr-2"></div>
+                                            <span>较高</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium">配置复杂度</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-16 h-2 bg-red-500 rounded-full mr-2"></div>
+                                            <span>高</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-6 h-2 bg-red-400 rounded-full mr-2"></div>
+                                            <span>低</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-2 bg-red-500 rounded-full mr-2"></div>
+                                            <span>中等</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-medium">虚拟化比例</td>
+                                    <td class="px-4 py-3">1:7</td>
+                                    <td class="px-4 py-3">1:48</td>
+                                    <td class="px-4 py-3">1:100+</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <h2 class="text-xl font-bold text-white text-center mb-3">用户态GPU虚拟化技术</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
-                                 <i class="fas fa-cogs mr-2"></i>核心技术
-                             </h3>
-                             <p class="text-gray-300 text-sm mb-2">CUDA API拦截、资源管理、时间片调度</p>
-                             <div class="feature-item text-gray-400 text-sm">
-                                 CUDA API拦截机制
-                             </div>
-                             <div class="feature-item text-gray-400 text-sm">
-                                 用户态资源管理
-                             </div>
-                             <div class="feature-item text-gray-400 text-sm">
-                                 时间片调度算法
-                             </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
-                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                部署简单，无需内核修改
+                    <!-- Selection recommendations -->
+                    <div class="mt-6 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 fade-in" style="animation-delay: 0.6s;">
+                        <h2 class="text-xl font-bold text-white mb-3 flex items-center">
+                            <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
+                            选型建议
+                        </h2>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-hospital text-blue-400 mr-2"></i>
+                                    <h3 class="text-white font-medium">金融/医疗</h3>
+                                </div>
+                                <p class="text-gray-300 text-sm">MIG（安全性要求高）</p>
                             </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                应用兼容性好
+                            <div class="bg-green-900 bg-opacity-30 rounded-lg p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-globe text-green-400 mr-2"></i>
+                                    <h3 class="text-white font-medium">互联网</h3>
+                                </div>
+                                <p class="text-gray-300 text-sm">HAMi（平衡性能和成本）</p>
                             </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                细粒度资源控制
+                            <div class="bg-orange-900 bg-opacity-30 rounded-lg p-3">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-graduation-cap text-orange-400 mr-2"></i>
+                                    <h3 class="text-white font-medium">教育/研发</h3>
+                                </div>
+                                <p class="text-gray-300 text-sm">时间切片（成本敏感）</p>
                             </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
-                                <i class="fas fa-check-circle mr-2"></i>适用场景
-                            </h3>
-                            <div class="feature-item text-gray-400 text-sm">
-                                云原生环境
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                容器化部署
-                            </div>
-                            <div class="feature-item text-gray-400 text-sm">
-                                多厂商异构GPU环境
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Comparison Summary -->
-            <div class="mt-4 bg-[#1e293b] bg-opacity-40 rounded-lg p-3 fade-in" style="animation-delay: 0.8s;">
-                <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
-                    <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
-                    技术选择建议
-                </h3>
-                <div class="flex justify-between">
-                    <div class="w-1/3 pr-4">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 rounded-full bg-[#4299e1] mr-2"></div>
-                            <span class="text-gray-300 text-sm">金融/医疗：优先选择硬件级虚拟化（安全性要求高）</span>
-                        </div>
-                    </div>
-                    <div class="w-1/3 px-4">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 rounded-full bg-[#48bb78] mr-2"></div>
-                            <span class="text-gray-300 text-sm">互联网：优先选择内核态虚拟化（性能与成本平衡）</span>
-                        </div>
-                    </div>
-                    <div class="w-1/3 pl-4">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
-                            <span class="text-gray-300 text-sm">教育/研发：优先选择用户态方案（灵活性高）</span>
                         </div>
                     </div>
                 </div>
@@ -299,7 +311,7 @@
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第20页 / 共37页
+            第22页 / 共37页
         </footer>
     </div>
 

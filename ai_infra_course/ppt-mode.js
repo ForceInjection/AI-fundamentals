@@ -6,7 +6,7 @@
 
 class PPTController {
     constructor() {
-        this.totalPages = 37;
+        this.totalPages = 35;
         this.currentPage = 1;
         this.isFullscreen = false;
         this.isPPTMode = false;

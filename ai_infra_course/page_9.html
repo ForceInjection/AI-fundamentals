@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>AI编程的四大应用场景</title>
+    <title>AI编程示例演示</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,14 +43,13 @@
             opacity: 0.15;
         }
 
-        .scenario-card {
+        .example-card {
             transition: all 0.3s ease;
-            height: 100%;
         }
 
-        .scenario-card:hover {
+        .example-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px -5px rgba(237, 137, 54, 0.3);
+            box-shadow: 0 10px 25px rgba(237, 137, 54, 0.2);
         }
 
         .fade-in {
@@ -60,7 +59,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
 
             to {
@@ -69,22 +68,68 @@
             }
         }
 
-        .icon-container {
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-bottom: 1rem;
+        .code-block {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            overflow-x: auto;
+            border-left: 4px solid #ed8936;
         }
 
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 2rem;
-            height: 450px;
+        .code-block pre {
+            margin: 0;
+            color: #d4d4d4;
+        }
+
+        .keyword {
+            color: #569cd6;
+        }
+
+        .string {
+            color: #ce9178;
+        }
+
+        .comment {
+            color: #6a9955;
+        }
+
+        .function {
+            color: #dcdcaa;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .performance-bar {
+            height: 8px;
+            background: #1e293b;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .performance-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ed8936, #f97316);
+            border-radius: 4px;
+            transition: width 1s ease;
         }
     </style>
 </head>
@@ -92,166 +137,226 @@
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 150px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 1000px;"></div>
-        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 400px; left: 150px;"></div>
-        <div class="hexagon" style="top: 600px; left: 900px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 300px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
                               linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 20px 20px;
         "></div>
+        
         <!-- Header -->
-        <header class="pt-10 px-16">
+        <header class="pt-8 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">AI编程</span>的四大应用场景
+                <span class="text-[#ed8936]">AI编程</span>实战示例
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
+        
         <!-- Main content -->
-        <main class="px-16 py-8">
-            <div class="grid-layout">
-                <!-- Scenario 1: Code Generation -->
-                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.2s;">
-                    <div class="flex items-start">
-                        <div
-                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
-                            <i class="fas fa-code text-3xl text-[#ed8936]"></i>
+        <main class="px-16 py-4">
+            <div class="grid grid-cols-3 gap-6 h-[580px]">
+                <!-- Example 1: Data Processing -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 example-card fade-in">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-database text-[#ed8936] text-xl mr-3"></i>
+                        <h2 class="text-lg font-bold text-white">示例1：数据处理函数生成</h2>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">需求描述</div>
+                        <div class="text-gray-300 text-xs bg-[#2563eb] bg-opacity-20 rounded p-2">
+                            "创建一个函数，读取CSV文件并计算每列的平均值"
                         </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">代码生成</h2>
-                            <p class="text-gray-300 mb-3">将自然语言描述转化为可执行代码，提高开发效率</p>
-                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
-                                <div class="flex items-center mb-2">
-                                    <i class="fas fa-arrow-right text-[#ed8936] mr-2"></i>
-                                    <span class="text-white font-medium">流程转化</span>
-                                </div>
-                                <div class="text-gray-400 text-sm">
-                                    自然语言 → 代码理解 → 逻辑设计 → 代码生成
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex items-center text-sm text-gray-400">
-                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
-                                        高效开发</span>
-                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 降低学习曲线</span>
-                                </div>
-                            </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">AI生成代码</div>
+                        <div class="code-block text-xs">
+                            <pre><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+
+<span class="keyword">def</span> <span class="function">calculate_column_averages</span>(csv_file_path):
+    <span class="comment">"""读取CSV文件并计算每列的平均值"""</span>
+    <span class="keyword">try</span>:
+        df = pd.read_csv(csv_file_path)
+        numeric_columns = df.select_dtypes(
+            include=[<span class="string">'number'</span>])
+        averages = numeric_columns.mean().to_dict()
+        <span class="keyword">return</span> averages
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        print(<span class="string">f"Error: {e}"</span>)
+        <span class="keyword">return</span> <span class="keyword">None</span></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                            <div class="text-[#ed8936] font-bold">3秒</div>
+                            <div class="text-white">生成时间</div>
+                        </div>
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                            <div class="text-[#ed8936] font-bold">✓</div>
+                            <div class="text-white">包含异常处理</div>
                         </div>
                     </div>
                 </div>
-                <!-- Scenario 2: Code Debugging -->
-                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.4s;">
-                    <div class="flex items-start">
-                        <div
-                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
-                            <i class="fas fa-bug text-3xl text-[#ed8936]"></i>
+                
+                <!-- Example 2: Algorithm Optimization -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 example-card fade-in" style="animation-delay: 0.2s;">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-rocket text-[#ed8936] text-xl mr-3"></i>
+                        <h2 class="text-lg font-bold text-white">示例2：算法优化</h2>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">优化前</div>
+                        <div class="code-block text-xs mb-2">
+                            <pre><span class="comment"># 嵌套循环实现矩阵乘法 O(n³)</span>
+<span class="keyword">def</span> <span class="function">matrix_multiply</span>(A, B):
+    result = []
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(A)):
+        row = []
+        <span class="keyword">for</span> j <span class="keyword">in</span> range(len(B[0])):
+            sum_val = 0
+            <span class="keyword">for</span> k <span class="keyword">in</span> range(len(B)):
+                sum_val += A[i][k] * B[k][j]
+            row.append(sum_val)
+        result.append(row)
+    <span class="keyword">return</span> result</pre>
                         </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">代码调试</h2>
-                            <p class="text-gray-300 mb-3">自动诊断错误并提供修复建议，提高调试效率</p>
-                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
-                                <div class="flex items-center mb-2">
-                                    <i class="fas fa-search text-[#ed8936] mr-2"></i>
-                                    <span class="text-white font-medium">智能诊断</span>
-                                </div>
-                                <div class="text-gray-400 text-sm">
-                                    错误定位 → 原因分析 → 修复建议 → 自动修复
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex items-center text-sm text-gray-400">
-                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
-                                        快速定位</span>
-                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 减少修复时间</span>
-                                </div>
-                            </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">AI优化后</div>
+                        <div class="code-block text-xs">
+                            <pre><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="keyword">def</span> <span class="function">matrix_multiply_optimized</span>(A, B):
+    <span class="comment"># 使用NumPy向量化操作</span>
+    <span class="keyword">return</span> np.dot(A, B)</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">性能提升</div>
+                        <div class="performance-bar">
+                            <div class="performance-fill" style="width: 85%;"></div>
+                        </div>
+                        <div class="text-center text-white text-xs mt-1">执行速度提升 50-100倍</div>
+                    </div>
+                    
+                    <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                        <i class="fas fa-chart-line text-[#ed8936] text-lg mb-1"></i>
+                        <div class="text-white text-xs">向量化操作优化</div>
+                    </div>
+                </div>
+                
+                <!-- Example 3: Bug Fixing -->
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 example-card fade-in" style="animation-delay: 0.4s;">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-bug text-[#ed8936] text-xl mr-3"></i>
+                        <h2 class="text-lg font-bold text-white">示例3：Bug修复</h2>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">错误代码</div>
+                        <div class="code-block text-xs mb-2">
+                            <pre><span class="keyword">def</span> <span class="function">get_last_element</span>(arr):
+    <span class="comment"># 数组越界风险</span>
+    <span class="keyword">return</span> arr[len(arr)]  <span class="comment"># ❌ 错误!</span></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">AI诊断</div>
+                        <div class="bg-red-900 bg-opacity-30 rounded p-2 text-xs text-red-300">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            索引越界：应使用 len(arr)-1
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="text-[#ed8936] text-sm font-semibold mb-1">修复后代码</div>
+                        <div class="code-block text-xs">
+                            <pre><span class="keyword">def</span> <span class="function">get_last_element</span>(arr):
+    <span class="comment"># 添加边界检查</span>
+    <span class="keyword">if</span> not arr:
+        <span class="keyword">raise</span> ValueError(<span class="string">"数组为空"</span>)
+    <span class="keyword">return</span> arr[len(arr) - 1]  <span class="comment"># ✅ 正确!</span></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-1 text-xs">
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                            <i class="fas fa-search text-[#ed8936] text-sm mb-1"></i>
+                            <div class="text-white">自动识别</div>
+                        </div>
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                            <i class="fas fa-shield-alt text-[#ed8936] text-sm mb-1"></i>
+                            <div class="text-white">边界检查</div>
+                        </div>
+                        <div class="bg-[#2563eb] bg-opacity-20 rounded p-2 text-center">
+                            <i class="fas fa-check-circle text-[#ed8936] text-sm mb-1"></i>
+                            <div class="text-white">异常处理</div>
                         </div>
                     </div>
                 </div>
-                <!-- Scenario 3: Code Refactoring -->
-                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.6s;">
-                    <div class="flex items-start">
-                        <div
-                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
-                            <i class="fas fa-sync-alt text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">代码重构</h2>
-                            <p class="text-gray-300 mb-3">优化代码结构和性能，提高代码质量和可维护性</p>
-                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
-                                <div class="flex items-center mb-2">
-                                    <i class="fas fa-exchange-alt text-[#ed8936] mr-2"></i>
-                                    <span class="text-white font-medium">结构优化</span>
-                                </div>
-                                <div class="text-gray-400 text-sm">
-                                    代码分析 → 结构优化 → 性能提升 → 可读性增强
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex items-center text-sm text-gray-400">
-                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
-                                        提升性能</span>
-                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 增加可读性</span>
-                                </div>
-                            </div>
-                        </div>
+            </div>
+            
+            <!-- Bottom summary -->
+            <div class="mt-4 bg-[#1e293b] bg-opacity-40 rounded-lg p-3">
+                <div class="flex items-center justify-center space-x-8 text-sm">
+                    <div class="flex items-center text-white">
+                        <i class="fas fa-clock text-[#ed8936] mr-2"></i>
+                        <span>平均生成时间：<span class="text-[#ed8936] font-bold">3-5秒</span></span>
                     </div>
-                </div>
-                <!-- Scenario 4: Documentation Generation -->
-                <div class="scenario-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.8s;">
-                    <div class="flex items-start">
-                        <div
-                            class="icon-container bg-[#ed8936] bg-opacity-20 border border-[#ed8936] border-opacity-50">
-                            <i class="fas fa-file-alt text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">文档生成</h2>
-                            <p class="text-gray-300 mb-3">自动生成注释和文档，提高文档质量和一致性</p>
-                            <div class="bg-[#1e293b] bg-opacity-50 p-3 rounded-md">
-                                <div class="flex items-center mb-2">
-                                    <i class="fas fa-pen-to-square text-[#ed8936] mr-2"></i>
-                                    <span class="text-white font-medium">智能文档</span>
-                                </div>
-                                <div class="text-gray-400 text-sm">
-                                    代码分析 → 注释生成 → 文档撰写 → 维护更新
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex items-center text-sm text-gray-400">
-                                    <span class="mr-3"><i class="fas fa-check-circle text-[#ed8936] mr-1"></i>
-                                        高效文档</span>
-                                    <span><i class="fas fa-check-circle text-[#ed8936] mr-1"></i> 保持同步</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="flex items-center text-white">
+                        <i class="fas fa-code text-[#ed8936] mr-2"></i>
+                        <span>代码质量：<span class="text-[#ed8936] font-bold">生产级别</span></span>
+                    </div>
+                    <div class="flex items-center text-white">
+                        <i class="fas fa-chart-line text-[#ed8936] mr-2"></i>
+                        <span>效率提升：<span class="text-[#ed8936] font-bold">50-100倍</span></span>
                     </div>
                 </div>
             </div>
         </main>
+        
         <!-- Footer -->
-        <div class="absolute bottom-6 left-16 right-16 flex justify-between items-center">
-            <div class="text-gray-400 text-sm">
-                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
-                AI编程工具能显著提升开发效率，降低学习门槛，提高代码质量
-            </div>
-            <div class="text-gray-400 text-sm">
-                第9页 / 共37页
-            </div>
-        </div>
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第9页 / 共34页
+        </footer>
     </div>
+    
+    <script>
+        // Animation for performance bars
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(() => {
+                const performanceFill = document.querySelector('.performance-fill');
+                if (performanceFill) {
+                    performanceFill.style.width = '85%';
+                }
+            }, 1000);
+            
+            // Add hover effects for code blocks
+            const codeBlocks = document.querySelectorAll('.code-block');
+            codeBlocks.forEach(block => {
+                block.addEventListener('mouseenter', function() {
+                    this.style.borderLeftColor = '#f97316';
+                });
+                block.addEventListener('mouseleave', function() {
+                    this.style.borderLeftColor = '#ed8936';
+                });
+            });
+        });
+    </script>
 
-<script src="ppt-mode.js"></script>
+    <script src="ppt-mode.js"></script>
 </body>
 
 </html>

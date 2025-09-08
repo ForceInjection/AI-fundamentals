@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CUDA性能优化要点</title>
+    <title>GPU虚拟化技术对比</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,25 +43,14 @@
             opacity: 0.15;
         }
 
-        .optimization-card {
+        .tech-card {
             transition: all 0.3s ease;
-            border-left: 4px solid transparent;
+            height: 520px;
         }
 
-        .optimization-card:hover {
-            transform: translateX(5px);
-        }
-
-        .memory-card {
-            border-color: #4299e1;
-        }
-
-        .compute-card {
-            border-color: #ed8936;
-        }
-
-        .goal-card {
-            border-color: #48bb78;
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
         .fade-in {
@@ -80,25 +69,36 @@
             }
         }
 
-        .highlight-text {
-            color: #ed8936;
-            font-weight: bold;
+        .feature-item {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 6px;
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ed8936;
         }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[736px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
         <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
         <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
         <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 700px;"></div>
-        <div class="circuit-dot" style="top: 580px; left: 400px;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 150px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 1000px;"></div>
+        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
         <div class="hexagon" style="top: 80px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 400px; left: 200px;"></div>
-        <div class="hexagon" style="top: 600px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 450px; left: 150px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -106,195 +106,202 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-10 px-16">
-            <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">CUDA</span>性能优化要点
+        <header class="pt-6 px-16">
+            <h1 class="text-3xl font-bold text-white">
+                <span class="text-[#ed8936]">GPU虚拟化技术</span>对比
             </h1>
-            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
+            <div class="w-32 h-1 bg-[#ed8936] mt-2"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6">
-            <div class="flex flex-wrap -mx-4">
-                <!-- Memory Optimization Section -->
-                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.2s;">
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card memory-card h-full">
-                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                            <i class="fas fa-memory text-[#4299e1] mr-3"></i>
-                            内存优化
-                        </h2>
-                        <ul class="space-y-3 text-gray-200">
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">合并访问</span>：连续线程访问连续内存，带宽利用率提升<span
-                                        class="highlight-text">90%+</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">共享内存</span>：缓存频繁访问数据，延迟降低<span
-                                        class="highlight-text">400倍</span>
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">向量化访问</span>：使用float4等向量类型，提高内存访问效率
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#4299e1] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">双缓冲</span>：计算和数据传输并行，提高总体吞吐量
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="mt-4 bg-[#2d3748] bg-opacity-50 p-3 rounded">
-                            <div class="text-sm text-gray-300 italic">
-                                <i class="fas fa-lightbulb text-[#4299e1] mr-2"></i>
-                                内存访问模式决定了GPU程序的性能瓶颈，优化内存布局和访问方式通常比优化计算逻辑更有效。
+        <main class="px-16 py-4">
+            <div class="flex justify-between space-x-6">
+                <!-- Hardware-level GPU Virtualization -->
+                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#4299e1] fade-in"
+                    style="animation-delay: 0.2s;">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
+                        <i class="fas fa-microchip text-2xl text-[#4299e1]"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white text-center mb-3">硬件级GPU虚拟化技术</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
+                                <i class="fas fa-cogs mr-2"></i>核心技术
+                            </h3>
+                            <p class="text-gray-300 text-sm mb-2">NVIDIA MIG、AMD SR-IOV、GPU Passthrough等硬件级虚拟化技术</p>
+                            <div class="feature-item text-gray-400 text-sm">
+                                硬件层面资源分割
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                需要特定硬件支持
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
+                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                硬件级隔离，安全性最高
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                性能开销极小，接近原生性能
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                故障隔离能力强
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#4299e1] mb-2 flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>适用场景
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                云服务提供商
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                多租户环境
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                对安全性和性能要求极高的场景
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Computational Optimization Section -->
-                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.4s;">
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card compute-card h-full">
-                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                            <i class="fas fa-microchip text-[#ed8936] mr-3"></i>
-                            计算优化
-                        </h2>
-                        <ul class="space-y-3 text-gray-200">
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">占用率最大化</span>：平衡寄存器和共享内存使用，提高SM利用率
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">避免分支发散</span>：warp内线程执行一致路径，减少控制流开销
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">指令级并行</span>：循环展开，多重累加器，提高指令吞吐量
-                                </div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                <div>
-                                    <span class="font-medium">混合精度</span>：FP16计算 + FP32累加，平衡精度和性能
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="mt-4 bg-[#2d3748] bg-opacity-50 p-3 rounded">
-                            <div class="text-sm text-gray-300 italic">
-                                <i class="fas fa-lightbulb text-[#ed8936] mr-2"></i>
-                                计算优化的核心是提高Occupancy（活跃warp数/最大warp数），通常通过平衡资源使用和控制流优化实现。
+                <!-- Kernel-level GPU Virtualization -->
+                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#48bb78] fade-in"
+                    style="animation-delay: 0.4s;">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
+                        <i class="fas fa-cogs text-2xl text-[#48bb78]"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white text-center mb-3">内核态GPU虚拟化技术</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
+                                <i class="fas fa-cogs mr-2"></i>核心技术
+                            </h3>
+                            <p class="text-gray-300 text-sm mb-2">在操作系统内核层实现GPU虚拟化</p>
+                            <div class="feature-item text-gray-400 text-sm">
+                                调度器设计
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                资源管理器、上下文切换优化
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
+                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                性能开销较小
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                安全性较高
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                资源控制精确
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#48bb78] mb-2 flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>适用场景
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                容器化环境
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                多租户云平台
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                高性能计算集群
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Optimization Goals Section -->
-                <div class="w-full px-4 fade-in" style="animation-delay: 0.6s;">
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded-lg p-5 optimization-card goal-card">
-                        <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                            <i class="fas fa-bullseye text-[#48bb78] mr-3"></i>
-                            优化目标
-                        </h2>
-                        <div class="flex justify-between items-center">
-                            <div class="w-1/4 text-center">
-                                <div class="text-4xl font-bold text-[#48bb78] mb-2">80%+</div>
-                                <div class="text-gray-300">理论性能利用率</div>
-                                <div class="text-xs text-gray-400 mt-1">接近极限性能</div>
+                <!-- User-Space GPU Virtualization -->
+                <div class="tech-card w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] fade-in"
+                    style="animation-delay: 0.6s;">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-[#1a365d] mx-auto mb-3">
+                        <i class="fas fa-layer-group text-2xl text-[#ed8936]"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white text-center mb-3">用户态GPU虚拟化技术</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
+                                 <i class="fas fa-cogs mr-2"></i>核心技术
+                             </h3>
+                             <p class="text-gray-300 text-sm mb-2">CUDA API拦截、资源管理、时间片调度</p>
+                             <div class="feature-item text-gray-400 text-sm">
+                                 CUDA API拦截机制
+                             </div>
+                             <div class="feature-item text-gray-400 text-sm">
+                                 用户态资源管理
+                             </div>
+                             <div class="feature-item text-gray-400 text-sm">
+                                 时间片调度算法
+                             </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
+                                <i class="fas fa-thumbs-up mr-2"></i>技术特点
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                部署简单，无需内核修改
                             </div>
-                            <div class="w-1/4 text-center">
-                                <div class="text-4xl font-bold text-[#48bb78] mb-2">70%+</div>
-                                <div class="text-gray-300">内存带宽利用率</div>
-                                <div class="text-xs text-gray-400 mt-1">最大化内存吞吐</div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                应用兼容性好
                             </div>
-                            <div class="w-1/4 text-center">
-                                <div class="text-4xl font-bold text-[#48bb78] mb-2">60%+</div>
-                                <div class="text-gray-300">SM利用率</div>
-                                <div class="text-xs text-gray-400 mt-1">高效利用计算资源</div>
-                            </div>
-                            <div class="w-1/4 text-center">
-                                <div class="text-4xl font-bold text-[#48bb78] mb-2">50%+</div>
-                                <div class="text-gray-300">Occupancy</div>
-                                <div class="text-xs text-gray-400 mt-1">warp并行度</div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                细粒度资源控制
                             </div>
                         </div>
-                        <div class="mt-6 h-16 w-full" id="performance-gauge"></div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#ed8936] mb-2 flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>适用场景
+                            </h3>
+                            <div class="feature-item text-gray-400 text-sm">
+                                云原生环境
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                容器化部署
+                            </div>
+                            <div class="feature-item text-gray-400 text-sm">
+                                多厂商异构GPU环境
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Comparison Summary -->
+            <div class="mt-4 bg-[#1e293b] bg-opacity-40 rounded-lg p-3 fade-in" style="animation-delay: 0.8s;">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                    <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
+                    技术选择建议
+                </h3>
+                <div class="flex justify-between">
+                    <div class="w-1/3 pr-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-[#4299e1] mr-2"></div>
+                            <span class="text-gray-300 text-sm">金融/医疗：优先选择硬件级虚拟化（安全性要求高）</span>
+                        </div>
+                    </div>
+                    <div class="w-1/3 px-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-[#48bb78] mr-2"></div>
+                            <span class="text-gray-300 text-sm">互联网：优先选择内核态虚拟化（性能与成本平衡）</span>
+                        </div>
+                    </div>
+                    <div class="w-1/3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                            <span class="text-gray-300 text-sm">教育/研发：优先选择用户态方案（灵活性高）</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第18页 / 共37页
+            第20页 / 共37页
         </footer>
     </div>
-    <script>
-        // Simple D3.js visualization for performance metrics
-        document.addEventListener('DOMContentLoaded', function () {
-            const width = document.getElementById('performance-gauge').offsetWidth;
-            const height = document.getElementById('performance-gauge').offsetHeight;
-
-            const svg = d3.select('#performance-gauge')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height);
-
-            const metrics = [
-                { name: "理论性能", value: 80, color: "#48bb78" },
-                { name: "内存带宽", value: 70, color: "#4299e1" },
-                { name: "SM利用率", value: 60, color: "#ed8936" },
-                { name: "Occupancy", value: 50, color: "#9f7aea" }
-            ];
-
-            const barWidth = width / metrics.length - 20;
-
-            // Create bars
-            metrics.forEach((metric, i) => {
-                const x = i * (barWidth + 20);
-
-                // Background bar
-                svg.append('rect')
-                    .attr('x', x)
-                    .attr('y', 10)
-                    .attr('width', barWidth)
-                    .attr('height', 20)
-                    .attr('rx', 4)
-                    .attr('fill', '#2d3748');
-
-                // Progress bar
-                svg.append('rect')
-                    .attr('x', x)
-                    .attr('y', 10)
-                    .attr('width', 0)
-                    .attr('height', 20)
-                    .attr('rx', 4)
-                    .attr('fill', metric.color)
-                    .transition()
-                    .duration(1500)
-                    .delay(i * 300)
-                    .attr('width', metric.value / 100 * barWidth);
-
-                // Label
-                svg.append('text')
-                    .attr('x', x + barWidth / 2)
-                    .attr('y', 50)
-                    .attr('text-anchor', 'middle')
-                    .attr('fill', '#e2e8f0')
-                    .attr('font-size', '12px')
-                    .text(`${metric.name}: ${metric.value}%`);
-            });
-        });
-    </script>
 
 <script src="ppt-mode.js"></script>
 </body>

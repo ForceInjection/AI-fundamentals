@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>RAG系统架构</title>
+    <title>AI系统监控运维</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,39 +36,37 @@
 
         .hexagon {
             position: absolute;
-            width: 60px;
-            height: 69px;
+            width: 80px;
+            height: 92px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .component-card {
+        .monitor-card {
             transition: all 0.3s ease;
-            border: 1px solid rgba(237, 137, 54, 0.3);
+            border-left: 4px solid transparent;
         }
 
-        .component-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        .monitor-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .flow-arrow {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(237, 137, 54, 0.7), rgba(237, 137, 54, 1));
+        .performance-card {
+            border-color: #3b82f6;
         }
 
-        .flow-arrow::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: -4px;
-            width: 0;
-            height: 0;
-            border-top: 5px solid transparent;
-            border-bottom: 5px solid transparent;
-            border-left: 8px solid rgba(237, 137, 54, 1);
+        .cost-card {
+            border-color: #10b981;
+        }
+
+        .security-card {
+            border-color: #ef4444;
+        }
+
+        .availability-card {
+            border-color: #f59e0b;
         }
 
         .fade-in {
@@ -87,25 +85,30 @@
             }
         }
 
-        .pulse {
-            animation: pulse 3s infinite;
+        .dashboard-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
+        .gauge-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
 
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-            }
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 8;
+        }
 
-            100% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
+        .gauge-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
         }
     </style>
 </head>
@@ -114,14 +117,14 @@
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
         <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 580px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 180px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 900px;"></div>
-        <div class="circuit-dot" style="top: 580px; left: 300px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
-        <div class="hexagon" style="top: 400px; left: 150px;"></div>
-        <div class="hexagon" style="top: 600px; left: 900px;"></div>
+        <div class="circuit-line" style="top: 350px; left: 0; width: 80%;"></div>
+        <div class="circuit-line" style="top: 580px; left: 200px; width: 70%;"></div>
+        <div class="circuit-dot" style="top: 120px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 80px;"></div>
+        <div class="circuit-dot" style="top: 580px; left: 200px;"></div>
+        <div class="hexagon" style="top: 80px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 400px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 600px; left: 300px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -129,255 +132,176 @@
             background-size: 20px 20px;
         "></div>
         <!-- Header -->
-        <header class="pt-10 px-16">
+        <header class="pt-8 px-12">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">RAG</span>系统架构：检索增强生成的企业级实践
+                AI系统监控运维：<span class="text-[#ed8936]">全方位可观测性与成本优化</span>
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-6">
-            <div class="flex justify-between space-x-4 mt-4">
-                <!-- Document Processing Pipeline -->
-                <div class="w-[22%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 fade-in"
-                    style="animation-delay: 0.2s;">
-                    <div class="flex items-center mb-4">
-                        <div
-                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-file-alt text-[#ed8936] text-xl"></i>
+        <main class="px-12 py-6">
+            <div class="flex flex-wrap -mx-4">
+                <!-- Performance Monitoring -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.2s;">
+                    <div class="monitor-card performance-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full">
+                        <div class="flex items-center mb-4">
+                            <div
+                                class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-line text-blue-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">性能监控</h2>
                         </div>
-                        <h2 class="text-xl font-bold text-white">文档处理管道</h2>
+                        <ul class="space-y-3 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">应用指标：</span>
+                                    <span>响应时间（P50/P95/P99）、吞吐量（QPS/TPS）、错误率、可用性</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">基础设施指标：</span>
+                                    <span>GPU利用率、内存使用、网络带宽、存储IOPS</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-blue-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">业务指标：</span>
+                                    <span>用户活跃度、功能使用率、用户满意度、转化率</span>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-upload text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">文档摄取：</span>
-                                <span class="text-sm">支持PDF、Word、PPT等多格式，OCR识别，结构化提取</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-broom text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">文本预处理：</span>
-                                <span class="text-sm">清洗规则、分块策略、元数据提取、质量评估</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">处理性能：</span>
-                                <span class="text-sm">每小时处理1000+文档，准确率&gt;98%，支持50+格式</span>
-                            </div>
-                        </li>
-                    </ul>
                 </div>
-                <!-- Vector Database Architecture -->
-                <div class="w-[22%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 fade-in"
-                    style="animation-delay: 0.4s;">
-                    <div class="flex items-center mb-4">
-                        <div
-                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-database text-[#ed8936] text-xl"></i>
+                <!-- Cost Optimization -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.4s;">
+                    <div class="monitor-card cost-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full">
+                        <div class="flex items-center mb-4">
+                            <div
+                                class="w-10 h-10 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-dollar-sign text-green-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">成本分析与优化</h2>
                         </div>
-                        <h2 class="text-xl font-bold text-white">向量数据库架构</h2>
+                        <ul class="space-y-3 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">资源成本：</span>
+                                    <span>计算、存储、网络、许可成本全面统计</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">成本优化策略：</span>
+                                    <span>资源右配、Spot实例、预留实例、成本告警</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">成本节约：</span>
+                                    <span>相比传统方案降低40-60%的资源消耗</span>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-cube text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">技术选型：</span>
-                                <span class="text-sm">Milvus、Pinecone、Weaviate、Qdrant等主流方案</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-sitemap text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">索引优化：</span>
-                                <span class="text-sm">HNSW、IVF索引，PQ量化，混合索引策略</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-tachometer-alt text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">性能指标：</span>
-                                <span class="text-sm">查询延迟&lt;10ms，召回率&gt;95%，吞吐量&gt;10K QPS</span>
-                            </div>
-                        </li>
-                    </ul>
                 </div>
-                <!-- Retrieval-Enhanced Generation Process -->
-                <div class="w-[22%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 fade-in"
-                    style="animation-delay: 0.6s;">
-                    <div class="flex items-center mb-4">
-                        <div
-                            class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-cogs text-[#ed8936] text-xl"></i>
+                <!-- Fault Diagnosis -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.6s;">
+                    <div class="monitor-card security-card bg-[#1e293b] bg-opacity-60 rounded-lg p-5 h-full">
+                        <div class="flex items-center mb-4">
+                            <div
+                                class="w-10 h-10 rounded-full bg-red-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-shield-alt text-red-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">安全与高可用设计</h2>
                         </div>
-                        <h2 class="text-xl font-bold text-white">检索增强生成流程</h2>
+                        <ul class="space-y-3 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-red-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">安全合规：</span>
+                                    <span>数据加密、RBAC权限、审计日志、SOC2/ISO27001认证</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-red-400 mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">高可用设计：</span>
+                                    <span>多AZ部署、自动故障转移、3-2-1备份、RTO&lt;1小时</span>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-search text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">查询理解：</span>
-                                <span class="text-sm">意图识别、实体抽取、查询扩展、查询重写</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-filter text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">检索策略：</span>
-                                <span class="text-sm">多路召回、重排序、多样性保证、时效性优化</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-magic text-[#ed8936] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">生成优化：</span>
-                                <span class="text-sm">动态上下文、引用标注、事实检查、安全过滤</span>
-                            </div>
-                        </li>
-                    </ul>
                 </div>
-                <!-- Agentic RAG -->
-                <div class="w-[22%] component-card bg-[#1e293b] bg-opacity-60 rounded-lg p-3 fade-in"
-                    style="animation-delay: 0.8s;">
-                    <div class="flex items-center mb-4">
-                        <div
-                            class="w-10 h-10 rounded-full bg-[#38a169] bg-opacity-20 flex items-center justify-center mr-3">
-                            <i class="fas fa-robot text-[#38a169] text-xl"></i>
+                <!-- Dashboard -->
+                <div class="w-1/2 px-4 mb-6 fade-in" style="animation-delay: 0.8s;">
+                    <div class="dashboard-panel p-5 h-full">
+                        <h2 class="text-2xl font-bold text-white mb-4">监控仪表盘示例</h2>
+                        <div class="flex justify-around items-center">
+                            <!-- GPU Usage Gauge -->
+                            <div class="text-center">
+                                <div class="gauge-container mx-auto">
+                                    <svg height="80" viewBox="0 0 80 80" width="80">
+                                        <circle class="gauge-bg" cx="40" cy="40" r="36"></circle>
+                                        <circle class="gauge-fill" cx="40" cy="40" r="36" stroke="#3b82f6"
+                                            stroke-dasharray="226.2" stroke-dashoffset="113.1"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-white font-bold">70%</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-gray-300 text-sm">GPU利用率</div>
+                            </div>
+                            <!-- Memory Usage Gauge -->
+                            <div class="text-center">
+                                <div class="gauge-container mx-auto">
+                                    <svg height="80" viewBox="0 0 80 80" width="80">
+                                        <circle class="gauge-bg" cx="40" cy="40" r="36"></circle>
+                                        <circle class="gauge-fill" cx="40" cy="40" r="36" stroke="#10b981"
+                                            stroke-dasharray="226.2" stroke-dashoffset="135.7"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-white font-bold">60%</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-gray-300 text-sm">内存使用率</div>
+                            </div>
+                            <!-- Network Usage Gauge -->
+                            <div class="text-center">
+                                <div class="gauge-container mx-auto">
+                                    <svg height="80" viewBox="0 0 80 80" width="80">
+                                        <circle class="gauge-bg" cx="40" cy="40" r="36"></circle>
+                                        <circle class="gauge-fill" cx="40" cy="40" r="36" stroke="#f59e0b"
+                                            stroke-dasharray="226.2" stroke-dashoffset="180.9"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-white font-bold">40%</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-gray-300 text-sm">网络带宽</div>
+                            </div>
                         </div>
-                        <h2 class="text-xl font-bold text-white">Agentic RAG</h2>
-                    </div>
-                    <ul class="space-y-2 text-gray-200 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-brain text-[#38a169] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">智能体架构：</span>
-                                <span class="text-sm">多步推理、决策规划、工具调用</span>
+                        <div class="mt-6 bg-[#1e293b] bg-opacity-50 p-3 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-bell text-yellow-400 mr-2"></i>
+                                    <span class="text-white font-medium">告警机制</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-gray-300 mr-2">多渠道：</span>
+                                    <span class="text-white">邮件</span>
+                                    <span class="text-gray-300 mx-1">·</span>
+                                    <span class="text-white">短信</span>
+                                    <span class="text-gray-300 mx-1">·</span>
+                                    <span class="text-white">钉钉</span>
+                                </div>
                             </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-network-wired text-[#38a169] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">复杂检索：</span>
-                                <span class="text-sm">多轮对话、跨域检索、动态策略</span>
-                            </div>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-cogs text-[#38a169] mt-1 mr-2"></i>
-                            <div>
-                                <span class="font-semibold">自主优化：</span>
-                                <span class="text-sm">自我反思、策略调整、性能提升</span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <!-- Flow diagram -->
-            <div class="relative mt-8 h-[180px] fade-in" style="animation-delay: 0.8s;">
-                <!-- Document flow -->
-                <div class="flow-arrow" style="top: 30px; left: 150px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 80px; left: 150px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 130px; left: 150px; width: 200px;"></div>
-                <!-- Vector database flow -->
-                <div class="flow-arrow" style="top: 30px; left: 550px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 80px; left: 550px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 130px; left: 550px; width: 200px;"></div>
-                <!-- Generation flow -->
-                <div class="flow-arrow" style="top: 30px; left: 950px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 80px; left: 950px; width: 200px;"></div>
-                <div class="flow-arrow" style="top: 130px; left: 950px; width: 200px;"></div>
-                <!-- Document processing steps -->
-                <div class="absolute top-0 left-[40px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">文档摄取</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-file-import text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[50px] left-[30px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">文本预处理</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-broom text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[100px] left-[55px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">向量化</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-vector-square text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <!-- Vector database steps -->
-                <div class="absolute top-0 left-[445px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">索引构建</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-database text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[50px] left-[435px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">相似度搜索</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-search text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[100px] left-[460px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">重排序</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-sort-amount-up text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <!-- Generation steps -->
-                <div class="absolute top-0 left-[850px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">查询理解</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-lightbulb text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[50px] left-[838px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">上下文构建</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center">
-                        <i class="fas fa-puzzle-piece text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <div class="absolute top-[100px] left-[850px] w-[120px] flex items-center">
-                    <div class="text-white text-xs mr-3">生成回答</div>
-                    <div
-                        class="w-12 h-12 rounded-full bg-[#1e293b] border-2 border-[#ed8936] flex items-center justify-center pulse">
-                        <i class="fas fa-check-circle text-[#ed8936]"></i>
-                    </div>
-                </div>
-                <!-- Enterprise benefits -->
-                <div class="absolute bottom-[-80px] left-0 right-0 bg-[#1e293b] bg-opacity-60 rounded-lg p-4 mx-16 fade-in"
-                    style="animation-delay: 1s;">
-                    <h3 class="text-xl font-bold text-white mb-2 flex items-center">
-                        <i class="fas fa-building mr-2 text-[#ed8936]"></i>
-                        企业级实践经验
-                    </h3>
-                    <div class="flex justify-between">
-                        <div class="flex items-center">
-                            <i class="fas fa-shield-alt text-[#ed8936] mr-2"></i>
-                            <span class="text-gray-200 text-sm">安全合规保障</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-tachometer-alt text-[#ed8936] mr-2"></i>
-                            <span class="text-gray-200 text-sm">高吞吐处理能力</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-balance-scale text-[#ed8936] mr-2"></i>
-                            <span class="text-gray-200 text-sm">成本效益优化</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-sync text-[#ed8936] mr-2"></i>
-                            <span class="text-gray-200 text-sm">实时更新与维护</span>
                         </div>
                     </div>
                 </div>
@@ -385,7 +309,7 @@
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第33页 / 共37页
+            第35页 / 共37页
         </footer>
     </div>
 

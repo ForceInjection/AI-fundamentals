@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CUDA矩阵计算编程实战</title>
+    <title>CUDA应用案例与分析工具</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -43,42 +43,22 @@
             opacity: 0.15;
         }
 
-        .code-block {
-            font-family: 'Consolas', 'Monaco', monospace;
-            background-color: #1e1e1e;
-            border-radius: 0.375rem;
-            padding: 1rem;
-            overflow: auto;
-            line-height: 1.5;
-            color: #d4d4d4;
+        .app-card {
+            transition: all 0.3s ease;
+            height: 100%;
         }
 
-        .code-keyword {
-            color: #569cd6;
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .code-function {
-            color: #dcdcaa;
+        .tool-row {
+            transition: all 0.3s ease;
         }
 
-        .code-comment {
-            color: #6a9955;
-        }
-
-        .code-string {
-            color: #ce9178;
-        }
-
-        .code-number {
-            color: #b5cea8;
-        }
-
-        .code-constant {
-            color: #dcdcaa;
-        }
-
-        .code-type {
-            color: #4ec9b0;
+        .tool-row:hover {
+            background-color: rgba(237, 137, 54, 0.1);
         }
 
         .fade-in {
@@ -102,142 +82,268 @@
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
-        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
-        <div class="hexagon" style="top: 580px; left: 300px;"></div>
+        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
+        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
+        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
+        <div class="hexagon" style="top: 500px; left: 200px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
                               linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 20px 20px;
         "></div>
-        
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">CUDA</span>矩阵计算编程实战
+                <span class="text-[#ed8936]">CUDA</span>应用案例与分析工具
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
-        
         <!-- Main content -->
-        <main class="px-16 py-4 grid grid-cols-12 gap-6">
-            <!-- Left column: Matrix Multiplication Implementation -->
-            <div class="col-span-6 fade-in" style="animation-delay: 0.2s;">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 h-full">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-calculator mr-3 text-[#ed8936]"></i>
-                        矩阵乘法实现
-                    </h2>
-                    
-                    <!-- Matrix Multiplication Concept -->
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">矩阵乘法概念</h3>
-                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
-                            <img src="https://cdn.nlark.com/yuque/0/2024/jpeg/43171351/1718435919826-c0fa373a-b20a-4089-a3f6-099c59f4b28f.jpeg?x-oss-process=image%2Fformat%2Cwebp%2Finterlace%2C1" 
-                                 alt="矩阵乘法示意图" 
-                                 class="w-full max-w-sm mx-auto rounded-lg shadow-lg" />
+        <main class="px-16 py-6 grid grid-cols-2 gap-8">
+            <!-- Left side: Application Cases -->
+            <div class="fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-laptop-code text-[#ed8936] mr-2"></i>
+                    典型应用案例
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="app-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <div class="flex items-center mb-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-brain text-[#ed8936]"></i>
+                            </div>
+                            <h3 class="text-xl font-medium text-white">深度学习</h3>
+                        </div>
+                        <p class="text-gray-300 text-sm">卷积优化，相比CPU快50-100倍</p>
+                        <div class="mt-3 h-16" id="deep-learning-chart"></div>
+                    </div>
+                    <div class="app-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <div class="flex items-center mb-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-atom text-[#ed8936]"></i>
+                            </div>
+                            <h3 class="text-xl font-medium text-white">科学计算</h3>
+                        </div>
+                        <p class="text-gray-300 text-sm">分子动力学，N-body问题优化</p>
+                        <div class="mt-3 flex items-center justify-center">
+                            <div class="w-16 h-16 rounded-full bg-[#1e293b] flex items-center justify-center">
+                                <i class="fas fa-microscope text-[#ed8936] text-2xl"></i>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-400 mx-2"></i>
+                            <div class="w-16 h-16 rounded-full bg-[#1e293b] flex items-center justify-center">
+                                <i class="fas fa-gpu text-[#ed8936] text-2xl"></i>
+                            </div>
                         </div>
                     </div>
-                    
-
-                    
-                    <!-- Performance Tips -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">性能要点</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-blue-900 bg-opacity-30 rounded p-2">
-                                <div class="text-blue-300 font-bold text-sm">内存合并</div>
-                                <div class="text-gray-300 text-xs">相邻线程访问相邻内存</div>
+                    <div class="app-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <div class="flex items-center mb-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-image text-[#ed8936]"></i>
                             </div>
-                            <div class="bg-green-900 bg-opacity-30 rounded p-2">
-                                <div class="text-green-300 font-bold text-sm">分块计算</div>
-                                <div class="text-gray-300 text-xs">利用共享内存减少全局内存访问</div>
+                            <h3 class="text-xl font-medium text-white">图像处理</h3>
+                        </div>
+                        <p class="text-gray-300 text-sm">并行滤波，实时视频处理</p>
+                        <div class="mt-3 flex justify-center">
+                            <div class="relative">
+                                <div class="w-24 h-6 bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="absolute top-0 left-0 h-full w-3/4 bg-[#ed8936] bg-opacity-70"></div>
+                                </div>
+                                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-between px-2">
+                                    <span class="text-xs text-white">CPU</span>
+                                    <span class="text-xs text-white">GPU</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="app-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 border-l-4 border-[#ed8936]">
+                        <div class="flex items-center mb-3">
+                            <div
+                                class="w-10 h-10 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-line text-[#ed8936]"></i>
+                            </div>
+                            <h3 class="text-xl font-medium text-white">金融计算</h3>
+                        </div>
+                        <p class="text-gray-300 text-sm">蒙特卡洛模拟，风险分析</p>
+                        <div class="mt-3 flex items-center justify-center">
+                            <div
+                                class="w-20 h-20 rounded-full bg-[#1e293b] flex items-center justify-center border-2 border-[#ed8936] border-opacity-30">
+                                <i class="fas fa-random text-[#ed8936] text-xl"></i>
+                            </div>
+                            <div class="mx-2 text-[#ed8936] font-bold">→</div>
+                            <div
+                                class="w-20 h-20 rounded-full bg-[#1e293b] flex items-center justify-center border-2 border-[#ed8936] border-opacity-30">
+                                <i class="fas fa-dollar-sign text-[#ed8936] text-xl"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Right column: Optimization Strategies -->
-            <div class="col-span-6 fade-in" style="animation-delay: 0.4s;">
-                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 h-full">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-rocket mr-3 text-[#ed8936]"></i>
-                        优化策略
-                    </h2>
-                    
-                    <!-- Thread Block Configuration -->
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">线程块配置</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
-                                <div class="text-yellow-300 font-bold text-sm mb-1">块大小</div>
-                                <div class="text-gray-300 text-xs">• 16×16 = 256线程</div>
-                                <div class="text-gray-300 text-xs">• 32×32 = 1024线程</div>
+            <!-- Right side: Analysis Tools -->
+            <div class="fade-in" style="animation-delay: 0.4s;">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-tools text-[#ed8936] mr-2"></i>
+                    性能分析工具
+                </h2>
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-600">
+                                <th class="text-left py-2 px-2 text-gray-300 font-semibold">工具名称</th>
+                                <th class="text-left py-2 px-2 text-gray-300 font-semibold">功能特点</th>
+                                <th class="text-left py-2 px-2 text-gray-300 font-semibold">适用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="tool-row border-b border-gray-700">
+                                <td class="py-3 px-2 text-white font-medium">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-microscope text-[#ed8936] mr-2"></i>
+                                        Nsight Compute
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2 text-gray-300">Kernel级性能分析，可视化内存访问</td>
+                                <td class="py-3 px-2 text-gray-300">深度学习模型优化</td>
+                            </tr>
+                            <tr class="tool-row border-b border-gray-700">
+                                <td class="py-3 px-2 text-white font-medium">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-sitemap text-[#ed8936] mr-2"></i>
+                                        Nsight Systems
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2 text-gray-300">系统级性能分析，追踪分布式任务</td>
+                                <td class="py-3 px-2 text-gray-300">多GPU并行计算</td>
+                            </tr>
+                            <tr class="tool-row border-b border-gray-700">
+                                <td class="py-3 px-2 text-white font-medium">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-terminal text-[#ed8936] mr-2"></i>
+                                        nvprof
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2 text-gray-300">命令行性能分析工具</td>
+                                <td class="py-3 px-2 text-gray-300">自动化测试与基准对比</td>
+                            </tr>
+                            <tr class="tool-row">
+                                <td class="py-3 px-2 text-white font-medium">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-chart-bar text-[#ed8936] mr-2"></i>
+                                        Visual Profiler
+                                    </div>
+                                </td>
+                                <td class="py-3 px-2 text-gray-300">图形化分析界面，用户体验友好</td>
+                                <td class="py-3 px-2 text-gray-300">快速问题定位</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-6 bg-[#1e293b] bg-opacity-50 rounded p-4">
+                        <h3 class="text-lg font-medium text-white mb-2 flex items-center">
+                            <i class="fas fa-tachometer-alt text-[#ed8936] mr-2"></i>
+                            关键性能指标
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                                <span class="text-gray-300 text-sm">理论性能利用率: &gt;80%</span>
                             </div>
-                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
-                                <div class="text-green-300 font-bold text-sm mb-1">网格配置</div>
-                                <div class="text-gray-300 text-xs">• (N/16, N/16)</div>
-                                <div class="text-gray-300 text-xs">• 覆盖整个矩阵</div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                                <span class="text-gray-300 text-sm">内存带宽利用率: &gt;70%</span>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Memory Access Pattern -->
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">内存访问模式</h3>
-                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
-                            <div class="grid grid-cols-2 gap-3 text-xs">
-                                <div class="bg-green-900 bg-opacity-30 rounded p-2">
-                                    <div class="text-green-300 font-bold mb-1">✓ 优化访问</div>
-                                    <div class="text-gray-300">• 行主序访问A矩阵</div>
-                                    <div class="text-gray-300">• 列主序访问B矩阵</div>
-                                </div>
-                                <div class="bg-orange-900 bg-opacity-30 rounded p-2">
-                                    <div class="text-orange-300 font-bold mb-1">⚡ 分块策略</div>
-                                    <div class="text-gray-300">• 16×16子矩阵</div>
-                                    <div class="text-gray-300">• 重用共享内存数据</div>
-                                </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                                <span class="text-gray-300 text-sm">SM利用率: &gt;60%</span>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Launch Configuration -->
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">启动配置</h3>
-                        <div class="code-block text-xs">
-                            <span class="code-type">dim3</span> blockSize(<span class="code-number">16</span>, <span class="code-number">16</span>);<br/>
-                            <span class="code-type">dim3</span> gridSize((N + <span class="code-number">15</span>) / <span class="code-number">16</span>, (N + <span class="code-number">15</span>) / <span class="code-number">16</span>);<br/>
-                            <span class="code-function">matrixMul</span><<<gridSize, blockSize>>>(d_C, d_A, d_B, N);
-                        </div>
-                    </div>
-                    
-                    <!-- Performance Metrics -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">性能指标</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-blue-900 bg-opacity-30 rounded p-2 text-center">
-                                <div class="text-blue-300 font-bold text-sm">GFLOPS</div>
-                                <div class="text-gray-300 text-xs">浮点运算性能</div>
-                            </div>
-                            <div class="bg-purple-900 bg-opacity-30 rounded p-2 text-center">
-                                <div class="text-purple-300 font-bold text-sm">内存带宽</div>
-                                <div class="text-gray-300 text-xs">数据传输效率</div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-[#ed8936] mr-2"></div>
+                                <span class="text-gray-300 text-sm">占用率: 活跃warp数/最大warp数</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-        
+        <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第17页 / 共37页
+            第19页 / 共37页
         </footer>
     </div>
+    <script>
+        // Simple bar chart for deep learning performance comparison
+        document.addEventListener('DOMContentLoaded', function () {
+            const data = [
+                { category: "CPU", value: 1, color: "#94a3b8" },
+                { category: "GPU", value: 75, color: "#ed8936" }  // Average of 50-100x faster
+            ];
+
+            const margin = { top: 5, right: 10, bottom: 15, left: 10 };
+            const width = document.getElementById('deep-learning-chart').clientWidth - margin.left - margin.right;
+            const height = document.getElementById('deep-learning-chart').clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select("#deep-learning-chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // X scale
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.category))
+                .range([0, width])
+                .padding(0.4);
+
+            // Y scale
+            const y = d3.scaleLinear()
+                .domain([0, 100])
+                .range([height, 0]);
+
+            // Add X axis
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("fill", "#d1d5db")
+                .style("text-anchor", "middle");
+
+            // Add Y axis
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(3))
+                .selectAll("text")
+                .attr("fill", "#d1d5db");
+
+            // Add bars
+            svg.selectAll("mybar")
+                .data(data)
+                .join("rect")
+                .attr("x", d => x(d.category))
+                .attr("y", d => y(d.value))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d.value))
+                .attr("fill", d => d.color)
+                .attr("rx", 3)
+                .attr("ry", 3);
+
+            // Add labels
+            svg.selectAll("mytext")
+                .data(data)
+                .join("text")
+                .attr("x", d => x(d.category) + x.bandwidth() / 2)
+                .attr("y", d => y(d.value) - 5)
+                .attr("text-anchor", "middle")
+                .text(d => d.category === "GPU" ? "50-100x" : "")
+                .attr("fill", "#ed8936")
+                .attr("font-size", "10px")
+                .attr("font-weight", "bold");
+        });
+    </script>
+
 <script src="ppt-mode.js"></script>
 </body>
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CUDA编程基础</title>
+    <title>CUDA矩阵计算编程实战</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -46,48 +46,39 @@
         .code-block {
             font-family: 'Consolas', 'Monaco', monospace;
             background-color: #1e1e1e;
-            border-radius: 4px;
-            padding: 12px;
-            color: #d4d4d4;
-            font-size: 14px;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            overflow: auto;
             line-height: 1.5;
-            border-left: 3px solid #ed8936;
-            overflow-x: auto;
+            color: #d4d4d4;
         }
 
-        .cuda-keyword {
+        .code-keyword {
             color: #569cd6;
         }
 
-        .cuda-function {
+        .code-function {
             color: #dcdcaa;
         }
 
-        .cuda-comment {
+        .code-comment {
             color: #6a9955;
         }
 
-        .thread-arrow {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(237, 137, 54, 0.7), rgba(237, 137, 54, 1));
-            animation: moveRight 2s infinite;
+        .code-string {
+            color: #ce9178;
         }
 
-        @keyframes moveRight {
-            0% {
-                width: 0;
-                opacity: 0;
-            }
+        .code-number {
+            color: #b5cea8;
+        }
 
-            50% {
-                opacity: 1;
-            }
+        .code-constant {
+            color: #dcdcaa;
+        }
 
-            100% {
-                width: 100%;
-                opacity: 0;
-            }
+        .code-type {
+            color: #4ec9b0;
         }
 
         .fade-in {
@@ -105,195 +96,148 @@
                 transform: translateY(0);
             }
         }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-
-        .grid-item {
-            background-color: rgba(30, 41, 59, 0.7);
-            border-radius: 6px;
-            padding: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .grid-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
     <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 120px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 480px; left: 0; width: 100%;"></div>
-        <div class="circuit-dot" style="top: 120px; left: 150px;"></div>
-        <div class="circuit-dot" style="top: 480px; left: 900px;"></div>
-        <div class="hexagon" style="top: 80px; left: 1000px;"></div>
-        <div class="hexagon" style="top: 550px; left: 150px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 900px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 580px; left: 300px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
                               linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 20px 20px;
         "></div>
+        
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">CUDA</span>编程基础
+                <span class="text-[#ed8936]">CUDA</span>矩阵计算编程实战
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
+        
         <!-- Main content -->
-        <main class="px-16 py-6">
-            <div class="grid-container">
-                <!-- Host-Device Architecture -->
-                <div class="grid-item fade-in" style="animation-delay: 0.2s;">
-                    <h2 class="text-xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-sitemap text-[#ed8936] mr-2"></i>
-                        Host-Device架构
+        <main class="px-16 py-4 grid grid-cols-12 gap-6">
+            <!-- Left column: Matrix Multiplication Implementation -->
+            <div class="col-span-6 fade-in" style="animation-delay: 0.2s;">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 h-full">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-3">
+                        <i class="fas fa-calculator mr-3 text-[#ed8936]"></i>
+                        矩阵乘法实现
                     </h2>
-                    <div class="flex justify-center mb-4 relative h-32">
-                        <div
-                            class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#1e293b] rounded-lg p-3 w-32 text-center border-2 border-[#4a5568]">
-                            <i class="fas fa-microchip text-[#ed8936] text-xl mb-1"></i>
-                            <div class="text-white font-medium">CPU</div>
-                            <div class="text-gray-400 text-xs">控制中心</div>
-                        </div>
-                        <div class="thread-arrow absolute top-16 left-1/2 transform -translate-x-1/2"></div>
-                        <div
-                            class="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-[#1e293b] rounded-lg p-3 w-32 text-center border-2 border-[#ed8936]">
-                            <i class="fas fa-chart-network text-[#ed8936] text-xl mb-1"></i>
-                            <div class="text-white font-medium">GPU</div>
-                            <div class="text-gray-400 text-xs">计算中心</div>
+                    
+                    <!-- Matrix Multiplication Concept -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">矩阵乘法概念</h3>
+                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                            <img src="https://cdn.nlark.com/yuque/0/2024/jpeg/43171351/1718435919826-c0fa373a-b20a-4089-a3f6-099c59f4b28f.jpeg?x-oss-process=image%2Fformat%2Cwebp%2Finterlace%2C1" 
+                                 alt="矩阵乘法示意图" 
+                                 class="w-full max-w-sm mx-auto rounded-lg shadow-lg" />
                         </div>
                     </div>
-                    <ul class="text-gray-300 space-y-2 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>CPU负责任务调度和控制</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>GPU负责并行计算</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>通过API进行CPU-GPU交互</span>
-                        </li>
-                    </ul>
-                </div>
-                <!-- Kernel Functions -->
-                <div class="grid-item fade-in" style="animation-delay: 0.4s;">
-                    <h2 class="text-xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-function text-[#ed8936] mr-2"></i>
-                        Kernel函数
-                    </h2>
-                    <div class="code-block mb-4">
-                        <span class="cuda-keyword">__global__</span> <span class="cuda-keyword">void</span> <span
-                            class="cuda-function">vectorAdd</span>(<span class="cuda-keyword">float</span>* a, <span
-                            class="cuda-keyword">float</span>* b, <span class="cuda-keyword">float</span>* c, <span
-                            class="cuda-keyword">int</span> n) {<br />
-                          <span class="cuda-keyword">int</span> i = blockIdx.x * blockDim.x + threadIdx.x;<br />
-                          <span class="cuda-keyword">if</span> (i &lt; n) {<br />
-                            c[i] = a[i] + b[i];<br />
-                          }<br />
-                        }
-                    </div>
-                    <ul class="text-gray-300 space-y-2 text-sm">
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>用<span class="text-[#ed8936] font-mono">__global__</span>标记GPU函数</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>通过<span class="text-[#ed8936] font-mono">&lt;&lt;<griddim, blockdim="">&gt;&gt;配置
-                                    </griddim,></span>执行</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2"></i>
-                            <span>每个线程执行相同代码但不同数据</span>
-                        </li>
-                    </ul>
-                </div>
-                <!-- Memory Management -->
-                <div class="grid-item fade-in" style="animation-delay: 0.6s;">
-                    <h2 class="text-xl font-bold text-white flex items-center mb-3">
-                        <i class="fas fa-memory text-[#ed8936] mr-2"></i>
-                        内存管理
-                    </h2>
-                    <div class="flex justify-between mb-4 relative h-32">
-                        <div
-                            class="absolute top-0 left-0 bg-[#1e293b] rounded-lg p-2 w-24 text-center border border-[#4a5568]">
-                            <div class="text-white text-xs">全局内存</div>
-                            <div class="text-gray-400 text-xs">高延迟</div>
+                    
+
+                    
+                    <!-- Performance Tips -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">性能要点</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-blue-900 bg-opacity-30 rounded p-2">
+                                <div class="text-blue-300 font-bold text-sm">内存合并</div>
+                                <div class="text-gray-300 text-xs">相邻线程访问相邻内存</div>
+                            </div>
+                            <div class="bg-green-900 bg-opacity-30 rounded p-2">
+                                <div class="text-green-300 font-bold text-sm">分块计算</div>
+                                <div class="text-gray-300 text-xs">利用共享内存减少全局内存访问</div>
+                            </div>
                         </div>
-                        <div
-                            class="absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#1e293b] rounded-lg p-2 w-24 text-center border border-[#4a5568]">
-                            <div class="text-white text-xs">共享内存</div>
-                            <div class="text-gray-400 text-xs">低延迟</div>
-                        </div>
-                        <div
-                            class="absolute top-0 right-0 bg-[#1e293b] rounded-lg p-2 w-24 text-center border border-[#4a5568]">
-                            <div class="text-white text-xs">寄存器</div>
-                            <div class="text-gray-400 text-xs">最快访问</div>
-                        </div>
-                        <div class="thread-arrow absolute top-16 left-1/4"></div>
-                        <div class="thread-arrow absolute top-16 left-1/2"></div>
-                        <div class="thread-arrow absolute top-16 right-1/4"></div>
-                        <div
-                            class="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-[#1e293b] rounded-lg p-2 w-32 text-center border border-[#ed8936]">
-                            <div class="text-white text-xs">线程私有</div>
-                        </div>
-                    </div>
-                    <div class="text-xs text-gray-300 mb-2">
-                        <span class="text-[#ed8936] font-mono">cudaMalloc</span>,
-                        <span class="text-[#ed8936] font-mono">cudaMemcpy</span>,
-                        <span class="text-[#ed8936] font-mono">cudaFree</span>
                     </div>
                 </div>
             </div>
-            <!-- Programming Key Points -->
-            <div class="mt-6 grid-item fade-in" style="animation-delay: 0.8s;">
-                <h2 class="text-xl font-bold text-white flex items-center mb-3">
-                    <i class="fas fa-key text-[#ed8936] mr-2"></i>
-                    编程要点
-                </h2>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded p-3 border-l-4 border-[#ed8936]">
-                        <h3 class="text-white font-medium flex items-center">
-                            <i class="fas fa-th text-[#ed8936] mr-2"></i>
-                            数据并行化设计
-                        </h3>
-                        <p class="text-gray-300 text-sm mt-1">将任务分解为多个并行执行的子任务，充分利用GPU并行计算能力</p>
+            
+            <!-- Right column: Optimization Strategies -->
+            <div class="col-span-6 fade-in" style="animation-delay: 0.4s;">
+                <div class="bg-[#1e293b] bg-opacity-60 rounded-lg p-4 h-full">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-3">
+                        <i class="fas fa-rocket mr-3 text-[#ed8936]"></i>
+                        优化策略
+                    </h2>
+                    
+                    <!-- Thread Block Configuration -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">线程块配置</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-yellow-300 font-bold text-sm mb-1">块大小</div>
+                                <div class="text-gray-300 text-xs">• 16×16 = 256线程</div>
+                                <div class="text-gray-300 text-xs">• 32×32 = 1024线程</div>
+                            </div>
+                            <div class="bg-gray-800 bg-opacity-50 rounded p-2">
+                                <div class="text-green-300 font-bold text-sm mb-1">网格配置</div>
+                                <div class="text-gray-300 text-xs">• (N/16, N/16)</div>
+                                <div class="text-gray-300 text-xs">• 覆盖整个矩阵</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded p-3 border-l-4 border-[#ed8936]">
-                        <h3 class="text-white font-medium flex items-center">
-                            <i class="fas fa-database text-[#ed8936] mr-2"></i>
-                            内存访问优化
-                        </h3>
-                        <p class="text-gray-300 text-sm mt-1">优化内存访问模式，减少全局内存访问，增加共享内存使用</p>
+                    
+                    <!-- Memory Access Pattern -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">内存访问模式</h3>
+                        <div class="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="bg-green-900 bg-opacity-30 rounded p-2">
+                                    <div class="text-green-300 font-bold mb-1">✓ 优化访问</div>
+                                    <div class="text-gray-300">• 行主序访问A矩阵</div>
+                                    <div class="text-gray-300">• 列主序访问B矩阵</div>
+                                </div>
+                                <div class="bg-orange-900 bg-opacity-30 rounded p-2">
+                                    <div class="text-orange-300 font-bold mb-1">⚡ 分块策略</div>
+                                    <div class="text-gray-300">• 16×16子矩阵</div>
+                                    <div class="text-gray-300">• 重用共享内存数据</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-[#1e293b] bg-opacity-70 rounded p-3 border-l-4 border-[#ed8936]">
-                        <h3 class="text-white font-medium flex items-center">
-                            <i class="fas fa-sync-alt text-[#ed8936] mr-2"></i>
-                            线程同步机制
-                        </h3>
-                        <p class="text-gray-300 text-sm mt-1">合理使用同步原语，避免线程间竞争条件，提高并行效率</p>
+                    
+                    <!-- Launch Configuration -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">启动配置</h3>
+                        <div class="code-block text-xs">
+                            <span class="code-type">dim3</span> blockSize(<span class="code-number">16</span>, <span class="code-number">16</span>);<br/>
+                            <span class="code-type">dim3</span> gridSize((N + <span class="code-number">15</span>) / <span class="code-number">16</span>, (N + <span class="code-number">15</span>) / <span class="code-number">16</span>);<br/>
+                            <span class="code-function">matrixMul</span><<<gridSize, blockSize>>>(d_C, d_A, d_B, N);
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Metrics -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-[#ed8936] mb-2">性能指标</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-blue-900 bg-opacity-30 rounded p-2 text-center">
+                                <div class="text-blue-300 font-bold text-sm">GFLOPS</div>
+                                <div class="text-gray-300 text-xs">浮点运算性能</div>
+                            </div>
+                            <div class="bg-purple-900 bg-opacity-30 rounded p-2 text-center">
+                                <div class="text-purple-300 font-bold text-sm">内存带宽</div>
+                                <div class="text-gray-300 text-xs">数据传输效率</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
-        <!-- Footer -->
+        
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第15页 / 共37页
+            第17页 / 共37页
         </footer>
     </div>
-
 <script src="ppt-mode.js"></script>
 </body>
 

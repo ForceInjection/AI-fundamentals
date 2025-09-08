@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>训练集群 vs 推理集群</title>
+    <title>高级推理优化</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -12,7 +12,7 @@
     <style>
         body {
             width: 1280px;
-            min-height: 720px;
+            min-height: 700px;
             margin: 0 auto;
             display: flex;
             align-items: center;
@@ -22,7 +22,7 @@
 
         .slide {
             width: 1280px;
-            min-height: 720px;
+            min-height: 700px;
             position: relative;
         }
 
@@ -36,49 +36,31 @@
 
         .hexagon {
             position: absolute;
-            width: 80px;
-            height: 92px;
+            width: 60px;
+            height: 69px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .comparison-card {
+        .feature-card {
             transition: all 0.3s ease;
-            height: 100%;
+            border-left: 4px solid transparent;
         }
 
-        .comparison-card:hover {
+        .feature-card:hover {
+            transform: translateX(5px);
+            border-left-color: #ed8936;
+        }
+
+        .parallel-card {
+            transition: all 0.3s ease;
+            border-top: 4px solid transparent;
+        }
+
+        .parallel-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }
-
-        .feature-icon {
-            flex-shrink: 0;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-right: 12px;
-            margin-top: 2px;
-        }
-
-        .training-icon {
-            background-color: rgba(237, 137, 54, 0.2);
-            color: #ed8936;
-        }
-
-        .inference-icon {
-            background-color: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
+            border-top-color: #ed8936;
         }
 
         .fade-in {
@@ -96,22 +78,40 @@
                 transform: translateY(0);
             }
         }
+
+        .flow-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .flow-arrow-right {
+            border-width: 8px 0 8px 12px;
+            border-color: transparent transparent transparent #ed8936;
+        }
+
+        .flow-arrow-down {
+            border-width: 12px 8px 0 8px;
+            border-color: #ed8936 transparent transparent transparent;
+        }
     </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[700px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
-        <div class="circuit-line" style="top: 150px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 450px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 250px; left: 200px; width: 30%;"></div>
-        <div class="circuit-line" style="top: 350px; left: 700px; width: 30%;"></div>
-        <div class="circuit-dot" style="top: 150px; left: 200px;"></div>
-        <div class="circuit-dot" style="top: 450px; left: 800px;"></div>
-        <div class="circuit-dot" style="top: 250px; left: 500px;"></div>
-        <div class="circuit-dot" style="top: 350px; left: 900px;"></div>
-        <div class="hexagon" style="top: 100px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 500px; left: 200px;"></div>
+        <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 480px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 380px; left: 300px; width: 200px; transform: rotate(90deg);"></div>
+        <div class="circuit-line" style="top: 280px; left: 900px; width: 200px; transform: rotate(90deg);"></div>
+        <div class="circuit-dot" style="top: 180px; left: 250px;"></div>
+        <div class="circuit-dot" style="top: 480px; left: 850px;"></div>
+        <div class="circuit-dot" style="top: 380px; left: 300px;"></div>
+        <div class="circuit-dot" style="top: 280px; left: 900px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1050px;"></div>
+        <div class="hexagon" style="top: 550px; left: 150px;"></div>
+        <div class="hexagon" style="top: 300px; left: 1150px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -121,167 +121,242 @@
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">训练集群</span> vs <span class="text-[#4ade80]">推理集群</span>
+                <span class="text-[#ed8936]">高级推理优化</span>
             </h1>
-            <div class="w-32 h-1 bg-gradient-to-r from-[#ed8936] to-[#4ade80]" mt-3"=""></div>
+            <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-8">
-            <div class="flex space-x-6 mb-6">
-                <!-- Training Cluster -->
-                <div class="w-1/2 comparison-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.2s;">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                        <i class="fas fa-server mr-3 text-[#ed8936]"></i>
-                        训练集群特点
+        <main class="px-16 py-6">
+            <div class="flex space-x-6">
+                <!-- Left side: Parallel Strategies -->
+                <div class="w-1/2">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-network-wired text-[#ed8936] mr-3"></i>
+                        并行策略
                     </h2>
-                    <div class="space-y-1">
-                        <div class="feature-item">
-                            <div class="feature-icon training-icon">
-                                <i class="fas fa-microchip"></i>
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Data Parallelism -->
+                        <div class="parallel-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                            style="animation-delay: 0.6s;">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-bold text-white">数据并行</h3>
+                                <i class="fas fa-server text-[#ed8936] text-xl"></i>
                             </div>
-                            <div>
-                                <h3 class="text-white font-medium">高性能GPU</h3>
-                                <p class="text-gray-300 text-sm">A100/H100系列，高算力需求</p>
-                            </div>
+                            <ul class="text-gray-300 text-sm space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>多个GPU处理不同请求</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>适用于高并发场景</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>扩展性好，实现简单</span>
+                                </li>
+                            </ul>
                         </div>
-                        <div class="feature-item">
-                            <div class="feature-icon training-icon">
-                                <i class="fas fa-memory"></i>
+                        <!-- Tensor Parallelism -->
+                        <div class="parallel-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                            style="animation-delay: 0.8s;">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-bold text-white">张量并行</h3>
+                                <i class="fas fa-cubes text-[#ed8936] text-xl"></i>
                             </div>
-                            <div>
-                                <h3 class="text-white font-medium">大内存配置</h3>
-                                <p class="text-gray-300 text-sm">高容量显存，支持大型模型训练</p>
-                            </div>
+                            <ul class="text-gray-300 text-sm space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>模型权重分布在多个GPU上</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>适用于大模型推理</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>通信开销需要优化</span>
+                                </li>
+                            </ul>
                         </div>
-                        <div class="feature-item">
-                            <div class="feature-icon training-icon">
-                                <i class="fas fa-network-wired"></i>
+                        <!-- Pipeline Parallelism -->
+                        <div class="parallel-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                            style="animation-delay: 1s;">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-bold text-white">流水线并行</h3>
+                                <i class="fas fa-stream text-[#ed8936] text-xl"></i>
                             </div>
-                            <div>
-                                <h3 class="text-white font-medium">高速网络互联</h3>
-                                <p class="text-gray-300 text-sm">InfiniBand或高速以太网</p>
-                            </div>
+                            <ul class="text-gray-300 text-sm space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>模型层分布在不同GPU上</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>适用于超大模型</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>需要careful的batch调度</span>
+                                </li>
+                            </ul>
                         </div>
-                        <div class="feature-item">
-                            <div class="feature-icon training-icon">
-                                <i class="fas fa-tachometer-alt"></i>
+                        <!-- Mixed Parallelism -->
+                        <div class="parallel-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                            style="animation-delay: 1.2s;">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-bold text-white">混合并行</h3>
+                                <i class="fas fa-random text-[#ed8936] text-xl"></i>
                             </div>
-                            <div>
-                                <h3 class="text-white font-medium">性能优化</h3>
-                                <p class="text-gray-300 text-sm">侧重计算密集型任务处理能力</p>
+                            <ul class="text-gray-300 text-sm space-y-2">
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>结合多种并行策略</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>根据模型和硬件特点优化</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-angle-right text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                    <span>复杂度高但效果最佳</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- PD Separation Technology -->
+                    <div class="mt-4 bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                        style="animation-delay: 1.4s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-bold text-white flex items-center">
+                                <i class="fas fa-layer-group text-[#ed8936] mr-2"></i>
+                                PD分离技术
+                            </h3>
+                        </div>
+                        <div class="mt-3">
+                            <p class="text-gray-300 mb-3 text-sm">将预填充(Prefill)和解码(Decode)阶段分离，优化资源利用</p>
+                            <div class="flex items-start space-x-3">
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">核心原理</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>预填充阶段：计算密集型</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>解码阶段：内存密集型</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">优化效果</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>提升GPU利用率</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>降低延迟抖动</span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Inference Cluster -->
-                <div class="w-1/2 comparison-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#4ade80] fade-in"
-                    style="animation-delay: 0.4s;">
-                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
-                        <i class="fas fa-cloud mr-3 text-[#4ade80]"></i>
-                        推理集群特点
-                    </h2>
-                    <div class="space-y-1">
-                        <div class="feature-item">
-                            <div class="feature-icon inference-icon">
-                                <i class="fas fa-microchip"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-medium">成本优化GPU</h3>
-                                <p class="text-gray-300 text-sm">V100等成本效益型GPU</p>
-                            </div>
+                <!-- Right side: Optimization Techniques -->
+                <div class="w-1/2 space-y-4">
+                    <!-- Continuous Batching -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                        style="animation-delay: 0.2s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fas fa-sync-alt text-[#ed8936] mr-2"></i>
+                                连续批处理
+                            </h3>
                         </div>
-                        <div class="feature-item">
-                            <div class="feature-icon inference-icon">
-                                <i class="fas fa-bolt"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-medium">低延迟优化</h3>
-                                <p class="text-gray-300 text-sm">优先考虑首token延迟</p>
-                            </div>
-                        </div>
-                        <div class="feature-item">
-                            <div class="feature-icon inference-icon">
-                                <i class="fas fa-expand-arrows-alt"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-medium">弹性扩缩容</h3>
-                                <p class="text-gray-300 text-sm">按需扩展，灵活资源分配</p>
-                            </div>
-                        </div>
-                        <div class="feature-item">
-                            <div class="feature-icon inference-icon">
-                                <i class="fas fa-compress-arrows-alt"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-medium">内存效率</h3>
-                                <p class="text-gray-300 text-sm">通过KV Cache优化，节省90%+显存</p>
+                        <div class="mt-3">
+                            <p class="text-gray-300 mb-3 text-sm">动态调度，序列完成后立即处理新请求，避免GPU空闲</p>
+                            <div class="flex items-start space-x-3">
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">核心技术</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>内存复用</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>优先级调度</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">性能提升</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>GPU利用率提升至90%+</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>延迟降低50%</span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <!-- Bottom section: Necessity of separation -->
-            <div class="bg-[#1e293b] bg-opacity-40 rounded-lg p-6 fade-in" style="animation-delay: 0.6s;">
-                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
-                    <i class="fas fa-puzzle-piece mr-2 text-[#ed8936]"></i>
-                    架构分离的必要性
-                </h3>
-                <div class="flex space-x-6">
-                    <div class="w-1/3">
-                        <div class="flex items-center mb-2">
-                            <div
-                                class="w-6 h-6 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-tasks text-[#ed8936] text-sm"></i>
-                            </div>
-                            <p class="text-gray-200 text-sm">训练和推理任务的资源需求差异显著</p>
+                    <!-- Speculative Decoding -->
+                    <div class="feature-card bg-[#1e293b] bg-opacity-60 rounded-lg p-4 fade-in"
+                        style="animation-delay: 0.4s;">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fas fa-bolt text-[#ed8936] mr-2"></i>
+                                投机解码
+                            </h3>
                         </div>
-                        <div class="flex items-center">
-                            <div
-                                class="w-6 h-6 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-chart-line text-[#ed8936] text-sm"></i>
+                        <div class="mt-3">
+                            <p class="text-gray-300 mb-3 text-sm">小模型生成候选token → 大模型并行验证 → 接受正确token</p>
+                            <div class="flex items-start space-x-3">
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">工作原理</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>小模型快速生成候选</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>大模型并行验证</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="bg-[#212529] rounded-md p-3 flex-1">
+                                    <h4 class="text-[#ed8936] font-medium mb-2 text-sm">性能收益</h4>
+                                    <ul class="text-gray-300 text-xs space-y-1">
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>2-3倍推理加速</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i class="fas fa-chart-line text-[#ed8936] mt-1 mr-2 text-xs"></i>
+                                            <span>适用于长文本生成</span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                            <p class="text-gray-200 text-sm">训练集群需要高带宽和大量显存</p>
-                        </div>
-                    </div>
-                    <div class="w-1/3">
-                        <div class="flex items-center mb-2">
-                            <div
-                                class="w-6 h-6 rounded-full bg-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-bolt text-[#4ade80] text-sm"></i>
-                            </div>
-                            <p class="text-gray-200 text-sm">推理集群对延迟和成本更加敏感</p>
-                        </div>
-                        <div class="flex items-center">
-                            <div
-                                class="w-6 h-6 rounded-full bg-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-users text-[#4ade80] text-sm"></i>
-                            </div>
-                            <p class="text-gray-200 text-sm">能够支持大规模并发用户请求</p>
-                        </div>
-                    </div>
-                    <div class="w-1/3">
-                        <div class="flex items-center mb-2">
-                            <div
-                                class="w-6 h-6 rounded-full bg-gradient-to-r from-[#ed8936] to-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-puzzle-piece text-white text-sm"></i>
-                            </div>
-                            <p class="text-gray-200 text-sm">专业化分工提升整体系统效率</p>
-                        </div>
-                        <div class="flex items-center">
-                            <div
-                                class="w-6 h-6 rounded-full bg-gradient-to-r from-[#ed8936] to-[#4ade80] bg-opacity-20 flex items-center justify-center mr-2">
-                                <i class="fas fa-cogs text-white text-sm"></i>
-                            </div>
-                            <p class="text-gray-200 text-sm">独立扩展和优化不同集群</p>
                         </div>
                     </div>
+
                 </div>
             </div>
         </main>
         <!-- Footer -->
         <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
-            第25页 / 共37页
+            第27页 / 共37页
         </footer>
     </div>
 

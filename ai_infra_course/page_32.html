@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>云原生带来的四大优势</title>
+    <title>Agent系统架构：智能体协作与工具调用</title>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -36,31 +36,43 @@
 
         .hexagon {
             position: absolute;
-            width: 80px;
-            height: 92px;
+            width: 60px;
+            height: 69px;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             background: linear-gradient(135deg, rgba(26, 54, 93, 0.7), rgba(237, 137, 54, 0.2));
             opacity: 0.15;
         }
 
-        .advantage-card {
+        .card {
             transition: all 0.3s ease;
-            height: 100%;
         }
 
-        .advantage-card:hover {
+        .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .icon-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
+        .agent-icon {
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
+            border-radius: 50%;
+        }
+
+        .connection-line {
+            stroke: rgba(237, 137, 54, 0.6);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5, 5;
+            animation: dash 30s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 1000;
+            }
         }
 
         .fade-in {
@@ -70,7 +82,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
 
             to {
@@ -82,20 +94,19 @@
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-    <div class="w-[1280px] h-[720px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
+    <div class="w-[1280px] h-[868px] bg-gradient-to-br from-[#1a365d] to-[#0f172a] relative">
         <!-- Background decorative elements -->
         <div class="circuit-line" style="top: 180px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 420px; left: 0; width: 100%;"></div>
-        <div class="circuit-line" style="top: 300px; left: 0; width: 80%;"></div>
-        <div class="circuit-line" style="top: 540px; left: 200px; width: 70%;"></div>
+        <div class="circuit-line" style="top: 520px; left: 0; width: 100%;"></div>
+        <div class="circuit-line" style="top: 350px; left: 200px; width: 30%;"></div>
+        <div class="circuit-line" style="top: 400px; left: 700px; width: 30%;"></div>
         <div class="circuit-dot" style="top: 180px; left: 300px;"></div>
-        <div class="circuit-dot" style="top: 420px; left: 800px;"></div>
-        <div class="circuit-dot" style="top: 300px; left: 1000px;"></div>
-        <div class="circuit-dot" style="top: 540px; left: 200px;"></div>
-        <div class="hexagon" style="top: 120px; left: 1100px;"></div>
-        <div class="hexagon" style="top: 580px; left: 200px;"></div>
-        <div class="hexagon" style="top: 250px; left: 80px;"></div>
-        <div class="hexagon" style="top: 450px; left: 1000px;"></div>
+        <div class="circuit-dot" style="top: 520px; left: 800px;"></div>
+        <div class="circuit-dot" style="top: 350px; left: 500px;"></div>
+        <div class="circuit-dot" style="top: 400px; left: 900px;"></div>
+        <div class="hexagon" style="top: 120px; left: 1000px;"></div>
+        <div class="hexagon" style="top: 550px; left: 200px;"></div>
+        <div class="hexagon" style="top: 250px; left: 600px;"></div>
         <!-- Grid pattern -->
         <div class="absolute inset-0" style="
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), 
@@ -105,135 +116,305 @@
         <!-- Header -->
         <header class="pt-10 px-16">
             <h1 class="text-4xl font-bold text-white">
-                <span class="text-[#ed8936]">云原生</span>带来的四大优势
+                <span class="text-[#ed8936]">Agent</span>系统架构：智能体协作与工具调用
             </h1>
             <div class="w-32 h-1 bg-[#ed8936] mt-3"></div>
         </header>
         <!-- Main content -->
-        <main class="px-16 py-8">
-            <div class="grid grid-cols-2 gap-8 h-[500px]">
-                <!-- Advantage 1: Containerized Deployment -->
-                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
+        <main class="px-16 py-6">
+            <div class="flex justify-between space-x-6">
+                <!-- Multi-agent collaboration framework -->
+                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
                     style="animation-delay: 0.2s;">
-                    <div class="flex items-start">
-                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
-                            <i class="fas fa-cube text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">容器化部署</h2>
-                            <ul class="space-y-2 text-gray-300">
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>标准化部署流程，版本管理与快速回滚</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>一致的运行环境，减少&#34;环境差异&#34;问题</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>自动化扩缩容，应对流量波动</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <!-- Advantage 2: Microservice Architecture -->
-                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.4s;">
-                    <div class="flex items-start">
-                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
-                            <i class="fas fa-sitemap text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">微服务架构</h2>
-                            <ul class="space-y-2 text-gray-300">
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>独立扩展，按需分配资源</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>服务间松耦合，提高系统弹性</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>故障隔离，单个服务异常不影响整体系统</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <!-- Advantage 3: Cost Optimization -->
-                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.6s;">
-                    <div class="flex items-start">
-                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
-                            <i class="fas fa-coins text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">成本优化</h2>
-                            <ul class="space-y-2 text-gray-300 mb-4">
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>按需分配资源，避免过度配置</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>支持Spot实例，进一步降低计算成本</span>
-                                </li>
-                            </ul>
-                            <div class="mt-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-300">推理成本降低</span>
-                                    <span class="text-[#ed8936] font-bold">40-60%</span>
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                        <i class="fas fa-users-gear mr-3 text-[#ed8936]"></i>
+                        多Agent协作框架
+                    </h2>
+                    <div class="mb-5">
+                        <h3 class="text-xl text-[#ed8936] mb-2">Agent类型</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div class="agent-icon bg-blue-500 bg-opacity-20 mr-2">
+                                    <i class="fas fa-sitemap text-blue-400"></i>
                                 </div>
-                                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
-                                    <div class="bg-[#ed8936] h-2.5 rounded-full" style="width: 60%"></div>
+                                <span class="text-gray-200">规划Agent</span>
+                            </div>
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div class="agent-icon bg-green-500 bg-opacity-20 mr-2">
+                                    <i class="fas fa-play text-green-400"></i>
+                                </div>
+                                <span class="text-gray-200">执行Agent</span>
+                            </div>
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div class="agent-icon bg-yellow-500 bg-opacity-20 mr-2">
+                                    <i class="fas fa-chart-line text-yellow-400"></i>
+                                </div>
+                                <span class="text-gray-200">监控Agent</span>
+                            </div>
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div class="agent-icon bg-purple-500 bg-opacity-20 mr-2">
+                                    <i class="fas fa-handshake text-purple-400"></i>
+                                </div>
+                                <span class="text-gray-200">协调Agent</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl text-[#ed8936] mb-2">协作模式</h3>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-arrow-right-arrow-left text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">流水线：</span>顺序执行，前一个Agent输出作为下一个Agent输入</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-network-wired text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">并行：</span>多个Agent同时执行，共享资源</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-sitemap text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">层次：</span>Agent按层级组织，上级协调下级</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-store text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">市场：</span>Agent通过市场机制竞争任务</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="mt-5">
+                        <h3 class="text-xl text-[#ed8936] mb-2">通信机制</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">消息队列</span>
+                            <span
+                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">事件总线</span>
+                            <span
+                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">共享内存</span>
+                            <span
+                                class="bg-[#253859] bg-opacity-50 text-gray-200 px-3 py-1 rounded-full text-sm">API调用</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tool calling mechanism -->
+                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
+                    style="animation-delay: 0.4s;">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                        <i class="fas fa-tools mr-3 text-[#ed8936]"></i>
+                        工具调用机制
+                    </h2>
+                    <div class="mb-5">
+                        <h3 class="text-xl text-[#ed8936] mb-2">工具注册</h3>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-code-signs text-[#ed8936] mt-1 mr-2"></i>
+                                <span>函数签名解析，自动提取参数信息</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-comment-dots text-[#ed8936] mt-1 mr-2"></i>
+                                <span>自然语言描述，增强人类可读性</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-shield-alt text-[#ed8936] mt-1 mr-2"></i>
+                                <span>权限控制，确保安全调用</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-code-branch text-[#ed8936] mt-1 mr-2"></i>
+                                <span>版本管理，支持多版本工具</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl text-[#ed8936] mb-2">调用执行</h3>
+                        <div class="bg-[#253859] bg-opacity-50 rounded p-3 mb-3">
+                            <div class="flex items-center mb-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
+                                    <i class="fas fa-gears text-[#ed8936]"></i>
+                                </div>
+                                <span class="text-white font-medium">参数解析</span>
+                            </div>
+                            <p class="text-gray-300 text-sm ml-10">将自然语言参数转换为工具所需格式</p>
+                        </div>
+                        <div class="bg-[#253859] bg-opacity-50 rounded p-3 mb-3">
+                            <div class="flex items-center mb-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
+                                    <i class="fas fa-box text-[#ed8936]"></i>
+                                </div>
+                                <span class="text-white font-medium">安全沙箱</span>
+                            </div>
+                            <p class="text-gray-300 text-sm ml-10">限制工具执行环境，防止未授权操作</p>
+                        </div>
+                        <div class="bg-[#253859] bg-opacity-50 rounded p-3">
+                            <div class="flex items-center mb-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-[#ed8936] bg-opacity-20 flex items-center justify-center mr-2">
+                                    <i class="fas fa-clock text-[#ed8936]"></i>
+                                </div>
+                                <span class="text-white font-medium">超时控制</span>
+                            </div>
+                            <p class="text-gray-300 text-sm ml-10">设置合理执行时间，避免无限期等待</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- State management system -->
+                <div class="w-1/3 bg-[#1e293b] bg-opacity-60 rounded-lg p-5 border-t-4 border-[#ed8936] card fade-in"
+                    style="animation-delay: 0.6s;">
+                    <h2 class="text-2xl font-bold text-white flex items-center mb-4">
+                        <i class="fas fa-database mr-3 text-[#ed8936]"></i>
+                        状态管理系统
+                    </h2>
+                    <div class="mb-5">
+                        <h3 class="text-xl text-[#ed8936] mb-2">状态存储</h3>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-blue-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                    <i class="fas fa-memory text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium">内存状态</h4>
+                                    <p class="text-gray-300 text-sm">Redis等高性能KV存储</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-green-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                    <i class="fas fa-database text-green-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium">持久化</h4>
+                                    <p class="text-gray-300 text-sm">PostgreSQL等关系型数据库</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-[#253859] bg-opacity-50 rounded p-2">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-purple-500 bg-opacity-20 flex items-center justify-center mr-3">
+                                    <i class="fas fa-network-wired text-purple-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium">分布式</h4>
+                                    <p class="text-gray-300 text-sm">etcd等分布式KV存储</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Advantage 4: Self-Healing -->
-                <div class="advantage-card bg-[#1e293b] bg-opacity-60 rounded-lg p-6 border-t-4 border-[#ed8936] fade-in"
-                    style="animation-delay: 0.8s;">
-                    <div class="flex items-start">
-                        <div class="icon-circle bg-[#1e293b] border-2 border-[#ed8936]">
-                            <i class="fas fa-heartbeat text-3xl text-[#ed8936]"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-2xl font-bold text-white mb-3">故障自愈</h2>
-                            <ul class="space-y-2 text-gray-300">
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>自动检测异常，触发恢复机制</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>自动故障转移，确保高可用性</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <i class="fas fa-check-circle text-[#ed8936] mt-1 mr-2"></i>
-                                    <span>自愈算法持续优化，提高系统稳定性</span>
-                                </li>
-                            </ul>
-                        </div>
+                    <div>
+                        <h3 class="text-xl text-[#ed8936] mb-2">状态同步</h3>
+                        <ul class="space-y-2 text-gray-200">
+                            <li class="flex items-start">
+                                <i class="fas fa-history text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">事件溯源：</span>记录状态变更历史，支持回滚</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-camera text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">快照机制：</span>定期保存状态快照，提高恢复效率</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-arrows-up-down text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">增量同步：</span>只传输变化部分，减少网络开销</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-code-merge text-[#ed8936] mt-1 mr-2"></i>
+                                <span><span class="font-medium">冲突解决：</span>版本号或时间戳比较，确保数据一致性</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
+            <!-- Agent collaboration visualization -->
+            <div class="mt-6 relative h-[120px] fade-in" style="animation-delay: 0.8s;">
+                <svg class="mx-auto" height="120" id="agent-flow" width="1200"></svg>
+            </div>
         </main>
         <!-- Footer -->
-        <div class="absolute bottom-6 left-16 right-16 flex justify-between items-center">
-            <div class="text-gray-400 text-sm">
-                <i class="fas fa-quote-left mr-2 text-[#ed8936]"></i>
-                云原生架构是AI基础设施现代化的关键
-            </div>
-            <div class="text-gray-400 text-sm">
-                第32页 / 共37页
-            </div>
-        </div>
+        <footer class="absolute bottom-6 right-10 text-gray-400 text-sm">
+            第34页 / 共37页
+        </footer>
     </div>
+    <script>
+        // Agent flow visualization
+        document.addEventListener('DOMContentLoaded', function () {
+            const svg = d3.select("#agent-flow");
+            const width = +svg.attr("width");
+            const height = +svg.attr("height");
+
+            // Define nodes
+            const nodes = [
+                { id: "planning", name: "规划Agent", x: 150, y: height / 2, color: "#3B82F6" },
+                { id: "execution", name: "执行Agent", x: 400, y: height / 2, color: "#10B981" },
+                { id: "monitoring", name: "监控Agent", x: 650, y: height / 2, color: "#FBBF24" },
+                { id: "coordination", name: "协调Agent", x: 900, y: height / 2, color: "#8B5CF6" }
+            ];
+
+            // Define links
+            const links = [
+                { source: "planning", target: "execution", type: "forward" },
+                { source: "execution", target: "monitoring", type: "forward" },
+                { source: "monitoring", target: "coordination", type: "forward" },
+                { source: "coordination", target: "planning", type: "feedback" }
+            ];
+
+            // Draw links
+            svg.selectAll(".link")
+                .data(links)
+                .enter()
+                .append("path")
+                .attr("class", "connection-line")
+                .attr("d", d => {
+                    const source = nodes.find(n => n.id === d.source);
+                    const target = nodes.find(n => n.id === d.target);
+
+                    if (d.type === "feedback") {
+                        // Curved path for feedback loop
+                        return `M${source.x},${source.y} C${source.x + 100},${source.y - 50} ${target.x - 100},${target.y - 50} ${target.x},${target.y}`;
+                    } else {
+                        // Straight path for forward connections
+                        return `M${source.x},${source.y} L${target.x},${target.y}`;
+                    }
+                });
+
+            // Draw nodes
+            const nodeGroups = svg.selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // Node circles
+            nodeGroups.append("circle")
+                .attr("r", 25)
+                .attr("fill", d => d.color)
+                .attr("fill-opacity", 0.2)
+                .attr("stroke", d => d.color)
+                .attr("stroke-width", 2);
+
+            // Node icons
+            nodeGroups.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", "0.3em")
+                .attr("fill", "white")
+                .attr("class", d => {
+                    if (d.id === "planning") return "fas fa-sitemap";
+                    if (d.id === "execution") return "fas fa-play";
+                    if (d.id === "monitoring") return "fas fa-chart-line";
+                    if (d.id === "coordination") return "fas fa-handshake";
+                })
+                .text(d => {
+                    if (d.id === "planning") return "\uf0e8"; // sitemap icon
+                    if (d.id === "execution") return "\uf04b"; // play icon
+                    if (d.id === "monitoring") return "\uf201"; // chart-line icon
+                    if (d.id === "coordination") return "\uf2b5"; // handshake icon
+                });
+
+            // Node labels
+            nodeGroups.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", 45)
+                .attr("fill", "white")
+                .text(d => d.name);
+        });
+    </script>
 
 <script src="ppt-mode.js"></script>
 </body>
