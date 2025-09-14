@@ -1,0 +1,101 @@
+<svg width="1100" height="620" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="1100" height="620" fill="#f8f9fa" stroke="none"/>
+  
+  <!-- 标题 -->
+  <text x="550" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2c3e50">AI 智能体记忆系统架构图</text>
+  
+
+  
+  <!-- 主流程模块 -->
+  <!-- 用户输入 -->
+  <rect x="50" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="110" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">用户输入</text>
+  
+  <!-- 多策略检索 -->
+  <rect x="220" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="280" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">多策略检索</text>
+  
+  <!-- 上下文构建 -->
+  <rect x="390" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="450" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">上下文构建</text>
+  
+  <!-- LLM 推理 -->
+  <rect x="560" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="620" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">LLM 推理</text>
+  
+  <!-- 响应生成 -->
+  <rect x="730" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="790" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">响应生成</text>
+  
+  <!-- 主流程箭头 -->
+  <path d="M 170 110 L 210 110" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 340 110 L 380 110" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 510 110 L 550 110" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 680 110 L 720 110" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- 记忆层（水平排列） -->
+  <!-- 短期记忆 -->
+  <rect x="150" y="180" width="100" height="50" rx="5" fill="#1abc9c" stroke="#16a085" stroke-width="2"/>
+  <text x="200" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">短期记忆</text>
+  
+  <!-- 中期记忆 -->
+  <rect x="270" y="180" width="100" height="50" rx="5" fill="#1abc9c" stroke="#16a085" stroke-width="2"/>
+  <text x="320" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">中期记忆</text>
+  
+  <!-- 长期记忆 -->
+  <rect x="390" y="180" width="100" height="50" rx="5" fill="#1abc9c" stroke="#16a085" stroke-width="2"/>
+  <text x="440" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">长期记忆</text>
+  
+  <!-- 多策略检索到记忆层的箭头 -->
+  <path d="M 250 140 L 200 170" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 280 140 L 320 170" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 310 140 L 440 170" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- 用户反馈（主流程） -->
+  <rect x="900" y="80" width="120" height="60" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="960" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">用户反馈</text>
+  
+  <!-- 响应生成到用户反馈的箭头 -->
+  <path d="M 850 110 L 890 110" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+
+  
+  <!-- 支线流程模块（增加间距） -->
+  <!-- 记忆质量评估 -->
+  <rect x="900" y="200" width="120" height="50" rx="5" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+  <text x="960" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">记忆质量评估</text>
+  
+  <!-- 个性化学习 -->
+  <rect x="900" y="290" width="120" height="50" rx="5" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+  <text x="960" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">个性化学习</text>
+  
+  <!-- 智能记忆更新 -->
+  <rect x="900" y="380" width="120" height="50" rx="5" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+  <text x="960" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">智能记忆更新</text>
+  
+  <!-- 支线流程箭头 -->
+  <path d="M 960 140 L 960 190" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 960 250 L 960 280" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 960 340 L 960 370" stroke="#2c3e50" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- 智能记忆更新到记忆层的箭头（单折线路径，连接到方块下部中心点） -->
+  <!-- 到短期记忆的单折线箭头 -->
+  <path d="M 900 405 L 200 405 L 200 230" stroke="#e74c3c" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <!-- 到中期记忆的单折线箭头 -->
+  <path d="M 900 405 L 320 405 L 320 230" stroke="#e74c3c" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  <!-- 到长期记忆的单折线箭头 -->
+  <path d="M 900 405 L 440 405 L 440 230" stroke="#e74c3c" stroke-width="2" fill="none" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+  
+  <!-- 箭头标记定义 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2c3e50"/>
+    </marker>
+  </defs>
+  
+  <!-- 说明文字 -->
+  <text x="50" y="500" font-family="Arial, sans-serif" font-size="12" fill="#7f8c8d">• 主流程：用户输入 → 多策略检索 → 上下文构建 → LLM 推理 → 响应生成 → 用户反馈</text>
+  <text x="50" y="520" font-family="Arial, sans-serif" font-size="12" fill="#7f8c8d">• 记忆层：短期记忆、中期记忆、长期记忆水平排列，多策略检索可直接访问</text>
+  <text x="50" y="540" font-family="Arial, sans-serif" font-size="12" fill="#7f8c8d">• 更新流程：由用户反馈触发，包括记忆质量评估、个性化学习和智能记忆更新</text>
+</svg>
