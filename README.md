@@ -38,6 +38,8 @@
 
 - [**GPU Architecture and Programming — An Introduction**](gpu_programming/gpu_programming_introduction.md) - `GPU` 架构与编程模型的全面介绍
 
+- [**GPU 词汇表**](https://modal.com/gpu-glossary/readme) - 全面的 GPU 技术术语词典，涵盖 GPU 架构、CUDA 编程、并行计算等核心概念
+
 #### 1.2.2 CUDA 核心技术
 
 - [**深入理解 NVIDIA CUDA 核心（vs. Tensor Cores vs. RT Cores）**](cuda/cuda_cores_cn.md)
