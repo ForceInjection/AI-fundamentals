@@ -328,14 +328,17 @@
 
 #### 2.4.2 参考资料
 
-- [**CUDA Reading Group 相关讲座**](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA): [GPU Mode Reading Group](https://github.com/gpu-mode)
+- [**CUDA Reading Group 相关讲座**](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA)
+  - [GPU Mode Reading Group](https://github.com/gpu-mode)
 - [**《CUDA C++ Programming Guide 》**](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
-- [**《CUDA C 编程权威指南》**](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)：[书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
+- [**《CUDA C 编程权威指南》**](https://mp.weixin.qq.com/s/xJY5Znv3cuQi_UCd_XjJ4A)
+  - [书中示例代码](https://github.com/Eddie-Wang1120/Professional-CUDA-C-Programming-Code-and-Notes)
 - [**Nvidia 官方 CUDA 示例**](https://github.com/NVIDIA/cuda-samples)
 - [**《CUDA 编程：基础与实践 by 樊哲勇》**](https://book.douban.com/subject/35252459/)
   - [**学习笔记**](https://github.com/QINZHAOYU/CudaSteps)
   - [**示例代码**](https://github.com/MAhaitao999/CUDA_Programming)
-- [**《CUDA 编程简介: 基础与实践 by 李瑜》**](http://www.frankyongtju.cn/ToSeminars/hpc.pdf)
+  - [**樊哲勇主页**](https://wlkxyjsxy.bhu.edu.cn/engine2/general/4146630/detail?engineInstanceId=656243&typeId=2986094&pageId=85748&websiteId=63087&currentBranch=1)
+- [**《CUDA 编程简介: 基础与实践 by 李瑜》**](./cuda/CUDA%20编程简介%20-%20基础与实践.pdf)
 - [**《CUDA 编程入门》** - 本文改编自北京大学超算队 CUDA 教程讲义](https://hpcwiki.io/gpu/cuda/)
 - [**Multi GPU Programming Models**](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [**CUDA Processing Streams**](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
