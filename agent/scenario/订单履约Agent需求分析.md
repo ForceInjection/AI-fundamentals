@@ -1,6 +1,6 @@
 # 订单履约 Agent 需求分析
 
-> 原始需求来自：<https://zhuanlan.zhihu.com/p/1938355479681139306/>
+> 原始需求来自《Palantir AIP Agent落地场景解析-订单履约》：<https://zhuanlan.zhihu.com/p/1938355479681139306/>
 
 ## 1. 业务背景
 
