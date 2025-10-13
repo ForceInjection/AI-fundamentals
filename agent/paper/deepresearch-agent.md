@@ -1,6 +1,6 @@
 # 论文解读：深度研究智能体（Deep Research Agents）的定义与核心能力
 
-> 论文：**Deep Research Agents: A Systematic Examination And Roadmap** - <http://arxiv.org/abs/2506.18096/>
+> Y. Huang, Y. Chen, H. Zhang, K. Li, H. Zhou, M. Fang, L. Yang, X. Li, L. Shang, S. Xu, J. Hao, K. Shao, and J. Wang, "**Deep Research Agents: A Systematic Examination And Roadmap**," arXiv preprint arXiv:2506.18096, Jun. 2025. <https://arxiv.org/abs/2506.18096/>
 
 大型语言模型（LLMs）的飞速发展催生了一种新型的自主人工智能系统——**深度研究智能体（Deep Research, DR Agents）**。`DR 智能体`旨在通过结合**动态推理**、**自适应长程规划**、**多跳信息检索**、**迭代工具使用**以及**结构化分析报告的生成**，来应对复杂、多轮次的信息研究任务。
 
