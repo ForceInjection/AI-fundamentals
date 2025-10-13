@@ -5,6 +5,14 @@
 > **适用人群**：`AI` 工程师、系统架构师、`GPU` 编程开发者、大模型应用开发者、技术研究人员。
 > **技术栈**：`CUDA`、`GPU` 架构、`LLM`、`AI` 系统、分布式计算、容器化部署、性能优化。
 
+---
+
+**Star History**:
+
+## [![Star History Chart](https://api.star-history.com/svg?repos=ForceInjection/AI-fundermentals&type=date&legend=top-left)](https://www.star-history.com/#ForceInjection/AI-fundermentals&date&legend=top-left)
+
+---
+
 ## 1. 硬件与基础设施
 
 ### 1.1 硬件基础知识
@@ -289,7 +297,6 @@
 
 - [**CUDA 核心概念详解**](cuda/cuda_cores_cn.md) - CUDA 核心、线程块、网格等基础概念的深度解析
 - [**CUDA 流详解**](cuda/cuda_streams.md) - CUDA 流的原理、应用场景与性能优化
-- [**GPU 编程基础**](gpu_programming/gpu_programming_introduction.md) - GPU 编程入门到进阶的完整技术路径
 
 **技术特色：**
 
@@ -297,18 +304,32 @@
 - **性能调优实践**：内存访问模式优化、线程同步策略、算法并行化重构
 - **高级编程特性**： Unified Memory 统一内存、Multi-GPU 多卡编程、CUDA Streams 异步执行
 
-### 2.3 Trae 编程实战课程
+### 2.3 GPU 编程基础
+
+- [**GPU 编程基础**](gpu_programming/README.md) - GPU 编程入门到进阶的完整技术路径，涵盖 GPU 架构、编程模型和性能优化
+
+**核心内容：**
+
+- **GPU 架构理解**：GPU 与 CPU 的架构差异、并行计算原理、内存层次结构
+- **CUDA 编程实践**：线程模型、内存管理、核函数编写、性能优化技巧
+- **调试与性能分析**：CUDA 调试工具、性能分析方法、瓶颈识别与优化
+- **高级特性应用**：流处理、多 GPU 编程、与深度学习框架的集成
+
+### 2.4 Trae 编程实战课程
 
 **系统化的 Trae 编程学习体系：**
 
-- [《Trae 编程实战》课程提纲](trae/《Trae%20编程实战》课程提纲（对外）.md) - 完整的五部分 21 章课程规划
-  - **基础入门**：环境配置、交互模式、HelloWorld 项目实战
-  - **场景实战**：前端开发、后端 API、数据库设计、安全认证
-  - **高级应用**： AI 集成、实时通信、数据分析、微服务架构
-  - **团队协作**：代码质量、版本控制、CI/CD、性能优化
-  - **综合项目**：企业级应用开发、部署运维实战
+- [**Trae 编程实战教程**](trae/README.md) - 从基础入门到高级应用的完整 Trae 编程学习路径
 
-### 2.4 Java AI 开发
+**课程结构：**
+
+- **第一部分：Trae 基础入门**：环境配置、交互模式、HelloWorld 项目实战
+- **第二部分：常见编程场景实战**：前端开发、Web 开发、后端 API、数据库设计、安全认证
+- **第三部分：高级应用场景**：AI 模型集成、实时通信、数据分析、微服务架构
+- **第四部分：团队协作与最佳实践**：代码质量管理、项目管理、性能优化、DevOps 实践
+- **第五部分：综合项目实战**：企业级应用开发、核心功能实现、部署运维实战
+
+### 2.5 Java AI 开发
 
 - [**Java AI 开发指南**](java_ai/README.md) - Java 生态系统中的 AI 开发技术
 - [**使用 Spring AI 构建高效 LLM 代理**](java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
@@ -320,15 +341,15 @@
 - **生产就绪**：提供完整的企业级 AI 应用解决方案
 - **Java 原生**：充分利用 Java 生态系统的优势
 
-### 2.4 CUDA 学习材料
+### 2.6 CUDA 学习材料
 
-#### 2.4.1 快速入门
+#### 2.6.1 快速入门
 
 - [**并行计算、费林分类法和 CUDA 基本概念**](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [**CUDA 编程模型入门**](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
 - [**CUDA 并发编程之 Stream 介绍**](cuda/cuda_streams.md)
 
-#### 2.4.2 参考资料
+#### 2.6.2 参考资料
 
 - [**CUDA Reading Group 相关讲座**](https://mp.weixin.qq.com/s/6sOrNzG0UeVBes8stWSoWA)
   - [GPU Mode Reading Group](https://github.com/gpu-mode)
@@ -345,7 +366,7 @@
 - [**Multi GPU Programming Models**](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [**CUDA Processing Streams**](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
 
-#### 2.4.3 专业选手
+#### 2.6.3 专业选手
 
 本小节面向 `CUDA` 编程的专业开发者，提供深度优化的内核实现和高性能计算技术。通过 200+ 个精心设计的内核示例，涵盖 `Tensor Core`、`CUDA Core` 的极致优化，以及现代 `GPU` 架构的前沿技术应用，帮助开发者达到接近硬件理论峰值的性能表现。
 
@@ -547,19 +568,19 @@
 - [**一文读懂思维链（Chain-of-Thought, CoT）**](llm/一文读懂思维链（Chain-of-Thought,%20CoT）.md) - 推理能力增强的核心技术
 - [**大模型的幻觉及其应对措施**](llm/大模型的幻觉及其应对措施.md) - 幻觉问题的成因分析与解决方案
 - [**大模型文件格式完整指南**](llm/大模型文件格式完整指南.md) - 模型存储与部署的技术规范
-- [**混合专家系统（MoE）图解指南**](llm/A%20Visual%20Guide%20to%20Mixture%20of%20Experts%20(MoE).zh-CN.md) - 稀疏激活架构的设计原理
+- [**混合专家系统（MoE）图解指南**](<llm/A%20Visual%20Guide%20to%20Mixture%20of%20Experts%20(MoE).zh-CN.md>) - 稀疏激活架构的设计原理
 - [**量化技术可视化指南**](llm/A%20Visual%20Guide%20to%20Quantization.zh-CN.md) - 模型压缩与加速的核心技术
 - [**基于大型语言模型的意图检测**](llm/Intent%20Detection%20using%20LLM.zh-CN.md) - 自然语言理解的实际应用
 
 ### 4.4 参考书籍
 
-- [**大模型技术 30 讲**](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg)  - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南
-  - 第三方：[大模型技术30讲（英文&中文批注）](https://ningg.top/Machine-Learning-Q-and-AI)
+- [**大模型技术 30 讲**](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg) - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南
+  - 第三方：[大模型技术 30 讲（英文&中文批注）](https://ningg.top/Machine-Learning-Q-and-AI)
 - [**大模型基础**](https://github.com/ZJU-LLMs/Foundations-of-LLMs) <br>
- <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
+  <img src="https://raw.githubusercontent.com/ZJU-LLMs/Foundations-of-LLMs/main/figure/cover.png" height="300"/>
 
 - [**Hands-On Large Language Models**](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) <br>
- <img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
+  <img src="https://raw.githubusercontent.com/HandsOnLLM/Hands-On-Large-Language-Models/main/images/book_cover.png" height="300"/>
 
 - [**从零构建大模型**](https://mp.weixin.qq.com/s/FkBjsQmeXEPlsdFXETYSng) - 从理论到实践，手把手教你打造自己的大语言模型
 - [**百面大模型**](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA) - 打通大模型求职与实战的关键一书
@@ -649,12 +670,14 @@
 **理论基础与核心原理：**
 
 - [**上下文工程原理**](agent/context/上下文工程原理.md) - 基于中科院权威论文的系统性理论阐述与技术框架
+
   - **范式转变**：从传统提示工程到现代上下文工程的技术演进
   - **核心机制**：信息检索、智能选择、动态组装、自适应压缩和实时调整
   - **技术架构**：多模态信息融合、分布式状态管理、智能组装引擎
   - **企业应用**：全生命周期上下文管理和系统化自动优化策略
 
 - [**上下文工程原理简介**](agent/context/上下文工程原理简介.md) - 面向开发者的深入浅出技术指南
+
   - **概念演进**：从简单聊天机器人到复杂智能助手的技术进化路径
   - **核心特征**：系统性方法论、动态优化算法、多模态融合、状态管理、智能组装
   - **技术对比**：与传统提示词工程的本质区别、优势分析和应用场景
@@ -665,18 +688,25 @@
   - **问题解决**：上下文污染检测、信息干扰过滤、语义混淆处理、冲突解决策略
   - **性能优化**：令牌消耗控制算法、成本效益分析、延迟优化技术
 
-### 7.4 AI 智能体记忆系统架构
+### 7.4 Agent 基础设施架构
+
+Agent 基础设施是位于智能 Agent 之外、用于调节、协调、约束 Agent 与环境交互的一组技术系统与共享协议。本节深入探讨 Agent 基础设施的核心概念、架构设计原理和工程实践，涵盖可靠性、可扩展性、可观测性、成本可控性以及合规治理等关键技术领域。
+
+- [**AI Agent 基础设施的崛起**](agent_infra/the-rise-of-ai-agent-infrastructure.md) - AI Agent 基础设施的发展趋势、技术演进和行业应用前景
+- [**AI Agent 基础设施三层架构：工具、数据、编排**](agent_infra/ai-agent-infrastructure-three-layers-tools-data-orchestration.md) - AI Agent 基础设施的三层架构设计，涵盖工具层、数据层和编排层的技术实现
+
+### 7.5 AI 智能体记忆系统架构
 
 记忆系统是 AI 智能体实现长期学习和知识积累的关键技术组件。本节深入探讨智能体记忆系统的架构设计原理、存储策略优化、检索算法实现和多轮对话中的指代消解机制，为构建具备持续学习能力的智能体系统提供完整的技术方案。
 
-#### 7.4.1 记忆系统理论基础
+#### 7.5.1 记忆系统理论基础
 
 - [**AI 智能体记忆系统：理论与实践**](agent/memory/AI%20智能体记忆系统：理论与实践.md) - 智能体记忆系统的架构设计、存储策略与检索优化技术
   - [**记忆系统代码实现**](agent/memory/code/README.md) - 记忆系统的核心算法实现与工程化实践
 - [**论文解读 - 大模型 Agent 记忆系统：理论基础与交互机制**](agent/memory/大模型Agent记忆综述.md) - 本文从理论角度深入探讨了大模型 Agent 记忆系统的定义、概念和交互机制，旨在帮助读者理解记忆系统的产生、存储和使用原理。
 - [**如何设计支持多轮指代消解的对话系统**](agent/如何设计支持多轮指代消解的对话系统.md) - 多轮对话中的指代消解机制与上下文理解技术
 
-#### 7.4.2 MemoryOS 智能记忆系统
+#### 7.5.2 MemoryOS 智能记忆系统
 
 MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支持可插拔存储后端和分层记忆管理机制。该系统为 AI 智能体提供了完整的记忆存储、检索和管理解决方案。
 
@@ -689,7 +719,7 @@ MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支�
 - **多存储后端支持**：支持文件存储、向量数据库等多种存储方式
 - **智能检索优化**：提供高效的记忆检索和相似性匹配算法
 
-#### 7.4.3 Mem0 智能记忆系统
+#### 7.5.3 Mem0 智能记忆系统
 
 Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设计的自改进记忆层，通过提供持久化、个性化的记忆能力来增强 AI 助手和智能体的表现。该系统同时提供托管平台服务和开源解决方案，让开发者能够为 AI 应用添加上下文记忆功能。
 
@@ -709,7 +739,7 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 - **医疗保健**：跟踪患者偏好和历史记录，提供个性化护理
 - **生产力和游戏**：基于用户行为自适应工作流程和环境
 
-#### 7.4.4 记忆系统框架集成
+#### 7.5.4 记忆系统框架集成
 
 - [**使用 LangChain 实现智能对话机器人的记忆功能**](agent/memory/langchain/langchain_memory.md) - 本文将深入探讨如何使用 LangChain 框架实现智能对话机器人的记忆功能，从 AI Agent 记忆系统的理论基础到 LangChain 的具体实现，再到实际应用案例。
   - [**LangChain 记忆功能演示代码**](agent/memory/langchain/code/README.md) - 完整的 LangChain 记忆功能实现示例，包含四种核心记忆类型演示、智能客服应用和现代 LangGraph 记忆管理：
@@ -719,23 +749,23 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
     - **多 LLM 支持**：兼容 OpenAI API、本地模型（Ollama）和其他 OpenAI 兼容服务的灵活配置
     - **交互式演示**：提供实时聊天界面和完整的配置管理，支持一键运行和调试
 
-### 7.5 工程实践与项目案例
+### 7.6 工程实践与项目案例
 
 本节通过完整的企业级项目案例和系统性的培训体系，展示多智能体系统从理论设计到工程实现的全过程。涵盖 Docker 容器化部署、自动化测试、性能监控、LangGraph 工作流编排、LangSmith 全链路监控等企业级技术栈，为开发者提供可直接应用的工程实践指南。
 
-#### 7.5.1 多智能体系统工程实践
+#### 7.6.1 多智能体系统工程实践
 
 - [**多智能体系统项目**](agent/multi_agent_system/) - 企业级多智能体系统的完整实现项目，包含 Docker 容器化部署、自动化测试用例和性能监控
 
-#### 7.5.2 多智能体训练
+#### 7.6.2 多智能体培训
 
-- [**多智能体训练课程**](agent/multi_agent_training/) - 系统性的多智能体训练教程，包含理论基础、LangGraph 框架、LangSmith 监控、企业级架构和应用实践
+- [**多智能体培训课程**](agent/multi_agent_training/) - 系统性的多智能体训练教程，包含理论基础、LangGraph 框架、LangSmith 监控、企业级架构和应用实践
 - [**多智能体 AI 系统培训材料**](agent/multi_agent_training/README.md) - 5 天 40 学时的完整培训体系
-- [**多智能体系统概论**](agent/multi_agent_training/01-理论基础/01-多智能体系统概论.md) - BDI 架构、协作机制、系统优势
-- [**LangGraph 深度应用**](agent/multi_agent_training/02-LangGraph框架/02-LangGraph深度应用.md) - 工作流编排引擎深度应用
-- [**LangSmith 监控平台集成**](agent/multi_agent_training/03-LangSmith监控/03-LangSmith监控平台集成.md) - 全链路追踪、告警、性能优化
-- [**企业级系统架构设计与实现**](agent/multi_agent_training/04-企业级架构/04-企业级系统架构设计与实现.md) - 架构设计、技术实现、代码实践
-- [**应用实践与部署运维**](agent/multi_agent_training/05-应用实践/05-应用实践与部署运维.md) - 智能客服、部署、最佳实践
+  - [**多智能体系统概论**](agent/multi_agent_training/01-理论基础/01-多智能体系统概论.md) - BDI 架构、协作机制、系统优势
+  - [**LangGraph 深度应用**](agent/multi_agent_training/02-LangGraph框架/02-LangGraph深度应用.md) - 工作流编排引擎深度应用
+  - [**LangSmith 监控平台集成**](agent/multi_agent_training/03-LangSmith监控/03-LangSmith监控平台集成.md) - 全链路追踪、告警、性能优化
+  - [**企业级系统架构设计与实现**](agent/multi_agent_training/04-企业级架构/04-企业级系统架构设计与实现.md) - 架构设计、技术实现、代码实践
+  - [**应用实践与部署运维**](agent/multi_agent_training/05-应用实践/05-应用实践与部署运维.md) - 智能客服、部署、最佳实践
 
 **培训特色：**
 
@@ -744,13 +774,13 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 - **企业级标准**：高可用性架构、安全机制、性能优化、运维最佳实践
 - **完整项目案例**：智能客服系统、内容创作平台、金融分析系统
 
-### 7.6 应用案例
+### 7.7 应用案例
 
 本节提供具体的 AI Agent 应用部署案例，通过 Coze 平台的部署配置实践，展示企业级智能体应用的实际落地过程，包括平台选择、配置优化、部署策略等关键环节的最佳实践。
 
 - [**Coze 部署和配置手册**](agent/Coze部署和配置手册.md) - Coze 平台的部署配置指南
 
-#### 7.6.1 数据科学智能体应用
+#### 7.7.1 数据科学智能体应用
 
 数据科学智能体（Data Science Agent）是 Databricks 推出的革命性 AI 助手，专为数据科学家和分析师设计。通过自然语言交互，智能体能够自动生成和执行代码、探索数据、构建机器学习模型，并提供智能化的错误诊断和修复建议，显著提升数据科学工作流程的效率和质量。
 
@@ -760,7 +790,7 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
   - **产品创新**：渐进式交互设计、上下文感知能力、透明度与自动化的平衡
   - **企业应用**：工具确认机制、最佳实践建议、未来发展方向
 
-### 7.7 RAG 技术
+### 7.8 RAG 技术
 
 检索增强生成（RAG）是现代 AI Agent 系统的核心技术之一，通过结合外部知识库和生成模型，显著提升智能体的知识获取和推理能力。本节涵盖 RAG 系统的架构设计、分块策略优化、Embedding 模型选型、系统评估等关键技术，为构建知识密集型智能体应用提供完整的技术指南。
 
@@ -770,7 +800,7 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 - [**Evaluating Chunking Strategies for Retrieval 总结**](llm/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
 - [**中文 RAG 系统 Embedding 模型选型技术文档**](llm/rag/中文RAG系统Embedding模型选型技术文档.md)
 
-### 7.8 AI Agent 框架与工具
+### 7.9 AI Agent 框架与工具
 
 本节系统介绍 AI Agent 开发的主流框架和工具生态，涵盖 Python 和 Java 两大技术栈。从 LangChain、LangGraph 等 Python 生态的工作流编排工具，到 Spring AI 等 Java 企业级框架，以及 MCP、n8n 等新兴技术平台，为不同技术背景的开发者提供全面的工具选型指南和最佳实践。
 
@@ -791,13 +821,13 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
   - **企业级实践**：可预测性、一致性、可维护性的平衡
   - **技术实现**： Spring AI 的模型可移植性和结构化输出功能
 
-### 7.9 模型上下文协议（MCP）
+### 7.10 模型上下文协议（MCP）
 
 模型上下文协议（MCP）是 AI 工具生态的重要技术标准，为智能体与外部工具的集成提供了标准化的接口规范。本节深入解析 MCP 的技术架构、协议设计和未来发展趋势，探讨其在构建可扩展、可互操作的 AI 工具生态中的关键作用。
 
 - [**MCP 深度解析与 AI 工具未来**](llm/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)
 
-### 7.10 12-Factor Agents 方法论
+### 7.11 12-Factor Agents 方法论
 
 12-Factor Agents 是一套经过验证的构建可靠 LLM 应用的原则体系，借鉴了著名的 12 Factor Apps 方法论。这套方法论为开发者提供了从理论到实践的完整指导，特别适用于需要达到生产级质量标准的 AI 应用开发。
 
@@ -811,13 +841,13 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 - **技术栈无关**：适用于任何编程语言或框架
 - **可测试性**：每个要素都可以独立测试和验证
 
-**12个核心要素**：
+**12 个核心要素**：
 
 1. **自然语言到工具调用** - 将用户意图原子化转换为结构化操作
 2. **拥有自己的提示词** - 将提示词视为代码进行版本控制和测试
 3. **拥有自己的上下文窗口** - 完全控制上下文构建和格式化
 4. **显式状态管理** - 明确的状态转换和持久化策略
-5. **工具即API** - 将工具视为标准的API接口进行设计
+5. **工具即 API** - 将工具视为标准的 API 接口进行设计
 6. **日志与可观测性** - 全面的日志记录和监控体系
 7. **渐进式交互** - 支持多轮对话和逐步确认机制
 8. **错误处理与恢复** - 健壮的异常处理和优雅降级
@@ -826,7 +856,7 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 11. **性能优化** - 针对延迟、成本和质量的综合优化
 12. **部署与运维** - 生产环境的部署策略和运维最佳实践
 
-- [**12-Factor Agents 完整指南**](agent/12-factor-agents-intro.md) - 构建可靠 LLM 应用的12个核心原则详解
+- [**12-Factor Agents 完整指南**](agent/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 个核心原则详解
 
 ---
 
@@ -913,12 +943,12 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 ---
 
-## Buy Me a Coffee
+## Buy Me a Coffee!
 
 如果您觉得本项目对您有帮助，欢迎购买我一杯咖啡，支持我继续创作和维护。
 
-|**微信**|**支付宝**|
-|---|---|
-|<img src="./img/weixinpay.JPG" alt="wechat" width="200">|<img src="./img/alipay.JPG" alt="alipay" width="200">|
+| **微信**                                                 | **支付宝**                                            |
+| -------------------------------------------------------- | ----------------------------------------------------- |
+| <img src="./img/weixinpay.JPG" alt="wechat" width="200"> | <img src="./img/alipay.JPG" alt="alipay" width="200"> |
 
 ---
