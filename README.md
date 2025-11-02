@@ -329,7 +329,20 @@
 - **第四部分：团队协作与最佳实践**：代码质量管理、项目管理、性能优化、DevOps 实践
 - **第五部分：综合项目实战**：企业级应用开发、核心功能实现、部署运维实战
 
-### 2.5 Java AI 开发
+### 2.5 MCP 协议与实战
+
+**Model Context Protocol** (MCP) 是一个开放标准，用于连接 AI 助手与外部数据源和工具。
+
+- **标准化接口**：为 AI 助手提供统一的外部工具访问协议
+- **安全可控**：基于 JSON-RPC 的安全通信机制
+- **可扩展性**：支持自定义工具和数据源的灵活集成
+- **跨平台支持**：兼容多种 AI 开发环境和 IDE
+
+**实战案例**：
+
+- [**从零构建 MCP 服务实践指南**](https://github.com/ForceInjection/markdown-mcp/blob/main/docs/blog-mcp-integration.md) - 完整的 MCP 服务开发与集成教程。
+
+### 2.6 Java AI 开发
 
 - [**Java AI 开发指南**](java_ai/README.md) - Java 生态系统中的 AI 开发技术
 - [**使用 Spring AI 构建高效 LLM 代理**](java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
@@ -341,9 +354,9 @@
 - **生产就绪**：提供完整的企业级 AI 应用解决方案
 - **Java 原生**：充分利用 Java 生态系统的优势
 
-### 2.6 CUDA 学习材料
+### 2.7 CUDA 学习材料
 
-#### 2.6.1 快速入门
+#### 2.7.1 快速入门
 
 - [**并行计算、费林分类法和 CUDA 基本概念**](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [**CUDA 编程模型入门**](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
