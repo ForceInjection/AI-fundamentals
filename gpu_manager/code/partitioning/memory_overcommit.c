@@ -20,6 +20,7 @@
 typedef enum {
     PAGE_STATE_FREE,        // 空闲
     PAGE_STATE_ALLOCATED,   // 已分配
+    PAGE_STATE_RESIDENT,    // 常驻显存
     PAGE_STATE_COMPRESSED,  // 已压缩
     PAGE_STATE_SWAPPED,     // 已换出
     PAGE_STATE_MIGRATED     // 已迁移
@@ -140,6 +141,7 @@ static void release_physical_page(void *addr, size_t size);
 static lru_cache_t* create_lru_cache(size_t capacity);
 static void lru_cache_put(lru_cache_t *cache, memory_page_t *page);
 static memory_page_t* lru_cache_get(lru_cache_t *cache, void *virtual_addr);
+static void lru_cache_update(lru_cache_t *cache, memory_page_t *page);
 static int expand_page_table(void);
 static int swap_in_page(memory_page_t *page);
 static int migrate_page_back(memory_page_t *page);
@@ -650,6 +652,11 @@ static memory_page_t* lru_cache_get(lru_cache_t *cache, void *virtual_addr) {
         }
     }
     return NULL;
+}
+
+static void lru_cache_update(lru_cache_t *cache, memory_page_t *page) {
+    (void)cache;
+    (void)page;
 }
 
 // 迁移冷数据（简化实现）

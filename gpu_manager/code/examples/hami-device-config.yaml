@@ -1,5 +1,9 @@
 # hami-scheduler-device-configMap
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hami-device-config
+  namespace: kube-system
 data:
   device-config.yaml: |
     nvidia:
@@ -46,8 +50,15 @@ spec:
     image: pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
     resources:
       limits:
-        nvidia.com/gpu: 2        # 请求2个vGPU
-        nvidia.com/gpumem: 8000  # 每个vGPU 8GB内存
+        cpu: "2"
+        memory: "4Gi"
+        nvidia.com/gpu: "2"        # 请求2个vGPU
+        nvidia.com/gpumem: "8000"  # 每个vGPU 8GB内存
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+        nvidia.com/gpu: "2"
+        nvidia.com/gpumem: "8000"
     command: ["python", "train.py"]
 
 ---
@@ -64,5 +75,12 @@ spec:
     image: pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
     resources:
       limits:
-        nvidia.com/gpu: 1
-        nvidia.com/gpumem: 10240  # 使用2g.10gb MIG实例
+        cpu: "2"
+        memory: "4Gi"
+        nvidia.com/gpu: "1"
+        nvidia.com/gpumem: "10240"  # 使用2g.10gb MIG实例
+      requests:
+        cpu: "1"
+        memory: "2Gi"
+        nvidia.com/gpu: "1"
+        nvidia.com/gpumem: "10240"

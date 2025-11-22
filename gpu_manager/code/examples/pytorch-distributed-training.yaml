@@ -3,6 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: pytorch-distributed-training
+  namespace: default
 spec:
   parallelism: 4  # 4个并行训练任务
   template:
@@ -12,9 +13,17 @@ spec:
         image: pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
         resources:
           limits:
+            cpu: "4"
+            memory: "8Gi"
             nvidia.com/gpu: "1"        # 每个worker使用1个vGPU
             nvidia.com/gpumem: "6000"   # 分配6GB显存
             nvidia.com/gpucores: "75"   # 使用75%计算资源
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+            nvidia.com/gpu: "1"
+            nvidia.com/gpumem: "6000"
+            nvidia.com/gpucores: "75"
         env:
         - name: MASTER_ADDR
           value: "pytorch-master"
@@ -23,13 +32,21 @@ spec:
         - name: WORLD_SIZE
           value: "4"
         command:
-        - python
-        - -m
-        - torch.distributed.launch
+        - torchrun
         - --nproc_per_node=1
+        - --nnodes=4
+        - --node_rank=$(JOB_COMPLETION_INDEX)
+        - --master_addr=pytorch-master
+        - --master_port=29500
         - train_distributed.py
         volumeMounts:
         - name: training-data
           mountPath: /data
         - name: model-output
           mountPath: /output
+      restartPolicy: Never
+      volumes:
+      - name: training-data
+        emptyDir: {}
+      - name: model-output
+        emptyDir: {}
