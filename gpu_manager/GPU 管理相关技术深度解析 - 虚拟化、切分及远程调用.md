@@ -158,59 +158,59 @@
 
 ## 1. 术语表
 
-| **术语**   | **全称**                                        | **定义**                                          |
-| ---------- | ----------------------------------------------- | ------------------------------------------------- |
-| GPU        | Graphics Processing Unit                        | 图形处理单元，专门用于并行计算的处理器            |
-| MIG        | Multi-Instance GPU                              | NVIDIA 的多实例 GPU 技术，支持硬件级 GPU 切分 [1] |
-| HAMi       | Heterogeneous AI Computing Middleware           | 异构 AI 计算中间件，开源 GPU 资源管理方案 [2,3]   |
-| CUDA       | Compute Unified Device Architecture             | NVIDIA 的并行计算平台和编程模型 [4,5]             |
-| API        | Application Programming Interface               | 应用程序编程接口                                  |
-| cgroup     | Control Groups                                  | Linux 内核功能，用于限制和隔离进程组的资源使用    |
-| ioctl      | Input/Output Control                            | 设备输入输出控制系统调用                          |
-| mmap       | Memory Map                                      | 内存映射系统调用                                  |
-| QoS        | Quality of Service                              | 服务质量，用于保证网络或系统性能                  |
-| SLA        | Service Level Agreement                         | 服务级别协议                                      |
-| ROI        | Return on Investment                            | 投资回报率                                        |
-| NPU        | Neural Processing Unit                          | 神经网络处理单元                                  |
-| DPU        | Data Processing Unit                            | 数据处理单元                                      |
-| FPGA       | Field-Programmable Gate Array                   | 现场可编程门阵列                                  |
-| vGPU       | Virtual GPU                                     | 虚拟 GPU，基于虚拟化创建的 GPU 实例               |
-| SR-IOV     | Single Root I/O Virtualization                  | 单根 I/O 虚拟化，硬件级虚拟化技术 [6]             |
-| IOMMU      | Input-Output Memory Management Unit             | 输入输出内存管理单元，用于设备虚拟化 [7]          |
-| PCIe       | Peripheral Component Interconnect Express       | 高速串行计算机扩展总线标准                        |
-| NUMA       | Non-Uniform Memory Access                       | 非统一内存访问架构                                |
-| UVM        | Unified Virtual Memory                          | 统一虚拟内存，CUDA 的内存管理技术                 |
-| COW        | Copy-on-Write                                   | 写时复制，内存管理优化技术                        |
-| LRU        | Least Recently Used                             | 最近最少使用，缓存替换算法                        |
-| OOM        | Out of Memory                                   | 内存不足错误                                      |
-| ZSTD       | Zstandard                                       | 高效的无损数据压缩算法                            |
-| LZ4        | LZ4                                             | 快速无损数据压缩算法                              |
-| RDMA       | Remote Direct Memory Access                     | 远程直接内存访问技术                              |
-| InfiniBand | InfiniBand                                      | 高性能计算和数据中心互联技术                      |
-| NVLink     | NVIDIA NVLink                                   | NVIDIA 的高速 GPU 互联技术                        |
-| NVSwitch   | NVIDIA NVSwitch                                 | NVIDIA 的 GPU 交换芯片                            |
-| NCCL       | NVIDIA Collective Communication Library         | NVIDIA 集合通信库 [8]                             |
-| cuDNN      | CUDA Deep Neural Network Library                | CUDA 深度神经网络库 [8]                           |
-| TensorRT   | TensorRT                                        | NVIDIA 的深度学习推理优化库 [8]                   |
-| Triton     | Triton Inference Server                         | NVIDIA 的推理服务器                               |
-| DRA        | Dynamic Resource Allocation                     | Kubernetes 动态资源分配技术，支持精细化 GPU 资源管理 [12] |
-| CDI        | Container Device Interface                      | 容器设备接口规范，实现容器与设备的无缝对接 [13]   |
-| Device Plugin | Kubernetes Device Plugin                     | Kubernetes 设备插件框架，用于硬件设备管理 [14]    |
-| MPS        | Multi-Process Service                           | NVIDIA 多进程服务，支持多进程共享 GPU 资源 [15]   |
-| Docker     | Docker                                          | 容器化平台                                        |
-| Kubernetes | Kubernetes                                      | 容器编排平台                                      |
-| Prometheus | Prometheus                                      | 开源监控和告警系统 [9]                            |
-| Grafana    | Grafana                                         | 开源数据可视化平台 [10]                           |
-| ROCm       | Radeon Open Compute                             | AMD 的开源 GPU 计算平台 [11]                      |
-| HIP        | Heterogeneous-Compute Interface for Portability | AMD 的异构计算接口                                |
-| HBM        | High Bandwidth Memory                           | 高带宽内存                                        |
-| GDDR       | Graphics Double Data Rate                       | 图形双倍数据速率内存                              |
-| ECC        | Error-Correcting Code                           | 错误纠正码内存                                    |
-| DMA        | Direct Memory Access                            | 直接内存访问                                      |
-| IOVA       | I/O Virtual Address                             | I/O 虚拟地址                                      |
-| SMMU       | System Memory Management Unit                   | 系统内存管理单元                                  |
-| ATS        | Address Translation Services                    | 地址转换服务                                      |
-| PASID      | Process Address Space Identifier                | 进程地址空间标识符                                |
+| **术语**      | **全称**                                        | **定义**                                                  |
+| ------------- | ----------------------------------------------- | --------------------------------------------------------- |
+| GPU           | Graphics Processing Unit                        | 图形处理单元，专门用于并行计算的处理器                    |
+| MIG           | Multi-Instance GPU                              | NVIDIA 的多实例 GPU 技术，支持硬件级 GPU 切分 [1]         |
+| HAMi          | Heterogeneous AI Computing Middleware           | 异构 AI 计算中间件，开源 GPU 资源管理方案 [2,3]           |
+| CUDA          | Compute Unified Device Architecture             | NVIDIA 的并行计算平台和编程模型 [4,5]                     |
+| API           | Application Programming Interface               | 应用程序编程接口                                          |
+| cgroup        | Control Groups                                  | Linux 内核功能，用于限制和隔离进程组的资源使用            |
+| ioctl         | Input/Output Control                            | 设备输入输出控制系统调用                                  |
+| mmap          | Memory Map                                      | 内存映射系统调用                                          |
+| QoS           | Quality of Service                              | 服务质量，用于保证网络或系统性能                          |
+| SLA           | Service Level Agreement                         | 服务级别协议                                              |
+| ROI           | Return on Investment                            | 投资回报率                                                |
+| NPU           | Neural Processing Unit                          | 神经网络处理单元                                          |
+| DPU           | Data Processing Unit                            | 数据处理单元                                              |
+| FPGA          | Field-Programmable Gate Array                   | 现场可编程门阵列                                          |
+| vGPU          | Virtual GPU                                     | 虚拟 GPU，基于虚拟化创建的 GPU 实例                       |
+| SR-IOV        | Single Root I/O Virtualization                  | 单根 I/O 虚拟化，硬件级虚拟化技术 [6]                     |
+| IOMMU         | Input-Output Memory Management Unit             | 输入输出内存管理单元，用于设备虚拟化 [7]                  |
+| PCIe          | Peripheral Component Interconnect Express       | 高速串行计算机扩展总线标准                                |
+| NUMA          | Non-Uniform Memory Access                       | 非统一内存访问架构                                        |
+| UVM           | Unified Virtual Memory                          | 统一虚拟内存，CUDA 的内存管理技术                         |
+| COW           | Copy-on-Write                                   | 写时复制，内存管理优化技术                                |
+| LRU           | Least Recently Used                             | 最近最少使用，缓存替换算法                                |
+| OOM           | Out of Memory                                   | 内存不足错误                                              |
+| ZSTD          | Zstandard                                       | 高效的无损数据压缩算法                                    |
+| LZ4           | LZ4                                             | 快速无损数据压缩算法                                      |
+| RDMA          | Remote Direct Memory Access                     | 远程直接内存访问技术                                      |
+| InfiniBand    | InfiniBand                                      | 高性能计算和数据中心互联技术                              |
+| NVLink        | NVIDIA NVLink                                   | NVIDIA 的高速 GPU 互联技术                                |
+| NVSwitch      | NVIDIA NVSwitch                                 | NVIDIA 的 GPU 交换芯片                                    |
+| NCCL          | NVIDIA Collective Communication Library         | NVIDIA 集合通信库 [8]                                     |
+| cuDNN         | CUDA Deep Neural Network Library                | CUDA 深度神经网络库 [8]                                   |
+| TensorRT      | TensorRT                                        | NVIDIA 的深度学习推理优化库 [8]                           |
+| Triton        | Triton Inference Server                         | NVIDIA 的推理服务器                                       |
+| DRA           | Dynamic Resource Allocation                     | Kubernetes 动态资源分配技术，支持精细化 GPU 资源管理 [12] |
+| CDI           | Container Device Interface                      | 容器设备接口规范，实现容器与设备的无缝对接 [13]           |
+| Device Plugin | Kubernetes Device Plugin                        | Kubernetes 设备插件框架，用于硬件设备管理 [14]            |
+| MPS           | Multi-Process Service                           | NVIDIA 多进程服务，支持多进程共享 GPU 资源 [15]           |
+| Docker        | Docker                                          | 容器化平台                                                |
+| Kubernetes    | Kubernetes                                      | 容器编排平台                                              |
+| Prometheus    | Prometheus                                      | 开源监控和告警系统 [9]                                    |
+| Grafana       | Grafana                                         | 开源数据可视化平台 [10]                                   |
+| ROCm          | Radeon Open Compute                             | AMD 的开源 GPU 计算平台 [11]                              |
+| HIP           | Heterogeneous-Compute Interface for Portability | AMD 的异构计算接口                                        |
+| HBM           | High Bandwidth Memory                           | 高带宽内存                                                |
+| GDDR          | Graphics Double Data Rate                       | 图形双倍数据速率内存                                      |
+| ECC           | Error-Correcting Code                           | 错误纠正码内存                                            |
+| DMA           | Direct Memory Access                            | 直接内存访问                                              |
+| IOVA          | I/O Virtual Address                             | I/O 虚拟地址                                              |
+| SMMU          | System Memory Management Unit                   | 系统内存管理单元                                          |
+| ATS           | Address Translation Services                    | 地址转换服务                                              |
+| PASID         | Process Address Space Identifier                | 进程地址空间标识符                                        |
 
 ---
 
@@ -1500,7 +1500,7 @@ cudaError_t virtual_cuda_malloc(void **devPtr, size_t size) {
 
 #### 5.2.2 内核态虚拟化方案
 
-内核态虚拟化通过驱动与设备插件在系统层拦截 ioctl / mmap 等关键调用，并与容器运行时、 cgroup、 SR-IOV 等机制协同，实现更稳健的资源治理、调度与安全隔离，适用于生产多租户场景（度量与基准验证参见 11.2.2，参考资料参见 [11.6.1]）。
+内核态虚拟化通过驱动与设备插件在系统层拦截 ioctl / mmap 等关键调用，并与容器运行时、cgroup、SR-IOV 等机制协同，实现更稳健的资源治理、调度与安全隔离，适用于生产多租户场景（度量与基准验证参见 11.2.2，参考资料参见 [11.6.1]）。
 
 **核心技术原理：**
 
@@ -1668,7 +1668,7 @@ flowchart TD
 
 ### 6.1 显存管理技术
 
-本节聚焦多租户与异构环境下的显存管理机制与工程权衡：从显存池化与动态分配、碎片治理与回收、 pinned memory 与 DMA 路径优化，到统一内存（UVA / UVM）下的分页迁移、预取与回退策略，以及显存超分的阈值管控、冷热数据分层与 OOM 防护。我们将结合 NVLink / PCIe / InfiniBand / RDMA 的链路差异，分析跨 NUMA 与拓扑亲和性对延迟与带宽的影响，给出 SLA 驱动的配额与 QoS 策略、度量与基准验证方法（参见 11.2.2），以及渐进式变更与回滚的运维实践（参见 11.5.1），以构建可复用、可观测、可回退的显存管理方案。
+本节聚焦多租户与异构环境下的显存管理机制与工程权衡：从显存池化与动态分配、碎片治理与回收、pinned memory 与 DMA 路径优化，到统一内存（UVA / UVM）下的分页迁移、预取与回退策略，以及显存超分的阈值管控、冷热数据分层与 OOM 防护。我们将结合 NVLink / PCIe / InfiniBand / RDMA 的链路差异，分析跨 NUMA 与拓扑亲和性对延迟与带宽的影响，给出 SLA 驱动的配额与 QoS 策略、度量与基准验证方法（参见 11.2.2），以及渐进式变更与回滚的运维实践（参见 11.5.1），以构建可复用、可观测、可回退的显存管理方案。
 
 #### 6.1.1 显存池化和动态分配
 
@@ -2496,7 +2496,7 @@ typedef struct {
 **行业标准基准测试：**
 
 - **SPEC ACCEL**：SPEC 组织的高性能计算基准测试套件，用于评估 GPU 加速计算性能 [34]
-- **Rodinia**： heterogeneous computing benchmark，涵盖多种并行计算模式 [35]
+- **Rodinia**：heterogeneous computing benchmark，涵盖多种并行计算模式 [35]
 - **SHOC**：可扩展异构计算基准测试，支持多种 GPU 架构和编程模型 [36]
 - **GPU-Burn**：GPU 压力测试工具，用于测试 GPU 在极限负载下的稳定性 [42]
 - **NVML**：NVIDIA 管理库提供的性能监控和基准测试接口 [45]
