@@ -138,7 +138,7 @@
 
 ### 1.1 InfiniBand 概述
 
-`InfiniBand` (IB) 是一种高性能、低延迟的网络互连技术，专为高性能计算 (HPC)、数据中心和企业级应用设计。`InfiniBand` 架构由 `InfiniBand Trade Association` (IBTA) 标准化，提供了比传统以太网更优越的性能特性。
+`InfiniBand` (IB) 是一种高性能、低延迟的网络互连技术，专为高性能计算 (HPC)、数据中心和企业级应用设计。`InfiniBand` 架构由 `InfiniBand Trade Association` (IBTA) 标准化，提供了比传统以太网更优越的性能特性 [1]。
 
 ### 1.2 核心技术特性
 
@@ -147,7 +147,7 @@
 根据 `IBTA` 规范，`InfiniBand` 提供以下核心性能特性：
 
 - **高带宽**: 支持从 8 Gbps (SDR) 到 775 Gbps (XDR) 的数据传输速率（有效带宽）
-- **超低延迟**: _端到端延迟_ 通常为 1.6-3 微秒 [1]，在理想实验室环境下可低至 0.5 微秒
+- **超低延迟**: _端到端延迟_ 通常为 1.6-3 微秒 [2]，在理想实验室环境下可低至 0.5 微秒
 - **高可靠性**: 硬件级别的错误检测和纠正机制，BER < 10⁻¹⁵
 - **可扩展性**: 支持数万个节点的大规模集群部署
 
@@ -206,7 +206,7 @@
 - **编码效率**: 8b/10b 编码效率为 80%，64b/66b 编码效率为 96.97%
 - **PAM-4**: Pulse Amplitude Modulation 4-level，四电平脉冲幅度调制
 - **NDR 发布**: 2020 年规范发布，2021 年商用化
-- **XDR 状态**: 2023 年 10 月规范发布 [2]，支持 800Gb/s 端口速度和 1.6Tb/s 交换机间连接，产品已于 2024 年下半年开始部署
+- **XDR 状态**: 2023 年 10 月规范发布 [3]，支持 800Gb/s 端口速度和 1.6Tb/s 交换机间连接，产品已于 2024 年下半年开始部署
 
 _数据来源: `IBTA` 官方规范 [4] 和 `Wikipedia InfiniBand` 规格表 [5]_
 
@@ -299,21 +299,21 @@ _数据来源: `IBTA` 官方规范 [4] 和 `Wikipedia InfiniBand` 规格表 [5]_
 
 | 实现方式            | 典型延迟     | 带宽利用率 | 部署复杂度 | 基础设施要求 | 数据来源  |
 | ------------------- | ------------ | ---------- | ---------- | ------------ | --------- |
-| **InfiniBand RDMA** | 1.6-3 μs [1] | > 95%      | 中等       | 专用 IB 网络 | FS.com    |
-| **RoCE v2**         | 1.3-6 μs [6] | 85-90%     | 复杂       | 无损以太网   | Wikipedia |
-| **iWARP**           | 3-15 μs [6]  | 70-85%     | 简单       | 标准以太网   | Wikipedia |
+| **InfiniBand RDMA** | 1.6-3 μs [2] | > 95%      | 中等       | 专用 IB 网络 | FS.com    |
+| **RoCE v2**         | 1.3-6 μs [6]                                           | 85-90%     | 复杂       | 无损以太网   | Wikipedia |
+| **iWARP**           | 3-15 μs [6]                                            | 70-85%     | 简单       | 标准以太网   | Wikipedia |
 
 **延迟对比说明**:
 
 - **交换机延迟**: InfiniBand 交换机端口延迟约 100ns，以太网交换机约 230ns [6]
 - **最佳性能**: RoCE HCA 最低延迟可达 1.3μs，而 iWARP 最低约 3μs (2011 年数据) [6]
-- **实际应用**: InfiniBand 在理想条件下可达 1.6μs，生产环境通常为 1.6-3μs [1]
+- **实际应用**: InfiniBand 在理想条件下可达 1.6μs，生产环境通常为 1.6-3μs [2]
 
 **与以太网和 RoCE 的详细对比**:
 
 | 特性             | InfiniBand     | 以太网       | RoCE v2     |
 | ---------------- | -------------- | ------------ | ----------- |
-| **端到端延迟**   | 1.6-3 μs [1]   | 20-80 μs [7] | 5-6 μs [1]  |
+| **端到端延迟**   | 1.6-3 μs [2]   | 20-80 μs [7] | 5-6 μs [2]  |
 | **CPU 开销**     | < 5%           | 15-30%       | 5-10%       |
 | **带宽利用率**   | > 95%          | 60-80%       | 85-90%      |
 | **错误率 (BER)** | < 10⁻¹⁵        | 10⁻¹²        | 10⁻¹³       |
@@ -326,8 +326,8 @@ _数据来源: `IBTA` 官方规范 [4] 和 `Wikipedia InfiniBand` 规格表 [5]_
 
 **技术注释**:
 
-1. **InfiniBand 延迟特性**: 根据最新技术资料，InfiniBand 在理想条件下可达 1.6μs，生产环境典型值为 1.6-3μs [1]
-2. **RoCE v2 延迟特性**: 生产环境典型延迟为 5-6μs，理想条件下最低可达 1.3μs [6] [1]
+1. **InfiniBand 延迟特性**: 根据最新技术资料，InfiniBand 在理想条件下可达 1.6μs，生产环境典型值为 1.6-3μs [2]
+2. **RoCE v2 延迟特性**: 生产环境典型延迟为 5-6μs，理想条件下最低可达 1.3μs [2,6]
 3. **延迟差异原因**: InfiniBand 交换机延迟约 100ns，以太网交换机约 230ns [6]
 4. **RDMA 技术优势**: 通过硬件卸载显著降低 CPU 开销
 5. **PFC+ECN**: Priority Flow Control + Explicit Congestion Notification，RoCE v2 的无损网络配置
@@ -2140,11 +2140,11 @@ InfiniBand 网络技术作为高性能计算和 AI 训练的核心基础设施�
 
 ---
 
-## 8. 引用
+## 8. 参考文献
 
-1. FS.com. "InfiniBand vs RoCE v2: What's the Best Fit for Your AI Data Center." FS.com. Accessed: Dec. 7, 2025. [Online]. Available: https://www.fs.com/blog/infiniband-vs-roce-v2-whats-the-best-fit-for-your-ai-data-center-25811.html
-2. IBTA. "IBTA Unveils XDR InfiniBand Specification." InfiniBand Trade Association. Accessed: Dec. 7, 2025. [Online]. Available: https://www.infinibandta.org/ibta-unveils-xdr-infiniband-specification-to-enable-the-next-generation-of-ai-and-scientific-computing/
-3. IBTA. "Celebrating 25 Years of the InfiniBand Trade Association." InfiniBand Trade Association. Accessed: Dec. 7, 2025. [Online]. Available: https://www.infinibandta.org/celebrating-25-years-of-the-infiniband-trade-association/
+1. IBTA. "Celebrating 25 Years of the InfiniBand Trade Association." InfiniBand Trade Association. Accessed: Dec. 7, 2025. [Online]. Available: https://www.infinibandta.org/celebrating-25-years-of-the-infiniband-trade-association/
+2. FS.com. "InfiniBand vs RoCE v2: What's the Best Fit for Your AI Data Center." FS.com. Accessed: Dec. 7, 2025. [Online]. Available: https://www.fs.com/blog/infiniband-vs-roce-v2-whats-the-best-fit-for-your-ai-data-center-25811.html
+3. IBTA. "IBTA Unveils XDR InfiniBand Specification." InfiniBand Trade Association. Accessed: Dec. 7, 2025. [Online]. Available: https://www.infinibandta.org/ibta-unveils-xdr-infiniband-specification-to-enable-the-next-generation-of-ai-and-scientific-computing/
 4. InfiniBand Trade Association. _InfiniBand Architecture Specification_. 2023. [Online]. Available: https://www.infinibandta.org/ibta-specification/
 5. Wikipedia contributors. "InfiniBand." Wikipedia. Accessed: Dec. 7, 2025. [Online]. Available: https://en.wikipedia.org/wiki/InfiniBand
 6. Wikipedia contributors. "RDMA over Converged Ethernet." Wikipedia. Accessed: Dec. 7, 2025. [Online]. Available: https://en.wikipedia.org/wiki/RDMA_over_Converged_Ethernet
