@@ -4,7 +4,7 @@
 
 ---
 
-> **目前进展**：单节点测试基本验证OK（Nvlink,Pcie,IB,SHM,Ethernet,Socket），多节点基于以太网验证OK。
+> **目前进展**：单节点测试基本验证 OK（NVLink, PCIe, IB, SHM, Ethernet, Socket），多节点基于以太网验证 OK。
 
 ## 目录
 
@@ -84,7 +84,7 @@
       - [5.12.1 性能监控指标](#5121-性能监控指标)
       - [5.12.2 自适应优化算法](#5122-自适应优化算法)
       - [5.12.3 性能分析工具集成](#5123-性能分析工具集成)
-  - [6. Python测试模板](#6-python测试模板)
+  - [6. Python 测试模板](#6-python-测试模板)
     - [6.1 Python 测试模板概述](#61-python-测试模板概述)
     - [6.2 基本使用](#62-基本使用)
     - [6.3 环境变量配置](#63-环境变量配置)
@@ -129,7 +129,7 @@
       - [10.1.1 核心 NCCL 环境变量](#1011-核心-nccl-环境变量)
       - [10.1.2 网络特定变量](#1012-网络特定变量)
     - [10.2 命令参考](#102-命令参考)
-      - [10.2.1 nccl\_benchmark.sh 参数](#1021-nccl_benchmarksh-参数)
+      - [10.2.1 nccl_benchmark.sh 参数](#1021-nccl_benchmarksh-参数)
       - [10.2.2 网络后端选项](#1022-网络后端选项)
     - [10.3 性能基准数据](#103-性能基准数据)
       - [10.3.1 GPU 间通信性能](#1031-gpu-间通信性能)
@@ -144,40 +144,40 @@
 
 #### 1.1.1 为什么需要 NCCL 测试
 
-在现代深度学习训练中，多GPU和分布式训练已成为处理大规模模型的标准方法。NCCL (NVIDIA Collective Communications Library) 作为NVIDIA提供的高性能集合通信库，负责GPU间的数据同步和通信。然而，NCCL的性能高度依赖于：
+在现代深度学习训练中，多 GPU 和分布式训练已成为处理大规模模型的标准方法。NCCL (NVIDIA Collective Communications Library) 作为 NVIDIA 提供的高性能集合通信库，负责 GPU 间的数据同步和通信。然而，NCCL 的性能高度依赖于：
 
-- **硬件配置**：GPU型号、内存带宽、PCIe拓扑结构
+- **硬件配置**：GPU 型号、内存带宽、PCIe 拓扑结构
 - **网络环境**：InfiniBand、RoCE、以太网的配置和性能
-- **软件栈**：CUDA版本、驱动程序、NCCL库版本的兼容性
-- **环境变量**：数百个NCCL参数的正确配置（现已通过统一配置管理器自动化）
+- **软件栈**：CUDA 版本、驱动程序、NCCL 库版本的兼容性
+- **环境变量**：数百个 NCCL 参数的正确配置（现已通过统一配置管理器自动化）
 
 不当的配置可能导致：
 
-- 训练速度下降50-90%
-- 通信延迟增加10-100倍
-- 网络带宽利用率低于10%
+- 训练速度下降 50-90%
+- 通信延迟增加 10-100 倍
+- 网络带宽利用率低于 10%
 - 分布式训练失败或不稳定
 
 #### 1.1.2 NCCL 核心概念
 
-**AllReduce 操作**：NCCL最重要的集合通信原语，用于梯度聚合
+**AllReduce 操作**：NCCL 最重要的集合通信原语，用于梯度聚合
 
-- 将所有GPU上的数据进行归约运算（如求和）
-- 将结果广播到所有参与的GPU
+- 将所有 GPU 上的数据进行归约运算（如求和）
+- 将结果广播到所有参与的 GPU
 - 是分布式训练中梯度同步的核心操作
 
 **通信算法**：
 
 - **Ring AllReduce**：适用于带宽受限环境，通信量为 `2(N-1)/N × data_size`
 - **Tree AllReduce**：适用于延迟敏感场景，通信深度为 `log₂(N)`
-- **Double Binary Tree**：NCCL 2.4+的默认算法，平衡延迟和带宽
+- **Double Binary Tree**：NCCL 2.4+ 的默认算法，平衡延迟和带宽
 
 **网络后端**：
 
-- **NVLink**：GPU间直连，带宽300-600 GB/s
-- **InfiniBand**：高性能网络，带宽12.5-50 GB/s (100-400 Gbps)
-- **RoCE**：基于以太网的RDMA，带宽3.1-12.5 GB/s (25-100 Gbps)
-- **TCP/Socket**：通用网络，带宽0.125-1.25 GB/s (1-10 Gbps)
+- **NVLink**：GPU 间直连，带宽 300-600 GB/s
+- **InfiniBand**：高性能网络，带宽 12.5-50 GB/s (100-400 Gbps)
+- **RoCE**：基于以太网的 RDMA，带宽 3.1-12.5 GB/s (25-100 Gbps)
+- **TCP/Socket**：通用网络，带宽 0.125-1.25 GB/s (1-10 Gbps)
 
 ### 1.2 工具概述
 
@@ -187,10 +187,10 @@
 
 **`nccl_benchmark.sh`** - 主要的 NCCL 性能测试工具：
 
-- **性能基准测试**：测量真实的NCCL通信性能
-- **智能配置管理**：统一配置管理器自动化NCCL环境变量设置
+- **性能基准测试**：测量真实的 NCCL 通信性能
+- **智能配置管理**：统一配置管理器自动化 NCCL 环境变量设置
 - **多级优化策略**：提供保守、平衡、激进三种优化级别（**仅适用于 NVLink 网络后端**）
-- **自动路径检测**：按NCCL优先级自动选择最佳通信路径
+- **自动路径检测**：按 NCCL 优先级自动选择最佳通信路径
 - **问题诊断**：识别性能瓶颈和配置问题
 
 **`gpu_topology_detector.sh`** - GPU 拓扑检测工具：
@@ -209,7 +209,7 @@
 ### 1.3 主要功能
 
 - **系统检查**: 验证依赖组件和硬件状态
-- **统一配置管理**: 自动化NCCL环境变量设置
+- **统一配置管理**: 自动化 NCCL 环境变量设置
 - **性能测试**: 分布式 AllReduce 测试和性能分析
 - **报告生成**: 详细的测试报告和性能数据分析
 
@@ -218,17 +218,17 @@
 #### 1.4.1 硬件要求
 
 - **GPU**: 一个或多个 NVIDIA GPU (支持 CUDA Compute Capability 3.5+)
-  - 推荐：V100、A100、H100 等数据中心GPU
-  - 最低：GTX 1080、RTX 2080 等消费级GPU
+  - 推荐：V100、A100、H100 等数据中心 GPU
+  - 最低：GTX 1080、RTX 2080 等消费级 GPU
 - **网络**: InfiniBand 网卡 (原生 IB 或 RoCE)
   - InfiniBand：EDR (12.5 GB/s)、HDR (25 GB/s)、NDR (50 GB/s)
   - RoCE：3.1/6.25/12.5 GB/s (25/50/100 Gbps) 以太网卡
-- **内存**: 建议 16GB 以上系统内存
-- **存储**: 至少 10GB 可用空间用于日志和临时文件
+- **内存**: 建议 16 GB 以上系统内存
+- **存储**: 至少 10 GB 可用空间用于日志和临时文件
 
 #### 1.4.2 软件要求
 
-- **操作系统**: Linux (Ubuntu 18.04+/CentOS 7+/RHEL 7+)
+- **操作系统**: Linux (Ubuntu 18.04+ / CentOS 7+ / RHEL 7+)
 - **Python**: Python 3.7+ (推荐 3.8-3.11)
 - **PyTorch**: 1.12.0+ 支持 CUDA 的版本
 - **NCCL**: 2.12.0+ (推荐 2.18.0+)
@@ -274,7 +274,7 @@ sudo systemctl enable rdma && sudo systemctl start rdma
 
 ### 2.1 单节点测试概述
 
-单节点测试用于验证单台机器上多GPU之间的NCCL通信性能，是分布式训练的基础验证步骤。
+单节点测试用于验证单台机器上多 GPU 之间的 NCCL 通信性能，是分布式训练的基础验证步骤。
 
 ### 2.2 快速开始
 
@@ -315,12 +315,12 @@ sudo systemctl enable rdma && sudo systemctl start rdma
 
 #### 2.3.1 基本参数
 
-| 参数 | 默认值 | 说明 | 示例 |
-|------|--------|------|------|
-| `--size` | 1M | 测试数据大小 | `--size 100M` |
-| `--time` | 30 | 测试持续时间(秒) | `--time 120` |
-| `--network` | auto | 网络后端 | `--network nvlink` |
-| `--optimization-level` | conservative | 优化级别(仅NVLink) | `--optimization-level balanced` |
+| 参数                   | 默认值       | 说明                 | 示例                            |
+| ---------------------- | ------------ | -------------------- | ------------------------------- |
+| `--size`               | 1M           | 测试数据大小         | `--size 100M`                   |
+| `--time`               | 30           | 测试持续时间（秒）   | `--time 120`                    |
+| `--network`            | auto         | 网络后端             | `--network nvlink`              |
+| `--optimization-level` | conservative | 优化级别 (仅 NVLink) | `--optimization-level balanced` |
 
 #### 2.3.2 高级参数
 
@@ -337,10 +337,10 @@ sudo systemctl enable rdma && sudo systemctl start rdma
 
 ### 2.4 统一配置管理器
 
-**新版本特性**：脚本使用统一配置管理器自动化NCCL环境变量设置，无需手动配置。
+**新版本特性**：脚本使用统一配置管理器自动化 NCCL 环境变量设置，无需手动配置。
 
 ```bash
-# 1. 自动配置所有NCCL环境变量
+# 1. 自动配置所有 NCCL 环境变量
 ./nccl_benchmark.sh --network nvlink
 
 # 2. 查看自动配置的环境变量
@@ -349,7 +349,7 @@ sudo systemctl enable rdma && sudo systemctl start rdma
 
 **配置管理器功能**：
 
-- 消除重复代码，统一管理所有NCCL配置项
+- 消除重复代码，统一管理所有 NCCL 配置项
 - 智能缓存系统，避免重复检测
 - 批量配置设置和管理
 - 实时展示环境变量状态
@@ -455,7 +455,7 @@ cd k8s/
 # 节点1 (主节点 - 192.168.1.100)
 ./nccl_multinode_launcher.sh 0 192.168.1.100
 
-# 节点2 (工作节点 - 192.168.1.101)  
+# 节点2 (工作节点 - 192.168.1.101)
 ./nccl_multinode_launcher.sh 1 192.168.1.100
 
 # 或直接使用 nccl_benchmark.sh
@@ -563,10 +563,10 @@ Tree AllReduce 适用于延迟敏感的小数据通信场景：
 - **带宽利用**：根节点带宽压力大，适合小数据量
 - **容错性**：树结构对节点故障敏感
 
-**性能模型**：
+**性能模型**（基于流水线并行）：
 
 ```text
-延迟 = log₂(N) × (α + β × message_size)
+T_tree = 2 × log₂(N) × α + 2 × message_size × β
 其中：α = 网络延迟，β = 1/带宽，N = 节点数
 ```
 
@@ -586,7 +586,7 @@ NCCL 2.4+ 的默认算法，平衡延迟和带宽：
 if (message_size < threshold_small):
     use Tree AllReduce
 elif (message_size > threshold_large):
-    use Ring AllReduce  
+    use Ring AllReduce
 else:
     use Double Binary Tree
 ```
@@ -596,11 +596,13 @@ else:
 NCCL 内部算法选择基于以下因素：
 
 1. **数据大小阈值**：
-   - 小数据 (< 32KB)：Tree 算法
-   - 中等数据 (32KB - 2MB)：Double Binary Tree
-   - 大数据 (> 2MB)：Ring 算法
+
+   - 小数据 (< 32 KB)：Tree 算法
+   - 中等数据 (32 KB - 2 MB)：Double Binary Tree
+   - 大数据 (> 2 MB)：Ring 算法
 
 2. **网络拓扑**：
+
    - 单节点：优先 NVLink P2P
    - 多节点：基于网络带宽选择
 
@@ -683,29 +685,28 @@ NCCL 内部算法选择基于以下因素：
 
 #### 5.6.1 通信性能建模
 
-**基础性能模型**：
+**基础性能模型**（Hockney 模型）：
 
 ```text
-T_comm = α + β × message_size + γ × log₂(P)
+T_comm = α + β × message_size
 
 其中：
 α = 启动延迟 (startup latency)
-β = 传输时间系数 (1/bandwidth)  
-γ = 跳数延迟系数
-P = 参与进程数
+β = 传输时间系数 (1/bandwidth)
 ```
 
-**AllReduce 性能模型**：
+**AllReduce 性能模型**（考虑流水线并行）：
 
 ```text
 Ring AllReduce:
-T_ring = 2 × (P-1)/P × (α + β × message_size)
+T_ring = 2(P-1) × α + 2(P-1)/P × message_size × β
 
 Tree AllReduce:
-T_tree = 2 × log₂(P) × (α + β × message_size)
+T_tree = 2log₂(P) × α + 2 × message_size × β
 
 选择策略：
-if (message_size < α/β × log₂(P)/(P-1)):
+# 当数据量较小时，延迟项占主导，Tree 算法（对数级延迟）优于 Ring 算法（线性级延迟）
+if (message_size < 阈值):
     选择 Tree AllReduce
 else:
     选择 Ring AllReduce
@@ -832,7 +833,7 @@ Top-K 稀疏：只传输最大的 K 个梯度
 
 负载指标：
 - 链路利用率
-- 队列长度  
+- 队列长度
 - 延迟变化
 - 丢包率
 ```
@@ -845,7 +846,7 @@ Top-K 稀疏：只传输最大的 K 个梯度
 
 ```text
 全局内存 (Global Memory):
-- 容量：16-80 GB (取决于GPU型号)
+- 容量：16-80 GB (取决于 GPU 型号)
 - 带宽：1-3 TB/s
 - 延迟：200-400 cycles
 - 用途：主要数据存储
@@ -854,7 +855,7 @@ Top-K 稀疏：只传输最大的 K 个梯度
 - 容量：48-164 KB per SM
 - 带宽：19 TB/s (理论值)
 - 延迟：1-2 cycles
-- 用途：SM内数据共享
+- 用途：SM 内数据共享
 
 L2 缓存:
 - 容量：6-40 MB
@@ -908,8 +909,8 @@ L2 缓存:
 
 零拷贝技术 (Zero-copy):
 - 统一虚拟寻址 (UVA)
-- 直接GPU-GPU传输
-- 减少CPU参与度
+- 直接 GPU-GPU 传输
+- 减少 CPU 参与度
 ```
 
 #### 5.8.3 数据布局优化策略
@@ -932,12 +933,12 @@ L2 缓存:
 
 ```text
 对齐要求:
-- 128字节对齐：最佳合并访问
-- 256字节对齐：AVX指令优化
-- 4KB对齐：页面边界优化
+- 128 字节对齐：最佳合并访问
+- 256 字节对齐：AVX 指令优化
+- 4 KB 对齐：页面边界优化
 
 填充策略:
-- 避免bank冲突
+- 避免 bank 冲突
 - 减少缓存行竞争
 - 提高访存效率
 ```
@@ -949,12 +950,12 @@ L2 缓存:
 **AllReduce 内部实现**：
 
 ```text
-阶段1 - 数据分割:
-1. 将输入数据分割为P个块 (P=进程数)
+阶段 1 - 数据分割:
+1. 将输入数据分割为 P 个块 (P=进程数)
 2. 每个进程负责一个块的归约
 3. 计算每个块的起始地址和大小
 
-阶段2 - Reduce-Scatter:
+阶段 2 - Reduce-Scatter:
 for i in range(P-1):
     send_rank = (rank + 1) % P
     recv_rank = (rank - 1 + P) % P
@@ -962,7 +963,7 @@ for i in range(P-1):
     recv_data = receive_from(recv_rank)
     local_data[recv_chunk] = reduce_op(local_data[recv_chunk], recv_data)
 
-阶段3 - AllGather:
+阶段 3 - AllGather:
 for i in range(P-1):
     send_rank = (rank + 1) % P
     recv_rank = (rank - 1 + P) % P
@@ -999,7 +1000,7 @@ NCCL Transport Interface:
 - IB Transport: InfiniBand RDMA
 - Socket Transport: TCP/IP
 - SHM Transport: 共享内存
-- P2P Transport: GPU直连
+- P2P Transport: GPU 直连
 ```
 
 **连接管理**：
@@ -1029,7 +1030,7 @@ NCCL Transport Interface:
 
 执行流水线:
 1. 操作排队：加入执行队列
-2. 资源分配：分配网络和GPU资源
+2. 资源分配：分配网络和 GPU 资源
 3. 执行监控：跟踪执行进度
 4. 完成通知：触发回调函数
 ```
@@ -1037,13 +1038,13 @@ NCCL Transport Interface:
 **资源管理**：
 
 ```text
-GPU资源管理:
-- Stream管理：多流并发执行
+GPU 资源管理:
+- Stream 管理：多流并发执行
 - 内存管理：动态分配和释放
-- 计算资源：SM调度优化
+- 计算资源：SM 调度优化
 
 网络资源管理:
-- 带宽分配：QoS保证
+- 带宽分配：QoS 保证
 - 连接复用：减少连接开销
 - 拥塞控制：自适应速率调整
 ```
@@ -1058,7 +1059,7 @@ GPU资源管理:
 特性:
 - 容量：128 KB per SM
 - 延迟：1 cycle
-- 策略：LRU替换
+- 策略：LRU 替换
 
 优化技巧:
 - 数据局部性：时间和空间局部性
@@ -1085,13 +1086,13 @@ GPU资源管理:
 **硬件预取器**：
 
 ```text
-L1预取器:
+L1 预取器:
 - 顺序预取：检测顺序访问模式
 - 步长预取：检测固定步长模式
-- 预取距离：通常1-2个缓存行
+- 预取距离：通常 1-2 个缓存行
 
-L2预取器:
-- 更大预取距离：4-8个缓存行
+L2 预取器:
+- 更大预取距离：4-8 个缓存行
 - 复杂模式识别：多种访问模式
 - 自适应调整：基于命中率调整
 ```
@@ -1106,14 +1107,14 @@ __builtin_prefetch(addr, rw, locality)
 - locality：局部性级别(0-3)
 
 预取时机:
-- 提前预取：在使用前N个周期
+- 提前预取：在使用前 N 个周期
 - 批量预取：一次预取多个地址
 - 条件预取：基于分支预测
 ```
 
 #### 5.10.3 缓存一致性协议
 
-**GPU缓存一致性**：
+**GPU 缓存一致性**：
 
 ```text
 一致性模型:
@@ -1123,7 +1124,7 @@ __builtin_prefetch(addr, rw, locality)
 
 同步原语:
 - __threadfence(): 线程块内同步
-- __threadfence_block(): SM内同步
+- __threadfence_block(): SM 内同步
 - __threadfence_system(): 系统级同步
 ```
 
@@ -1134,13 +1135,13 @@ __builtin_prefetch(addr, rw, locality)
 **硬件错误检测**：
 
 ```text
-ECC内存错误:
+ECC 内存错误:
 - 单比特错误：自动纠正
 - 双比特错误：检测但无法纠正
 - 错误计数：累积错误统计
 
 网络错误检测:
-- CRC校验：数据完整性检查
+- CRC 校验：数据完整性检查
 - 超时检测：通信超时处理
 - 链路状态监控：实时状态检查
 ```
@@ -1148,9 +1149,9 @@ ECC内存错误:
 **软件错误检测**：
 
 ```text
-NCCL错误码:
+NCCL 错误码:
 - ncclSuccess：操作成功
-- ncclUnhandledCudaError：CUDA错误
+- ncclUnhandledCudaError：CUDA 错误
 - ncclSystemError：系统错误
 - ncclInternalError：内部错误
 
@@ -1200,7 +1201,7 @@ NCCL错误码:
 ```text
 延迟指标:
 - 平均延迟：所有操作的平均时间
-- 99分位延迟：99%操作的最大时间
+- 99 分位延迟：99% 操作的最大时间
 - 尾延迟：最慢操作的时间
 
 吞吐量指标:
@@ -1212,8 +1213,8 @@ NCCL错误码:
 **资源利用率指标**：
 
 ```text
-GPU利用率:
-- SM利用率：计算单元使用率
+GPU 利用率:
+- SM 利用率：计算单元使用率
 - 内存利用率：显存使用率
 - 功耗利用率：能效比指标
 
@@ -1233,10 +1234,10 @@ T_ring = 2 × (P-1)/P × (α + β × S)
 T_tree = 2 × log₂(P) × (α + β × S)
 
 选择策略:
-if (实测T_ring < 实测T_tree):
-    选择Ring算法
+if (实测 T_ring < 实测 T_tree):
+    选择 Ring 算法
 else:
-    选择Tree算法
+    选择 Tree 算法
 
 自适应阈值:
 threshold = α/β × log₂(P)/(P-1) × 调整因子
@@ -1251,19 +1252,19 @@ threshold = α/β × log₂(P)/(P-1) × 调整因子
 - 在线调整：基于实时性能反馈
 
 网络参数调优:
-- 拥塞窗口：TCP拥塞控制
-- 重传超时：基于RTT动态调整
+- 拥塞窗口：TCP 拥塞控制
+- 重传超时：基于 RTT 动态调整
 - 流控制：基于接收方能力
 ```
 
 #### 5.12.3 性能分析工具集成
 
-**NVIDIA工具集成**：
+**NVIDIA 工具集成**：
 
 ```text
 Nsight Systems:
 - 系统级性能分析
-- GPU和CPU活动跟踪
+- GPU 和 CPU 活动跟踪
 - 内存传输分析
 
 Nsight Compute:
@@ -1293,7 +1294,7 @@ NCCL Tests:
 
 ---
 
-## 6. Python测试模板
+## 6. Python 测试模板
 
 ### 6.1 Python 测试模板概述
 
@@ -1319,7 +1320,7 @@ python3 nccl_python_template.py
 **推荐方式：使用 nccl_benchmark.sh 统一配置管理器：**
 
 ```bash
-# 自动配置所有NCCL环境变量（推荐）
+# 自动配置所有 NCCL 环境变量（推荐）
 ./nccl_benchmark.sh --network nvlink
 
 # 查看配置后的环境变量
@@ -1357,7 +1358,7 @@ python3 nccl_python_template.py
 
 **检测优先级**：
 
-1. NVLink (单节点多GPU)
+1. NVLink (单节点多 GPU)
 2. InfiniBand (多节点首选)
 3. PCIe P2P (单节点备选)
 4. 以太网 (通用选择)
@@ -1386,31 +1387,32 @@ NCCL_P2P_LEVEL=PIX                 # P2P 级别：PIX (PCIe) 或 NVL (NVLink)
 NCCL_IB_HCA=mlx5_0                 # HCA 设备名 (自动检测)
 NCCL_IB_TC=136                     # Traffic Class (流量类别)
 NCCL_IB_SL=0                       # Service Level (服务级别)
-NCCL_IB_TIMEOUT=22                 # 超时设置 (4.096μs × 2^22)
+NCCL_IB_TIMEOUT=22                 # 超时设置 (4.096 μs × 2^22)
 NCCL_IB_RETRY_CNT=7                # 重试次数
 NCCL_IB_GID_INDEX=0                # 原生 IB: 0, RoCE v2: 3
 NCCL_IB_PKEY=0                     # Partition Key
 
 # 性能优化参数
-NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8MB)
+NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8 MB)
 NCCL_CROSS_NIC=0                   # 跨网卡通信 (0=禁用, 1=启用)
 ```
 
 **参数含义详解**：
 
 - **NCCL_NET_GDR_LEVEL**: GPUDirect RDMA 级别
+
   - `0`: 禁用 GPUDirect
   - `1`: 启用 GPUDirect 读取
   - `2`: 启用 GPUDirect 读写 (推荐)
   - `3`: 强制启用 GPUDirect
 
 - **NCCL_IB_TC**: InfiniBand Traffic Class，用于 QoS 控制
-- **NCCL_IB_TIMEOUT**: 超时值，计算公式：4.096μs × 2^value
+- **NCCL_IB_TIMEOUT**: 超时值，计算公式：4.096 μs × 2^value
 - **NCCL_IB_GID_INDEX**: 全局标识符索引，RoCE 需要设置为 3
 
 #### 7.2.3 NVLink 模式 (`--network nvlink`)
 
-**适用场景**：单节点多GPU环境，GPU间直连通信
+**适用场景**：单节点多 GPU 环境，GPU 间直连通信
 
 **硬件检查**：验证 NVLink 拓扑和连接状态
 
@@ -1424,8 +1426,8 @@ NCCL_IB_DISABLE=1                  # 禁用 InfiniBand
 NCCL_NET_DISABLE=1                 # 禁用网络通信
 
 # NVLink 特定参数
-NCCL_NVLS_ENABLE=1                 # 启用 NVLink SHARP
-NCCL_NVLS_CHUNKSIZE=524288         # NVLink 块大小 (512KB)
+NCCL_NVLS_ENABLE=1                 # 启用 NVLink SHARP (仅支持 Hopper+ 或部分 Ampere GPU)
+NCCL_NVLS_CHUNKSIZE=524288         # NVLink 块大小 (512 KB)
 NCCL_TREE_THRESHOLD=0              # Tree 算法阈值
 
 # 性能优化参数 (根据优化级别)
@@ -1436,24 +1438,24 @@ NCCL_MAX_NCHANNELS=32              # 最大通道数
 
 # 平衡模式
 NCCL_NTHREADS=384                  # 线程数
-NCCL_BUFFSIZE=12582912             # 缓冲区大小 (12MB)
+NCCL_BUFFSIZE=12582912             # 缓冲区大小 (12 MB)
 
 # 激进模式
 NCCL_NTHREADS=512                  # 线程数
-NCCL_BUFFSIZE=16777216             # 缓冲区大小 (16MB)
+NCCL_BUFFSIZE=16777216             # 缓冲区大小 (16 MB)
 NCCL_CHECK_POINTERS=1              # 启用指针检查
 ```
 
 **参数含义详解**：
 
-- **NCCL_NVLS_ENABLE**: NVLink SHARP 技术，提供硬件加速的集合通信
+- **NCCL_NVLS_ENABLE**: NVLink SHARP 技术，提供硬件加速的集合通信 (需硬件支持)
 - **NCCL_NVLS_CHUNKSIZE**: NVLink 传输的数据块大小
 - **NCCL_NTHREADS**: NCCL 使用的线程数，影响并发度
 - **NCCL_MIN/MAX_NCHANNELS**: 通信通道数范围，影响带宽利用率
 
 #### 7.2.4 PCIe P2P 模式 (`--network pcie`)
 
-**适用场景**：单节点多GPU，无 NVLink 连接的环境
+**适用场景**：单节点多 GPU，无 NVLink 连接的环境
 
 **NCCL 参数配置**：
 
@@ -1468,11 +1470,11 @@ NCCL_NVLS_ENABLE=0                 # 禁用 NVLink SHARP
 NCCL_ALGO=Ring                     # 使用 Ring 算法
 NCCL_MAX_NCHANNELS=16              # 最大通道数
 NCCL_MIN_NCHANNELS=1               # 最小通道数
-NCCL_P2P_NET_CHUNKSIZE=131072      # P2P 网络块大小 (128KB)
+NCCL_P2P_NET_CHUNKSIZE=131072      # P2P 网络块大小 (128 KB)
 
 # 性能优化参数
 NCCL_NTHREADS=128                  # 线程数
-NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8MB)
+NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8 MB)
 NCCL_DMABUF_ENABLE=1               # 启用 DMA 缓冲区
 NCCL_REG_CACHE_ENABLE=1            # 启用注册缓存
 NCCL_NET_GDR_LEVEL=1               # 基础 GPUDirect 支持
@@ -1502,7 +1504,7 @@ NCCL_NET_GDR_LEVEL=0               # 禁用 GPUDirect (以太网不支持)
 
 # 性能优化参数
 NCCL_NTHREADS=64                   # 线程数
-NCCL_BUFFSIZE=4194304              # 缓冲区大小 (4MB)
+NCCL_BUFFSIZE=4194304              # 缓冲区大小 (4 MB)
 NCCL_MIN_NCHANNELS=1               # 最小通道数
 NCCL_MAX_NCHANNELS=8               # 最大通道数
 NCCL_SOCKET_NTHREADS=8             # Socket 线程数
@@ -1560,7 +1562,7 @@ NCCL_NET_GDR_LEVEL=0               # 禁用 GPUDirect
 
 # 共享内存特定参数
 NCCL_NTHREADS=32                   # 线程数
-NCCL_BUFFSIZE=2097152              # 缓冲区大小 (2MB)
+NCCL_BUFFSIZE=2097152              # 缓冲区大小 (2 MB)
 NCCL_MIN_NCHANNELS=1               # 最小通道数
 NCCL_MAX_NCHANNELS=4               # 最大通道数
 NCCL_CUMEM_ENABLE=0                # 禁用 CUDA 内存管理
@@ -1601,23 +1603,23 @@ NCCL_COLLNET_CHAIN_THRESHOLD=2     # 链式通信阈值
 # 性能优化参数 (根据优化级别)
 # 保守模式
 NCCL_NTHREADS=256                  # 线程数
-NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8MB)
+NCCL_BUFFSIZE=8388608              # 缓冲区大小 (8 MB)
 NCCL_MIN_NCHANNELS=4               # 最小通道数
 NCCL_MAX_NCHANNELS=12              # 最大通道数
 
 # 平衡模式
 NCCL_NTHREADS=384                  # 线程数
-NCCL_BUFFSIZE=12582912             # 缓冲区大小 (12MB)
+NCCL_BUFFSIZE=12582912             # 缓冲区大小 (12 MB)
 NCCL_MIN_NCHANNELS=6               # 最小通道数
 NCCL_MAX_NCHANNELS=16              # 最大通道数
-NCCL_P2P_NET_CHUNKSIZE=262144      # P2P 网络块大小 (256KB)
+NCCL_P2P_NET_CHUNKSIZE=262144      # P2P 网络块大小 (256 KB)
 
 # 激进模式 (启用完全自动优化)
 NCCL_NTHREADS=512                  # 线程数
-NCCL_BUFFSIZE=16777216             # 缓冲区大小 (16MB)
+NCCL_BUFFSIZE=16777216             # 缓冲区大小 (16 MB)
 NCCL_MIN_NCHANNELS=8               # 最小通道数
 NCCL_MAX_NCHANNELS=20              # 最大通道数
-NCCL_P2P_NET_CHUNKSIZE=524288      # P2P 网络块大小 (512KB)
+NCCL_P2P_NET_CHUNKSIZE=524288      # P2P 网络块大小 (512 KB)
 NCCL_CHECK_POINTERS=1              # 启用指针检查
 NCCL_SOCKET_NTHREADS=16            # Socket 线程数
 NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
@@ -1627,6 +1629,7 @@ NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
 **参数含义详解**：
 
 - **NCCL_P2P_LEVEL (智能选择)**: 节点内 P2P 通信级别
+
   - `NVL`: 当检测到 NVLink 时自动选择，提供 ~900 GB/s 带宽，< 1 μs 延迟
   - `PIX`: 当未检测到 NVLink 时回退选择，提供 ~64 GB/s 带宽，2-5 μs 延迟
   - 智能选择确保在不同硬件配置下都能获得最佳节点内通信性能
@@ -1662,7 +1665,7 @@ NCCL_NSOCKS_PERTHREAD=2            # 每线程 Socket 数
 # 调试级别
 NCCL_DEBUG=INFO                     # 调试级别: WARN, INFO, TRACE
 NCCL_DEBUG_SUBSYS=INIT,NET         # 调试子系统: INIT, NET, GRAPH, COLL, P2P, SHM, BOOTSTRAP, ALL
-NCCL_DEBUG_FILE=/tmp/nccl_%h_%p.log # 调试日志文件 (%h=主机名, %p=进程ID)
+NCCL_DEBUG_FILE=/tmp/nccl_%h_%p.log # 调试日志文件 (%h=主机名, %p=进程 ID)
 
 # 性能分析
 NCCL_ALGO_TRACE=1                   # 启用算法跟踪
@@ -1672,6 +1675,7 @@ NCCL_PROTO_TRACE=1                  # 启用协议跟踪
 **参数含义**：
 
 - **NCCL_DEBUG**: 控制调试信息的详细程度
+
   - `WARN`: 仅显示警告和错误
   - `INFO`: 显示基本信息、警告和错误
   - `TRACE`: 显示详细的跟踪信息（性能影响较大）
@@ -1706,18 +1710,22 @@ NCCL_PROTO=Simple,LL,LL128          # 允许的协议: Simple, LL, LL128
 **参数含义**：
 
 - **NCCL_NTHREADS**: NCCL 内部使用的线程数
+
   - 更多线程可以提高并发度，但也会增加开销
   - 推荐值：256-512 (根据 GPU 数量调整)
 
 - **NCCL_MIN/MAX_NCHANNELS**: 通信通道数范围
+
   - 更多通道可以提高带宽利用率
   - 但也会增加延迟和内存开销
 
 - **NCCL_BUFFSIZE**: 主缓冲区大小
+
   - 较大的缓冲区可以提高大数据传输的效率
   - 但会增加内存使用和延迟
 
 - **NCCL_ALGO**: 集合通信算法
+
   - `Ring`: 环形算法，适合带宽受限环境
   - `Tree`: 树形算法，适合延迟敏感场景
   - `CollNet`: 集合网络算法，需要硬件支持
@@ -1725,7 +1733,7 @@ NCCL_PROTO=Simple,LL,LL128          # 允许的协议: Simple, LL, LL128
 - **NCCL_PROTO**: 通信协议
   - `Simple`: 标准协议，兼容性最好
   - `LL`: Low-Latency 协议，降低延迟
-  - `LL128`: 128位 Low-Latency 协议，平衡延迟和带宽
+  - LL128: 128 位 Low-Latency 协议，平衡延迟和带宽
 
 #### 7.3.3 内存管理参数
 
@@ -1744,10 +1752,12 @@ NCCL_TREE_THRESHOLD=0               # Tree 算法阈值 (字节, 0=自动)
 **参数含义**：
 
 - **NCCL_CUMEM_ENABLE**: CUDA 统一内存管理
+
   - 启用后可以自动管理 GPU 和 CPU 内存
   - 可能影响性能，建议在兼容性问题时启用
 
 - **NCCL_REG_CACHE_ENABLE**: 内存注册缓存
+
   - 缓存已注册的内存区域，减少重复注册开销
   - 推荐启用以提高性能
 
@@ -1772,12 +1782,14 @@ NCCL_IGNORE_CPU_AFFINITY=1          # 忽略 CPU 亲和性 (0=遵守, 1=忽略)
 **参数含义**：
 
 - **NCCL_NET_GDR_LEVEL**: GPUDirect RDMA 级别
+
   - `0`: 禁用 GPUDirect
   - `1`: 启用 GPUDirect 读取
   - `2`: 启用 GPUDirect 读写 (推荐)
   - `3`: 强制启用 GPUDirect
 
 - **NCCL_CROSS_NIC**: 跨网卡通信
+
   - 启用后可以使用多个网卡进行通信
   - 可以提高带宽，但可能增加复杂性
 
@@ -1801,6 +1813,7 @@ NCCL_HEALTH_CHECK_TIMEOUT=30        # 健康检查超时 (秒)
 **参数含义**：
 
 - **NCCL_TIMEOUT**: 操作超时时间
+
   - 设置 NCCL 操作的最大等待时间
   - 过短可能导致误报，过长可能延迟错误检测
 
@@ -1837,7 +1850,7 @@ NCCL_HEALTH_CHECK_TIMEOUT=30        # 健康检查超时 (秒)
 
 - **定义**：单次通信操作的时间开销
 - **单位**：微秒 (μs) 或毫秒 (ms)
-- **影响因素**：网络延迟、GPU处理时间、软件开销
+- **影响因素**：网络延迟、GPU 处理时间、软件开销
 
 **吞吐量 (Throughput)**：
 
@@ -2049,13 +2062,13 @@ kubectl exec -it <pod1> -- ping <pod2-ip>
 
 #### 10.1.1 核心 NCCL 环境变量
 
-| 变量名 | 默认值 | 说明 | 示例值 |
-|--------|--------|------|--------|
-| `NCCL_DEBUG` | WARN | 调试级别 | INFO, WARN, ERROR |
-| `NCCL_IB_DISABLE` | 0 | 禁用 InfiniBand | 0, 1 |
-| `NCCL_NET_GDR_LEVEL` | 未设置 | GPUDirect RDMA 级别 | 0, 1, 2, 3 |
-| `NCCL_P2P_DISABLE` | 0 | 禁用 P2P 通信 | 0, 1 |
-| `NCCL_SHM_DISABLE` | 0 | 禁用共享内存 | 0, 1 |
+| 变量名               | 默认值 | 说明                | 示例值            |
+| -------------------- | ------ | ------------------- | ----------------- |
+| `NCCL_DEBUG`         | WARN   | 调试级别            | INFO, WARN, ERROR |
+| `NCCL_IB_DISABLE`    | 0      | 禁用 InfiniBand     | 0, 1              |
+| `NCCL_NET_GDR_LEVEL` | 未设置 | GPUDirect RDMA 级别 | 0, 1, 2, 3        |
+| `NCCL_P2P_DISABLE`   | 0      | 禁用 P2P 通信       | 0, 1              |
+| `NCCL_SHM_DISABLE`   | 0      | 禁用共享内存        | 0, 1              |
 
 #### 10.1.2 网络特定变量
 
@@ -2074,14 +2087,14 @@ kubectl exec -it <pod1> -- ping <pod2-ip>
 
 #### 10.2.1 nccl_benchmark.sh 参数
 
-| 参数 | 短参数 | 默认值 | 说明 |
-|------|--------|--------|------|
-| `--size` | `-s` | 1M | 测试数据大小 |
-| `--time` | `-t` | 30 | 测试时间(秒) |
-| `--network` | `-n` | auto | 网络后端 |
-| `--multinode` | `-m` | false | 多节点模式 |
-| `--master-addr` | 无 | 无 | 主节点地址 |
-| `--optimization-level` | 无 | conservative | 优化级别 |
+| 参数                   | 短参数 | 默认值       | 说明         |
+| ---------------------- | ------ | ------------ | ------------ |
+| `--size`               | `-s`   | 1M           | 测试数据大小 |
+| `--time`               | `-t`   | 30           | 测试时间(秒) |
+| `--network`            | `-n`   | auto         | 网络后端     |
+| `--multinode`          | `-m`   | false        | 多节点模式   |
+| `--master-addr`        | 无     | 无           | 主节点地址   |
+| `--optimization-level` | 无     | conservative | 优化级别     |
 
 #### 10.2.2 网络后端选项
 
@@ -2098,20 +2111,20 @@ kubectl exec -it <pod1> -- ping <pod2-ip>
 
 #### 10.3.1 GPU 间通信性能
 
-| GPU 型号 | NVLink 版本 | 理论带宽 | 实际性能 |
-|----------|-------------|----------|----------|
-| V100 | NVLink 2.0 | 300 GB/s | 250-280 GB/s |
-| A100 | NVLink 3.0 | 600 GB/s | 500-550 GB/s |
-| H100 | NVLink 4.0 | 900 GB/s | 750-850 GB/s |
+| GPU 型号 | NVLink 版本 | 理论带宽 | 实际性能     |
+| -------- | ----------- | -------- | ------------ |
+| V100     | NVLink 2.0  | 300 GB/s | 250-280 GB/s |
+| A100     | NVLink 3.0  | 600 GB/s | 500-550 GB/s |
+| H100     | NVLink 4.0  | 900 GB/s | 750-850 GB/s |
 
 #### 10.3.2 网络性能基准
 
-| 网络类型 | 理论带宽 | 典型延迟 | 实际性能 |
-|----------|----------|----------|----------|
-| InfiniBand EDR | 100 Gbps | 1-2 μs | 80-90 Gbps |
-| InfiniBand HDR | 200 Gbps | 1-2 μs | 160-180 Gbps |
-| 100GbE RoCE | 100 Gbps | 2-5 μs | 70-85 Gbps |
-| 10GbE | 10 Gbps | 10-50 μs | 8-9 Gbps |
+| 网络类型       | 理论带宽 | 典型延迟 | 实际性能     |
+| -------------- | -------- | -------- | ------------ |
+| InfiniBand EDR | 100 Gbps | 1-2 μs   | 80-90 Gbps   |
+| InfiniBand HDR | 200 Gbps | 1-2 μs   | 160-180 Gbps |
+| 100GbE RoCE    | 100 Gbps | 2-5 μs   | 70-85 Gbps   |
+| 10GbE          | 10 Gbps  | 10-50 μs | 8-9 Gbps     |
 
 ### 10.4 参考资料
 

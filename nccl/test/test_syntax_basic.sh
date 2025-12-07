@@ -1,22 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # =============================================================================
-# 验证 nccl_benchmark.sh 修复的脚本
-# 测试所有网络后端的 dry-run 模式
+# 验证 nccl_benchmark.sh 语法正确性
+# 功能: 仅进行静态语法检查，不执行任何实际功能测试
 # =============================================================================
 
-echo "=== 验证 NCCL Benchmark 脚本修复 ==="
+echo "=== 验证 NCCL Benchmark 脚本语法 ==="
 echo
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NCCL_SCRIPT="$SCRIPT_DIR/../nccl_benchmark.sh"
-NCCL_MOCK_SCRIPT="$SCRIPT_DIR/nccl_benchmark_mock.sh"
-
-# 使用 mock 脚本进行测试
-if [ -f "$NCCL_MOCK_SCRIPT" ]; then
-    NCCL_SCRIPT="$NCCL_MOCK_SCRIPT"
-    echo "✓ 使用 Mock 脚本进行测试: $NCCL_SCRIPT"
-fi
 
 if [ ! -f "$NCCL_SCRIPT" ]; then
     echo "❌ 错误: 找不到 nccl_benchmark.sh 脚本"
@@ -27,7 +20,7 @@ echo "✅ 找到脚本: $NCCL_SCRIPT"
 echo
 
 # 1. 语法检查
-echo "1. 检查脚本语法..."
+echo "1. 检查脚本语法 (bash -n)..."
 if bash -n "$NCCL_SCRIPT"; then
     echo "✅ 语法检查通过"
 else
@@ -36,41 +29,27 @@ else
 fi
 echo
 
-# 2. 测试各种网络后端
-networks=("socket" "ethernet" "auto")
-
-for network in "${networks[@]}"; do
-    echo "2. 测试网络后端: $network"
-    if timeout 30 "$NCCL_SCRIPT" --dry-run --network "$network" >/dev/null 2>&1; then
-        echo "✅ $network 后端测试通过"
-    else
-        echo "❌ $network 后端测试失败"
-    fi
-done
-echo
-
-# 3. 测试需要硬件的网络后端（预期会失败但不应该有语法错误）
-hardware_networks=("nvlink" "pcie" "ib")
-
-for network in "${hardware_networks[@]}"; do
-    echo "3. 测试硬件网络后端: $network (预期硬件检查失败)"
-    if timeout 30 "$NCCL_SCRIPT" --dry-run --network "$network" 2>&1 | grep -q "硬件检查失败"; then
-        echo "✅ $network 后端正确检测到硬件缺失"
-    else
-        echo "❌ $network 后端测试异常"
-    fi
-done
-echo
-
-# 4. 测试帮助信息
-echo "4. 测试帮助信息..."
-if "$NCCL_SCRIPT" --help >/dev/null 2>&1; then
-    echo "✅ 帮助信息正常"
+# 2. 检查可执行权限
+echo "2. 检查可执行权限..."
+if [ -x "$NCCL_SCRIPT" ]; then
+    echo "✅ 脚本具有可执行权限"
 else
-    echo "❌ 帮助信息异常"
+    echo "⚠️ 脚本没有可执行权限 (建议运行: chmod +x nccl_benchmark.sh)"
+fi
+echo
+
+# 3. 检查 Shebang
+echo "3. 检查 Shebang..."
+# 使用单引号避免 bash 历史展开错误 (!/...)
+if head -n 1 "$NCCL_SCRIPT" | grep -q '^#!/usr/bin/env bash'; then
+    echo '✅ Shebang 正确 (#!/usr/bin/env bash)'
+elif head -n 1 "$NCCL_SCRIPT" | grep -q '^#!/bin/bash'; then
+    echo '✅ Shebang 正确 (#!/bin/bash)'
+else
+    echo "⚠️ Shebang 可能不规范"
+    head -n 1 "$NCCL_SCRIPT"
 fi
 echo
 
 echo "=== 验证完成 ==="
-echo "✅ 所有基本功能测试通过"
-echo "📝 注意: 在没有 NVIDIA GPU 的环境中，硬件相关的网络后端会正确报错"
+echo "✅ 静态检查全部通过"

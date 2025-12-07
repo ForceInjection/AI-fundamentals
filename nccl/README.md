@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-本目录提供了完整的 NCCL (NVIDIA Collective Communication Library) 分布式通信测试解决方案，支持单节点和多节点的 GPU 通信性能测试，包含容器化部署和原生环境部署两种方式。
+本目录提供了完整的 NCCL (NVIDIA Collective Communications Library) 分布式通信测试解决方案，支持单节点和多节点的 GPU 通信性能测试，包含容器化部署和原生环境部署两种方式。
 
 ### 1.1 PXN 模式支持
 
@@ -28,14 +28,11 @@ nccl/
 │   ├── nccl_multinode_launcher.sh # 原生多节点测试启动器 (支持 PXN 模式)
 │   └── k8s/                       # Kubernetes 多节点部署方案
 │       ├── deploy.sh              # Kubernetes 部署管理脚本 (支持 PXN 模式)
-│       ├── nccl-multinode-job.yaml # NCCL 多节点 Job 配置
+│       ├── nccl-multinode-sts.yaml # NCCL 多节点 StatefulSet 配置
 │       ├── nccl-service.yaml      # NCCL 服务配置
 │       ├── nccl-configmap.yaml    # NCCL 配置映射
+│       ├── nccl-rbac.yaml         # RBAC 权限配置
 │       └── README.md              # Kubernetes 部署指南
-├── 🚀 PXN 模式专用
-│   ├── demo_pxn_mode.sh           # PXN 模式演示脚本
-│   ├── PXN_MODE_GUIDE.md          # PXN 模式详细指南
-│   └── test_pxn_integration.sh    # PXN 集成测试脚本
 ├── 🔍 诊断工具
 │   └── gpu_topology_detector.sh   # GPU 拓扑检测工具
 ├── 📚 配置文件
@@ -122,7 +119,7 @@ nccl/
 - **状态监控**：实时查看部署状态和测试进度
 - **资源清理**：完整的资源生命周期管理
 
-**`nccl-multinode-job.yaml`** - NCCL 多节点 Job 配置：
+**`nccl-multinode-sts.yaml`** - NCCL 多节点 StatefulSet 配置：
 
 - **并行执行**：支持多节点并行测试
 - **资源管理**：GPU 资源请求和限制
@@ -183,11 +180,11 @@ Python 依赖包配置文件，包含：
 
 - **GPU**: 一个或多个 NVIDIA GPU (支持 CUDA)
 - **网络**: InfiniBand 或高速以太网 (可选，用于多节点测试)
-- **内存**: 建议 16GB 以上系统内存
+- **内存**: 建议 16 GB 以上系统内存
 
 ### 4.2 软件要求
 
-- **操作系统**: Linux (Ubuntu 18.04+/CentOS 7+/RHEL 7+)
+- **操作系统**: Linux (Ubuntu 18.04+ / CentOS 7+ / RHEL 7+)
 - **Docker**: 用于容器化部署 (推荐)
 - **NVIDIA Container Toolkit**: GPU 容器支持
 - **Python 3.7+**: 原生环境测试 (可选)

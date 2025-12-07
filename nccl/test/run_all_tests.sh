@@ -201,9 +201,9 @@ setup_test_environment() {
         }
         
         # 构建 mock 脚本参数
-        NCCL_TEST_SCRIPT="$NCCL_MOCK_SCRIPT"
+        NCCL_TEST_CMD=("$NCCL_MOCK_SCRIPT")
         if [ -n "$MOCK_SCENARIO" ]; then
-            NCCL_TEST_SCRIPT="$NCCL_MOCK_SCRIPT --mock-scenario=$MOCK_SCENARIO"
+            NCCL_TEST_CMD+=("--mock-scenario=$MOCK_SCENARIO")
         fi
         
         log_success "测试环境初始化完成 (Mock 模式)"
@@ -213,13 +213,13 @@ setup_test_environment() {
         fi
     else
         # 使用原始脚本
-        NCCL_TEST_SCRIPT="$NCCL_SCRIPT_PATH"
+        NCCL_TEST_CMD=("$NCCL_SCRIPT_PATH")
         log_success "测试环境初始化完成 (原始脚本模式)"
     fi
     
     log_info "测试结果目录: $TEST_RESULTS_DIR"
     log_info "原始脚本: $NCCL_SCRIPT_PATH"
-    log_info "测试脚本: $NCCL_TEST_SCRIPT"
+    log_info "测试命令: ${NCCL_TEST_CMD[*]}"
     log_info "主日志文件: $MAIN_LOG"
 }
 
@@ -393,7 +393,7 @@ run_integration_tests() {
         integration_total=$((integration_total + 1))
         log_info "测试网络后端: $backend"
         
-        if timeout 60 "$NCCL_TEST_SCRIPT" --dry-run --network "$backend" >> "$integration_log" 2>&1; then
+        if timeout 60 "${NCCL_TEST_CMD[@]}" --dry-run --network "$backend" >> "$integration_log" 2>&1; then
             log_success "网络后端 $backend 测试通过"
             integration_passed=$((integration_passed + 1))
         else

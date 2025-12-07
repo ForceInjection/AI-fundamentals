@@ -30,12 +30,12 @@ test_dns_resolution() {
     
     # 验证解析结果和 IP 地址格式
     if [ -z "$RESOLVED_ADDR" ]; then
-        echo "❌ 错误: 无法解析主机地址 $hostname"
+        echo "⚠️ 错误: 无法解析主机地址 $hostname"
         echo "使用域名作为备选方案"
         RESOLVED_ADDR="$hostname"
         return 1
     elif [[ ! "$RESOLVED_ADDR" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        echo "❌ 警告: 解析结果格式异常: $RESOLVED_ADDR"
+        echo "⚠️ 警告: 解析结果格式异常: $RESOLVED_ADDR"
         echo "使用域名作为备选方案"
         RESOLVED_ADDR="$hostname"
         return 1
@@ -46,7 +46,7 @@ test_dns_resolution() {
         IFS='.' read -ra IP_PARTS <<< "$RESOLVED_ADDR"
         for part in "${IP_PARTS[@]}"; do
             if [ "$part" -gt 255 ] || [ "$part" -lt 0 ]; then
-                echo "❌ 警告: IP 地址段超出范围: $part"
+                echo "⚠️ 警告: IP 地址段超出范围: $part"
                 echo "使用域名作为备选方案"
                 RESOLVED_ADDR="$hostname"
                 return 1
@@ -111,7 +111,7 @@ validate_ip_format() {
         for i in "${!IP_PARTS[@]}"; do
             part="${IP_PARTS[$i]}"
             if [ "$part" -gt 255 ] || [ "$part" -lt 0 ]; then
-                echo "❌ 第$((i+1))段超出范围: $part (应在0-255之间)"
+                echo "⚠️ 第$((i+1))段超出范围: $part (应在0-255之间)"
                 valid=false
             else
                 echo "✅ 第$((i+1))段有效: $part"
@@ -122,11 +122,11 @@ validate_ip_format() {
             echo "✅ IP 地址完全有效: $ip"
             return 0
         else
-            echo "❌ IP 地址无效: $ip"
+            echo "⚠️ IP 地址无效: $ip"
             return 1
         fi
     else
-        echo "❌ 基本格式检查失败: $ip"
+        echo "⚠️ 基本格式检查失败: $ip"
         return 1
     fi
 }
@@ -137,18 +137,34 @@ main() {
     echo
     
     # 测试常见的主机名
+    # 格式: "hostname:expected_success" (true/false)
     test_cases=(
-        "localhost"
-        "google.com"
-        "github.com"
-        "kubernetes.default.svc.cluster.local"
-        "nccl-multinode-0.nccl-multinode.default"
-        "invalid-hostname-that-should-fail.local"
+        "localhost:true"
+        "google.com:true"
+        "github.com:true"
+        "kubernetes.default.svc.cluster.local:false"
+        "nccl-multinode-0.nccl-multinode.default:false"
+        "invalid-hostname-that-should-fail.local:false"
     )
     
     echo "=== 测试用例执行 ==="
-    for hostname in "${test_cases[@]}"; do
-        test_dns_resolution "$hostname"
+    for test_case in "${test_cases[@]}"; do
+        IFS=':' read -r hostname expected_success <<< "$test_case"
+        
+        if test_dns_resolution "$hostname"; then
+            if [ "$expected_success" = "true" ]; then
+                echo "✅ [PASS] $hostname 解析成功 (符合预期)"
+            else
+                echo "⚠️ [WARN] $hostname 解析成功 (预期失败，可能环境支持解析)"
+            fi
+        else
+            if [ "$expected_success" = "false" ]; then
+                echo "✅ [PASS] $hostname 解析失败 (符合预期)"
+            else
+                echo "❌ [FAIL] $hostname 解析失败 (预期成功)"
+                exit 1
+            fi
+        fi
         echo
     done
     
@@ -156,19 +172,36 @@ main() {
     analyze_ping_output "google.com"
     
     echo "=== IP 地址格式验证测试 ==="
+    # 格式: "ip:expected_valid" (true/false)
     ip_test_cases=(
-        "192.168.1.1"
-        "10.0.0.1"
-        "172.16.0.1"
-        "8.8.8.8"
-        "256.1.1.1"    # 无效：超出范围
-        "192.168.1"    # 无效：格式错误
-        "192.168.1.1.1" # 无效：段数错误
-        "84"           # 无效：之前遇到的问题
+        "192.168.1.1:true"
+        "10.0.0.1:true"
+        "172.16.0.1:true"
+        "8.8.8.8:true"
+        "256.1.1.1:false"    # 无效：超出范围
+        "192.168.1:false"    # 无效：格式错误
+        "192.168.1.1.1:false" # 无效：段数错误
+        "84:false"           # 无效：之前遇到的问题
     )
     
-    for ip in "${ip_test_cases[@]}"; do
-        validate_ip_format "$ip"
+    for test_case in "${ip_test_cases[@]}"; do
+        IFS=':' read -r ip expected_valid <<< "$test_case"
+        
+        if validate_ip_format "$ip"; then
+            if [ "$expected_valid" = "true" ]; then
+                echo "✅ [PASS] $ip 验证通过 (符合预期)"
+            else
+                echo "❌ [FAIL] $ip 验证通过 (预期失败)"
+                exit 1
+            fi
+        else
+            if [ "$expected_valid" = "false" ]; then
+                echo "✅ [PASS] $ip 验证失败 (符合预期)"
+            else
+                echo "❌ [FAIL] $ip 验证失败 (预期成功)"
+                exit 1
+            fi
+        fi
         echo
     done
     

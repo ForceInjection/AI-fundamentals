@@ -289,7 +289,8 @@ test_help_function() {
     
     local help_output
     if help_output=$(bash "$NCCL_SCRIPT_PATH" --help 2>&1); then
-        if echo "$help_output" | grep -q "NCCL 测试验证脚本"; then
+        # 兼容 nccl_benchmark_mock.sh 的帮助信息
+        if echo "$help_output" | grep -q -E "NCCL 测试验证脚本|NCCL Benchmark 增强版 Mock 包装器"; then
             log_test_pass "帮助信息显示正常"
         else
             log_test_fail "帮助信息内容不完整"
@@ -437,17 +438,29 @@ EOF
 test_network_configurations() {
     log_test_header "测试网络配置功能"
     
-    local network_backends=("auto" "ib" "nvlink" "pcie" "ethernet" "socket")
+    # 定义后端对应的测试场景
+    # 格式: "backend:scenario"
+    local test_cases=(
+        "auto:single_gpu"
+        "ib:cluster_ib"
+        "nvlink:multi_gpu_nvlink"
+        "pcie:multi_gpu_pcie"
+        "ethernet:single_gpu"
+        "socket:single_gpu"
+    )
     
-    for backend in "${network_backends[@]}"; do
-        start_test "测试网络后端: $backend"
+    for test_case in "${test_cases[@]}"; do
+        IFS=':' read -r backend scenario <<< "$test_case"
+        start_test "测试网络后端: $backend (场景: $scenario)"
         
         local config_output
-        if config_output=$(bash "$NCCL_SCRIPT_PATH" --network "$backend" --dry-run 2>&1); then
+        if config_output=$(bash "$NCCL_SCRIPT_PATH" --network "$backend" --mock-scenario="$scenario" --dry-run 2>&1); then
             if echo "$config_output" | grep -q "NCCL 环境变量配置完成"; then
                 log_test_pass "网络后端 $backend 配置正常"
             else
                 log_test_fail "网络后端 $backend 配置异常"
+                # 输出部分日志以便调试
+                echo "$config_output" | grep -E "ERROR|WARNING|配置完成" | head -5
             fi
         else
             log_test_fail "网络后端 $backend 配置执行失败"

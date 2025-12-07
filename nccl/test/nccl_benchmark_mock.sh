@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # =============================================================================
 # NCCL Benchmark 增强版 Mock 包装器
 # 功能: 使用独立的 mock 模块提供完整的测试环境
@@ -69,6 +69,16 @@ else
 fi
 EOF
     chmod +x "$mock_bin_dir/ibv_devinfo"
+    
+    # Mock python3 for PyTorch check
+    cat > "$mock_bin_dir/python3" << 'EOF'
+#!/bin/bash
+if [[ "$@" == *"-c import torch"* ]]; then
+    exit 0
+fi
+exec /usr/bin/env python3 "$@"
+EOF
+    chmod +x "$mock_bin_dir/python3"
     
     # 将 mock 命令添加到 PATH
     export PATH="$mock_bin_dir:$PATH"

@@ -8,15 +8,15 @@
 
 ### 1. Kubernetes vs Docker Compose
 
-| 特性 | Docker Compose | Kubernetes |
-|------|----------------|------------|
-| **节点调度** | 手动指定 | 自动调度到最优节点 |
-| **资源管理** | 基础限制 | 精确的资源请求和限制 |
-| **故障恢复** | 手动重启 | 自动重启和故障转移 |
-| **扩展性** | 静态配置 | 动态扩缩容 |
-| **网络** | Host/Bridge | 丰富的网络策略 |
-| **存储** | 本地挂载 | 持久化存储抽象 |
-| **监控** | 基础日志 | 完整的可观测性 |
+| 特性         | Docker Compose | Kubernetes           |
+| ------------ | -------------- | -------------------- |
+| **节点调度** | 手动指定       | 自动调度到最优节点   |
+| **资源管理** | 基础限制       | 精确的资源请求和限制 |
+| **故障恢复** | 手动重启       | 自动重启和故障转移   |
+| **扩展性**   | 静态配置       | 动态扩缩容           |
+| **网络**     | Host/Bridge    | 丰富的网络策略       |
+| **存储**     | 本地挂载       | 持久化存储抽象       |
+| **监控**     | 基础日志       | 完整的可观测性       |
 
 ### 2. NCCL 在 Kubernetes 中的优势
 
@@ -33,14 +33,14 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                    Kubernetes Cluster                       │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Node 1    │    │   Node 2    │    │   Node 3    │     │
-│  │ ┌─────────┐ │    │ ┌─────────┐ │    │ ┌─────────┐ │     │
-│  │ │NCCL Pod │ │    │ │NCCL Pod │ │    │ │NCCL Pod │ │     │
-│  │ │Rank: 0  │ │    │ │Rank: 1  │ │    │ │Rank: 2  │ │     │
-│  │ │GPU: 2   │ │    │ │GPU: 2   │ │    │ │GPU: 2   │ │     │
-│  │ └─────────┘ │    │ └─────────┘ │    │ └─────────┘ │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │   Node 1    │    │   Node 2    │    │   Node 3    │      │
+│  │ ┌─────────┐ │    │ ┌─────────┐ │    │ ┌─────────┐ │      │
+│  │ │NCCL Pod │ │    │ │NCCL Pod │ │    │ │NCCL Pod │ │      │
+│  │ │Rank: 0  │ │    │ │Rank: 1  │ │    │ │Rank: 2  │ │      │
+│  │ │GPU: 2   │ │    │ │GPU: 2   │ │    │ │GPU: 2   │ │      │
+│  │ └─────────┘ │    │ └─────────┘ │    │ └─────────┘ │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
 ├─────────────────────────────────────────────────────────────┤
 │                 NCCL Master Service                         │
 │              (Headless Service for P2P)                     │
@@ -60,15 +60,15 @@ kubectl cluster-info
 # 检查 GPU 节点
 kubectl get nodes -l nvidia.com/gpu.present=true
 
-# 检查 NVIDIA Device Plugin
-kubectl get pods -n kube-system | grep nvidia-device-plugin
+# 注意：默认配置使用 hami-scheduler 调度器。
+# 如果您的集群未使用该调度器，请修改 nccl-multinode-sts.yaml 中的 schedulerName 字段。
 ```
 
 ### 2. 部署测试
 
 ```bash
 # 进入 NCCL 目录
-cd /Users/wangtianqing/Project/AI-fundermentals/nccl
+cd /AI-fundermentals/nccl
 
 # 部署默认配置
 ./k8s/deploy.sh deploy
@@ -100,13 +100,17 @@ kubectl logs -l app=nccl-test --tail=100 -f
 
 ## 配置说明
 
-### 1. Job 配置 (nccl-multinode-job.yaml)
+### 1. StatefulSet 配置 (nccl-multinode-sts.yaml)
 
 ```yaml
 spec:
-  parallelism: 2      # 并行运行的 Pod 数量
-  completions: 2      # 需要成功完成的 Pod 数量
-  backoffLimit: 3     # 最大重试次数
+  serviceName: nccl-multinode
+  replicas: 2 # 并行运行的 Pod 数量 (由 deploy.sh 动态替换)
+  podManagementPolicy: Parallel
+  template:
+    spec:
+      schedulerName: "hami-scheduler" # 使用 hami 调度器 (可选)
+      restartPolicy: Always
 ```
 
 ### 2. 资源配置
@@ -114,32 +118,38 @@ spec:
 ```yaml
 resources:
   requests:
-    nvidia.com/gpu: 2  # 每个 Pod 请求的 GPU 数量
+    nvidia.com/gpu: 2 # 每个 Pod 请求的 GPU 数量 (可配置)
   limits:
     nvidia.com/gpu: 2
-    memory: "16Gi"     # 内存限制
-    cpu: "8"           # CPU 限制
+    memory: "16Gi" # 内存限制
+    cpu: "8" # CPU 限制
 ```
 
 ### 3. 网络配置
 
 ```yaml
-hostNetwork: true     # 使用主机网络，支持 InfiniBand
-hostIPC: true        # 共享主机 IPC
+hostNetwork: true # 使用主机网络，支持 InfiniBand
+hostIPC: true # 共享主机 IPC
 securityContext:
-  privileged: true   # 特权模式，访问硬件设备
+  privileged: true # 特权模式，访问硬件设备
 ```
 
 ### 4. NCCL 环境变量
 
 ```yaml
 env:
-- name: NCCL_IB_DISABLE
-  value: "0"          # 启用 InfiniBand
-- name: NCCL_NET_GDR_LEVEL
-  value: "3"          # 最高级别 GPUDirect RDMA
-- name: NCCL_IB_HCA
-  value: "^lo"        # 排除回环接口
+  - name: NCCL_DEBUG
+    value: "INFO" # 调试级别
+  - name: NCCL_SOCKET_IFNAME
+    value: "eno*,eth*,ib*,enp*" # 指定网络接口
+  - name: NCCL_IB_DISABLE
+    value: "0" # 启用 InfiniBand
+  - name: NCCL_NET_GDR_LEVEL
+    value: "2" # 启用 GPUDirect RDMA
+  - name: NCCL_P2P_DISABLE
+    value: "0" # 启用 P2P 通信
+  - name: NCCL_IGNORE_CPU_AFFINITY
+    value: "1" # 忽略 CPU 亲和性限制
 ```
 
 ## 高级配置
@@ -158,10 +168,10 @@ affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-      - matchExpressions:
-        - key: nvidia.com/gpu.count
-          operator: Gt
-          values: ["1"]
+        - matchExpressions:
+            - key: nvidia.com/gpu.count
+              operator: Gt
+              values: ["1"]
 ```
 
 ### 2. Pod 反亲和性
@@ -172,12 +182,12 @@ affinity:
 affinity:
   podAntiAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
-    - labelSelector:
-        matchExpressions:
-        - key: app
-          operator: In
-          values: ["nccl-test"]
-      topologyKey: kubernetes.io/hostname
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values: ["nccl-test"]
+        topologyKey: kubernetes.io/hostname
 ```
 
 ### 3. 持久化存储
@@ -186,13 +196,13 @@ affinity:
 
 ```yaml
 volumes:
-- name: nccl-results
-  persistentVolumeClaim:
-    claimName: nccl-pvc
+  - name: nccl-results
+    persistentVolumeClaim:
+      claimName: nccl-pvc
 
 volumeMounts:
-- name: nccl-results
-  mountPath: /workspace/results
+  - name: nccl-results
+    mountPath: /workspace/results
 ```
 
 ## 故障排查
@@ -256,8 +266,8 @@ resources:
 
 # 内存优化
 env:
-- name: NCCL_BUFFSIZE
-  value: "8388608"    # 8MB buffer
+  - name: NCCL_BUFFSIZE
+    value: "8388608" # 8MB buffer
 ```
 
 ### 2. 网络优化
@@ -265,12 +275,12 @@ env:
 ```yaml
 # InfiniBand 优化
 env:
-- name: NCCL_IB_TIMEOUT
-  value: "23"
-- name: NCCL_IB_RETRY_CNT
-  value: "7"
-- name: NCCL_IB_GID_INDEX
-  value: "3"
+  - name: NCCL_IB_TIMEOUT
+    value: "23"
+  - name: NCCL_IB_RETRY_CNT
+    value: "7"
+  - name: NCCL_IB_GID_INDEX
+    value: "3"
 ```
 
 ### 3. GPU 优化
@@ -278,10 +288,10 @@ env:
 ```yaml
 # GPU 直通优化
 env:
-- name: NCCL_P2P_DISABLE
-  value: "0"          # 启用 P2P
-- name: NCCL_SHM_DISABLE
-  value: "0"          # 启用共享内存
+  - name: NCCL_P2P_DISABLE
+    value: "0" # 启用 P2P
+  - name: NCCL_SHM_DISABLE
+    value: "0" # 启用共享内存
 ```
 
 ## 监控和可观测性
@@ -316,8 +326,8 @@ metadata:
 
 ```yaml
 env:
-- name: JAEGER_AGENT_HOST
-  value: "jaeger-agent"
+  - name: JAEGER_AGENT_HOST
+    value: "jaeger-agent"
 ```
 
 ## 最佳实践
