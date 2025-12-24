@@ -1,4 +1,4 @@
-# Knowledge Graphs for RAG 深度学习教案
+# Knowledge Graphs for RAG（GraphRAG）
 
 本教案基于 DeepLearning.AI 与 Neo4j 合作的 "Knowledge Graphs for RAG" 课程设计，旨在为学习者提供从理论到实践的完整路径。课程围绕构建一个基于 SEC 财报（10-K 表格）的问答系统展开，通过实战掌握 GraphRAG 的核心技术。
 
@@ -201,6 +201,7 @@ print(response['result'])
 
 - 下载示例 SEC 10-K JSON 数据（如 NetApp Inc. 的财报）。
 - 提取其中的 `Item 1` (Business) 和 `Item 1A` (Risk Factors) 部分。
+- **资源**: 完整的数据处理脚本、Notebooks 及示例数据可在 [GitHub 仓库](https://github.com/kaushikacharya/Knowledge_Graphs_for_RAG) 中找到。
 
 #### 5.2 构建策略
 
@@ -257,5 +258,6 @@ print(response['result'])
 ## 参考文献与资源
 
 1. **DeepLearning.AI Course**: [Knowledge Graphs for RAG](https://learn.deeplearning.ai/courses/knowledge-graphs-rag/)
-2. **Neo4j GenAI Stack**: [GitHub Repository](https://github.com/neo4j/neo4j-genai-python)
-3. **LangChain Graph Documentation**: [Docs](https://python.langchain.com/docs/integrations/graphs/neo4j_cypher/)
+2. **Course Code Repository (Unofficial)**: [GitHub - kaushikacharya/Knowledge_Graphs_for_RAG](https://github.com/kaushikacharya/Knowledge_Graphs_for_RAG) (包含课程 Notebooks 和数据)
+3. **Neo4j GenAI Stack**: [GitHub Repository](https://github.com/neo4j/neo4j-genai-python)
+4. **LangChain Graph Documentation**: [Docs](https://python.langchain.com/docs/integrations/graphs/neo4j_cypher/)
