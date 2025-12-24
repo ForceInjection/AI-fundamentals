@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   neo4j:
     image: neo4j:5.22.0

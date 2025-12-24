@@ -42,7 +42,7 @@ docker-compose up -d neo4j
 
 ## 导入图谱
 
-说明：通过 Bolt Driver 执行 `etl/cypher_import.cypher`，在 Neo4j 中落地顶点与边。
+说明：通过 Bolt Driver 执行 `etl/cypher_import.cypher`，在 Neo4j 中写入顶点与边。
 
 ```bash
 # 从仓库根目录执行（路径包含空格，需加引号）
