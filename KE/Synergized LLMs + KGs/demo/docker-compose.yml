@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  neo4j:
+    image: neo4j:5.22.0
+    container_name: demo-neo4j
+    environment:
+      # 仅用于本地演示。生产环境请使用强口令与密钥管理系统。
+      - NEO4J_AUTH=neo4j/password
+      # APOC 用于子图采样与路径检索，支撑 GraphRAG 风格的“证据聚合”。
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=1G
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      # Neo4j 仅允许从 import 目录读取 CSV，因此将本地 demo/data 映射到该目录。
+      - ../demo/data:/var/lib/neo4j/import
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+volumes:
+  neo4j_data:
+  neo4j_logs:

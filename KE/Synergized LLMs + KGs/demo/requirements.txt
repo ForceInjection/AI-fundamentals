@@ -1,0 +1,5 @@
+fastapi==0.115.5
+uvicorn==0.32.0
+neo4j==5.26.0
+python-dateutil==2.9.0.post0
+httpx==0.27.2
