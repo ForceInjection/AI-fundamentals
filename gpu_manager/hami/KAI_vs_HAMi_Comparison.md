@@ -1,6 +1,6 @@
-# KAI Scheduler 功能架构解析及与 HAMi 的对比分析
+# Nvidia KAI Scheduler 功能架构解析
 
-本文档旨在深入解析 KAI Scheduler 的核心功能与实现机制，并将其与异构计算虚拟化中间件 HAMi (Heterogeneous AI Computing Virtualization Middleware) 进行多维度对比，为技术决策者提供选型依据。
+本文档深入解析了 NVIDIA KAI Scheduler 的核心架构与关键特性，并将其与异构计算虚拟化中间件 HAMi 进行多维度对比。通过分析两者在系统定位（调度器 vs 中间件）、资源隔离（软隔离 vs 硬隔离）及适用场景（大规模训练 vs 在线推理）上的差异，为构建高效、可靠的 AI 基础设施提供技术选型依据。
 
 ---
 
