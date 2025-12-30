@@ -632,7 +632,7 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 - [**DeepSeek-R1 模型对比分析**](deepseek/deepseek-r1-cmp.md) - 1.5b、7b、官网版本的性能对比与评测
 - [**Mac 上运行 DeepSeek-R1 模型**](deepseek/mac-deepseek-r1.md) - 使用 Ollama 在 Mac 上本地部署 DeepSeek-R1
 - [**DeepSeek 3FS 存储系统**](deepseek/deepseek_3fs_design_notes.zh-CN.md) - DeepSeek 自研的高性能分布式文件系统设计笔记
-- [**DeepSeek 技术突破**](ai_infra_course/讲稿.md) - 在 AI Infra 课程中关于 DeepSeek 技术演进的深度解析
+- [**DeepSeek 技术突破**](ai_infra_course/入门级/讲稿.md) - 在 AI Infra 课程中关于 DeepSeek 技术演进的深度解析
 
 ---
 
@@ -921,8 +921,8 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 ### 11.2 AI Infra 基础课程（入门）
 
-- [**大模型原理与最新进展**](ai_infra_course/index.html) - 交互式在线课程平台
-- [**AI Infra 课程演讲稿**](ai_infra_course/讲稿.md) - 完整的课程演讲内容、技术要点与实践案例
+- [**大模型原理与最新进展**](ai_infra_course/入门级/index.html) - 交互式在线课程平台
+- [**AI Infra 课程演讲稿**](ai_infra_course/入门级/讲稿.md) - 完整的课程演讲内容、技术要点与实践案例
 - **学习目标**：深入理解大模型工作原理、最新技术进展与企业级应用实践
 - **核心内容**：
   - **Transformer 架构深度解析**：编码器-解码器结构、多头注意力机制、文本生成过程
