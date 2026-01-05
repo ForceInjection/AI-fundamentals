@@ -24,7 +24,7 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 **L1: 极速内存层 (Memory Tier)**：
 
 - **LocalCPUBackend**: 默认的一级缓存。基于本地 CPU 内存，速度极快。它通常兼任**内存分配器 (Allocator)** 的角色，直接服务于 GPU 的换入换出。
-- **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计的特殊后端。在 Decoder 节点上替代 `LocalCPUBackend` 充当 Allocator，负责接收来自 Prefiller 的数据流。
+- **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计的特殊后端。在 Decoder 节点上替代 `LocalCPUBackend` 充当 Allocator，**基于 GPU 显存**，负责接收来自 Prefiller 的数据流。
 
 **L2: 弹性互联层 (P2P Tier)**：
 
@@ -158,8 +158,7 @@ def get(self, key, location=None):
 > **重要说明：内存分配器 (Allocator) 的必要性**
 >
 > 系统**必须启用** `LocalCPUBackend` 或 `PDBackend` 其中之一。这是因为它们不仅作为存储后端，还实现了 `AllocatorBackendInterface`，承担了**内存分配器 (Allocator)** 的角色。
->
-> 即使数据最终只存储在远程 (RemoteBackend)，系统也需要先通过 Allocator 分配本地 CPU 内存 (`MemoryObj`) 作为中转 Buffer，才能将数据发送到远程。因此，Allocator 后端是系统运行的基石。
+> > 即使数据最终只存储在远程 (RemoteBackend)，系统也需要先通过 Allocator 分配本地 Buffer（CPU 内存或 GPU 显存，取决于 Allocator 类型）作为中转，才能将数据发送到远程。因此，Allocator 后端是系统运行的基石。
 
 ### 3.2 LocalCPUBackend (L1) 实现细节
 
@@ -199,7 +198,7 @@ def allocate(self, ...):
 
    - **职责**: 负责计算 Prompt 的 KV Cache。
    - **行为**: 它作为 Allocator 分配内存，但在 `put` 操作时，**不进行本地存储**，而是直接通过网络将数据推送到 Receiver。
-   - **数据流**: GPU -> CPU Buffer -> Network (Proxy/Direct) -> Receiver。
+   - **数据流**: Source GPU Memory -> LMCache GPU Buffer -> Network (Proxy/Direct) -> Receiver。
 
 2. **Receiver (Decoder)**:
    - **职责**: 负责接收 KV Cache 并进行后续的 Token 生成。
@@ -530,3 +529,5 @@ LMCache 通过精妙的分层存储架构和灵活的调度策略，有效地解
 - **高效的数据流转**: 采用 **Write-All** 策略确保数据的多级持久化，结合 **Waterfall** 检索策略和 **自动提升 (Promotion)** 机制，保证了热点数据始终驻留在最快的存储层级。
 - **多样化的部署支持**: 从单实例的 **CPU/Disk Offload**，到多实例的 **P2P 互联**与**中心化共享**，再到专为高吞吐设计的 **Prefill-Decode 分离**架构，LMCache 能够适应不同规模和需求的生产环境。
 - **极致性能优化**: 通过异步 I/O、优先级队列、`O_DIRECT` 以及智能的缓存逐出策略 (LRU)，LMCache 在显著扩展 KV Cache 容量（支持无限上下文）的同时，最大限度地降低了首字延迟 (TTFT) 并提升了推理吞吐量。
+
+---
