@@ -1,4 +1,4 @@
-# NVIDIA Inference Context Memory Storage：为长上下文与 agentic AI 推理打造的 G3.5 上下文存储层
+# NVIDIA Inference Context Memory Storage：为长上下文与 Agentic AI 推理打造的 G3.5 上下文存储层
 
 **NVIDIA Inference Context Memory Storage** (ICMS) 是 **NVIDIA Rubin** 平台面向推理场景引入的一类上下文存储基础设施，旨在将推理上下文（Key-Value, KV cache）作为一种 AI 原生数据类别进行高效复用与共享。其核心思路是在 GPU HBM 与通用共享存储之间建立面向 KV cache 的 **G3.5** 层（以太网连接的闪存层），并结合 **BlueField-4** 数据处理器与 **Spectrum-X** 以太网 RDMA 互联，为延迟敏感且可重建的 KV 数据提供更高吞吐、更优能效与更稳定的低抖动访问路径。
 
@@ -10,7 +10,7 @@
 - **BlueField-4** 作为数据处理器，为 KV I/O 提供加速能力，包括线速加密与 CRC 保护，并可终止 NVMe-oF 与对象 / RDMA 等协议。
 - **Spectrum-X** 以太网提供 RDMA 互联，为共享 KV cache 提供可预期的低延迟、低抖动与高带宽访问路径。
 - **Dynamo / NIXL / DOCA** 等软件组件协同进行上下文放置、KV block 管理与预置（prestage），降低 decode 阶段 stall 并提升复用效率。
-- 在长上下文与 agentic 推理场景中，官方给出的对比结果为：最高可达 5× 持续 TPS 提升与 5× 能效提升，并改善大规模部署的 TCO。
+- 在长上下文与 Agentic AI 推理场景中，官方给出的对比结果为：最高可达 5× 持续 TPS 提升与 5× 能效提升，并改善大规模部署的 TCO。
 
 > 注：本文所称 **GPU pod** 对应原文的 **Compute pod** 概念，是由多机架 GPU、Spectrum-X 以太网与存储组成的伸缩单元；原文使用 “petabytes” 的量级表述描述其容量目标，并未在该处给出精确的上限数值。
 
@@ -18,7 +18,7 @@
 
 ## 一、问题背景：推理上下文 (KV Cache) 的存储挑战
 
-现代大规模 AI 推理（尤其是 agentic 和长上下文推理）对 **Key-Value (KV) cache** 的需求激增：
+现代大规模 AI 推理（尤其是 Agentic AI 和长上下文推理）对 **Key-Value (KV) cache** 的需求激增：
 
 - **KV Cache** 相当于推理过程中模型的“短期与长期记忆”，避免重复计算历史信息。
 - 随着上下文窗口扩展至百万级令牌，传统内存层（GPU HBM、系统内存）容量受限，通用存储层（对象/文件存储）虽然容量大，但访问延迟高，效率低。
