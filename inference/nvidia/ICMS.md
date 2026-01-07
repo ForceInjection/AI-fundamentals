@@ -7,7 +7,7 @@
 ## 要点总结
 
 - **ICMS** 在 **Rubin** 平台引入 **pod** 级的**推理上下文存储层**（**G3.5 层**），以太网连接闪存用于承载可复用的 KV cache。
-- **BlueField-4** 作为数据处理器，为 KV I/O 提供加速能力，包括线速加密与 CRC 保护，并可终止 NVMe-oF 与对象 / RDMA 等协议。
+- **BlueField-4** 作为数据处理器，为 KV I/O 提供加速能力，包括线速加密与 CRC 保护，并可在 DPU 侧完成 NVMe-oF 与对象 / RDMA 等协议的终结（termination）。
 - **Spectrum-X** 以太网提供 RDMA 互联，为共享 KV cache 提供可预期的低延迟、低抖动与高带宽访问路径。
 - **Dynamo / NIXL / DOCA** 等软件组件协同进行上下文放置、KV block 管理与预置（prestage），降低 decode 阶段 stall 并提升复用效率。
 - 在长上下文与 Agentic AI 推理场景中，官方给出的对比结果为：最高可达 5× 持续 TPS 提升与 5× 能效提升，并改善大规模部署的 TCO。
@@ -57,7 +57,7 @@ ICMS 引入了一个新的层级 **G3.5**，作为以太网连接的闪存层，
 
 ## 三、ICMS 的系统架构构成
 
-从整体架构看，ICMS 作为 Rubin 平台的 pod 级上下文存储层（G3.5），位于推理编排层与计算节点之间：上层由 **NVIDIA Dynamo**、**NIXL** 等推理框架协调 prefill / decode 与 KV cache 访问，并通过 KV block 管理机制将需要的上下文从 ICMS 预置回主机内存或 GPU HBM；下层由 **Spectrum-X** 以太网 RDMA 互联将 Rubin 计算节点连接到基于闪存的 ICMS 目标节点，提供可预期的低延迟与低抖动数据路径；在数据平面上，**BlueField-4** 负责 KV I/O 相关加速与协议终止（如 NVMe-oF 与对象 / RDMA），从而降低主机 CPU 负载并提升上下文共享效率。
+从整体架构看，ICMS 作为 Rubin 平台的 pod 级上下文存储层（G3.5），位于推理编排层与计算节点之间：上层由 **NVIDIA Dynamo**、**NIXL** 等推理框架协调 prefill / decode 与 KV cache 访问，并通过 KV block 管理机制将需要的上下文从 ICMS 预置回主机内存或 GPU HBM；下层由 **Spectrum-X** 以太网 RDMA 互联将 Rubin 计算节点连接到基于闪存的 ICMS 目标节点，提供可预期的低延迟与低抖动数据路径；在数据平面上，**BlueField-4** 负责 KV I/O 相关加速与协议终结（termination，如 NVMe-oF 与对象 / RDMA），从而降低主机 CPU 负载并提升上下文共享效率。
 
 > 注：原文语境中关于 “共享” 与 “跨节点” 的讨论主要指 **同一 GPU pod 内** 的多节点共享与复用（跨节点但不必跨 pod）。
 
@@ -70,7 +70,7 @@ ICMS 的控制与数据平面由 **NVIDIA BlueField-4 数据处理单元 (DPU)**
 - 提供 **800 Gb/s** 连接能力；
 - 内置 64-核 NVIDIA Grace CPU 和高带宽 LPDDR；
 - 提供线速加密与 CRC 数据保护，用于 KV 数据路径的安全与完整性校验；
-- 可高效终止 NVMe-oF 与对象 / RDMA 协议，减少主机 CPU 负载。
+- 可高效终结 NVMe-oF 与对象 / RDMA 协议（termination），减少主机 CPU 负载。
 
 ---
 
