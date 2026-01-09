@@ -34,7 +34,7 @@
 - [Evaluating Chunking Strategies for Retrieval 总结](../../07_rag_and_tools/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20%E6%80%BB%E7%BB%93.md)
 - [中文 RAG 系统 Embedding 模型选型技术文档](../../07_rag_and_tools/rag/%E4%B8%AD%E6%96%87RAG%E7%B3%BB%E7%BB%9FEmbedding%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3.md)
 - [Cursor DeepSearch 深度搜索技术](../deep_research/cursor-deepsearch.md)
-- [写作 Agentic Agent 智能体](../../08_agentic_system/%E5%86%99%E4%BD%9C%20Agentic%20Agent.md)
+- [写作 Agentic Agent 智能体](../../08_agentic_system/agent_design/%E5%86%99%E4%BD%9C%20Agentic%20Agent.md)
 
 ## 6. 嵌入技术
 

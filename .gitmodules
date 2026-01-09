@@ -1,6 +1,6 @@
 [submodule "hands-on-ML"]
 	path = hands-on-ML
-	url = git@github.com:ForceInjection/hands-on-ML.git
+	url = https://github.com/ForceInjection/hands-on-ML.git
 [submodule "AISystem"]
 	path = AISystem
-	url = git@github.com:Infrasys-AI/AISystem.git
+	url = https://github.com/Infrasys-AI/AISystem.git

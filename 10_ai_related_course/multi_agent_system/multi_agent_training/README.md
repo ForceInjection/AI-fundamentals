@@ -2,7 +2,7 @@
 
 ## 培训概述
 
-本培训材料基于《多智能体AI系统基础：理论与框架》（[Part1-Multi-Agent-AI-Fundamentals.md](../../../08_agentic_system/Part1-Multi-Agent-AI-Fundamentals.md)）和《企业级多智能体AI系统构建实战》（[Part2-Enterprise-Multi-Agent-System-Implementation.md](../../../08_agentic_system/Part2-Enterprise-Multi-Agent-System-Implementation.md)）两个核心文档构建，为企业技术团队提供从理论基础到实战应用的完整学习体系。
+本培训材料基于《多智能体AI系统基础：理论与框架》（[Part1-Multi-Agent-AI-Fundamentals.md](../../../08_agentic_system/multi_agent/Part1-Multi-Agent-AI-Fundamentals.md)）和《企业级多智能体AI系统构建实战》（[Part2-Enterprise-Multi-Agent-System-Implementation.md](../../../08_agentic_system/multi_agent/Part2-Enterprise-Multi-Agent-System-Implementation.md)）两个核心文档构建，为企业技术团队提供从理论基础到实战应用的完整学习体系。
 
 **核心文档对应关系：**
 

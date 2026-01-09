@@ -592,8 +592,8 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 本节提供企业级 `AI Agent` 开发的全景视图，涵盖从基础理论到架构设计的完整技术体系。通过 BDI 架构、协作机制等核心概念的深入解析，为构建高性能、可扩展的智能体系统奠定坚实基础。
 
 - [**AI Agent 开发与实践**](README.md) - 企业级 AI Agent 开发的完整技术体系与最佳实践
-- [**多智能体 AI 系统基础：理论与框架**](08_agentic_system/Part1-Multi-Agent-AI-Fundamentals.md) - 多智能体系统的理论基础、BDI 架构和协作机制
-- [**企业级多智能体 AI 系统构建实战**](08_agentic_system/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 企业级多智能体系统的架构设计、技术选型和工程实现
+- [**多智能体 AI 系统基础：理论与框架**](08_agentic_system/multi_agent/Part1-Multi-Agent-AI-Fundamentals.md) - 多智能体系统的理论基础、BDI 架构和协作机制
+- [**企业级多智能体 AI 系统构建实战**](08_agentic_system/multi_agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 企业级多智能体系统的架构设计、技术选型和工程实现
 
 ### 8.2 上下文工程技术体系
 
@@ -625,7 +625,7 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 Agent 基础设施是位于智能 Agent 之外、用于调节、协调、约束 Agent 与环境交互的一组技术系统与共享协议。本节深入探讨 Agent 基础设施的核心概念、架构设计原理和工程实践，涵盖可靠性、可扩展性、可观测性、成本可控性以及合规治理等关键技术领域。
 
 - [**AI Agent 基础设施的崛起**](08_agentic_system/agent_infra/the-rise-of-ai-agent-infrastructure.md) - AI Agent 基础设施的发展趋势、技术演进和行业应用前景
-- [**AI Agent 基础设施三层架构：工具、数据、编排**](08_agentic_system/agent_infra/ai-agent-infrastructure-three-layers-tools-data-orchestration.md) - AI Agent 基础设施的三层架构设计，涵盖工具层、数据层和编排层的技术实现
+- [**AI Agent 基础设施三层架构：工具、数据、编排**](08_agentic_system/agent_infra/ai-agent-infra-stack.md) - AI Agent 基础设施的三层架构设计，涵盖工具层、数据层和编排层的技术实现
 
 ### 8.4 AI 智能体记忆系统架构
 
@@ -633,16 +633,16 @@ Agent 基础设施是位于智能 Agent 之外、用于调节、协调、约束 
 
 #### 8.4.1 记忆系统理论基础
 
-- [**AI 智能体记忆系统：理论与实践**](08_agentic_system/memory/AI%20%E6%99%BA%E8%83%BD%E4%BD%93%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%EF%BC%9A%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5.md) - 智能体记忆系统的架构设计、存储策略与检索优化技术
+- [**AI 智能体记忆系统：理论与实践**](08_agentic_system/memory/docs/AI%20%E6%99%BA%E8%83%BD%E4%BD%93%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%EF%BC%9A%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5.md) - 智能体记忆系统的架构设计、存储策略与检索优化技术
   - [**记忆系统代码实现**](README.md) - 记忆系统的核心算法实现与工程化实践
-- [**论文解读 - 大模型 Agent 记忆系统：理论基础与交互机制**](08_agentic_system/memory/%E5%A4%A7%E6%A8%A1%E5%9E%8BAgent%E8%AE%B0%E5%BF%86%E7%BB%BC%E8%BF%B0.md) - 本文从理论角度深入探讨了大模型 Agent 记忆系统的定义、概念和交互机制，旨在帮助读者理解记忆系统的产生、存储和使用原理。
-- [**如何设计支持多轮指代消解的对话系统**](08_agentic_system/%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E6%94%AF%E6%8C%81%E5%A4%9A%E8%BD%AE%E6%8C%87%E4%BB%A3%E6%B6%88%E8%A7%A3%E7%9A%84%E5%AF%B9%E8%AF%9D%E7%B3%BB%E7%BB%9F.md) - 多轮对话中的指代消解机制与上下文理解技术
+- [**论文解读 - 大模型 Agent 记忆系统：理论基础与交互机制**](08_agentic_system/memory/docs/%E5%A4%A7%E6%A8%A1%E5%9E%8BAgent%E8%AE%B0%E5%BF%86%E7%BB%BC%E8%BF%B0.md) - 本文从理论角度深入探讨了大模型 Agent 记忆系统的定义、概念和交互机制，旨在帮助读者理解记忆系统的产生、存储和使用原理。
+- [**如何设计支持多轮指代消解的对话系统**](08_agentic_system/agent_design/%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E6%94%AF%E6%8C%81%E5%A4%9A%E8%BD%AE%E6%8C%87%E4%BB%A3%E6%B6%88%E8%A7%A3%E7%9A%84%E5%AF%B9%E8%AF%9D%E7%B3%BB%E7%BB%9F.md) - 多轮对话中的指代消解机制与上下文理解技术
 
 #### 8.4.2 MemoryOS 智能记忆系统
 
 MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支持可插拔存储后端和分层记忆管理机制。该系统为 AI 智能体提供了完整的记忆存储、检索和管理解决方案。
 
-- [**MemoryOS 智能记忆系统架构设计与开发指南**](08_agentic_system/memory/MemoryOS%E6%99%BA%E8%83%BD%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md) - MemoryOS 智能记忆管理系统的模块化架构设计、可插拔存储后端和分层记忆管理机制
+- [**MemoryOS 智能记忆系统架构设计与开发指南**](08_agentic_system/memory/docs/MemoryOS%E6%99%BA%E8%83%BD%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md) - MemoryOS 智能记忆管理系统的模块化架构设计、可插拔存储后端和分层记忆管理机制
 
 **核心技术特色：**
 
@@ -655,7 +655,7 @@ MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支�
 
 Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设计的自改进记忆层，通过提供持久化、个性化的记忆能力来增强 AI 助手和智能体的表现。该系统同时提供托管平台服务和开源解决方案，让开发者能够为 AI 应用添加上下文记忆功能。
 
-- [**Mem0 快速入门指南**](08_agentic_system/memory/mem0%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8.md) - Mem0 记忆系统的完整技术指南，包含架构设计、API 接口、集成示例和性能对比
+- [**Mem0 快速入门指南**](08_agentic_system/memory/docs/mem0%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8.md) - Mem0 记忆系统的完整技术指南，包含架构设计、API 接口、集成示例和性能对比
 
 **核心技术特色：**
 
@@ -731,7 +731,7 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 检索增强生成（RAG）是现代 AI Agent 系统的核心技术之一，通过结合外部知识库和生成模型，显著提升智能体的知识获取和推理能力。
 
 - [**RAG 技术概述**](README.md)
-- [**从 0 到 1 快速搭建 RAG 应用**](08_agentic_system/%E5%86%99%E4%BD%9C%20Agentic%20Agent.md)
+- [**从 0 到 1 快速搭建 RAG 应用**](08_agentic_system/agent_design/%E5%86%99%E4%BD%9C%20Agentic%20Agent.md)
   - [**配套代码**](07_rag_and_tools/rag/lession2.ipynb)
 - [**Evaluating Chunking Strategies for Retrieval 总结**](07_rag_and_tools/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20%E6%80%BB%E7%BB%93.md)
 - [**中文 RAG 系统 Embedding 模型选型技术文档**](07_rag_and_tools/rag/%E4%B8%AD%E6%96%87RAG%E7%B3%BB%E7%BB%9FEmbedding%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3.md)
@@ -773,7 +773,7 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 12-Factor Agents 是一套经过验证的构建可靠 LLM 应用的原则体系，借鉴了著名的 12 Factor Apps 方法论。这套方法论为开发者提供了从理论到实践的完整指导，特别适用于需要达到生产级质量标准的 AI 应用开发。
 
-- [**12-Factor Agents 完整指南**](08_agentic_system/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 个核心原则详解
+- [**12-Factor Agents 完整指南**](08_agentic_system/concepts/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 个核心原则详解
 
 **核心价值**：
 
@@ -789,7 +789,7 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 - [**DeepResearch Agent 解析**](08_agentic_system/paper/deepresearch-agent.md) - 深度研究智能体的架构设计与核心能力解析
 - [**通义 DeepResearch 深度分析**](06_llm_theory_and_fundamentals/deep_research/%E9%80%9A%E4%B9%89DeepResearch%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90.md) - 通义实验室 DeepResearch 技术的深度技术剖析
 - [**Cursor IDE 架构概览**](06_llm_theory_and_fundamentals/deep_research/cursor-deepsearch.md) - AI 驱动的代码编辑器 Cursor 的技术架构与实现原理
-- [**Cursor ReAct Agent 深度分析**](08_agentic_system/react-agent.md) - Cursor IDE 中 ReAct Agent 的架构设计与核心机制解析
+- [**Cursor ReAct Agent 深度分析**](08_agentic_system/agent_design/react-agent.md) - Cursor IDE 中 ReAct Agent 的架构设计与核心机制解析
 
 ---
 

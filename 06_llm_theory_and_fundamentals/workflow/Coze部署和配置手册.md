@@ -30,7 +30,7 @@ Coze Studio 采用分层架构设计，包含以下核心组件：
 
 ### 1.3 系统组件详细配置
 
-本节将基于 [Docker Compose 配置](../../10_ai_related_course/multi_agent_system/multi_agent_system/docker-compose.yml) 对各组件的详细配置进行说明。
+本节将基于 [Docker Compose 配置](../../08_agentic_system/multi_agent/multi_agent_system/docker-compose.yml) 对各组件的详细配置进行说明。
 
 #### 1.3.1 MySQL 数据库
 
@@ -245,19 +245,19 @@ MINIO_BUCKET_NAME=milvus              # 存储桶名称
 
 #### 1.3.11 端口列表总结
 
-| 服务 | 内部端口 | 外部端口 | 协议 | 说明 |
-|------|----------|----------|------|------|
-| coze-web | 80 | 8888 | HTTP | Web 前端访问 |
-| coze-server | 8888, 8889 | - | HTTP | API 服务（内网） |
-| mysql | 3306 | - | TCP | 数据库（内网） |
-| redis | 6379 | - | TCP | 缓存（内网） |
-| elasticsearch | 9200 | - | HTTP | 搜索引擎（内网） |
-| minio | 9000, 9001 | - | HTTP | 对象存储（内网） |
-| etcd | 2379, 2380 | - | TCP | 配置中心（内网） |
-| milvus | 19530, 9091 | - | TCP/HTTP | 向量数据库（内网） |
-| nsqlookupd | 4160, 4161 | - | TCP/HTTP | 消息队列发现（内网） |
-| nsqd | 4150, 4151 | - | TCP/HTTP | 消息队列（内网） |
-| nsqadmin | 4171 | - | HTTP | 消息队列管理（内网） |
+| 服务          | 内部端口    | 外部端口 | 协议     | 说明                 |
+| ------------- | ----------- | -------- | -------- | -------------------- |
+| coze-web      | 80          | 8888     | HTTP     | Web 前端访问         |
+| coze-server   | 8888, 8889  | -        | HTTP     | API 服务（内网）     |
+| mysql         | 3306        | -        | TCP      | 数据库（内网）       |
+| redis         | 6379        | -        | TCP      | 缓存（内网）         |
+| elasticsearch | 9200        | -        | HTTP     | 搜索引擎（内网）     |
+| minio         | 9000, 9001  | -        | HTTP     | 对象存储（内网）     |
+| etcd          | 2379, 2380  | -        | TCP      | 配置中心（内网）     |
+| milvus        | 19530, 9091 | -        | TCP/HTTP | 向量数据库（内网）   |
+| nsqlookupd    | 4160, 4161  | -        | TCP/HTTP | 消息队列发现（内网） |
+| nsqd          | 4150, 4151  | -        | TCP/HTTP | 消息队列（内网）     |
+| nsqadmin      | 4171        | -        | HTTP     | 消息队列管理（内网） |
 
 ---
 
@@ -366,9 +366,9 @@ coze-studio/
 #### 3.1.1 系统要求
 
 - 操作系统：Linux (Ubuntu 18.04+, CentOS 7+)
-- CPU：4核心以上
-- 内存：8GB以上（推荐16GB）
-- 磁盘：50GB以上可用空间
+- CPU：4 核心以上
+- 内存：8GB 以上（推荐 16GB）
+- 磁盘：50GB 以上可用空间
 - 网络：稳定的互联网连接
 
 #### 3.1.2 安装 Docker 和 Docker Compose
@@ -539,7 +539,7 @@ curl -I http://localhost:8888
 
 - 设置管理员邮箱和密码
 - 配置基本系统设置
-- 添加AI模型配置
+- 添加 AI 模型配置
 
 #### 3.5.2 配置 AI 模型
 
@@ -551,7 +551,7 @@ curl -I http://localhost:8888
 
 #### 3.5.3 测试功能
 
-- 创建测试Bot
+- 创建测试 Bot
 - 上传测试文档到知识库
 - 进行对话测试
 
@@ -576,11 +576,13 @@ curl -I http://localhost:8888
 **机器配置建议**:
 
 1. **负载均衡层 (2-3 台)**
+
    - **配置**: 4C8G，50GB SSD
    - **组件**: Nginx/HAProxy + Keepalived
    - **说明**: 采用主备模式，确保高可用性
 
 2. **应用集群层 (最少 3 台)**
+
    - **配置**: 8C16G，100GB SSD
    - **组件**: coze-web + coze-server
    - **扩展**: 根据并发量水平扩展
@@ -588,33 +590,40 @@ curl -I http://localhost:8888
 3. **数据层集群 (9-15 台)**
 
    **MySQL 集群 (3 台)**:
+
    - **Master**: 8C32G，500GB SSD
    - **Slave**: 8C16G，500GB SSD × 2
 
    **Redis 集群 (3 台)**:
+
    - **配置**: 4C16G，200GB SSD
    - **模式**: 3 主 3 从模式
 
    **Elasticsearch 集群 (3 台)**:
+
    - **配置**: 8C32G，1TB SSD
    - **角色**: Master + Data + Ingest
 
    **MinIO 集群 (4 台)**:
+
    - **配置**: 4C16G，2TB HDD
    - **模式**: 分布式模式，4 节点
 
    **Milvus 集群 (3 台)**:
+
    - **配置**: 8C32G，500GB SSD
    - **组件**: Query Node + Data Node + Index Node
 
 **部署策略**:
 
 1. **负载均衡层**
+
    - 使用 Nginx 或 HAProxy 进行负载均衡
    - 配置 SSL 终止和健康检查
    - 实现会话保持（如需要）
 
 2. **应用层扩展**
+
    - coze-web: 无状态，可水平扩展
    - coze-server: 无状态，可水平扩展
    - 使用容器编排工具（Kubernetes/Docker Swarm）
@@ -646,16 +655,16 @@ spec:
         app: coze-server
     spec:
       containers:
-      - name: coze-server
-        image: cozedev/coze-studio-server:latest
-        ports:
-        - containerPort: 8888
-        env:
-        - name: MYSQL_HOST
-          value: "mysql-service"
-        - name: REDIS_ADDR
-          value: "redis-service:6379"
-        # 其他环境变量...
+        - name: coze-server
+          image: cozedev/coze-studio-server:latest
+          ports:
+            - containerPort: 8888
+          env:
+            - name: MYSQL_HOST
+              value: "mysql-service"
+            - name: REDIS_ADDR
+              value: "redis-service:6379"
+          # 其他环境变量...
 ```
 
 ---
@@ -799,16 +808,16 @@ export VIKING_DB_MODEL_NAME=""                # VikingDB 模型名称（如未�
 
 以下表格列出了 `Coze Studio` 中所有可能需要配置的模型类型：
 
-| 模型类别 | 模型类型 | 支持的提供商 | 主要用途 | 配置前缀 |
-|---------|---------|-------------|---------|----------|
-| **嵌入模型** | 文本嵌入 | Ark、OpenAI、Ollama、Gemini、HTTP | 知识库向量化、文档检索 | `ARK_EMBEDDING_`、`OPENAI_EMBEDDING_`、`OLLAMA_EMBEDDING_`、`GEMINI_EMBEDDING_`、`HTTP_EMBEDDING_` |
-| **聊天模型** | 对话生成 | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | Agent 对话、Workflow 执行 | `MODEL_` |
-| **内置聊天模型** | NL2SQL | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 自然语言转 SQL 查询 | `NL2SQL_BUILTIN_CM_` |
-| | 消息重写 | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 查询意图理解和重写 | `M2Q_BUILTIN_CM_` |
-| | 图像标注 | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 图像内容识别和标注 | `IA_BUILTIN_CM_` |
-| | 工作流知识召回 | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 工作流中的知识检索 | `WKR_BUILTIN_CM_` |
-| **Rerank 模型** | 结果重排序 | VikingDB、RRF | 搜索结果重新排序 | `VIKINGDB_RERANK_` |
-| **OCR 模型** | 文字识别 | 火山引擎、PaddleOCR | 图像文字提取 | `VE_OCR_`、`PADDLEOCR_OCR_` |
+| 模型类别         | 模型类型       | 支持的提供商                                | 主要用途                  | 配置前缀                                                                                           |
+| ---------------- | -------------- | ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
+| **嵌入模型**     | 文本嵌入       | Ark、OpenAI、Ollama、Gemini、HTTP           | 知识库向量化、文档检索    | `ARK_EMBEDDING_`、`OPENAI_EMBEDDING_`、`OLLAMA_EMBEDDING_`、`GEMINI_EMBEDDING_`、`HTTP_EMBEDDING_` |
+| **聊天模型**     | 对话生成       | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | Agent 对话、Workflow 执行 | `MODEL_`                                                                                           |
+| **内置聊天模型** | NL2SQL         | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 自然语言转 SQL 查询       | `NL2SQL_BUILTIN_CM_`                                                                               |
+|                  | 消息重写       | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 查询意图理解和重写        | `M2Q_BUILTIN_CM_`                                                                                  |
+|                  | 图像标注       | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 图像内容识别和标注        | `IA_BUILTIN_CM_`                                                                                   |
+|                  | 工作流知识召回 | Ark、OpenAI、DeepSeek、Ollama、Qwen、Gemini | 工作流中的知识检索        | `WKR_BUILTIN_CM_`                                                                                  |
+| **Rerank 模型**  | 结果重排序     | VikingDB、RRF                               | 搜索结果重新排序          | `VIKINGDB_RERANK_`                                                                                 |
+| **OCR 模型**     | 文字识别       | 火山引擎、PaddleOCR                         | 图像文字提取              | `VE_OCR_`、`PADDLEOCR_OCR_`                                                                        |
 
 **配置说明**：
 
@@ -1153,11 +1162,11 @@ export LOG_FORMAT="json"                       # 日志格式
 ```yaml
 # 示例：MySQL 健康检查
 healthcheck:
-  test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
-  interval: 10s      # 检查间隔
-  timeout: 5s        # 超时时间
-  retries: 5         # 重试次数
-  start_period: 30s  # 启动等待时间
+  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  interval: 10s # 检查间隔
+  timeout: 5s # 超时时间
+  retries: 5 # 重试次数
+  start_period: 30s # 启动等待时间
 ```
 
 #### 5.1.2 日志管理
@@ -1188,16 +1197,16 @@ logging:
 
 1. **资源限制**
 
-    详细的资源限制配置请参考本章节 5.4.1 的生产环境配置。
+   详细的资源限制配置请参考本章节 5.4.1 的生产环境配置。
 
 2. **存储优化**
 
-    ```bash
-    # 使用 SSD 存储
-    # 配置合适的文件系统（ext4/xfs）
-    # 启用数据库查询缓存
-    # 优化 Elasticsearch 堆内存设置
-    ```
+   ```bash
+   # 使用 SSD 存储
+   # 配置合适的文件系统（ext4/xfs）
+   # 启用数据库查询缓存
+   # 优化 Elasticsearch 堆内存设置
+   ```
 
 ---
 
@@ -1206,11 +1215,13 @@ logging:
 #### 5.2.1 常见问题
 
 1. **服务启动失败**
+
    - 检查服务状态：参考附录中的服务管理命令
    - 查看错误日志：参考附录中的日志查看命令
    - 检查端口占用：参考附录中的系统监控命令
 
 2. **数据库连接问题**
+
    - 检查 MySQL 服务状态：参考附录中的数据库操作命令
    - 检查网络连通性：`docker-compose exec coze-server ping mysql`
 
@@ -1221,6 +1232,7 @@ logging:
 #### 5.2.2 性能问题诊断
 
 1. **资源使用监控**
+
    - 查看容器资源使用：参考附录中的系统监控命令
    - 查看系统负载：参考附录中的系统监控命令
 
@@ -1235,10 +1247,12 @@ logging:
 #### 5.3.1 版本升级步骤
 
 1. **备份数据**
+
    - 备份数据库：参考附录中的数据库操作命令
    - 备份配置文件：`cp -r . ../coze-studio-backup-$(date +%Y%m%d)`
 
 2. **更新镜像**
+
    - 拉取最新镜像：`docker-compose pull`
    - 停止和启动服务：参考附录中的服务管理命令
 
@@ -1266,202 +1280,202 @@ docker-compose exec -T mysql mysql -u root -p < backup_before_upgrade.sql
 
 1. **安全加固**
 
-    ```bash
-    # 使用强密码
-    MYSQL_ROOT_PASSWORD="$(openssl rand -base64 32)"
-    MINIO_ROOT_PASSWORD="$(openssl rand -base64 32)"
-    
-    # 限制Web访问（使用反向代理）
-    WEB_LISTEN_ADDR="0.0.0.0:8888"
-    
-    # 禁用用户注册
-    DISABLE_USER_REGISTRATION="true"
-    ```
+   ```bash
+   # 使用强密码
+   MYSQL_ROOT_PASSWORD="$(openssl rand -base64 32)"
+   MINIO_ROOT_PASSWORD="$(openssl rand -base64 32)"
+
+   # 限制Web访问（使用反向代理）
+   WEB_LISTEN_ADDR="0.0.0.0:8888"
+
+   # 禁用用户注册
+   DISABLE_USER_REGISTRATION="true"
+   ```
 
 2. **性能优化**
 
-    ```bash
-    # 调整JVM参数（Elasticsearch）
-    ES_JAVA_OPTS="-Xms2g -Xmx2g"
-    
-    # 增加连接池大小
-    MYSQL_MAX_CONNECTIONS=200
-    
-    # 优化Redis配置
-    REDIS_MAXMEMORY="1gb"
-    REDIS_MAXMEMORY_POLICY="allkeys-lru"
-    ```
+   ```bash
+   # 调整JVM参数（Elasticsearch）
+   ES_JAVA_OPTS="-Xms2g -Xmx2g"
+
+   # 增加连接池大小
+   MYSQL_MAX_CONNECTIONS=200
+
+   # 优化Redis配置
+   REDIS_MAXMEMORY="1gb"
+   REDIS_MAXMEMORY_POLICY="allkeys-lru"
+   ```
 
 3. **资源限制**
 
-    在 `docker-compose.yml` 中添加资源限制：
+   在 `docker-compose.yml` 中添加资源限制：
 
-    ```yaml
-    services:
-      mysql:
-        deploy:
-          resources:
-            limits:
-              memory: 2G
-              cpus: '1.0'
-            reservations:
-              memory: 1G
-              cpus: '0.5'
-    ```
+   ```yaml
+   services:
+     mysql:
+       deploy:
+         resources:
+           limits:
+             memory: 2G
+             cpus: "1.0"
+           reservations:
+             memory: 1G
+             cpus: "0.5"
+   ```
 
 #### 5.4.2 监控告警
 
-1. **集成Prometheus监控**
+1. **集成 Prometheus 监控**
 
-    ```yaml
-    # 添加到docker-compose.yml
-    prometheus:
-      image: prom/prometheus:latest
-      ports:
-        - "9090:9090"
-      volumes:
-        - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    
-    grafana:
-      image: grafana/grafana:latest
-      ports:
-        - "3000:3000"
-      environment:
-        - GF_SECURITY_ADMIN_PASSWORD=admin
-    ```
+   ```yaml
+   # 添加到docker-compose.yml
+   prometheus:
+     image: prom/prometheus:latest
+     ports:
+       - "9090:9090"
+     volumes:
+       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+   grafana:
+     image: grafana/grafana:latest
+     ports:
+       - "3000:3000"
+     environment:
+       - GF_SECURITY_ADMIN_PASSWORD=admin
+   ```
 
 2. **健康检查脚本**
 
-    ```bash
-    #!/bin/bash
-    # health_check.sh
-    
-    services=("mysql" "redis" "elasticsearch" "minio" "milvus" "coze-server" "coze-web")
-    
-    for service in "${services[@]}"; do
-        if ! docker-compose ps $service | grep -q "Up"; then
-            echo "ALERT: $service is down!"
-            # 发送告警通知
-        fi
-    done
-    ```
+   ```bash
+   #!/bin/bash
+   # health_check.sh
+
+   services=("mysql" "redis" "elasticsearch" "minio" "milvus" "coze-server" "coze-web")
+
+   for service in "${services[@]}"; do
+       if ! docker-compose ps $service | grep -q "Up"; then
+           echo "ALERT: $service is down!"
+           # 发送告警通知
+       fi
+   done
+   ```
 
 #### 5.4.3 备份策略
 
 1. **自动化备份脚本**
 
-    ```bash
-    #!/bin/bash
-    # backup.sh
-    
-    BACKUP_DIR="/opt/backups/$(date +%Y%m%d)"
-    mkdir -p $BACKUP_DIR
-    
-    # MySQL备份
-    docker-compose exec -T mysql mysqldump -u root -p$MYSQL_ROOT_PASSWORD --all-databases > $BACKUP_DIR/mysql.sql
-    
-    # MinIO备份
-    docker-compose exec -T minio mc mirror /data $BACKUP_DIR/minio/
-    
-    # 配置文件备份
-    cp .env $BACKUP_DIR/
-    cp docker-compose.yml $BACKUP_DIR/
-    
-    # 压缩备份
-    tar -czf $BACKUP_DIR.tar.gz $BACKUP_DIR
-    rm -rf $BACKUP_DIR
-    
-    # 清理旧备份（保留7天）
-    find /opt/backups -name "*.tar.gz" -mtime +7 -delete
-    ```
+   ```bash
+   #!/bin/bash
+   # backup.sh
+
+   BACKUP_DIR="/opt/backups/$(date +%Y%m%d)"
+   mkdir -p $BACKUP_DIR
+
+   # MySQL备份
+   docker-compose exec -T mysql mysqldump -u root -p$MYSQL_ROOT_PASSWORD --all-databases > $BACKUP_DIR/mysql.sql
+
+   # MinIO备份
+   docker-compose exec -T minio mc mirror /data $BACKUP_DIR/minio/
+
+   # 配置文件备份
+   cp .env $BACKUP_DIR/
+   cp docker-compose.yml $BACKUP_DIR/
+
+   # 压缩备份
+   tar -czf $BACKUP_DIR.tar.gz $BACKUP_DIR
+   rm -rf $BACKUP_DIR
+
+   # 清理旧备份（保留7天）
+   find /opt/backups -name "*.tar.gz" -mtime +7 -delete
+   ```
 
 2. **定时备份**
 
-    ```bash
-    # 添加到crontab
-    0 2 * * * /opt/coze-studio/backup.sh
-    ```
+   ```bash
+   # 添加到crontab
+   0 2 * * * /opt/coze-studio/backup.sh
+   ```
 
 #### 5.4.4 高可用部署
 
 1. **负载均衡配置**
 
-    ```nginx
-    # nginx.conf
-    upstream coze_backend {
-        server 192.168.1.10:8888;
-        server 192.168.1.11:8888;
-        server 192.168.1.12:8888;
-    }
-    
-    server {
-        listen 80;
-        server_name coze.example.com;
-        
-        location / {
-            proxy_pass http://coze_backend;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-        }
-    }
-    ```
+   ```nginx
+   # nginx.conf
+   upstream coze_backend {
+       server 192.168.1.10:8888;
+       server 192.168.1.11:8888;
+       server 192.168.1.12:8888;
+   }
+
+   server {
+       listen 80;
+       server_name coze.example.com;
+
+       location / {
+           proxy_pass http://coze_backend;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+   }
+   ```
 
 2. **数据库集群**
 
-    ```yaml
-    # MySQL主从配置示例
-    mysql-master:
-      image: mysql:8.0
-      environment:
-        MYSQL_REPLICATION_MODE: master
-        MYSQL_REPLICATION_USER: replicator
-        MYSQL_REPLICATION_PASSWORD: replicator_password
-    
-    mysql-slave:
-      image: mysql:8.0
-      environment:
-        MYSQL_REPLICATION_MODE: slave
-        MYSQL_MASTER_HOST: mysql-master
-        MYSQL_REPLICATION_USER: replicator
-        MYSQL_REPLICATION_PASSWORD: replicator_password
-    ```
+   ```yaml
+   # MySQL主从配置示例
+   mysql-master:
+     image: mysql:8.0
+     environment:
+       MYSQL_REPLICATION_MODE: master
+       MYSQL_REPLICATION_USER: replicator
+       MYSQL_REPLICATION_PASSWORD: replicator_password
+
+   mysql-slave:
+     image: mysql:8.0
+     environment:
+       MYSQL_REPLICATION_MODE: slave
+       MYSQL_MASTER_HOST: mysql-master
+       MYSQL_REPLICATION_USER: replicator
+       MYSQL_REPLICATION_PASSWORD: replicator_password
+   ```
 
 #### 5.4.5 故障恢复
 
 1. **快速恢复脚本**
 
-    ```bash
-    #!/bin/bash
-    # recovery.sh
-    
-    echo "Starting Coze Studio recovery..."
-    
-    # 停止所有服务
-    docker-compose down
-    
-    # 清理异常容器
-    docker system prune -f
-    
-    # 恢复配置
-    if [ -f ".env.backup" ]; then
-        cp .env.backup .env
-    fi
-    
-    # 重新启动服务
-    docker-compose up -d
-    
-    echo "Recovery completed. Please check service status."
-    ```
+   ```bash
+   #!/bin/bash
+   # recovery.sh
+
+   echo "Starting Coze Studio recovery..."
+
+   # 停止所有服务
+   docker-compose down
+
+   # 清理异常容器
+   docker system prune -f
+
+   # 恢复配置
+   if [ -f ".env.backup" ]; then
+       cp .env.backup .env
+   fi
+
+   # 重新启动服务
+   docker-compose up -d
+
+   echo "Recovery completed. Please check service status."
+   ```
 
 2. **数据恢复**
 
-    ```bash
-    # 从备份恢复MySQL
-    docker-compose exec -T mysql mysql -u root -p$MYSQL_ROOT_PASSWORD < backup/mysql.sql
-    
-    # 恢复MinIO数据
-    docker-compose exec minio mc mirror backup/minio/ /data/
-    ```
+   ```bash
+   # 从备份恢复MySQL
+   docker-compose exec -T mysql mysql -u root -p$MYSQL_ROOT_PASSWORD < backup/mysql.sql
+
+   # 恢复MinIO数据
+   docker-compose exec minio mc mirror backup/minio/ /data/
+   ```
 
 ---
 
@@ -1482,9 +1496,9 @@ ollama:
   container_name: coze-ollama
   restart: unless-stopped
   ports:
-    - "11434:11434"  # Ollama API 端口
+    - "11434:11434" # Ollama API 端口
   volumes:
-    - ollama_data:/root/.ollama  # 模型数据存储
+    - ollama_data:/root/.ollama # 模型数据存储
   environment:
     - OLLAMA_HOST=0.0.0.0
     - OLLAMA_ORIGINS=*
@@ -1496,7 +1510,7 @@ ollama:
         devices:
           - driver: nvidia
             count: all
-            capabilities: [gpu]  # GPU 支持（可选）
+            capabilities: [gpu] # GPU 支持（可选）
 ```
 
 #### 6.1.2 模型下载和管理
@@ -1550,11 +1564,11 @@ export EMBEDDING_MAX_BATCH_SIZE="50"             # 批处理大小（字符串�
 
 **常用嵌入模型维度参考**：
 
-| 模型名称 | 维度 | 特点 |
-|---------|------|------|
-| nomic-embed-text | 768 | 英文优化，轻量级 |
-| bge-m3 | 1024 | 多语言支持 |
-| mxbai-embed-large | 1024 | 高质量嵌入 |
+| 模型名称          | 维度 | 特点             |
+| ----------------- | ---- | ---------------- |
+| nomic-embed-text  | 768  | 英文优化，轻量级 |
+| bge-m3            | 1024 | 多语言支持       |
+| mxbai-embed-large | 1024 | 高质量嵌入       |
 
 #### 6.2.2 聊天模型配置
 
@@ -1642,7 +1656,7 @@ ollama:
   environment:
     - OLLAMA_HOST=0.0.0.0
     - OLLAMA_ORIGINS=*
-    - CUDA_VISIBLE_DEVICES=0,1  # 指定使用的 GPU
+    - CUDA_VISIBLE_DEVICES=0,1 # 指定使用的 GPU
   networks:
     - coze-network
   deploy:
@@ -1687,10 +1701,10 @@ export OLLAMA_LOAD_TIMEOUT=5m            # 模型加载超时时间
 
 **模型选择建议**：
 
-| 硬件配置 | 推荐聊天模型 | 推荐嵌入模型 | 说明 |
-|---------|-------------|-------------|------|
-| 低配置（8GB RAM） | qwen2.5:7b, llama3.1:8b | nomic-embed-text | 基础功能 |
-| 中配置（16GB RAM） | qwen2.5:14b, gemma2:9b | bge-m3 | 平衡性能 |
+| 硬件配置            | 推荐聊天模型              | 推荐嵌入模型      | 说明     |
+| ------------------- | ------------------------- | ----------------- | -------- |
+| 低配置（8GB RAM）   | qwen2.5:7b, llama3.1:8b   | nomic-embed-text  | 基础功能 |
+| 中配置（16GB RAM）  | qwen2.5:14b, gemma2:9b    | bge-m3            | 平衡性能 |
 | 高配置（32GB+ RAM） | qwen2.5:32b, llama3.1:70b | mxbai-embed-large | 最佳效果 |
 
 **场景化模型选择**：
@@ -1787,12 +1801,12 @@ curl -s http://localhost:11434/api/tags | jq '.models[].name' || echo "API 连�
 
 **Ollama 特有问题**：
 
-| 问题类型 | 快速解决方案 | 详细排查 |
-|---------|-------------|----------|
-| 模型加载失败 | `ollama rm && ollama pull` | 检查模型文件完整性 |
-| 内存不足 | 调整 `OLLAMA_NUM_PARALLEL=1` | 减少并发和缓存模型 |
-| GPU 问题 | 检查 `nvidia-smi` | 验证 Docker GPU 支持 |
-| API 连接失败 | 检查端口和防火墙 | 参考 7.2.1 网络诊断 |
+| 问题类型     | 快速解决方案                 | 详细排查             |
+| ------------ | ---------------------------- | -------------------- |
+| 模型加载失败 | `ollama rm && ollama pull`   | 检查模型文件完整性   |
+| 内存不足     | 调整 `OLLAMA_NUM_PARALLEL=1` | 减少并发和缓存模型   |
+| GPU 问题     | 检查 `nvidia-smi`            | 验证 Docker GPU 支持 |
+| API 连接失败 | 检查端口和防火墙             | 参考 7.2.1 网络诊断  |
 
 **性能优化参数**：
 
