@@ -5,6 +5,8 @@ __pycache__/
 
 #Mac
 .DS_Store
+fix_links.py
+verify_links.py
 
 # C extensions
 *.so

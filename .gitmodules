@@ -1,6 +1,3 @@
-[submodule "llm/agent/mcp-sse"]
-	path = llm/agent/mcp-sse
-	url = git@github.com:sidharthrajaram/mcp-sse.git
 [submodule "hands-on-ML"]
 	path = hands-on-ML
 	url = git@github.com:ForceInjection/hands-on-ML.git

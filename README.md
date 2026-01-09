@@ -15,7 +15,7 @@
 
 ## 1. 硬件与基础设施
 
-本章节主要构建 AI 系统的物理底座，深入探讨从单机计算芯片（GPU/TPU）到大规模集群互联（InfiniBand/RDMA）的核心技术。我们将从硬件架构原理出发，逐步延伸至分布式存储、高性能网络以及云原生基础设施的管理与运维，为构建高性能、高可用的 AI 平台打下坚实基础。
+本章节主要构建 AI 系统的物理底座，深入探讨从单机计算芯片（GPU/TPU）到大规模集群互联（03_ai_cluster_ops/infiniband/RDMA）的核心技术。我们将从硬件架构原理出发，逐步延伸至分布式存储、高性能网络以及云原生基础设施的管理与运维，为构建高性能、高可用的 AI 平台打下坚实基础。
 
 ### 1.1 硬件基础知识
 
@@ -38,7 +38,7 @@
 
 #### 1.2.1 Google TPU 架构深度解析
 
-- [**TPU 101: 深度学习专用加速器架构解析**](tpu/tpu%20101.md) - 深入剖析 Google TPU 的设计哲学、脉动阵列架构及其与 GPU 的本质区别
+- [**TPU 101: 深度学习专用加速器架构解析**](01_hardware_architecture/tpu/tpu%20101.md) - 深入剖析 Google TPU 的设计哲学、脉动阵列架构及其与 GPU 的本质区别
 
 **核心内容：**
 
@@ -49,26 +49,26 @@
 
 #### 1.2.2 GPU 架构和编程模型介绍
 
-- [**GPU Architecture and Programming — An Introduction**](gpu_programming/gpu_programming_introduction.md) - `GPU` 架构与编程模型的全面介绍
+- [**GPU Architecture and Programming — An Introduction**](02_gpu_programming/cuda/gpu_programming_introduction.md) - `GPU` 架构与编程模型的全面介绍
 - [**GPU 词汇表**](https://modal.com/gpu-glossary/readme) - 全面的 GPU 技术术语词典，涵盖 GPU 架构、CUDA 编程、并行计算等核心概念
 
 **参考资料：**
 
-- [**GPU 特性**](gpu_architecture/gpu_characteristics.md)
-- [**GPU 内存**](gpu_architecture/gpu_memory.md)
-- [**GPU Example: Tesla V100**](gpu_architecture/tesla_v100.md)
-- [**GPUs on Frontera: RTX 5000**](gpu_architecture/rtx_5000.md)
+- [**GPU 特性**](01_hardware_architecture/nvidia/gpu_characteristics.md)
+- [**GPU 内存**](01_hardware_architecture/nvidia/gpu_memory.md)
+- [**GPU Example: Tesla V100**](01_hardware_architecture/nvidia/tesla_v100.md)
+- [**GPUs on Frontera: RTX 5000**](01_hardware_architecture/nvidia/rtx_5000.md)
 - **练习**：
-  - [**Exercise: Device Query**](gpu_architecture/exer_device_query.md)
-  - [**Exercise: Device Bandwidth**](gpu_architecture/exer_device_bandwidth.md)
+  - [**Exercise: Device Query**](01_hardware_architecture/nvidia/exer_device_query.md)
+  - [**Exercise: Device Bandwidth**](01_hardware_architecture/nvidia/exer_device_bandwidth.md)
 
 #### 1.2.3 CUDA 核心技术
 
-- [**深入理解 NVIDIA CUDA 核心（vs. Tensor Cores vs. RT Cores）**](cuda/cuda_cores_cn.md)
+- [**深入理解 NVIDIA CUDA 核心（vs. Tensor Cores vs. RT Cores）**](02_gpu_programming/cuda/cuda_cores_cn.md)
 
 #### 1.2.4 GPGPU vs NPU 技术对比
 
-- [**GPGPU vs NPU：大模型推理与训练的算力选择指南**](gpu_architecture/GPGPU_vs_NPU_大模型推理训练对比.md) - 全面对比分析 GPGPU 和 NPU 在大模型场景下的技术特点、性能表现和应用选择
+- [**GPGPU vs NPU：大模型推理与训练的算力选择指南**](01_hardware_architecture/nvidia/GPGPU_vs_NPU_大模型推理训练对比.md) - 全面对比分析 GPGPU 和 NPU 在大模型场景下的技术特点、性能表现和应用选择
 
 **核心内容：**
 
@@ -88,27 +88,27 @@
 
 **理论与架构：**
 
-- [**GPU 虚拟化与切分技术原理解析**](gpu_manager/GPU虚拟化与切分技术原理解析.md) - 技术原理深入
-- [**GPU 管理相关技术深度解析 - 虚拟化、切分及远程调用**](gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md) - 全面的 GPU 管理技术指南
-- [**第一部分：基础理论篇**](gpu_manager/第一部分：基础理论篇.md) - GPU 管理基础概念与理论
-- [**第二部分：虚拟化技术篇**](gpu_manager/第二部分：虚拟化技术篇.md) - 硬件、内核、用户态虚拟化技术
-- [**第三部分：资源管理与优化篇**](gpu_manager/第三部分：资源管理与优化篇.md) - GPU 切分与资源调度算法
-- [**第四部分：实践应用篇**](gpu_manager/第四部分：实践应用篇.md) - 部署、运维、性能调优实践
+- [**GPU 虚拟化与切分技术原理解析**](04_cloud_native_ai_platform/gpu_manager/GPU虚拟化与切分技术原理解析.md) - 技术原理深入
+- [**GPU 管理相关技术深度解析 - 虚拟化、切分及远程调用**](04_cloud_native_ai_platform/gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md) - 全面的 GPU 管理技术指南
+- [**第一部分：基础理论篇**](04_cloud_native_ai_platform/gpu_manager/第一部分：基础理论篇.md) - GPU 管理基础概念与理论
+- [**第二部分：虚拟化技术篇**](04_cloud_native_ai_platform/gpu_manager/第二部分：虚拟化技术篇.md) - 硬件、内核、用户态虚拟化技术
+- [**第三部分：资源管理与优化篇**](04_cloud_native_ai_platform/gpu_manager/第三部分：资源管理与优化篇.md) - GPU 切分与资源调度算法
+- [**第四部分：实践应用篇**](04_cloud_native_ai_platform/gpu_manager/第四部分：实践应用篇.md) - 部署、运维、性能调优实践
 
 **GPU 虚拟化解决方案：**
 
-- [**HAMi GPU 资源管理完整指南**](gpu_manager/hami/hmai-gpu-resources-guide.md)
+- [**HAMi GPU 资源管理完整指南**](04_cloud_native_ai_platform/gpu_manager/hami/hmai-gpu-resources-guide.md)
 
 ### 1.5 GPU 运维工具与实践
 
-- [**GPU 监控与运维工具概述**](ops/README.md) - 企业级 GPU 集群的全方位监控与运维解决方案
-- [**nvidia-smi 入门**](ops/nvidia-smi.md)
-- [**nvtop 入门**](ops/nvtop.md)
+- [**GPU 监控与运维工具概述**](03_ai_cluster_ops/gpu_ops/README.md) - 企业级 GPU 集群的全方位监控与运维解决方案
+- [**nvidia-smi 入门**](03_ai_cluster_ops/gpu_ops/nvidia-smi.md)
+- [**nvtop 入门**](03_ai_cluster_ops/gpu_ops/nvtop.md)
 - [**NVIDIA GPU XID 故障码解析**](https://mp.weixin.qq.com/s/ekCnhr3qrhjuX_-CEyx65g)
 - [**NVIDIA GPU 卡之 ECC 功能**](https://mp.weixin.qq.com/s/nmZVOQAyfFyesm79HzjUlQ)
-- [**查询 GPU 卡详细参数**](ops/DeviceQuery.md)
+- [**查询 GPU 卡详细参数**](03_ai_cluster_ops/gpu_ops/DeviceQuery.md)
 - [**Understanding NVIDIA GPU Performance: Utilization vs. Saturation (2023)**](https://arthurchiao.art/blog/understanding-gpu-performance/)
-- [**GPU 利用率是一个误导性指标**](ops/GPU%20利用率是一个误导性指标.md)
+- [**GPU 利用率是一个误导性指标**](03_ai_cluster_ops/gpu_ops/GPU%20利用率是一个误导性指标.md)
 
 ### 1.6 分布式存储系统
 
@@ -124,9 +124,9 @@
 
 **JuiceFS 分布式文件系统：**
 
-- [**JuiceFS 文件修改机制分析**](juicefs/JuiceFS%20文件修改机制分析.md) - 分布式文件系统的修改机制深度解析
-- [**JuiceFS 后端存储变更手册**](juicefs/JuiceFS%20后端存储变更手册.md) - JuiceFS 后端存储迁移和变更操作指南
-- [**3FS 分布式文件系统**](deepseek/deepseek_3fs_design_notes.zh-CN.md) - 高性能分布式文件系统的设计理念与技术实现
+- [**JuiceFS 文件修改机制分析**](04_cloud_native_ai_platform/storage/juicefs/JuiceFS%20文件修改机制分析.md) - 分布式文件系统的修改机制深度解析
+- [**JuiceFS 后端存储变更手册**](04_cloud_native_ai_platform/storage/juicefs/JuiceFS%20后端存储变更手册.md) - JuiceFS 后端存储迁移和变更操作指南
+- [**3FS 分布式文件系统**](04_cloud_native_ai_platform/storage/deepseek_3fs_design_notes.zh-CN.md) - 高性能分布式文件系统的设计理念与技术实现
   - **系统架构**：集群管理器、元数据服务、存储服务、客户端四大组件
   - **核心技术**： RDMA 网络、CRAQ 链式复制、异步零拷贝 API
   - **性能优化**： FUSE 局限性分析、本地客户端设计、io_uring 启发的 API 设计
@@ -139,12 +139,12 @@
 
 `InfiniBand`（IB）是专为高性能计算设计的网络架构，在 `AI` 基础设施中扮演着数据传输高速公路的角色。相比传统以太网， `IB` 提供更低的延迟（<1μs）、更高的带宽（200Gbps+）和更强的可扩展性，特别适合大规模 `GPU` 集群的参数同步、梯度聚合等通信密集型任务。
 
-- [**InfiniBand 网络理论与实践**](InfiniBand/IB%20网络理论与实践.md) - 企业级高性能计算网络的核心技术栈
+- [**InfiniBand 网络理论与实践**](03_ai_cluster_ops/infiniband/IB%20网络理论与实践.md) - 企业级高性能计算网络的核心技术栈
   - **技术特性**：亚微秒级延迟、200Gbps+ 带宽、RDMA 零拷贝传输
   - **应用场景**：大规模分布式训练、高频金融交易、科学计算集群
   - **架构优势**：硬件级卸载、CPU 旁路、内存直接访问
-- [**InfiniBand 健康检查工具**](InfiniBand/health/README.md) - 网络健康状态监控和故障诊断
-- [**InfiniBand 带宽监控**](InfiniBand/monitor/README.md) - 实时带宽监控和性能分析
+- [**InfiniBand 健康检查工具**](03_ai_cluster_ops/infiniband/health/README.md) - 网络健康状态监控和故障诊断
+- [**InfiniBand 带宽监控**](03_ai_cluster_ops/infiniband/monitor/README.md) - 实时带宽监控和性能分析
 
 #### 1.7.2 RDMA 远程直接内存访问
 
@@ -166,11 +166,11 @@
 
 #### 1.7.3 NCCL 分布式通信
 
-- [**NCCL 分布式通信测试套件使用指南**](nccl/tutorial.md) - NVIDIA 集合通信库的深度技术解析
+- [**NCCL 分布式通信测试套件使用指南**](03_ai_cluster_ops/nccl/tutorial.md) - NVIDIA 集合通信库的深度技术解析
   - **核心算法**： AllReduce、AllGather、Broadcast、ReduceScatter 优化实现
   - **性能调优**：网络拓扑感知、带宽聚合、计算通信重叠
   - **生态集成**：与 PyTorch、TensorFlow、MPI 的深度集成方案
-- [**NCCL Kubernetes 部署**](nccl/k8s/README.md) - 容器化 NCCL 集群部署方案
+- [**NCCL Kubernetes 部署**](03_ai_cluster_ops/nccl/k8s/README.md) - 容器化 NCCL 集群部署方案
 
 **核心特性：**
 
@@ -182,15 +182,15 @@
 
 **测试工具：**
 
-- [**NCCL 性能基准测试**](nccl/nccl_benchmark.sh) - 支持 PXN 模式的性能测试
-- [**容器化测试管理**](nccl/nccl_container_manager.sh) - 容器化测试环境管理
-- [**多节点测试启动器**](nccl/nccl_multinode_launcher.sh) - 原生多节点测试部署
+- [**NCCL 性能基准测试**](03_ai_cluster_ops/nccl/nccl_benchmark.sh) - 支持 PXN 模式的性能测试
+- [**容器化测试管理**](03_ai_cluster_ops/nccl/nccl_container_manager.sh) - 容器化测试环境管理
+- [**多节点测试启动器**](03_ai_cluster_ops/nccl/nccl_multinode_launcher.sh) - 原生多节点测试部署
 
 ### 1.8 性能分析与调优
 
 #### 1.8.1 AI 系统性能分析概述
 
-- [**AI 系统性能分析**](profiling/README.md) - 企业级 AI 系统的全栈性能分析与瓶颈诊断
+- [**AI 系统性能分析**](02_gpu_programming/profiling/README.md) - 企业级 AI 系统的全栈性能分析与瓶颈诊断
 
 **分析维度：**
 
@@ -201,7 +201,7 @@
 #### 1.8.2 GPU 性能分析
 
 - [**使用 Nsight Compute Tool 分析 CUDA 矩阵乘法程序**](https://www.yuque.com/u41800946/nquqpa/eo7gykiyhg8xi2gg)
-- [**CUDA 内核性能分析指南**](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf) - NVIDIA 官方 CUDA 内核性能分析详细指南
+- [**CUDA 内核性能分析指南**](02_gpu_programming/profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf) - NVIDIA 官方 CUDA 内核性能分析详细指南
 
 **性能分析工具：**
 
@@ -230,10 +230,10 @@
 
 ### 2.1 Kubernetes AI 生态
 
-- [**Kubernetes AI 基础设施概述**](k8s/README.md) - 企业级容器化 AI 工作负载的编排管理平台
-- [**Kueue + HAMi 集成方案**](k8s/Kueue%20+%20HAMi.md) - GPU 资源调度与管理的云原生解决方案
-- [**NVIDIA Container Toolkit 原理分析**](k8s/Nvidia%20Container%20Toolkit%20原理分析.md) - 容器化 GPU 支持的底层机制
-- [**NVIDIA K8s Device Plugin 分析**](k8s/nvidia-k8s-device-plugin-analysis.md) - GPU 设备插件的架构与实现
+- [**Kubernetes AI 基础设施概述**](04_cloud_native_ai_platform/k8s/README.md) - 企业级容器化 AI 工作负载的编排管理平台
+- [**Kueue + HAMi 集成方案**](04_cloud_native_ai_platform/k8s/Kueue%20+%20HAMi.md) - GPU 资源调度与管理的云原生解决方案
+- [**NVIDIA Container Toolkit 原理分析**](04_cloud_native_ai_platform/k8s/Nvidia%20Container%20Toolkit%20原理分析.md) - 容器化 GPU 支持的底层机制
+- [**NVIDIA K8s Device Plugin 分析**](04_cloud_native_ai_platform/k8s/nvidia-k8s-device-plugin-analysis.md) - GPU 设备插件的架构与实现
 
 **核心特性：**
 
@@ -243,8 +243,8 @@
 
 ### 2.2 AI 推理服务
 
-- [**云原生高性能分布式 LLM 推理框架 llm-d 介绍**](k8s/llm-d-intro.md) - 基于 Kubernetes 的大模型推理框架
-- [**vLLM + LWS ： Kubernetes 上的多机多卡推理方案**](k8s/lws_intro.md) - LWS 旨在提供一种 **更符合 AI 原生工作负载特点的分布式控制器语义**，填补现有原语在推理部署上的能力空白
+- [**云原生高性能分布式 LLM 推理框架 llm-d 介绍**](04_cloud_native_ai_platform/k8s/llm-d-intro.md) - 基于 Kubernetes 的大模型推理框架
+- [**vLLM + LWS ： Kubernetes 上的多机多卡推理方案**](04_cloud_native_ai_platform/k8s/lws_intro.md) - LWS 旨在提供一种 **更符合 AI 原生工作负载特点的分布式控制器语义**，填补现有原语在推理部署上的能力空白
 
 **技术架构：**
 
@@ -260,8 +260,8 @@
 
 ### 3.1 AI 编程入门
 
-- [**AI 编程入门完整教程**](ai_coding/AI%20编程入门.md) - 面向初学者的 AI 编程完整学习路径与实践指南
-- [**AI 编程入门在线版本**](ai_coding/index.html) - 交互式在线学习体验与动手实践
+- [**AI 编程入门完整教程**](10_ai_related_course/ai_coding/AI%20%E7%BC%96%E7%A8%8B%E5%85%A5%E9%97%A8.md) - 面向初学者的 AI 编程完整学习路径与实践指南
+- [**AI 编程入门在线版本**](10_ai_related_course/ai_coding/index.html) - 交互式在线学习体验与动手实践
 
 **学习路径：**
 
@@ -275,8 +275,8 @@
 
 #### 3.2.1 核心概念与开发
 
-- [**CUDA 核心概念详解**](cuda/cuda_cores_cn.md) - CUDA 核心、线程块、网格等基础概念的深度解析
-- [**CUDA 流详解**](cuda/cuda_streams.md) - CUDA 流的原理、应用场景与性能优化
+- [**CUDA 核心概念详解**](02_gpu_programming/cuda/cuda_cores_cn.md) - CUDA 核心、线程块、网格等基础概念的深度解析
+- [**CUDA 流详解**](02_gpu_programming/cuda/cuda_streams.md) - CUDA 流的原理、应用场景与性能优化
 
 **技术特色：**
 
@@ -286,7 +286,7 @@
 
 #### 3.2.2 GPU 编程基础
 
-- [**GPU 编程基础**](gpu_programming/README.md) - GPU 编程入门到进阶的完整技术路径，涵盖 GPU 架构、编程模型和性能优化
+- [**GPU 编程基础**](02_gpu_programming/README.md) - GPU 编程入门到进阶的完整技术路径，涵盖 GPU 架构、编程模型和性能优化
 
 **核心内容：**
 
@@ -301,7 +301,7 @@
 
 - [**并行计算、费林分类法和 CUDA 基本概念**](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [**CUDA 编程模型入门**](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
-- [**CUDA 并发编程之 Stream 介绍**](cuda/cuda_streams.md)
+- [**CUDA 并发编程之 Stream 介绍**](02_gpu_programming/cuda/cuda_streams.md)
 
 **参考资料**：
 
@@ -315,7 +315,7 @@
 - [**学习笔记**](https://github.com/QINZHAOYU/CudaSteps)
 - [**示例代码**](https://github.com/MAhaitao999/CUDA_Programming)
 - [**樊哲勇主页**](https://wlkxyjsxy.bhu.edu.cn/engine2/general/4146630/detail?engineInstanceId=656243&typeId=2986094&pageId=85748&websiteId=63087&currentBranch=1)
-- [**《CUDA 编程简介: 基础与实践 by 李瑜》**](./cuda/CUDA%20编程简介%20-%20基础与实践.pdf)
+- [**《CUDA 编程简介: 基础与实践 by 李瑜》**](02_gpu_programming/cuda/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
 - [**《CUDA 编程入门》** - 本文改编自北京大学超算队 CUDA 教程讲义](https://hpcwiki.io/gpu/cuda/)
 - [**Multi GPU Programming Models**](https://github.com/NVIDIA/multi-gpu-programming-models)
 - [**CUDA Processing Streams**](https://turing.une.edu.au/~cosc330/lectures/display_lecture.php?lecture=22#1)
@@ -328,8 +328,8 @@
 
 ### 3.3 Java AI 开发
 
-- [**Java AI 开发指南**](java_ai/README.md) - Java 生态系统中的 AI 开发技术
-- [**使用 Spring AI 构建高效 LLM 代理**](java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
+- [**Java AI 开发指南**](README.md) - Java 生态系统中的 AI 开发技术
+- [**使用 Spring AI 构建高效 LLM 代理**](98_llm_programming/java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
 
 **技术特色：**
 
@@ -346,7 +346,7 @@
 
 ### 4.1 机器学习学习资源
 
-- [**动手学机器学习**](hands-on-ML/README.md) - 全面的机器学习学习资源库，包含理论讲解、代码实现和实战案例
+- [**动手学机器学习**](README.md) - 全面的机器学习学习资源库，包含理论讲解、代码实现和实战案例
 
 **核心特色：**
 
@@ -357,10 +357,6 @@
 
 ### 4.2 基础概念与数学准备
 
-- [**通俗理解机器学习核心概念**](hands-on-ML/nju_software/通俗理解机器学习核心概念.md)
-- [**梯度下降算法：从直觉到实践**](hands-on-ML/nju_software/梯度下降算法：从直觉到实践.md)
-- [**混淆矩阵评价指标**](hands-on-ML/nju_software/混淆矩阵评价指标.md)
-- [**误差 vs. 残差**](hands-on-ML/nju_software/误差%20vs%20残差.md)
 - [**线性代数的本质**](https://www.bilibili.com/video/BV1ys411472E) - 3Blue1Brown 可视化教程
 - [**MIT 18.06 线性代数**](https://ocw.mit.edu/courses/mathematics/18-06-linear-algebra-spring-2010/) - Gilbert Strang 经典课程
 - [**概率论与统计学基础**](https://book.douban.com/subject/35798663/) - 贝叶斯定理、概率分布、最大似然估计
@@ -373,22 +369,11 @@
 
 基础算法是监督学习的核心组成部分，包括线性模型、树模型、概率模型等经典算法。这些算法各有特色，适用于不同的数据类型和问题场景，是机器学习从业者必须掌握的基础技能。
 
-- [**KNN 算法**](hands-on-ML/nju_software/ch-03/动手学机器学习%20KNN%20算法.md) - K 近邻算法理论与实现
-- [**线性回归**](hands-on-ML/nju_software/ch-03/动手学机器学习线性回归算法.md) - 最小二乘法、正则化
-- [**逻辑回归**](hands-on-ML/nju_software/ch-03/动手学机器学习逻辑回归算法.md) - 分类算法基础
-- [**决策树**](hands-on-ML/nju_software/ch-03/动手学机器学习决策树算法.md) - ID3、C4.5、CART 算法
-- [**支持向量机**](hands-on-ML/nju_software/ch-03/动手学机器学习支持向量机算法.md) - 核技巧与软间隔
-- [**朴素贝叶斯**](hands-on-ML/nju_software/ch-03/动手学机器学习朴素贝叶斯算法.md) - 概率分类器
 
 #### 4.3.2 集成学习
 
 集成学习通过组合多个基学习器来提升模型性能，是现代机器学习竞赛和工业应用的重要技术。本小节深入探讨 Bagging、Boosting、Stacking 等主流集成方法，以及它们在实际项目中的应用策略和优化技巧。
 
-- [**随机森林**](hands-on-ML/nju_software/ch-04/动手学机器学习随机森林算法.md) - Bagging 集成方法
-- [**AdaBoost**](hands-on-ML/nju_software/ch-04/Adaboost%20计算示例.md) - Boosting 算法
-- [**GBDT**](hands-on-ML/nju_software/ch-04/一文读懂GBDT.md) - 梯度提升决策树
-- [**Stacking**](hands-on-ML/nju_software/ch-04/kaggle房价预测中的集成技巧.md) - 模型堆叠技术
-- [**集成学习概述**](hands-on-ML/nju_software/ch-04/一文深入了解机器学习之集成学习.md) - 集成学习理论与方法
 
 ### 4.4 无监督学习
 
@@ -398,25 +383,16 @@
 
 聚类算法是无监督学习的重要分支，用于发现数据中的自然分组结构。本小节介绍基于距离、密度、层次等不同原理的聚类方法，分析各算法的优缺点和适用场景，为数据分析和客户细分等应用提供技术支撑。
 
-- [**K-means 聚类**](hands-on-ML/nju_software/ch-05/动手学机器学习%20Kmeans%20聚类算法.md) - 基础聚类算法
-- [**层次聚类**](hands-on-ML/nju_software/ch-05/动手学机器学习层次聚类算法.md) - 凝聚与分裂聚类
-- [**DBSCAN**](hands-on-ML/nju_software/ch-05/动手学机器学习：DBSCAN%20密度聚类算法.md) - 密度聚类算法
 
 #### 4.4.2 降维算法
 
 降维算法通过减少数据维度来简化问题复杂度，同时保留数据的主要信息。本小节深入探讨线性和非线性降维方法，包括主成分分析、线性判别分析等经典技术，以及它们在数据可视化和特征提取中的应用。
 
-- [**PCA 主成分分析**](hands-on-ML/nju_software/ch-11/PCA降维算法详解.md) - 线性降维方法
-- [**LDA 线性判别分析**](hands-on-ML/nju_software/ch-11/LDA降维算法详解.md) - 监督降维技术
-- [**PCA vs LDA 比较**](hands-on-ML/nju_software/ch-11/PCA%20vs.%20LDA%20降维方法比较.md) - 降维方法对比分析
 
 #### 4.4.3 概率模型
 
 概率模型基于统计学原理对数据进行建模，能够处理不确定性和噪声。本小节介绍期望最大化算法、高斯混合模型等重要概率建模技术，以及最大似然估计的理论基础和实际应用。
 
-- [**EM 算法**](hands-on-ML/nju_software/ch-06/一文了解%20EM%20算法.md) - 期望最大化算法
-- [**高斯混合模型**](hands-on-ML/nju_software/ch-06/一文了解%20GMM%20算法.md) - GMM 聚类方法
-- [**最大似然估计**](hands-on-ML/nju_software/ch-06/最大似然估计（MLE）简介.md) - MLE 理论基础
 
 ### 4.5 特征工程与模型优化
 
@@ -426,21 +402,11 @@
 
 特征工程是将原始数据转换为机器学习算法可以有效利用的特征的过程。本小节涵盖数据清洗、特征选择、特征变换等核心技术，以及针对不同数据类型（数值、文本、时间序列）的专门处理方法。
 
-- [**特征工程概述**](hands-on-ML/nju_software/ch-07/特征工程.md) - 数据预处理、特征选择与变换
-- [**特征选择方法**](hands-on-ML/nju_software/ch-10/特征选择方法概述.md) - 过滤法、包装法、嵌入法
-- [**GBDT 特征提取**](hands-on-ML/nju_software/ch-07/GBDT特征提取.md) - 基于树模型的特征工程
-- [**时间序列特征提取**](hands-on-ML/nju_software/ch-07/时间序列数据及特征提取.md) - 时间序列数据处理
-- [**词袋模型**](hands-on-ML/nju_software/ch-07/词袋模型介绍.md) - 文本特征工程
 
 #### 4.5.2 模型评估
 
 模型评估是机器学习项目的重要环节，用于客观衡量模型性能和选择最优方案。本小节介绍各种评估指标、交叉验证方法、超参数优化技术，以及处理数据不平衡等实际问题的解决方案。
 
-- [**模型评估方法**](hands-on-ML/nju_software/ch-08/图解机器学习-模型评估方法与准则.md) - 评估指标与交叉验证
-- [**混淆矩阵评价指标**](hands-on-ML/nju_software/混淆矩阵评价指标.md) - 分类模型性能评估
-- [**GridSearchCV**](hands-on-ML/nju_software/ch-09/gridsearchcv_intro.md) - 超参数优化实践
-- [**L1 L2 正则化**](hands-on-ML/nju_software/ch-09/L1_L2_intro.md) - 正则化方法介绍
-- [**SMOTE 采样**](hands-on-ML/nju_software/ch-09/SMOTE%20介绍.md) - 不平衡数据处理
 
 ### 4.6 推荐系统与概率图模型
 
@@ -450,36 +416,21 @@
 
 推荐系统是现代互联网应用的核心技术之一，广泛应用于电商、内容平台、社交网络等场景。本小节系统介绍协同过滤、内容推荐、矩阵分解等主流推荐算法，以及推荐系统的评估方法和工程实践。
 
-- [**推荐系统入门**](hands-on-ML/nju_software/ch-12/recommendation_intro.md) - 推荐算法概述
-- [**协同过滤算法**](hands-on-ML/nju_software/ch-12/协同过滤推荐算法：原理、实现与分析.md) - 用户协同过滤与物品协同过滤
-- [**基于内容的推荐**](hands-on-ML/nju_software/ch-12/基于内容的推荐算法：原理与实践.md) - 内容推荐算法
-- [**矩阵分解推荐**](hands-on-ML/nju_software/ch-12/基于矩阵分解的推荐算法：原理与实践.md) - SVD 推荐算法
-- [**关联规则挖掘**](hands-on-ML/nju_software/ch-12/使用%20Apriori%20算法进行关联分析：原理与示例.md) - Apriori 算法
 
 #### 4.6.2 概率图模型
 
 概率图模型结合了概率论和图论，用于建模变量间的复杂依赖关系。本小节介绍贝叶斯网络、隐马尔可夫模型等重要概率图模型，探讨它们在自然语言处理、计算机视觉等领域的应用。
 
-- [**贝叶斯网络**](hands-on-ML/nju_software/ch-13/一文读懂贝叶斯网络.md) - 概率图模型基础
-- [**隐马尔可夫模型**](hands-on-ML/nju_software/ch-13/一文读懂隐马尔可夫模型（HMM）.md) - 序列建模与状态推断
-- [**马尔可夫模型**](hands-on-ML/nju_software/ch-13/马尔可夫模型简介.md) - 马尔可夫链基础
 
 ### 4.7 深度学习基础
 
 深度学习是现代人工智能的核心技术，通过多层神经网络学习数据的深层表示。本节介绍深度学习的基本概念、神经网络架构和训练方法，为后续的大模型学习奠定基础。
 
-- [**深度学习概述**](hands-on-ML/nju_software/ch-14/深度学习概述.md) - 深度学习理论与实践指南
-- [**神经网络基础**](hands-on-ML/nju_software/ch-14/神经网络示例.md) - 感知机、多层感知机、反向传播
-- [**什么是深度学习**](hands-on-ML/nju_software/ch-14/什么是深度学习？.md) - 深度学习入门介绍
 
 ### 4.8 实战项目
 
 实战项目是将理论知识转化为实际技能的重要途径。本节提供多个完整的机器学习项目案例，涵盖数据预处理、特征工程、模型训练、评估优化等完整流程，帮助读者积累实际项目经验。
 
-- [**泰坦尼克号幸存者预测**](hands-on-ML/nju_software/ch-03/使用决策树对泰坦尼克号幸存者数据进行分类.md) - 特征工程与分类实战
-- [**朴素贝叶斯实例**](hands-on-ML/nju_software/ch-03/朴素贝叶斯计算：建筑工人打喷嚏后患感冒的概率.md) - 概率计算实例
-- [**RFM 用户分析**](hands-on-ML/nju_software/ch-07/数据探索-根据历史订单信息求RFM值.md) - 用户价值分析
-- [**电影推荐系统**](hands-on-ML/nju_software/ch-12/movie-recommendation.ipynb) - 推荐算法实战
 
 ### 4.9 学习资源
 
@@ -493,9 +444,6 @@
 
 #### 4.9.2 在线资源
 
-- [**机器学习考试复习提纲**](hands-on-ML/nju_software/机器学习考试复习提纲.md) - 考试重点总结
-- [**梯度下降算法详解**](hands-on-ML/nju_software/梯度下降算法：从直觉到实践.md) - 优化算法理解
-- [**机器学习核心概念**](hands-on-ML/nju_software/通俗理解机器学习核心概念.md) - 概念通俗解释
 - [**Andrew Ng 机器学习课程**](https://www.coursera.org/learn/machine-learning) - Coursera 经典课程
 - [**CS229 机器学习**](http://cs229.stanford.edu/) - 斯坦福大学课程
 
@@ -517,28 +465,27 @@
 
 - [**Andrej Karpathy ： Deep Dive into LLMs like ChatGPT （B 站视频）**](https://www.bilibili.com/video/BV16cNEeXEer) - 深度学习领域权威专家的 LLM 技术解析
 - [**大模型基础组件 - Tokenizer**](https://zhuanlan.zhihu.com/p/651430181) - 文本分词与编码的核心技术
-- [**解密大语言模型中的 Tokens**](llm/token/llm_token_intro.md) - Token 机制的深度解析与实践应用
+- [**解密大语言模型中的 Tokens**](06_llm_theory_and_fundamentals/llm_basic_concepts/token/llm_token_intro.md) - Token 机制的深度解析与实践应用
   - [**Tiktokenizer 在线版**](https://tiktokenizer.vercel.app/?model=gpt-4o) - 交互式 Token 分析工具
 
 ### 5.2 嵌入技术与表示学习
 
 嵌入技术是大语言模型的核心组件之一，负责将离散的文本符号转换为连续的向量表示。这一技术不仅影响模型的理解能力，还直接关系到模型的性能和效率。本节深入探讨文本嵌入的原理、实现方式以及在不同场景下的应用策略。
 
-- [**文本嵌入（Text-Embedding） 技术快速入门**](llm/embedding/text_embeddings_guide.md) - 文本向量化的理论基础与实践
-- [**LLM 嵌入技术详解：图文指南**](llm/embedding/LLM%20Embeddings%20Explained%20-%20A%20Visual%20and%20Intuitive%20Guide.zh-CN.md) - 可视化理解嵌入技术
-- [**大模型 Embedding 层与独立 Embedding 模型：区别与联系**](llm/embedding/embedding.md) - 嵌入层架构设计与选型策略
+- [**文本嵌入（Text-Embedding） 技术快速入门**](06_llm_theory_and_fundamentals/llm_basic_concepts/embedding/text_embeddings_guide.md) - 文本向量化的理论基础与实践
+- [**LLM 嵌入技术详解：图文指南**](06_llm_theory_and_fundamentals/llm_basic_concepts/embedding/LLM%20Embeddings%20Explained%20-%20A%20Visual%20and%20Intuitive%20Guide.zh-CN.md) - 可视化理解嵌入技术
+- [**大模型 Embedding 层与独立 Embedding 模型：区别与联系**](06_llm_theory_and_fundamentals/llm_basic_concepts/embedding/embedding.md) - 嵌入层架构设计与选型策略
 
 ### 5.3 高级架构与优化技术
 
 现代大语言模型采用了多种先进的架构设计和优化技术，以提升模型性能、降低计算成本并解决特定问题。本节涵盖混合专家系统、量化技术、思维链推理等前沿技术，这些技术代表了当前 LLM 领域的最新发展方向。
 
 - [**大模型可视化指南**](https://www.maartengrootendorst.com/) - 大模型内部机制的可视化分析
-- [**一文读懂思维链（Chain-of-Thought, CoT）**](llm/一文读懂思维链（Chain-of-Thought,%20CoT）.md) - 推理能力增强的核心技术
-- [**大模型的幻觉及其应对措施**](llm/大模型的幻觉及其应对措施.md) - 幻觉问题的成因分析与解决方案
-- [**大模型文件格式完整指南**](llm/大模型文件格式完整指南.md) - 模型存储与部署的技术规范
-- [**混合专家系统（MoE）图解指南**](<llm/A%20Visual%20Guide%20to%20Mixture%20of%20Experts%20(MoE).zh-CN.md>) - 稀疏激活架构的设计原理
-- [**量化技术可视化指南**](llm/A%20Visual%20Guide%20to%20Quantization.zh-CN.md) - 模型压缩与加速的核心技术
-- [**基于大型语言模型的意图检测**](llm/Intent%20Detection%20using%20LLM.zh-CN.md) - 自然语言理解的实际应用
+- [**一文读懂思维链（Chain-of-Thought, CoT）**](06_llm_theory_and_fundamentals/llm_basic_concepts/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82%E6%80%9D%E7%BB%B4%E9%93%BE%EF%BC%88Chain-of-Thought%2C%20CoT%EF%BC%89.md) - 推理能力增强的核心技术
+- [**大模型的幻觉及其应对措施**](06_llm_theory_and_fundamentals/llm_basic_concepts/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%E5%B9%BB%E8%A7%89%E5%8F%8A%E5%85%B6%E5%BA%94%E5%AF%B9%E6%8E%AA%E6%96%BD.md) - 幻觉问题的成因分析与解决方案
+- [**大模型文件格式完整指南**](06_llm_theory_and_fundamentals/llm_basic_concepts/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F%E5%AE%8C%E6%95%B4%E6%8C%87%E5%8D%97.md) - 模型存储与部署的技术规范
+- [**量化技术可视化指南**](06_llm_theory_and_fundamentals/llm_basic_concepts/A%20Visual%20Guide%20to%20Quantization.zh-CN.md) - 模型压缩与加速的核心技术
+- [**基于大型语言模型的意图检测**](06_llm_theory_and_fundamentals/llm_basic_concepts/Intent%20Detection%20using%20LLM.zh-CN.md) - 自然语言理解的实际应用
 
 ### 5.4 参考书籍
 
@@ -564,9 +511,9 @@
 
 指令微调（Instruction Tuning）和监督微调（Supervised Fine-Tuning, SFT）是大语言模型训练的关键技术，通过在预训练模型基础上使用高质量的指令-响应数据对进行进一步训练，使模型能够更好地理解和执行人类指令。这一技术对于提升模型的实用性和安全性具有重要意义。
 
-- [**Qwen 2 大模型指令微调实战**](llm/fine-tuning/train_qwen2.ipynb) - 基于 Qwen 2 的指令微调 Notebook 实践
+- [**Qwen 2 大模型指令微调实战**](05_model_training_and_fine_tuning/sft_example/train_qwen2.ipynb) - 基于 Qwen 2 的指令微调 Notebook 实践
 - [**Qwen 2 指令微调教程**](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA) - 详细的图文教程
-- [**一文入门垂域模型 SFT 微调**](llm/一文入门垂域模型SFT微调.md) - 垂直领域模型的监督微调技术与应用实践
+- [**一文入门垂域模型 SFT 微调**](05_model_training_and_fine_tuning/sft_example/一文入门垂域模型SFT微调.md) - 垂直领域模型的监督微调技术与应用实践
 
 ### 6.2 大规模模型训练实践
 
@@ -581,9 +528,9 @@
 
 模型后训练（Post-Training）和评估是确保模型在实际应用中表现稳定、可靠的关键步骤。本节涵盖 AIOps 场景下的后训练技术、基于 Kubernetes 的评估框架以及基准测试生成方法。
 
-- [**AIOps 后训练技术**](fine-tuning/aiops_post_training.md) - 面向智能运维场景的模型后训练技术与实践
-- [**Kubernetes 模型评估框架**](fine-tuning/kubernetes_model_evaluation_framework.md) - 基于 K8s 的大模型评估框架设计与实现
-- [**Kubernetes AIOps 基准测试生成框架**](fine-tuning/kubernetes_aiops_benchmark_generation_framework.md) - 自动化生成 AIOps 基准测试数据集的框架设计
+- [**AIOps 后训练技术**](05_model_training_and_fine_tuning/ai_ops_design/aiops_post_training.md) - 面向智能运维场景的模型后训练技术与实践
+- [**Kubernetes 模型评估框架**](05_model_training_and_fine_tuning/ai_ops_design/kubernetes_model_evaluation_framework.md) - 基于 K8s 的大模型评估框架设计与实现
+- [**Kubernetes AIOps 基准测试生成框架**](05_model_training_and_fine_tuning/ai_ops_design/kubernetes_aiops_benchmark_generation_framework.md) - 自动化生成 AIOps 基准测试数据集的框架设计
 
 ---
 
@@ -595,13 +542,13 @@
 
 推理系统架构是大模型服务化的核心基础，直接决定了系统的性能、可扩展性和资源利用效率。现代推理系统需要在低延迟、高吞吐量和成本效益之间找到最佳平衡点，同时支持动态批处理、内存优化和多模型并发等高级特性。
 
-- [**Mooncake 架构详解：以 KV 缓存为中心的高效 LLM 推理系统设计**](llm/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md) - 新一代推理系统的架构创新与性能优化策略
+- [**Mooncake 架构详解：以 KV 缓存为中心的高效 LLM 推理系统设计**](09_inference_system/Mooncake%20%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9A%E4%BB%A5%20KV%20%E7%BC%93%E5%AD%98%E4%B8%BA%E4%B8%AD%E5%BF%83%E7%9A%84%E9%AB%98%E6%95%88%20LLM%20%E6%8E%A8%E7%90%86%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1.md) - 新一代推理系统的架构创新与性能优化策略
 
 ### 7.2 模型部署与运维实践
 
 模型部署与运维是将训练好的大模型转化为可用服务的关键环节，涉及模型格式转换、环境配置、服务监控和故障处理等多个方面。有效的部署策略能够显著降低运维成本，提高服务稳定性和用户体验。
 
-- [**动手部署 ollama**](llm/ollama/README.md) - 轻量级本地大模型部署的完整实践指南
+- [**动手部署 ollama**](README.md) - 轻量级本地大模型部署的完整实践指南
 
 ### 7.3 推理优化技术体系
 
@@ -609,30 +556,30 @@
 
 完整的 AI 推理优化技术文档系列，涵盖从小型到大型集群的推理优化策略：
 
-- [**AI 推理优化技术文档导航**](inference/README.md) - 推理优化技术方案的完整导航，涵盖基础理论、技术选型、专业领域优化和实施运维的系统性指南
-- [**背景与目标**](inference/01-背景与目标.md) - 大模型推理优化的技术背景分析，包括推理挑战、应用需求、发展趋势和核心研究目标
-- [**集群规模分类与特征分析**](inference/02-集群规模分类与特征分析.md) - 小型、中型、大型集群的详细特征分析，配置要求和规模化部署策略
-- [**核心推理优化技术深度解析**](inference/03-核心推理优化技术深度解析.md) - 模型压缩、并行计算、推测解码等核心优化技术的深度技术解析和实现指南
-- [**不同集群规模的技术选型策略**](inference/04-不同集群规模的技术选型策略.md) - 针对不同规模集群的技术选型决策框架和最优配置策略
-- [**性能评估指标体系**](inference/05-性能评估指标体系.md) - 推理服务性能评估的完整指标体系，包括吞吐量、延迟、资源利用率等关键指标
-- [**推理服务架构设计**](inference/06-推理服务架构设计.md) - 推理服务的微服务架构设计，负载均衡、容错机制和高可用性保障
-- [**实施建议与最佳实践**](inference/07-实施建议与最佳实践.md) - 分阶段实施策略、风险管理和生产环境部署的最佳实践指南
-- [**参考资料与延伸阅读**](inference/08-参考资料与延伸阅读.md) - 推理优化相关的技术文档、开源项目和深度学习资源汇总
-- [**安全性与合规性**](inference/09-安全性与合规性.md) - 推理服务的安全威胁分析、隐私保护机制和企业级合规要求
-- [**多模态推理优化**](inference/10-多模态推理优化.md) - 文本、图像、音频等多模态融合的推理架构设计和跨模态注意力优化技术
-- [**边缘推理优化**](inference/11-边缘推理优化.md) - 边缘设备适配、分布式边缘推理和实时推理优化的完整技术方案
-- [**场景问题解答**](inference/12-场景问题解答.md) - 推理优化实施过程中的常见技术问题、故障排查和解决方案集合
-- [**实施检查清单**](inference/13-实施检查清单.md) - 推理优化项目的分阶段实施检查清单和验收标准
-- [**总结与展望**](inference/14-总结与展望.md) - 推理优化技术的发展总结和未来趋势分析，技术演进路线图
+- [**AI 推理优化技术文档导航**](README.md) - 推理优化技术方案的完整导航，涵盖基础理论、技术选型、专业领域优化和实施运维的系统性指南
+- [**背景与目标**](09_inference_system/reference_desgin/01-%E8%83%8C%E6%99%AF%E4%B8%8E%E7%9B%AE%E6%A0%87.md) - 大模型推理优化的技术背景分析，包括推理挑战、应用需求、发展趋势和核心研究目标
+- [**集群规模分类与特征分析**](09_inference_system/reference_desgin/02-%E9%9B%86%E7%BE%A4%E8%A7%84%E6%A8%A1%E5%88%86%E7%B1%BB%E4%B8%8E%E7%89%B9%E5%BE%81%E5%88%86%E6%9E%90.md) - 小型、中型、大型集群的详细特征分析，配置要求和规模化部署策略
+- [**核心推理优化技术深度解析**](09_inference_system/reference_desgin/03-%E6%A0%B8%E5%BF%83%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96%E6%8A%80%E6%9C%AF%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90.md) - 模型压缩、并行计算、推测解码等核心优化技术的深度技术解析和实现指南
+- [**不同集群规模的技术选型策略**](09_inference_system/reference_desgin/04-%E4%B8%8D%E5%90%8C%E9%9B%86%E7%BE%A4%E8%A7%84%E6%A8%A1%E7%9A%84%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B%E7%AD%96%E7%95%A5.md) - 针对不同规模集群的技术选型决策框架和最优配置策略
+- [**性能评估指标体系**](09_inference_system/reference_desgin/05-%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87%E4%BD%93%E7%B3%BB.md) - 推理服务性能评估的完整指标体系，包括吞吐量、延迟、资源利用率等关键指标
+- [**推理服务架构设计**](09_inference_system/reference_desgin/06-%E6%8E%A8%E7%90%86%E6%9C%8D%E5%8A%A1%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1.md) - 推理服务的微服务架构设计，负载均衡、容错机制和高可用性保障
+- [**实施建议与最佳实践**](09_inference_system/reference_desgin/07-%E5%AE%9E%E6%96%BD%E5%BB%BA%E8%AE%AE%E4%B8%8E%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5.md) - 分阶段实施策略、风险管理和生产环境部署的最佳实践指南
+- [**参考资料与延伸阅读**](09_inference_system/reference_desgin/08-%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99%E4%B8%8E%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB.md) - 推理优化相关的技术文档、开源项目和深度学习资源汇总
+- [**安全性与合规性**](09_inference_system/reference_desgin/09-%E5%AE%89%E5%85%A8%E6%80%A7%E4%B8%8E%E5%90%88%E8%A7%84%E6%80%A7.md) - 推理服务的安全威胁分析、隐私保护机制和企业级合规要求
+- [**多模态推理优化**](09_inference_system/reference_desgin/10-%E5%A4%9A%E6%A8%A1%E6%80%81%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96.md) - 文本、图像、音频等多模态融合的推理架构设计和跨模态注意力优化技术
+- [**边缘推理优化**](09_inference_system/reference_desgin/11-%E8%BE%B9%E7%BC%98%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96.md) - 边缘设备适配、分布式边缘推理和实时推理优化的完整技术方案
+- [**场景问题解答**](09_inference_system/reference_desgin/12-%E5%9C%BA%E6%99%AF%E9%97%AE%E9%A2%98%E8%A7%A3%E7%AD%94.md) - 推理优化实施过程中的常见技术问题、故障排查和解决方案集合
+- [**实施检查清单**](09_inference_system/reference_desgin/13-%E5%AE%9E%E6%96%BD%E6%A3%80%E6%9F%A5%E6%B8%85%E5%8D%95.md) - 推理优化项目的分阶段实施检查清单和验收标准
+- [**总结与展望**](09_inference_system/reference_desgin/14-%E6%80%BB%E7%BB%93%E4%B8%8E%E5%B1%95%E6%9C%9B.md) - 推理优化技术的发展总结和未来趋势分析，技术演进路线图
 
 ### 7.4 DeepSeek 专题
 
 DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设计和高性能表现备受关注。本节汇总了关于 DeepSeek 模型的部署、对比分析和存储系统设计等核心资料。
 
-- [**DeepSeek-R1 模型对比分析**](deepseek/deepseek-r1-cmp.md) - 1.5b、7b、官网版本的性能对比与评测
-- [**Mac 上运行 DeepSeek-R1 模型**](deepseek/mac-deepseek-r1.md) - 使用 Ollama 在 Mac 上本地部署 DeepSeek-R1
-- [**DeepSeek 3FS 存储系统**](deepseek/deepseek_3fs_design_notes.zh-CN.md) - DeepSeek 自研的高性能分布式文件系统设计笔记
-- [**DeepSeek 技术突破**](ai_infra_course/入门级/讲稿.md) - 在 AI Infra 课程中关于 DeepSeek 技术演进的深度解析
+- [**DeepSeek-R1 模型对比分析**](99_misc/deepseek/deepseek-r1-cmp.md) - 1.5b、7b、官网版本的性能对比与评测
+- [**Mac 上运行 DeepSeek-R1 模型**](99_misc/deepseek/mac-deepseek-r1.md) - 使用 Ollama 在 Mac 上本地部署 DeepSeek-R1
+- [**DeepSeek 3FS 存储系统**](04_cloud_native_ai_platform/storage/deepseek_3fs_design_notes.zh-CN.md) - DeepSeek 自研的高性能分布式文件系统设计笔记
+- [**DeepSeek 技术突破**](10_ai_related_course/ai_infra_course/%E5%85%A5%E9%97%A8%E7%BA%A7/%E8%AE%B2%E7%A8%BF.md) - 在 AI Infra 课程中关于 DeepSeek 技术演进的深度解析
 
 ---
 
@@ -644,9 +591,9 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 
 本节提供企业级 `AI Agent` 开发的全景视图，涵盖从基础理论到架构设计的完整技术体系。通过 BDI 架构、协作机制等核心概念的深入解析，为构建高性能、可扩展的智能体系统奠定坚实基础。
 
-- [**AI Agent 开发与实践**](agent/README.md) - 企业级 AI Agent 开发的完整技术体系与最佳实践
-- [**多智能体 AI 系统基础：理论与框架**](agent/Part1-Multi-Agent-AI-Fundamentals.md) - 多智能体系统的理论基础、BDI 架构和协作机制
-- [**企业级多智能体 AI 系统构建实战**](agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 企业级多智能体系统的架构设计、技术选型和工程实现
+- [**AI Agent 开发与实践**](README.md) - 企业级 AI Agent 开发的完整技术体系与最佳实践
+- [**多智能体 AI 系统基础：理论与框架**](08_agentic_system/Part1-Multi-Agent-AI-Fundamentals.md) - 多智能体系统的理论基础、BDI 架构和协作机制
+- [**企业级多智能体 AI 系统构建实战**](08_agentic_system/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 企业级多智能体系统的架构设计、技术选型和工程实现
 
 ### 8.2 上下文工程技术体系
 
@@ -654,20 +601,20 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 
 **理论基础与核心原理：**
 
-- [**上下文工程原理**](agent/context/上下文工程原理.md) - 基于中科院权威论文的系统性理论阐述与技术框架
+- [**上下文工程原理**](08_agentic_system/context/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%E5%8E%9F%E7%90%86.md) - 基于中科院权威论文的系统性理论阐述与技术框架
 
   - **范式转变**：从传统提示工程到现代上下文工程的技术演进
   - **核心机制**：信息检索、智能选择、动态组装、自适应压缩和实时调整
   - **技术架构**：多模态信息融合、分布式状态管理、智能组装引擎
   - **企业应用**：全生命周期上下文管理和系统化自动优化策略
 
-- [**上下文工程原理简介**](agent/context/上下文工程原理简介.md) - 面向开发者的深入浅出技术指南
+- [**上下文工程原理简介**](08_agentic_system/context/%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B.md) - 面向开发者的深入浅出技术指南
 
   - **概念演进**：从简单聊天机器人到复杂智能助手的技术进化路径
   - **核心特征**：系统性方法论、动态优化算法、多模态融合、状态管理、智能组装
   - **技术对比**：与传统提示词工程的本质区别、优势分析和应用场景
 
-- [**基于上下文工程的 LangChain 智能体应用**](agent/context/langchain_with_context_engineering.md) - LangChain 框架的上下文工程实践指南
+- [**基于上下文工程的 LangChain 智能体应用**](08_agentic_system/context/langchain_with_context_engineering.md) - LangChain 框架的上下文工程实践指南
   - **架构设计**：行为准则定义、信息接入策略、会话记忆管理、工具集成方案、用户画像构建
   - **技术实现**： LangChain 与 LangGraph 的深度集成与上下文工程最佳实践
   - **问题解决**：上下文污染检测、信息干扰过滤、语义混淆处理、冲突解决策略
@@ -677,8 +624,8 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 
 Agent 基础设施是位于智能 Agent 之外、用于调节、协调、约束 Agent 与环境交互的一组技术系统与共享协议。本节深入探讨 Agent 基础设施的核心概念、架构设计原理和工程实践，涵盖可靠性、可扩展性、可观测性、成本可控性以及合规治理等关键技术领域。
 
-- [**AI Agent 基础设施的崛起**](agent_infra/the-rise-of-ai-agent-infrastructure.md) - AI Agent 基础设施的发展趋势、技术演进和行业应用前景
-- [**AI Agent 基础设施三层架构：工具、数据、编排**](agent_infra/ai-agent-infrastructure-three-layers-tools-data-orchestration.md) - AI Agent 基础设施的三层架构设计，涵盖工具层、数据层和编排层的技术实现
+- [**AI Agent 基础设施的崛起**](08_agentic_system/agent_infra/the-rise-of-ai-agent-infrastructure.md) - AI Agent 基础设施的发展趋势、技术演进和行业应用前景
+- [**AI Agent 基础设施三层架构：工具、数据、编排**](08_agentic_system/agent_infra/ai-agent-infrastructure-three-layers-tools-data-orchestration.md) - AI Agent 基础设施的三层架构设计，涵盖工具层、数据层和编排层的技术实现
 
 ### 8.4 AI 智能体记忆系统架构
 
@@ -686,16 +633,16 @@ Agent 基础设施是位于智能 Agent 之外、用于调节、协调、约束 
 
 #### 8.4.1 记忆系统理论基础
 
-- [**AI 智能体记忆系统：理论与实践**](agent/memory/AI%20智能体记忆系统：理论与实践.md) - 智能体记忆系统的架构设计、存储策略与检索优化技术
-  - [**记忆系统代码实现**](agent/memory/code/README.md) - 记忆系统的核心算法实现与工程化实践
-- [**论文解读 - 大模型 Agent 记忆系统：理论基础与交互机制**](agent/memory/大模型Agent记忆综述.md) - 本文从理论角度深入探讨了大模型 Agent 记忆系统的定义、概念和交互机制，旨在帮助读者理解记忆系统的产生、存储和使用原理。
-- [**如何设计支持多轮指代消解的对话系统**](agent/如何设计支持多轮指代消解的对话系统.md) - 多轮对话中的指代消解机制与上下文理解技术
+- [**AI 智能体记忆系统：理论与实践**](08_agentic_system/memory/AI%20%E6%99%BA%E8%83%BD%E4%BD%93%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%EF%BC%9A%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5.md) - 智能体记忆系统的架构设计、存储策略与检索优化技术
+  - [**记忆系统代码实现**](README.md) - 记忆系统的核心算法实现与工程化实践
+- [**论文解读 - 大模型 Agent 记忆系统：理论基础与交互机制**](08_agentic_system/memory/%E5%A4%A7%E6%A8%A1%E5%9E%8BAgent%E8%AE%B0%E5%BF%86%E7%BB%BC%E8%BF%B0.md) - 本文从理论角度深入探讨了大模型 Agent 记忆系统的定义、概念和交互机制，旨在帮助读者理解记忆系统的产生、存储和使用原理。
+- [**如何设计支持多轮指代消解的对话系统**](08_agentic_system/%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E6%94%AF%E6%8C%81%E5%A4%9A%E8%BD%AE%E6%8C%87%E4%BB%A3%E6%B6%88%E8%A7%A3%E7%9A%84%E5%AF%B9%E8%AF%9D%E7%B3%BB%E7%BB%9F.md) - 多轮对话中的指代消解机制与上下文理解技术
 
 #### 8.4.2 MemoryOS 智能记忆系统
 
 MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支持可插拔存储后端和分层记忆管理机制。该系统为 AI 智能体提供了完整的记忆存储、检索和管理解决方案。
 
-- [**MemoryOS 智能记忆系统架构设计与开发指南**](agent/memory/MemoryOS智能记忆系统架构设计与开发指南.md) - MemoryOS 智能记忆管理系统的模块化架构设计、可插拔存储后端和分层记忆管理机制
+- [**MemoryOS 智能记忆系统架构设计与开发指南**](08_agentic_system/memory/MemoryOS%E6%99%BA%E8%83%BD%E8%AE%B0%E5%BF%86%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md) - MemoryOS 智能记忆管理系统的模块化架构设计、可插拔存储后端和分层记忆管理机制
 
 **核心技术特色：**
 
@@ -708,7 +655,7 @@ MemoryOS 是一个智能记忆管理系统，采用模块化架构设计，支�
 
 Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设计的自改进记忆层，通过提供持久化、个性化的记忆能力来增强 AI 助手和智能体的表现。该系统同时提供托管平台服务和开源解决方案，让开发者能够为 AI 应用添加上下文记忆功能。
 
-- [**Mem0 快速入门指南**](agent/memory/mem0快速入门.md) - Mem0 记忆系统的完整技术指南，包含架构设计、API 接口、集成示例和性能对比
+- [**Mem0 快速入门指南**](08_agentic_system/memory/mem0%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8.md) - Mem0 记忆系统的完整技术指南，包含架构设计、API 接口、集成示例和性能对比
 
 **核心技术特色：**
 
@@ -726,8 +673,8 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 #### 8.4.4 记忆系统框架集成
 
-- [**使用 LangChain 实现智能对话机器人的记忆功能**](agent/memory/langchain/langchain_memory.md) - 本文将深入探讨如何使用 LangChain 框架实现智能对话机器人的记忆功能，从 AI Agent 记忆系统的理论基础到 LangChain 的具体实现，再到实际应用案例。
-  - [**LangChain 记忆功能演示代码**](agent/memory/langchain/code/README.md) - 完整的 LangChain 记忆功能实现示例，包含四种核心记忆类型演示、智能客服应用和现代 LangGraph 记忆管理：
+- [**使用 LangChain 实现智能对话机器人的记忆功能**](08_agentic_system/memory/langchain/langchain_memory.md) - 本文将深入探讨如何使用 LangChain 框架实现智能对话机器人的记忆功能，从 AI Agent 记忆系统的理论基础到 LangChain 的具体实现，再到实际应用案例。
+  - [**LangChain 记忆功能演示代码**](README.md) - 完整的 LangChain 记忆功能实现示例，包含四种核心记忆类型演示、智能客服应用和现代 LangGraph 记忆管理：
     - **基础记忆类型演示**：ConversationBufferMemory、ConversationSummaryMemory、ConversationBufferWindowMemory、ConversationSummaryBufferMemory 四种核心记忆类型的完整实现
     - **智能客服机器人**：多用户会话管理、智能记忆类型选择、性能监控统计和会话持久化存储的企业级应用示例
     - **LangGraph 记忆管理**：基于状态图的现代记忆管理方案，支持持久化存储、自动总结和跨会话记忆保持
@@ -740,17 +687,15 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 #### 8.5.1 多智能体系统工程实践
 
-- [**多智能体系统项目**](agent/multi_agent_system/) - 企业级多智能体系统的完整实现项目，包含 Docker 容器化部署、自动化测试用例和性能监控
 
 #### 8.5.2 多智能体培训
 
-- [**多智能体培训课程**](agent/multi_agent_training/) - 系统性的多智能体训练教程，包含理论基础、LangGraph 框架、LangSmith 监控、企业级架构和应用实践
-- [**多智能体 AI 系统培训材料**](agent/multi_agent_training/README.md) - 5 天 40 学时的完整培训体系
-  - [**多智能体系统概论**](agent/multi_agent_training/01-理论基础/01-多智能体系统概论.md) - BDI 架构、协作机制、系统优势
-  - [**LangGraph 深度应用**](agent/multi_agent_training/02-LangGraph框架/02-LangGraph深度应用.md) - 工作流编排引擎深度应用
-  - [**LangSmith 监控平台集成**](agent/multi_agent_training/03-LangSmith监控/03-LangSmith监控平台集成.md) - 全链路追踪、告警、性能优化
-  - [**企业级系统架构设计与实现**](agent/multi_agent_training/04-企业级架构/04-企业级系统架构设计与实现.md) - 架构设计、技术实现、代码实践
-  - [**应用实践与部署运维**](agent/multi_agent_training/05-应用实践/05-应用实践与部署运维.md) - 智能客服、部署、最佳实践
+- [**多智能体 AI 系统培训材料**](README.md) - 5 天 40 学时的完整培训体系
+  - [**多智能体系统概论**](10_ai_related_course/multi_agent_system/multi_agent_training/01-%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80/01-%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%AE%BA.md) - BDI 架构、协作机制、系统优势
+  - [**LangGraph 深度应用**](10_ai_related_course/multi_agent_system/multi_agent_training/02-LangGraph%E6%A1%86%E6%9E%B6/02-LangGraph%E6%B7%B1%E5%BA%A6%E5%BA%94%E7%94%A8.md) - 工作流编排引擎深度应用
+  - [**LangSmith 监控平台集成**](10_ai_related_course/multi_agent_system/multi_agent_training/03-LangSmith%E7%9B%91%E6%8E%A7/03-LangSmith%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E9%9B%86%E6%88%90.md) - 全链路追踪、告警、性能优化
+  - [**企业级系统架构设计与实现**](10_ai_related_course/multi_agent_system/multi_agent_training/04-%E4%BC%81%E4%B8%9A%E7%BA%A7%E6%9E%B6%E6%9E%84/04-%E4%BC%81%E4%B8%9A%E7%BA%A7%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md) - 架构设计、技术实现、代码实践
+  - [**应用实践与部署运维**](10_ai_related_course/multi_agent_system/multi_agent_training/05-%E5%BA%94%E7%94%A8%E5%AE%9E%E8%B7%B5/05-%E5%BA%94%E7%94%A8%E5%AE%9E%E8%B7%B5%E4%B8%8E%E9%83%A8%E7%BD%B2%E8%BF%90%E7%BB%B4.md) - 智能客服、部署、最佳实践
 
 **培训特色：**
 
@@ -763,17 +708,15 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 本节提供具体的 AI Agent 应用部署案例，从通用的科研助手到垂直领域的订单履约系统，展示企业级智能体应用的实际落地过程和最佳实践。
 
-- [**Coze 部署和配置手册**](agent/Coze部署和配置手册.md) - Coze 平台的部署配置指南
-- [**科研助手设计文档**](agent/scenario/科研助手.md) - 智能化科研辅助系统的架构设计与功能实现
-- [**多源文献检索与聚合系统**](agent/scenario/多源文献检索与聚合系统设计文档.md) - 针对科研场景的智能文献检索与聚合系统设计
-- [**订单履约 Agent 系统设计**](agent/scenario/订单履约Agent系统设计文档.md) - 电商领域订单履约智能体的系统架构与业务流程设计
-- [**Building Research Agents for Tech Insights**](agent/scenario/《Building%20Research%20Agents%20for%20Tech%20Insights》深度解读.md) - 构建技术洞察研究智能体的深度解读
+- [**Coze 部署和配置手册**](06_llm_theory_and_fundamentals/workflow/Coze%E9%83%A8%E7%BD%B2%E5%92%8C%E9%85%8D%E7%BD%AE%E6%89%8B%E5%86%8C.md) - Coze 平台的部署配置指南
+- [**科研助手设计文档**](06_llm_theory_and_fundamentals/deep_research/design/%E7%A7%91%E7%A0%94%E5%8A%A9%E6%89%8B.md) - 智能化科研辅助系统的架构设计与功能实现
+- [**订单履约 Agent 系统设计**](06_llm_theory_and_fundamentals/deep_research/design/%E8%AE%A2%E5%8D%95%E5%B1%A5%E7%BA%A6Agent%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E6%96%87%E6%A1%A3.md) - 电商领域订单履约智能体的系统架构与业务流程设计
+- [**Building Research Agents for Tech Insights**](06_llm_theory_and_fundamentals/deep_research/%E3%80%8ABuilding%20Research%20Agents%20for%20Tech%20Insights%E3%80%8B%E6%B7%B1%E5%BA%A6%E8%A7%A3%E8%AF%BB.md) - 构建技术洞察研究智能体的深度解读
 
 #### 8.5.4 数据科学智能体应用
 
 数据科学智能体（Data Science Agent）是 Databricks 推出的革命性 AI 助手，专为数据科学家和分析师设计。通过自然语言交互，智能体能够自动生成和执行代码、探索数据、构建机器学习模型，并提供智能化的错误诊断和修复建议，显著提升数据科学工作流程的效率和质量。
 
-- [**Databricks Data Science Agent 深度解析**](agent/scenario/data%20agent.md) - 数据科学智能体的功能特性、使用场景、产品设计评价与最佳实践指南
   - **核心功能**：数据探索与分析、机器学习开发、错误诊断与修复、结果总结与解释
   - **高级特性**：Planner 模式、Notebook 管理、企业级数据治理与安全
   - **产品创新**：渐进式交互设计、上下文感知能力、透明度与自动化的平衡
@@ -787,12 +730,12 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 检索增强生成（RAG）是现代 AI Agent 系统的核心技术之一，通过结合外部知识库和生成模型，显著提升智能体的知识获取和推理能力。
 
-- [**RAG 技术概述**](llm/rag/README.md)
-- [**从 0 到 1 快速搭建 RAG 应用**](llm/rag/写作%20Agentic%20Agent.md)
-  - [**配套代码**](llm/rag/lession2.ipynb)
-- [**Evaluating Chunking Strategies for Retrieval 总结**](llm/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20总结.md)
-- [**中文 RAG 系统 Embedding 模型选型技术文档**](llm/rag/中文RAG系统Embedding模型选型技术文档.md)
-- [**Agentic RAG 架构对比**](llm/rag/RAG%20对比.md) - Agentic RAG 与传统 RAG、Router 模式的深度对比分析
+- [**RAG 技术概述**](README.md)
+- [**从 0 到 1 快速搭建 RAG 应用**](08_agentic_system/%E5%86%99%E4%BD%9C%20Agentic%20Agent.md)
+  - [**配套代码**](07_rag_and_tools/rag/lession2.ipynb)
+- [**Evaluating Chunking Strategies for Retrieval 总结**](07_rag_and_tools/rag/Evaluating%20Chunking%20Strategies%20for%20Retrieval%20%E6%80%BB%E7%BB%93.md)
+- [**中文 RAG 系统 Embedding 模型选型技术文档**](07_rag_and_tools/rag/%E4%B8%AD%E6%96%87RAG%E7%B3%BB%E7%BB%9FEmbedding%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3.md)
+- [**Agentic RAG 架构对比**](07_rag_and_tools/rag/RAG%20%E5%AF%B9%E6%AF%94.md) - Agentic RAG 与传统 RAG、Router 模式的深度对比分析
 
 #### 8.6.2 AI Agent 框架与协议
 
@@ -800,15 +743,15 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 **Python 生态：**
 
-- [**LangChain + 模型上下文协议（MCP）： AI 智能体 Demo**](llm/agent/README.md)
-- [**AI Agents for Beginners 课程之 AI 智能体及使用场景简介**](llm/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)
-- [**LangGraph 实战：用 Python 打造有状态智能体**](llm/langgraph/langgraph_intro.md)
-- [**使用 n8n 构建多智能体系统的实践指南**](llm/n8n_multi_agent_guide.md)
-- [**开源大语言模型应用编排平台对比**](llm/开源大模型应用编排平台：Dify、AnythingLLM、Ragflow%20与%20n8n%20的功能与商用许可对比分析.md) - Dify、AnythingLLM、Ragflow 与 n8n 的功能与商用许可对比分析
+- [**LangChain + 模型上下文协议（MCP）： AI 智能体 Demo**](README.md)
+- [**AI Agents for Beginners 课程之 AI 智能体及使用场景简介**](10_ai_related_course/AI%20Agents%20for%20Beginners%20%E8%AF%BE%E7%A8%8B%E4%B9%8B%20AI%20Agent%E5%8F%8A%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E7%AE%80%E4%BB%8B.md)
+- [**LangGraph 实战：用 Python 打造有状态智能体**](98_llm_programming/langgraph/langgraph_intro.md)
+- [**使用 n8n 构建多智能体系统的实践指南**](06_llm_theory_and_fundamentals/workflow/n8n_multi_agent_guide.md)
+- [**开源大语言模型应用编排平台对比**](06_llm_theory_and_fundamentals/workflow/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8%E7%BC%96%E6%8E%92%E5%B9%B3%E5%8F%B0%EF%BC%9ADify%E3%80%81AnythingLLM%E3%80%81Ragflow%20%E4%B8%8E%20n8n%20%E7%9A%84%E5%8A%9F%E8%83%BD%E4%B8%8E%E5%95%86%E7%94%A8%E8%AE%B8%E5%8F%AF%E5%AF%B9%E6%AF%94%E5%88%86%E6%9E%90.md) - Dify、AnythingLLM、Ragflow 与 n8n 的功能与商用许可对比分析
 
 **Java 生态：**
 
-- [**使用 Spring AI 构建高效 LLM 代理**](java_ai/spring_ai_cn.md) - Spring AI 代理模式实现指南
+- [**使用 Spring AI 构建高效 LLM 代理**](98_llm_programming/java_ai/spring_ai_cn.md) - Spring AI 代理模式实现指南
   - **代理系统架构**：工作流 vs 代理的设计理念对比
   - **五种基本模式**：链式工作流、路由工作流、并行化、编排、评估
   - **企业级实践**：可预测性、一致性、可维护性的平衡
@@ -818,8 +761,8 @@ Mem0（发音为 "mem-zero"）是一个为大型语言模型（LLM）应用设�
 
 Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与外部数据源和工具。
 
-- [**MCP 深度解析与 AI 工具未来**](llm/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)
-- [**MCP SSE 客户端与服务端实战**](llm/agent/mcp-sse/README.md) - 基于 SSE 的 MCP 服务端与客户端开发实战
+- [**MCP 深度解析与 AI 工具未来**](08_agentic_system/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)
+- [**MCP SSE 客户端与服务端实战**](README.md) - 基于 SSE 的 MCP 服务端与客户端开发实战
 - [**从零构建 MCP 服务实践指南**](https://github.com/ForceInjection/markdown-mcp/blob/main/docs/blog-mcp-integration.md) - 完整的 MCP 服务开发与集成教程
 
 ### 8.7 前沿方法论与深度研究
@@ -830,7 +773,7 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 12-Factor Agents 是一套经过验证的构建可靠 LLM 应用的原则体系，借鉴了著名的 12 Factor Apps 方法论。这套方法论为开发者提供了从理论到实践的完整指导，特别适用于需要达到生产级质量标准的 AI 应用开发。
 
-- [**12-Factor Agents 完整指南**](agent/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 个核心原则详解
+- [**12-Factor Agents 完整指南**](08_agentic_system/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 个核心原则详解
 
 **核心价值**：
 
@@ -842,11 +785,11 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 深度解读 AI Agent 领域的最新学术成果和技术突破。
 
-- [**Agent Workflow 综述**](agent/paper/agent-workflow-survey.md) - AI Agent 工作流技术的全面梳理与发展趋势分析
-- [**DeepResearch Agent 解析**](agent/paper/deepresearch-agent.md) - 深度研究智能体的架构设计与核心能力解析
-- [**通义 DeepResearch 深度分析**](agent/通义DeepResearch深度分析.md) - 通义实验室 DeepResearch 技术的深度技术剖析
-- [**Cursor IDE 架构概览**](llm/rag/cursor-deepsearch.md) - AI 驱动的代码编辑器 Cursor 的技术架构与实现原理
-- [**Cursor ReAct Agent 深度分析**](llm/rag/react-agent.md) - Cursor IDE 中 ReAct Agent 的架构设计与核心机制解析
+- [**Agent Workflow 综述**](08_agentic_system/paper/agent-workflow-survey.md) - AI Agent 工作流技术的全面梳理与发展趋势分析
+- [**DeepResearch Agent 解析**](08_agentic_system/paper/deepresearch-agent.md) - 深度研究智能体的架构设计与核心能力解析
+- [**通义 DeepResearch 深度分析**](06_llm_theory_and_fundamentals/deep_research/%E9%80%9A%E4%B9%89DeepResearch%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90.md) - 通义实验室 DeepResearch 技术的深度技术剖析
+- [**Cursor IDE 架构概览**](06_llm_theory_and_fundamentals/deep_research/cursor-deepsearch.md) - AI 驱动的代码编辑器 Cursor 的技术架构与实现原理
+- [**Cursor ReAct Agent 深度分析**](08_agentic_system/react-agent.md) - Cursor IDE 中 ReAct Agent 的架构设计与核心机制解析
 
 ---
 
@@ -858,24 +801,24 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 本节聚焦于大语言模型的实际部署和推理实践，通过具体的部署案例，展示如何在生产环境中高效部署和运行大模型服务，包括环境配置、性能优化、资源管理等关键技术环节。
 
-- [**动手部署 ollama**](llm/ollama/README.md)
+- [**动手部署 ollama**](README.md)
 
 ### 9.2 文档处理工具
 
 文档处理是 AI 应用的重要场景之一，本节介绍多种先进的 AI 驱动文档处理工具和技术。涵盖 PDF 布局检测、复杂文档解析、多格式转换等核心功能，为构建智能文档处理系统提供完整的技术解决方案和工程实践指导。
 
-- [**深入探索： AI 驱动的 PDF 布局检测引擎源代码解析**](llm/marker.zh-CN.md)
-- [**上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取**](llm/minerU_intro.md)
-- [**Markitdown 入门**](llm/markitdown/README.md)
-- [**DeepWiki 使用方法与技术原理深度分析**](llm/DeepWiki%20使用方法与技术原理深度分析.md)
+- [**深入探索： AI 驱动的 PDF 布局检测引擎源代码解析**](07_rag_and_tools/pdf/marker.zh-CN.md)
+- [**上海人工智能实验室开源工具 MinerU 助力复杂 PDF 高效解析提取**](07_rag_and_tools/pdf/minerU_intro.md)
+- [**Markitdown 入门**](README.md)
+- [**DeepWiki 使用方法与技术原理深度分析**](06_llm_theory_and_fundamentals/deep_research/DeepWiki%20%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%E4%B8%8E%E6%8A%80%E6%9C%AF%E5%8E%9F%E7%90%86%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90.md)
 
 ### 9.3 特定领域应用
 
 本节展示 AI 技术在垂直领域的深度应用实践，包括中医古籍分析、法律合同审核、智能对话系统等专业场景。通过具体的应用案例，探讨如何针对特定领域的需求进行模型定制、数据处理和系统优化，为行业 AI 应用提供参考范例。
 
-- [**中医古籍分析**](llm/scenario/traditional-chinese-medicine.md) - 关于 7b 模型阅读分析中医古籍能力的探讨与专项训练建议
-- [**合同审核清单**](llm/scenario/中国大陆合同审核要点清单.md) - 中国大陆合同审核要点清单与 AI 辅助审核实践
-- [**让用户"说半句"话也能懂： ChatBox 的意图识别与语义理解机制解析**](llm/ChatBox_Intent_Recognition_and_Semantic_Understanding_Half_Sentence.md)
+- [**中医古籍分析**](99_misc/scenario/traditional-chinese-medicine.md) - 关于 7b 模型阅读分析中医古籍能力的探讨与专项训练建议
+- [**合同审核清单**](99_misc/scenario/%E4%B8%AD%E5%9B%BD%E5%A4%A7%E9%99%86%E5%90%88%E5%90%8C%E5%AE%A1%E6%A0%B8%E8%A6%81%E7%82%B9%E6%B8%85%E5%8D%95.md) - 中国大陆合同审核要点清单与 AI 辅助审核实践
+- [**让用户"说半句"话也能懂： ChatBox 的意图识别与语义理解机制解析**](06_llm_theory_and_fundamentals/llm_basic_concepts/ChatBox_Intent_Recognition_and_Semantic_Understanding_Half_Sentence.md)
 
 ---
 
@@ -911,18 +854,18 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 ### 11.1 AI System 全栈课程（ZOMI 酱）
 
-[**AISystem**](AISystem/README.md) - ZOMI 酱的 AI 系统全栈课程，涵盖从硬件基础到框架设计的全技术栈内容：
+[**AISystem**](README.md) - ZOMI 酱的 AI 系统全栈课程，涵盖从硬件基础到框架设计的全技术栈内容：
 
-- [**系统介绍**](AISystem/01Introduction/README.md) - AI 系统概述、发展历程与技术演进路径
-- [**硬件基础**](AISystem/02Hardware/README.md) - AI 芯片架构、硬件加速器与计算平台深度解析
-- [**编译器技术**](AISystem/03Compiler/README.md) - AI 编译器原理、优化技术与工程实践
-- [**推理优化**](AISystem/04Inference/README.md) - 模型推理加速技术、性能调优与部署策略
-- [**框架设计**](AISystem/05Framework/README.md) - AI 框架架构设计、分布式计算与并行优化
+- [**系统介绍**](README.md) - AI 系统概述、发展历程与技术演进路径
+- [**硬件基础**](README.md) - AI 芯片架构、硬件加速器与计算平台深度解析
+- [**编译器技术**](README.md) - AI 编译器原理、优化技术与工程实践
+- [**推理优化**](README.md) - 模型推理加速技术、性能调优与部署策略
+- [**框架设计**](README.md) - AI 框架架构设计、分布式计算与并行优化
 
 ### 11.2 AI Infra 基础课程（入门）
 
-- [**大模型原理与最新进展**](ai_infra_course/入门级/index.html) - 交互式在线课程平台
-- [**AI Infra 课程演讲稿**](ai_infra_course/入门级/讲稿.md) - 完整的课程演讲内容、技术要点与实践案例
+- [**大模型原理与最新进展**](10_ai_related_course/ai_coding/index.html) - 交互式在线课程平台
+- [**AI Infra 课程演讲稿**](10_ai_related_course/ai_infra_course/%E5%85%A5%E9%97%A8%E7%BA%A7/%E8%AE%B2%E7%A8%BF.md) - 完整的课程演讲内容、技术要点与实践案例
 - **学习目标**：深入理解大模型工作原理、最新技术进展与企业级应用实践
 - **核心内容**：
   - **Transformer 架构深度解析**：编码器-解码器结构、多头注意力机制、文本生成过程
@@ -937,7 +880,7 @@ Model Context Protocol (MCP) 是一个开放标准，用于连接 AI 助手与�
 
 **系统化的 Trae 编程学习体系：**
 
-- [**Trae 编程实战教程**](trae/README.md) - 从基础入门到高级应用的完整 Trae 编程学习路径
+- [**Trae 编程实战教程**](README.md) - 从基础入门到高级应用的完整 Trae 编程学习路径
 
 **课程结构：**
 
