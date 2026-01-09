@@ -59,15 +59,6 @@ def check_local_file_exists(file_path, base_dir):
     # 检查文件是否存在
     exists = os.path.exists(full_path)
     
-    # 如果不存在，检查是否是submodule目录
-    if not exists:
-        # 检查是否是submodule路径
-        path_parts = decoded_path.split('/')
-        if len(path_parts) > 0:
-            first_dir = path_parts[0]
-            if first_dir in ['AISystem', 'hands-on-ML']:
-                return False, 'submodule_not_initialized'
-    
     return exists, 'exists' if exists else 'not_found'
 
 def check_external_url(url, timeout=10):

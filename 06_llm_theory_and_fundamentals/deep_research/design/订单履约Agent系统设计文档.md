@@ -19,15 +19,15 @@
 
 #### 1.3.1 流程概览
 
-| 步骤 | 流程名称 | 参与者 | 前置条件 | 执行动作 | 输出结果 |
-|------|----------|--------|----------|----------|----------|
-| 1 | **订单解析与映射** | 订单解析引擎、数据映射服务 | 接收到原始订单数据 | 数据格式转换、字段映射、数据验证 | 标准化订单对象 |
-| 2 | **核心参数获取** | 参数提取服务、业务规则引擎 | 标准化订单对象可用 | 关键信息提取、参数验证、业务规则应用 | 订单核心参数集 |
-| 3 | **库存水平获取** | 库存管理系统、查询服务 | 订单参数完整且有效 | 实时库存查询、多仓库聚合、库存状态检查 | 库存水平报告 |
-| 4 | **库存可用性校验** | 可用性检查引擎、业务规则服务 | 库存水平数据可用 | 可用性计算、约束检查、分配策略应用 | 可用性校验结果 |
-| 5 | **库存可用执行** | 库存分配服务、预留系统 | 可用性校验通过 | 库存预留、分配执行、状态更新 | 库存分配确认 |
-| 6 | **文档关联处理** | 文档管理系统、关联服务 | 库存分配完成 | 文档检索、关联建立、版本管理 | 文档关联结果 |
-| 7 | **最终操作（库存不可用分支）** | 异常处理引擎、替代方案服务 | 检测到库存不可用 | 替代品推荐、重新分配、异常处理 | 最终处理结果 |
+| 步骤 | 流程名称                       | 参与者                       | 前置条件           | 执行动作                               | 输出结果       |
+| ---- | ------------------------------ | ---------------------------- | ------------------ | -------------------------------------- | -------------- |
+| 1    | **订单解析与映射**             | 订单解析引擎、数据映射服务   | 接收到原始订单数据 | 数据格式转换、字段映射、数据验证       | 标准化订单对象 |
+| 2    | **核心参数获取**               | 参数提取服务、业务规则引擎   | 标准化订单对象可用 | 关键信息提取、参数验证、业务规则应用   | 订单核心参数集 |
+| 3    | **库存水平获取**               | 库存管理系统、查询服务       | 订单参数完整且有效 | 实时库存查询、多仓库聚合、库存状态检查 | 库存水平报告   |
+| 4    | **库存可用性校验**             | 可用性检查引擎、业务规则服务 | 库存水平数据可用   | 可用性计算、约束检查、分配策略应用     | 可用性校验结果 |
+| 5    | **库存可用执行**               | 库存分配服务、预留系统       | 可用性校验通过     | 库存预留、分配执行、状态更新           | 库存分配确认   |
+| 6    | **文档关联处理**               | 文档管理系统、关联服务       | 库存分配完成       | 文档检索、关联建立、版本管理           | 文档关联结果   |
+| 7    | **最终操作（库存不可用分支）** | 异常处理引擎、替代方案服务   | 检测到库存不可用   | 替代品推荐、重新分配、异常处理         | 最终处理结果   |
 
 #### 1.3.2 详细流程描述
 
@@ -136,11 +136,13 @@
 系统在业务流程执行过程中，根据业务复杂度和系统成熟度动态选择集成模式：
 
 - **旁路模式**：适用于初期部署或复杂业务场景
+
   - Agent 独立执行决策逻辑，通过 MCP 协议调用现有系统的查询和执行工具
   - 现有业务流程保持不变，Agent 作为智能辅助层提供决策支持
   - 支持渐进式验证和风险控制，确保业务连续性
 
 - **扩展模式**：适用于成熟阶段或标准化业务场景
+
   - 现有系统通过 MCP Server 暴露增强的智能决策能力
   - Agent 的决策逻辑深度集成到现有业务流程中
   - 实现业务流程的智能化升级和自动化程度提升
@@ -162,22 +164,22 @@
 
 **核心业务实体定义**：
 
-| 实体类型 | 核心属性 | 业务关系 | 履约作用 |
-|---------|---------|---------|---------|
-| **订单 (Order)** | 订单 ID 、客户 ID 、订单日期、状态、优先级、总金额 | 包含订单项、属于客户、分配到仓库 | 履约处理的核心对象 |
-| **订单项 (OrderItem)** | SKU 、数量、单价、行状态 | 属于订单、对应产品、关联库存 | 具体履约执行单元 |
-| **产品 (Product)** | SKU 、产品名称、类别、规格、重量、尺寸 | 有替代品、属于类别、有库存 | 履约商品主体 |
-| **库存 (Inventory)** | 仓库 ID 、 SKU 、可用数量、预留数量 | 仓库-SKU 唯一约束 | 履约能力基础 |
-| **仓库 (Warehouse)** | 仓库 ID 、名称、地址、服务区域 | 包含库存、服务订单 | 履约执行地点 |
+| 实体类型               | 核心属性                                           | 业务关系                         | 履约作用           |
+| ---------------------- | -------------------------------------------------- | -------------------------------- | ------------------ |
+| **订单 (Order)**       | 订单 ID 、客户 ID 、订单日期、状态、优先级、总金额 | 包含订单项、属于客户、分配到仓库 | 履约处理的核心对象 |
+| **订单项 (OrderItem)** | SKU 、数量、单价、行状态                           | 属于订单、对应产品、关联库存     | 具体履约执行单元   |
+| **产品 (Product)**     | SKU 、产品名称、类别、规格、重量、尺寸             | 有替代品、属于类别、有库存       | 履约商品主体       |
+| **库存 (Inventory)**   | 仓库 ID 、 SKU 、可用数量、预留数量                | 仓库-SKU 唯一约束                | 履约能力基础       |
+| **仓库 (Warehouse)**   | 仓库 ID 、名称、地址、服务区域                     | 包含库存、服务订单               | 履约执行地点       |
 
 **产品替代关系本体**：
 
-| 关系属性 | 业务含义 | 履约决策影响 |
-|---------|---------|-------------|
-| **兼容性评分** (0-1) | 产品替代的兼容程度 | 评分 ≥ 0.8 可自动替代 |
-| **替代类型** | 直接替代/功能替代/升级替代 | 直接替代优先推荐 |
-| **客户接受率** (0-1) | 历史客户接受替代的比例 | 接受率 ≥ 0.9 优先推荐 |
-| **价格比率** | 替代品与原品的价格比 | 影响替代成本计算 |
+| 关系属性             | 业务含义                   | 履约决策影响          |
+| -------------------- | -------------------------- | --------------------- |
+| **兼容性评分** (0-1) | 产品替代的兼容程度         | 评分 ≥ 0.8 可自动替代 |
+| **替代类型**         | 直接替代/功能替代/升级替代 | 直接替代优先推荐      |
+| **客户接受率** (0-1) | 历史客户接受替代的比例     | 接受率 ≥ 0.9 优先推荐 |
+| **价格比率**         | 替代品与原品的价格比       | 影响替代成本计算      |
 
 #### 2.1.2 标准化体系构建
 
@@ -191,12 +193,12 @@
 
 **订单履约专用查询能力**：
 
-| 查询类型 | 输入条件 | 输出结果 | 履约价值 |
-|---------|---------|---------|---------|
-| **库存匹配查询** | 订单项列表 | 可履约数量、缺货清单 | 确定基础履约能力 |
-| **替代品推荐** | 缺货 SKU 列表 | 替代方案排序列表 | 提升订单完整履约率 |
-| **最优仓库选择** | 订单地址、商品清单 | 推荐仓库及分配方案 | 优化物流成本和时效 |
-| **履约路径规划** | 完整订单信息 | 分仓履约方案 | 实现复杂订单智能处理 |
+| 查询类型         | 输入条件           | 输出结果             | 履约价值             |
+| ---------------- | ------------------ | -------------------- | -------------------- |
+| **库存匹配查询** | 订单项列表         | 可履约数量、缺货清单 | 确定基础履约能力     |
+| **替代品推荐**   | 缺货 SKU 列表      | 替代方案排序列表     | 提升订单完整履约率   |
+| **最优仓库选择** | 订单地址、商品清单 | 推荐仓库及分配方案   | 优化物流成本和时效   |
+| **履约路径规划** | 完整订单信息       | 分仓履约方案         | 实现复杂订单智能处理 |
 
 **技术实现架构**：
 
@@ -210,11 +212,11 @@
 
 **核心 AI 能力**：
 
-| AI 能力 | 履约应用 | 技术方案 | 预期效果 |
-|---------|----------|----------|----------|
-| **订单解析** | 自动识别产品需求和替换意图 | NLP + 领域微调 | 解析准确率 ≥ 95% |
-| **库存匹配** | 智能库存分配和预测 | 机器学习 + 时间序列 | 缺货率降低 30% |
-| **替代推荐** | 基于产品关系的智能推荐 | 知识图谱 + 推理引擎 | 推荐准确率 ≥ 90% |
+| AI 能力      | 履约应用                   | 技术方案            | 预期效果         |
+| ------------ | -------------------------- | ------------------- | ---------------- |
+| **订单解析** | 自动识别产品需求和替换意图 | NLP + 领域微调      | 解析准确率 ≥ 95% |
+| **库存匹配** | 智能库存分配和预测         | 机器学习 + 时间序列 | 缺货率降低 30%   |
+| **替代推荐** | 基于产品关系的智能推荐     | 知识图谱 + 推理引擎 | 推荐准确率 ≥ 90% |
 
 **Agent 决策机制**：
 
@@ -228,12 +230,12 @@
 
 **核心事件模型**：
 
-| 事件类型 | 触发条件 | 消费者服务 | 处理时效 |
-|---------|---------|-----------|----------|
-| **OrderCreated** | 订单创建完成 | 库存服务、决策服务 | 实时处理 |
-| **InventoryReserved** | 库存预留成功 | 订单服务、通知服务 | < 1 秒 |
-| **DecisionMade** | AI 决策完成 | 订单服务、产品服务 | < 2 秒 |
-| **StatusChanged** | 订单状态变更 | 通知服务、监控服务 | 实时推送 |
+| 事件类型                 | 触发条件     | 消费者服务         | 处理时效 |
+| ------------------------ | ------------ | ------------------ | -------- |
+| **OrderCreated**         | 订单创建完成 | 库存服务、决策服务 | 实时处理 |
+| **InventoryReserved**    | 库存预留成功 | 订单服务、通知服务 | < 1 秒   |
+| **DecisionMade**         | AI 决策完成  | 订单服务、产品服务 | < 2 秒   |
+| **StatusChanged**        | 订单状态变更 | 通知服务、监控服务 | 实时推送 |
 | **FulfillmentCompleted** | 履约流程完成 | 订单服务、统计服务 | 批量处理 |
 
 ### 2.2 系统分层架构概览
@@ -285,10 +287,10 @@
 
 **核心组件**：
 
-| 组件名称 | 核心功能 | 性能指标 |
-|---------|---------|----------|
+| 组件名称         | 核心功能                       | 性能指标      |
+| ---------------- | ------------------------------ | ------------- |
 | **Web 管理界面** | 订单管理、监控仪表板、决策审批 | 页面加载 < 2s |
-| **移动端应用** | 订单查询、状态推送、移动审批 | 响应时间 < 1s |
+| **移动端应用**   | 订单查询、状态推送、移动审批   | 响应时间 < 1s |
 
 #### 2.3.2 API 网关设计
 
@@ -388,37 +390,37 @@
 
 **核心组件映射**：
 
-| 核心组件 | 整合能力 | 核心技术 | 性能目标 | 对应章节 |
-|---------|---------|---------|----------|----------|
-| **Agent Controller** | 流程编排 + 组件协调 + 状态管理 | 工作流引擎 + 状态机 + 事件驱动 | 协调延迟 < 50ms | 3.2.1 |
-| **Planning Engine** | 任务分解 + 资源规划 + 时序安排 | LLM + HTN + 约束求解 | 规划时间 < 500ms | 3.2.2 |
-| **Reasoning Engine** | 业务推理 + 因果分析 + 决策验证 | LLM + 逻辑推理 + 知识图谱 | 推理准确率 ≥ 95% | 3.2.3 |
-| **Memory Management** | 上下文管理 + 知识存储 + 状态维护 | 向量数据库 + 知识图谱 + 缓存 | 检索延迟 < 100ms | 3.2.4 |
-| **Learning Engine** | 模式学习 + 策略优化 + 反馈学习 | 机器学习 + 强化学习 + LLM | 学习收敛 < 24h | 3.2.5 |
-| **Action Engine** | 动作执行 + 工具调用 + 状态监控 | 工具调用框架 + 监控系统 + API 网关 | 执行成功率 ≥ 99% | 3.2.6 |
+| 核心组件              | 整合能力                         | 核心技术                           | 性能目标         | 对应章节 |
+| --------------------- | -------------------------------- | ---------------------------------- | ---------------- | -------- |
+| **Agent Controller**  | 流程编排 + 组件协调 + 状态管理   | 工作流引擎 + 状态机 + 事件驱动     | 协调延迟 < 50ms  | 3.2.1    |
+| **Planning Engine**   | 任务分解 + 资源规划 + 时序安排   | LLM + HTN + 约束求解               | 规划时间 < 500ms | 3.2.2    |
+| **Reasoning Engine**  | 业务推理 + 因果分析 + 决策验证   | LLM + 逻辑推理 + 知识图谱          | 推理准确率 ≥ 95% | 3.2.3    |
+| **Memory Management** | 上下文管理 + 知识存储 + 状态维护 | 向量数据库 + 知识图谱 + 缓存       | 检索延迟 < 100ms | 3.2.4    |
+| **Learning Engine**   | 模式学习 + 策略优化 + 反馈学习   | 机器学习 + 强化学习 + LLM          | 学习收敛 < 24h   | 3.2.5    |
+| **Action Engine**     | 动作执行 + 工具调用 + 状态监控   | 工具调用框架 + 监控系统 + API 网关 | 执行成功率 ≥ 99% | 3.2.6    |
 
 #### 2.4.3 AI 能力体系
 
 **AI 能力矩阵**：
 
-| AI 能力类型 | 应用场景 | 参考技术实现 | 效果指标 |
-|------------|---------|---------|----------|
-| **大模型对话理解** | 订单备注解析、客户意图识别、多轮对话处理 | GPT-4/Claude + 领域微调 + RAG | 理解准确率 ≥ 98% |
-| **大模型推理决策** | 复杂业务推理、异常处理决策、多因素综合分析 | LLM + Chain-of-Thought + 业务知识库 | 决策准确率 ≥ 95% |
-| **智能任务编排** | 动态流程规划、任务协调、异常处理编排 | LLM + Function Calling + 工作流引擎 | 编排效率提升 ≥ 40% |
-| **机器学习预测** | 库存需求预测、缺货风险评估 | XGBoost + 时间序列 + LLM 增强 | 预测精度 ≥ 90% |
-| **知识图谱推理** | 产品替代推荐、关系挖掘 | Neo4j + 图神经网络 + LLM 推理 | 推荐准确率 ≥ 95% |
-| **向量语义搜索** | 文档检索、相似性匹配 | Embedding + Faiss + LLM 重排序 | 检索相关性 ≥ 92% |
-| **决策优化算法** | 库存分配优化、路径规划 | 遗传算法 + 线性规划 + LLM 策略 | 优化提升 ≥ 30% |
+| AI 能力类型        | 应用场景                                   | 参考技术实现                        | 效果指标           |
+| ------------------ | ------------------------------------------ | ----------------------------------- | ------------------ |
+| **大模型对话理解** | 订单备注解析、客户意图识别、多轮对话处理   | GPT-4/Claude + 领域微调 + RAG       | 理解准确率 ≥ 98%   |
+| **大模型推理决策** | 复杂业务推理、异常处理决策、多因素综合分析 | LLM + Chain-of-Thought + 业务知识库 | 决策准确率 ≥ 95%   |
+| **智能任务编排**   | 动态流程规划、任务协调、异常处理编排       | LLM + Function Calling + 工作流引擎 | 编排效率提升 ≥ 40% |
+| **机器学习预测**   | 库存需求预测、缺货风险评估                 | XGBoost + 时间序列 + LLM 增强       | 预测精度 ≥ 90%     |
+| **知识图谱推理**   | 产品替代推荐、关系挖掘                     | Neo4j + 图神经网络 + LLM 推理       | 推荐准确率 ≥ 95%   |
+| **向量语义搜索**   | 文档检索、相似性匹配                       | Embedding + Faiss + LLM 重排序      | 检索相关性 ≥ 92%   |
+| **决策优化算法**   | 库存分配优化、路径规划                     | 遗传算法 + 线性规划 + LLM 策略      | 优化提升 ≥ 30%     |
 
 **混合架构协同机制**：
 
-| 协同层面 | 大模型优势 | 传统 AI 优势 | 协同方式 |
-|---------|-----------|-------------|----------|
-| **理解层面** | 复杂语义理解、多模态处理 | 结构化数据解析、规则匹配 | LLM 主导理解，传统 AI 辅助验证 |
-| **推理层面** | 常识推理、因果分析 | 精确计算、逻辑推理 | LLM 提供推理框架，传统 AI 执行计算 |
-| **决策层面** | 综合决策、创新方案 | 优化算法、约束求解 | LLM 生成决策方案，传统 AI 优化执行 |
-| **学习层面** | 模式识别、策略学习 | 数值预测、统计分析 | LLM 学习业务模式，传统 AI 提供数据支撑 |
+| 协同层面     | 大模型优势               | 传统 AI 优势             | 协同方式                               |
+| ------------ | ------------------------ | ------------------------ | -------------------------------------- |
+| **理解层面** | 复杂语义理解、多模态处理 | 结构化数据解析、规则匹配 | LLM 主导理解，传统 AI 辅助验证         |
+| **推理层面** | 常识推理、因果分析       | 精确计算、逻辑推理       | LLM 提供推理框架，传统 AI 执行计算     |
+| **决策层面** | 综合决策、创新方案       | 优化算法、约束求解       | LLM 生成决策方案，传统 AI 优化执行     |
+| **学习层面** | 模式识别、策略学习       | 数值预测、统计分析       | LLM 学习业务模式，传统 AI 提供数据支撑 |
 
 #### 2.4.4 双引擎协同机制
 
@@ -429,6 +431,7 @@
 **分层协同策略**：
 
 - **认知理解层**：大模型负责非结构化信息的语义理解和意图识别
+
   - 订单备注的自然语言解析（"急单"、"质量要求高"等）
   - 客户沟通记录的情感分析和需求提取
   - 产品描述的语义匹配和规格理解
@@ -491,14 +494,14 @@
 
 **MCP Server 部署矩阵**：
 
-| 业务域 | MCP Server | 封装系统 | 核心工具方法 | 支持的 Agent 组件 |
-|-------|------------|---------|-------------|------------------|
-| **订单管理** | ERP MCP Server | OMS + IMS | validate_order, check_inventory, reserve_stock | Agent Controller + Planning Engine |
-| **仓储物流** | WMS MCP Server | WMS + TMS | create_pick_task, plan_shipment, track_delivery | Action Engine + Planning Engine |
-| **客户服务** | CRM MCP Server | CRM + 客服系统 | check_customer_credit, send_notification, query_preferences | Reasoning Engine + Action Engine |
-| **生产制造** | 生产 MCP Server | MES + 生产计划 | check_capacity, create_production_plan, monitor_progress | Planning Engine + Action Engine |
-| **质量管控** | 质量 MCP Server | QMS + 检测系统 | validate_quality_standard, create_inspection_task | Reasoning Engine + Action Engine |
-| **财务结算** | 财务 MCP Server | 财务系统 + 发票系统 | calculate_cost, generate_invoice, track_payment | Planning Engine + Action Engine |
+| 业务域       | MCP Server      | 封装系统            | 核心工具方法                                                | 支持的 Agent 组件                  |
+| ------------ | --------------- | ------------------- | ----------------------------------------------------------- | ---------------------------------- |
+| **订单管理** | ERP MCP Server  | OMS + IMS           | validate_order, check_inventory, reserve_stock              | Agent Controller + Planning Engine |
+| **仓储物流** | WMS MCP Server  | WMS + TMS           | create_pick_task, plan_shipment, track_delivery             | Action Engine + Planning Engine    |
+| **客户服务** | CRM MCP Server  | CRM + 客服系统      | check_customer_credit, send_notification, query_preferences | Reasoning Engine + Action Engine   |
+| **生产制造** | 生产 MCP Server | MES + 生产计划      | check_capacity, create_production_plan, monitor_progress    | Planning Engine + Action Engine    |
+| **质量管控** | 质量 MCP Server | QMS + 检测系统      | validate_quality_standard, create_inspection_task           | Reasoning Engine + Action Engine   |
+| **财务结算** | 财务 MCP Server | 财务系统 + 发票系统 | calculate_cost, generate_invoice, track_payment             | Planning Engine + Action Engine    |
 
 #### 2.5.2 MCP 协议集成架构
 
@@ -557,14 +560,14 @@
 
 **协议集成特性**：
 
-| 集成特性 | 技术实现 | 业务价值 | 性能指标 |
-|---------|---------|---------|----------|
-| **动态能力发现** | MCP 协议能力注册机制 | Agent 可自动发现和调用新增工具 | 发现延迟 < 100ms |
-| **标准化接口** | 统一的工具调用协议 | 简化系统集成复杂度 | 接口一致性 100% |
-| **异步通信** | 基于消息队列的异步调用 | 提升系统响应性能 | 并发处理 > 1000 TPS |
-| **错误处理** | 标准化错误码和重试机制 | 提升系统稳定性 | 错误恢复率 ≥ 95% |
-| **安全控制** | 基于令牌的权限验证 | 确保系统安全性 | 权限验证延迟 < 50ms |
-| **监控审计** | 全链路调用追踪 | 支持问题诊断和合规审计 | 追踪覆盖率 100% |
+| 集成特性         | 技术实现               | 业务价值                       | 性能指标            |
+| ---------------- | ---------------------- | ------------------------------ | ------------------- |
+| **动态能力发现** | MCP 协议能力注册机制   | Agent 可自动发现和调用新增工具 | 发现延迟 < 100ms    |
+| **标准化接口**   | 统一的工具调用协议     | 简化系统集成复杂度             | 接口一致性 100%     |
+| **异步通信**     | 基于消息队列的异步调用 | 提升系统响应性能               | 并发处理 > 1000 TPS |
+| **错误处理**     | 标准化错误码和重试机制 | 提升系统稳定性                 | 错误恢复率 ≥ 95%    |
+| **安全控制**     | 基于令牌的权限验证     | 确保系统安全性                 | 权限验证延迟 < 50ms |
+| **监控审计**     | 全链路调用追踪         | 支持问题诊断和合规审计         | 追踪覆盖率 100%     |
 
 #### 2.5.3 业务流程编排
 
@@ -597,12 +600,12 @@
 
 **异常处理编排**：
 
-| 异常类型 | 检测机制 | 处理策略 | 恢复流程 |
-|---------|---------|---------|----------|
+| 异常类型     | 检测机制     | 处理策略                 | 恢复流程                       |
+| ------------ | ------------ | ------------------------ | ------------------------------ |
 | **库存不足** | 实时库存检查 | 自动寻找替代品或分批发货 | 重新规划 → 客户确认 → 执行调整 |
-| **产能不足** | 生产能力评估 | 调整交期或外协生产 | 重新排产 → 客户沟通 → 计划更新 |
-| **质量异常** | 质量检测反馈 | 重新生产或质量整改 | 问题分析 → 整改措施 → 重新检测 |
-| **物流延误** | 物流状态监控 | 调整配送方案或紧急配送 | 重新规划 → 客户通知 → 跟踪确认 |
+| **产能不足** | 生产能力评估 | 调整交期或外协生产       | 重新排产 → 客户沟通 → 计划更新 |
+| **质量异常** | 质量检测反馈 | 重新生产或质量整改       | 问题分析 → 整改措施 → 重新检测 |
+| **物流延误** | 物流状态监控 | 调整配送方案或紧急配送   | 重新规划 → 客户通知 → 跟踪确认 |
 
 #### 2.5.4 数据一致性保障
 
@@ -618,13 +621,13 @@
 
 **数据同步策略**：
 
-| 数据类型 | 一致性要求 | 同步方式 | 同步频率 | 容错机制 |
-|---------|-----------|---------|----------|----------|
-| **订单状态** | 强一致性 | 实时同步 | 实时 | 立即重试 + 告警 |
-| **库存数据** | 强一致性 | 实时同步 | 实时 | 锁定机制 + 补偿 |
-| **客户信息** | 最终一致性 | 异步同步 | 5分钟 | 延迟重试 + 人工介入 |
-| **生产计划** | 最终一致性 | 批量同步 | 30分钟 | 版本控制 + 冲突解决 |
-| **财务数据** | 强一致性 | 事务同步 | 实时 | 事务回滚 + 审计 |
+| 数据类型     | 一致性要求 | 同步方式 | 同步频率 | 容错机制            |
+| ------------ | ---------- | -------- | -------- | ------------------- |
+| **订单状态** | 强一致性   | 实时同步 | 实时     | 立即重试 + 告警     |
+| **库存数据** | 强一致性   | 实时同步 | 实时     | 锁定机制 + 补偿     |
+| **客户信息** | 最终一致性 | 异步同步 | 5 分钟   | 延迟重试 + 人工介入 |
+| **生产计划** | 最终一致性 | 批量同步 | 30 分钟  | 版本控制 + 冲突解决 |
+| **财务数据** | 强一致性   | 事务同步 | 实时     | 事务回滚 + 审计     |
 
 **补偿式事务处理**：
 
@@ -634,13 +637,13 @@
 │             │    │             │    │             │    │             │
 │ 成功 ✓       │    │ 失败 ✗      │    │ 未执行       │    │ 未执行       │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                  
-       ▼                   ▼                  
-┌─────────────┐    ┌─────────────┐    
-│ 库存释放补偿  │ ◀──│ 补偿触发机制  │    
-│             │    │             │    
-│ 执行补偿 ✓   │    │ 检测失败     │    
-└─────────────┘    └─────────────┘    
+       │                   │
+       ▼                   ▼
+┌─────────────┐    ┌─────────────┐
+│ 库存释放补偿  │ ◀──│ 补偿触发机制  │
+│             │    │             │
+│ 执行补偿 ✓   │    │ 检测失败     │
+└─────────────┘    └─────────────┘
 ```
 
 **数据校验与修复**：
@@ -677,7 +680,7 @@
 构建支持 Agent 智能推理的实体关系网络：
 
 - 订单与订单项的包含关系，支持 Agent 智能分组和优先级排序
-- 产品与库存的多仓库关系，支持 Agent 库存智能分配和预测补货  
+- 产品与库存的多仓库关系，支持 Agent 库存智能分配和预测补货
 - 产品间的替代关系网络，支持 Agent 智能替代推荐和兼容性分析
 - 仓库与库存的管理关系，支持 Agent 负载均衡和容量优化
 
@@ -697,14 +700,14 @@
 
 **存储技术选型**：
 
-| 存储类型 | 技术选择 | 适用场景 | Agent 增强能力 |
-|---------|---------|---------|---------------|
-| **业务数据库** | MySQL 8.0 | 事务性业务数据 | 支持 Agent 实时业务查询和事务处理 |
-| **分析数据库** | ClickHouse | 大数据分析 | 支持 Agent 历史数据分析和趋势预测 |
-| **向量数据库** | Milvus | 语义检索 | 支持 Agent 语义理解和智能推荐 |
-| **图数据库** | Neo4j | 关系网络分析 | 支持 Agent 关系推理和网络分析 |
-| **时序数据库** | InfluxDB | 监控指标数据 | 支持 Agent 实时监控和异常检测 |
-| **缓存存储** | Redis Cluster | 高频访问数据 | 支持 Agent 快速决策和实时响应 |
+| 存储类型       | 技术选择      | 适用场景       | Agent 增强能力                    |
+| -------------- | ------------- | -------------- | --------------------------------- |
+| **业务数据库** | MySQL 8.0     | 事务性业务数据 | 支持 Agent 实时业务查询和事务处理 |
+| **分析数据库** | ClickHouse    | 大数据分析     | 支持 Agent 历史数据分析和趋势预测 |
+| **向量数据库** | Milvus        | 语义检索       | 支持 Agent 语义理解和智能推荐     |
+| **图数据库**   | Neo4j         | 关系网络分析   | 支持 Agent 关系推理和网络分析     |
+| **时序数据库** | InfluxDB      | 监控指标数据   | 支持 Agent 实时监控和异常检测     |
+| **缓存存储**   | Redis Cluster | 高频访问数据   | 支持 Agent 快速决策和实时响应     |
 
 **数据分布策略**：
 
@@ -752,7 +755,7 @@
 **核心数据流类型**：
 
 - **实时事件流**：支持 Agent 实时决策的高频事件数据流，延迟 < 50ms
-- **业务数据流**：支持 Agent 业务分析的结构化数据流，延迟 < 200ms  
+- **业务数据流**：支持 Agent 业务分析的结构化数据流，延迟 < 200ms
 - **分析数据流**：支持 Agent 趋势预测的大数据分析流，延迟 < 500ms
 - **归档数据流**：支持 Agent 历史学习的批量数据流，延迟 < 1s
 
@@ -846,7 +849,7 @@
 
 **功能职责**：
 
-- **订单流程编排**：接收电商订单、 B2B 采购订单等各类订单请求，启动库存检查→支付确认→仓储分配→物流配送的完整履约流程
+- **订单流程编排**：接收电商订单、 B2B 采购订单等各类订单请求，启动库存检查 → 支付确认 → 仓储分配 → 物流配送的完整履约流程
 - **履约组件协调**：统一管理 `Planning Engine` 的配送路径规划、 `Reasoning Engine` 的库存分配决策、 `Action Engine` 的系统调用等协作关系
 - **订单状态管理**：实时跟踪订单从"待处理"→"库存确认"→"支付完成"→"拣货中"→"配送中"→"已送达"的全生命周期状态
 - **履约异常处理**：处理库存不足、支付失败、配送延误等异常情况，提供自动重试、人工介入、订单取消等恢复机制
@@ -865,7 +868,7 @@
 │   ├── 多渠道订单统一接入（官网、APP、小程序、第三方平台）
 │   ├── 订单信息标准化处理
 │   └── 初步风险评估和反欺诈检查
-├── 履约决策阶段  
+├── 履约决策阶段
 │   ├── 库存可用性实时查询
 │   ├── 最优仓库和配送方案选择
 │   └── 预计送达时间计算
@@ -885,7 +888,7 @@
 
 **订单履约规划职责**：
 
-- **履约路径规划**：将订单履约分解为库存分配→拣货打包→物流配送→客户签收的最优执行序列
+- **履约路径规划**：将订单履约分解为库存分配 → 拣货打包 → 物流配送 → 客户签收的最优执行序列
 - **仓储资源规划**：基于商品属性、库存分布、仓库产能等因素，智能分配最优的履约仓库和拣货路径
 - **配送时序规划**：结合客户期望送达时间、配送运力、交通状况等制定最优的配送时间表
 - **履约计划验证**：验证库存充足性、配送可达性、时效可行性等关键约束条件
@@ -1176,7 +1179,7 @@ Controller → Memory → Planning → Reasoning → Action → Learning → 履
 
 **订单履约流程控制机制**：
 
-- **履约顺序执行**：确保关键履约步骤的执行顺序（库存锁定→订单分配→配送调度→客户通知）
+- **履约顺序执行**：确保关键履约步骤的执行顺序（库存锁定 → 订单分配 → 配送调度 → 客户通知）
 - **履约并行处理**：支持独立履约任务的并行执行（多订单同时处理、多仓库并行分配）
 - **履约条件分支**：基于履约业务规则的智能分支选择（商品类型、客户等级、配送区域）
 - **履约异常恢复**：多层次的履约错误处理和恢复策略（库存不足、配送延误、系统故障）
@@ -1450,13 +1453,13 @@ Controller → Memory → Planning → Reasoning → Action → Learning → 履
 
 为确保概念一致性，明确定义智能实体与传统实体的映射关系，智能实体是传统实体的 `Agent` 增强版本：
 
-| 智能实体 | 传统实体基础 | Agent 增强特性 | 映射关系 |
-|---------|-------------|---------------|---------|
-| **FulfillmentOrder** | Order | AI 决策上下文、智能优先级 | 1:1 扩展映射 |
-| **IntelligentOrderItem** | OrderItem | 智能分配策略、替代规则 | 1:1 扩展映射 |
-| **IntelligentProduct** | Product | 语义属性、AI 分类标签 | 1:1 扩展映射 |
-| **DynamicInventory** | Inventory | AI 优化参数、预测特征 | 1:1 扩展映射 |
-| **IntelligentWarehouse** | Warehouse | AI 调度策略、智能负载 | 1:1 扩展映射 |
+| 智能实体                 | 传统实体基础 | Agent 增强特性            | 映射关系     |
+| ------------------------ | ------------ | ------------------------- | ------------ |
+| **FulfillmentOrder**     | Order        | AI 决策上下文、智能优先级 | 1:1 扩展映射 |
+| **IntelligentOrderItem** | OrderItem    | 智能分配策略、替代规则    | 1:1 扩展映射 |
+| **IntelligentProduct**   | Product      | 语义属性、AI 分类标签     | 1:1 扩展映射 |
+| **DynamicInventory**     | Inventory    | AI 优化参数、预测特征     | 1:1 扩展映射 |
+| **IntelligentWarehouse** | Warehouse    | AI 调度策略、智能负载     | 1:1 扩展映射 |
 
 **智能实体属性详细规范**：
 
@@ -1588,57 +1591,57 @@ Controller → Memory → Planning → Reasoning → Action → Learning → 履
 
 **1. 订单履约实体数据字典**：
 
-| 字段名称 | 数据类型 | 长度 | 是否必填 | 默认值 | 约束条件 | 业务含义 | 示例值 |
-|---------|---------|------|---------|--------|---------|---------|--------|
-| `order_id` | VARCHAR | 32 | 是 | - | 主键，唯一性约束 | 订单唯一标识符 | ORD20240115001 |
-| `customer_id` | VARCHAR | 20 | 是 | - | 外键约束，关联客户表 | 客户标识符 | CUST000123456 |
-| `order_date` | TIMESTAMP | - | 是 | CURRENT_TIMESTAMP | 不能晚于当前时间 | 订单创建时间 | 2024-01-15 10:30:00 |
-| `status` | ENUM | - | 是 | 'PENDING' | 枚举值约束 | 订单状态 | PENDING/PROCESSING/COMPLETED |
-| `total_amount` | DECIMAL | 10,2 | 是 | 0.00 | 非负数约束 | 订单总金额 | 1299.99 |
-| `delivery_address` | TEXT | 500 | 是 | - | 长度限制 | 配送地址 | 北京市朝阳区xxx街道 |
-| `expected_delivery_time` | TIMESTAMP | - | 否 | NULL | 不能早于订单创建时间 | 期望交付时间 | 2024-01-16 18:00:00 |
-| `ai_priority_score` | DECIMAL | 5,3 | 否 | 0.500 | 0.000-1.000范围约束 | AI计算优先级 | 0.875 |
-| `risk_assessment` | JSON | - | 否 | {} | JSON格式验证 | 风险评估结果 | {"level":"LOW","score":0.2} |
+| 字段名称                 | 数据类型  | 长度 | 是否必填 | 默认值            | 约束条件             | 业务含义       | 示例值                       |
+| ------------------------ | --------- | ---- | -------- | ----------------- | -------------------- | -------------- | ---------------------------- |
+| `order_id`               | VARCHAR   | 32   | 是       | -                 | 主键，唯一性约束     | 订单唯一标识符 | ORD20240115001               |
+| `customer_id`            | VARCHAR   | 20   | 是       | -                 | 外键约束，关联客户表 | 客户标识符     | CUST000123456                |
+| `order_date`             | TIMESTAMP | -    | 是       | CURRENT_TIMESTAMP | 不能晚于当前时间     | 订单创建时间   | 2024-01-15 10:30:00          |
+| `status`                 | ENUM      | -    | 是       | 'PENDING'         | 枚举值约束           | 订单状态       | PENDING/PROCESSING/COMPLETED |
+| `total_amount`           | DECIMAL   | 10,2 | 是       | 0.00              | 非负数约束           | 订单总金额     | 1299.99                      |
+| `delivery_address`       | TEXT      | 500  | 是       | -                 | 长度限制             | 配送地址       | 北京市朝阳区 xxx 街道        |
+| `expected_delivery_time` | TIMESTAMP | -    | 否       | NULL              | 不能早于订单创建时间 | 期望交付时间   | 2024-01-16 18:00:00          |
+| `ai_priority_score`      | DECIMAL   | 5,3  | 否       | 0.500             | 0.000-1.000 范围约束 | AI 计算优先级  | 0.875                        |
+| `risk_assessment`        | JSON      | -    | 否       | {}                | JSON 格式验证        | 风险评估结果   | {"level":"LOW","score":0.2}  |
 
 **2. 智能订单项实体数据字典**：
 
-| 字段名称 | 数据类型 | 长度 | 是否必填 | 默认值 | 约束条件 | 业务含义 | 示例值 |
-|---------|---------|------|---------|--------|---------|---------|--------|
-| `order_item_id` | VARCHAR | 32 | 是 | - | 主键，唯一性约束 | 订单项唯一标识 | ITM20240115001001 |
-| `order_id` | VARCHAR | 32 | 是 | - | 外键约束，关联订单表 | 所属订单ID | ORD20240115001 |
-| `sku` | VARCHAR | 20 | 是 | - | 外键约束，关联产品表 | 产品SKU | SKU123456789 |
-| `quantity` | INTEGER | - | 是 | 1 | 正整数约束 | 订购数量 | 2 |
-| `unit_price` | DECIMAL | 8,2 | 是 | 0.00 | 非负数约束 | 商品单价 | 649.99 |
-| `line_status` | ENUM | - | 是 | 'PENDING' | 枚举值约束 | 订单项状态 | PENDING/ALLOCATED/SHIPPED |
-| `allocation_priority` | INTEGER | - | 否 | 100 | 1-999范围约束 | 分配优先级 | 150 |
-| `substitute_candidates` | JSON | - | 否 | [] | JSON数组格式 | 替代产品候选 | ["SKU987654321","SKU456789123"] |
+| 字段名称                | 数据类型 | 长度 | 是否必填 | 默认值    | 约束条件             | 业务含义       | 示例值                          |
+| ----------------------- | -------- | ---- | -------- | --------- | -------------------- | -------------- | ------------------------------- |
+| `order_item_id`         | VARCHAR  | 32   | 是       | -         | 主键，唯一性约束     | 订单项唯一标识 | ITM20240115001001               |
+| `order_id`              | VARCHAR  | 32   | 是       | -         | 外键约束，关联订单表 | 所属订单 ID    | ORD20240115001                  |
+| `sku`                   | VARCHAR  | 20   | 是       | -         | 外键约束，关联产品表 | 产品 SKU       | SKU123456789                    |
+| `quantity`              | INTEGER  | -    | 是       | 1         | 正整数约束           | 订购数量       | 2                               |
+| `unit_price`            | DECIMAL  | 8,2  | 是       | 0.00      | 非负数约束           | 商品单价       | 649.99                          |
+| `line_status`           | ENUM     | -    | 是       | 'PENDING' | 枚举值约束           | 订单项状态     | PENDING/ALLOCATED/SHIPPED       |
+| `allocation_priority`   | INTEGER  | -    | 否       | 100       | 1-999 范围约束       | 分配优先级     | 150                             |
+| `substitute_candidates` | JSON     | -    | 否       | []        | JSON 数组格式        | 替代产品候选   | ["SKU987654321","SKU456789123"] |
 
 **3. 智能产品本体数据字典**：
 
-| 字段名称 | 数据类型 | 长度 | 是否必填 | 默认值 | 约束条件 | 业务含义 | 示例值 |
-|---------|---------|------|---------|--------|---------|---------|--------|
-| `sku` | VARCHAR | 20 | 是 | - | 主键，唯一性约束 | 产品SKU | SKU123456789 |
-| `product_name` | VARCHAR | 200 | 是 | - | 长度限制，非空 | 产品名称 | iPhone 15 Pro 256GB 深空黑色 |
-| `category` | VARCHAR | 50 | 是 | - | 分类枚举约束 | 产品分类 | 智能手机 |
-| `weight` | DECIMAL | 6,3 | 否 | 0.000 | 非负数约束 | 产品重量(kg) | 0.221 |
-| `dimensions` | VARCHAR | 50 | 否 | - | 格式约束(长×宽×高) | 产品尺寸(cm) | 15.9×7.7×0.8 |
-| `brand` | VARCHAR | 50 | 是 | - | 品牌枚举约束 | 产品品牌 | Apple |
-| `status` | ENUM | - | 是 | 'ACTIVE' | 枚举值约束 | 产品状态 | ACTIVE/INACTIVE/DISCONTINUED |
-| `semantic_vector` | JSON | - | 否 | NULL | JSON格式验证 | 语义向量表示 | [0.1,0.2,-0.3,...] |
-| `ai_category_tags` | JSON | - | 否 | [] | JSON数组格式 | AI分类标签 | ["高端","智能","通讯"] |
+| 字段名称           | 数据类型 | 长度 | 是否必填 | 默认值   | 约束条件               | 业务含义     | 示例值                       |
+| ------------------ | -------- | ---- | -------- | -------- | ---------------------- | ------------ | ---------------------------- |
+| `sku`              | VARCHAR  | 20   | 是       | -        | 主键，唯一性约束       | 产品 SKU     | SKU123456789                 |
+| `product_name`     | VARCHAR  | 200  | 是       | -        | 长度限制，非空         | 产品名称     | iPhone 15 Pro 256GB 深空黑色 |
+| `category`         | VARCHAR  | 50   | 是       | -        | 分类枚举约束           | 产品分类     | 智能手机                     |
+| `weight`           | DECIMAL  | 6,3  | 否       | 0.000    | 非负数约束             | 产品重量(kg) | 0.221                        |
+| `dimensions`       | VARCHAR  | 50   | 否       | -        | 格式约束(长 × 宽 × 高) | 产品尺寸(cm) | 15.9×7.7×0.8                 |
+| `brand`            | VARCHAR  | 50   | 是       | -        | 品牌枚举约束           | 产品品牌     | Apple                        |
+| `status`           | ENUM     | -    | 是       | 'ACTIVE' | 枚举值约束             | 产品状态     | ACTIVE/INACTIVE/DISCONTINUED |
+| `semantic_vector`  | JSON     | -    | 否       | NULL     | JSON 格式验证          | 语义向量表示 | [0.1,0.2,-0.3,...]           |
+| `ai_category_tags` | JSON     | -    | 否       | []       | JSON 数组格式          | AI 分类标签  | ["高端","智能","通讯"]       |
 
 **4. 动态库存实体数据字典**：
 
-| 字段名称 | 数据类型 | 长度 | 是否必填 | 默认值 | 约束条件 | 业务含义 | 示例值 |
-|---------|---------|------|---------|--------|---------|---------|--------|
-| `inventory_id` | VARCHAR | 32 | 是 | - | 主键，唯一性约束 | 库存记录ID | INV20240115001 |
-| `warehouse_id` | VARCHAR | 20 | 是 | - | 外键约束，关联仓库表 | 仓库ID | WH001 |
-| `sku` | VARCHAR | 20 | 是 | - | 外键约束，关联产品表 | 产品SKU | SKU123456789 |
-| `available_quantity` | INTEGER | - | 是 | 0 | 非负整数约束 | 可用库存数量 | 150 |
-| `reserved_quantity` | INTEGER | - | 是 | 0 | 非负整数约束 | 预留库存数量 | 25 |
-| `safety_stock` | INTEGER | - | 是 | 0 | 非负整数约束 | 安全库存 | 20 |
-| `last_updated` | TIMESTAMP | - | 是 | CURRENT_TIMESTAMP | 自动更新时间戳 | 最后更新时间 | 2024-01-15 14:30:00 |
-| `real_time_demand_forecast` | DECIMAL | 8,2 | 否 | 0.00 | 非负数约束 | 实时需求预测 | 12.5 |
+| 字段名称                    | 数据类型  | 长度 | 是否必填 | 默认值            | 约束条件             | 业务含义     | 示例值              |
+| --------------------------- | --------- | ---- | -------- | ----------------- | -------------------- | ------------ | ------------------- |
+| `inventory_id`              | VARCHAR   | 32   | 是       | -                 | 主键，唯一性约束     | 库存记录 ID  | INV20240115001      |
+| `warehouse_id`              | VARCHAR   | 20   | 是       | -                 | 外键约束，关联仓库表 | 仓库 ID      | WH001               |
+| `sku`                       | VARCHAR   | 20   | 是       | -                 | 外键约束，关联产品表 | 产品 SKU     | SKU123456789        |
+| `available_quantity`        | INTEGER   | -    | 是       | 0                 | 非负整数约束         | 可用库存数量 | 150                 |
+| `reserved_quantity`         | INTEGER   | -    | 是       | 0                 | 非负整数约束         | 预留库存数量 | 25                  |
+| `safety_stock`              | INTEGER   | -    | 是       | 0                 | 非负整数约束         | 安全库存     | 20                  |
+| `last_updated`              | TIMESTAMP | -    | 是       | CURRENT_TIMESTAMP | 自动更新时间戳       | 最后更新时间 | 2024-01-15 14:30:00 |
+| `real_time_demand_forecast` | DECIMAL   | 8,2  | 否       | 0.00              | 非负数约束           | 实时需求预测 | 12.5                |
 
 **数据完整性约束规范**：
 
@@ -1646,23 +1649,23 @@ Controller → Memory → Planning → Reasoning → Action → Learning → 履
 
 ```sql
 -- 订单表主键约束
-ALTER TABLE fulfillment_orders 
+ALTER TABLE fulfillment_orders
 ADD CONSTRAINT pk_fulfillment_orders PRIMARY KEY (order_id);
 
 -- 订单项表主键约束
-ALTER TABLE intelligent_order_items 
+ALTER TABLE intelligent_order_items
 ADD CONSTRAINT pk_intelligent_order_items PRIMARY KEY (order_item_id);
 
 -- 产品表主键约束
-ALTER TABLE intelligent_products 
+ALTER TABLE intelligent_products
 ADD CONSTRAINT pk_intelligent_products PRIMARY KEY (sku);
 
 -- 库存表主键约束
-ALTER TABLE dynamic_inventory 
+ALTER TABLE dynamic_inventory
 ADD CONSTRAINT pk_dynamic_inventory PRIMARY KEY (inventory_id);
 
 -- 仓库表主键约束
-ALTER TABLE intelligent_warehouses 
+ALTER TABLE intelligent_warehouses
 ADD CONSTRAINT pk_intelligent_warehouses PRIMARY KEY (warehouse_id);
 ```
 
@@ -1670,27 +1673,27 @@ ADD CONSTRAINT pk_intelligent_warehouses PRIMARY KEY (warehouse_id);
 
 ```sql
 -- 订单项关联订单约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT fk_order_items_order 
-FOREIGN KEY (order_id) REFERENCES fulfillment_orders(order_id) 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT fk_order_items_order
+FOREIGN KEY (order_id) REFERENCES fulfillment_orders(order_id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 订单项关联产品约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT fk_order_items_product 
-FOREIGN KEY (sku) REFERENCES intelligent_products(sku) 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT fk_order_items_product
+FOREIGN KEY (sku) REFERENCES intelligent_products(sku)
 ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- 库存关联仓库约束
-ALTER TABLE dynamic_inventory 
-ADD CONSTRAINT fk_inventory_warehouse 
-FOREIGN KEY (warehouse_id) REFERENCES intelligent_warehouses(warehouse_id) 
+ALTER TABLE dynamic_inventory
+ADD CONSTRAINT fk_inventory_warehouse
+FOREIGN KEY (warehouse_id) REFERENCES intelligent_warehouses(warehouse_id)
 ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- 库存关联产品约束
-ALTER TABLE dynamic_inventory 
-ADD CONSTRAINT fk_inventory_product 
-FOREIGN KEY (sku) REFERENCES intelligent_products(sku) 
+ALTER TABLE dynamic_inventory
+ADD CONSTRAINT fk_inventory_product
+FOREIGN KEY (sku) REFERENCES intelligent_products(sku)
 ON DELETE RESTRICT ON UPDATE CASCADE;
 ```
 
@@ -1698,33 +1701,33 @@ ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ```sql
 -- 订单金额非负约束
-ALTER TABLE fulfillment_orders 
-ADD CONSTRAINT chk_total_amount_positive 
+ALTER TABLE fulfillment_orders
+ADD CONSTRAINT chk_total_amount_positive
 CHECK (total_amount >= 0);
 
 -- AI优先级评分范围约束
-ALTER TABLE fulfillment_orders 
-ADD CONSTRAINT chk_ai_priority_score_range 
+ALTER TABLE fulfillment_orders
+ADD CONSTRAINT chk_ai_priority_score_range
 CHECK (ai_priority_score >= 0.000 AND ai_priority_score <= 1.000);
 
 -- 订单项数量正整数约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT chk_quantity_positive 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT chk_quantity_positive
 CHECK (quantity > 0);
 
 -- 订单项单价非负约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT chk_unit_price_positive 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT chk_unit_price_positive
 CHECK (unit_price >= 0);
 
 -- 库存数量非负约束
-ALTER TABLE dynamic_inventory 
-ADD CONSTRAINT chk_inventory_quantities_positive 
+ALTER TABLE dynamic_inventory
+ADD CONSTRAINT chk_inventory_quantities_positive
 CHECK (available_quantity >= 0 AND reserved_quantity >= 0 AND safety_stock >= 0);
 
 -- 产品重量非负约束
-ALTER TABLE intelligent_products 
-ADD CONSTRAINT chk_weight_positive 
+ALTER TABLE intelligent_products
+ADD CONSTRAINT chk_weight_positive
 CHECK (weight >= 0);
 ```
 
@@ -1732,13 +1735,13 @@ CHECK (weight >= 0);
 
 ```sql
 -- 仓库-产品库存唯一性约束
-ALTER TABLE dynamic_inventory 
-ADD CONSTRAINT uk_warehouse_sku_unique 
+ALTER TABLE dynamic_inventory
+ADD CONSTRAINT uk_warehouse_sku_unique
 UNIQUE (warehouse_id, sku);
 
 -- 订单-产品订单项唯一性约束（防止重复订单项）
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT uk_order_sku_unique 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT uk_order_sku_unique
 UNIQUE (order_id, sku);
 ```
 
@@ -1748,13 +1751,13 @@ UNIQUE (order_id, sku);
 
 ```sql
 -- 期望交付时间不能早于订单创建时间
-ALTER TABLE fulfillment_orders 
-ADD CONSTRAINT chk_delivery_time_logic 
+ALTER TABLE fulfillment_orders
+ADD CONSTRAINT chk_delivery_time_logic
 CHECK (expected_delivery_time IS NULL OR expected_delivery_time >= order_date);
 
 -- 库存更新时间合理性约束
-ALTER TABLE dynamic_inventory 
-ADD CONSTRAINT chk_update_time_logic 
+ALTER TABLE dynamic_inventory
+ADD CONSTRAINT chk_update_time_logic
 CHECK (last_updated <= CURRENT_TIMESTAMP);
 ```
 
@@ -1762,37 +1765,37 @@ CHECK (last_updated <= CURRENT_TIMESTAMP);
 
 ```sql
 -- 订单状态枚举约束
-ALTER TABLE fulfillment_orders 
-ADD CONSTRAINT chk_order_status_enum 
+ALTER TABLE fulfillment_orders
+ADD CONSTRAINT chk_order_status_enum
 CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'FAILED'));
 
 -- 订单项状态枚举约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT chk_order_item_status_enum 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT chk_order_item_status_enum
 CHECK (line_status IN ('PENDING', 'ALLOCATED', 'PICKED', 'SHIPPED', 'DELIVERED', 'CANCELLED'));
 
 -- 产品状态枚举约束
-ALTER TABLE intelligent_products 
-ADD CONSTRAINT chk_product_status_enum 
+ALTER TABLE intelligent_products
+ADD CONSTRAINT chk_product_status_enum
 CHECK (status IN ('ACTIVE', 'INACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK'));
 ```
 
-**3. JSON数据格式约束**：
+**3. JSON 数据格式约束**：
 
 ```sql
 -- 风险评估JSON格式约束
-ALTER TABLE fulfillment_orders 
-ADD CONSTRAINT chk_risk_assessment_json 
+ALTER TABLE fulfillment_orders
+ADD CONSTRAINT chk_risk_assessment_json
 CHECK (JSON_VALID(risk_assessment));
 
 -- 替代产品候选JSON数组约束
-ALTER TABLE intelligent_order_items 
-ADD CONSTRAINT chk_substitute_candidates_json 
+ALTER TABLE intelligent_order_items
+ADD CONSTRAINT chk_substitute_candidates_json
 CHECK (JSON_VALID(substitute_candidates) AND JSON_TYPE(substitute_candidates) = 'ARRAY');
 
 -- 语义向量JSON格式约束
-ALTER TABLE intelligent_products 
-ADD CONSTRAINT chk_semantic_vector_json 
+ALTER TABLE intelligent_products
+ADD CONSTRAINT chk_semantic_vector_json
 CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 ```
 
@@ -1812,12 +1815,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **2. 数据关系属性模型**：
 
-| 关系类型 | 关系属性 | 数据支持 | 业务价值 |
-|---------|---------|---------|---------|
-| **订单-订单项关系** | 订单状态、项目状态、数量约束 | 支持订单完整性验证 | 确保订单数据一致性 |
-| **产品-库存关系** | 库存数量、安全库存、预留数量 | 支持库存实时查询 | 提供准确库存信息 |
-| **产品-替代关系** | 替代优先级、兼容性评分、适用条件 | 支持替代产品推荐 | 提升订单满足率 |
-| **仓库-库存关系** | 仓库容量、存储成本、配送范围 | 支持仓库优化分析 | 优化仓储和配送效率 |
+| 关系类型            | 关系属性                         | 数据支持           | 业务价值           |
+| ------------------- | -------------------------------- | ------------------ | ------------------ |
+| **订单-订单项关系** | 订单状态、项目状态、数量约束     | 支持订单完整性验证 | 确保订单数据一致性 |
+| **产品-库存关系**   | 库存数量、安全库存、预留数量     | 支持库存实时查询   | 提供准确库存信息   |
+| **产品-替代关系**   | 替代优先级、兼容性评分、适用条件 | 支持替代产品推荐   | 提升订单满足率     |
+| **仓库-库存关系**   | 仓库容量、存储成本、配送范围     | 支持仓库优化分析   | 优化仓储和配送效率 |
 
 **3. 产品替代关系数据模型**：
 
@@ -1825,25 +1828,25 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **产品替代关系属性模型**：
 
-| 替代属性 | 数据类型 | 数据来源 | 计算逻辑 | 业务权重 |
-|---------|---------|----------|---------|---------|
-| **产品相似度** | Float(0.0-1.0) | 产品属性数据 | 基于产品特征向量的相似度计算 | 权重： 0.3 |
-| **功能匹配度** | Float(0.0-1.0) | 产品规格数据 | 产品功能特性的匹配度评估 | 权重： 0.25 |
-| **客户接受度** | Float(0.0-1.0) | 历史交易数据 | 基于客户历史选择的接受度统计 | 权重： 0.2 |
-| **库存可用性** | Float(0.0-1.0) | 实时库存数据 | 库存数量和周转率的综合指标 | 权重： 0.15 |
-| **成本效益比** | Float(0.0-1.0) | 成本和价格数据 | 替代对成本和效率的影响评估 | 权重： 0.1 |
+| 替代属性       | 数据类型       | 数据来源       | 计算逻辑                     | 业务权重    |
+| -------------- | -------------- | -------------- | ---------------------------- | ----------- |
+| **产品相似度** | Float(0.0-1.0) | 产品属性数据   | 基于产品特征向量的相似度计算 | 权重： 0.3  |
+| **功能匹配度** | Float(0.0-1.0) | 产品规格数据   | 产品功能特性的匹配度评估     | 权重： 0.25 |
+| **客户接受度** | Float(0.0-1.0) | 历史交易数据   | 基于客户历史选择的接受度统计 | 权重： 0.2  |
+| **库存可用性** | Float(0.0-1.0) | 实时库存数据   | 库存数量和周转率的综合指标   | 权重： 0.15 |
+| **成本效益比** | Float(0.0-1.0) | 成本和价格数据 | 替代对成本和效率的影响评估   | 权重： 0.1  |
 
 **数据处理上下文增强属性**：
 
 为支持数据处理过程的追踪和优化，在关系实体中增加以下数据处理上下文属性：
 
-| 数据上下文属性 | 数据类型 | 应用场景 | 数据支持 |
-|----------------|---------|---------|---------|
-| **处理会话 ID** | String | 跟踪单次数据处理过程 | 数据链路追踪、问题诊断 |
-| **处理上下文** | JSON | 存储数据处理过程中的中间状态 | 处理过程可追溯性、调试支持 |
-| **数据质量评分** | Float(0.0-1.0) | 量化数据处理结果的质量 | 质量控制、异常检测触发 |
-| **优化反馈标识** | Boolean | 标记是否需要处理优化反馈 | 处理策略优化、性能改进 |
-| **异常状态标记** | JSON | 记录数据处理异常状态 | 异常处理、系统稳定性 |
+| 数据上下文属性   | 数据类型       | 应用场景                     | 数据支持                   |
+| ---------------- | -------------- | ---------------------------- | -------------------------- |
+| **处理会话 ID**  | String         | 跟踪单次数据处理过程         | 数据链路追踪、问题诊断     |
+| **处理上下文**   | JSON           | 存储数据处理过程中的中间状态 | 处理过程可追溯性、调试支持 |
+| **数据质量评分** | Float(0.0-1.0) | 量化数据处理结果的质量       | 质量控制、异常检测触发     |
+| **优化反馈标识** | Boolean        | 标记是否需要处理优化反馈     | 处理策略优化、性能改进     |
+| **异常状态标记** | JSON           | 记录数据处理异常状态         | 异常处理、系统稳定性       |
 
 **数据处理链属性模型**：
 
@@ -1968,12 +1971,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据流分层模型**：
 
-| 数据流层级 | 处理延迟 | 数据类型 | 数据特征 | 存储方式 | 技术选型 |
-|-----------|---------|---------|---------|---------|---------|
-| **实时事件流** | < 50ms | 订单事件、库存变更、状态更新 | 高频、小数据量、时效性强 | 内存缓存 | Apache Kafka + Redis |
-| **业务数据流** | < 200ms | 订单数据、产品数据、客户数据 | 中频、结构化、一致性要求高 | 关系型数据库 | PostgreSQL + Debezium |
-| **分析数据流** | < 500ms | 处理结果、性能指标、统计数据 | 低频、大数据量、分析导向 | 列式存储 | ClickHouse + Apache Flink |
-| **归档数据流** | < 1s | 历史数据、审计日志、备份数据 | 批量、压缩存储、长期保存 | 对象存储 | MinIO + Apache Spark |
+| 数据流层级     | 处理延迟 | 数据类型                     | 数据特征                   | 存储方式     | 技术选型                  |
+| -------------- | -------- | ---------------------------- | -------------------------- | ------------ | ------------------------- |
+| **实时事件流** | < 50ms   | 订单事件、库存变更、状态更新 | 高频、小数据量、时效性强   | 内存缓存     | Apache Kafka + Redis      |
+| **业务数据流** | < 200ms  | 订单数据、产品数据、客户数据 | 中频、结构化、一致性要求高 | 关系型数据库 | PostgreSQL + Debezium     |
+| **分析数据流** | < 500ms  | 处理结果、性能指标、统计数据 | 低频、大数据量、分析导向   | 列式存储     | ClickHouse + Apache Flink |
+| **归档数据流** | < 1s     | 历史数据、审计日志、备份数据 | 批量、压缩存储、长期保存   | 对象存储     | MinIO + Apache Spark      |
 
 **数据流处理管道**：
 
@@ -2015,13 +2018,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据反馈流设计**：
 
-| 反馈类型 | 数据源 | 反馈目标 | 反馈延迟 | 反馈内容 | 数据优化作用 |
-|---------|-------|---------|---------|---------|-------------|
-| **数据质量反馈** | 数据验证层 | 数据采集层 | < 100ms | 数据完整性、准确性指标 | 采集策略优化 |
-| **处理性能反馈** | 数据处理层 | 数据存储层 | < 200ms | 处理延迟、吞吐量指标 | 存储策略优化 |
-| **查询性能反馈** | 数据服务层 | 数据存储层 | < 300ms | 查询响应时间、命中率 | 索引策略优化 |
-| **存储状态反馈** | 存储监控 | 数据管理层 | < 50ms | 存储容量、I/O性能 | 存储资源调整 |
-| **系统性能反馈** | 全系统监控 | 数据架构层 | < 500ms | 整体性能指标、瓶颈分析 | 架构优化 |
+| 反馈类型         | 数据源     | 反馈目标   | 反馈延迟 | 反馈内容               | 数据优化作用 |
+| ---------------- | ---------- | ---------- | -------- | ---------------------- | ------------ |
+| **数据质量反馈** | 数据验证层 | 数据采集层 | < 100ms  | 数据完整性、准确性指标 | 采集策略优化 |
+| **处理性能反馈** | 数据处理层 | 数据存储层 | < 200ms  | 处理延迟、吞吐量指标   | 存储策略优化 |
+| **查询性能反馈** | 数据服务层 | 数据存储层 | < 300ms  | 查询响应时间、命中率   | 索引策略优化 |
+| **存储状态反馈** | 存储监控   | 数据管理层 | < 50ms   | 存储容量、I/O 性能     | 存储资源调整 |
+| **系统性能反馈** | 全系统监控 | 数据架构层 | < 500ms  | 整体性能指标、瓶颈分析 | 架构优化     |
 
 **数据反馈处理管道**：
 
@@ -2079,13 +2082,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据动态路由策略**：
 
-| 路由策略 | 路由依据 | 适用场景 | 路由算法 | 性能优化 |
-|---------|---------|---------|---------|---------|
-| **负载均衡路由** | 系统负载状态 | 高并发场景 | 加权轮询 | 负载分散、响应优化 |
-| **数据类型路由** | 数据特征属性 | 异构数据处理 | 特征匹配 | 处理效率优化 |
-| **地理位置路由** | 数据源地理位置 | 分布式部署 | 就近原则 | 延迟优化 |
-| **业务优先级路由** | 数据重要性 | 关键业务场景 | 优先级队列 | 业务保障 |
-| **故障转移路由** | 节点健康状态 | 故障恢复场景 | 健康检查 | 可用性保障 |
+| 路由策略           | 路由依据       | 适用场景     | 路由算法   | 性能优化           |
+| ------------------ | -------------- | ------------ | ---------- | ------------------ |
+| **负载均衡路由**   | 系统负载状态   | 高并发场景   | 加权轮询   | 负载分散、响应优化 |
+| **数据类型路由**   | 数据特征属性   | 异构数据处理 | 特征匹配   | 处理效率优化       |
+| **地理位置路由**   | 数据源地理位置 | 分布式部署   | 就近原则   | 延迟优化           |
+| **业务优先级路由** | 数据重要性     | 关键业务场景 | 优先级队列 | 业务保障           |
+| **故障转移路由**   | 节点健康状态   | 故障恢复场景 | 健康检查   | 可用性保障         |
 
 **数据路由决策引擎**：
 
@@ -2147,12 +2150,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **批量数据分层策略**：
 
-| 数据层级 | 数据特征 | 存储格式 | 更新频率 | 处理能力支持 |
-|---------|---------|---------|---------|---------------|
-| **原始数据层** | 全量历史数据 | Parquet/ORC | 实时追加 | 数据挖掘、模式识别 |
-| **清洗数据层** | 标准化业务数据 | Delta Lake | 小时级 | 分析计算、报表生成 |
-| **聚合数据层** | 汇总指标数据 | 列式存储 | 日级 | 快速查询、趋势分析 |
-| **特征数据层** | 机器学习特征 | 特征存储 | 按需更新 | 模型训练、预测分析 |
+| 数据层级       | 数据特征       | 存储格式    | 更新频率 | 处理能力支持       |
+| -------------- | -------------- | ----------- | -------- | ------------------ |
+| **原始数据层** | 全量历史数据   | Parquet/ORC | 实时追加 | 数据挖掘、模式识别 |
+| **清洗数据层** | 标准化业务数据 | Delta Lake  | 小时级   | 分析计算、报表生成 |
+| **聚合数据层** | 汇总指标数据   | 列式存储    | 日级     | 快速查询、趋势分析 |
+| **特征数据层** | 机器学习特征   | 特征存储    | 按需更新 | 模型训练、预测分析 |
 
 **批量数据处理管道设计**：
 
@@ -2198,13 +2201,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据验证层级设计**：
 
-| 验证层级 | 验证时机 | 验证范围 | 验证重点 | 质量保障目标 |
-|---------|---------|---------|---------|---------------|
+| 验证层级         | 验证时机       | 验证范围       | 验证重点             | 质量保障目标   |
+| ---------------- | -------------- | -------------- | -------------------- | -------------- |
 | **数据输入验证** | 数据进入系统前 | 所有外部数据源 | 格式、完整性、时效性 | 防止脏数据进入 |
-| **数据处理验证** | 数据处理过程中 | 数据转换环节 | 转换逻辑、约束条件 | 保障处理正确性 |
-| **数据存储验证** | 数据存储前 | 目标存储系统 | 一致性、完整性 | 确保存储可靠性 |
-| **数据输出验证** | 数据输出前 | 下游系统接口 | 格式规范、业务规则 | 保障输出质量 |
-| **数据使用验证** | 数据使用时 | 业务应用层 | 业务逻辑、权限控制 | 确保使用安全性 |
+| **数据处理验证** | 数据处理过程中 | 数据转换环节   | 转换逻辑、约束条件   | 保障处理正确性 |
+| **数据存储验证** | 数据存储前     | 目标存储系统   | 一致性、完整性       | 确保存储可靠性 |
+| **数据输出验证** | 数据输出前     | 下游系统接口   | 格式规范、业务规则   | 保障输出质量   |
+| **数据使用验证** | 数据使用时     | 业务应用层     | 业务逻辑、权限控制   | 确保使用安全性 |
 
 **数据验证规则体系**：
 
@@ -2276,12 +2279,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **业务域数据治理需求**：
 
-| 业务域 | 核心数据治理需求 | 质量要求 | 安全要求 |
-|--------|----------------|---------|---------|
+| 业务域       | 核心数据治理需求                     | 质量要求           | 安全要求         |
+| ------------ | ------------------------------------ | ------------------ | ---------------- |
 | **订单管理** | 订单数据完整性验证、实时数据质量监控 | 数据完整率 ≥ 99.5% | 订单敏感信息脱敏 |
-| **库存管理** | 库存数据实时同步、异常数据告警 | 数据延迟 ≤ 5 分钟 | 库存数据加密传输 |
-| **客户管理** | 客户数据隐私保护、数据血缘追踪 | 数据一致性 ≥ 99.8% | 客户隐私数据保护 |
-| **规则管理** | 规则数据变更影响分析、元数据管理 | 数据准确率 ≥ 99.9% | 业务规则访问控制 |
+| **库存管理** | 库存数据实时同步、异常数据告警       | 数据延迟 ≤ 5 分钟  | 库存数据加密传输 |
+| **客户管理** | 客户数据隐私保护、数据血缘追踪       | 数据一致性 ≥ 99.8% | 客户隐私数据保护 |
+| **规则管理** | 规则数据变更影响分析、元数据管理     | 数据准确率 ≥ 99.9% | 业务规则访问控制 |
 
 **数据血缘追踪需求**：
 
@@ -2325,12 +2328,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 系统对数据质量监控的需求：
 
-| 质量维度 | 业务需求 | 监控要求 | 异常处理需求 |
-|---------|---------|---------|-------------|
-| **准确性** | 确保订单信息准确，避免业务错误 | 实时监控 | 自动告警 + 人工介入 |
-| **完整性** | 保证业务处理所需数据字段完整 | 实时监控 | 数据补全 + 降级策略 |
-| **一致性** | 确保多系统数据一致性 | 小时级监控 | 数据同步 + 冲突解决 |
-| **及时性** | 支持实时业务响应要求 | 实时监控 | 缓存策略 + 异步更新 |
+| 质量维度   | 业务需求                       | 监控要求   | 异常处理需求        |
+| ---------- | ------------------------------ | ---------- | ------------------- |
+| **准确性** | 确保订单信息准确，避免业务错误 | 实时监控   | 自动告警 + 人工介入 |
+| **完整性** | 保证业务处理所需数据字段完整   | 实时监控   | 数据补全 + 降级策略 |
+| **一致性** | 确保多系统数据一致性           | 小时级监控 | 数据同步 + 冲突解决 |
+| **及时性** | 支持实时业务响应要求           | 实时监控   | 缓存策略 + 异步更新 |
 
 **数据治理平台集成需求**：
 
@@ -2349,22 +2352,22 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **业务数据标准规范**：
 
-| 数据类别 | 标准化要求 | 数据格式规范 | 编码规则 | 验证规则 |
-|---------|-----------|-------------|---------|---------|
-| **订单数据** | 订单号唯一性、状态标准化 | 订单号：20位数字，状态：枚举值 | 前缀+时间戳+序列号 | 格式校验+业务规则校验 |
-| **商品数据** | SKU 编码标准化、分类体系统一 | SKU：字母数字组合，分类：层级编码 | 品牌+类别+规格+序号 | 唯一性校验+分类校验 |
-| **客户数据** | 客户编号标准化、信息完整性 | 客户号：数字编码，联系方式：标准格式 | 地区+类型+序列号 | 格式校验+重复性检查 |
-| **库存数据** | 库存单位标准化、数量精度统一 | 数量：小数点后2位，单位：标准代码 | 国际标准单位代码 | 精度校验+范围校验 |
-| **地址数据** | 地址格式标准化、编码统一 | 省市区：标准编码，详细地址：结构化 | 国标行政区划代码 | 地址有效性校验 |
+| 数据类别     | 标准化要求                   | 数据格式规范                         | 编码规则            | 验证规则              |
+| ------------ | ---------------------------- | ------------------------------------ | ------------------- | --------------------- |
+| **订单数据** | 订单号唯一性、状态标准化     | 订单号：20 位数字，状态：枚举值      | 前缀+时间戳+序列号  | 格式校验+业务规则校验 |
+| **商品数据** | SKU 编码标准化、分类体系统一 | SKU：字母数字组合，分类：层级编码    | 品牌+类别+规格+序号 | 唯一性校验+分类校验   |
+| **客户数据** | 客户编号标准化、信息完整性   | 客户号：数字编码，联系方式：标准格式 | 地区+类型+序列号    | 格式校验+重复性检查   |
+| **库存数据** | 库存单位标准化、数量精度统一 | 数量：小数点后 2 位，单位：标准代码  | 国际标准单位代码    | 精度校验+范围校验     |
+| **地址数据** | 地址格式标准化、编码统一     | 省市区：标准编码，详细地址：结构化   | 国标行政区划代码    | 地址有效性校验        |
 
 **技术数据标准规范**：
 
-| 技术标准 | 规范要求 | 实施标准 | 验证方法 |
-|---------|---------|---------|---------|
-| **数据类型标准** | 统一数据类型定义和精度要求 | 字符串：UTF-8编码，数值：IEEE 754标准 | Schema 验证 |
-| **时间格式标准** | 统一时间戳格式和时区处理 | ISO 8601 格式，UTC 时区存储 | 格式解析验证 |
-| **编码标准** | 统一字符编码和数据压缩标准 | UTF-8 字符编码，gzip 压缩传输 | 编码检测验证 |
-| **接口标准** | 统一 API 接口规范和数据交换格式 | RESTful API，JSON 数据格式 | 接口测试验证 |
+| 技术标准         | 规范要求                        | 实施标准                                | 验证方法     |
+| ---------------- | ------------------------------- | --------------------------------------- | ------------ |
+| **数据类型标准** | 统一数据类型定义和精度要求      | 字符串：UTF-8 编码，数值：IEEE 754 标准 | Schema 验证  |
+| **时间格式标准** | 统一时间戳格式和时区处理        | ISO 8601 格式，UTC 时区存储             | 格式解析验证 |
+| **编码标准**     | 统一字符编码和数据压缩标准      | UTF-8 字符编码，gzip 压缩传输           | 编码检测验证 |
+| **接口标准**     | 统一 API 接口规范和数据交换格式 | RESTful API，JSON 数据格式              | 接口测试验证 |
 
 **数据命名规范**：
 
@@ -2400,14 +2403,14 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据质量维度定义**：
 
-| 质量维度 | 定义说明 | 评估指标 | 计算方法 | 目标阈值 |
-|---------|---------|---------|---------|---------|
-| **准确性** | 数据与真实情况的符合程度 | 准确率 = 正确记录数 / 总记录数 | 业务规则验证 + 人工抽检 | ≥ 99.5% |
-| **完整性** | 数据的完整程度和缺失情况 | 完整率 = 非空记录数 / 总记录数 | 必填字段检查 + 关联完整性 | ≥ 99.8% |
-| **一致性** | 数据在不同系统间的一致程度 | 一致率 = 一致记录数 / 总记录数 | 跨系统数据比对 | ≥ 99.0% |
-| **及时性** | 数据的时效性和更新频率 | 及时率 = 及时更新记录数 / 总记录数 | 时间戳比较 + 业务规则 | ≥ 95.0% |
-| **唯一性** | 数据的唯一性和重复情况 | 唯一率 = 唯一记录数 / 总记录数 | 重复检测算法 | ≥ 99.9% |
-| **有效性** | 数据格式和取值的有效性 | 有效率 = 有效记录数 / 总记录数 | 格式校验 + 业务规则 | ≥ 99.7% |
+| 质量维度   | 定义说明                   | 评估指标                           | 计算方法                  | 目标阈值 |
+| ---------- | -------------------------- | ---------------------------------- | ------------------------- | -------- |
+| **准确性** | 数据与真实情况的符合程度   | 准确率 = 正确记录数 / 总记录数     | 业务规则验证 + 人工抽检   | ≥ 99.5%  |
+| **完整性** | 数据的完整程度和缺失情况   | 完整率 = 非空记录数 / 总记录数     | 必填字段检查 + 关联完整性 | ≥ 99.8%  |
+| **一致性** | 数据在不同系统间的一致程度 | 一致率 = 一致记录数 / 总记录数     | 跨系统数据比对            | ≥ 99.0%  |
+| **及时性** | 数据的时效性和更新频率     | 及时率 = 及时更新记录数 / 总记录数 | 时间戳比较 + 业务规则     | ≥ 95.0%  |
+| **唯一性** | 数据的唯一性和重复情况     | 唯一率 = 唯一记录数 / 总记录数     | 重复检测算法              | ≥ 99.9%  |
+| **有效性** | 数据格式和取值的有效性     | 有效率 = 有效记录数 / 总记录数     | 格式校验 + 业务规则       | ≥ 99.7%  |
 
 **数据质量监控机制**：
 
@@ -2437,14 +2440,14 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **数据质量改进流程**：
 
-| 改进阶段 | 主要活动 | 输出成果 | 责任方 |
-|---------|---------|---------|--------|
-| **问题识别** | 质量监控、异常检测、用户反馈 | 质量问题清单、影响评估报告 | 数据质量团队 |
-| **根因分析** | 数据血缘分析、流程梳理、系统检查 | 根因分析报告、改进建议 | 业务分析师 |
-| **方案设计** | 改进方案设计、技术方案评估 | 改进实施方案、技术设计文档 | 技术架构师 |
-| **方案实施** | 系统改造、流程优化、规则调整 | 系统更新、流程文档、配置变更 | 开发团队 |
-| **效果验证** | 质量测试、效果评估、用户验收 | 测试报告、效果评估、验收确认 | 测试团队 |
-| **持续监控** | 质量监控、趋势分析、定期评估 | 监控报告、趋势分析、改进建议 | 运维团队 |
+| 改进阶段     | 主要活动                         | 输出成果                     | 责任方       |
+| ------------ | -------------------------------- | ---------------------------- | ------------ |
+| **问题识别** | 质量监控、异常检测、用户反馈     | 质量问题清单、影响评估报告   | 数据质量团队 |
+| **根因分析** | 数据血缘分析、流程梳理、系统检查 | 根因分析报告、改进建议       | 业务分析师   |
+| **方案设计** | 改进方案设计、技术方案评估       | 改进实施方案、技术设计文档   | 技术架构师   |
+| **方案实施** | 系统改造、流程优化、规则调整     | 系统更新、流程文档、配置变更 | 开发团队     |
+| **效果验证** | 质量测试、效果评估、用户验收     | 测试报告、效果评估、验收确认 | 测试团队     |
+| **持续监控** | 质量监控、趋势分析、定期评估     | 监控报告、趋势分析、改进建议 | 运维团队     |
 
 ---
 
@@ -2458,13 +2461,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **选型决策矩阵**：
 
-| 评估维度 | 权重 | 评估标准 | 量化指标 |
-|---------|------|---------|---------|
-| **业务适配性** | 30% | 支持复杂业务逻辑和决策流程 | 功能覆盖度、扩展性、定制能力 |
-| **性能表现** | 25% | 高并发、低延迟、大数据处理 | QPS 、响应时间、吞吐量 |
-| **技术成熟度** | 20% | 生产级稳定性和社区支持 | 版本稳定性、社区活跃度、文档质量 |
-| **开发效率** | 15% | 快速迭代和功能交付 | 学习曲线、开发工具、调试能力 |
-| **运维成本** | 10% | 部署、监控、维护复杂度 | 自动化程度、故障排查、运维工具 |
+| 评估维度       | 权重 | 评估标准                   | 量化指标                         |
+| -------------- | ---- | -------------------------- | -------------------------------- |
+| **业务适配性** | 30%  | 支持复杂业务逻辑和决策流程 | 功能覆盖度、扩展性、定制能力     |
+| **性能表现**   | 25%  | 高并发、低延迟、大数据处理 | QPS 、响应时间、吞吐量           |
+| **技术成熟度** | 20%  | 生产级稳定性和社区支持     | 版本稳定性、社区活跃度、文档质量 |
+| **开发效率**   | 15%  | 快速迭代和功能交付         | 学习曲线、开发工具、调试能力     |
+| **运维成本**   | 10%  | 部署、监控、维护复杂度     | 自动化程度、故障排查、运维工具   |
 
 **技术选型原则**：
 
@@ -2477,10 +2480,10 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心 Agent 框架对比**：
 
-| 框架 | 优势 | 劣势 | 适用场景 | 评分 |
-|------|------|------|---------|------|
+| 框架                    | 优势                           | 劣势                     | 适用场景               | 评分   |
+| ----------------------- | ------------------------------ | ------------------------ | ---------------------- | ------ |
 | **LangChain/LangGraph** | 生态丰富、灵活可扩展、社区活跃 | 学习曲线陡峭、版本迭代快 | 复杂业务逻辑、深度定制 | 9.2/10 |
-| **Dify Platform** | 可视化编排、快速上手、模板丰富 | 定制能力有限、平台依赖 | 快速原型、标准流程 | 7.8/10 |
+| **Dify Platform**       | 可视化编排、快速上手、模板丰富 | 定制能力有限、平台依赖   | 快速原型、标准流程     | 7.8/10 |
 
 **最终选型决策**：
 
@@ -2492,12 +2495,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **模型能力对比**：
 
-| 模型 | 推理能力 | API 稳定性 | 成本 | 延迟 | 适用场景 | 评分 |
-|------|---------|-----------|------|------|---------|------|
-| **DeepSeek-R1-0528** | 优秀 | 极高 | 高 | 极低 | 复杂推理、代码生成、数学计算 | 9.5/10 |
-| **Qwen2.5-Max** | 优秀 | 极高 | 高 | 低 | 多语言理解、知识问答、指令遵循 | 9.2/10 |
-| **Qwen2.5-VL-72B** | 优秀 | 高 | 中等 | 低 | 多模态理解、视觉代理、文档解析 | 9.0/10 |
-| **本地模型** | 可控 | 中等 | 低 | 高 | 数据安全、成本控制 | 7.5/10 |
+| 模型                 | 推理能力 | API 稳定性 | 成本 | 延迟 | 适用场景                       | 评分   |
+| -------------------- | -------- | ---------- | ---- | ---- | ------------------------------ | ------ |
+| **DeepSeek-R1-0528** | 优秀     | 极高       | 高   | 极低 | 复杂推理、代码生成、数学计算   | 9.5/10 |
+| **Qwen2.5-Max**      | 优秀     | 极高       | 高   | 低   | 多语言理解、知识问答、指令遵循 | 9.2/10 |
+| **Qwen2.5-VL-72B**   | 优秀     | 高         | 中等 | 低   | 多模态理解、视觉代理、文档解析 | 9.0/10 |
+| **本地模型**         | 可控     | 中等       | 低   | 高   | 数据安全、成本控制             | 7.5/10 |
 
 ### 5.2 技术架构方案对比
 
@@ -2505,19 +2508,19 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **关系型数据库选型**：
 
-| 数据库 | 优势 | 劣势 | 适用场景 | 评分 |
-|--------|------|------|---------|------|
-| **PostgreSQL** | ACID 完整性、 JSON 支持、扩展性强 | 配置复杂、内存消耗大 | 订单数据、复杂查询 | 9.1/10 |
-| **MySQL** | 生态成熟、性能优秀、运维简单 | JSON 支持有限、扩展性一般 | 用户数据、简单查询 | 8.2/10 |
+| 数据库         | 优势                              | 劣势                      | 适用场景           | 评分   |
+| -------------- | --------------------------------- | ------------------------- | ------------------ | ------ |
+| **PostgreSQL** | ACID 完整性、 JSON 支持、扩展性强 | 配置复杂、内存消耗大      | 订单数据、复杂查询 | 9.1/10 |
+| **MySQL**      | 生态成熟、性能优秀、运维简单      | JSON 支持有限、扩展性一般 | 用户数据、简单查询 | 8.2/10 |
 
 **NoSQL 数据库选型**：
 
-| 数据库类型 | 技术选择 | 核心优势 | 应用场景 | 选型理由 |
-|-----------|---------|---------|---------|---------|
-| **图数据库** | Neo4j | 关系查询、路径分析 | 供应链网络、产品关系 | 复杂关系建模需求 |
-| **向量数据库** | Qdrant | 高性能相似性搜索 | 语义搜索、知识检索 | AI 原生应用需求 |
-| **时序数据库** | InfluxDB | 时间序列优化 | 监控指标、业务分析 | 大量时序数据处理 |
-| **文档数据库** | MongoDB | 灵活 Schema 、水平扩展 | 配置数据、日志存储 | 半结构化数据存储 |
+| 数据库类型     | 技术选择 | 核心优势               | 应用场景             | 选型理由         |
+| -------------- | -------- | ---------------------- | -------------------- | ---------------- |
+| **图数据库**   | Neo4j    | 关系查询、路径分析     | 供应链网络、产品关系 | 复杂关系建模需求 |
+| **向量数据库** | Qdrant   | 高性能相似性搜索       | 语义搜索、知识检索   | AI 原生应用需求  |
+| **时序数据库** | InfluxDB | 时间序列优化           | 监控指标、业务分析   | 大量时序数据处理 |
+| **文档数据库** | MongoDB  | 灵活 Schema 、水平扩展 | 配置数据、日志存储   | 半结构化数据存储 |
 
 **最终选型决策**：
 
@@ -2530,17 +2533,17 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **消息中间件选型**：
 
-| 技术 | 核心优势 | 适用场景 | 选型理由 |
-|------|---------|---------|---------|
-| **Apache Kafka** | 高吞吐、持久化、分布式 | 事件流、数据管道 | 订单事件流处理的核心组件 |
-| **RabbitMQ** | 低延迟、灵活路由、易运维 | 业务消息、任务队列 | 业务通知和任务分发的首选 |
+| 技术             | 核心优势                 | 适用场景           | 选型理由                 |
+| ---------------- | ------------------------ | ------------------ | ------------------------ |
+| **Apache Kafka** | 高吞吐、持久化、分布式   | 事件流、数据管道   | 订单事件流处理的核心组件 |
+| **RabbitMQ**     | 低延迟、灵活路由、易运维 | 业务消息、任务队列 | 业务通知和任务分发的首选 |
 
 **流处理引擎选型**：
 
-| 引擎 | 核心能力 | 技术特点 | 应用场景 |
-|------|---------|---------|---------|
-| **Apache Flink** | 低延迟流处理、状态管理 | 事件时间处理、容错机制 | 实时决策引擎、复杂事件处理 |
-| **Kafka Streams** | 轻量级、 Kafka 原生 | 简单部署、流表对偶 | 简单流处理、数据转换 |
+| 引擎              | 核心能力               | 技术特点               | 应用场景                   |
+| ----------------- | ---------------------- | ---------------------- | -------------------------- |
+| **Apache Flink**  | 低延迟流处理、状态管理 | 事件时间处理、容错机制 | 实时决策引擎、复杂事件处理 |
+| **Kafka Streams** | 轻量级、 Kafka 原生    | 简单部署、流表对偶     | 简单流处理、数据转换       |
 
 **技术选型决策**：
 
@@ -2552,16 +2555,16 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **模型推理框架选型**：
 
-| 框架 | 技术特点 | 适用场景 | 选型理由 |
-|------|---------|---------|---------|
-| **vLLM** | 高性能推理、动态批处理 | 生产环境大模型推理 | 支持高并发订单处理需求 |
-| **Transformers** | 丰富模型库、易于集成 | 模型研发、快速原型 | 模型验证和功能开发 |
+| 框架             | 技术特点               | 适用场景           | 选型理由               |
+| ---------------- | ---------------------- | ------------------ | ---------------------- |
+| **vLLM**         | 高性能推理、动态批处理 | 生产环境大模型推理 | 支持高并发订单处理需求 |
+| **Transformers** | 丰富模型库、易于集成   | 模型研发、快速原型 | 模型验证和功能开发     |
 
 **向量检索技术选型**：
 
-| 技术 | 核心能力 | 技术优势 | 应用场景 |
-|------|---------|---------|---------|
-| **Qdrant** | 高性能向量检索、实时更新 | 易部署、低运维成本 | 产品相似性搜索、知识库检索 |
+| 技术       | 核心能力                     | 技术优势           | 应用场景                     |
+| ---------- | ---------------------------- | ------------------ | ---------------------------- |
+| **Qdrant** | 高性能向量检索、实时更新     | 易部署、低运维成本 | 产品相似性搜索、知识库检索   |
 | **Milvus** | 大规模分布式检索、多向量类型 | 高扩展性、丰富功能 | 大规模向量数据、复杂查询场景 |
 
 **技术选型决策**：
@@ -2632,13 +2635,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `validate_order` | 订单信息验证，包括客户信息、产品规格、数量等 | 确保订单数据准确性，避免后续处理错误 |
-| `check_inventory` | 实时库存查询，支持多仓库、多批次查询 | 提供准确的库存可用性信息 |
-| `reserve_inventory` | 库存预留与锁定，防止超卖 | 保障订单履约的库存可用性 |
-| `get_product_info` | 产品详细信息查询，包括规格、价格、替代品 | 支持产品可行性分析和替代方案推荐 |
-| `update_order_status` | 订单状态更新，记录履约进度 | 维护订单全生命周期状态跟踪 |
+| 工具方法              | 功能描述                                     | 业务价值                             |
+| --------------------- | -------------------------------------------- | ------------------------------------ |
+| `validate_order`      | 订单信息验证，包括客户信息、产品规格、数量等 | 确保订单数据准确性，避免后续处理错误 |
+| `check_inventory`     | 实时库存查询，支持多仓库、多批次查询         | 提供准确的库存可用性信息             |
+| `reserve_inventory`   | 库存预留与锁定，防止超卖                     | 保障订单履约的库存可用性             |
+| `get_product_info`    | 产品详细信息查询，包括规格、价格、替代品     | 支持产品可行性分析和替代方案推荐     |
+| `update_order_status` | 订单状态更新，记录履约进度                   | 维护订单全生命周期状态跟踪           |
 
 #### 6.2.2 WMS MCP Server - 仓储与配送管理
 
@@ -2646,13 +2649,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `create_pick_task` | 创建拣货任务，优化拣货路径 | 提升仓储作业效率 |
-| `track_warehouse_operation` | 跟踪仓储作业进度，监控异常 | 实时掌握仓储执行状态 |
-| `plan_shipment` | 制定配送计划，优化配送路线 | 降低物流成本，提升配送效率 |
-| `track_shipment` | 货物配送跟踪，实时位置更新 | 提供配送透明度，提升客户体验 |
-| `confirm_delivery` | 配送完成确认，客户签收记录 | 完成履约交付确认 |
+| 工具方法                    | 功能描述                   | 业务价值                     |
+| --------------------------- | -------------------------- | ---------------------------- |
+| `create_pick_task`          | 创建拣货任务，优化拣货路径 | 提升仓储作业效率             |
+| `track_warehouse_operation` | 跟踪仓储作业进度，监控异常 | 实时掌握仓储执行状态         |
+| `plan_shipment`             | 制定配送计划，优化配送路线 | 降低物流成本，提升配送效率   |
+| `track_shipment`            | 货物配送跟踪，实时位置更新 | 提供配送透明度，提升客户体验 |
+| `confirm_delivery`          | 配送完成确认，客户签收记录 | 完成履约交付确认             |
 
 #### 6.2.3 CRM MCP Server - 客户关系管理
 
@@ -2660,13 +2663,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `check_customer_credit` | 客户信用状态查询，授信额度检查 | 降低履约风险，保障资金安全 |
-| `get_customer_preferences` | 客户偏好信息查询，历史订单分析 | 提供个性化履约服务 |
-| `notify_customer` | 客户通知服务，订单状态推送 | 保持客户知情，维护客户关系 |
-| `handle_service_request` | 客户服务请求处理，投诉管理 | 快速响应客户需求，提升服务质量 |
-| `collect_feedback` | 客户满意度调查，服务评价收集 | 持续改进履约服务质量 |
+| 工具方法                   | 功能描述                       | 业务价值                       |
+| -------------------------- | ------------------------------ | ------------------------------ |
+| `check_customer_credit`    | 客户信用状态查询，授信额度检查 | 降低履约风险，保障资金安全     |
+| `get_customer_preferences` | 客户偏好信息查询，历史订单分析 | 提供个性化履约服务             |
+| `notify_customer`          | 客户通知服务，订单状态推送     | 保持客户知情，维护客户关系     |
+| `handle_service_request`   | 客户服务请求处理，投诉管理     | 快速响应客户需求，提升服务质量 |
+| `collect_feedback`         | 客户满意度调查，服务评价收集   | 持续改进履约服务质量           |
 
 #### 6.2.4 生产 MCP Server - 生产计划与执行
 
@@ -2674,13 +2677,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `check_production_capacity` | 生产能力查询，交期预测 | 提供准确的生产承诺 |
-| `create_production_plan` | 生产计划制定，资源分配 | 优化生产效率，确保按期交付 |
-| `track_production_progress` | 生产进度监控，异常预警 | 实时掌握生产状态，主动风险管控 |
-| `check_material_availability` | 原材料可用性检查，供应商协调 | 保障生产计划可执行性 |
-| `suggest_alternatives` | 替代方案推荐，规格调整建议 | 在资源约束下提供最优生产方案 |
+| 工具方法                      | 功能描述                     | 业务价值                       |
+| ----------------------------- | ---------------------------- | ------------------------------ |
+| `check_production_capacity`   | 生产能力查询，交期预测       | 提供准确的生产承诺             |
+| `create_production_plan`      | 生产计划制定，资源分配       | 优化生产效率，确保按期交付     |
+| `track_production_progress`   | 生产进度监控，异常预警       | 实时掌握生产状态，主动风险管控 |
+| `check_material_availability` | 原材料可用性检查，供应商协调 | 保障生产计划可执行性           |
+| `suggest_alternatives`        | 替代方案推荐，规格调整建议   | 在资源约束下提供最优生产方案   |
 
 #### 6.2.5 质量 MCP Server - 质量管控
 
@@ -2688,12 +2691,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `check_quality_standards` | 产品质量标准查询，检测要求确认 | 确保产品符合质量要求 |
-| `monitor_quality_metrics` | 质量指标监控，实时质量状态 | 保障产品质量，降低客户投诉 |
-| `handle_quality_issues` | 质量问题处理，不良品管理 | 快速响应质量异常，减少损失 |
-| `generate_quality_report` | 质量报告生成，质量数据分析 | 支持质量改进决策 |
+| 工具方法                  | 功能描述                       | 业务价值                   |
+| ------------------------- | ------------------------------ | -------------------------- |
+| `check_quality_standards` | 产品质量标准查询，检测要求确认 | 确保产品符合质量要求       |
+| `monitor_quality_metrics` | 质量指标监控，实时质量状态     | 保障产品质量，降低客户投诉 |
+| `handle_quality_issues`   | 质量问题处理，不良品管理       | 快速响应质量异常，减少损失 |
+| `generate_quality_report` | 质量报告生成，质量数据分析     | 支持质量改进决策           |
 
 #### 6.2.6 财务 MCP Server - 财务结算
 
@@ -2701,12 +2704,12 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 
 **核心工具方法**：
 
-| 工具方法 | 功能描述 | 业务价值 |
-|---------|---------|---------|
-| `calculate_order_cost` | 订单成本核算，利润分析 | 确保履约盈利性，支持定价决策 |
-| `generate_invoice` | 自动开票，税务合规处理 | 提升财务处理效率，确保合规性 |
-| `track_payment` | 应收账款管理，回款跟踪 | 加速资金回笼，降低坏账风险 |
-| `analyze_profitability` | 盈利能力分析，成本优化建议 | 支持业务决策优化 |
+| 工具方法                | 功能描述                   | 业务价值                     |
+| ----------------------- | -------------------------- | ---------------------------- |
+| `calculate_order_cost`  | 订单成本核算，利润分析     | 确保履约盈利性，支持定价决策 |
+| `generate_invoice`      | 自动开票，税务合规处理     | 提升财务处理效率，确保合规性 |
+| `track_payment`         | 应收账款管理，回款跟踪     | 加速资金回笼，降低坏账风险   |
+| `analyze_profitability` | 盈利能力分析，成本优化建议 | 支持业务决策优化             |
 
 ### 6.3 订单履约 MCP Server 调用策略
 
@@ -2715,23 +2718,27 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 **订单履约标准流程的 MCP Server 调用序列**：
 
 1. **订单接收阶段**：
+
    - `ERP MCP Server`: `validate_order` → `get_product_info`
    - `CRM MCP Server`: `check_customer_credit` → `get_customer_preferences`
    - 实现订单快速验证和客户信用评估
 
 2. **可行性分析阶段**：
+
    - `ERP MCP Server`: `check_inventory`
    - `生产 MCP Server`: `check_production_capacity` → `check_material_availability`
    - `质量 MCP Server`: `check_quality_standards`
    - 全面评估订单履约可行性
 
 3. **履约规划阶段**：
+
    - `ERP MCP Server`: `reserve_inventory`
    - `生产 MCP Server`: `create_production_plan`
    - `WMS MCP Server`: `plan_shipment`
    - 制定最优履约执行计划
 
 4. **执行监控阶段**：
+
    - `生产 MCP Server`: `track_production_progress`
    - `质量 MCP Server`: `monitor_quality_metrics`
    - `WMS MCP Server`: `track_warehouse_operation`
@@ -2739,6 +2746,7 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
    - 实时监控履约进度和状态
 
 5. **交付完成阶段**：
+
    - `WMS MCP Server`: `track_shipment` → `confirm_delivery`
    - `CRM MCP Server`: `collect_feedback`
    - 确保及时准确的产品交付
@@ -2752,11 +2760,13 @@ CHECK (semantic_vector IS NULL OR JSON_VALID(semantic_vector));
 **常见履约异常的 Server 协同策略**：
 
 - **库存不足异常**：
+
   - `生产 MCP Server`: `suggest_alternatives`
   - `ERP MCP Server`: `get_product_info` (替代品)
   - `CRM MCP Server`: `notify_customer`
 
 - **生产延期异常**：
+
   - `生产 MCP Server`: `create_production_plan` (重新排程)
   - `WMS MCP Server`: `plan_shipment` (调整配送)
   - `CRM MCP Server`: `notify_customer`

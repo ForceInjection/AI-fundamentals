@@ -1,120 +1,97 @@
 # AI Agent 开发与实践
 
-## 1. 概述
+本目录包含 AI Agent 开发的完整技术体系，涵盖从基础理论到企业级实践的全方位内容，旨在为开发者提供构建生产级智能体系统的系统化指南。
 
-本目录包含 AI Agent 开发的完整技术体系，涵盖从基础理论到企业级实践的全方位内容。文档体系分为理论基础、方法论指导、学术研究和实际应用四个层次，为 AI Agent 开发者提供系统性的学习和实践资源。
+## 1. 核心理论与框架
 
-## 2. 核心文档
+本章深入探讨构建智能体系统的理论基石，从多智能体协作机制到通用的设计模式，为复杂系统的构建提供指导原则。
 
-### 2.1 基础理论与框架
+### 1.1 多智能体系统
 
-- **[多智能体 AI 系统基础：理论与框架](./multi_agent/Part1-Multi-Agent-AI-Fundamentals.md)** - 多智能体 AI 系统的核心理论、技术框架和 LangGraph/LangSmith 平台深度解析
-- **[企业级多智能体 AI 系统构建实战](./multi_agent/Part2-Enterprise-Multi-Agent-System-Implementation.md)** - 基于 LangGraph 和 LangSmith 的企业级多智能体系统架构设计、代码实现和部署方案
+聚焦于多个智能体如何通过协作解决复杂问题，涵盖 BDI 架构、通信机制及企业级落地框架。
 
-### 2.2 方法论与最佳实践
+- [**多智能体 AI 系统基础：理论与框架**](./multi_agent/Part1-Multi-Agent-AI-Fundamentals.md) - BDI 架构、协作机制与 LangGraph 深度解析
+- [**企业级多智能体 AI 系统构建实战**](./multi_agent/Part2-Enterprise-Multi-Agent-System-Implementation.md) - 基于 LangGraph 的架构设计与代码落地
 
-- **[12-Factor Agents - 构建可靠 LLM 应用的原则](./concepts/12-factor-agents-intro.md)** - 借鉴 12 Factor Apps 方法论，为构建可靠的 LLM 应用提供的 12 个核心要素和最佳实践指南
+### 1.2 智能体设计模式
 
-### 2.3 专业技术领域
+总结了业界成熟的智能体设计范式，包括推理与行动协同、复杂内容创作及高阶对话管理。
 
-#### 2.3.1 上下文工程
+- [**ReAct Agent 模式详解**](./agent_design/react-agent.md) - 推理 (Reasoning) 与行动 (Acting) 的协同机制
+- [**写作 Agentic Agent 设计**](./agent_design/写作%20Agentic%20Agent.md) - 复杂内容创作领域的智能体架构设计
+- [**多轮指代消解对话系统**](./agent_design/如何设计支持多轮指代消解的对话系统.md) - 高级对话状态管理与上下文理解
+- [**12-Factor Agents**](./concepts/12-factor-agents-intro.md) - 构建可靠 LLM 应用的 12 要素原则
 
-- **[上下文工程原理](./context/上下文工程原理.md)** - 上下文工程的理论基础和实现原理
-- **[上下文工程原理简介](./context/上下文工程原理简介.md)** - 上下文工程的入门介绍
-- **[基于上下文工程的 LangChain 智能体应用](./context/langchain_with_context_engineering.md)** - LangChain 框架中的上下文工程实践
+## 2. 核心组件与工程
 
-#### 2.3.2 记忆系统
+详细拆解智能体系统的关键工程组件，包括上下文管理、长期记忆、工具协议及底层基础设施。
 
-- **[AI 智能体记忆系统：理论与实践](./memory/docs/AI%20智能体记忆系统：理论与实践.md)** - 智能体记忆系统的设计原理和实现方法
+### 2.1 上下文工程
 
-### 2.4 实践项目
+探讨如何高效管理和优化 LLM 的上下文窗口，通过动态组装与压缩技术提升系统性能与响应质量。
 
-#### 2.4.1 多智能体系统
+- [**上下文工程原理**](./context/上下文工程原理.md) - 动态上下文组装的理论基础与实现机制
+- [**Anthropic 上下文工程指南**](./context/anthropic_context_engineering_zh.md) - 来自 Anthropic 的最佳实践译文
+- [**LangChain 上下文工程实践**](./context/langchain_with_context_engineering.md) - 结合 LangChain 框架的工程化落地
 
-#### 2.4.2 多智能体训练
+### 2.2 记忆系统
 
-- 理论基础
-- LangGraph 框架
-- LangSmith 监控
-- 企业级架构
-- 应用实践
+介绍智能体的记忆机制，从理论模型到 MemoryOS 与 Mem0 等实战架构，赋予智能体长期记忆与个性化能力。
 
-### 2.5 应用案例
+- [**AI 智能体记忆系统综述**](./memory/docs/AI%20智能体记忆系统：理论与实践.md) - 记忆系统的理论模型与技术路线
+- [**MemoryOS 架构设计**](./memory/docs/MemoryOS智能记忆系统架构设计与开发指南.md) - 模块化智能记忆管理系统设计
+- [**Mem0 快速入门**](./memory/docs/mem0快速入门.md) - 个性化记忆库 Mem0 的实战指南
 
-- **[Coze 部署和配置手册](../06_llm_theory_and_fundamentals/workflow/Coze%E9%83%A8%E7%BD%B2%E5%92%8C%E9%85%8D%E7%BD%AE%E6%89%8B%E5%86%8C.md)** - Coze 平台的部署配置指南
-- **[支持多轮对话指代消解的 ChatBot 系统：架构设计与实现详解](./agent_design/如何设计支持多轮指代消解的对话系统.md)** - 支持多轮对话的智能体系统设计方案
+### 2.3 工具与互操作性 (Tools & MCP)
 
-## 3. 学术研究
+关注智能体与外部世界的交互能力，特别是通过 Model Context Protocol (MCP) 实现的标准化工具互操作。
 
-### 3.1 论文解读
+- [**Model Context Protocol (MCP) 深度解析**](./mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md) - 定义 AI 工具互操作未来的通用标准
+- [**Claude Skills 开发指南**](./agent-skills/claude_skills_guide.md) - 扩展智能体能力的工具定义与最佳实践
 
-- **[A Survey on Agent Workflow – Status and Future](./paper/agent-workflow-survey.md)** - Agent 工作流领域的系统性综述，涵盖 24 个主流框架的评估和未来发展方向
-- **[深度研究智能体（Deep Research Agents）的定义与核心能力](./paper/deepresearch-agent.md)** - 深度研究智能体的正式定义、核心特点和技术实现
-- **[论文资源汇总](./paper/README.md)** - Agent 相关论文的收集和分类整理
+### 2.4 基础设施
 
-## 4. 实际应用场景
+解析支撑大规模智能体运行的技术栈，涵盖编排、监控、部署等关键环节，构建稳健的 Agent 运行环境。
 
-### 4.1 科研领域
-
-- **[科研助手 Agent 需求与场景清单](../06_llm_theory_and_fundamentals/deep_research/design/%E7%A7%91%E7%A0%94%E5%8A%A9%E6%89%8B.md)** - 面向研究者的全生命周期智能助手系统设计，覆盖从研究发现到成果传播的完整闭环
-
-### 4.2 企业应用
-
-- **[订单履约 Agent 系统设计文档](../06_llm_theory_and_fundamentals/deep_research/design/%E8%AE%A2%E5%8D%95%E5%B1%A5%E7%BA%A6Agent%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E6%96%87%E6%A1%A3.md)** - 制造业订单履约业务的智能化 Agent 系统设计，实现从订单接收到库存分配的全流程自动化
-- **[订单履约 Agent 需求分析](../06_llm_theory_and_fundamentals/deep_research/design/%E8%AE%A2%E5%8D%95%E5%B1%A5%E7%BA%A6Agent%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90.md)** - 订单履约 Agent 系统的详细需求分析和业务流程设计
-
-### 4.3 数据科学
-
-### 4.4 技术研究
-
-- **[《Building Research Agents for Tech Insights》深度解读](../06_llm_theory_and_fundamentals/deep_research/%E3%80%8ABuilding%20Research%20Agents%20for%20Tech%20Insights%E3%80%8B%E6%B7%B1%E5%BA%A6%E8%A7%A3%E8%AF%BB.md)** - 技术洞察研究 Agent 的构建方法和实践案例
-
-## 5. 技术栈
-
-### 5.1 核心框架
-
-- **LangChain** - 大语言模型应用开发框架
-- **LangGraph** - 多智能体工作流编排框架
-- **LangSmith** - LLM 应用监控和调试平台
-
-### 5.2 部署与运维
-
-- **Docker** - 容器化部署
-- **Docker Compose** - 多容器应用编排
-- **Python** - 主要编程语言
-
-### 5.3 平台与工具
-
-- **Coze** - 智能体开发平台
-- **Databricks** - 数据科学和机器学习平台
-
-## 6. 学习路径建议
-
-### 6.1 初学者路径
-
-1. 阅读 [多智能体 AI 系统基础：理论与框架](./multi_agent/Part1-Multi-Agent-AI-Fundamentals.md) 了解基础概念
-2. 学习 [12-Factor Agents](./concepts/12-factor-agents-intro.md) 掌握最佳实践
-3. 通过 [多智能体训练课程](../10_ai_related_course/multi_agent_system/multi_agent_training) 进行系统性学习
-4. 参考 [应用场景](../99_misc/scenario) 了解实际应用
-
-### 6.2 进阶开发者路径
-
-1. 深入学习 [企业级多智能体 AI 系统构建实战](./multi_agent/Part2-Enterprise-Multi-Agent-System-Implementation.md)
-2. 研究 [学术论文](./paper/) 了解前沿技术
-3. 实践 [多智能体系统项目](../10_ai_related_course/multi_agent_system) 获得实战经验
-4. 根据具体需求参考相应的 [应用场景文档](../99_misc/scenario)
-
-## 7. 相关资源
-
-### 7.1 官方文档
-
-- **[LangChain 官方文档](https://python.langchain.com/en/latest/)** - 详细的 LangChain 框架文档
-- **[LangGraph 官方文档](https://langgraph.readthedocs.io/en/latest/)** - 详细的 LangGraph 框架文档
-- **[LangSmith 官方文档](https://docs.langchain.com/langsmith/)** - 详细的 LangSmith 监控文档
-- **[Coze 官方文档](https://www.coze.com/docs/)** - 详细的 Coze 平台文档
-
-### 7.2 学术资源
-
-- **[AI Agents 论文集合](https://github.com/AI4Finance-Foundation/awesome-agent)** - AI Agents 相关论文的系统性收集
+- [**AI Agent 基础设施技术栈**](./agent_infra/ai-agent-infra-stack.md) - 工具层、数据层与编排层的三层架构
+- [**AI Agent 基础设施的崛起**](./agent_infra/the-rise-of-ai-agent-infrastructure.md) - 基础设施生态的演进趋势
 
 ---
+
+## 3. 实战项目与代码
+
+提供可运行的代码示例与完整项目源码，帮助开发者从理论走向实践，快速构建自己的智能体应用。
+
+### 3.1 完整系统
+
+包含经过验证的端到端系统实现，展示了多智能体协作与 MCP 服务的完整代码结构。
+
+- [**企业级多智能体系统源码**](./multi_agent/multi_agent_system/README.md) - 基于 Python 的完整 MAS 实现，包含通信总线与监控集成
+- [**MCP Demo 服务**](./mcp/mcp_demo/README.md) - Model Context Protocol 服务端与客户端完整示例代码
+
+### 3.2 专项工具
+
+针对特定场景的实用工具库与示例，如文档处理与记忆集成，可作为构建复杂系统的积木。
+
+- [**PDF 智能翻译器**](./agent-skills/pdf-translator/README.md) - 结合 OCR 与 LLM 的文档处理工具，支持多模态解析
+- [**LangChain 记忆集成示例**](./memory/langchain/README.md) - 多种记忆模式 (ConversationBuffer, Summary 等) 的代码实现
+
+---
+
+## 4. 前沿研究与报告
+
+追踪 AI Agent 领域的最新学术进展与行业动态，为技术选型与未来规划提供前瞻性参考。
+
+### 4.1 行业报告
+
+汇集主流技术社区与咨询机构的深度报告，分析 Agent 工程化的现状与发展趋势。
+
+- [**LangChain Agent 工程现状报告**](./report/langchain-state-of-agent-engineering.md) - 2024 年度技术趋势与开发者生态分析
+
+### 4.2 学术论文
+
+精选 Agent 领域的核心论文，涵盖工作流综述与深度研究智能体等前沿课题。
+
+- [**Deep Research Agents**](./paper/deepresearch-agent.md) - 深度研究智能体的定义、核心能力与评估
+- [**Agent Workflow 综述**](./paper/agent-workflow-survey.md) - 涵盖 24 种主流工作流模式的系统性综述
+- [**论文资源库**](./paper/README.md) - AI Agent 领域核心论文索引

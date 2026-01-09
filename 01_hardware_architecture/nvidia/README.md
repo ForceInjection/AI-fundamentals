@@ -54,4 +54,4 @@
 - [CUDA 编程基础](../../02_gpu_programming/) - CUDA 核心概念与编程
 - [GPU 编程实践](../../02_gpu_programming/) - GPU 编程入门指南
 - [性能分析工具](../../02_gpu_programming/profiling/) - GPU 性能分析与优化
-- [AI 系统架构](../../AISystem/) - AI 系统整体架构设计
+- [AI 系统架构](https://github.com/Infrasys-AI/AISystem) - AI 系统整体架构设计

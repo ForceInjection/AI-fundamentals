@@ -143,19 +143,19 @@ class Memory(MemoryBase):
             self.config.vector_store.config,
         )
         self.vector_store = VectorStoreFactory.create(
-            self.config.vector_store.provider, 
+            self.config.vector_store.provider,
             self.config.vector_store.config
         )
         self.llm = LlmFactory.create(
-            self.config.llm.provider, 
+            self.config.llm.provider,
             self.config.llm.config
         )
         self.db = SQLiteManager(self.config.history_db_path)
-        
+
         # 可选的图存储支持
         if self.config.graph_store.config:
             self.graph = GraphStoreFactory.create(
-                self.config.graph_store.provider, 
+                self.config.graph_store.provider,
                 self.config
             )
 ```
@@ -182,7 +182,7 @@ class MemoryConfig(BaseModel):
 
 ### 3.3 智能记忆处理流程
 
-#### 3.3.1 记忆添加流程（_add_to_vector_store）
+#### 3.3.1 记忆添加流程（\_add_to_vector_store）
 
 1. **消息解析**：使用 `parse_messages()` 解析输入消息格式
 2. **事实提取**：通过 LLM 和自定义提示提取关键事实
@@ -231,27 +231,27 @@ class Memory:
     def add(self, messages, user_id=None, agent_id=None, run_id=None, metadata=None):
         """添加新记忆到系统中"""
         pass
-    
+
     def get(self, memory_id):
         """根据 ID 获取特定记忆"""
         pass
-    
+
     def get_all(self, user_id=None, agent_id=None, run_id=None):
         """获取指定范围内的所有记忆"""
         pass
-    
+
     def search(self, query, user_id=None, agent_id=None, run_id=None, limit=100):
         """基于语义相似度搜索相关记忆"""
         pass
-    
+
     def update(self, memory_id, data):
         """更新现有记忆内容"""
         pass
-    
+
     def delete(self, memory_id):
         """删除特定记忆"""
         pass
-    
+
     def delete_all(self, user_id=None, agent_id=None, run_id=None):
         """批量删除记忆"""
         pass
@@ -286,7 +286,7 @@ config = {
             "embedding_model_dims": 1536  # 嵌入维度
         }
     },
-    
+
     # 大语言模型配置
     "llm": {
         "provider": "openai",  # 支持: openai, anthropic, google, ollama
@@ -297,7 +297,7 @@ config = {
             "max_tokens": 1000   # 最大输出长度
         }
     },
-    
+
     # 嵌入模型配置
     "embedder": {
         "provider": "openai",
@@ -307,7 +307,7 @@ config = {
             "dimensions": 1536  # 嵌入向量维度
         }
     },
-    
+
     # 图数据库配置（可选）
     "graph_store": {
         "provider": "neo4j",
@@ -334,31 +334,31 @@ config = {
 
 ### 4.1 主要系统对比
 
-| 特性 | Mem0 | MemoryOS | Zep | Letta (MemGPT) | LangChain Memory |
-|------|------|----------|-----|----------------|------------------|
-| **类型** | 智能记忆层 | 记忆操作系统 | 长期记忆存储 | 虚拟上下文管理 | 会话记忆组件 |
-| **核心特点** | 自改进记忆 | 分层架构+热度评分 | 结构化存储 | 分层内存架构 | 多种记忆类型 |
-| **架构设计** | 向量+图存储 | 三层记忆(STM/MTM/LPM) | 结构化数据库 | 虚拟内存管理 | 多种记忆策略 |
-| **性能** | 亚 50ms 检索 | 低延迟+成本优化 | 快速查询 | 智能分页 | 依赖实现 |
-| **准确性** | LOCOMO 基准+26% | F1 提升 49.11% | 高精度 | 上下文保持 | 基础记忆 |
-| **部署方式** | 云端/本地 | 本地优先 | 云端/本地 | 本地 | 本地 |
-| **隐私保护** | 支持本地部署 | 内置隐私保护 | 企业级安全 | 完全本地 | 完全本地 |
-| **集成难度** | 简单 | 中等 | 中等 | 复杂 | 简单 |
+| 特性         | Mem0            | MemoryOS              | Zep          | Letta (MemGPT) | LangChain Memory |
+| ------------ | --------------- | --------------------- | ------------ | -------------- | ---------------- |
+| **类型**     | 智能记忆层      | 记忆操作系统          | 长期记忆存储 | 虚拟上下文管理 | 会话记忆组件     |
+| **核心特点** | 自改进记忆      | 分层架构+热度评分     | 结构化存储   | 分层内存架构   | 多种记忆类型     |
+| **架构设计** | 向量+图存储     | 三层记忆(STM/MTM/LPM) | 结构化数据库 | 虚拟内存管理   | 多种记忆策略     |
+| **性能**     | 亚 50ms 检索    | 低延迟+成本优化       | 快速查询     | 智能分页       | 依赖实现         |
+| **准确性**   | LOCOMO 基准+26% | F1 提升 49.11%        | 高精度       | 上下文保持     | 基础记忆         |
+| **部署方式** | 云端/本地       | 本地优先              | 云端/本地    | 本地           | 本地             |
+| **隐私保护** | 支持本地部署    | 内置隐私保护          | 企业级安全   | 完全本地       | 完全本地         |
+| **集成难度** | 简单            | 中等                  | 中等         | 复杂           | 简单             |
 
 ### 4.2 性能基准测试
 
 根据 LOCOMO 基准测试结果：
 
-| 指标 | Mem0 | MemoryOS | OpenAI Memory | Zep | LangChain ConversationBufferMemory | 全上下文方法 |
-|------|------|----------|---------------|-----|-----------------------------------|-------------|
-| **记忆准确性** | 85.2% | 89.7%* | 59.1% | 78.3% | 45.7% | - |
-| **F1 分数提升** | +26% | +49.11% | - | - | - | - |
-| **BLEU-1 提升** | - | +46.18% | - | - | - | - |
-| **响应速度（平均）** | 47ms | <50ms | - | 125ms | 156ms | 890ms |
-| **Token 使用量** | 基准值 | 优化 | - | +45% | +120% | +900% |
-| **成本效率** | 高 | 极高 | 中等 | 中等 | 低 | 极低 |
+| 指标                 | Mem0   | MemoryOS | OpenAI Memory | Zep   | LangChain ConversationBufferMemory | 全上下文方法 |
+| -------------------- | ------ | -------- | ------------- | ----- | ---------------------------------- | ------------ |
+| **记忆准确性**       | 85.2%  | 89.7%\*  | 59.1%         | 78.3% | 45.7%                              | -            |
+| **F1 分数提升**      | +26%   | +49.11%  | -             | -     | -                                  | -            |
+| **BLEU-1 提升**      | -      | +46.18%  | -             | -     | -                                  | -            |
+| **响应速度（平均）** | 47ms   | <50ms    | -             | 125ms | 156ms                              | 890ms        |
+| **Token 使用量**     | 基准值 | 优化     | -             | +45%  | +120%                              | +900%        |
+| **成本效率**         | 高     | 极高     | 中等          | 中等  | 低                                 | 极低         |
 
-*基于 LoCoMo 基准测试，相对于基线模型的提升
+\*基于 LoCoMo 基准测试，相对于基线模型的提升
 
 ### 4.3 选择建议
 
@@ -387,7 +387,7 @@ class MemoryOS:
         self.short_term_memory = []    # 短期记忆 (STM)
         self.mid_term_memory = []      # 中期记忆 (MTM)
         self.long_term_persona = {}    # 长期个人记忆 (LPM)
-        
+
     def update_memory_hierarchy(self, dialogue):
         # 基于热度评分的动态更新机制
         heat_score = self.calculate_heat_score(dialogue)
@@ -416,40 +416,40 @@ from typing import Any, Dict, List
 
 class Mem0LangChainMemory(BaseMemory):
     """将 Mem0 集成到 LangChain 的自定义记忆类"""
-    
+
     def __init__(self, user_id: str, **kwargs):
         super().__init__(**kwargs)
         self.mem0 = Memory()
         self.user_id = user_id
         self.memory_key = "history"
-    
+
     @property
     def memory_variables(self) -> List[str]:
         return [self.memory_key]
-    
+
     def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """从 Mem0 加载相关记忆"""
         query = inputs.get("input", "")
-        
+
         # 搜索相关记忆
         memories = self.mem0.search(query, user_id=self.user_id, limit=5)
-        
+
         # 格式化记忆内容
         memory_content = "\n".join([
             f"记忆: {memory['memory']}" for memory in memories
         ])
-        
+
         return {self.memory_key: memory_content}
-    
+
     def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
         """保存对话上下文到 Mem0"""
         messages = [
             {"role": "user", "content": inputs["input"]},
             {"role": "assistant", "content": outputs["output"]}
         ]
-        
+
         self.mem0.add(messages, user_id=self.user_id)
-    
+
     def clear(self) -> None:
         """清除用户记忆"""
         self.mem0.delete_all(user_id=self.user_id)
@@ -481,16 +481,16 @@ async def chat_with_memory(request: ChatRequest):
     try:
         # 转换消息格式
         messages = [msg.dict() for msg in request.messages]
-        
+
         # 添加到记忆
         result = memory.add(
-            messages, 
+            messages,
             user_id=request.user_id,
             metadata=request.metadata
         )
-        
+
         return {"status": "success", "memories_added": len(result)}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -500,7 +500,7 @@ async def get_user_memories(user_id: str):
     try:
         memories = memory.get_all(user_id=user_id)
         return {"memories": memories}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 ```
