@@ -31,15 +31,15 @@ $$
 
 常见精度下：
 
-- FP16/BF16：$b_{w}=2$；
-- INT8：$b_{w}=1$；
-- INT4：$b_{w}=0.5$。
+- FP16/BF16： $b_{w}=2$；
+- INT8： $b_{w}=1$；
+- INT4： $b_{w}=0.5$。
 
 注：INT8/INT4 的估算通常未计入量化权重的 metadata（如 scale / zero-point 或 per-group scaling 参数），实际占用会略高，且不同推理框架的存储格式可能不同。
 
 以 “Qwen3-0.6B” 为例（数量级估算）：
 
-- FP16：$0.6 \times 10^9 \times 2 \approx 1.2 \times 10^9~Bytes \approx 1.12~GiB$（十进制约 1.2 GB；$1~GiB = 1024^3~Bytes$）。
+- FP16： $0.6 \times 10^9 \times 2 \approx 1.2 \times 10^9\,\text{Bytes} \approx 1.12\,\text{GiB}$（十进制约 1.2 GB； $1\,\text{GiB} = 1024^3\,\text{Bytes}$）。
 - INT8：约为 FP16 的一半。
 - INT4：约为 FP16 的四分之一。
 
@@ -50,13 +50,13 @@ $$
 在深入计算 KV Cache 之前，我们需要先明确几个决定显存占用的核心模型参数。以 Hugging Face `transformers` 库中常见的 `config.json` 为例（参考 [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/config.json)）：
 
 - **hidden_size ($H$)**：模型隐藏层的维度大小。
-  - 它定义了 Token Embedding 的大小，通常也决定了注意力头的维度：$d_{head} = H / N_{attn}$。
+  - 它定义了 Token Embedding 的大小，通常也决定了注意力头的维度： $d_{head} = H / N_{attn}$。
   - 直接影响模型权重大小和 KV Cache 的总容量。
 - **num_hidden_layers ($L$)**：模型的层数（Transformer Blocks）。层数越多，需要缓存的 KV 对就越多。
 - **num_attention_heads ($N_{attn}$)**：注意力头的总数量。
-- **num_key_value_heads ($N_{kv}$)**：用于 Key 和 Value 的头数量。
-  - 在标准 **MHA** (Multi-Head Attention) 中，$N_{kv} = N_{attn}$。
-  - 在 **GQA** (Grouped-Query Attention) 或 **MQA** (Multi-Query Attention) 中，$N_{kv} < N_{attn}$，这能显著降低 KV Cache 的显存占用。
+- **num_key_alue_heads ($N_{kv}$)**：用于 Key 和 Value 的头数量。
+  - 在标准 **MHA** (Multi-Head Attention) 中， $N_{kv} = N_{attn}$。
+  - 在 **GQA** (Grouped-Query Attention) 或 **MQA** (Multi-Query Attention) 中， $N_{kv} < N_{attn}$，这能显著降低 KV Cache 的显存占用。
 - **max_position_embeddings**：模型支持的最大上下文窗口长度。这是 $S$ (Sequence Length) 的理论上限。
 - **vocab_size**：词表大小。
   - 主要影响 Embedding 层和最后的 LM Head 层的参数量。
@@ -116,21 +116,38 @@ graph LR
 
 #### 4.1.2 逐步推导公式
 
-1. **单层、单 Token 的大小**：
+**1. 单层、单 Token 的大小**：
    我们需要存储 Key 和 Value 两个矩阵。
-   $$ \text{Size}_{\text{layer, token}} = 2 \times N_{kv} \times D_{head} \times \text{Precision} $$
 
-2. **引入模型参数 $H$**：
-   利用关系 $D_{head} = \frac{H}{N_{attn}}$，替换上式中的 $D_{head}$：
-   $$ \text{Size}_{\text{layer, token}} = 2 \times N_{kv} \times \frac{H}{N_{attn}} \times \text{Precision} $$
-    整理后：
-    $$ \text{Size}_{\text{layer, token}} = 2 \times H \times \frac{N_{kv}}{N_{attn}} \times \text{Precision} $$
+```math
+\text{Size}_{\text{layer, token}} = 2 \times N_{kv} \times D_{head} \times \text{Precision}
+```
 
-3. **扩展到全模型（$L$ 层）**：
-   $$ \text{Size}_{\text{model, token}} = L \times \text{Size}_{\text{layer, token}} = 2 \times L \times H \times \frac{N_{kv}}{N_{attn}} \times \text{Precision} $$
+**2. 引入模型参数 $H$**：
 
-4. **扩展到总并发 ($B$) 和总长度 ($S$)**：
-   $$ \text{Total KV Memory} = B \times S \times \text{Size}_{\text{model, token}} $$
+利用关系 $D_{head} = \frac{H}{N_{attn}}$，替换上式中的 $D_{head}$：
+
+```math
+\text{Size}_{\text{layer, token}} = 2 \times N_{kv} \times \frac{H}{N_{attn}} \times \text{Precision}
+```
+
+整理后：
+
+```math
+\text{Size}_{\text{layer, token}} = 2 \times H \times \frac{N_{kv}}{N_{attn}} \times \text{Precision}
+   ```
+
+**3. 扩展到全模型（$L$ 层）**：
+
+```math
+\text{Size}_{\text{model, token}} = L \times \text{Size}_{\text{layer, token}} = 2 \times L \times H \times \frac{N_{kv}}{N_{attn}} \times \text{Precision}
+```
+
+**4. 扩展到总并发 ($B$) 和总长度 ($S$)**：
+
+```math
+\text{Total KV Memory} = B \times S \times \text{Size}_{\text{model, token}}
+```
 
 最终得到我们熟知的通用公式。
 
@@ -178,7 +195,7 @@ $$
 - $H = 1024$
 - $N_{attn} = 16$
 - $N_{kv} = 8$ (GQA, ratio = 0.5)
-- 单 Token KV Cache：$4 \times 28 \times 1024 \times (8/16) = 57{,}344~Bytes \approx 56~KiB$
+- 单 Token KV Cache： $4 \times 28 \times 1024 \times (8/16) = 57{,}344\,\text{Bytes} \approx 56\,\text{KiB}$
 
 相比于传统的 13B 级模型（单 Token 约 0.8 MB），小模型配合 GQA 技术使得 KV Cache 极小，这意味着在同样的显存预算下可以支持极大的并发或超长的上下文。
 
@@ -215,7 +232,7 @@ $$
 
 1. 确定权重精度与并行方式，估算 $\text{Memory}_{weights}$。
 2. 选定服务侧目标：最大并发 $B$、最大总长度 $S$（Prompt + Output），估算 $\text{Memory}_{KV}$。
-3. 预留系统开销与中间激活（$\text{Memory}_{overhead}$）。
+3. 预留系统开销与中间激活: $\text{Memory}_{overhead}$ 。
    - 大模型（>7B）：可按权重的 20% 估算。
    - 小模型（<1B）：建议直接预留 1 GB ~ 2 GB 固定值（保守取 2 GB），并在真实负载下校准。
 4. 检查是否满足：
@@ -264,7 +281,7 @@ mem_total = mem_weights + mem_kv + mem_overhead
 
 - 权重显存：约 1.12 GiB（即 1.2 GB）。
 - 系统开销预留：约 1.4 GiB（即 1.5 GB，含 CUDA Context + Activation + 余量）。
-- **可用显存**：$40 - 1.12 - 1.4 \approx 37.48~GiB$（其中 “40” 为示例预算，工程上请以实际机器 `nvidia-smi` 读数替换该值）。
+- **可用显存**： $40 - 1.12 - 1.4 \approx 37.48\,\text{GiB}$（其中 “40” 为示例预算，工程上请以实际机器 `nvidia-smi` 读数替换该值）。
 
 ### 7.2 并发与长度的约束（KV Cache 主导近似）
 
@@ -274,7 +291,7 @@ $$
 \text{Max Token Capacity} \approx \frac{\text{Available Memory}}{\text{Size}_{KV,\text{per-token}}}
 $$
 
-沿用上文 $56~KiB$ ($57{,}344~Bytes$) 的单 Token KV Cache，预算为 37.48 GiB：
+沿用上文 $56\,\text{KiB}$ ($57{,}344\,\text{Bytes}$) 的单 Token KV Cache，预算为 37.48 GiB：
 
 $$
 \text{Max Token Capacity} \approx \frac{37.48 \times 1024^3}{57{,}344} \approx 701{,}842
@@ -290,9 +307,9 @@ $$
 
 给出几个典型 $S$ 下的理论最大并发：
 
-1. $S = 512$：$B_{max} \approx 701{,}842 / 512 \approx 1370$。
-2. $S = 4096$：$B_{max} \approx 701{,}842 / 4096 \approx 171$。
-3. $S = 32k$ ($32768$)：$B_{max} \approx 701{,}842 / 32768 \approx 21$。
+1. $S = 512$： $B_{max} \approx 701{,}842 / 512 \approx 1370$。
+2. $S = 4096$： $B_{max} \approx 701{,}842 / 4096 \approx 171$。
+3. $S = 32k$ ($32768$)： $B_{max} \approx 701{,}842 / 32768 \approx 21$。
 
 **结论**：对于 0.6B 这样的小参数模型，配合 GQA 技术，显存几乎不再是瓶颈。在 A100 这样的硬件上，主要的瓶颈可能会转移到**计算能力**或**显存带宽**，而不是显存容量。这也解释了为什么小模型非常适合部署在端侧设备或消费级显卡上。
 
@@ -304,21 +321,21 @@ $$
 
 1. 总显存需求（预算）：
 
-   $$
+   ```math
    M_{\text{total}} = M_{\text{weights}} + M_{\text{kv cache}} + M_{\text{overhead}}
-   $$
+   ```
 
 2. KV Cache 估算（单卡、FP16/BF16）：
 
-   $$
+   ```math
    M_{\text{kv}} (\text{GiB}) \approx \frac{4 \times L \times H \times B \times S}{1024^3} \times \frac{N_{kv}}{N_{attn}}
-   $$
+   ```
 
 3. 最大并发数估算（KV 主导近似）：
 
-   $$
+   ```math
    B_{\text{max}} \approx \frac{\text{GPU Mem Budget} - M_{\text{weights}} - M_{\text{overhead}}}{(4LH \cdot \frac{N_{kv}}{N_{attn}}) \times S}
-   $$
+   ```
 
 其中 $\text{GPU Mem Budget}, M_{\text{weights}}, M_{\text{overhead}}$ 的单位需要与分母保持一致（推荐统一使用 Bytes，或统一使用 GiB 并在分子分母同时除以 $1024^3$）。
 
