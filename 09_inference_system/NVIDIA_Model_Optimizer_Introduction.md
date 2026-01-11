@@ -2,7 +2,7 @@
 
 NVIDIA Model Optimizer（简称 ModelOpt）是一个包含最先进模型优化技术的库，专为加速生成式 AI 模型而设计。它支持从 Hugging Face、PyTorch 和 ONNX 导入模型，通过量化（Quantization）、稀疏化（Sparsity）、剪枝（Pruning）、蒸馏（Distillation）等技术进行压缩和优化，最终生成的检查点可无缝部署于 NVIDIA TensorRT-LLM、TensorRT、vLLM 等推理框架中。
 
-地址：https://github.com/NVIDIA/Model-Optimizer
+地址：<https://github.com/NVIDIA/Model-Optimizer>
 
 ---
 
