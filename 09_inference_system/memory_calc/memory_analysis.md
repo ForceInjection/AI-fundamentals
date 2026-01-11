@@ -221,7 +221,7 @@ $$
 4. 检查是否满足：
 
 $$
-\text{Memory}_{weights} + \text{Memory}_{KV} + \text{Memory}_{overhead} \le \text{GPU\_Memory\_Budget}
+\text{Memory}_{\text{weights}} + \text{Memory}_{KV} + \text{Memory}_{overhead} \le \text{GPU Memory Budget}
 $$
 
 下面给出一段伪代码，描述如何将上述公式落地到估算器中（示例仅用于说明计算流程）：
@@ -271,13 +271,13 @@ mem_total = mem_weights + mem_kv + mem_overhead
 用“可用于 KV 的显存预算 / 单 Token KV”来估算可容纳的 Token 总量：
 
 $$
-\text{Max\_Token\_Capacity} \approx \frac{\text{Available\_Memory}}{\text{Size}_{KV,\text{per-token}}}
+\text{Max Token Capacity} \approx \frac{\text{Available Memory}}{\text{Size}_{KV,\text{per-token}}}
 $$
 
 沿用上文 $56~KiB$ ($57{,}344~Bytes$) 的单 Token KV Cache，预算为 37.48 GiB：
 
 $$
-\text{Max\_Token\_Capacity} \approx \frac{37.48 \times 1024^3}{57{,}344} \approx 701{,}842
+\text{Max Token Capacity} \approx \frac{37.48 \times 1024^3}{57{,}344} \approx 701{,}842
 $$
 
 这意味着我们可以同时在显存中容纳超过 70 万个 Token！
@@ -285,7 +285,7 @@ $$
 这些 Token 需要分配给全部并发请求，因此最大并发可估算为：
 
 $$
-B_{max} \approx \frac{\text{Max\_Token\_Capacity}}{S}
+B_{max} \approx \frac{\text{Max Token Capacity}}{S}
 $$
 
 给出几个典型 $S$ 下的理论最大并发：
@@ -305,7 +305,7 @@ $$
 1. 总显存需求（预算）：
 
    $$
-   M_{\text{total}} = M_{\text{weights}} + M_{\text{kv\_cache}} + M_{\text{overhead}}
+   M_{\text{total}} = M_{\text{weights}} + M_{\text{kv cache}} + M_{\text{overhead}}
    $$
 
 2. KV Cache 估算（单卡、FP16/BF16）：
@@ -317,10 +317,10 @@ $$
 3. 最大并发数估算（KV 主导近似）：
 
    $$
-   B_{\text{max}} \approx \frac{\text{GPU\_Mem\_Budget} - M_{\text{weights}} - M_{\text{overhead}}}{(4LH \cdot \frac{N_{kv}}{N_{attn}}) \times S}
+   B_{\text{max}} \approx \frac{\text{GPU Mem Budget} - M_{\text{weights}} - M_{\text{overhead}}}{(4LH \cdot \frac{N_{kv}}{N_{attn}}) \times S}
    $$
 
-其中 $\text{GPU\_Mem\_Budget}, M_{\text{weights}}, M_{\text{overhead}}$ 的单位需要与分母保持一致（推荐统一使用 Bytes，或统一使用 GiB 并在分子分母同时除以 $1024^3$）。
+其中 $\text{GPU Mem Budget}, M_{\text{weights}}, M_{\text{overhead}}$ 的单位需要与分母保持一致（推荐统一使用 Bytes，或统一使用 GiB 并在分子分母同时除以 $1024^3$）。
 
 通过深入理解显存构成，我们可以更科学地进行硬件选型和系统优化，在成本与性能之间找到最佳平衡点。
 
