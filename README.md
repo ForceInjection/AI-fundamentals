@@ -51,7 +51,15 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 **核心技术与方案：**
 
 - **推理系统架构**：[Mooncake 架构详解](09_inference_system/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md) - 以 KV 缓存为中心的高效 LLM 推理系统设计
-- **KV 缓存优化**：[LMCache 概览](09_inference_system/lmcache/lmcache_overview.md) - 跨实例 KV 缓存共享与管理
+- **KV 缓存优化 (LMCache)**：
+  - [LMCache 源码分析指南](09_inference_system/lmcache/README.md) - 文档入口与推荐阅读路径
+  - [LMCache 架构概览](09_inference_system/lmcache/lmcache_overview.md) - 系统定位、四层存储架构 (L1-L4) 与组件交互
+  - [LMCacheConnector 源码分析](09_inference_system/lmcache/lmcache_connector.md) - 推理引擎 (如 vLLM) 集成入口与请求拦截
+  - [LMCacheEngine 源码分析](09_inference_system/lmcache/lmcache_engine.md) - 核心控制流、I/O 编排与元数据管理
+  - [分层存储架构与调度机制](09_inference_system/lmcache/lmcache_storage_overview.md) - StorageManager 调度、Write-All 与 Waterfall 检索
+  - [LocalCPUBackend 源码分析](09_inference_system/lmcache/local_cpu_backend.md) - L1 本地 CPU 内存后端与并发控制
+  - [P2PBackend 源码分析](09_inference_system/lmcache/p2p_backend.md) - L2 弹性互联层与跨节点传输机制
+  - [LocalDiskBackend 源码分析](09_inference_system/lmcache/local_disk_backend.md) - L3 本地磁盘后端与 I/O 优化
 - **部署实战**：
   - [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference-solution/DeepSeek-V3-MoE-vLLM-H20-Deployment.md) - H20 硬件上的部署方案与 SLO 验证
   - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference-solution/Qwen2-VL-7B_Huawei.md) - 国产硬件平台的部署优化
