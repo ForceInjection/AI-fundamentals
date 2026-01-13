@@ -1,5 +1,7 @@
 # LMCacheEngine 核心引擎代码分析
 
+[< 返回架构概览](./lmcache_overview.md)
+
 本文档深入剖析 LMCache 的核心调度中枢 `LMCacheEngine`——该组件不仅统筹 KV Cache 的存储、检索全生命周期管理，还支撑层级流水线并行推理的 I/O-计算协同，同时实现与 vLLM 等计算引擎的无缝交互、缓存钉住（Pin）/压缩等进阶能力，并联动存储后端完成跨节点缓存迁移与资源释放。
 
 ---
@@ -144,7 +146,7 @@ def retrieve(
 
 1. **数据获取策略**:
    - **异步路径**: 当启用 `async_loading` 时，引擎直接从 `EventManager` 获取预取任务的结果。这通常与 `async_lookup_and_prefetch` 配合，允许在计算的同时后台加载数据，掩盖 I/O 延迟。
-   - **同步路径**: 若未启用异步模式，则调用 `_process_tokens_internal` 执行标准层级查找。该过程依次扫描 L1 (Local CPU)、L2 (Local Disk/P2P) 和 L3 (Remote Backend)，直到找到所需数据。
+   - **同步路径**: 若未启用异步模式，则调用 `_process_tokens_internal` 执行标准层级查找。该过程依次扫描 **L1 (Local CPU)**、**L2 (P2P)**、**L3 (Local Disk)** 和 **L4 (Remote Backend)**，直到找到所需数据。
 2. **MLA 广播 (Broadcast)**:
    - 在 MLA 场景下（配置 `save_only_first_rank`），为减少存储开销，仅 Rank 0 负责实际的数据检索。检索完成后，Rank 0 通过 NCCL 将 `MemoryObj` 广播给其他被动 Rank。
 3. **传输至显存 (H2D)**:

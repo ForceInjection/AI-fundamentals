@@ -98,30 +98,35 @@ graph TD
 `LMCacheConnector` 是 LMCache 与推理引擎（如 vLLM）之间的桥梁。它作为 vLLM 的一个插件运行，拦截 KV Cache 的相关操作。
 
 **角色**：连接器 / 适配器
+**代码位置**：[`lmcache/integration/vllm/lmcache_connector_v1.py`](../lmcache/integration/vllm/lmcache_connector_v1.py)
 **功能**：
 
 - **拦截**：拦截 vLLM 的 KV Cache 生成和读取请求。
 - **转换**：将 vLLM 的内部 KV Cache 格式（如 PagedMemory）转换为 LMCache 的通用格式。
 - **转发**：将请求转发给核心的 `LMCacheEngine` 处理。
 
+> 深入分析可参考：[LMCacheConnector 源码分析](./lmcache_connector.md)
 
 #### 3.1.2 LMCacheEngine
 
 `LMCacheEngine` 是 LMCache 的中央控制器，负责协调生命周期管理、I/O 操作和缓存策略执行。
 
 **角色**：核心引擎
+**代码位置**：[`lmcache/v1/cache_engine.py`](../lmcache/v1/cache_engine.py)
 **功能**：
 
 - **生命周期管理**：管理 KV Cache 的存储、检索和预取。
 - **GPU 交互**：通过 `GPUConnector` 高效地在 GPU 和 CPU 之间传输数据。
 - **事件管理**：处理异步 I/O 事件。
 
+> 深入分析可参考：[LMCacheEngine 源码分析](./lmcache_engine.md)
 
 #### 3.1.3 TokenDatabase
 
 `TokenDatabase` 维护了 Token 序列与 KV Cache Key 之间的映射关系，是实现缓存查找的关键组件。
 
 **角色**：元数据索引
+**代码位置**：[`lmcache/v1/token_database.py`](../lmcache/v1/token_database.py)
 **功能**：
 
 - **索引**：根据输入的 Token 序列（Prompt）计算并查找对应的 Cache Key。
@@ -132,6 +137,7 @@ graph TD
 `GPUConnector` 负责处理不同推理引擎（如 vLLM）特有的显存格式（如 PagedAttention）与 LMCache 通用内存格式之间的转换与传输。
 
 **角色**：显存适配器
+**代码位置**：[`lmcache/v1/gpu_connector.py`](../lmcache/v1/gpu_connector.py)
 **功能**：
 
 - **格式转换**：将非连续的 Paged Memory 转换为连续的内存块（或反之）。
@@ -142,6 +148,7 @@ graph TD
 `StorageManager` 实现了分层存储架构，统一管理从内存到远程存储的多级后端，并执行数据读写策略。
 
 **角色**：存储管理
+**代码位置**：[`lmcache/v1/storage_backend/storage_manager.py`](../lmcache/v1/storage_backend/storage_manager.py)
 **功能**：
 
 - **分层管理**: 统一管理 L1 (Memory), L2 (P2P), L3 (Disk), L4 (Remote) 多级后端。
@@ -149,12 +156,14 @@ graph TD
 - **内存分配**: 负责 CPU 内存缓冲区的分配和回收 (通过 Allocator Backend)。
 - **后端抽象**: 通过统一的接口与不同的存储后端交互。
 
+> 深入分析可参考：[LMCache 分层存储架构与调度机制详解](./lmcache_storage_overview.md)
 
 #### 3.1.6 LMCacheWorker
 
 `LMCacheWorker` 运行在推理引擎进程内部（作为 `LMCacheEngine` 的一部分），是 `Cache Controller` 在本地的代理。
 
 **角色**：控制代理
+**代码位置**：[`lmcache/v1/cache_controller/worker.py`](../lmcache/v1/cache_controller/worker.py)
 **功能**：
 
 - **通信**：通过 ZMQ 与远端的 `Cache Controller` 保持长连接。
@@ -166,6 +175,7 @@ graph TD
 `RuntimePluginLauncher` 负责在 LMCache 生命周期中加载和管理外部插件，允许用户通过自定义脚本扩展系统功能。
 
 **角色**：插件启动器
+**代码位置**：[`lmcache/v1/plugin/runtime_plugin_launcher.py`](../lmcache/v1/plugin/runtime_plugin_launcher.py)
 **功能**：
 
 - **插件加载**：根据配置扫描并启动指定目录下的 Python 或 Shell 插件脚本。
@@ -181,6 +191,7 @@ graph TD
 `Cache Controller` 是一个独立的进程，负责管理整个 LMCache 集群的元数据和控制流。
 
 **角色**：控制平面（Control Plane）
+**代码位置**：[`lmcache/v1/cache_controller/`](../lmcache/v1/cache_controller/)
 **功能**：
 
 - **全局视图**：维护集群中所有 KV Cache 的位置信息。
@@ -193,6 +204,7 @@ graph TD
 `LMCache Server` 是 LMCache 自带的一种轻量级远程存储服务，用于跨机共享 KV Cache。它在架构上与 Mooncake Store、Redis 等第三方存储后端处于同一层级。
 
 **角色**：数据平面（Data Plane） - 默认远程存储后端
+**代码位置**：[`lmcache/v1/server/__main__.py`](../lmcache/v1/server/__main__.py)
 **核心功能与架构**：
 
 - **远程存储后端**：为 `StorageManager` 提供标准的远程存储接口，负责接收并存储来自推理实例的 KV Cache 数据，以及响应读取请求。
@@ -212,6 +224,7 @@ graph TD
 `Controller Dashboard` 是一个基于 Web 的可视化界面，用于监控 LMCache 集群的实时状态。
 
 **角色**：可视化监控看板
+**代码位置**：[`lmcache/v1/cache_controller/frontend/`](../lmcache/v1/cache_controller/frontend/)
 **功能**：
 
 - **集群监控**：展示所有连接的 LMCache 实例及其状态（CPU/GPU 缓存使用率）。
@@ -307,11 +320,13 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 1. **捕获 (Capture)**
 
    - **核心逻辑**: `LMCacheConnector` 作为 vLLM 的插件，在 `wait_for_save` 阶段拦截 KV Cache 保存请求。
+   - **代码位置**: [`lmcache/integration/vllm/vllm_v1_adapter.py`](../lmcache/integration/vllm/vllm_v1_adapter.py)
    - **细节**: 连接器根据已保存的 token 数量 (`skip_leading_tokens`) 计算本次增量保存的 Token 范围，生成 `store_mask`，并调用核心引擎接口 `store(...)`。
 
 2. **传输 (Transfer)**
 
    - **核心逻辑**: `LMCacheEngine` 协调资源，将数据从 GPU 显存高效传输到 CPU 内存。
+   - **代码位置**: [`lmcache/v1/cache_engine.py`](../lmcache/v1/cache_engine.py)
    - **细节**:
      - 首先调用 `TokenDatabase` 根据 Token 序列计算 Chunk Hash Key。
      - 调用 `StorageManager` 申请 CPU 内存 (`MemoryObj`)。
@@ -320,6 +335,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 3. **存储 (Storage)**
 
    - **核心逻辑**: `StorageManager` 将数据分发到配置的存储后端（分层存储）。
+   - **代码位置**: [`lmcache/v1/storage_backend/storage_manager.py`](../lmcache/v1/storage_backend/storage_manager.py)
    - **细节**: `StorageManager` 按照初始化的优先级顺序，遍历所有激活的存储后端并提交任务。
      - **必要性说明**: **LocalCPUBackend** (或 `PDBackend`) 是**必须启用**的，因为它不仅作为一级缓存，还承担了**内存分配器 (Allocator)** 的角色。
      - **注**: `PDBackend` (Prefill-Decode Backend) 专用于 **Prefill-Decode 分离架构**。在此模式下，它默认替代 `LocalCPUBackend` 作为内存分配器，负责在 Prefill 和 Decode 实例间直接传输 KV Cache。
@@ -335,6 +351,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 
 4. **发布 (Publish)** (仅 P2P 模式)
    - **核心逻辑**: 本地存储完成后，异步通知 Cache Controller 更新元数据。
+   - **代码位置**: [`lmcache/v1/storage_backend/local_cpu_backend.py`](../lmcache/v1/storage_backend/local_cpu_backend.py)
    - **细节**: 当数据成功存入 `LocalCPUBackend` 后，其内部会通过 `BatchedMessageSender` 构造 `ADMIT` 消息，并经由长连接异步发送给 `Cache Controller`。Controller 收到后更新全局路由表，使其他实例能感知到该数据的存在。
 
 ### 5.2 Reuse (读取流程)
