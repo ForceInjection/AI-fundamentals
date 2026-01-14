@@ -7,6 +7,8 @@
 更关键的是，`LocalCPUBackend` 在系统中不仅仅是一个存储后端，它还承担了 **核心内存分配器 (Core Memory Allocator)** 的重任。无论是本地磁盘的 I/O 中转，还是远程数据的网络传输，所有涉及内存对象（MemoryObj）创建的操作，最终都依赖于该模块进行物理内存的分配与管理。
 
 > **架构定位**: 在 `lmcache_storage_overview.md` 定义的层级中，它是 L1 层。它是整个存储系统的“内存池”，直接对接 GPU 的 H2D/D2H 拷贝操作，并负责驱动下层存储（L2/L3/L4）的数据流转。
+>
+> **注意**: 在 Prefill-Decode 分离架构中，L1 层和 Allocator 的角色由 `PDBackend` 承担（详见 [PDBackend 源码分析](./pd_backend.md)），两者互斥。
 
 ---
 

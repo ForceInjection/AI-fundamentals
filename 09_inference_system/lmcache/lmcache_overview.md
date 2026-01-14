@@ -293,7 +293,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 
 - **核心机制**: **Push-based 流水线**。Prefill 实例作为生产者，主动将生成的 KV Cache 推送给 Decode 实例（消费者）。
 - **关键组件**:
-  - `PDBackend`: 专用的后端，替代 `LocalCPUBackend` 作为内存分配器。它负责协调 KV Cache 的发送和接收。
+  - `PDBackend`: 专用的后端，替代 `LocalCPUBackend` 作为内存分配器。它负责协调 KV Cache 的发送和接收。详见 [PDBackend 源码分析](./pd_backend.md)。
   - `Global Proxy`: 全局代理，负责调度和协调 Prefill 和 Decode 实例。
 - **工作流程**:
   1. **Prefill**: Prefill 实例计算完成后，`PDBackend` 并不将数据存入常规的 LRU 缓存，而是直接通过底层传输通道 (如 TCP/RDMA) 推送到指定的 Decode 实例。
@@ -338,7 +338,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
    - **代码位置**: [`lmcache/v1/storage_backend/storage_manager.py`](../lmcache/v1/storage_backend/storage_manager.py)
    - **细节**: `StorageManager` 按照初始化的优先级顺序，遍历所有激活的存储后端并提交任务。
      - **必要性说明**: **LocalCPUBackend** (或 `PDBackend`) 是**必须启用**的，因为它不仅作为一级缓存，还承担了**内存分配器 (Allocator)** 的角色。
-     - **注**: `PDBackend` (Prefill-Decode Backend) 专用于 **Prefill-Decode 分离架构**。在此模式下，它默认替代 `LocalCPUBackend` 作为内存分配器，负责在 Prefill 和 Decode 实例间直接传输 KV Cache。
+     - **注**: `PDBackend` (Prefill-Decode Backend) 专用于 **Prefill-Decode 分离架构**。在此模式下，它默认替代 `LocalCPUBackend` 作为内存分配器，负责在 Prefill 和 Decode 实例间直接传输 KV Cache。详见 [PDBackend 源码分析](./pd_backend.md)。
    - **后端优先级** (初始化与调用顺序):
      1. **PDBackend**: (仅在 PD 模式启用) 优先级最高，作为 Allocator。
      2. **LocalCPUBackend**: (默认) 核心内存后端。若启用 PD 模式且未显式配置 `local_cpu=True`，则会被跳过。

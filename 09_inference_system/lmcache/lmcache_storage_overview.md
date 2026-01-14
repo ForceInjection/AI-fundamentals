@@ -38,7 +38,7 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 
 **L4: 远程共享层 (Remote/Shared Tier)**：
 
-- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server, Redis, S3](./lmcache_remote_connector.md)）。用于跨实例共享数据，支持多实例集群。详见 [Remote Connector 源码分析](./lmcache_remote_connector.md)。
+- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server, Redis, S3](./remote_connector.md)）。用于跨实例共享数据，支持多实例集群。详见 [Remote Connector 源码分析](./remote_connector.md)。
 
 ---
 
@@ -191,6 +191,8 @@ def allocate(self, ...):
 ```
 
 ### 3.3 PDBackend（L1）实现细节
+
+> 详细代码分析请参阅 [PDBackend 源码分析](./pd_backend.md)。
 
 `PDBackend` (位于 [lmcache/v1/storage_backend/pd_backend.py](../lmcache/v1/storage_backend/pd_backend.py)) 是为了支持 **Prefill-Decode 分离 (Disaggregation)** 架构而设计的特殊后端。在此架构中，计算负载被拆分为 Prefill（预填充）和 Decode（解码）两个阶段，通常部署在不同的实例甚至机器上。
 

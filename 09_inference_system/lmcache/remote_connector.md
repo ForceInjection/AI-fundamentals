@@ -1,4 +1,4 @@
-# LMCache Remote Connector (远程连接器) 源码分析
+# Remote Connector (远程连接器) 源码分析
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 

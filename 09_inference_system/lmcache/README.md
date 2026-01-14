@@ -54,12 +54,22 @@
 - **核心内容**: 内存分配器 (Allocator)、锁粒度优化、NUMA 亲和性。
 - **目标**: 理解高性能内存管理与并发控制。
 
-**7. [LocalDiskBackend 源码分析](./local_disk_backend.md)** (L3 磁盘层)
+**7. [P2PBackend 源码分析](./p2p_backend.md)** (L2 弹性互联层)
+
+- **核心内容**: 双平面架构（控制面/数据面）、RDMA/TCP 零拷贝传输、跨节点内存借用。
+- **目标**: 理解去中心化架构下的低延迟数据流转。
+
+**8. [PDBackend 源码分析](./pd_backend.md)** (预填充-解码分离)
+
+- **核心内容**: Push-based 主动推送、Sender/Receiver 角色分工、内存直写与 Proxy 协同。
+- **目标**: 理解高性能流水线推理场景下的存储优化。
+
+**9. [LocalDiskBackend 源码分析](./local_disk_backend.md)** (L3 磁盘层)
 
 - **核心内容**: 扁平化文件布局、O_DIRECT 直通 I/O、异步流水线。
 - **目标**: 理解基于磁盘的高吞吐扩展实现。
 
-**8. [LMCache Remote Connector 源码分析](./lmcache_remote_connector.md)** (L4 远程层)
+**10. [Remote Connector 源码分析](./remote_connector.md)** (L4 远程层)
 
 - **核心内容**: RemoteConnector 抽象接口、Redis/S3/Mooncake 等多后端实现、零拷贝与异步 I/O 机制。
 - **目标**: 理解如何适配异构远程存储系统以实现数据共享与持久化。
@@ -77,5 +87,6 @@
 | [lmcache_storage_overview.md](./lmcache_storage_overview.md) | 多级存储架构与 StorageManager 调度逻辑分析。            |
 | [local_cpu_backend.md](./local_cpu_backend.md)               | L1 本地 CPU 内存后端及内存分配器分析。                  |
 | [p2p_backend.md](./p2p_backend.md)                           | L2 弹性互联层及跨节点传输机制分析。                     |
+| [pd_backend.md](./pd_backend.md)                             | 预填充-解码分离 (PD) 专用后端及主动推送机制分析。       |
 | [local_disk_backend.md](./local_disk_backend.md)             | L3 本地磁盘后端及 I/O 优化分析。                        |
-| [lmcache_remote_connector.md](./lmcache_remote_connector.md) | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
+| [remote_connector.md](./remote_connector.md)                 | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
