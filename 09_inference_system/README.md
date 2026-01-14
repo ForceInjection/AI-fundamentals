@@ -61,6 +61,7 @@
 - **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - L2 弹性互联层与跨节点传输机制
 - **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - L3 本地磁盘后端与 I/O 优化
 - **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - L4 共享存储接口与 Redis/S3/Mooncake 实现
+- **[LMCache Server 源码分析](lmcache/lmcache_server.md)** - LMCache Server 服务端架构与协议分析
 - **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
 
 ## 3. 推理部署方案
