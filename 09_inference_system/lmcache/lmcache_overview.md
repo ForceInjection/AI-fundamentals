@@ -21,7 +21,7 @@ LMCache 将存储介质划分为四个层级 (L1-L4)，实现了从本地内存�
 - **L3: 本地持久层 (Disk Tier)**:
   - **LocalDiskBackend**: (可选) 基于本地磁盘 (NVMe SSD)，利用 `O_DIRECT` 和异步 I/O 作为后备缓存。
 - **L4: 远程共享层 (Remote/Shared Tier)**:
-  - **RemoteBackend**: (可选) 基于中心化存储服务 (LMCache Server, Redis, Mooncake, S3)，用于跨实例持久化共享。
+  - **RemoteBackend**: (可选) 基于中心化存储服务 ([LMCache Server](./lmcache_server.md), Redis, Mooncake, S3)，用于跨实例持久化共享。
 
 ### 1.2 核心能力范式
 

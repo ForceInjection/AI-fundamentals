@@ -129,6 +129,8 @@ async with self.sem:
 
 代码位于 [lmcache/v1/storage_backend/connector/lm_connector.py](../lmcache/v1/storage_backend/connector/lm_connector.py)。
 
+> 关于 LMCache Server 服务端的详细架构与协议实现，请参考 [LMCache Server 源码分析](./lmcache_server.md)。
+
 ### 3.1 通信协议
 
 采用自定义的 TCP 二进制协议，分为 **MetaMessage** 和 **Data Payload** 两部分。核心数据结构定义在 `lmcache/v1/protocol.py` 中。

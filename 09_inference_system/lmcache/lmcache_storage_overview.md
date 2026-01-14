@@ -38,7 +38,7 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 
 **L4: 远程共享层 (Remote/Shared Tier)**：
 
-- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server, Redis, S3](./remote_connector.md)）。用于跨实例共享数据，支持多实例集群。详见 [Remote Connector 源码分析](./remote_connector.md)。
+- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server](./lmcache_server.md), Redis, Mooncake Store, S3）。用于跨实例共享数据，支持多实例集群。详见 [Remote Connector 源码分析](./remote_connector.md)。
 
 ---
 

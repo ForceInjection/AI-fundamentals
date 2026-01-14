@@ -74,6 +74,11 @@
 - **核心内容**: RemoteConnector 抽象接口、Redis/S3/Mooncake 等多后端实现、零拷贝与异步 I/O 机制。
 - **目标**: 理解如何适配异构远程存储系统以实现数据共享与持久化。
 
+**11. [LMCache Server 源码分析](./lmcache_server.md)** (服务端实现)
+
+- **核心内容**: Thread-per-Client 模型、自定义 TCP 协议设计、基于内存/磁盘的存储后端。
+- **目标**: 理解 LMCache 自带的轻量级中心化存储服务的设计与实现。
+
 ---
 
 ## 文档索引
@@ -89,4 +94,5 @@
 | [p2p_backend.md](./p2p_backend.md)                           | L2 弹性互联层及跨节点传输机制分析。                     |
 | [pd_backend.md](./pd_backend.md)                             | 预填充-解码分离 (PD) 专用后端及主动推送机制分析。       |
 | [local_disk_backend.md](./local_disk_backend.md)             | L3 本地磁盘后端及 I/O 优化分析。                        |
+| [lmcache_server.md](./lmcache_server.md)                     | LMCache Server 服务端架构与协议分析。                   |
 | [remote_connector.md](./remote_connector.md)                 | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
