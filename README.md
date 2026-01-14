@@ -54,12 +54,15 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 - **KV 缓存优化 (LMCache)**：
   - [LMCache 源码分析指南](09_inference_system/lmcache/README.md) - 文档入口与推荐阅读路径
   - [LMCache 架构概览](09_inference_system/lmcache/lmcache_overview.md) - 系统定位、四层存储架构 (L1-L4) 与组件交互
+  - [LMCache Controller (控制平面) 架构剖析](09_inference_system/lmcache/lmcache_controller.md) - 集群元数据管理、节点协调及全局指令下发
   - [LMCacheConnector 源码分析](09_inference_system/lmcache/lmcache_connector.md) - 推理引擎 (如 vLLM) 集成入口与请求拦截
   - [LMCacheEngine 源码分析](09_inference_system/lmcache/lmcache_engine.md) - 核心控制流、I/O 编排与元数据管理
   - [分层存储架构与调度机制](09_inference_system/lmcache/lmcache_storage_overview.md) - StorageManager 调度、Write-All 与 Waterfall 检索
   - [LocalCPUBackend 源码分析](09_inference_system/lmcache/local_cpu_backend.md) - L1 本地 CPU 内存后端与并发控制
   - [P2PBackend 源码分析](09_inference_system/lmcache/p2p_backend.md) - L2 弹性互联层与跨节点传输机制
   - [LocalDiskBackend 源码分析](09_inference_system/lmcache/local_disk_backend.md) - L3 本地磁盘后端与 I/O 优化
+  - [Remote Connector (远程连接器) 源码分析](09_inference_system/lmcache/remote_connector.md) - L4 共享存储接口与 Redis/S3/Mooncake 实现
+  - [PDBackend (预填充-解码分离后端) 源码分析](09_inference_system/lmcache/pd_backend.md) - 专为分离架构设计的 KV Cache 主动推送机制
 - **部署实战**：
   - [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference-solution/DeepSeek-V3-MoE-vLLM-H20-Deployment.md) - H20 硬件上的部署方案与 SLO 验证
   - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference-solution/Qwen2-VL-7B_Huawei.md) - 国产硬件平台的部署优化
