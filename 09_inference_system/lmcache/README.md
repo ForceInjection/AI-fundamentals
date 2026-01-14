@@ -59,17 +59,23 @@
 - **核心内容**: 扁平化文件布局、O_DIRECT 直通 I/O、异步流水线。
 - **目标**: 理解基于磁盘的高吞吐扩展实现。
 
+**8. [LMCache Remote Connector 源码分析](./lmcache_remote_connector.md)** (L4 远程层)
+
+- **核心内容**: RemoteConnector 抽象接口、Redis/S3/Mooncake 等多后端实现、零拷贝与异步 I/O 机制。
+- **目标**: 理解如何适配异构远程存储系统以实现数据共享与持久化。
+
 ---
 
 ## 文档索引
 
-| 文档名称                                                     | 描述                                         |
-| :----------------------------------------------------------- | :------------------------------------------- |
-| [lmcache_overview.md](./lmcache_overview.md)                 | 系统的整体架构与核心概念介绍。               |
-| [lmcache_connector.md](./lmcache_connector.md)               | 与推理引擎对接的连接器实现分析。             |
-| [lmcache_engine.md](./lmcache_engine.md)                     | 核心引擎逻辑与数据流编排分析。               |
-| [lmcache_controller.md](./lmcache_controller.md)             | 控制平面架构与分布式元数据管理分析。         |
-| [lmcache_storage_overview.md](./lmcache_storage_overview.md) | 多级存储架构与 StorageManager 调度逻辑分析。 |
-| [local_cpu_backend.md](./local_cpu_backend.md)               | L1 本地 CPU 内存后端及内存分配器分析。       |
-| [p2p_backend.md](./p2p_backend.md)                           | L2 弹性互联层及跨节点传输机制分析。          |
-| [local_disk_backend.md](./local_disk_backend.md)             | L3 本地磁盘后端及 I/O 优化分析。             |
+| 文档名称                                                     | 描述                                                    |
+| :----------------------------------------------------------- | :------------------------------------------------------ |
+| [lmcache_overview.md](./lmcache_overview.md)                 | 系统的整体架构与核心概念介绍。                          |
+| [lmcache_connector.md](./lmcache_connector.md)               | 与推理引擎对接的连接器实现分析。                        |
+| [lmcache_engine.md](./lmcache_engine.md)                     | 核心引擎逻辑与数据流编排分析。                          |
+| [lmcache_controller.md](./lmcache_controller.md)             | 控制平面架构与分布式元数据管理分析。                    |
+| [lmcache_storage_overview.md](./lmcache_storage_overview.md) | 多级存储架构与 StorageManager 调度逻辑分析。            |
+| [local_cpu_backend.md](./local_cpu_backend.md)               | L1 本地 CPU 内存后端及内存分配器分析。                  |
+| [p2p_backend.md](./p2p_backend.md)                           | L2 弹性互联层及跨节点传输机制分析。                     |
+| [local_disk_backend.md](./local_disk_backend.md)             | L3 本地磁盘后端及 I/O 优化分析。                        |
+| [lmcache_remote_connector.md](./lmcache_remote_connector.md) | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
