@@ -1,11 +1,8 @@
 # LMCache 架构概览
 
-**LMCache** 是一个专为大语言模型（LLM）服务引擎设计的 KV Cache 管理系统，旨在通过高效的缓存机制降低 **Time-To-First-Token** (TTFT) 并提高系统吞吐量，特别是在**长上下文 (Long-Context)** 场景下表现优异。
+**LMCache** 是一个专为大语言模型服务引擎设计的 KV Cache 管理系统，旨在通过高效的缓存机制降低 **Time-To-First-Token(TTFT)** 并提高系统吞吐量，特别是在**长上下文 (Long-Context)** 场景下表现优异。
 
-它通过将 KV Cache 存储在**多种介质**（GPU 显存、CPU 内存、本地磁盘、远程存储）中，实现了跨推理实例的 KV Cache 重用。LMCache 不仅支持前缀缓存 (Prefix Caching)，还支持任意文本片段的复用，从而显著节省 GPU 计算资源并降低用户响应延迟。在**多轮对话**和**检索增强生成**等场景中，LMCache 能够带来 `3-10` 倍的性能提升。
-
-> **论文**：[LMCache: A High-Performance KV Cache Management System for LLM Serving](https://arxiv.org/abs/2511.13333)。
-> **官方翻译**：[LMCACHE：面向企业级大语言模型推理的高效 KV Cache 层](https://blog.lmcache.ai/zh/2025/11/24/lmcache%e9%9d%a2%e5%90%91%e4%bc%81%e4%b8%9a%e7%ba%a7%e5%a4%a7%e8%af%ad%e8%a8%80%e6%a8%a1%e5%9e%8b%e6%8e%a8%e7%90%86%e7%9a%84%e9%ab%98%e6%95%88kv-cache%e5%b1%82/)。
+它通过将 KV Cache 存储在**多种介质**（GPU 显存、CPU 内存、本地磁盘、远程存储）中，实现了跨推理实例的 KV Cache 重用。LMCache 不仅支持**前缀缓存(Prefix Caching)** ，还支持任意文本片段的复用，从而显著节省 GPU 计算资源并降低用户响应延迟。在**多轮对话**和**检索增强生成**等场景中，LMCache 能够带来 `3-10` 倍的性能提升。
 
 ## 1. 概述
 
@@ -17,12 +14,14 @@ LMCache 将存储介质划分为四个层级 (L1-L4)，实现了从本地内存�
 
 - **L1: 极速内存层 (Memory Tier)**:
   - **GPU Memory**: 保存当前正在使用的活跃 KV Cache 工作集。
-  - **LocalCPUBackend**: 基于本地 CPU 内存，速度极快。兼任**内存分配器 (Allocator)**。
-  - **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计的特殊后端。
+  - **LocalCPUBackend**: (默认) 基于本地 CPU 内存。**在当前架构中，它是系统强制的全局内存分配器 (Global Allocator)**，负责 Host Memory 的申请与回收，是所有数据流转的必经之地。
+  - **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计。在此模式下，它**替代** LocalCPUBackend 成为全局内存分配器，支持跨节点的内存直传。
 - **L2: 弹性互联层 (P2P Tier)**:
   - **P2PBackend**: (可选) 基于点对点通信，优先从其他节点的内存中拉取数据，速度通常快于本地磁盘。
 - **L3: 本地持久层 (Disk Tier)**:
-  - **LocalDiskBackend**: (可选) 基于本地磁盘 (NVMe SSD)，利用 `O_DIRECT` 和异步 I/O 作为后备缓存。
+  - **NixlStorageBackend**: (可选) 高性能网络/存储后端。它拥有**独立的内存分配器**用于管理内部缓冲区 (Buffer)，但不承担全局分配任务。
+  - **GdsBackend**: (可选) 基于 **NVIDIA GPUDirect Storage (GDS)** 的高性能持久化后端。它拥有**独立的内存分配器** (CuFileMemoryAllocator) 用于管理 GDS 专用的 I/O 缓冲区 (GPU/Registered Memory)，但**不取代** LocalCPUBackend 的全局分配器地位。详见 [GdsBackend 源码分析](./gds_backend.md)。
+  - **LocalDiskBackend**: (可选) 基于本地磁盘 (NVMe SSD)，利用 `O_DIRECT` 和异步 I/O 作为后备缓存。**注意：其索引仅在内存维护，重启后数据不可恢复。**详见 [LocalDiskBackend 源码分析](./local_disk_backend.md)。
 - **L4: 远程共享层 (Remote/Shared Tier)**:
   - **RemoteBackend**: (可选) 基于中心化存储服务 ([LMCache Server](./lmcache_server.md), Redis, Mooncake, S3)，用于跨实例持久化共享。
 
@@ -34,14 +33,16 @@ LMCache 支持三种核心能力范式，覆盖了从单机加速到大规模分
 
    - **核心价值**: **扩展显存，以空间换时间**。利用本地 CPU 内存和磁盘作为二级缓存，突破 GPU 显存容量限制。
    - **关键机制**: 异步卸载 (Offload) 与 预取 (Prefetch)。
+     - **GdsBackend / NixlStorageBackend**: 利用 GPU 直通存储 (GDS) 技术实现零拷贝的极速本地 I/O。
+     - **LocalDiskBackend**: 利用 O_DIRECT 和异步线程池提供标准的本地磁盘缓存。
    - **典型场景**: 单实例长文档推理、本地多轮对话历史复用。
 
 2. **集群共享 (Cluster Sharing)**:
 
    - **核心价值**: **一次计算，全局可用**。在多个推理实例间共享 KV Cache，避免重复计算，提升集群整体吞吐量。
    - **关键机制**:
-     - **集中式**: 基于共享存储 (Remote Backend) 的 Hub-and-Spoke 模式。
-     - **去中心化**: 基于 P2P (P2P Backend) 的 Mesh 互联模式。
+     - **集中式**: 基于共享存储 (**LMCache Server / Redis / Mooncake / S3**) 的 Hub-and-Spoke 模式。**NixlStorageBackend** 支持直接对接 S3 对象存储。
+     - **去中心化**: 基于 P2P (**P2PBackend**) 的 Mesh 互联模式。
    - **典型场景**: 跨实例负载均衡、上下文迁移 (Context Migration)、多实例共享 System Prompt。
 
 3. **流水线传输 (Pipeline Transmission)**:
@@ -96,12 +97,12 @@ graph TD
 
 这些组件直接运行在推理引擎（如 vLLM）的进程空间内，与推理引擎共享内存和资源。
 
-#### 3.1.1 LMCacheConnector
+#### 3.1.1 LMCacheConnector (LMCacheConnectorV1Impl)
 
-`LMCacheConnector` 是 LMCache 与推理引擎（如 vLLM）之间的桥梁。它作为 vLLM 的一个插件运行，拦截 KV Cache 的相关操作。
+`LMCacheConnector` (具体实现类为 `LMCacheConnectorV1Impl`) 是 LMCache 与推理引擎（如 vLLM）之间的桥梁。它作为 vLLM 的一个插件运行，拦截 KV Cache 的相关操作。
 
 **角色**：连接器 / 适配器
-**代码位置**：[`lmcache/integration/vllm/lmcache_connector_v1.py`](../lmcache/integration/vllm/lmcache_connector_v1.py)
+**代码位置**：[`lmcache/integration/vllm/vllm_v1_adapter.py`](../lmcache/integration/vllm/vllm_v1_adapter.py)
 **功能**：
 
 - **拦截**：拦截 vLLM 的 KV Cache 生成和读取请求。
@@ -156,7 +157,11 @@ graph TD
 
 - **分层管理**: 统一管理 L1 (Memory), L2 (P2P), L3 (Disk), L4 (Remote) 多级后端。
 - **策略执行**: 实现了 **Write-All (全写模式)** 确保数据多级持久化，以及 **Waterfall (瀑布式检索)** 确保优先访问最快层级。同时支持 **LRU/LFU** 等缓存逐出策略。
-- **内存分配**: 负责 CPU 内存缓冲区的分配和回收 (通过 Allocator Backend)。
+- **内存分配**: 负责协调内存缓冲区的分配和回收。LMCache 目前支持四种内存分配策略：
+  - **LocalCPUBackend**: 标准模式下的默认分配器 (Host Memory)。
+  - **PDBackend**: PD 分离模式下的专用分配器 (Pinned/Shared Memory)。
+  - **GdsBackend**: GDS 模式下的专用分配器 (Registered Device Memory)，确保 I/O Buffer 满足 `libcufile` 的对齐要求。
+  - **NixlStorageBackend**: 高性能场景下的独立分配器 (Registered Host/Device Memory)，用于支持零拷贝传输。
 - **后端抽象**: 通过统一的接口与不同的存储后端交互。
 
 > 深入分析可参考：[LMCache 分层存储架构与调度机制详解](./lmcache_storage_overview.md)
@@ -250,6 +255,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
   - `LMCache Server`：LMCache 自带的轻量级存储服务器，支持 TCP/RDMA。
   - `Redis`：通用的内存数据库，适合小规模或测试环境。
   - `Mooncake Store`：高性能分布式存储，支持大规模集群。
+  - `NixlStorageBackend (S3)`：直接对接 S3 等对象存储，适合云原生环境下的低成本、大容量共享。
 - **工作流程**：
   1. **写入**：实例 A 生成 KV Cache 后，将其推送到中心存储后端。
   2. **存储**：中心存储后端持久化或在内存中保存该数据。
@@ -322,7 +328,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 
 1. **捕获 (Capture)**
 
-   - **核心逻辑**: `LMCacheConnector` 作为 vLLM 的插件，在 `wait_for_save` 阶段拦截 KV Cache 保存请求。
+   - **核心逻辑**: `LMCacheConnector` 作为 vLLM 的插件，在 `save_kv_layer` 等阶段拦截 KV Cache 保存请求。
    - **代码位置**: [`lmcache/integration/vllm/vllm_v1_adapter.py`](../lmcache/integration/vllm/vllm_v1_adapter.py)
    - **细节**: 连接器根据已保存的 token 数量 (`skip_leading_tokens`) 计算本次增量保存的 Token 范围，生成 `store_mask`，并调用核心引擎接口 `store(...)`。
 
@@ -340,16 +346,19 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
    - **核心逻辑**: `StorageManager` 将数据分发到配置的存储后端（分层存储）。
    - **代码位置**: [`lmcache/v1/storage_backend/storage_manager.py`](../lmcache/v1/storage_backend/storage_manager.py)
    - **细节**: `StorageManager` 按照初始化的优先级顺序，遍历所有激活的存储后端并提交任务。
-     - **必要性说明**: **LocalCPUBackend** (或 `PDBackend`) 是**必须启用**的，因为它不仅作为一级缓存，还承担了**内存分配器 (Allocator)** 的角色。
-     - **注**: `PDBackend` (Prefill-Decode Backend) 专用于 **Prefill-Decode 分离架构**。在此模式下，它默认替代 `LocalCPUBackend` 作为内存分配器，负责在 Prefill 和 Decode 实例间直接传输 KV Cache。详见 [PDBackend 源码分析](./pd_backend.md)。
+     - **内存分配器说明**:
+       - **Global Allocator**: 默认使用 **LocalCPUBackend** (或 PD 模式下的 PDBackend)。所有 KV Cache 必须先写入它分配的 Host Memory。
+       - **Internal Allocator**: **GdsBackend** 和 **NixlStorageBackend** 使用自己的 Allocator 分配传输缓冲区。`StorageManager` 会将数据从 Host Memory 拷贝到这些缓冲区中，然后再执行底层写入。这意味着在当前架构下，**无法完全绕过 CPU 内存**。
    - **后端优先级** (初始化与调用顺序):
      1. **PDBackend**: (仅在 PD 模式启用) 优先级最高，作为 Allocator。
      2. **LocalCPUBackend**: (默认) 核心内存后端。若启用 PD 模式且未显式配置 `local_cpu=True`，则会被跳过。
      3. **P2PBackend**: (仅在 P2P 模式启用) 优先级高于磁盘/远程。**注意**: P2P 模式依赖 LocalCPUBackend 存在。
-     4. **LocalDiskBackend**: 若配置了本地磁盘路径。
-     5. **GdsBackend**: 若启用 GPUDirect Storage。
-     6. **RemoteBackend**: 远程后端 (Redis/Mooncake/LMCache Server)。
-     7. **PluginBackend**: 自定义插件后端。
+     4. **NixlStorageBackend**: (可选) 专为高性能网络/DPU 优化的存储后端。
+     5. **LocalDiskBackend**: 若配置了本地磁盘路径。
+     6. **GdsBackend**: 若启用 GPUDirect Storage。
+     7. **RemoteBackend**: 远程后端 (Redis/Mooncake/LMCache Server)。
+     8. **PluginBackend**: 自定义插件后端。
+     9. **AuditBackend**: (可选) 审计包装器，用于记录 I/O 操作日志。
    - **并发写入**: `batched_put` 会向所有激活的后端并发提交任务。例如，数据会同时被写入本地内存（同步更新索引）、提交给磁盘写入线程（异步）以及发送给远程服务器（异步）。
 
 4. **发布 (Publish)** (仅 P2P 模式)
@@ -369,7 +378,18 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
    - **命中本地**: 直接从内存/磁盘读取。
    - **命中远程**: 从 `LMCache Server` (或 Redis/Mooncake) 下载。
    - **命中 P2P**: `P2PBackend` 通过底层传输通道 (如 TCP/RDMA) 与持有数据的对端实例建立连接，直接拉取数据。
-4. **加载 (Load)**: 数据被加载回 CPU，再通过 `LMCacheEngine` 传输回 GPU 显存。
+4. **加载 (Load) & 提升 (Promotion)**:
+   - **数据加载**: 数据从后端被读取到内存（标准模式为 CPU 内存；GDS/Nixl 模式直达 GPU 显存）。
+   - **自动提升**: 数据对象的引用 (Reference) 会被注册到 `LocalCPUBackend`，避免重复 I/O。
+   - **最终传输**: 若数据在 CPU，则由 `LMCacheEngine` 传输至 GPU；若已在 GPU 则直接复用。
 5. **解码 (Decode)**: vLLM 引擎复用 KV Cache，跳过 Prefill 计算，直接开始 Decode 阶段。
+
+---
+
+## 6. 存储后端选型指南
+
+LMCache 提供了丰富的存储后端以应对不同的硬件环境和业务需求。
+
+> 详细的场景分析、后端组合方案及优劣势对比，请参阅 **[存储架构概览 - 典型部署场景与选型指南](./lmcache_storage_overview.md#4-典型部署场景与后端组合)**。
 
 ---

@@ -33,7 +33,7 @@
 LMCache 使用 `LMCacheEngineBuilder` 类来管理 `LMCacheEngine` 的生命周期，采用单例模式确保每个 `instance_id` 对应唯一的引擎实例。其核心方法 `get_or_create` 实现了以下逻辑：
 
 1. **单例检查**：首先检查 `_instances` 中是否存在指定 `instance_id` 的实例。
-2. **组件初始化**：如果不存在，则初始化 `NUMADetector`、`TokenDatabase` 和 `LMCStatsMonitor` 等组件。
+2. **组件初始化**：如果不存在，则初始化 `NUMADetector`、`TokenDatabase` 和 `LMCacheStatsLogger` 等组件。
 3. **Engine 实例化**：创建并注册 `LMCacheEngine` 实例。
 4. **配置校验**：如果实例已存在，校验其配置和元数据是否与当前请求一致，防止配置冲突。
 
@@ -103,6 +103,9 @@ class LMCacheEngine:
 
         # 初始化统计监控
         self.stats_monitor = LMCStatsMonitor.GetOrCreate()
+
+        # 初始化健康监控占位符 (在 post_init 中启动)
+        self.health_monitor = None
 ```
 
 ### 3.2 延迟初始化
@@ -120,6 +123,9 @@ def post_init(self, **kwargs) -> None:
         if self.gpu_connector is not None:
             self.gpu_connector.initialize_kvcaches_ptr(**kwargs)
 
+        # 初始化并启动健康监控
+        self._init_health_monitor()
+
         self.post_inited = True
 ```
 
@@ -127,7 +133,7 @@ def post_init(self, **kwargs) -> None:
 
 ## 4. 核心操作：Retrieve (检索)
 
-`retrieve` 方法负责将 KV Cache 从存储后端加载回 GPU。这一过程首先通过 `StorageManager` 将数据从后端（如磁盘或远程服务器）加载到 CPU 内存，随后利用 `GPUConnector` 组件高效地将数据批量传输至 GPU 显存中。
+130→`retrieve` 方法负责将 KV Cache 从存储后端加载回 GPU。这一过程首先通过 `StorageManager` 将数据从后端（如磁盘或远程服务器）加载到 CPU 内存（或者在 GDS/Nixl 模式下直接 DMA 到 GPU 显存），随后利用 `GPUConnector` 组件高效地将数据批量传输至 GPU 显存中。
 
 ### 4.1 接口定义
 
@@ -146,7 +152,7 @@ def retrieve(
 
 1. **数据获取策略**:
    - **异步路径**: 当启用 `async_loading` 时，引擎直接从 `EventManager` 获取预取任务的结果。这通常与 `async_lookup_and_prefetch` 配合，允许在计算的同时后台加载数据，掩盖 I/O 延迟。
-   - **同步路径**: 若未启用异步模式，则调用 `_process_tokens_internal` 执行标准层级查找。该过程依次扫描 **L1 (Local CPU)**、**L2 (P2P)**、**L3 (Local Disk)** 和 **L4 (Remote Backend)**，直到找到所需数据。
+   - **同步路径**: 若未启用异步模式，则调用 `_process_tokens_internal` 执行标准层级查找。该过程依次扫描 **L1 (Local CPU)**、**L2 (P2P)**、**L3 (Local Disk / GDS / Nixl)** 和 **L4 (Remote Backend)**，直到找到所需数据。
 2. **MLA 广播 (Broadcast)**:
    - 在 MLA 场景下（配置 `save_only_first_rank`），为减少存储开销，仅 Rank 0 负责实际的数据检索。检索完成后，Rank 0 通过 NCCL 将 `MemoryObj` 广播给其他被动 Rank。
 3. **传输至显存 (H2D)**:
@@ -393,7 +399,7 @@ def lookup(self, tokens, search_range=None, lookup_id=None, pin=False, ...):
         if pin and block_mapping:
             assert lookup_id is not None
             self.lookup_pins[lookup_id] = block_mapping
-    
+
     # 3. 刷新缓存状态
     if pin:
         self.storage_manager.touch_cache()
@@ -571,6 +577,10 @@ LMCacheEngine 的生命周期管理主要涉及两个方法：`close` 和 `destr
 def close(self) -> None:
     """Close the cache engine and free all the resources"""
 
+    # 0. 停止健康监控
+    if self.health_monitor is not None:
+        self.health_monitor.stop()
+
     # 1. 关闭后台 Worker
     if self.lmcache_worker is not None:
         try:
@@ -627,18 +637,43 @@ def destroy(cls, instance_id: str) -> None:
 
 ---
 
-## 9. 监控与统计
+## 9. 健康监控
+
+LMCache 引入了 `HealthMonitor` 组件来持续监控系统的健康状态。该组件在引擎初始化时启动，并自动发现和运行所有注册的健康检查项。
+
+### 9.1 工作机制
+
+- **自动发现**：`HealthMonitor` 会自动扫描并实例化所有 `HealthCheck` 的子类。
+- **定期检查**：后台线程每隔一定时间（默认通过 `ping_interval` 配置）执行一次健康检查。
+- **状态熔断**：如果检测到不健康状态（如存储后端故障），`store` 和 `lookup` 等核心操作会直接返回或跳过，起到熔断保护作用。
+
+### 9.2 接口
+
+引擎提供了 `is_healthy()` 接口供外部查询当前状态：
+
+```python
+def is_healthy(self) -> bool:
+    if self.health_monitor is None:
+        return True
+    return self.health_monitor.is_healthy()
+```
+
+此外，健康状态也会通过 Prometheus 指标 `lmcache_is_healthy` 暴露给监控系统。
+
+---
+
+## 10. 监控与统计
 
 LMCache 内置了完善的可观测性（Observability）系统，基于 Prometheus 标准提供多维度的性能指标监控。这对于生产环境中的性能调优、故障排查和资源规划至关重要。
 
-### 9.1 核心组件
+### 10.1 核心组件
 
 监控系统主要由以下两个组件构成：
 
 - **LMCStatsMonitor**：核心监控单例，负责实时采集各类指标（Counter, Gauge, Histogram）。它支持多进程模式（Multi-process Mode），能够正确汇总 vLLM 等多进程架构下的指标数据。
 - **LMCacheStatsLogger**：一个后台线程，负责定期（默认 10 秒）将聚合后的统计信息输出到日志中，便于快速查看系统运行状态。
 
-### 9.2 关键指标体系
+### 10.2 关键指标体系
 
 LMCache 暴露了丰富的指标，主要包括以下几类：
 
@@ -661,7 +696,7 @@ LMCache 暴露了丰富的指标，主要包括以下几类：
    - `lmcache:remote_time_to_get` / `lmcache:remote_time_to_put`：远程存储后端的读写延迟分布。
    - `lmcache:p2p_transfer_latency`：P2P 传输延迟。
 
-### 9.3 集成方式
+### 10.3 集成方式
 
 在 vLLM 集成场景下，LMCache 的指标通常通过 vLLM 的 `/metrics` 接口统一暴露。用户只需配置 Prometheus 抓取该端口，即可通过 Grafana 等工具进行可视化展示。
 
@@ -686,6 +721,6 @@ class LMCacheEngine:
             self.stats_monitor.on_store_finished(req_id, num_tokens)
 ```
 
-### 9.4 事件追踪 (Event Tracing)
+### 10.4 事件追踪 (Event Tracing)
 
 除了聚合指标外，LMCache 还支持详细的事件追踪机制。通过配置 `enable_kv_events=True`，引擎会记录关键操作（如存储）的详细元数据，包括耗时、涉及的 Key 和数据大小等。这些事件以 `CacheStoreEvent` 对象的形式存储，可用于细粒度的性能分析。

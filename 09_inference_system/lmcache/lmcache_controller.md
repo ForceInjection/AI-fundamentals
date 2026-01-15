@@ -272,7 +272,7 @@ Dashboard 采用轻量级的前后端分离架构，但在部署上保持一体�
 ### 5.3 访问方式
 
 默认情况下，Dashboard 随 Controller 启动，访问地址为：
-`http://<controller_host>:<port>/` (默认端口 8000)
+`http://<controller_host>:<port>/` (如 9001)
 
 ---
 

@@ -532,8 +532,8 @@ def save_kv_layer(self, layer_name, kv_layer, ...):
 
 `StorageManager` 屏蔽了底层存储的复杂性，向连接器提供统一的 `batched_put` 接口。
 
-- **统一调度**: 同时管理多个后端（如 `LocalDiskBackend`, `S3Backend`），支持数据的多级存储。
-- **内存桥接**: 维护 `LocalCPUBackend` 作为分配器 (Allocator)，管理从 GPU 传输下来的中间态内存对象 (`MemoryObj`)，避免频繁的系统调用开销。
+- **统一调度**: 同时管理多个后端（如 `LocalDiskBackend`, `RemoteBackend`），支持数据的多级存储。
+- **内存桥接**: 维护核心内存后端（如 `LocalCPUBackend`, `PDBackend` 或 `GdsBackend`）作为分配器 (Allocator)，管理从 GPU 传输下来的中间态内存对象 (`MemoryObj`)，避免频繁的系统调用开销。
 
 #### 4.2.2 异步写入流程
 

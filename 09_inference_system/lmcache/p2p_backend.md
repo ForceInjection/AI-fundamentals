@@ -490,7 +490,31 @@ p2p_host: "192.168.1.11"
 
 ```python
 from lmcache.v1.storage_backend import LMCacheEngine
-from lmcache.v1.config import LMCacheEngineConfig
+# ... (测试代码)
+```
+
+#### 5.3.3 单机多实例测试 (Loopback)
+
+**可以**在单台机器上通过启动多个 LMCache 实例来模拟 P2P 环境。这对于开发调试或在单机多卡环境（如 8x A100）下验证 P2P 功能非常有用。
+
+**配置要点**：
+所有实例的 `p2p_host` 均设置为 `127.0.0.1`，但必须配置**不同的端口**以避免冲突。
+
+**Instance 1 配置**:
+
+```yaml
+p2p_host: "127.0.0.1"
+p2p_init_ports: [60000] # 数据端口 A
+p2p_lookup_ports: [60001] # 控制端口 A
+```
+
+**Instance 2 配置**:
+
+````yaml
+p2p_host: "127.0.0.1"
+p2p_init_ports: [60002]   # 数据端口 B (必须不同)
+p2p_lookup_ports: [60003] # 控制端口 B (必须不同)
+```from lmcache.v1.config import LMCacheEngineConfig
 import time
 
 # 加载配置
@@ -507,7 +531,7 @@ print(f"Put data for key: {key}")
 # 保持进程存活以响应 P2P 请求
 while True:
     time.sleep(1)
-```
+````
 
 **Receiver (Instance B):**
 
@@ -533,7 +557,7 @@ else:
     print("Failed to retrieve data")
 ```
 
-#### 5.3.3 常见问题排查
+#### 5.3.4 常见问题排查
 
 - **`ibv_open_device failed`**: 检查 RDMA 网卡驱动是否安装，以及是否有权限访问 `/dev/infiniband/uverbs*` 设备。
 - **`Memory registration failed`**: 检查 `ulimit -l` 是否受限。

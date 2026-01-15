@@ -25,8 +25,8 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 
 **L1: 极速内存层 (Memory Tier)**：
 
-- **LocalCPUBackend**: 默认的一级缓存。基于本地 CPU 内存，速度极快。它通常兼任**内存分配器 (Allocator)** 的角色，直接服务于 GPU 的换入换出。
-- **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计的特殊后端。在 Decoder 节点上替代 `LocalCPUBackend` 充当 Allocator，**基于 GPU 显存**，负责接收来自 Prefiller 的数据流。
+- **LocalCPUBackend**: 默认的一级缓存。基于本地 CPU 内存。**在当前代码逻辑中，它（或 PDBackend）被强制指定为全局内存分配器 (Global Allocator)**。所有从 GPU 卸载的数据必须先经由 LocalCPUBackend 分配的 Host Memory 中转。
+- **PDBackend**: (可选) 专为 **Prefill-Decode 分离**场景设计的特殊后端。在 PD 模式下，它**完全替代** LocalCPUBackend 成为全局分配器，负责跨节点的内存直传。
 
 **L2: 弹性互联层 (P2P Tier)**：
 
@@ -34,11 +34,13 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 
 **L3: 本地持久层 (Disk Tier)**：
 
-- **LocalDiskBackend**: (可选) 基于本地磁盘（NVMe SSD 推荐）。容量巨大但速度慢于内存/网络，利用 `O_DIRECT` 和异步 I/O 技术作为后备缓存，适合存储被逐出的冷数据。
+- **NixlStorageBackend**: (可选) 高性能网络/存储后端。它拥有**独立的内存分配器**用于管理内部缓冲区 (Buffer)，但不承担全局分配任务。
+- **GdsBackend**: (可选) 基于 NVIDIA GDS。同样拥有**独立的内存分配器** (CuFileMemoryAllocator) 用于管理 I/O 缓冲区，不承担全局分配任务。
+- **LocalDiskBackend**: (可选) 基于本地磁盘（NVMe SSD 推荐）。容量巨大但速度慢于内存/网络，利用 `O_DIRECT` 和异步 I/O 技术作为后备缓存，适合存储被逐出的冷数据。**注意：其索引仅在内存维护，重启后数据不可恢复。**
 
 **L4: 远程共享层 (Remote/Shared Tier)**：
 
-- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server](./lmcache_server.md), Redis, Mooncake Store, S3）。用于跨实例共享数据，支持多实例集群。详见 [Remote Connector 源码分析](./remote_connector.md)。
+- **RemoteBackend**: (可选) 基于中心化存储服务（如 [LMCache Server](./lmcache_server.md), [Redis, S3](./remote_connector.md)）。用于跨实例共享数据，支持多实例集群。
 
 ---
 
@@ -152,15 +154,16 @@ def get(self, key, location=None):
 1. **PDBackend**: 如果启用 P-D 分离 (`enable_pd=True`)，它是第一个被创建的，并替代 LocalCPUBackend 成为核心 Allocator。
 2. **LocalCPUBackend**: 如果未启用 PD，它总是第一个被创建。如果启用了 PD 且 `local_cpu=True`，它也会被创建，但在 PDBackend 之后。
 3. **P2PBackend**: 如果启用 P2P，优先级高于磁盘和远程。
-4. **LocalDiskBackend**: 如果配置了 `local_disk` 路径，则创建。
-5. **GdsBackend**: GPUDirect Storage 后端（如果启用）。
-6. **RemoteBackend**: 远程存储后端。
-7. **Dynamic Plugins**: 通过 `storage_plugin_launcher` 加载的自定义后端（如果有配置）。
+4. **NixlStorageBackend**: 如果启用 NIXL (`enable_nixl_storage=True`)。支持 GDS 或对象存储。
+5. **LocalDiskBackend**: 如果配置了 `local_disk` 路径，则创建。
+6. **GdsBackend**: 传统的 GPUDirect Storage 后端（如果启用）。
+7. **RemoteBackend**: 远程存储后端。
+8. **Dynamic Plugins**: 通过 `storage_plugin_launcher` 加载的自定义后端（如果有配置）。
 
-> **重要说明：内存分配器 (Allocator) 的必要性**
+> **内存分配器说明**:
 >
-> 系统**必须启用** `LocalCPUBackend` 或 `PDBackend` 其中之一。这是因为它们不仅作为存储后端，还实现了 `AllocatorBackendInterface`，承担了**内存分配器 (Allocator)** 的角色。
-> 即使数据最终只存储在远程 (RemoteBackend)，系统也需要先通过 Allocator 分配本地 Buffer（CPU 内存或 GPU 显存，取决于 Allocator 类型）作为中转，才能将数据发送到远程。因此，Allocator 后端是系统运行的基石。
+> - **Global Allocator**: 默认使用 **LocalCPUBackend** (或 PD 模式下的 PDBackend)。所有 KV Cache 必须先写入它分配的 Host Memory。
+> - **Internal Allocator**: **GdsBackend** 和 **NixlStorageBackend** 使用自己的 Allocator 分配传输缓冲区。`StorageManager` 会将数据从 Host Memory 拷贝到这些缓冲区中，然后再执行底层写入。这意味着在当前架构下，**无法完全绕过 CPU 内存**。
 
 ### 3.2 LocalCPUBackend (L1) 实现细节
 
@@ -320,7 +323,7 @@ def write_file(self, buffer, path):
 
 #### 3.5.2 异步操作与连接管理
 
-`RemoteBackend` 同样支持异步操作，并通过 `RemoteMonitor` 动态监控连接状态。如果连接断开，它会尝试自动重连，并在断连期间降级服务（例如返回 False），避免阻塞本地推理。
+`RemoteBackend` 同样支持异步操作。需要注意的是，其健康检查（Health Check）已不再由 Backend 内部独立管理，而是统一由 `LMCacheEngine` 级别的 `HealthMonitor` 组件负责。`HealthMonitor` 会定期检查远程后端的可用性，并在断连期间自动熔断，避免阻塞本地推理。
 
 ```python
 # lmcache/v1/storage_backend/remote_backend.py
@@ -331,79 +334,119 @@ class RemoteBackend(StorageBackendInterface):
         # 初始化序列化器
         self.serializer, self.deserializer = CreateSerde(...)
 
-        # 启动连接监控
-        self.remote_monitor = RemoteMonitor(self)
-        self.remote_monitor.start()
+        # NOTE: Health monitoring is now handled at the LMCacheEngine level
+        # through HealthMonitor.
 ```
 
 ---
 
 ## 4. 典型部署场景与后端组合
 
-LMCache 根据应用场景的不同，通过配置组合出不同的存储后端拓扑。
+为了帮助用户在复杂的组合中做出最佳选择，下表提供了不同场景下的推荐后端配置方案。
 
-### 4.1 单实例加速
+### 4.1 选型速查表
+
+| 场景         | 方案             | 组合方式                               | 适用环境                | 优势                                | 劣势                              |
+| :----------- | :--------------- | :------------------------------------- | :---------------------- | :---------------------------------- | :-------------------------------- |
+| **本地复用** | **标准组合**     | `LocalCPU` + `LocalDiskBackend`        | 通用硬件，无 GDS。      | **兼容性好**；磁盘扩展容量。        | 延迟较高；**重启数据不可恢复**。  |
+|              | **高性能持久化** | `LocalCPU` + `GdsBackend`              | NVMe SSD + GDS 支持。   | **极速 I/O**；**数据持久化**。      | 依赖 GDS；inode 开销大。          |
+|              | **极致性能缓存** | `LocalCPU` + `NixlStorageBackend`      | 极低延迟，不求持久化。  | **极致吞吐**；无运行时 inode 开销。 | **数据易失**；配置复杂。          |
+| **集群共享** | **中心化共享**   | `LocalCPU` + `RemoteBackend`           | 小规模集群，需持久化。  | **架构简单**；支持断点续传。        | 中心瓶颈；网络延迟。              |
+|              | **云原生共享**   | `LocalCPU` + `NixlStorageBackend` (S3) | 云原生，低成本大容量。  | **容量无限**；直接对接 S3。         | S3 延迟较高。                     |
+|              | **P2P 互联**     | `LocalCPU` + `P2PBackend`              | 大规模集群，RDMA 网络。 | **无中心瓶颈**；零拷贝传输。        | 依赖 Controller；仅共享内存数据。 |
+| **PD 分离**  | **流水线直传**   | `PDBackend`                            | 专用 PD 分离架构。      | **定向优化**；支持 RDMA 直传。      | 功能单一；不具备通用缓存能力。    |
+
+### 4.2 单实例加速
 
 本模式是 LMCache 最基础的用法，旨在通过利用本地资源（CPU 内存和磁盘）来加速单机环境下的推理任务，特别适合开发、测试以及对延迟敏感的单实例服务。
 
 - **场景说明**: 适用于开发测试或单机服务场景。利用本地内存 (RAM) 和磁盘 (Disk) 缓存历史 KV 数据，加速本地复用的 Prompt，减少重复计算。
 - **关键配置**:
-  - `local_cpu=True`
-  - `local_disk=Path` (可选)
+  - **方案 A (标准组合)**:
+    - `local_cpu=True`
+    - `local_disk="file://<path>"`
+  - **方案 B (高性能持久化)**:
+    - `local_cpu=True` (必选，作为 L1 Cache/Global Allocator)
+    - `gds_path="/path/to/gds_dir"`
+  - **方案 C (极致性能缓存)**:
+    - `local_cpu=True` (必选，作为 L1 Cache/Global Allocator)
+    - `extra_config.enable_nixl_storage=True`
+    - `extra_config.nixl_backend="GDS"` (或 POSIX/HF3FS)
 - **激活后端 (按层级)**:
-  1. `LocalCPUBackend`
-  2. `LocalDiskBackend` (可选)
+  - **标准组合**: `LocalCPU` + `LocalDiskBackend`
+  - **高性能持久化**: `LocalCPU` + `GdsBackend`
+  - **极致性能缓存**: `LocalCPU` + `NixlStorageBackend`
 - **读写流程**:
-  - **Write**:
-    1. GPU 数据拷贝到 CPU (`LocalCPUBackend`)。
-    2. 若配置了磁盘，异步提交任务给 `LocalDiskBackend`，后台线程将数据写入磁盘文件。
-  - **Read**:
-    1. 查询 `LocalCPUBackend`，若命中则直接使用。
-    2. 若未命中则查询 `LocalDiskBackend`。
-    3. 磁盘命中后，读取文件并将数据加载到 CPU。
-    4. 触发 **Promotion** 机制，将数据写回 `LocalCPUBackend` 以加速后续访问。
+  - **方案 A: 标准组合**
+    - **Write**:
+      1. GPU 数据拷贝到 CPU (`LocalCPUBackend`)。
+      2. 异步提交任务给 `LocalDiskBackend`，后台线程将数据写入磁盘文件。
+    - **Read**:
+      1. 查询 `LocalCPUBackend`，若命中则直接使用。
+      2. 若未命中则查询 `LocalDiskBackend`。
+      3. 磁盘命中后，读取文件并将数据加载到 CPU。
+      4. 触发 **Promotion** 机制，将数据写回 `LocalCPUBackend` 以加速后续访问。
+  - **方案 B/C: 高性能/极致性能组合 (GDS/NIXL)**
+    - **Write**:
+      1. **Global Allocator 阶段**: 数据首先存入 `LocalCPUBackend` 分配的 Host Memory。
+      2. **Internal Transfer**: `StorageManager` 将数据从 Host Memory 拷贝到 GDS/NIXL 后端管理的专用缓冲区 (Internal Buffer)。
+      3. **Persist**: 通过 GDS (cuFile) 或 NIXL 驱动直接写入 NVMe，绕过 OS Page Cache。
+    - **Read**:
+      1. 查询 `LocalCPUBackend` (未命中)。
+      2. 查询 GDS/NIXL 后端。
+      3. **Zero-Copy Restore**: 数据通过 DMA 直接加载到 GPU 显存 (绕过 CPU)。
+      4. **Promotion**: 数据对象的引用被注册到 `LocalCPUBackend` (L1)，以缓存热点数据，避免重复的磁盘 I/O。
 
-### 4.2 多实例共享 - 中心化模式
+### 4.3 多实例共享 - 中心化模式
 
 本模式通过引入中心化的存储服务，实现了多实例间的 KV Cache 共享，适用于中小型集群或对一致性要求较高的场景。
 
 - **场景说明**: 适用于多节点共享 KV Cache 的场景。假设有两个实例 **Instance A** 和 **Instance B**。Instance A 生成的 KV Cache 可以被 Instance B 复用。数据通过中心化的 LMCache Server (支持 Redis/S3 协议) 传输。
 - **关键配置**:
-  - `remote_url="lm://<host>:<port>"`
+  - **方案 A (中心化共享)**:
+    - `local_cpu=True`
+    - `remote_url="lm://<host>:<port>"` (或 redis://, s3://)
+  - **方案 B (云原生共享)**:
+    - `local_cpu=True`
+    - `extra_config.enable_nixl_storage=True`
+    - `extra_config.nixl_backend="OBJ"` (对象存储)
+    - `extra_config.nixl_path="s3://<bucket>/<prefix>"`
 - **激活后端 (按层级)**:
-  1. `LocalCPUBackend`
-  2. `RemoteBackend`
+  - **中心化共享**: `LocalCPU` + `RemoteBackend`
+  - **云原生共享**: `LocalCPU` + `NixlStorageBackend`
 - **读写流程**:
   - **Write (Instance A)**:
-    1. 数据存入本地 `LocalCPUBackend`。
-    2. `StorageManager` 通过 `RemoteBackend` 异步将数据序列化。
-    3. 通过网络发送给 `LMCache Server` 进行持久化存储。
+    1. **Global Allocator**: 数据存入本地 `LocalCPUBackend` (Host Memory)。
+    2. **Persist**:
+       - **RemoteBackend**: `StorageManager` 异步序列化数据并通过网络发送给 Server。
+       - **NixlStorageBackend**: `StorageManager` 拷贝数据到 Internal Buffer，Nixl 驱动将其上传至 S3。
   - **Read (Instance B)**:
     1. 查询本地 `LocalCPUBackend` (未命中)。
-    2. 查询 `RemoteBackend`，向 Server 发送 Lookup 请求。
-    3. 若数据存在，从 Server 下载数据并反序列化到本地 CPU。
-    4. 触发 **Promotion** 机制，将数据提升到 Instance B 的 `LocalCPUBackend`。
+    2. **Remote Lookup**: 查询 `RemoteBackend` 或 `NixlStorageBackend`。
+    3. **Fetch & Restore**:
+       - **RemoteBackend**: 从 Server 下载数据，反序列化并写入本地 `LocalCPUBackend`。
+       - **NixlStorageBackend**: 从 S3 下载数据到 Internal Buffer，再拷贝回 `LocalCPUBackend`。
+    4. **Promotion**: 数据进入 LocalCPU 后，即完成提升，可供 GPU 直接使用。
 
-### 4.3 多实例共享 - P2P 模式
+### 4.4 多实例共享 - P2P 模式
 
 本模式专为大规模高并发集群设计，去除了中心化存储瓶颈，通过点对点直接传输实现高性能的数据共享。
 
 - **场景说明**: 适用于大规模分布式集群。假设 **Instance A** 持有热门 KV Cache，**Instance B** 需要访问它。实例间直接传输数据，`Cache Controller` 仅负责元数据管理和对等点发现。
 - **关键配置**:
+  - `local_cpu=True` (必须，作为 P2P 传输的源和目的地)
   - `enable_p2p=True`
 - **激活后端 (按层级)**:
-  1. `LocalCPUBackend`
-  2. `P2PBackend`
+  - `LocalCPU` + `P2PBackend`
 - **读写流程**:
-
   - **Write (Instance A)**:
-    1. 数据存入本地 `LocalCPUBackend`。
-    2. `P2PBackend` 异步向 `Cache Controller` 发送 `ADMIT` 消息，注册 KV Cache 的位置信息。
+    1. **Global Allocator**: 数据存入本地 `LocalCPUBackend`。
+    2. **Publish**: `P2PBackend` 异步向 `Cache Controller` 发送 `ADMIT` 消息，注册 KV Cache 的位置信息。
   - **Read (Instance B)**:
     1. 查询本地 `LocalCPUBackend` (未命中)。
-    2. `P2PBackend` 向 `Cache Controller` 发起查询，获取持有数据的节点列表 (如 Instance A)。
-    3. Instance B 与 Instance A 建立 P2P 连接，直接从 Instance A 拉取数据。
-    4. 数据加载到 Instance B 的 CPU，并提升到 `LocalCPUBackend`。
+    2. **Peer Lookup**: `P2PBackend` 向 `Cache Controller` 发起查询，获取持有数据的节点列表 (如 Instance A)。
+    3. **P2P Transfer**: Instance B 与 Instance A 建立 P2P 连接，数据从 Instance A 的 Host Memory 直接传输到 Instance B 的 Host Memory。
+    4. **Promotion**: 数据进入 Instance B 的 `LocalCPUBackend`，完成提升。
 
 **特别说明**:
 
@@ -437,19 +480,26 @@ async def _handle_batched_lookup_and_get(
 2. **延迟可预测性 (Latency Predictability)**: 内存访问是微秒级的，而磁盘 I/O 是毫秒级的且波动较大。限制 P2P 仅在内存层，保证了该路径的低延迟特性。
 3. **元数据一致性 (Metadata Consistency)**: LMCache 的元数据管理策略倾向于 "内存即服务"。当数据从内存逐出时，系统会向 Controller 发送 `EVICT` 信号，从路由表中移除该节点。这种设计简化了状态管理，避免了复杂的跨层级一致性维护。
 
-### 4.4 分布式推理支持 (Tensor/Pipeline Parallelism)
+### 4.5 分布式推理支持 (Tensor/Pipeline Parallelism)
 
-本模式确保了 LMCache 能够无缝集成到基于张量并行 (TP) 或流水线并行 (PP) 的大模型推理架构中，维持各并行 Rank 的数据一致性。
+本模式确保了 LMCache 能够无缝集成到基于张量并行 (TP) 或流水线并行 (PP) 的大模型推理架构中。
 
-- **场景说明**: 适用于大模型分布式推理 (TP/PP)。LMCache 在每个 GPU Worker 进程中独立运行，负责管理该 Rank 对应的 KV 切片 (Partition)。
+- **场景说明**: 适用于大模型分布式推理 (TP/PP)。LMCache 以 **Sidecar** 形式在每个 GPU Worker 进程中独立运行，每个实例仅负责管理所属 Rank 的 KV Cache 切片 (Partition)。
 - **关键配置**:
-  - 兼容上述任意场景 (1/2/3) 的配置。
+  - `local_cpu=True` (必须，每个 Rank 独立管理自己的 Host Memory)
+  - 其他配置与上述场景 (4.2/4.3/4.4) 保持一致，并在所有 Rank 间同步。
 - **激活后端 (按层级)**:
-  - 对应场景的后端组合 (Per-Rank 隔离运行)。
+  - 每个 Rank 独立初始化一套后端组合 (如 `LocalCPU` + `RemoteBackend`)。
 - **读写流程**:
-  - **Write/Read**: 每个 Rank 的 LMCache 实例独立执行上述 (4.1/4.2/4.3) 的流程，仅处理属于自己 Rank 的 KV 数据切片。上层应用 (vLLM) 负责协调各 Rank 的计算。
+  - **SPMD 模式**: 所有 Rank 并行执行相同的读写逻辑。
+  - **Write**:
+    1. **Local**: 各 Rank 将自己的 KV 切片写入本地 `LocalCPU`。
+    2. **Remote/P2P**: 若配置了共享后端，各 Rank 独立将切片上传/发送。
+  - **Read**:
+    1. 各 Rank 独立查询并加载属于自己的 KV 切片。
+    2. vLLM 引擎在计算层进行集合通信 (AllReduce)，LMCache 不感知上层通信。
 
-### 4.5 Prefill-Decode 分离
+### 4.6 Prefill-Decode 分离
 
 本模式针对极致性能优化的 Prefill-Decode 分离架构，通过内存直传机制，实现了跨节点的毫秒级 KV Cache 传输。
 
@@ -457,17 +507,16 @@ async def _handle_batched_lookup_and_get(
 - **关键配置**:
   - `enable_pd=True`
 - **激活后端 (按层级)**:
-  1. `PDBackend`
-  2. `LocalCPUBackend` (可选)
+  - `PDBackend` (**Global Allocator**)
+  - `LocalCPUBackend` (代码允许开启，但**不推荐**。若开启，数据会被冗余写入本地 CPU 内存，增加无谓开销，且不参与 PD 核心传输链路)
 - **读写流程**:
   - **Write (Prefiller)**:
-    1. `StorageManager` 调用 `PDBackend`。
-    2. `PDBackend` 作为 Allocator 分配传输 Buffer。
-    3. 数据直接通过网络 (ZMQ) 推送给指定的 Decoder 节点，**不进行本地持久化**。
+    1. **Global Allocator**: `StorageManager` 使用 `PDBackend` 分配 Host/Pinned Memory。
+    2. **Push**: 数据从 GPU 拷贝到 PDBackend Buffer 后，立即通过网络 (ZMQ) 推送给指定的 Decoder 节点，**不进行本地持久化**。
   - **Read (Decoder)**:
-    1. Decoder 节点的 `PDBackend` 在后台监听并接收数据，存入本地内存字典 (`self.data`)。
-    2. 推理请求到达时，`StorageManager` 查询 `PDBackend`。
-    3. 直接从 `PDBackend` 的本地接收缓冲区获取已就绪的 KV Cache，并加载到 GPU 进行 Decode。
+    1. **Background Receive**: Decoder 节点的 `PDBackend` 在后台监听并接收数据，存入本地内存字典。
+    2. **Fetch**: 推理请求到达时，`StorageManager` 直接从 `PDBackend` 的本地缓冲区获取已就绪的 KV Cache。
+    3. **Restore**: 数据加载到 GPU 进行 Decode。
 
 ---
 
