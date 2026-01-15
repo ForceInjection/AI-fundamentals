@@ -4,6 +4,9 @@
 
 它通过将 KV Cache 存储在**多种介质**（GPU 显存、CPU 内存、本地磁盘、远程存储）中，实现了跨推理实例的 KV Cache 重用。LMCache 不仅支持前缀缓存 (Prefix Caching)，还支持任意文本片段的复用，从而显著节省 GPU 计算资源并降低用户响应延迟。在**多轮对话**和**检索增强生成**等场景中，LMCache 能够带来 `3-10` 倍的性能提升。
 
+> **论文**：[LMCache: A High-Performance KV Cache Management System for LLM Serving](https://arxiv.org/abs/2511.13333)。
+> **官方翻译**：[LMCACHE：面向企业级大语言模型推理的高效 KV Cache 层](https://blog.lmcache.ai/zh/2025/11/24/lmcache%e9%9d%a2%e5%90%91%e4%bc%81%e4%b8%9a%e7%ba%a7%e5%a4%a7%e8%af%ad%e8%a8%80%e6%a8%a1%e5%9e%8b%e6%8e%a8%e7%90%86%e7%9a%84%e9%ab%98%e6%95%88kv-cache%e5%b1%82/)。
+
 ## 1. 概述
 
 LMCache 通过扩展 LLM 推理引擎（如 vLLM），构建了一个跨越 GPU 显存、CPU 内存以及磁盘/远程后端的**多层级 KV Cache 存储系统 (Multi-Tier Storage Architecture)**。
