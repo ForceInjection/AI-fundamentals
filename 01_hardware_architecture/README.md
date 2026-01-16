@@ -54,3 +54,11 @@
 
 - **TPU 101**：深度学习专用加速器架构解析
 - **对比分析**：TPU vs GPU
+
+### 3.3 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
+
+详细解析 NVIDIA GPUDirect 系列技术，重点关注解决“内存墙”与“IO 墙”问题的核心方案。
+
+- **核心技术**：[GPUDirect RDMA](gpudirect/gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/gpudirect_technology.md#3-gpudirect-storage-gds-技术)
+- **原理解析**：PCI BAR 映射、DMA 路径优化、Zero-Copy 机制
+- **生态支持**：硬件（网卡/存储）、软件（通信库/文件系统）及 AI 框架集成

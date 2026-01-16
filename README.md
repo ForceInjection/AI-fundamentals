@@ -21,7 +21,7 @@
 
 **核心模块导航**：
 
-- **[GPU 与 AI 加速器架构](01_hardware_architecture/README.md)**：涵盖 NVIDIA GPU 架构、Google TPU 设计哲学及 GPGPU vs NPU 对比分析。
+- **[GPU 与 AI 加速器架构](01_hardware_architecture/README.md)**：涵盖 NVIDIA GPU 架构、Google TPU 设计哲学、GPUDirect 核心技术及 GPGPU vs NPU 对比分析。
 - **[AI 集群运维与通信](03_ai_cluster_ops/README.md)**：包含 GPU 基础运维、InfiniBand 高性能网络及 NCCL 分布式通信实战。
 - **[性能分析与调优](02_gpu_programming/profiling/README.md)**：AI 系统全栈性能分析与瓶颈诊断。
 
