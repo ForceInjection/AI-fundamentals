@@ -1,4 +1,4 @@
-# NVIDIA GPUDirect 技术详解：RDMA 与 Storage
+# NVIDIA GPUDirect RDMA 与 Storage 技术详解
 
 ## 1. 引言
 
