@@ -346,15 +346,15 @@ class RemoteBackend(StorageBackendInterface):
 
 ### 4.1 选型速查表
 
-| 场景         | 方案             | 组合方式                               | 适用环境                | 优势                                | 劣势                              |
-| :----------- | :--------------- | :------------------------------------- | :---------------------- | :---------------------------------- | :-------------------------------- |
-| **本地复用** | **标准组合**     | `LocalCPU` + `LocalDiskBackend`        | 通用硬件，无 GDS。      | **兼容性好**；磁盘扩展容量。        | 延迟较高；**重启数据不可恢复**。  |
-|              | **高性能持久化** | `LocalCPU` + `GdsBackend`              | NVMe SSD + GDS 支持。   | **极速 I/O**；**数据持久化**。      | 依赖 GDS；inode 开销大。          |
-|              | **极致性能缓存** | `LocalCPU` + `NixlStorageBackend`      | 极低延迟，不求持久化。  | **极致吞吐**；无运行时 inode 开销。 | **数据易失**；配置复杂。          |
-| **集群共享** | **中心化共享**   | `LocalCPU` + `RemoteBackend`           | 小规模集群，需持久化。  | **架构简单**；支持断点续传。        | 中心瓶颈；网络延迟。              |
-|              | **云原生共享**   | `LocalCPU` + `NixlStorageBackend` (S3) | 云原生，低成本大容量。  | **容量无限**；直接对接 S3。         | S3 延迟较高。                     |
-|              | **P2P 互联**     | `LocalCPU` + `P2PBackend`              | 大规模集群，RDMA 网络。 | **无中心瓶颈**；零拷贝传输。        | 依赖 Controller；仅共享内存数据。 |
-| **PD 分离**  | **流水线直传**   | `PDBackend`                            | 专用 PD 分离架构。      | **定向优化**；支持 RDMA 直传。      | 功能单一；不具备通用缓存能力。    |
+| 场景         | 方案             | 组合方式                                      | 适用环境                | 优势                                | 劣势                              |
+| :----------- | :--------------- | :-------------------------------------------- | :---------------------- | :---------------------------------- | :-------------------------------- |
+| **本地复用** | **标准组合**     | `LocalCPUBackend` + `LocalDiskBackend`        | 通用硬件，无 GDS。      | **兼容性好**；磁盘扩展容量。        | 延迟较高；**重启数据不可恢复**。  |
+|              | **高性能持久化** | `LocalCPUBackend` + `GdsBackend`              | NVMe SSD + GDS 支持。   | **极速 I/O**；**数据持久化**。      | 依赖 GDS；inode 开销大。          |
+|              | **极致性能缓存** | `LocalCPUBackend` + `NixlStorageBackend`      | 极低延迟，不求持久化。  | **极致吞吐**；无运行时 inode 开销。 | **数据易失**；配置复杂。          |
+| **集群共享** | **中心化共享**   | `LocalCPUBackend` + `RemoteBackend`           | 小规模集群，需持久化。  | **架构简单**；支持断点续传。        | 中心瓶颈；网络延迟。              |
+|              | **云原生共享**   | `LocalCPUBackend` + `NixlStorageBackend` (S3) | 云原生，低成本大容量。  | **容量无限**；直接对接 S3。         | S3 延迟较高。                     |
+|              | **P2P 互联**     | `LocalCPUBackend` + `P2PBackend`              | 大规模集群，RDMA 网络。 | **无中心瓶颈**；零拷贝传输。        | 依赖 Controller；仅共享内存数据。 |
+| **PD 分离**  | **流水线直传**   | `PDBackend`                                   | 专用 PD 分离架构。      | **定向优化**；支持 RDMA 直传。      | 功能单一；不具备通用缓存能力。    |
 
 ### 4.2 单实例加速
 
@@ -373,9 +373,9 @@ class RemoteBackend(StorageBackendInterface):
     - `extra_config.enable_nixl_storage=True`
     - `extra_config.nixl_backend="GDS"` (或 POSIX/HF3FS)
 - **激活后端 (按层级)**:
-  - **标准组合**: `LocalCPU` + `LocalDiskBackend`
-  - **高性能持久化**: `LocalCPU` + `GdsBackend`
-  - **极致性能缓存**: `LocalCPU` + `NixlStorageBackend`
+  - **标准组合**: `LocalCPUBackend` + `LocalDiskBackend`
+  - **高性能持久化**: `LocalCPUBackend` + `GdsBackend`
+  - **极致性能缓存**: `LocalCPUBackend` + `NixlStorageBackend`
 - **读写流程**:
   - **方案 A: 标准组合**
     - **Write**:
@@ -412,8 +412,8 @@ class RemoteBackend(StorageBackendInterface):
     - `extra_config.nixl_backend="OBJ"` (对象存储)
     - `extra_config.nixl_path="s3://<bucket>/<prefix>"`
 - **激活后端 (按层级)**:
-  - **中心化共享**: `LocalCPU` + `RemoteBackend`
-  - **云原生共享**: `LocalCPU` + `NixlStorageBackend`
+  - **中心化共享**: `LocalCPUBackend` + `RemoteBackend`
+  - **云原生共享**: `LocalCPUBackend` + `NixlStorageBackend`
 - **读写流程**:
   - **Write (Instance A)**:
     1. **Global Allocator**: 数据存入本地 `LocalCPUBackend` (Host Memory)。
@@ -437,7 +437,7 @@ class RemoteBackend(StorageBackendInterface):
   - `local_cpu=True` (必须，作为 P2P 传输的源和目的地)
   - `enable_p2p=True`
 - **激活后端 (按层级)**:
-  - `LocalCPU` + `P2PBackend`
+  - `LocalCPUBackend` + `P2PBackend`
 - **读写流程**:
   - **Write (Instance A)**:
     1. **Global Allocator**: 数据存入本地 `LocalCPUBackend`。
@@ -489,11 +489,11 @@ async def _handle_batched_lookup_and_get(
   - `local_cpu=True` (必须，每个 Rank 独立管理自己的 Host Memory)
   - 其他配置与上述场景 (4.2/4.3/4.4) 保持一致，并在所有 Rank 间同步。
 - **激活后端 (按层级)**:
-  - 每个 Rank 独立初始化一套后端组合 (如 `LocalCPU` + `RemoteBackend`)。
+  - 每个 Rank 独立初始化一套后端组合 (如 `LocalCPUBackend` + `RemoteBackend`)。
 - **读写流程**:
   - **SPMD 模式**: 所有 Rank 并行执行相同的读写逻辑。
   - **Write**:
-    1. **Local**: 各 Rank 将自己的 KV 切片写入本地 `LocalCPU`。
+    1. **Local**: 各 Rank 将自己的 KV 切片写入本地 `LocalCPUBackend`。
     2. **Remote/P2P**: 若配置了共享后端，各 Rank 独立将切片上传/发送。
   - **Read**:
     1. 各 Rank 独立查询并加载属于自己的 KV 切片。
