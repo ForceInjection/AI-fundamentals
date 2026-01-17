@@ -88,3 +88,9 @@
 
 - **[Mooncake 架构详解](Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
 - **[NVIDIA Model Optimizer 技术详解](NVIDIA_Model_Optimizer_Introduction.md)** - NVIDIA 官方模型量化、稀疏化与蒸馏工具库指南
+
+## 6. 高性能通信与互联
+
+本章聚焦于分布式推理系统中的底层通信技术，探讨如何通过高效的数据传输机制解决分离式架构与大规模集群中的通信瓶颈。
+
+- **[NIXL (NVIDIA Inference Xfer Library) 简介](communication/nixl_introduction.md)** - 专为大规模分布式 AI 推理设计的点对点通信库，通过统一抽象屏蔽底层异构性，支持分离式推理与 KV Cache 的高效流转。
