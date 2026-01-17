@@ -60,11 +60,21 @@
 - **[LocalCPUBackend 源码分析](lmcache/local_cpu_backend.md)** - L1 本地 CPU 内存后端与并发控制
 - **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - L2 弹性互联层与跨节点传输机制
 - **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - L3 本地磁盘后端与 I/O 优化
+- **[GdsBackend 源码分析](lmcache/gds_backend.md)** - 基于 GPUDirect Storage 的高性能存储后端
+- **[NixlStorageBackend 源码分析](lmcache/nixl_backend.md)** - 基于 NIXL 的通用存储/网络后端
 - **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - L4 共享存储接口与 Redis/S3/Mooncake 实现
 - **[LMCache Server 源码分析](lmcache/lmcache_server.md)** - LMCache Server 服务端架构与协议分析
 - **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
 
-## 3. 推理部署方案
+## 3. 显存分析与计算工具
+
+本章提供了针对 LLM 推理显存占用的深度分析与计算工具，帮助开发者精确评估硬件需求。
+
+- **[LLM 模型推理显存占用深度分析](memory_calc/memory_analysis.md)** - 理论分析模型权重、KV Cache 及激活值的显存构成
+- **[显存计算脚本](memory_calc/calculate_qwen3_memory.py)** - 自动计算指定模型配置下的显存占用 (支持 Qwen3 等)
+- **[模型配置示例](memory_calc/qwen3-06b.config.json)** - Qwen3-0.6B 模型的标准配置文件
+
+## 4. 推理部署方案
 
 本章汇集了针对主流开源模型（如 DeepSeek、Qwen、Llama 等）的实战部署方案。每个方案均包含详细的硬件配置、环境搭建步骤及性能基准数据，为开发者提供可直接复用的生产级部署模板。
 
@@ -72,4 +82,9 @@
   - **[SLO 计算工具](./inference-solution/slo_calc_v2.py)** - 基于腾讯太极团队实际数据的 DeepSeek-V3 SLO 目标验证脚本
 - **[Qwen2-VL-7B 模型在华为硬件平台的部署优化](./inference-solution/Qwen2-VL-7B_Huawei.md)**
 
----
+## 5. 深度技术专题
+
+本章收录了业界前沿的推理系统架构与优化工具的深度解析。
+
+- **[Mooncake 架构详解](Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
+- **[NVIDIA Model Optimizer 技术详解](NVIDIA_Model_Optimizer_Introduction.md)** - NVIDIA 官方模型量化、稀疏化与蒸馏工具库指南
