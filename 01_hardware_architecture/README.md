@@ -26,8 +26,8 @@
 
 ### 1.2 深度阅读
 
-- [**PCIe 知识大全**](https://mp.weixin.qq.com/s/dHvKYcZoa4rcF90LLyo_0A) - 深入理解 PCIe 总线架构、带宽计算和性能优化
-- [**NVLink 入门**](https://mp.weixin.qq.com/s/fP69UEgusOa_X4ZKLo30ig) - NVIDIA 高速互连技术的原理与应用场景
+- [**PCIe 知识大全**](pcie/pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化
+- [**NVLink 入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景
 - [**NVIDIA DGX SuperPOD**](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q) - 企业级 AI 超算集群的架构设计与部署实践
 
 ## 2. 芯片架构对比
