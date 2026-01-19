@@ -51,6 +51,7 @@
 
 在大模型推理中，KV Cache 的管理是影响长上下文性能与显存效率的核心瓶颈。本节专门探讨 LMCache 等先进缓存技术，从架构概览到源码实现，深入解析如何通过多级存储与高效调度突破显存限制。
 
+- **[vLLM KV Offloading 与 LMCache 深度对比](vllm/KV_Offloading_and_LMCache_Analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCacheConnector 在架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡。
 - **[LMCache 源码分析指南](lmcache/README.md)** - LMCache 文档入口与推荐阅读路径
 - **[LMCache 架构概览](lmcache/lmcache_overview.md)** - 系统定位、四层存储架构 (L1-L4) 与组件交互
 - **[LMCache Controller (控制平面) 架构剖析](lmcache/lmcache_controller.md)** - 集群元数据管理、节点协调及全局指令下发
