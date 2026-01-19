@@ -53,7 +53,8 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 
 1. **nvidia-container-runtime**: 一个轻量级的 Wrapper，它包裹了系统的原生运行时（如 runC）。它并不直接运行容器，而是拦截容器启动请求，注入 `prestart hook`。
 2. **nvidia-container-toolkit (Hook)**: 作为 prestart hook 被调用，它读取容器配置（如环境变量、Mounts），并调用 CLI 工具。
-3. **libnvidia-container / nvidia-container-cli**: 核心执行组件。它负责与操作系统内核交互，执行具体的设备挂载和库文件注入。
+3. **nvidia-ctk**: (v1.11.0+ 引入) 新一代命令行工具，用于配置生成和 CDI (Container Device Interface) 规范管理，逐步取代部分旧组件功能。
+4. **libnvidia-container / nvidia-container-cli**: 核心执行组件。它负责与操作系统内核交互，执行具体的设备挂载和库文件注入。
 
 **NVIDIA Container Runtime 的具体职责（Under the Hood）：**
 
@@ -64,6 +65,8 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 3. **设备挂载 (Mount Devices)**：解析 `--gpus` 参数，找到对应的 GPU 设备节点（如 `/dev/nvidia0`, `/dev/nvidiactl`），并将其挂载到容器内的 `/dev/` 目录。
 4. **库注入 (Inject Libraries)**：将宿主机上的驱动库（如 `libcuda.so`, `libnvidia-ml.so`）挂载到容器内，通常通过 `ld.so.conf` 机制确保容器内应用能加载到这些库。
 5. **Cgroups 配置**：配置设备控制组（Device Cgroup），确保容器内进程只能访问被允许的 GPU 设备，实现资源隔离。
+
+> **深度阅读**：关于 NVIDIA Container Toolkit 的源码级深度解析（含 CDI 规范、Hook 机制代码分析），请参考 [NVIDIA Container Toolkit 原理分析与代码深度解析](../../04_cloud_native_ai_platform/k8s/Nvidia%20Container%20Toolkit%20原理分析.md)。
 
 ### 2.3 Docker / Container Runtime（必须）
 
