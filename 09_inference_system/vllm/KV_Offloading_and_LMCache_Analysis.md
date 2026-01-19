@@ -345,15 +345,15 @@ def wait_for_layer_load(self, layer_name: str) -> None:
 
 下表总结了 KV Offloading Connector 与 LMCacheConnector 的关键差异：
 
-| 特性维度         | KV Offloading Connector (vLLM Native)                                                                               | LMCacheConnector (LMCache Ecosystem)                                                                                                                                     |
-| :--------------- | :------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **核心定位**     | **垂直扩展 (Scale-Up)**<br>利用单机多级存储 (CPU/NVMe) 扩展显存容量。                                               | **水平扩展 (Scale-Out)**<br>构建分布式 KV 数据湖，支持跨实例、跨地域共享。                                                                                               |
-| **数据管理方式** | **显式物理管理**<br>Scheduler 明确记录 Block 在 CPU 还是 GPU，逻辑紧耦合。                                          | **隐式逻辑管理**<br>通过 Token Hash 索引，底层存储位置对 vLLM 透明。                                                                                                     |
-| **通信机制**     | **进程内/共享内存**<br>主要依赖 PCIe 进行 H2D/D2H 拷贝，延迟极低。                                                  | **多协议支持**<br>支持 TCP/IP, RDMA, gRPC 等，适应分布式网络环境。                                                                                                       |
-| **存储后端**     | **单一 (Host Memory)**<br>架构上支持磁盘，但目前核心实现聚焦于 CPU DRAM 扩展。                                      | **丰富 (Multi-Tier)**<br>Local CPU, Local Disk, Redis, MinIO (S3), P2P 网络等。                                                                                          |
-| **跨实例能力**   | **弱**<br>主要用于单实例内的 Preemption 恢复，无法跨进程共享。                                                      | **强**<br>天然支持 Disaggregated Serving (Prefill-Decode 分离) 和 Context Sharing。                                                                                      |
-| **实现复杂度**   | **轻量级**<br>代码量少，依赖 vLLM 内部 Block Table，无额外元数据开销。                                              | **重量级**<br>独立复杂的索引、序列化、网络模块，需维护 ReqMeta 和 RequestTracker。                                                                                       |
-| **适用场景**     | 1. **单机高并发**: 解决 OOM 和频繁 Preemption 问题。<br>2. **本地长文本**: 本地 CPU 内存充足，需扩展 Context 长度。 | 1. **分离式推理**: 专门的 Prefill 集群和 Decode 集群。<br>2. **多轮对话复用**: 多个请求共享相同的 System Prompt 或 History。<br>3. **Serverless 推理**: 实例快速冷启动。 |
+| 特性维度         | KV Offloading Connector (vLLM Native)                                                                           | LMCacheConnector (LMCache Ecosystem)                                                                                                                             |
+| :--------------- | :-------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **核心定位**     | **垂直扩展 (Scale-Up)**：利用单机多级存储 (CPU/NVMe) 扩展显存容量。                                             | **水平扩展 (Scale-Out)**：构建分布式 KV 数据湖，支持跨实例、跨地域共享。                                                                                         |
+| **数据管理方式** | **显式物理管理**：Scheduler 明确记录 Block 在 CPU 还是 GPU，逻辑紧耦合。                                        | **隐式逻辑管理**：通过 Token Hash 索引，底层存储位置对 vLLM 透明。                                                                                               |
+| **通信机制**     | **进程内/共享内存**：主要依赖 PCIe 进行 H2D/D2H 拷贝，延迟极低。                                                | **多协议支持**：支持 TCP/IP, RDMA, gRPC 等，适应分布式网络环境。                                                                                                 |
+| **存储后端**     | **单一 (Host Memory)**：架构上支持磁盘，但目前核心实现聚焦于 CPU DRAM 扩展。                                    | **丰富 (Multi-Tier)**：Local CPU, Local Disk, Redis, MinIO (S3), P2P 网络等。                                                                                    |
+| **跨实例能力**   | **弱**：主要用于单实例内的 Preemption 恢复，无法跨进程共享。                                                    | **强**：天然支持 Disaggregated Serving (Prefill-Decode 分离) 和 Context Sharing。                                                                                |
+| **实现复杂度**   | **轻量级**：代码量少，依赖 vLLM 内部 Block Table，无额外元数据开销。                                            | **重量级**：独立复杂的索引、序列化、网络模块，需维护 ReqMeta 和 RequestTracker。                                                                                 |
+| **适用场景**     | 1. **单机高并发**: 解决 OOM 和频繁 Preemption 问题。2. **本地长文本**: 本地 CPU 内存充足，需扩展 Context 长度。 | 1. **分离式推理**: 专门的 Prefill 集群和 Decode 集群。2. **多轮对话复用**: 多个请求共享相同的 System Prompt 或 History。3. **Serverless 推理**: 实例快速冷启动。 |
 
 ### 4.2 架构设计哲学：紧耦合 vs. 松耦合
 

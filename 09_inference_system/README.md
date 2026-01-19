@@ -51,21 +51,37 @@
 
 在大模型推理中，KV Cache 的管理是影响长上下文性能与显存效率的核心瓶颈。本节专门探讨 LMCache 等先进缓存技术，从架构概览到源码实现，深入解析如何通过多级存储与高效调度突破显存限制。
 
-- **[vLLM KV Offloading 与 LMCache 深度对比](vllm/KV_Offloading_and_LMCache_Analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCacheConnector 在架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡。
+#### 2.6.1 核心概览与对比
+
 - **[LMCache 源码分析指南](lmcache/README.md)** - LMCache 文档入口与推荐阅读路径
 - **[LMCache 架构概览](lmcache/lmcache_overview.md)** - 系统定位、四层存储架构 (L1-L4) 与组件交互
+- **[vLLM KV Offloading 与 LMCache 深度对比](vllm/KV_Offloading_and_LMCache_Analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCacheConnector 在架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡。
+
+#### 2.6.2 推理引擎进程内组件
+
+- **核心链路**
+  - **[LMCacheConnector 源码分析](lmcache/lmcache_connector.md)** - 推理引擎 (如 vLLM) 集成入口与请求拦截
+  - **[LMCacheEngine 源码分析](lmcache/lmcache_engine.md)** - 核心控制流、I/O 编排与元数据管理
+- **分层存储与后端实现**
+  - **[分层存储架构与调度机制](lmcache/lmcache_storage_overview.md)** - StorageManager 调度、Write-All 与 Waterfall 检索
+  - **L1 极速内存层**:
+    - **[LocalCPUBackend 源码分析](lmcache/local_cpu_backend.md)** - 本地 CPU 内存后端与并发控制
+    - **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
+  - **L2 弹性互联层**:
+    - **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - 跨节点点对点传输机制
+  - **L3 本地持久层**:
+    - **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - 本地磁盘后端与 I/O 优化
+    - **[GdsBackend 源码分析](lmcache/gds_backend.md)** - 基于 GPUDirect Storage 的高性能存储后端
+    - **[NixlStorageBackend 源码分析](lmcache/nixl_backend.md)** - 基于 NIXL 的通用存储/网络后端
+  - **L4 远程共享层**:
+    - **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - 共享存储接口与 Redis/S3/Mooncake 实现
+
+#### 2.6.3 控制面和数据面
+
 - **[LMCache Controller (控制平面) 架构剖析](lmcache/lmcache_controller.md)** - 集群元数据管理、节点协调及全局指令下发
-- **[LMCacheConnector 源码分析](lmcache/lmcache_connector.md)** - 推理引擎 (如 vLLM) 集成入口与请求拦截
-- **[LMCacheEngine 源码分析](lmcache/lmcache_engine.md)** - 核心控制流、I/O 编排与元数据管理
-- **[分层存储架构与调度机制](lmcache/lmcache_storage_overview.md)** - StorageManager 调度、Write-All 与 Waterfall 检索
-- **[LocalCPUBackend 源码分析](lmcache/local_cpu_backend.md)** - L1 本地 CPU 内存后端与并发控制
-- **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - L2 弹性互联层与跨节点传输机制
-- **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - L3 本地磁盘后端与 I/O 优化
-- **[GdsBackend 源码分析](lmcache/gds_backend.md)** - 基于 GPUDirect Storage 的高性能存储后端
-- **[NixlStorageBackend 源码分析](lmcache/nixl_backend.md)** - 基于 NIXL 的通用存储/网络后端
-- **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - L4 共享存储接口与 Redis/S3/Mooncake 实现
-- **[LMCache Server 源码分析](lmcache/lmcache_server.md)** - LMCache Server 服务端架构与协议分析
-- **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
+- **[LMCache Server (数据平面) 源码分析](lmcache/lmcache_server.md)** - 轻量级 KV Cache 存储服务架构与协议分析
+
+---
 
 ## 3. 显存分析与计算工具
 

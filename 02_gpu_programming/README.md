@@ -1,10 +1,18 @@
-# GPU 编程 (GPU Programming)
+# GPU 编程
 
 本章节构建了从基础 CUDA 编程到前沿 Tile-Based 优化的完整知识体系，旨在帮助开发者掌握高性能计算的核心编程范式。
 
-## 1. 核心编程范式
+## 1. 环境准备
 
-### 1.1 [CUDA 编程 (Standard)](cuda/README.md)
+工欲善其事，必先利其器。在开始 GPU 编程之前，首先需要构建一个标准化的容器开发环境。
+
+- [**NVIDIA GPU 容器环境安装指南**](environment/nvidia_container_setup.md) - 从驱动安装到容器启动的完整实战手册。
+
+---
+
+## 2. 核心编程范式
+
+### 2.1 [CUDA 编程基础](cuda/README.md)
 
 NVIDIA 官方标准的并行计算架构与编程模型，是 GPU 编程的基石。
 
@@ -12,33 +20,37 @@ NVIDIA 官方标准的并行计算架构与编程模型，是 GPU 编程的基�
 - **入门指南**：[CUDA 编程简介 - 基础与实践](cuda/CUDA%20编程简介%20-%20基础与实践.pdf)
 - **深度解析**：[GPU 编程导论](cuda/gpu_programming_introduction.md) | [SIMT vs Tile-Based 范式对比](cuda/simt_vs_tile_based_programming.md)
 
-### 1.2 [Tile-Based 编程 (Next-Gen)](tilelang/README.md)
+### 2.2 [Tile-Based 编程](tilelang/README.md)
 
 面向 Tensor Core 优化的新一代块级编程范式，专为大模型时代的高性能算子开发设计。
 
 - **快速入门**：[TileLang 快速入门](tilelang/TileLang_快速入门.md)
 
-## 2. 开发工具链
+---
 
-### 2.1 [性能分析与调优 (Profiling)](profiling/README.md)
+## 3. 开发工具链
 
-- **Nsight Compute**：内核级性能分析工具，深入指令流水线挖掘性能瓶颈。
+### 3.1 [性能分析与调优](profiling/README.md)
 
-## 3. 学习资源库
+- **Nsight Compute**：内核级性能分析工具，深入指令流水线挖掘性能瓶颈，参考文档：[Nsight Compute 核心分析指南 (PDF)](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)。
 
-### 3.1 快速入门
+---
+
+## 4. 学习资源库
+
+### 4.1 快速入门
 
 - [**并行计算、费林分类法和 CUDA 基本概念**](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [**CUDA 编程模型入门**](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
 - [**CUDA 并发编程之 Stream 介绍**](cuda/cuda_streams.md)
 
-### 3.2 进阶实战
+### 4.2 进阶实战
 
 面向专业开发者的深度优化指南。
 
 - [**CUDA-Learn-Notes**](https://github.com/xlite-dev/CUDA-Learn-Notes) - 涵盖 200+ 个 Tensor Core/CUDA Core 极致优化内核示例 (HGEMM, FA2 via MMA and CuTe)。
 
-### 3.3 参考资料大全
+### 4.3 参考资料大全
 
 我们整理了从官方文档到社区精选的完整学习路径。
 
