@@ -207,11 +207,11 @@ docker run --rm --gpus 'all,"capabilities=compute,utility"' nvidia/cuda:12.1.1-b
 
 ### 5.2 运行时调用链
 
-理解调用链有助于建立正确的系统心智模型：
+掌握从容器启动配置到运行时应用调用的完整链路，是深入理解 GPU 容器化工作机制的关键：
 
 ```mermaid
 graph LR
-    subgraph Startup ["Phase 1: 容器启动配置 (Container Startup)"]
+    subgraph Startup ["Phase 1: 容器启动配置"]
     direction TB
     CR[nvidia-container-runtime] -- "1-拦截启动" --> Hook[Prestart Hook]
     Hook -- "2-调用 CLI" --> CLI[nvidia-container-cli]
@@ -219,7 +219,7 @@ graph LR
     CLI -- "4-注入驱动库" --> Libs["libcuda.so, etc."]
     end
 
-    subgraph Execution ["Phase 2: 应用运行时 (App Execution)"]
+    subgraph Execution ["Phase 2: 应用运行时"]
     direction TB
     App["容器内应用 (App)"] --> Framework[CUDA Runtime / Framework]
     Framework --> LibCUDA["libcuda.so (宿主机注入)"]
