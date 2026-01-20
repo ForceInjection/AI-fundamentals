@@ -7,6 +7,7 @@
 工欲善其事，必先利其器。在开始 GPU 编程之前，首先需要构建一个标准化的容器开发环境。
 
 - [**NVIDIA GPU 容器环境：原理与构建指南**](environment/nvidia_container_setup.md) - 深入解析容器化架构原理，提供从驱动安装到实战配置的完整手册。
+- [**大模型训练与推理框架的 GPU 镜像构建深度解析**](environment/cuda_image_build_analysis.md) - 剖析 vLLM、TGI、Llama.cpp、DeepSpeed 四大框架的 Dockerfile，详解 CUDA 镜像变体选择与构建优化策略。
 
 ---
 
