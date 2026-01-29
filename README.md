@@ -107,6 +107,12 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 - [**Java AI 开发指南**](98_llm_programming/java_ai/README.md) - Java 生态系统中的 AI 开发技术
 - [**使用 Spring AI 构建高效 LLM 代理**](98_llm_programming/java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
 
+### 3.3 AI 编程范式
+
+本节探讨在 AI 时代下新兴的编程范式与工作流，重点关注如何利用 AI 提升开发效率与代码质量。
+
+- [**OpenSpec 实战指南**](https://github.com/ForceInjection/OpenSpec-practise/blob/main/README.md) - Spec 驱动开发 (Spec-Driven Development) 的工程实践，演示了 "意图 -> Spec -> AI -> 代码 & 验证" 的新一代开发工作流。
+
 ---
 
 ## 4. 机器学习基础
