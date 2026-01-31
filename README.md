@@ -100,14 +100,20 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 - **调试与性能分析**：CUDA 调试工具、性能分析方法、瓶颈识别与优化
 - **高级特性应用**：流处理、多 GPU 编程、与深度学习框架的集成
 
-### 3.2 Java AI 开发
+### 3.2 DPU 编程
+
+本节介绍 NVIDIA BlueField DPU 及其 DOCA 软件框架的编程指南。
+
+- [**DPU 编程与 DOCA 框架**](02_dpu_programming/README.md) - DPU 编程入门与 DOCA 核心组件解析
+
+### 3.3 Java AI 开发
 
 这里的 Java AI 开发主要用于开发 LLM 应用。
 
 - [**Java AI 开发指南**](98_llm_programming/java_ai/README.md) - Java 生态系统中的 AI 开发技术
 - [**使用 Spring AI 构建高效 LLM 代理**](98_llm_programming/java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发
 
-### 3.3 AI 编程范式
+### 3.4 AI 编程范式
 
 本节探讨在 AI 时代下新兴的编程范式与工作流，重点关注如何利用 AI 提升开发效率与代码质量。
 
