@@ -124,26 +124,39 @@ GPUDirect Storage (GDS) 旨在建立一条在本地或远程存储（如 NVMe �
 - **延迟增加**：多次内存拷贝和上下文切换显著增加了端到端延迟。
 - **PCIe 带宽浪费**：数据在 PCIe 总线上来回传输（SSD -> CPU -> GPU），实际上占用了两倍的 PCIe 带宽。
 
-### 3.2 工作原理详解
+### 3.2 工作原理与软件架构
 
-GPUDirect Storage 引入了全新的文件系统架构，允许存储设备直接对 GPU 显存进行 DMA 操作。
+GPUDirect Storage 不仅是一项硬件技术，更依赖于一套深度的软硬件协同栈，引入了全新的文件系统直通机制。
 
-#### 3.2.1 核心组件：cuFile API 与 libcufile
+#### 3.2.1 软件架构与依赖
 
-GDS 提供了一套名为 **cuFile** 的用户态 API，它类似于 POSIX 文件操作 API（如 read/write），但专为 GPU 显存设计。
+GDS 的实现依赖于以下核心软件组件：
 
-- **libcufile**：这是 GDS 的核心库，负责拦截 cuFile I/O 请求，并智能选择最佳传输路径。
-- **nvidia-fs.ko**：这是一个内核模块，负责处理文件系统元数据、页面锁定以及 DMA 映射。它与标准文件系统（如 ext4, xfs）协同工作，但绕过了 Page Cache。
+- **cuFile API (libcufile)**：用户态核心库。它提供了类似于 POSIX (`read`/`write`) 的 API，但专门针对 GPU 显存指针进行了重载。它负责拦截 I/O 请求，进行参数检查，并智能选择最佳的传输路径（GDS 路径或兼容回退路径）。
+- **nvidia-fs.ko (cufile.ko)**：这是 GDS 的核心内核模块。由于标准的 Linux 内核 VFS（虚拟文件系统）和块设备层无法直接处理 GPU 显存地址，`nvidia-fs` 必须介入。它负责：
+  - 与文件系统（如 ext4, xfs）交互以获取文件元数据和物理块布局。
+  - 调用 NVIDIA GPU 驱动接口锁定 GPU 显存页面。
+  - 将 I/O 请求转换为下层驱动可理解的格式。
+- **存储驱动适配**：
+  - **传统模式 (Legacy / MOFED)**：标准的 NVMe 驱动通常期望 DMA 目标是系统内存。为了支持 P2P DMA，旧版本的 GDS 往往需要经过补丁修改的 NVMe 驱动（通常由 MOFED 提供）或特定的内核补丁。在这种模式下，`nvidia-fs` 通过特定的回调接口与块设备层交互，甚至可能传递特殊的“伪地址”或句柄，以便驱动能识别并正确建立指向 GPU 显存的 DMA 映射。
+  - **原生 P2PDMA 模式 (Modern / Upstream)**：随着 Linux 内核的发展（Kernel >= 6.2），上游内核引入了标准的 **PCI P2PDMA** 基础设施。从 CUDA 12.8 开始，GDS 可以利用这一标准机制，无需修改 NVMe 驱动即可实现 P2P 传输。这显著降低了部署门槛，消除了对定制内核或驱动的依赖。
 
-#### 3.2.2 DMA 路径选择
+#### 3.2.2 核心流程：地址转换与 DMA
 
-当应用程序调用 `cuFileRead` 时：
+GDS 的 I/O 流程并非简单的“把 GPU 地址给硬盘”，而是一个复杂的地址转换与编排过程。由于 PCIe 设备间无法直接通过 GPU 虚拟地址通信，且操作系统内核主要管理 CPU 物理内存，因此需要经过多层转换：
 
-1. **Pinning**：`nvidia-fs` 锁定目标 GPU 显存页面。
-2. **DMA 映射**：将 GPU 物理地址提供给 NVMe 驱动程序。
-3. **Direct Transfer**：NVMe 控制器启动 DMA，通过 PCIe P2P (Peer-to-Peer) 机制直接将数据写入 GPU 显存。
+1. **用户态请求**：应用程序调用 `cuFileRead`，传入 GPU 虚拟地址（Device Virtual Address, DVA）。
+2. **内核态捕获**：`libcufile` 将请求传递给内核模块 `nvidia-fs`。
+3. **地址转换与锁定 (Pinning)**：
+   - `nvidia-fs` 无法直接将 GPU DVA 传递给 NVMe 驱动。它首先需要调用 NVIDIA GPU 驱动 API，将 GPU 虚拟地址锁定，并获取对应的 **GPU 物理地址 (GPU Physical Address)** 或 **PCIe 总线地址 (Bus Address)**。
+   - **Legacy 模式实现细节**：为了适配现有的内核块设备接口，`nvidia-fs` 可能会构建包含特殊标记（如“伪 CPU 地址”）的 BIO（Block I/O）结构体。当底层的 NVMe 驱动（需支持 GDS）识别到这些特殊标记时，会通过回调 `nvidia-fs` 提供的接口，将这些伪地址替换为真实的 GPU BAR 物理地址，从而构建正确的 DMA 描述符（PRP/SGL）。
+4. **DMA 描述符构建**：
+   - 最终，DMA 引擎的目标地址被填入了 GPU 的 BAR 空间物理地址，而非 CPU 内存地址。
+5. **P2P 直接传输**：NVMe 控制器启动 DMA，数据通过 PCIe 总线直接写入 GPU 显存，完全绕过 CPU 内存和 CPU 缓存。
 
-如果硬件或系统配置不支持 P2P（例如设备不在同一个 PCIe Root Complex 下），GDS 会自动回退到传统的系统内存缓冲模式，但仍会尝试优化路径。
+#### 3.2.3 路径选择与回退
+
+如果硬件或系统配置不支持 P2P（例如设备不在同一个 PCIe Root Complex 下，或缺少必要的 ACS 支持），`libcufile` 会自动检测并回退到兼容模式（System Memory Bounce Buffer），但仍会尝试优化路径。
 
 ### 3.3 核心优势
 
