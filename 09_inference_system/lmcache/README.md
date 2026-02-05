@@ -95,6 +95,15 @@
 - **核心内容**: Thread-per-Client 模型、自定义 TCP 协议设计、基于内存/磁盘的存储后端。
 - **目标**: 理解 LMCache 自带的轻量级中心化存储服务的设计与实现。
 
+## 第七阶段：高级特性
+
+探索 LMCache 针对特定场景（如 RAG）的高级优化技术。
+
+**14. [CacheBlend 技术详解](./cache_blend.md)**
+
+- **核心内容**: RAG 场景下的非前缀 KV Cache 复用、选择性重算与融合算法、I/O 流水线优化。
+- **目标**: 理解如何在检索增强生成场景中通过动态融合机制降低 TTFT。
+
 ---
 
 ## 文档索引
@@ -114,3 +123,4 @@
 | [nixl_backend.md](./nixl_backend.md)                         | L3/L4 高性能网络/存储后端 (GDS/S3) 分析。               |
 | [lmcache_server.md](./lmcache_server.md)                     | LMCache Server 服务端架构与协议分析。                   |
 | [remote_connector.md](./remote_connector.md)                 | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
+| [cache_blend.md](./cache_blend.md)                           | CacheBlend RAG 优化机制与源码分析。                     |
