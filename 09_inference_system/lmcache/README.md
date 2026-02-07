@@ -104,6 +104,11 @@
 - **核心内容**: RAG 场景下的非前缀 KV Cache 复用、选择性重算与融合算法、I/O 流水线优化。
 - **目标**: 理解如何在检索增强生成场景中通过动态融合机制降低 TTFT。
 
+**15. [CacheGen 技术详解](./cachegen.md)**
+
+- **核心内容**: 基于 SIGCOMM '24 论文实现的 KV Cache 压缩与流式传输系统、自适应量化、流式算术编码。
+- **目标**: 理解如何通过极致压缩与流式传输解决分布式推理中的网络带宽瓶颈。
+
 ---
 
 ## 文档索引
@@ -124,3 +129,4 @@
 | [lmcache_server.md](./lmcache_server.md)                     | LMCache Server 服务端架构与协议分析。                   |
 | [remote_connector.md](./remote_connector.md)                 | L4 远程存储连接器及 Redis/Server/Mooncake/S3 实现分析。 |
 | [cache_blend.md](./cache_blend.md)                           | CacheBlend RAG 优化机制与源码分析。                     |
+| [cachegen.md](./cachegen.md)                                 | CacheGen KV Cache 压缩与流式传输机制分析。              |
