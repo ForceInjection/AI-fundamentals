@@ -114,6 +114,36 @@ graph LR
     GPU_Memory --> Layer_Structure
 ```
 
+一个具体的 Llama-7B 例子如下：
+
+```mermaid
+graph TB
+    subgraph "KV Cache 结构 (以 Llama-7B 为例)"
+        subgraph "Layer 0"
+            K0["K: [seq_len, 32, 128]"]
+            V0["V: [seq_len, 32, 128]"]
+        end
+        subgraph "Layer 1"
+            K1["K: [seq_len, 32, 128]"]
+            V1["V: [seq_len, 32, 128]"]
+        end
+        subgraph "..."
+            KN["..."]
+        end
+        subgraph "Layer 31"
+            K31["K: [seq_len, 32, 128]"]
+            V31["V: [seq_len, 32, 128]"]
+        end
+    end
+
+    style K0 fill:#87CEEB
+    style V0 fill:#90EE90
+    style K1 fill:#87CEEB
+    style V1 fill:#90EE90
+    style K31 fill:#87CEEB
+    style V31 fill:#90EE90
+```
+
 #### 4.1.2 逐步推导公式
 
 **1. 单层、单 Token 的大小**：

@@ -12,6 +12,23 @@
 
 在检索增强生成 (RAG) 等现代 LLM 应用中，为了确保回复的准确性和一致性，模型输入通常由用户查询 (Query) 和多个检索到的文本块 (Chunks) 拼接而成。这些文本块为模型提供了必要的领域知识或上下文信息。然而，随着上下文长度的增加，这种模式给 LLM 推理系统带来了严峻的性能挑战。
 
+```mermaid
+graph LR
+    subgraph "RAG 工作流程"
+        A[用户查询] --> B[向量检索]
+        B --> C[检索文本块 1]
+        B --> D[检索文本块 2]
+        B --> E[检索文本块 N]
+        C --> F[构建 LLM 输入]
+        D --> F
+        E --> F
+        A --> F
+        F --> G[LLM 推理]
+        G --> H[生成响应]
+    end
+
+```
+
 **RAG 场景面临的核心矛盾**:
 
 1. **极高的 Prefill 开销 (High TTFT)**:
@@ -30,9 +47,77 @@
 然而，在 RAG 中，文档块的位置可能是任意的。根据 Transformer 的 Self-Attention 机制，一个 Token 的 KV 值不仅取决于其自身的 Embedding，还取决于它与**所有前序 Token** 的交互（Cross-Attention）。
 一旦文本块的位置发生变化（例如从前缀变为中间部分），其前序上下文改变，导致预计算的 KV Cache 失效。直接复用这些 KV Cache 会导致严重的精度损失，生成完全错误的回复。
 
+让我们通过一个具体例子来说明跨块注意力为何重要：
+
+**场景设置**：
+
+- **Chunk 1**: “Lionel Messi scored 13 goals at FIFA World Cups.”
+- **Chunk 2**: “Cristiano Ronaldo scored 8 goals at FIFA World Cups.”
+- **Query**: “Who scored more goals at FIFA World Cups, Messi or Ronaldo?”
+
+```mermaid
+graph TB
+    subgraph "Full KV Recompute - 正确答案"
+        A1[Chunk 1: Messi 13 球] --> A2[Chunk 2: Ronaldo 8 球]
+        A2 --> AQ[Query: 谁进球更多?]
+        AQ --> AA["✓ Messi 进球比 Ronaldo 多"]
+
+        A1 -.->|"Cross-Attention<br>建立关联"| A2
+    end
+
+    subgraph "Full KV Reuse - 错误答案"
+        B1["KV: Messi 13 球"]
+        B2["KV: Ronaldo 8 球"]
+        BQ[Query: 谁进球更多?]
+        B1 --> BC[直接拼接]
+        B2 --> BC
+        BQ --> BC
+        BC --> BA["✗ 无法正确比较<br>答非所问"]
+
+        B1 -.x|"无 Cross-Attention"| B2
+    end
+
+    style AA fill:#90EE90
+    style BA fill:#ff9999
+
+```
+
+**Attention Matrix（注意力矩阵）对比**：
+
+Full KV Recompute 的注意力矩阵包含完整的 Cross-Attention 区域，而 Full KV Reuse 的注意力矩阵在 Cross-Attention 区域为零（从未计算）。
+
+```text
+Full KV Recompute:          Full KV Reuse:
+┌─────────────────┐         ┌─────────────────┐
+│ █████           │         │ █████           │
+│ █████           │         │ █████           │
+│ █████████████   │  vs     │ █████ 00000     │  ← Cross-Attention
+│ █████████████   │         │ █████ 00000     │    区域缺失
+│ ███████████████ │         │ █████ █████████ │
+└─────────────────┘         └─────────────────┘
+   Chunk1  Chunk2              Chunk1  Chunk2
+
+```
+
 ### 1.3 CacheBlend 解决方案
 
 为了解决上述挑战，CacheBlend 提出了一种**选择性重算与融合 (Selective Recomputation & Fusion)** 机制。该机制的核心思想是：**以极小的计算代价（重算少量关键 Token），换取对非前缀 KV Cache 的高精度复用**。
+
+```mermaid
+graph TB
+    subgraph "Selective KV Recompute 概念"
+        A[预计算的 KV Cache] --> B{选择重要 Token}
+        B -->|"~15% Token"| C[重计算 KV]
+        B -->|"~85% Token"| D[保持原 KV]
+        C --> E[融合的 KV Cache]
+        D --> E
+        E --> F[高质量输出]
+    end
+
+    style C fill:#ff9999
+    style D fill:#90EE90
+
+```
 
 **关键洞察 (Key Insight)**:
 尽管 Cross-Attention 使得 Token 的 KV 值依赖于前文，但研究表明这种依赖具有**稀疏性**：绝大多数 Token 的 KV 值对上下文变化不敏感，仅有少部分“关键 Token”（通常是注意力机制中的 Hub Token 或语义转折点）的 KV 值会发生剧烈漂移。
@@ -324,3 +409,34 @@ CacheBlend 是 LMCache 为应对 RAG 场景中复杂多变的 KV Cache 复用需
    - 源码中预留的 TODO（如基于阈值的动态重算、逐层差异化比例）表明 CacheBlend 仍有进一步优化的空间，未来可能会引入更智能的自适应策略，以在更复杂的场景下平衡精度与性能。
 
 总而言之，CacheBlend 不仅是 LMCache 的一项高级特性，更是 RAG 推理优化的重要里程碑。它在保证生成质量的前提下，通过巧妙的计算与存储权衡，显著降低了首字延迟 (TTFT) 并提升了系统吞吐量，为构建高性能、低成本的 RAG 服务提供了强有力的支持。
+
+---
+
+## 附录 A: 关键设计决策
+
+### A.1 为什么选择 Layer 1 作为检测层？
+
+CacheBlend 默认在 Layer 1 进行关键 Token 选择。这是一种在**准确性**和**开销**之间的权衡：Layer 1 已经过一次完整的 Attention 计算，能够捕获 Token 间的上下文依赖；同时，实验表明 Layer 1 选出的关键 Token 与后续层高度一致，因此无需逐层检测，从而节省计算资源。
+
+### A.2 为什么使用 Value 差异？
+
+在衡量 KV Cache 失效程度时，CacheBlend 选择计算 **Value 向量的 L2 距离**。这是因为 Value 向量直接参与最终的加权求和，其变化直接反映了输出内容的差异。相比之下，Key 的变化不一定直接导致输出变化，且同时计算 K 和 V 的差异会带来双倍开销。
+
+### A.3 重计算比例 (16%) 的选择
+
+默认 16% 的重计算比例基于对 Attention 稀疏性的观察。在 RAG 场景中，绝大多数注意力权重集中在少部分 Token 上。16% 是一个经验值，处于质量-开销曲线的拐点，既能覆盖绝大多数关键 Token（如语义转折点），又能保证较低的重计算延迟。
+
+### A.4 流水线优化
+
+为了进一步降低延迟，CacheBlend 采用了双线程流水线设计，将下一层的 KV Cache 加载与当前层的计算并行化，从而有效掩盖了 I/O 开销。
+
+## 附录 B: 常见问题 (FAQ)
+
+**Q: CacheBlend 适用于哪些模型？**
+A: 核心机制适用于所有使用 **RoPE (旋转位置编码)** 的 Transformer 模型（如 Llama, Mistral, Qwen 等）。
+
+**Q: CacheBlend 与 Prefix Caching 有何区别？**
+A: 两者是互补的。**Prefix Caching** 仅适用于完全匹配的前缀复用；**CacheBlend** 专门解决文本块位置变化（非前缀）导致的复用难题。两者结合可最大化 RAG 系统的性能。
+
+**Q: 会增加显存开销吗？**
+A: 会。CacheBlend 本质上是以空间换时间，需要存储预计算好的 KV Cache。显存占用量取决于缓存的文本块数量和长度，约等于模型推理时的 KV Cache 大小。
