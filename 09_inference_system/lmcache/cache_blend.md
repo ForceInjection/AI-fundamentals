@@ -56,30 +56,36 @@ graph LR
 - **Query**: “Who scored more goals at FIFA World Cups, Messi or Ronaldo?”
 
 ```mermaid
-graph TB
-    subgraph "Full KV Recompute - 正确答案"
-        A1[Chunk 1: Messi 13 球] --> A2[Chunk 2: Ronaldo 8 球]
-        A2 --> AQ[Query: 谁进球更多?]
-        AQ --> AA["✓ Messi 进球比 Ronaldo 多"]
+graph LR
+    %% 使用一个容器子图来组织布局
+    subgraph Comparison ["KV Cache 处理方式对比"]
+        direction TB
+        
+        subgraph Correct ["Full KV Recompute - 正确答案"]
+            direction TB
+            A1[Chunk 1: Messi 13 球] --> A2[Chunk 2: Ronaldo 8 球]
+            A2 --> AQ[Query: 谁进球更多?]
+            AQ --> AA["✓ Messi 进球比 Ronaldo 多"]
 
-        A1 -.->|"Cross-Attention<br>建立关联"| A2
-    end
+            A1 -.->|"Cross-Attention<br>建立关联"| A2
+        end
 
-    subgraph "Full KV Reuse - 错误答案"
-        B1["KV: Messi 13 球"]
-        B2["KV: Ronaldo 8 球"]
-        BQ[Query: 谁进球更多?]
-        B1 --> BC[直接拼接]
-        B2 --> BC
-        BQ --> BC
-        BC --> BA["✗ 无法正确比较<br>答非所问"]
+        subgraph Wrong ["Full KV Reuse - 错误答案"]
+            direction TB
+            B1["KV: Messi 13 球"]
+            B2["KV: Ronaldo 8 球"]
+            BQ[Query: 谁进球更多?]
+            B1 --> BC[直接拼接]
+            B2 --> BC
+            BQ --> BC
+            BC --> BA["✗ 无法正确比较<br>答非所问"]
 
-        B1 -.x|"无 Cross-Attention"| B2
+            B1 -.-|"无 Cross-Attention"| B2
+        end
     end
 
     style AA fill:#90EE90
     style BA fill:#ff9999
-
 ```
 
 **Attention Matrix（注意力矩阵）对比**：
