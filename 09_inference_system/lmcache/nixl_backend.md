@@ -59,8 +59,7 @@
    它实现了 `AllocatorBackendInterface` 接口，并在内部维护了一个私有的 `PagedTensorMemoryAllocator` 实例。这与 `LocalDiskBackend`（强依赖外部传入的 `local_cpu_backend`）形成了鲜明对比。
 
 2. **专用 Buffer 管理**:
-
-   - `NixlStorageBackend` 在初始化时会分配一块连续的内存缓冲区（Buffer），大小由 `nixl_buffer_size` 控制。
+   - `NixlStorageBackend` 在初始化时会分配一块连续的内存缓冲区（Buffer），大小由 `nixl_buffer_size` 控制（需满足 28MB 对齐要求）。
    - **CPU 模式**: 调用 `_allocate_cpu_memory` 分配 Host Memory。
    - **GPU 模式**: 调用 `_allocate_gpu_memory` 分配 Device Memory。这对 GDS (GPUDirect Storage) 至关重要，因为 GDS 需要数据直接在 GPU 显存和 NVMe 之间传输，中间不经过 CPU 内存。
 
@@ -237,7 +236,6 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 写入操作被设计为异步任务，避免阻塞主线程的推理循环。其核心逻辑在 `batched_submit_put_task` 和 `mem_to_storage` 中实现。
 
 1. **任务提交与资源检查**:
-
    - 首先获取 `key_lock` 检查资源池 (Pool) 是否有足够空闲描述符。
    - 如果不足 (`available_descs < len(keys)`)，立即触发同步驱逐 (`batched_remove`)，确保有位可写。
 
@@ -272,7 +270,6 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 
 2. **内存分配**: 使用 `memory_allocator` 在目标设备（CPU 或 GPU）上分配 Buffer。如果是 GDS 后端，通常分配在 GPU 上。
 3. **零拷贝传输**:
-
    - 调用 `agent.get_storage_to_mem_handle` 建立传输通道，传入内存地址 (`mem_indices`) 和存储索引 (`storage_indices`)。
    - `agent.post_blocking(handle)` 触发底层数据搬运。例如在 GDS 模式下，直接由 GPU DMA 引擎将数据从 NVMe 读入显存，无需 CPU 参与数据拷贝。
 
@@ -290,22 +287,22 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 
 `NixlStorageBackend` 的行为高度依赖 `lmcache-config.yaml` 中的 `extra_config`。
 
-| 配置项                | 类型   | 说明                                                            | 适用模式  |
-| :-------------------- | :----- | :-------------------------------------------------------------- | :-------- |
-| `enable_nixl_storage` | `bool` | 必须为 `true` 以启用此后端。                                    | All       |
-| `nixl_backend`        | `str`  | 后端类型：`POSIX`, `GDS`, `GDS_MT`, `HF3FS`, `OBJ`。            | All       |
-| `nixl_buffer_device`  | `str`  | Buffer 驻留设备：`cpu` 或 `cuda`。GDS 后端通常设为 `cuda`。     | All       |
-| `nixl_pool_size`      | `int`  | 资源池大小。设为 `0` 启用动态模式（仅限 OBJ）。                 | Static    |
-| `nixl_path`           | `str`  | 文件存储路径（如 `/mnt/nvme`）或对象存储 Bucket 信息。          | Static    |
-| `nixl_buffer_size`    | `int`  | NIXL 内部传输 Buffer 的总大小。                                 | All       |
-| `use_direct_io`       | `bool` | 是否开启 O_DIRECT（绕过 Page Cache）。                          | POSIX/GDS |
-| `nixl_async_put`      | `bool` | 是否启用异步写入。默认为 `False`，建议开启以提升 Prefill 吞吐。 | Dynamic   |
-| `nixl_presence_cache` | `bool` | 是否启用存在性缓存优化。                                        | Dynamic   |
+| 配置项                | 类型   | 说明                                                                    | 适用模式  |
+| :-------------------- | :----- | :---------------------------------------------------------------------- | :-------- |
+| `enable_nixl_storage` | `bool` | 必须为 `true` 以启用此后端。                                            | All       |
+| `nixl_backend`        | `str`  | 后端类型：`POSIX`, `GDS`, `GDS_MT`, `HF3FS`, `OBJ`。                    | All       |
+| `nixl_buffer_device`  | `str`  | Buffer 驻留设备：`cpu` 或 `cuda`。GDS 后端通常设为 `cuda`。             | All       |
+| `nixl_pool_size`      | `int`  | 资源池大小。设为 `0` 启用动态模式（仅限 OBJ）。                         | Static    |
+| `nixl_path`           | `str`  | 文件存储路径（如 `/mnt/nvme`）或对象存储 Bucket 信息。                  | Static    |
+| `nixl_buffer_size`    | `int`  | NIXL 内部传输 Buffer 的总大小。**必须是 29360128 (约 28MB) 的整数倍**。 | All       |
+| `use_direct_io`       | `bool` | 是否开启 O_DIRECT（绕过 Page Cache）。                                  | POSIX/GDS |
+| `nixl_async_put`      | `bool` | 是否启用异步写入。默认为 `False`，建议开启以提升 Prefill 吞吐。         | Dynamic   |
+| `nixl_presence_cache` | `bool` | 是否启用存在性缓存优化。                                                | Dynamic   |
 
 ### 5.1 配置示例 (GDS 本地加速)
 
 ```yaml
-nixl_buffer_size: 1073741824 # 1GB
+nixl_buffer_size: 1086324736 # ~1.01GB (Must be multiple of 29360128)
 nixl_buffer_device: cuda # GDS 直接读入显存
 extra_config:
   enable_nixl_storage: true
@@ -318,7 +315,7 @@ extra_config:
 ### 5.2 配置示例 (S3 动态存储)
 
 ```yaml
-nixl_buffer_size: 1073741824
+nixl_buffer_size: 1086324736 # Must be multiple of 29360128
 nixl_buffer_device: cpu
 extra_config:
   enable_nixl_storage: true
@@ -361,7 +358,6 @@ extra_config:
 
 - **硬件协同 (Hardware Synergy)**:
   尽管不强制依赖，但 DPU (如 NVIDIA BlueField) 是运行 `NixlStorageBackend` 的**理想载体**，能提供更深层次的优化：
-
   - **零拷贝 (Zero-Copy)**: DPU 的 RDMA 引擎天然支持 NIXL 所需的内存注册与直接传输，确保数据流仅在 `GPU Mem <-> PCIe <-> NIC` 之间流转，完全绕过 Host CPU 和主存。
   - **资源隔离 (Isolation)**: DPU 拥有独立的计算单元（Arm Cores），具备承载 LMCache 控制逻辑或辅助计算（如压缩/解压）的潜力，从而实现对 Host 计算资源的"零干扰"。
 
