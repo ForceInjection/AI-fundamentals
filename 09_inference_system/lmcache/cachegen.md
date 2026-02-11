@@ -118,21 +118,17 @@ class CacheGenConfig:
 
 **关键步骤解析**：
 
-1. **自适应量化 (Adaptive Quantization)**:
-   `torch_quant_vectorized` 函数将浮点型的 KV 张量转换为整数索引。它首先计算每个 Token 的最大值用于归一化，然后根据 `CacheGenConfig` 中定义的 bins 进行映射。注意，为了适配后续的算术编码，量化后的值会被偏移到非负整数区间。
+1. **向量化自适应量化 (Vectorized Adaptive Quantization)**:
+   代码中并未采用论文提及的"基于锚点的差值计算 (Change-based Encoding)"，而是通过 `torch_quant_vectorized` 函数对分组内的 Token 进行直接量化。
+   - **原理**: 计算每组 (Group) 的最大绝对值 (`max1`)，将浮点值归一化并映射到 `[0, bins]` 的整数区间。
+   - **分层配置 (Layer-wise Configuration)**: 通过 `CacheGenConfig` 为不同层级设置不同的量化精度 (bins)。例如对于 Llama-3.1-8B 模型：
+     - **前 10 层**: Key 使用 32 bins (约 5 bit)，Value 使用 32 bins。
+     - **后 22 层**: Key 使用 16 bins (约 4 bit)，Value 使用 16 bins。
+   这种分层设计在保证关键层精度的同时实现了深层的激进压缩。
 
    ```python
    # lmcache/storage_backend/serde/cachegen_encoder.py
    def torch_quant_vectorized(bins: torch.Tensor, input_groups: torch.Tensor):
-       """
-       对 KV 张量进行向量化量化。
-       Args:
-           bins (torch.Tensor): 量化级别 (bins) 张量
-           input_groups (torch.Tensor): 输入 KV 张量组
-       Returns:
-           xq (torch.Tensor): 量化后的整数索引 (int8)
-           max1 (torch.Tensor): 每组的最大值，用于反量化
-       """
        MAX = (bins // 2 - 1)[:, None, None]
        max1 = torch.amax(torch.abs(input_groups), dim=-1, keepdim=True)
        factor = MAX / max1
@@ -148,13 +144,13 @@ class CacheGenConfig:
    # lmcache/storage_backend/serde/cachegen_encoder.py
 
    # 使用 CUDA 算子高效计算 CDF
-   # new_key: 量化后的 Key 张量
-   # key_bins: 对应的 bins 配置
    new_cdf_key = lmc_ops.calculate_cdf(new_key, int(key_bins.max()))
    ```
 
 3. **分块编码 (Chunked Encoding)**:
-   为了支持流式传输，KV Cache 被切分为多个 Chunk（默认 256 tokens）。编码器遍历每个 Chunk，调用 `encode_ntokens` 执行底层算术编码。
+   为了支持流式传输并快速响应网络带宽波动，KV 缓存被切分为多个 Chunk。
+   - **Chunk Size**: 虽然论文可能提及 1.5K tokens，但在 `cachegen_basics.py` 中，源码默认配置 `CACHEGEN_GPU_MAX_TOKENS_PER_CHUNK = 256`。
+   - **优势**: 更细粒度的分块允许系统在网络波动时更敏捷地进行自适应调整。
 
 ### 2.4 解码流程 (Decoder Pipeline)
 
