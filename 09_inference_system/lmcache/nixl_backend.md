@@ -12,7 +12,7 @@
 
 ## 1. 架构设计
 
-### 1.1 版本差异说明 (Version Differences)
+### 1.1 版本差异说明
 
 `NixlStorageBackend` 的功能在不同版本中存在显著差异，请根据您使用的 LMCache 版本进行配置：
 
@@ -66,17 +66,20 @@
 
 ### 1.5 内存管理与分配机制
 
-`NixlStorageBackend` 拥有完全独立且专用的内存管理机制，这一点与依赖 `LocalCPUBackend` 的 `LocalDiskBackend` 截然不同。
+`NixlStorageBackend` 拥有完全独立且专用的内存管理机制，但在 LMCache 框架中运行时，仍需配合 `LocalCPUBackend` 配置。
 
-1. **独立分配器**:
+1. **框架依赖**:
+   虽然 Nixl 自行管理传输 Buffer，但 LMCache 的上层逻辑（如 `StorageManager`）仍依赖 `LocalCPUBackend` 进行部分元数据管理或兜底操作。因此，配置中**必须启用 `local_cpu: true`** 并设置足够的 `max_local_cpu_size`（建议与工作负载匹配，如 40GB+），否则可能导致 `AssertionError` 或内存分配失败。
+
+2. **独立分配器**:
    它实现了 `AllocatorBackendInterface` 接口，并在内部维护了一个私有的 `PagedTensorMemoryAllocator` 实例。这与 `LocalDiskBackend`（强依赖外部传入的 `local_cpu_backend`）形成了鲜明对比。
 
-2. **专用 Buffer 管理**:
+3. **专用 Buffer 管理**:
    - `NixlStorageBackend` 在初始化时会分配一块连续的内存缓冲区（Buffer），大小由 `nixl_buffer_size` 控制（需满足 28MB 对齐要求）。
    - **CPU 模式**: 调用 `_allocate_cpu_memory` 分配 Host Memory。
    - **GPU 模式**: 调用 `_allocate_gpu_memory` 分配 Device Memory。这对 GDS (GPUDirect Storage) 至关重要，因为 GDS 需要数据直接在 GPU 显存和 NVMe 之间传输，中间不经过 CPU 内存。
 
-3. **设计考量**:
+4. **设计考量**:
    这种独立性设计是为了满足 **RDMA/GDS 的特殊内存要求**（如内存注册、锁定页面）。如果复用 L1 缓存（LocalCPUBackend）的内存，可能会因为内存碎片或非注册内存导致 DMA 传输失败或性能下降。
 
    ```python
@@ -304,17 +307,17 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 
 `NixlStorageBackend` 的行为高度依赖 `lmcache-config.yaml` 中的 `extra_config`。
 
-| 配置项                | 类型   | 说明                                                                                        | 适用模式                    |
-| :-------------------- | :----- | :------------------------------------------------------------------------------------------ | :-------------------------- |
-| `enable_nixl_storage` | `bool` | 必须为 `true` 以启用此后端。                                                                | All                         |
-| `nixl_backend`        | `str`  | 后端类型：`POSIX`, `GDS`, `GDS_MT`, `HF3FS`, `OBJ`。                                        | All                         |
-| `nixl_buffer_device`  | `str`  | Buffer 驻留设备：`cpu` 或 `cuda`。GDS 后端通常设为 `cuda`。                                 | All                         |
-| `nixl_pool_size`      | `int`  | 资源池大小。**v0.3.11 及以下**：仅支持静态模式，需 > 0。**v0.3.13+**：设为 0 开启动态模式。 | Static / Dynamic (v0.3.13+) |
-| `nixl_path`           | `str`  | 文件存储路径（如 `/mnt/nvme`）或对象存储 Bucket 信息。                                      | Static                      |
-| `nixl_buffer_size`    | `int`  | NIXL 内部传输 Buffer 的总大小。**必须是 29360128 (约 28MB) 的整数倍**。                     | All                         |
-| `use_direct_io`       | `bool` | 是否开启 O_DIRECT（绕过 Page Cache）。                                                      | POSIX/GDS                   |
-| `nixl_async_put`      | `bool` | 是否启用异步写入。默认为 `False`，建议开启以提升 Prefill 吞吐。                             | Dynamic                     |
-| `nixl_presence_cache` | `bool` | 是否启用存在性缓存优化。                                                                    | Dynamic                     |
+| 配置项                | 类型   | 说明                                                                                                                                                                | 适用模式                    |
+| :-------------------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------- |
+| `enable_nixl_storage` | `bool` | 必须为 `true` 以启用此后端。                                                                                                                                        | All                         |
+| `nixl_backend`        | `str`  | 后端类型：`POSIX`, `GDS`, `GDS_MT`, `HF3FS`, `OBJ`。                                                                                                                | All                         |
+| `nixl_buffer_device`  | `str`  | Buffer 驻留设备：`cpu` 或 `cuda`。GDS 后端通常设为 `cuda`。                                                                                                         | All                         |
+| `nixl_pool_size`      | `int`  | 资源池大小。**v0.3.11 及以下**：仅支持静态模式，需 > 0。**v0.3.13+**：设为 0 开启动态模式。                                                                         | Static / Dynamic (v0.3.13+) |
+| `nixl_path`           | `str`  | 文件存储路径（如 `/mnt/nvme`）或对象存储 Bucket 信息。                                                                                                              | Static                      |
+| `nixl_buffer_size`    | `int`  | NIXL 内部传输 Buffer 的总大小。**必须是 29360128 (约 28MB) 的整数倍**。在高并发场景下（如 50+ 并发），建议显著调大此值（如 29360128000 ≈ 27GB）以避免内存分配失败。 | All                         |
+| `use_direct_io`       | `bool` | 是否开启 O_DIRECT（绕过 Page Cache）。                                                                                                                              | POSIX/GDS                   |
+| `nixl_async_put`      | `bool` | 是否启用异步写入。默认为 `False`，建议开启以提升 Prefill 吞吐。                                                                                                     | Dynamic                     |
+| `nixl_presence_cache` | `bool` | 是否启用存在性缓存优化。                                                                                                                                            | Dynamic                     |
 
 ### 5.1 配置示例 (GDS 本地加速)
 
@@ -352,8 +355,10 @@ extra_config:
 适用于无限容量的云原生分层存储。
 
 ```yaml
-nixl_buffer_size: 1086324736
+nixl_buffer_size: 29360128000 # ~27GB (Must be multiple of 29360128)
 nixl_buffer_device: cpu
+local_cpu: true # 必须启用 LocalCPU
+max_local_cpu_size: 40 # 必须预留足够的 CPU 内存配额 (GB)
 extra_config:
   enable_nixl_storage: true
   nixl_backend: OBJ
