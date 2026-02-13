@@ -44,29 +44,64 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 
 本节整合了从云原生推理框架到企业级推理系统优化的完整解决方案，涵盖理论基础、技术选型及实战部署。
 
+#### 2.2.1 核心框架与平台
+
 - [**推理优化技术方案**](09_inference_system/README.md) - 企业级推理优化全景指南，涵盖集群规模分析、核心优化技术及实施路径
 - [**云原生高性能分布式 LLM 推理框架 llm-d 介绍**](04_cloud_native_ai_platform/k8s/llm-d-intro.md) - 基于 Kubernetes 的大模型推理框架
 - [**vLLM + LWS ： Kubernetes 上的多机多卡推理方案**](04_cloud_native_ai_platform/k8s/lws_intro.md) - LWS 分布式控制器在推理部署中的应用
 
-**核心技术与方案：**
+#### 2.2.2 推理系统架构
 
-- **推理系统架构**：[Mooncake 架构详解](09_inference_system/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md) - 以 KV 缓存为中心的高效 LLM 推理系统设计
-- **KV 缓存优化 (LMCache)**：
-  - [LMCache 源码分析指南](09_inference_system/lmcache/README.md) - 文档入口与推荐阅读路径
-  - [LMCache 架构概览](09_inference_system/lmcache/lmcache_overview.md) - 系统定位、四层存储架构 (L1-L4) 与组件交互
-  - [LMCache Controller (控制平面) 架构剖析](09_inference_system/lmcache/lmcache_controller.md) - 集群元数据管理、节点协调及全局指令下发
-  - [LMCacheConnector 源码分析](09_inference_system/lmcache/lmcache_connector.md) - 推理引擎 (如 vLLM) 集成入口与请求拦截
-  - [LMCacheEngine 源码分析](09_inference_system/lmcache/lmcache_engine.md) - 核心控制流、I/O 编排与元数据管理
-  - [分层存储架构与调度机制](09_inference_system/lmcache/lmcache_storage_overview.md) - StorageManager 调度、Write-All 与 Waterfall 检索
-  - [LocalCPUBackend 源码分析](09_inference_system/lmcache/local_cpu_backend.md) - L1 本地 CPU 内存后端与并发控制
-  - [P2PBackend 源码分析](09_inference_system/lmcache/p2p_backend.md) - L2 弹性互联层与跨节点传输机制
-  - [LocalDiskBackend 源码分析](09_inference_system/lmcache/local_disk_backend.md) - L3 本地磁盘后端与 I/O 优化
-  - [Remote Connector (远程连接器) 源码分析](09_inference_system/lmcache/remote_connector.md) - L4 共享存储接口与 Redis/S3/Mooncake 实现
-  - [LMCache Server 源码分析](09_inference_system/lmcache/lmcache_server.md) - LMCache Server 服务端架构与协议分析
-  - [PDBackend (预填充-解码分离后端) 源码分析](09_inference_system/lmcache/pd_backend.md) - 专为分离架构设计的 KV Cache 主动推送机制
-- **部署实战**：
-  - [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference-solution/DeepSeek-V3-MoE-vLLM-H20-Deployment.md) - H20 硬件上的部署方案与 SLO 验证
-  - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference-solution/Qwen2-VL-7B_Huawei.md) - 国产硬件平台的部署优化
+- [**Mooncake 架构详解**](09_inference_system/Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md) - 以 KV 缓存为中心的高效 LLM 推理系统设计
+
+#### 2.2.3 KV Cache 之 LMCache
+
+**技术特色**：LMCache 是专为 LLM 推理引擎设计的分布式 KV Cache 管理系统，通过四层存储架构 (L1-L4) 实现跨实例的高效缓存复用。支持前缀缓存、任意文本片段复用、P2P 去中心化共享、预填充-解码分离等多种模式，在长上下文和 RAG 场景下可带来 3-10 倍性能提升。
+
+##### 2.2.3.1 核心概览与对比
+
+- [LMCache 源码分析指南](09_inference_system/lmcache/README.md) - 完整学习路径与文档索引
+- [LMCache 架构概览](09_inference_system/lmcache/lmcache_overview.md) - 四层存储架构 (L1-L4)、核心组件交互与典型工作流
+- [vLLM KV Offloading 与 LMCache 深度对比](09_inference_system/vllm/KV_Offloading_and_LMCache_Analysis.md) - vLLM 原生 KV Offloading 与 LMCacheConnector 在架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡
+
+##### 2.2.3.2 推理引擎集成与核心链路
+
+- [LMCacheConnector 源码分析](09_inference_system/lmcache/lmcache_connector.md) - vLLM 集成适配器、视图转换与流水线加载
+- [LMCacheEngine 源码分析](09_inference_system/lmcache/lmcache_engine.md) - 核心调度中枢、异步事件管理与层级流水线
+
+##### 2.2.3.3 分层存储后端实现
+
+- [分层存储架构与调度机制](09_inference_system/lmcache/lmcache_storage_overview.md) - StorageManager 调度器、Write-All 策略与 Waterfall 检索
+- **L1 极速内存层**:
+  - [LocalCPUBackend 源码分析](09_inference_system/lmcache/local_cpu_backend.md) - 本地 CPU 内存后端与并发控制
+  - [PDBackend 源码分析](09_inference_system/lmcache/pd_backend.md) - 预填充-解码分离、Push-based 主动推送机制
+- **L2 弹性互联层**:
+  - [P2PBackend 源码分析](09_inference_system/lmcache/p2p_backend.md) - RDMA 零拷贝与去中心化传输
+- **L3 本地持久层**:
+  - [LocalDiskBackend 源码分析](09_inference_system/lmcache/local_disk_backend.md) - O_DIRECT 直通 I/O 与异步优化
+  - [GdsBackend 源码分析](09_inference_system/lmcache/gds_backend.md) - GPUDirect Storage 零拷贝
+  - [NixlStorageBackend 源码分析](09_inference_system/lmcache/nixl_backend.md) - 高性能网络存储、S3 对象存储对接
+- **L4 远程共享层**:
+  - [Remote Connector 源码分析](09_inference_system/lmcache/remote_connector.md) - Redis/S3/Mooncake 多后端适配
+
+##### 2.2.3.4 集群控制面与数据面
+
+- [LMCache Controller (控制平面)](09_inference_system/lmcache/lmcache_controller.md) - 集群元数据管理、ZMQ 三通道通信与节点协调
+- [LMCache Server 源码分析](09_inference_system/lmcache/lmcache_server.md) - 轻量级中心化存储服务、自定义 TCP 协议
+
+##### 2.2.3.5 高级技术
+
+- [CacheBlend 技术详解](09_inference_system/lmcache/cache_blend.md) - RAG 场景下的动态融合机制、选择性重算与精度保持
+- [CacheGen 技术详解](09_inference_system/lmcache/cachegen.md) - KV Cache 压缩与流式传输、自适应量化与算术编码
+
+#### 2.2.4 KV Cache 之 阿里云 Tair KVCache
+
+- **[Tair KVCache 架构与设计深度分析](ali-tair-kvcache/tair-kvcache-architecture-design.md)** - 阿里云企业级 KVCache 管理系统架构详解，包含与 LMCache 的全面对比分析、中心化管理模式及大规模部署最佳实践
+
+#### 2.2.5 部署实战
+
+- [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference-solution/DeepSeek-V3-MoE-vLLM-H20-Deployment.md) - H20 硬件上的部署方案与 SLO 验证
+- [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference-solution/Qwen2-VL-7B_Huawei.md) - 国产硬件平台的部署优化
 
 ---
 

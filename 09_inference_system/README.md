@@ -47,7 +47,7 @@
 - **[参考资料与延伸阅读](reference_desgin/08-参考资料与延伸阅读.md)** - 相关技术文档、开源项目和学习资源
 - **[总结与展望](reference_desgin/14-总结与展望.md)** - 技术总结和未来发展趋势分析
 
-### 2.6 KV Cache 与 LMCache
+### 2.6 KV Cache 之 LMCache
 
 在大模型推理中，KV Cache 的管理是影响长上下文性能与显存效率的核心瓶颈。本节专门探讨 LMCache 等先进缓存技术，从架构概览到源码实现，深入解析如何通过多级存储与高效调度突破显存限制。
 
@@ -57,29 +57,39 @@
 - **[LMCache 架构概览](lmcache/lmcache_overview.md)** - 系统定位、四层存储架构 (L1-L4) 与组件交互
 - **[vLLM KV Offloading 与 LMCache 深度对比](vllm/KV_Offloading_and_LMCache_Analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCacheConnector 在架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡。
 
-#### 2.6.2 推理引擎进程内组件
+#### 2.6.2 推理引擎集成与核心链路
 
-- **核心链路**
-  - **[LMCacheConnector 源码分析](lmcache/lmcache_connector.md)** - 推理引擎 (如 vLLM) 集成入口与请求拦截
-  - **[LMCacheEngine 源码分析](lmcache/lmcache_engine.md)** - 核心控制流、I/O 编排与元数据管理
-- **分层存储与后端实现**
-  - **[分层存储架构与调度机制](lmcache/lmcache_storage_overview.md)** - StorageManager 调度、Write-All 与 Waterfall 检索
-  - **L1 极速内存层**:
-    - **[LocalCPUBackend 源码分析](lmcache/local_cpu_backend.md)** - 本地 CPU 内存后端与并发控制
-    - **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
-  - **L2 弹性互联层**:
-    - **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - 跨节点点对点传输机制
-  - **L3 本地持久层**:
-    - **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - 本地磁盘后端与 I/O 优化
-    - **[GdsBackend 源码分析](lmcache/gds_backend.md)** - 基于 GPUDirect Storage 的高性能存储后端
-    - **[NixlStorageBackend 源码分析](lmcache/nixl_backend.md)** - 基于 NIXL 的通用存储/网络后端
-  - **L4 远程共享层**:
-    - **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - 共享存储接口与 Redis/S3/Mooncake 实现
+- **[LMCacheConnector 源码分析](lmcache/lmcache_connector.md)** - 推理引擎 (如 vLLM) 集成入口与请求拦截
+- **[LMCacheEngine 源码分析](lmcache/lmcache_engine.md)** - 核心控制流、I/O 编排与元数据管理
 
-#### 2.6.3 控制面和数据面
+#### 2.6.3 分层存储后端实现
+
+- **[分层存储架构与调度机制](lmcache/lmcache_storage_overview.md)** - StorageManager 调度、Write-All 与 Waterfall 检索
+- **L1 极速内存层**:
+  - **[LocalCPUBackend 源码分析](lmcache/local_cpu_backend.md)** - 本地 CPU 内存后端与并发控制
+  - **[PDBackend (预填充-解码分离后端) 源码分析](lmcache/pd_backend.md)** - 专为分离架构设计的 KV Cache 主动推送机制
+- **L2 弹性互联层**:
+  - **[P2PBackend 源码分析](lmcache/p2p_backend.md)** - 跨节点点对点传输机制
+- **L3 本地持久层**:
+  - **[LocalDiskBackend 源码分析](lmcache/local_disk_backend.md)** - 本地磁盘后端与 I/O 优化
+  - **[GdsBackend 源码分析](lmcache/gds_backend.md)** - 基于 GPUDirect Storage 的高性能存储后端
+  - **[NixlStorageBackend 源码分析](lmcache/nixl_backend.md)** - 基于 NIXL 的通用存储/网络后端
+- **L4 远程共享层**:
+  - **[Remote Connector (远程连接器) 源码分析](lmcache/remote_connector.md)** - 共享存储接口与 Redis/S3/Mooncake 实现
+
+#### 2.6.4 集群控制面与数据面
 
 - **[LMCache Controller (控制平面) 架构剖析](lmcache/lmcache_controller.md)** - 集群元数据管理、节点协调及全局指令下发
 - **[LMCache Server (数据平面) 源码分析](lmcache/lmcache_server.md)** - 轻量级 KV Cache 存储服务架构与协议分析
+
+#### 2.6.5 高级技术
+
+- **[CacheBlend 缓存混合策略](lmcache/cache_blend.md)** - 多级缓存混合调度与复用策略
+- **[CacheGen KV Cache 生成技术](lmcache/cachegen.md)** - 基于语义聚类的 KV Cache 预生成与检索技术
+
+### 2.7 阿里云 Tair KVCache
+
+- **[Tair KVCache 架构与设计深度分析](ali-tair-kvcache/tair-kvcache-architecture-design.md)** - 阿里云面向大语言模型推理场景打造的高性能 KVCache 系统，详细解析其核心组件 Tair KVCache Manager 的架构设计、技术实现和工程实践，包含与 LMCache 的全面对比分析
 
 ---
 
@@ -90,6 +100,9 @@
 - **[LLM 模型推理显存占用深度分析](memory_calc/memory_analysis.md)** - 理论分析模型权重、KV Cache 及激活值的显存构成
 - **[显存计算脚本](memory_calc/calculate_qwen3_memory.py)** - 自动计算指定模型配置下的显存占用 (支持 Qwen3 等)
 - **[模型配置示例](memory_calc/qwen3-06b.config.json)** - Qwen3-0.6B 模型的标准配置文件
+- **[显存分析 PPT](memory_calc/LLM模型推理显存占用深度分析.pptx)** - 显存占用分析的详细演示文稿
+
+---
 
 ## 4. 推理部署方案
 
@@ -99,12 +112,16 @@
   - **[SLO 计算工具](./inference-solution/slo_calc_v2.py)** - 基于腾讯太极团队实际数据的 DeepSeek-V3 SLO 目标验证脚本
 - **[Qwen2-VL-7B 模型在华为硬件平台的部署优化](./inference-solution/Qwen2-VL-7B_Huawei.md)**
 
+---
+
 ## 5. 深度技术专题
 
 本章收录了业界前沿的推理系统架构与优化工具的深度解析。
 
 - **[Mooncake 架构详解](Mooncake%20架构详解：以%20KV%20缓存为中心的高效%20LLM%20推理系统设计.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
 - **[NVIDIA Model Optimizer 技术详解](NVIDIA_Model_Optimizer_Introduction.md)** - NVIDIA 官方模型量化、稀疏化与蒸馏工具库指南
+
+---
 
 ## 6. 高性能通信与互联
 
