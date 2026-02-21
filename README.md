@@ -96,7 +96,7 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 
 #### 2.2.4 KV Cache 之 阿里云 Tair KVCache
 
-- **[Tair KVCache 架构与设计深度分析](ali-tair-kvcache/tair-kvcache-architecture-design.md)** - 阿里云企业级 KVCache 管理系统架构详解，包含与 LMCache 的全面对比分析、中心化管理模式及大规模部署最佳实践
+- **[Tair KVCache 架构与设计深度分析](09_inference_system/ali-tair-kvcache/tair-kvcache-architecture-design.md)** - 阿里云企业级 KVCache 管理系统架构详解，包含与 LMCache 的全面对比分析、中心化管理模式及大规模部署最佳实践
 
 #### 2.2.5 部署实战
 
@@ -153,6 +153,13 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 本节探讨在 AI 时代下新兴的编程范式与工作流，重点关注如何利用 AI 提升开发效率与代码质量。
 
 - [**OpenSpec 实战指南**](https://github.com/ForceInjection/OpenSpec-practise/blob/main/README.md) - Spec 驱动开发 (Spec-Driven Development) 的工程实践，演示了 "意图 -> Spec -> AI -> 代码 & 验证" 的新一代开发工作流。
+
+### 3.5 LangGraph 开发
+
+LangGraph 是一个用于构建有状态、多智能体应用程序的库，特别适合构建复杂的 Agent 工作流。
+
+- [**LangGraph 简介**](98_llm_programming/langgraph/langgraph_intro.md) - LangGraph 的核心概念与入门指南
+- [**AI 客服系统实战**](98_llm_programming/langgraph/aics.ipynb) - 基于 LangGraph 构建的 AI 客服系统 Notebook 实战
 
 ---
 
@@ -242,6 +249,23 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 - [**百面大模型**](https://mp.weixin.qq.com/s/rBJ5an0pr3TgjFbyJXa0WA) - 打通大模型求职与实战的关键一书
 - [**图解大模型：生成式 AI 原理与实践**](https://mp.weixin.qq.com/s/tYrHrpMrZySgWKE1ECqTWg) - 超过 300 幅全彩图示 × 实战级项目代码 × 中文独家 DeepSeek-R1 彩蛋内容，入门、进阶、实操、求职一步到位！
 
+### 5.5 Deep Research 深度研究
+
+本节深入探讨利用 AI 进行深度研究的技术与应用，包括 Research Agent 的设计与实现。
+
+- [**DeepWiki 深度研究报告**](06_llm_theory_and_fundamentals/deep_research/DeepWiki%20深度研究报告.pdf) - DeepWiki 的研究成果与深度分析报告
+- [**DeepWiki 使用方法与技术原理**](06_llm_theory_and_fundamentals/deep_research/DeepWiki%20使用方法与技术原理深度分析.md) - 技术实现细节与使用指南
+- [**通义 DeepResearch 深度分析**](06_llm_theory_and_fundamentals/deep_research/通义DeepResearch深度分析.md) - 对通义 DeepResearch 的技术剖析
+- [**科研助手设计**](06_llm_theory_and_fundamentals/deep_research/design/科研助手.md) - 智能科研助手的设计方案
+
+### 5.6 AI 工作流与编排
+
+本节介绍如何使用 Coze、n8n 等工具进行 AI 应用的编排与落地。
+
+- [**Coze 部署和配置手册**](06_llm_theory_and_fundamentals/workflow/Coze部署和配置手册.md) - Coze 平台的私有化部署与配置指南
+- [**n8n 多智能体编排指南**](06_llm_theory_and_fundamentals/workflow/n8n_multi_agent_guide.md) - 基于 n8n 构建 Multi-Agent 系统
+- [**开源大模型应用编排平台对比**](06_llm_theory_and_fundamentals/workflow/开源大模型应用编排平台：Dify、AnythingLLM、Ragflow%20与%20n8n%20的功能与商用许可对比分析.md) - 主流应用编排平台的深度横评
+
 ---
 
 ## 6. 大模型训练
@@ -291,18 +315,21 @@ Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推�
 模型部署与运维是将训练好的大模型转化为可用服务的关键环节，涉及模型格式转换、环境配置、服务监控和故障处理等多个方面。有效的部署策略能够显著降低运维成本，提高服务稳定性和用户体验。
 
 - [**动手部署 ollama**](99_misc/deepseek/mac-deepseek-r1.md) - 轻量级本地大模型部署的完整实践指南
+- [**Ollama 推理框架详解**](06_llm_theory_and_fundamentals/inference_framework/ollama/README.md) - Ollama 的架构原理与进阶配置
 
 ### 7.3 推理优化技术体系
 
 推理优化技术体系是提升大模型推理性能的核心技术集合，包括算法优化、硬件加速、系统调优和架构设计等多个维度。
 
 - [**AI 推理优化技术文档导航**](09_inference_system/README.md) - 涵盖基础理论、技术选型、专业领域优化和实施运维的系统性指南
+- [**LLM 显存占用分析与计算**](09_inference_system/memory_calc/memory_analysis.md) - 模型参数、KV Cache 与中间激活值的显存估算方法
 
 ### 7.4 DeepSeek 专题
 
 DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设计和高性能表现备受关注。本节汇总了关于 DeepSeek 模型的部署、对比分析和存储系统设计等核心资料。
 
 - [**DeepSeek 3FS 存储系统**](04_cloud_native_ai_platform/storage/deepseek_3fs_design_notes.zh-CN.md) - DeepSeek 自研的高性能分布式文件系统设计笔记
+- [**DeepSeek R1 对比分析**](99_misc/deepseek/deepseek-r1-cmp.md) - DeepSeek R1 与主流模型的详细对比
 
 ---
 
@@ -312,13 +339,24 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 
 - [**AI Agent 开发与实践**](08_agentic_system/README.md) - 核心文档门户，涵盖理论、架构与实战。
 
-**核心模块导航**：
+### 8.1 核心模块导航
 
 - **[多智能体系统](08_agentic_system/multi_agent/Part1-Multi-Agent-AI-Fundamentals.md)**：BDI 架构、多 Agent 协作机制与企业级落地
 - **[记忆系统](08_agentic_system/memory/docs/AI%20智能体记忆系统：理论与实践.md)**：MemoryOS 架构、Mem0 实战与 LangChain 记忆集成
 - **[上下文工程](08_agentic_system/context/上下文工程原理.md)**：动态组装、自适应压缩与 Anthropic 最佳实践
 - **[工具与 MCP](08_agentic_system/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)**：Model Context Protocol (MCP) 原理与实战
 - **[基础设施](08_agentic_system/agent_infra/ai-agent-infra-stack.md)**：Agent 基础设施技术栈与 12-Factor Agents 设计原则
+
+### 8.2 设计模式与技能
+
+- **[Agent 设计模式](08_agentic_system/agent_design/react-agent.md)**：ReAct 范式、[写作 Agent](08_agentic_system/agent_design/写作%20Agentic%20Agent.md) 与 [指代消解](08_agentic_system/agent_design/如何设计支持多轮指代消解的对话系统.md)
+- **[Agent Skills](08_agentic_system/agent-skills/claude_skills_guide.md)**：Claude Skills 开发指南与 PDF Translator 实战
+- **[世界模型](08_agentic_system/concepts/world_model_introduction.md)**：World Model 核心概念与应用
+
+### 8.3 深度报告与论文
+
+- **[Agent Workflow Survey](08_agentic_system/paper/agent-workflow-survey.md)**：Agent 工作流综述
+- **[LangChain State of Agent Engineering](08_agentic_system/report/langchain-state-of-agent-engineering.md)**：LangChain 发布的 Agent 工程化现状报告
 
 ---
 
@@ -328,18 +366,18 @@ DeepSeek 是当前开源大模型领域的重要力量，其创新的架构设�
 
 - [**RAG 与工具生态**](07_rag_and_tools/README.md) - 核心文档门户，涵盖 RAG、GraphRAG 与文档智能工具。
 
-**核心模块导航**：
+### 9.1 核心模块导航
 
 - **[RAG 基础与进阶](07_rag_and_tools/rag/README.md)**：RAG 技术全景、Chunking 策略与 Embedding 选型
-- **[GraphRAG 与知识图谱](07_rag_and_tools/GraphRAG/GraphRAG_Learning_Guide.md)**：GraphRAG 原理、Neo4j 实战与 KAG 框架
+- **[GraphRAG 与知识图谱](07_rag_and_tools/GraphRAG/GraphRAG_Learning_Guide.md)**：GraphRAG 原理、[Neo4j 实战](07_rag_and_tools/KG/Neo4j_HandsOn_Guide.md) 与 [KAG 框架](07_rag_and_tools/GraphRAG/KAG_Introduction.md)
 - **[LLM + KG 协同应用](07_rag_and_tools/Synergized%20LLMs%20+%20KGs/anti_fraud_design.md)**：金融反欺诈系统设计与 Demo 源码
-- **[文档智能解析](07_rag_and_tools/pdf/minerU_intro.md)**：MinerU、Marker 与 Markitdown 等高精度解析工具
+- **[文档智能解析](07_rag_and_tools/pdf/minerU_intro.md)**：[MinerU](07_rag_and_tools/pdf/minerU_intro.md)、[Marker](07_rag_and_tools/pdf/marker.zh-CN.md) 与 [Markitdown](07_rag_and_tools/pdf/markitdown/README.md) 等高精度解析工具
 
-**深度研究与工具**：
+### 9.2 深度研究与工具
 
 - [**DeepWiki 技术原理**](06_llm_theory_and_fundamentals/deep_research/DeepWiki%20使用方法与技术原理深度分析.md) - DeepWiki 使用方法与技术原理深度分析
 
-**特定领域应用**：
+### 9.3 特定领域应用
 
 - [**ChatBox 意图识别**](06_llm_theory_and_fundamentals/llm_basic_concepts/ChatBox_Intent_Recognition_and_Semantic_Understanding_Half_Sentence.md) - 意图识别与语义理解机制解析
 
