@@ -48,7 +48,7 @@ vLLM 推出的 **WideEP (EP + DP)** 方案巧妙解决了这一问题，实现�
 1. **Dual-batch Overlap (DBO)**：在 Decode 阶段，将通信（All-to-All）与计算交错推进。就像在繁忙的路口多开了一条通道，让数据流与计算流并行不悖，极大提高了 GPU 利用率。
 2. **Expert Parallel Load Balancer (EPLB)**：针对推理请求中 Token 路由不均导致的“专家忙闲不均”问题，EPLB 通过滑动窗口统计负载，动态调整专家映射权重，实现了“不重启模型也能热迁移”的负载均衡。
 
-![WideEP 架构](./wideEP.png)
+![WideEP 架构](./wide_ep.png)
 
 ---
 
