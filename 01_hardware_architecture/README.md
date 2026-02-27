@@ -9,13 +9,11 @@
 ### 1.1 核心组件
 
 1. **计算硬件 (Compute)**
-
    - **GPU 架构**：SIMT 线程模型、CUDA 核心原理、Tensor Core 加速单元。
    - **内存层次**：寄存器 (Registers) -> 共享内存 (Shared Memory) -> 全局内存 (Global Memory) -> HBM/GDDR。
    - **性能指标**：FLOPS (每秒浮点运算次数)、Memory Bandwidth (内存带宽)。
 
 2. **互连技术 (Interconnect)**
-
    - **片间互连**：NVLink、CXL，解决单机多卡通信瓶颈。
    - **节点互连**：InfiniBand (IB)、RoCEv2，构建大规模分布式训练集群。
    - **系统总线**：PCIe 4.0/5.0，CPU 与 GPU 之间的高速通道。
@@ -26,9 +24,11 @@
 
 ### 1.2 深度阅读
 
-- [**PCIe 知识大全**](pcie/pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化
-- [**NVLink 入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景
-- [**NVIDIA DGX SuperPOD**](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q) - 企业级 AI 超算集群的架构设计与部署实践
+- [**AI 基础设施延迟金字塔**](latency.md) - **必读**！建立对系统性能数量级的第一性认知。
+- [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化。
+- [**Linux PCIe P2PDMA 技术介绍**](pcie/p2pdma.md) - 详解设备直连 DMA 技术原理与 GDS 实践。
+- [**NVLink 技术入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景。
+- [**NVIDIA DGX SuperPOD**](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q) - 企业级 AI 超算集群的架构设计与部署实践。
 
 ## 2. 芯片架构对比
 
@@ -55,11 +55,20 @@
 - **TPU 101**：深度学习专用加速器架构解析
 - **对比分析**：TPU vs GPU
 
-### 3.3 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
+### 3.3 [PCIe 与互连技术](pcie/pcie_comprehensive_guide.md)
+
+- [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md)：从物理层到协议层的全面解析。
+- [**Linux PCIe P2PDMA**](pcie/p2pdma.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
+- [**NVLink 技术**](nvlink/nvlink_intro.md)：突破 PCIe 瓶颈的 GPU 高速互连方案。
+
+### 3.4 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
 
 详细解析 NVIDIA GPUDirect 系列技术，重点关注解决“内存墙”与“IO 墙”问题的核心方案。
 
 - **基础技术**：[GPUDirect P2P](gpudirect/gpudirect_p2p.md) - 节点内 GPU 高速互联
 - **核心技术**：[GPUDirect RDMA](gpudirect/gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/gpudirect_technology.md#3-gpudirect-storage-gds-技术)
 - **原理解析**：PCI BAR 映射、DMA 路径优化、Zero-Copy 机制
-- **生态支持**：硬件（网卡/存储）、软件（通信库/文件系统）及 AI 框架集成
+
+### 3.5 [性能参考](latency.md)
+
+- [**AI 基础设施延迟金字塔**](latency.md)：提供从寄存器访问到跨节点通信的各级延迟参考数据，辅助性能调优与架构设计。
