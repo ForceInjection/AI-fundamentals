@@ -1,8 +1,8 @@
-# 层级流水线并行 (Layerwise Pipelining)
+# KV Cache 层级流水线并行 (Layerwise Pipelining)
 
-层级流水线并行 (Layerwise Pipelining) 是 LMCache 和 DualPath 等先进 LLM 推理系统为了解决 **KV-Cache 存取延迟** 和 **显存容量限制** 而采用的核心优化机制。其核心思想是将 KV-Cache 的加载/存储与 GPU 的模型层级计算进行 **并行化处理**，从而掩盖 I/O 延迟并最大化系统吞吐量。
+层级流水线并行 (Layerwise Pipelining) 是 LMCache 和 DualPath 等先进 LLM 推理系统为了解决 **KV Cache 存取延迟** 和 **显存容量限制** 而采用的核心优化机制。其核心思想是将 KV Cache 的加载/存储与 GPU 的模型层级计算进行 **并行化处理**，从而掩盖 I/O 延迟并最大化系统吞吐量。
 
-本文基于 LMCache 官方文档 [1] 和 DualPath 论文 [2] 对该技术进行详细阐述。
+本文基于 LMCache 源码解读文档 [1] 和 DeepSeek DualPath 论文 [2] 对该技术进行详细阐述。
 
 ## 1. 核心概念
 
@@ -10,9 +10,9 @@
 
 在传统的推理过程中，系统通常采用 **"全部加载-计算-全部存储"** 的串行模式：
 
-1. **加载阶段**: 等待所有层的 KV-Cache 加载完成；
+1. **加载阶段**: 等待所有层的 KV Cache 加载完成；
 2. **计算阶段**: 执行所有层的推理计算；
-3. **存储阶段**: 将生成的 KV-Cache 全部回写存储。
+3. **存储阶段**: 将生成的 KV Cache 全部回写存储。
 
 这种模式会导致严重的 GPU 空闲，且受限于单张 GPU 的显存容量 (HBM Capacity)，限制了 Batch Size 的提升。
 
@@ -28,7 +28,7 @@
 层级流水线并行的实现依赖于 LLM 推理的计算局部性、硬件资源的解耦以及显存管理的优化。该技术主要依赖以下三个基本原理：
 
 1. **计算局部性 (Locality)**:
-   推理中的每一层计算仅需要该层特有的 KV-Cache 数据。这意味着系统不需要在显存中同时保存所有层的 KV-Cache，可以实现 **按需加载 (On-demand Loading)** 和 **即时释放 (Immediate Freeing)**。
+   推理中的每一层计算仅需要该层特有的 KV Cache 数据。这意味着系统不需要在显存中同时保存所有层的 KV Cache，可以实现 **按需加载 (On-demand Loading)** 和 **即时释放 (Immediate Freeing)**。
 
 2. **资源解耦 (Resource Decoupling)**:
    - 利用 GPU 的 **DMA 引擎** 进行显存与主机内存 (H2D/D2H) 的传输；
@@ -37,7 +37,7 @@
      这些 I/O 操作可以与 GPU 的 Tensor Core 计算 **异步执行**，互不干扰。
 
 3. **显存节省 (Memory Savings)**:
-   通过逐层分配和释放 KV-Cache 空间，显存只需持有当前正在计算的那一层 (或几层) 数据。这显著降低了显存占用，使得系统能够支持更大的 Batch Size，从而提高 GPU 计算单元的利用率。
+   通过逐层分配和释放 KV Cache 空间，显存只需持有当前正在计算的那一层 (或几层) 数据。这显著降低了显存占用，使得系统能够支持更大的 Batch Size，从而提高 GPU 计算单元的利用率。
 
 ---
 
@@ -100,7 +100,7 @@ DualPath [2] 将层级流水线并行从 **单机 I/O 优化** 扩展到了 **�
 
 ### 4.1 核心问题：存储 I/O 瓶颈
 
-在 Agentic (智能体) 等长上下文、多轮对话场景中，Prefill 阶段的 KV-Cache 加载需求巨大。传统的加载路径导致 **Prefill 节点的存储网卡 (SNIC) 饱和**，而 **Decode 节点的 SNIC 却处于空闲状态**。
+在 Agentic (智能体) 等长上下文、多轮对话场景中，Prefill 阶段的 KV Cache 加载需求巨大。传统的加载路径导致 **Prefill 节点的存储网卡 (SNIC) 饱和**，而 **Decode 节点的 SNIC 却处于空闲状态**。
 
 ### 4.2 双路径加载 (Dual-Path Loading)
 
@@ -117,9 +117,9 @@ DualPath [2] 将层级流水线并行从 **单机 I/O 优化** 扩展到了 **�
 
 DualPath 在这两条路径中都深度应用了层级流水线技术，以确保数据传输与计算的高度重叠：
 
-- **细粒度传输 (Layer Blocks)**: KV-Cache 被切分为细粒度的层级块 (Layer Blocks)。
+- **细粒度传输 (Layer Blocks)**: KV Cache 被切分为细粒度的层级块 (Layer Blocks)。
 - **跨网络流式传输**: 在 "DE Read Path" 中，数据从 Decode 节点加载到内存后，会立即以层为单位通过 **计算网络 (Compute Network/RDMA)** 流式传输给 Prefill 节点。
-- **流量隔离**: 采用以 NIC 为中心的流量管理 (NIC-centric Traffic Management)，确保 KV-Cache 的传输流量不会干扰模型推理的关键通信 (如 Collective Ops)。
+- **流量隔离**: 采用以 NIC 为中心的流量管理 (NIC-centric Traffic Management)，确保 KV Cache 的传输流量不会干扰模型推理的关键通信 (如 Collective Ops)。
 
 ---
 
@@ -136,5 +136,5 @@ DualPath 在这两条路径中都深度应用了层级流水线技术，以确�
 
 ## 6. 参考文献
 
-1. LMCache Documentation: `lmcache/lmcache_overview.md`, `lmcache/lmcache_engine.md`.
-2. DualPath Paper: _DualPath: Rethinking KV-Cache Loading for Agentic LLM Inference_ (arXiv:2602.21548v2).
+1. LMCache Documentation: [LMCache 架构概览](lmcache/lmcache_overview.md), [LMCacheEngine 核心引擎代码分析](lmcache/lmcache_engine.md).
+2. DualPath Paper: _DualPath: Rethinking KV Cache Loading for Agentic LLM Inference_ (arXiv:2602.21548v2).

@@ -118,7 +118,7 @@ NIXL 定义了标准的 C++ 插件接口 `nixlBackendEngine`，开发者可以�
 
 除了核心后端，NIXL 还拥有活跃的扩展生态，支持多种特定场景或预览特性的后端：
 
-- **Mooncake [Preview]**: 针对 KVCache 优化的分离式架构传输引擎，支持 TCP, RDMA, CXL 等多种协议，旨在降低 LLM 服务中的 I/O 延迟。
+- **Mooncake [Preview]**: 针对 KV Cache 优化的分离式架构传输引擎，支持 TCP, RDMA, CXL 等多种协议，旨在降低 LLM 服务中的 I/O 延迟。
 - **HF3FS**: 基于 DeepSeek 3FS 高性能文件系统的后端，利用共享内存和 mmap 优化本地数据传输。
 - **UCCL [Preview]**: 统一集合通信库的点对点扩展，专注于异构 GPU/NIC 环境下的可移植性和灵活性。
 
