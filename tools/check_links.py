@@ -33,8 +33,11 @@ def extract_markdown_links(content):
             i += 1
         
         if paren_count == 0:
-            url = content[start:i-1]
-            links.append((text.strip(), url.strip()))
+            url = content[start:i-1].strip()
+            # 去除URL两端的尖括号（如果有）
+            if url.startswith('<') and url.endswith('>'):
+                url = url[1:-1]
+            links.append((text.strip(), url))
     
     return links
 
@@ -71,8 +74,13 @@ def check_external_url(url, timeout=10):
 
 def main():
     # 设置基础目录
-    base_dir = '/Users/wangtianqing/Project/AI-fundermentals'
+    # 自动获取脚本所在目录的上级目录作为项目根目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(current_dir)
     readme_path = os.path.join(base_dir, 'README.md')
+    
+    print(f"项目根目录: {base_dir}")
+    print(f"检查文件: {readme_path}")
     
     # 读取README.md文件
     try:

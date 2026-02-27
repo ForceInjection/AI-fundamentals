@@ -8,13 +8,13 @@ Qwen2-VL-7B-Instruct 是阿里云研发的大规模视觉语言模型（Large Vi
 
 ### 1.2 版本兼容性
 
-| 组件 | 版本要求 |
-|------|----------|
-| MindIE | 1.0.0+ |
-| CANN | 8.0.RC1+ |
-| Atlas 硬件 | 800I A2 32G/64G |
-| 操作系统 | OpenEuler 24.03 LTS |
-| Python | 3.11+ |
+| 组件       | 版本要求            |
+| ---------- | ------------------- |
+| MindIE     | 1.0.0+              |
+| CANN       | 8.0.RC1+            |
+| Atlas 硬件 | 800I A2 32G/64G     |
+| 操作系统   | OpenEuler 24.03 LTS |
+| Python     | 3.11+               |
 
 ---
 
@@ -59,7 +59,7 @@ Qwen2-VL-7B-Instruct 是阿里云研发的大规模视觉语言模型（Large Vi
 - **内存要求**：至少 64GB 系统内存
 - **存储要求**：至少 50GB 可用存储空间
 
-### 3.2 Atlas 800I A2 64G 配置  
+### 3.2 Atlas 800I A2 64G 配置
 
 - **最低要求**：1台 Atlas 800I A2 64G 服务器
 - **推荐配置**：4卡或8卡并行部署
@@ -100,11 +100,11 @@ ${MindIE镜像名称:标签} \
 
 #### 4.1.2 参数说明
 
-| 参数 | 说明 | 示例值 |
-|------|------|--------|
-| `${容器名}` | 自定义容器名称 | `qwen2-vl-container` |
-| `/home/路径` | 宿主机数据目录路径 | `/home/user/data` |
-| `${映射端口}` | SSH端口映射 | `2222` |
+| 参数                     | 说明                     | 示例值                                                            |
+| ------------------------ | ------------------------ | ----------------------------------------------------------------- |
+| `${容器名}`              | 自定义容器名称           | `qwen2-vl-container`                                              |
+| `/home/路径`             | 宿主机数据目录路径       | `/home/user/data`                                                 |
+| `${映射端口}`            | SSH端口映射              | `2222`                                                            |
 | `${MindIE镜像名称:标签}` | 下载的MindIE镜像完整名称 | `ascendhub.huawei.com/xxx:1.0.0-800I-A2-py311-openeuler24.03-lts` |
 
 #### 4.1.3 启动示例
@@ -176,14 +176,14 @@ max_input_length=8192
 max_output_length=80
 
 # 输入图片或视频文件路径（支持格式：jpg/png/jpeg/mp4/wmv/avi）
-input_image="/data/test_images/sample.jpg" 
+input_image="/data/test_images/sample.jpg"
 
 # 用户prompt，默认放置在图片后
 input_text="Explain the details in the image."
 
 # 数据集路径（优先级比input_image高）
 # 若要推理整个数据集，在base_cmd入参中添加 --dataset_path $dataset_path
-dataset_path="/data/test_images" 
+dataset_path="/data/test_images"
 
 # 共享内存name保存路径，任意位置的一个txt即可
 shm_name_save_path="./shm_name.txt"
@@ -202,12 +202,12 @@ max_batch_size=4  # 64G版本可以设置更大的batch_size
 
 #### 5.1.3 参数详细说明
 
-| 参数名 | 说明 | 推荐值 | 注意事项 |
-|--------|------|--------|----------|
-| `max_batch_size` | 批处理大小 | 32G: 1-4<br>64G: 4-32 | 影响内存使用和吞吐量 |
-| `max_input_length` | 最大输入token长度 | 8192 | 处理长视频时可适当增加 |
-| `max_output_length` | 最大输出token长度 | 80-512 | 根据应用需求调整 |
-| `input_image` | 输入文件路径 | 绝对路径 | 确保文件存在且格式支持 |
+| 参数名              | 说明              | 推荐值              | 注意事项               |
+| ------------------- | ----------------- | ------------------- | ---------------------- |
+| `max_batch_size`    | 批处理大小        | 32G: 1-4；64G: 4-32 | 影响内存使用和吞吐量   |
+| `max_input_length`  | 最大输入token长度 | 8192                | 处理长视频时可适当增加 |
+| `max_output_length` | 最大输出token长度 | 80-512              | 根据应用需求调整       |
+| `input_image`       | 输入文件路径      | 绝对路径            | 确保文件存在且格式支持 |
 
 ### 5.2 运行推理
 
@@ -274,15 +274,15 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
   },
   "ServerConfig": {
     "ipAddress": "127.0.0.1",
-    "port": 1040,                    // 主服务端口，可自定义
-    "managementPort": 1041,          // 管理端口，可自定义
-    "metricsPort": 1042,             // 监控端口，可自定义
+    "port": 1040, // 主服务端口，可自定义
+    "managementPort": 1041, // 管理端口，可自定义
+    "metricsPort": 1042, // 监控端口，可自定义
     "maxLinkNum": 200,
     "httpsEnabled": false,
     "timeoutInSeconds": 300
   },
   "BackendConfig": {
-    "npuDeviceIds": [[0,1,2,3,4,5,6,7]],  // NPU设备ID配置
+    "npuDeviceIds": [[0, 1, 2, 3, 4, 5, 6, 7]], // NPU设备ID配置
     "ModelDeployConfig": {
       "maxSeqLen": 50000,
       "maxInputTokenLen": 50000,
@@ -290,10 +290,10 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
       "ModelConfig": [
         {
           "modelInstanceType": "Standard",
-          "modelName": "qwen2_vl",           // 建议使用qwen2_vl便于benchmark测试
-          "modelWeightPath": "/data/Qwen2-VL-7B-Instruct",  // 模型权重路径
-          "worldSize": 8,                    // 并行度，需与npuDeviceIds数量一致
-          "npuMemSize": 8,                   // KV cache分配，单位GB，需给VIT预留显存空间
+          "modelName": "qwen2_vl", // 建议使用qwen2_vl便于benchmark测试
+          "modelWeightPath": "/data/Qwen2-VL-7B-Instruct", // 模型权重路径
+          "worldSize": 8, // 并行度，需与npuDeviceIds数量一致
+          "npuMemSize": 8, // KV cache分配，单位GB，需给VIT预留显存空间
           "maxBatchSize": 32,
           "maxInputTokens": 8192,
           "maxOutputTokens": 512
@@ -312,10 +312,10 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
 
 #### 6.1.3 配置参数优化建议
 
-| 硬件配置 | npuMemSize | maxBatchSize | worldSize | 说明 |
-|----------|------------|--------------|-----------|------|
-| Atlas 800I A2 32G | 8-10 | 4-8 | 8 | 保守配置，稳定性优先 |
-| Atlas 800I A2 64G | 16-20 | 16-32 | 8 | 性能配置，吞吐量优先 |
+| 硬件配置          | npuMemSize | maxBatchSize | worldSize | 说明                 |
+| ----------------- | ---------- | ------------ | --------- | -------------------- |
+| Atlas 800I A2 32G | 8-10       | 4-8          | 8         | 保守配置，稳定性优先 |
+| Atlas 800I A2 64G | 16-20      | 16-32        | 8         | 性能配置，吞吐量优先 |
 
 > **重要提示**：`npuMemSize` 切勿设置为 -1，需要给 VIT（视觉编码器）预留足够的显存空间。
 
@@ -324,7 +324,7 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
 #### 6.2.1 设置环境变量
 
 ```bash
-export MASTER_ADDR=localhost 
+export MASTER_ADDR=localhost
 export MASTER_PORT=7896
 ```
 
@@ -359,7 +359,7 @@ curl -X POST http://127.0.0.1:1040/generate \
       "image_url": "file:///data/test_images/sample.jpg"
     },
     {
-      "type": "text", 
+      "type": "text",
       "text": "Explain the details in the image."
     }
   ],
@@ -386,13 +386,13 @@ curl -X POST http://127.0.0.1:1040/v1/chat/completions \
       "role": "user",
       "content": [
         {
-          "type": "image_url", 
+          "type": "image_url",
           "image_url": {
             "url": "file:///data/test_images/sample.jpg"
           }
         },
         {
-          "type": "text", 
+          "type": "text",
           "text": "Explain the details in the image."
         }
       ]
@@ -420,11 +420,11 @@ curl -X POST http://127.0.0.1:1040/v1/chat/completions \
       "role": "user",
       "content": [
         {
-          "type": "text", 
+          "type": "text",
           "text": "描述这张图片的内容"
         },
         {
-          "type": "image_url", 
+          "type": "image_url",
           "image_url": {
             "url": "file:///data/test_images/sample.jpg"
           }

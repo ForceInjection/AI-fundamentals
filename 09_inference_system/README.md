@@ -72,8 +72,6 @@
 
 ### 5.1 存储与通信基础设施
 
-- **[GDS P2PDMA 故障排查](infrastructure/gds_p2pdma_troubleshooting.md)** - GPUDirect Storage 在特定环境下的 P2PDMA 生效问题分析
-- **[GDS 性能测试报告](infrastructure/gds_performance_report.md)** - GPUDirect Storage 性能基准测试
 - **[NIXL (NVIDIA Inference Xfer Library)](infrastructure/nixl_introduction.md)** - 专为大规模分布式 AI 推理设计的点对点通信库
 
 ### 5.2 vLLM 引擎优化
