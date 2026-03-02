@@ -9,10 +9,12 @@
 - **NVIDIA Nsight Compute**: CUDA 内核级性能分析器
 - **NVIDIA Nsight Systems**: 系统级性能分析器
 - **nvprof**: 传统 CUDA 性能分析工具
+- **nvbandwidth**: NVIDIA GPU 带宽测量工具
 
-官方文档：
+相关文档：
 
 - [**CUDA 内核性能分析指南**](./s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)：NVIDIA 官方 CUDA 内核性能分析详细指南
+- [**nvbandwidth 深度解析**](./nvbandwidth_best_practices.md)：NVIDIA GPU 带宽测量工具全指南
 
 ## 2. 性能分析实践
 
