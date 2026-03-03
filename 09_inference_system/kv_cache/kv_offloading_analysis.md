@@ -162,9 +162,22 @@ Offloading Connector 的工作流程主要包含数据的卸载（Store）和加
 
 尽管 KV Offloading Connector 在缓解显存压力方面效果显著，但作为 vLLM 的原生组件，其设计权衡也带来了一些局限性：
 
-- **单机视角的局限**: 该方案本质上是 **Scale-up**（单机垂直扩展）策略，利用本地 CPU 内存扩容。它无法跨越物理节点，不支持多实例间的 KV Cache 共享或迁移。
-- **存储层级受限**: 核心设计聚焦于利用 Host DRAM 作为高速 Swap。虽然理论上可扩展，但缺乏对远程分布式存储（如 S3/Redis）的原生支持，限制了其存储容量的上限和持久化能力。
-- **调度与状态紧耦合**: 卸载逻辑与 Block Table 状态管理深度嵌入在 Scheduler 循环中。这意味着 KV Cache 的生命周期与计算实例绑定，无法实现真正的“存算分离”。
+- **单机视角的局限 (Local-Only)**: 该方案本质上是 **Scale-up**（单机垂直扩展）策略，利用本地 CPU 内存扩容。它无法跨越物理节点，不支持多实例间的 KV Cache 共享或迁移。
+- **存储层级受限 (Limited Storage Tiering)**: 核心设计聚焦于利用 Host DRAM 作为高速 Swap。虽然理论上可扩展，但缺乏对远程分布式存储（如 S3/Redis）的原生支持，限制了其存储容量的上限和持久化能力。
+- **不支持模型权重卸载 (No Model Weight Offload)**: 该组件专注于 KV Cache (Runtime State) 的动态管理，**不支持** Model Weights (Static State) 的卸载。模型权重的 Swap 通常由 vLLM 的其他机制（如 Sleep Mode）处理，不在此 Connector 的职责范围内。
+- **调度与状态紧耦合 (Tight Coupling)**: 卸载逻辑与 Block Table 状态管理深度嵌入在 Scheduler 循环中。这意味着 KV Cache 的生命周期与计算实例绑定，无法实现真正的“存算分离”。
+
+### 2.4 关键配置参数
+
+为了启用 KV Offloading Connector，vLLM 引入了专属的配置参数。需要特别注意区分它与模型权重卸载参数的差异：
+
+- **`--kv-offloading-backend native`**: 显式启用原生 KV Offloading 功能。
+- **`--kv-offloading-size <GiB>`**: 指定用于 KV Cache 卸载的 CPU 内存大小（GiB）。
+
+**⚠️ 易混淆参数辨析**:
+
+- **`--cpu-offload-gb`**: 这是一个完全不同的参数，用于 **Model Weights (模型权重)** 的卸载，与 KV Cache 无关。
+- **`--swap-space`**: vLLM 传统的 Swap 空间参数，主要用于处理 Decoding 阶段的临时 Swap（如 Beam Search），而 KV Offloading 更多是作为显存的扩展层。
 
 这些局限性也正是 **LMCache/LMCacheConnector** 试图解决的核心问题。
 
@@ -353,35 +366,39 @@ def wait_for_layer_load(self, layer_name: str) -> None:
 | **存储后端**     | **单一 (Host Memory)**：架构上支持磁盘，但目前核心实现聚焦于 CPU DRAM 扩展。                                    | **丰富 (Multi-Tier)**：Local CPU, Local Disk, Redis, MinIO (S3), P2P 网络等。                                                                                    |
 | **跨实例能力**   | **弱**：主要用于单实例内的 Preemption 恢复，无法跨进程共享。                                                    | **强**：天然支持 Disaggregated Serving (Prefill-Decode 分离) 和 Context Sharing。                                                                                |
 | **实现复杂度**   | **轻量级**：代码量少，依赖 vLLM 内部 Block Table，无额外元数据开销。                                            | **重量级**：独立复杂的索引、序列化、网络模块，需维护 ReqMeta 和 RequestTracker。                                                                                 |
-| **适用场景**     | 1. **单机高并发**: 解决 OOM 和频繁 Preemption 问题。2. **本地长文本**: 本地 CPU 内存充足，需扩展 Context 长度。 | 1. **分离式推理**: 专门的 Prefill 集群和 Decode 集群。2. **多轮对话复用**: 多个请求共享相同的 System Prompt 或 History。3. **Serverless 推理**: 实例快速冷启动。 |
+| **适用场景**     | 1. **单机高并发**: 解决 OOM 和频繁 Preemption 问题；2. **本地长文本**: 本地 CPU 内存充足，需扩展 Context 长度。 | 1. **分离式推理**: 专门的 Prefill 集群和 Decode 集群；2. **多轮对话复用**: 多个请求共享相同的 System Prompt 或 History；3. **Serverless 推理**: 实例快速冷启动。 |
 
 ### 4.2 架构设计哲学：紧耦合 vs. 松耦合
 
 两种 Connector 的根本差异源于其对“KV Cache”这一实体的定义不同：前者将其视为**计算过程的附属品**（Runtime State），后者将其视为独立的**数据资产**（Data Asset）。这种认知差异导致了截然不同的架构设计：
 
-1. **KV Offloading Connector (紧耦合)**:
-   - 深度集成于 `Scheduler`。调度器不仅决定“何时”卸载，还精确控制“卸载到哪里”（Block 粒度）。
-   - **优势**: 极致的本地性能，零开销的元数据管理，对 vLLM 核心流程侵入性低（复用现有的 Block Table）。
-   - **代价**: 难以扩展到多机环境，受限于单机物理资源，且无法感知数据的内容（Content-Unaware）。
+**KV Offloading Connector (紧耦合)**:
 
-2. **LMCacheConnector (松耦合)**:
-   - 引入了独立的 `LMCacheEngine` 和逻辑地址空间（Token Hash）。vLLM 只需通过 `Connector` 接口发起请求，无需关心数据最终落在 L1 还是 L4。
-   - **优势**: 存储后端可插拔，感知数据内容（Content-Aware），天然支持全局去重和共享。
-   - **代价**: 引入了视图转换（View Transformation）和哈希计算的开销，系统复杂度显著增加。
+- 深度集成于 `Scheduler`。调度器不仅决定“何时”卸载，还精确控制“卸载到哪里”（Block 粒度）。
+- **优势**: 极致的本地性能，零开销的元数据管理，对 vLLM 核心流程侵入性低（复用现有的 Block Table）。
+- **代价**: 难以扩展到多机环境，受限于单机物理资源，且无法感知数据的内容（Content-Unaware）。
+
+**LMCacheConnector (松耦合)**:
+
+- 引入了独立的 `LMCacheEngine` 和逻辑地址空间（Token Hash）。vLLM 只需通过 `Connector` 接口发起请求，无需关心数据最终落在 L1 还是 L4。
+- **优势**: 存储后端可插拔，感知数据内容（Content-Aware），天然支持全局去重和共享。
+- **代价**: 引入了视图转换（View Transformation）和哈希计算的开销，系统复杂度显著增加。
 
 ### 4.3 性能权衡分析
 
 在实际应用中，架构的差异直接体现为性能曲线的不同。我们需要在“极致的单机延迟”与“全局的系统吞吐”之间寻找平衡点：
 
-1. **延迟 (Latency)**:
-   - **Swap 操作**: KV Offloading Connector 走 PCIe DMA，延迟在微秒级，几乎不影响推理。LMCacheConnector 若命中本地盘或远程存储，检索延迟较高（毫秒级）。
-   - **TTFT (Time-To-First-Token)**:
-     - **Local Hit (Preemption)**: KV Offloading 表现极佳，通过 CPU->GPU 快速回加载，完全消除重计算开销。
-     - **Global Hit (Cold Start)**: 这是 LMCacheConnector 的杀手锏。它能将新实例的冷启动 TTFT 从“全量计算时间”降低为“网络传输时间”，在长文本场景下收益巨大（例如：从 10s 降低到 0.5s）。
+**延迟 (Latency)**:
 
-2. **吞吐量 (Throughput)**:
-   - KV Offloading Connector 通过扩大有效 Batch Size（将暂停的请求移出显存）来提升单机吞吐。
-   - LMCacheConnector 通过 **全局复用**（一次计算，多处使用）减少了集群的总计算负载，从而提升了整个集群的有效吞吐量。
+- **Swap 操作**: KV Offloading Connector 走 PCIe DMA，延迟在微秒级，几乎不影响推理。LMCacheConnector 若命中本地盘或远程存储，检索延迟较高（毫秒级）。
+- **TTFT (Time-To-First-Token)**:
+  - **Local Hit (Preemption)**: KV Offloading 表现极佳，通过 CPU->GPU 快速回加载，完全消除重计算开销。
+  - **Global Hit (Cold Start)**: 这是 LMCacheConnector 的杀手锏。它能将新实例的冷启动 TTFT 从“全量计算时间”降低为“网络传输时间”，在长文本场景下收益巨大（例如：从 10s 降低到 0.5s）。
+
+**吞吐量 (Throughput)**:
+
+- KV Offloading Connector 通过扩大有效 Batch Size（将暂停的请求移出显存）来提升单机吞吐。
+- LMCacheConnector 通过 **全局复用**（一次计算，多处使用）减少了集群的总计算负载，从而提升了整个集群的有效吞吐量。
 
 ---
 
