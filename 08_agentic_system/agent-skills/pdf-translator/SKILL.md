@@ -1,6 +1,6 @@
 ---
 name: pdf-translator
-description: Extract text from PDF files, translate it to a target language, and save the result as a Markdown file. Use this skill when the user wants to translate a PDF document.
+description: Extract text from PDF files, translate it to a target language, and save the result as a Markdown file. Use this skill when the user wants to translate a PDF document or asks to "convert PDF to Chinese".
 ---
 
 # PDF Translator Skill
@@ -18,9 +18,12 @@ Follow these steps to translate a PDF file:
    - Translate the extracted text into the target language requested by the user (default to the user's primary language or English if ambiguous).
    - Maintain the original structure (headings, paragraphs) as much as possible using Markdown formatting.
 4. **Save Output**:
-   - Create a new Markdown file with the translated content.
+   - Write the translated content to a temporary text file (e.g., `temp_translation.txt`).
+   - Use the `generate_md.py` script to create the final Markdown file with metadata.
+   - Command: `python3 skills/pdf-translator/scripts/generate_md.py <output_path> <original_filename> <temp_translation_file>`
    - Filename format: `<original_filename>_translated.md`.
    - Notify the user of the output file location.
+   - Clean up the temporary text file.
 
 ## Examples
 
@@ -31,8 +34,10 @@ Follow these steps to translate a PDF file:
 1. Locates `papers/deep_learning.pdf`.
 2. Runs: `python3 skills/pdf-translator/scripts/extract_text.py papers/deep_learning.pdf`
 3. Translates the extracted text to Chinese.
-4. Saves the result to `papers/deep_learning_translated.md`.
-5. Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
+4. Writes translation to `temp_translation.txt`.
+5. Runs: `python3 skills/pdf-translator/scripts/generate_md.py papers/deep_learning_translated.md deep_learning.pdf temp_translation.txt`
+6. Removes `temp_translation.txt`.
+7. Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
 
 **User**: "Help me read this manual.pdf"
 
@@ -40,4 +45,4 @@ Follow these steps to translate a PDF file:
 
 1. Locates `manual.pdf`.
 2. Runs extraction script.
-3. Translates/Summarizes based on user intent (if "read" implies understanding, a translation or summary might be appropriate).
+3. Translates/Summarizes based on user intent.

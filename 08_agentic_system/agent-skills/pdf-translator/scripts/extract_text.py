@@ -1,3 +1,4 @@
+import argparse
 import sys
 import os
 from PyPDF2 import PdfReader
@@ -13,6 +14,7 @@ def extract_text_from_pdf(pdf_path):
         for page in reader.pages:
             text.append(page.extract_text())
         
+        # Use double newlines to separate pages and paragraphs for better readability
         full_text = "\n\n".join(text)
         print(full_text)
         
@@ -21,9 +23,9 @@ def extract_text_from_pdf(pdf_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python extract_text.py <path_to_pdf>", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Extract text from a PDF file.")
+    parser.add_argument("pdf_path", help="Path to the PDF file to extract text from.")
     
-    pdf_path = sys.argv[1]
-    extract_text_from_pdf(pdf_path)
+    args = parser.parse_args()
+    
+    extract_text_from_pdf(args.pdf_path)

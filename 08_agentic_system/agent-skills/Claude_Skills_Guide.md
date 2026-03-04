@@ -29,14 +29,16 @@
 
 **目录结构推荐**：
 
+> **最佳实践**：采用生产级目录结构，将核心指令、脚本与参考资料分离。
+
 ```text
 skills/
-└── pdf-translator/
-    ├── SKILL.md              # 这就是那本“标准操作手册”
-    ├── requirements.txt      # 依赖清单
-    └── scripts/              # 具体的工具脚本
-        ├── extract_text.py
-        └── generate_md.py
+└── pdf-translator/         # 文件夹名必须使用 kebab-case (短横线连接)
+    ├── SKILL.md            # 核心：标准操作手册 (文件名必须严格大写)
+    ├── requirements.txt    # 依赖清单
+    ├── scripts/            # 可执行脚本 (extract_text.py, generate_md.py)
+    ├── references/         # [可选] 详细文档 (如 API 指南、长篇规则，通过链接按需加载)
+    └── assets/             # [可选] 静态资源 (如输出模板、字体、图标)
 ```
 
 **环境安装**：
@@ -54,15 +56,22 @@ pip install PyPDF2 reportlab
 
 这是最关键的一步。`SKILL.md` 文件由两部分组成：
 
-1. **Frontmatter (头部配置)**：用 YAML 格式定义，告诉系统这个 Skill 叫什么、干什么用。
-2. **Instruction (正文指令)**：用 Markdown 格式定义，告诉 Claude 具体的操作步骤。
+1. **Frontmatter (头部配置)**：YAML 格式，是 Claude 决定**是否加载**该 Skill 的关键依据。
+2. **Instruction (正文指令)**：Markdown 格式，告诉 Claude 加载后的具体操作步骤。
+
+> **⚠️ 关键点**：`description` 字段非常重要！它是 Claude 判断是否调用该 Skill 的唯一依据。
+>
+> **黄金公式**：`[功能描述] + [触发场景] + [关键词]`
+>
+> - ✅ **Good**: "Extract text from PDF files... Use this skill when the user wants to translate a PDF document."
+> - ❌ **Bad**: "Helps with PDF files." (太模糊，Claude 不知道什么时候用)
 
 **文件路径**：`skills/pdf-translator/SKILL.md`
 
 ```markdown
 ---
 name: pdf-translator
-description: Extract text from PDF files, translate it to a target language, and save the result as a Markdown file. Use this skill when the user wants to translate a PDF document.
+description: Extract text from PDF files, translate it to a target language, and save the result as a Markdown file. Use this skill when the user wants to translate a PDF document or asks to "convert PDF to Chinese".
 ---
 
 # PDF Translator Skill
@@ -80,9 +89,12 @@ Follow these steps to translate a PDF file:
     - Translate the extracted text into the target language requested by the user.
     - Maintain the original structure (headings, paragraphs) as much as possible using Markdown formatting.
 4.  **Save Output**:
-    - Create a new Markdown file with the translated content.
+    - Write the translated content to a temporary text file (e.g., `temp_translation.txt`).
+    - Use the `generate_md.py` script to create the final Markdown file with metadata.
+    - Command: `python3 skills/pdf-translator/scripts/generate_md.py <output_path> <original_filename> <temp_translation_file>`
     - Filename format: `<original_filename>_translated.md`.
     - Notify the user of the output file location.
+    - Clean up the temporary text file.
 
 ## Examples
 
@@ -93,8 +105,10 @@ Follow these steps to translate a PDF file:
 1.  Locates `papers/deep_learning.pdf`.
 2.  Runs: `python3 skills/pdf-translator/scripts/extract_text.py papers/deep_learning.pdf`
 3.  Translates the extracted text to Chinese.
-4.  Saves the result to `papers/deep_learning_translated.md`.
-5.  Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
+4.  Writes translation to `temp_translation.txt`.
+5.  Runs: `python3 skills/pdf-translator/scripts/generate_md.py papers/deep_learning_translated.md deep_learning.pdf temp_translation.txt`
+6.  Removes `temp_translation.txt`.
+7.  Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
 ```
 
 ### 1.4 第二步：打造工具 (Python 脚本)
@@ -104,6 +118,7 @@ Follow these steps to translate a PDF file:
 **1. 提取文本的工具 (`scripts/extract_text.py`)**：
 
 ```python
+import argparse
 import sys
 import os
 from PyPDF2 import PdfReader
@@ -118,29 +133,37 @@ def extract_text_from_pdf(pdf_path):
         text = []
         for page in reader.pages:
             text.append(page.extract_text())
-        # 用双换行符连接，保留段落感
-        print("\n\n".join(text))
+
+        # Use double newlines to separate pages and paragraphs for better readability
+        full_text = "\n\n".join(text)
+        print(full_text)
+
     except Exception as e:
         print(f"Error extracting text: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python extract_text.py <path_to_pdf>", file=sys.stderr)
-        sys.exit(1)
-    extract_text_from_pdf(sys.argv[1])
+    parser = argparse.ArgumentParser(description="Extract text from a PDF file.")
+    parser.add_argument("pdf_path", help="Path to the PDF file to extract text from.")
+
+    args = parser.parse_args()
+
+    extract_text_from_pdf(args.pdf_path)
 ```
 
 **2. 生成文件的工具 (`scripts/generate_md.py`)**：
 
 ```python
+import argparse
 import sys
 import os
 import datetime
 
 def generate_markdown(content, output_path, source_file):
+    """
+    Saves content to a Markdown file with a header.
+    """
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # 加上一点元数据，让文件看起来更专业
     header = f"""---
 title: Translated Document
 source: {source_file}
@@ -149,30 +172,49 @@ generated_by: Claude Agent Skill (pdf-translator)
 ---
 
 """
+
     try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(header + content)
+            f.write(header)
+            f.write(content)
         print(f"Successfully generated Markdown file at: {output_path}")
     except Exception as e:
         print(f"Error writing file: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python generate_md.py <output_path> <source_filename> [input_text_file]", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Generate a Markdown file with metadata.")
+    parser.add_argument("output_path", help="Path to save the generated Markdown file.")
+    parser.add_argument("source_filename", help="Name of the original source file (for metadata).")
+    parser.add_argument("input_text_file", nargs="?", help="Path to input text file. If omitted, reads from stdin.")
 
-    output_path = sys.argv[1]
-    source_filename = sys.argv[2]
+    args = parser.parse_args()
 
-    # 支持从文件读取或直接从管道(stdin)读取
-    if len(sys.argv) > 3:
-        with open(sys.argv[3], 'r', encoding='utf-8') as f:
-            content = f.read()
+    content = ""
+    if args.input_text_file:
+        if os.path.exists(args.input_text_file):
+            try:
+                with open(args.input_text_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except Exception as e:
+                print(f"Error reading input file: {str(e)}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print(f"Error: Input file not found: {args.input_text_file}", file=sys.stderr)
+            sys.exit(1)
     else:
-        content = sys.stdin.read()
+        # Check if stdin has data
+        if not sys.stdin.isatty():
+            content = sys.stdin.read()
+        else:
+            print("Error: No input provided. Pipe text to stdin or provide an input file.", file=sys.stderr)
+            parser.print_help()
+            sys.exit(1)
 
-    generate_markdown(content, output_path, source_filename)
+    generate_markdown(content, args.output_path, args.source_filename)
 ```
 
 ### 1.5 第三步：上岗实操 (注册与验证)
@@ -280,13 +322,19 @@ Claude 是如何知道该用哪个 Skill 的？
 
 你可能会担心：_“如果我有 100 个 Skill，全部注入到 Prompt 里，Context Window 岂不是瞬间爆炸？”_
 
-Claude 采用了一种聪明的**渐进式披露**机制，这与人类学习新知识的过程非常相似：
+Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知识的过程非常相似：
 
-1. **目录阶段 (Discovery)**：Claude 初始只看到所有 Skill 的元数据（Frontmatter）。系统会扫描 `~/.config/claude/skills/`、项目下的 `.claude/skills/` 等路径来构建这个目录。
-2. **调取阶段 (Loading)**：只有当 Claude 决定调用某个 Skill 后，系统才会加载该 Skill 完整的 `SKILL.md` 内容。
-3. **执行阶段 (Execution)**：在执行过程中，按需加载辅助脚本和资源。
+1. **第一层：元数据 (Always Loaded)**
+   - **内容**：所有 Skill 的 YAML Frontmatter (name, description)。
+   - **作用**：让 Claude 拥有“广博”的索引，知道有哪些能力可用，但不占用过多上下文。
+2. **第二层：核心指令 (Loaded on Demand)**
+   - **内容**：被选中 Skill 的 `SKILL.md` 正文。
+   - **作用**：当 Claude 决定调用某个 Skill 时，系统才将这份“操作手册”注入上下文。
+3. **第三层：详细文档 (Referenced)**
+   - **内容**：`references/` 目录下的详细文档。
+   - **作用**：Skill 可以在指令中引用这些文件，Claude 仅在执行过程中需要查阅特定细节时才会去读取。
 
-这种机制确保了 Claude 既能拥有“广博”的技能树，又能保持“专注”的上下文环境。
+这种机制确保了 Claude 既能拥有无限扩展的技能树，又能始终保持“专注”和高效的 Context 使用。
 
 ### 3.4 特性对比：并发与状态
 
@@ -299,7 +347,54 @@ Claude 采用了一种聪明的**渐进式披露**机制，这与人类学习新
 
 ---
 
-## 4. 总结
+## 4. 进阶设计模式：超越线性流程
+
+除了像 `pdf-translator` 这样的顺序工作流，Agent Skills 还支持更复杂的模式：
+
+1. **Multi-MCP Coordination (多 MCP 协同)**
+   - **场景**：设计交付。
+   - **流程**：Figma (MCP1) 导出 -> Drive (MCP2) 存储 -> Linear (MCP3) 建票 -> Slack (MCP4) 通知。
+   - **核心**：Skill 充当“指挥官”，协调多个独立工具完成端到端任务。
+
+2. **Iterative Refinement (迭代优化)**
+   - **场景**：撰写复杂报告。
+   - **流程**：生成初稿 -> 运行验证脚本 (Checker) -> 发现问题 -> 修正 -> 再次验证 -> 直至通过。
+   - **核心**：在 Skill 中定义“质量门禁”，让 Agent 自我纠错。
+
+3. **Context-Aware Tool Selection (上下文感知)**
+   - **场景**：文件存储。
+   - **流程**：判断文件大小 -> 若 >10MB 用 S3，若 <10MB 用本地存储。
+   - **核心**：在 Skill 中写入决策逻辑，而非硬编码在工具里。
+
+4. **Domain-Specific Intelligence (领域特定智能)**
+   - **场景**：合规审查。
+   - **流程**：在执行高风险操作（如转账）前，先强制运行合规检查步骤。
+   - **核心**：将业务规则（Business Rules）内嵌到 Skill 中，确保 Agent 行为合规。
+
+---
+
+## 5. 测试与评估：从“能用”到“好用”
+
+写好 Skill 只是第一步，如何确保它在各种场景下都能稳定运行？
+
+### 5.1 测试金字塔
+
+1. **Triggering Tests (触发测试)**：
+   - **正向测试**：确保用户说“帮我翻译这个”时能触发。
+   - **负向测试 (Negative Testing)**：确保用户说“帮我写代码”时**不会**误触发 `pdf-translator`。
+2. **Functional Tests (功能测试)**：
+   - 验证 API 调用是否成功，文件是否正确生成。
+3. **Performance Comparison (性能对比)**：
+   - 对比使用 Skill 前后的 Token 消耗、交互轮数。
+
+### 5.2 迭代工具
+
+- **Skill Creator**：Anthropic 官方提供的 Skill，可以帮你生成、审查和优化你的 Skill。
+  - _Prompt_: "Use the skill-creator skill to help me build a skill for..."
+
+---
+
+## 6. 总结
 
 Claude Agent Skills 代表了 AI Agent 开发的一种新范式：**通过自然语言编程**。
 
