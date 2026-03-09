@@ -40,7 +40,11 @@
 
 在大模型推理中，KV Cache 的管理是影响长上下文性能与显存效率的核心瓶颈。本节汇集了主流 KV Cache 系统的架构解析与优化技术。
 
-### 3.1 系统架构解析
+### 3.1 基础原理
+
+- **[KV Cache 原理简介](kv_cache/basic/kv_cache_原理简介.md)** - 介绍 KV Cache 的核心原理、显存占用分析及 MQA/GQA 优化技术
+
+### 3.2 系统架构解析
 
 - **[LMCache 源码分析指南](kv_cache/lmcache/README.md)** - LMCache 文档入口与推荐阅读路径
   - **[LMCache 架构概览](kv_cache/lmcache/lmcache_overview.md)**
@@ -49,7 +53,7 @@
 - **[Tair KVCache 架构与设计](kv_cache/ali_tair_kvcache/tair-kvcache-architecture-design.md)** - 阿里云高性能 KVCache 系统深度解析
 - **[Mooncake 架构详解](kv_cache/mooncake_architecture.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
 
-### 3.2 深度分析与前沿技术
+### 3.3 深度分析与前沿技术
 
 - **[层级流水线并行 (Layerwise Pipelining)](kv_cache/layerwise_pipeline.md)** - 解析 LMCache 和 DualPath 如何通过计算与 I/O 重叠解决存储瓶颈
 - **[vLLM KV Offloading 与 LMCache 对比](kv_cache/kv_offloading_analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCache 的架构差异与性能权衡
