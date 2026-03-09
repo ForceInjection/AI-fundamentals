@@ -1,16 +1,16 @@
 # 核心框架
-langchain==0.3.26
-langgraph==0.5.1
-langsmith==0.4.4
+langchain==1.2.10
+langgraph==1.0.10
+langsmith==0.7.14
 
 # AI模型
 openai==1.94.0
 anthropic==0.34.2
 
 # Web框架
-fastapi==0.116.0
-uvicorn[standard]==0.32.1
-streamlit==1.40.2
+fastapi==0.135.1
+uvicorn[standard]==0.34.0
+streamlit==1.42.0
 
 # 数据处理
 pandas==2.2.3
