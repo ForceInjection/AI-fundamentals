@@ -297,15 +297,16 @@ if not isinstance(self.connector, SupportsHMA):
 
 当前 Hybrid KV Cache Manager 存在以下已知限制：
 
-| 限制                                           | 说明                                                                                                     |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| HybridKVCacheCoordinator 只支持 2 种注意力类型 | Full + X，不支持 Full + SW + Mamba 等三类混合                                                            |
-| Mamba block_size 可能过大                      | Case 4 的 padding 策略可导致 block_size > 400，内存调度粗粒度                                            |
-| Chunked Local Attention + Eagle 不支持         | Llama 4 + Eagle 组合时 HMA 被强制关闭                                                                    |
-| Chunked Local Attention 存在延迟回归           | 默认通过 `VLLM_ALLOW_CHUNKED_LOCAL_ATTN_WITH_HYBRID_KV_CACHE=1` 手动开启                                 |
-| ~~KV Transfer 与 HMA 互斥~~                    | vLLM 侧限制已移除（PR #25712），但主流 Connector（如 LMCache）尚未适配 `SupportsHMA`，实际仍无法同时开启 |
-| Mamba 混合模型 + KV Transfer 死局              | Connector 不支持多 group 导致 HMA 无法开启，进而导致 Mamba 混合模型无法运行                              |
-| LRU 全局共享                                   | 所有 KV Cache Group 共享同一个 LRU 逐出队列，无法按类型差异化逐出                                        |
+| 限制                                           | 说明                                                                                                           |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| HybridKVCacheCoordinator 只支持 2 种注意力类型 | Full + X，不支持 Full + SW + Mamba 等三类混合                                                                  |
+| Mamba block_size 可能过大                      | Case 4 的 padding 策略可导致 block_size > 400，内存调度粗粒度                                                  |
+| Chunked Local Attention + Eagle 不支持         | Llama 4 + Eagle 组合时 HMA 被强制关闭                                                                          |
+| Chunked Local Attention 存在延迟回归           | 默认通过 `VLLM_ALLOW_CHUNKED_LOCAL_ATTN_WITH_HYBRID_KV_CACHE=1` 手动开启                                       |
+| ~~KV Transfer 与 HMA 互斥~~                    | **部分解决**（PR #25712，2025 年 10 月）vLLM 侧限制已移除，但 LMCache connector 尚未完全实现 `SupportsHMA`     |
+| Mamba 混合模型 + KV Transfer 死局              | **仍然存在**LMCache connector 未实现多 group block_ids 处理逻辑                                                |
+| Native KV Offloading 不支持 HMA                | vLLM 原生的 KV Cache Offloading（`--kv-offloading-size`）假设所有层共享同一 block table，无法处理多 group 场景 |
+| LRU 全局共享                                   | 所有 KV Cache Group 共享同一个 LRU 逐出队列，无法按类型差异化逐出                                              |
 
 ---
 
