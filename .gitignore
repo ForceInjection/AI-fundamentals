@@ -5,8 +5,12 @@ __pycache__/
 
 #Mac
 .DS_Store
-fix_links.py
-verify_links.py
+
+#Trae
+.trae
+
+#Qoder
+.qoder
 
 # C extensions
 *.so
