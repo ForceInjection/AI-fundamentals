@@ -202,15 +202,16 @@ vLLM 原生 APC 的主要局限在于：
 
 ### 4.1 架构概览
 
-LMCache 将 Prefix Caching 扩展到四级（L1-L4）五层存储架构，其中 L1 包含 GPU 显存和 CPU 内存两个子层：
+LMCache 在 vLLM 的 GPU 显存缓存（由 APC 管理）之外，提供了额外的多级存储扩展：
 
 | 层级 | 存储介质                        | 典型延迟 | 应用场景     |
 | ---- | ------------------------------- | -------- | ------------ |
-| L1   | GPU 显存                        | ~10 μs   | 活跃工作集   |
 | L1   | CPU 内存 (LocalCPUBackend)      | ~100 μs  | 本地扩展缓存 |
 | L2   | P2P 网络 (P2PBackend)           | ~1 ms    | 跨实例共享   |
 | L3   | 本地磁盘 (LocalDiskBackend/GDS) | ~10 ms   | 持久化缓存   |
 | L4   | 远程存储 (Redis/S3/Mooncake)    | ~100 ms  | 集群级共享   |
+
+> **注**：GPU 显存中的 KV Cache 由 vLLM 的 PagedAttention 和 APC 机制管理，LMCache 负责 GPU 显存之外的存储层级。
 
 ### 4.2 Token Hash 机制
 
