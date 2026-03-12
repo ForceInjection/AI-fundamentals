@@ -8,11 +8,17 @@ KV Cache 是 LLM 推理加速的基石。在自回归生成过程中，通过缓
 
 - **[KV Cache 原理简介](basic/kv_cache_原理简介.md)**：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 
-## 2. 进阶架构与管理系统
+## 2. Prefix Caching
+
+Prefix Caching（前缀缓存）是 KV Cache 优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 TTFT 并提升系统吞吐量。
+
+- **[Prefix Caching 原理与实现](prefix_caching.md)**：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
+
+## 3. 进阶架构与管理系统
 
 随着上下文长度的增加（Long Context）和分布式推理的需求，简单的显存内 KV Cache 已无法满足需求。业界涌现出多种分层存储和分布式管理方案，将 KV Cache 扩展到 CPU 内存、磁盘甚至远程存储。
 
-### 2.1 LMCache
+### 3.1 LMCache
 
 LMCache 是一个专为 LLM 推理引擎设计的 KV Cache 管理系统，旨在通过多层级存储架构实现跨实例的 KV Cache 重用。
 
@@ -38,36 +44,37 @@ LMCache 是一个专为 LLM 推理引擎设计的 KV Cache 管理系统，旨在
   - **[CacheBlend 技术详解：RAG 场景下的 KV Cache 动态融合机制与源码剖析](lmcache/cache_blend.md)**：RAG 场景下的 KV Cache 动态融合机制，通过选择性重算解决非前缀复用问题。
   - **[CacheGen 技术详解：KV Cache 的高效压缩与流式传输](lmcache/cachegen.md)**：KV Cache 的高效压缩与流式传输技术，显著降低网络传输带宽需求。
 
-### 2.2 Tair KVCache
+### 3.2 Tair KVCache
 
 Tair KVCache 是阿里云推出的企业级 KVCache 解决方案，基于 Tair 数据库技术，提供了高性能的分布式 KV Cache 管理能力。
 
 - **[Tair KVCache 架构与设计深度分析](ali_tair_kvcache/tair-kvcache-architecture-design.md)**：深入分析了 Tair KVCache Manager (KVCM) 的架构。它采用中心化元数据管理 + 分布式存储的模式，支持 KV 匹配、前缀匹配和滑动窗口匹配，并实现了两阶段写入机制以保障数据一致性。
 
-### 2.3 NVIDIA KVBM (KV Block Manager)
+### 3.3 NVIDIA KVBM (KV Block Manager)
 
 KVBM 是 NVIDIA Dynamo 项目中的核心组件，服务于 vLLM 和 TensorRT-LLM 等高性能推理框架。
 
 - **[KV Block Manager (KVBM) 深度解析](kvbm/KVBM_Analysis.md)**：剖析了 KVBM 如何通过统一内存 API 管理异构存储（GPU/CPU/SSD），利用 Block 机制和状态机管理内存生命周期，并结合 NIXL 库实现高效的数据传输（如 GDS、RDMA）。
 
-### 2.4 Mooncake 架构
+### 3.4 Mooncake 架构
 
 Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推理架构。
 
 - **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](mooncake_architecture.md)**：介绍了其基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
 
-## 3. 关键技术分析
+## 4. 关键技术分析
 
 除了具体的系统架构，本目录还包含对特定技术点的深度分析。
 
 - **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
 - **[KV Cache 层级流水线并行](layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
 
-## 4. 目录结构说明
+## 5. 目录结构说明
 
 | 目录/文件                  | 说明                             |
 | :------------------------- | :------------------------------- |
 | `basic/`                   | KV Cache 基础原理及图解          |
+| `prefix_caching.md`        | Prefix Caching 原理与实现详解    |
 | `lmcache/`                 | LMCache 项目相关文档及组件详解   |
 | `ali_tair_kvcache/`        | 阿里云 Tair KVCache 架构文档     |
 | `kvbm/`                    | NVIDIA KV Block Manager 技术文档 |
