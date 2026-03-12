@@ -12,7 +12,7 @@
 
 差距不在模型能力，而在于你是否建立了一套**驾驭系统**。
 
-OpenAI 团队将这套系统称为 **Harness** [1]，Martin Fowler 网站上 Birgitta Böckeler 的深度分析文章 [2] 将其上升为一种工程方法论——**Harness Engineering（驾驭工程）**。这篇文章将从"为什么翻车"出发，拆解这套方法论的核心思想，以及它对每一个使用 AI 写代码的开发者意味着什么。
+OpenAI 团队将这套系统称为 **Harness** [1]，Martin Fowler 网站上 Birgitta Böckeler 的深度分析文章 [2] 将其上升为一种工程方法论——**Harness Engineering（驾驭工程）**。本文将从"为什么翻车"出发，拆解这套方法论的核心思想，以及它对每一个使用 AI 写代码的开发者意味着什么。
 
 ---
 
