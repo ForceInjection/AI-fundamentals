@@ -178,7 +178,7 @@ def hash_block_tokens(
 
 ### 3.4 Prefix Caching 与混合注意力模型
 
-对于采用混合注意力机制的模型（如 Gemma-3 的 Sliding Window + Full Attention），vLLM 的 [Hybrid KV Cache Manager](../vllm/Hybrid_KV_Cache_Manager.md) 提供了分层的 Prefix Caching 支持：
+对于采用混合注意力机制的模型（如 Gemma-3 的 Sliding Window + Full Attention），vLLM 的 [Hybrid KV Cache Manager](../vllm/vllm_hybrid_kv_cache_manager_deep_dive.md) 提供了分层的 Prefix Caching 支持：
 
 - **Full Attention 层**：标准的从左到右前缀匹配
 - **Sliding Window 层**：从右到左匹配，只关心最近 `sliding_window_size` 个 token

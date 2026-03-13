@@ -80,8 +80,10 @@
 
 ### 5.2 vLLM 引擎优化
 
-- **[Hybrid KV Cache Manager 深度解析](vllm/Hybrid_KV_Cache_Manager.md)** - vLLM 针对混合注意力架构（Sliding Window/Mamba/Local Chunked）的显存优化机制与兼容性分析
-- **[vLLM WideEP 架构](vllm/wide_ep.md)** - vLLM 宽端点 (Wide Endpoint) 架构解析
+- **[Hybrid KV Cache Manager 深度解析](vllm/vllm_hybrid_kv_cache_manager_deep_dive.md)** - vLLM 针对混合注意力架构（Sliding Window/Mamba/Local Chunked）的显存优化机制与兼容性分析
+- **[vLLM WideEP 架构](vllm/vllm_deepseek_blackwell_wide_ep.md)** - vLLM 宽端点 (Wide Endpoint) 架构解析
+- **[vLLM Router 架构解析](vllm/vllm_router.md)** - 高性能、轻量级请求转发系统
+- **[vLLM Semantic Router 深度解析](vllm/vllm_semantic_router_deep_dive.md)** - 基于语义的智能路由策略
 - **[vLLM GB200 性能优化报告](vllm/vllm_gb200_optimization.pptx)**
 - **[Scaling DeepSeek on Blackwell](vllm/scaling_deepseek_blackwell.pptx)**
 
