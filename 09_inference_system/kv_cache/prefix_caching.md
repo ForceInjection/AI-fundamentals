@@ -36,9 +36,9 @@ Prefix Caching 的核心机制可以分为三个步骤：
 3. **查找与复用（Lookup & Reuse）**：新请求到来时，逐 Chunk 查找缓存，命中则复用，未命中则计算并存储
 
 ```text
-输入 Token 序列: [T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
-                 |---- Chunk 0 ----|---- Chunk 1 ----|---- Chunk 2 ----|
-                      Hash: H0           Hash: H1           Hash: H2
+输入 Token 序列: [T0,  T1,  T2,  T3,  T4,  T5,  T6,  T7,  T8,  T9,  T10,  T11]
+                |----- Chunk 0 -----|---- Chunk 1 -----|----- Chunk 2 -----|
+                    Hash: H0              Hash: H1            Hash: H2
 
 缓存查找:
   - H0 命中 → 复用 Chunk 0 的 KV Cache
