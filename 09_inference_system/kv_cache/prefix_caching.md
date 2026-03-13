@@ -165,15 +165,15 @@ def hash_block_tokens(
 
 ```text
 请求: [T0, T1, ..., T15] [T16, T17, ..., T31] [T32, T33, ..., T47]
-           Block 0            Block 1             Block 2
+           Block 0             Block 1             Block 2
               ↓                   ↓                   ↓
-         Hash: H0             Hash: H1            Hash: H2
+        Hash: H0               Hash: H1            Hash: H2
               ↓                   ↓                   ↓
-          [命中]              [命中]              [未命中]
+            [命中]              [命中]              [未命中]
               ↓                   ↓                   ↓
-        复用 KV Cache        复用 KV Cache     计算 KV Cache
-                                                    ↓
-                                               存入缓存
+        复用 KV Cache        复用 KV Cache       计算 KV Cache
+                                                      ↓
+                                                   存入缓存
 ```
 
 ### 3.4 Prefix Caching 与混合注意力模型
@@ -348,9 +348,9 @@ LMCACHE_CONFIG_FILE=lmcache_config.yaml vllm serve meta-llama/Llama-2-7b-hf \
 
 **假设**：
 
-- System Prompt 长度：$P$ tokens
-- 用户 Query 长度：$Q$ tokens
-- Prefill 计算复杂度：$O(N^2)$（其中 $N = P + Q$）
+- System Prompt 长度： $P$ tokens
+- 用户 Query 长度： $Q$ tokens
+- Prefill 计算复杂度： $O(N^2)$（其中 $N = P + Q$）
 
 **无 Prefix Caching**：
 
@@ -370,7 +370,7 @@ $$
 
 此外还需加上缓存读取的 I/O 开销（Cache Load）。
 
-**加速比**（假设 $P = 8192$，$Q = 256$）：
+**加速比**（假设 $P = 8192$， $Q = 256$）：
 
 虽然精确开销为 $Q(P + 0.5Q)$，但为了获得一个简洁且保守的加速比公式，我们将分母近似放大为 $Q(P+Q)$：
 
