@@ -38,7 +38,7 @@ pytest-asyncio==0.24.0
 pytest-cov==6.0.0
 
 # 开发工具
-black==25.1.0
+black==26.3.1
 flake8==7.3.0
 mypy==1.13.0
 
