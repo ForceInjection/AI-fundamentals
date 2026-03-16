@@ -24,7 +24,9 @@
 
 ### 1.2 深度阅读
 
-- [**AI 基础设施延迟金字塔**](latency.md) - **必读**！建立对系统性能数量级的第一性认知。
+- [**AI 基础设施延迟金字塔**](performance/ai_latency_pyramid.md) - **必读**！建立对系统性能数量级的第一性认知。
+- [**NVIDIA GB300 NVL72**](superchips/nvidia_gb300.md) - 下一代 AI 计算底座，Blackwell 架构与 NVL72 机架级互连。
+- [**NVLink-C2C 详解**](superchips/nvlink_c2c.md) - 突破内存墙的关键，Chip-to-Chip 异构互连技术。
 - [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化。
 - [**Linux PCIe P2PDMA 技术介绍**](pcie/p2pdma.md) - 详解设备直连 DMA 技术原理与 GDS 实践。
 - [**NVLink 技术入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景。
@@ -55,13 +57,20 @@
 - **TPU 101**：深度学习专用加速器架构解析
 - **对比分析**：TPU vs GPU
 
-### 3.3 [PCIe 与互连技术](pcie/pcie_comprehensive_guide.md)
+### 3.3 [AI Superchip 架构](superchips/nvidia_gb300.md)
+
+深入解析 NVIDIA Grace Hopper/Blackwell 等 Superchip 的异构融合架构。
+
+- **核心架构**：[NVIDIA GB300 NVL72](superchips/nvidia_gb300.md) - 机架级计算系统架构解析
+- **关键互连**：[NVLink-C2C](superchips/nvlink_c2c.md) - 芯片级高速互连技术详解
+
+### 3.4 [PCIe 与互连技术](pcie/pcie_comprehensive_guide.md)
 
 - [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md)：从物理层到协议层的全面解析。
 - [**Linux PCIe P2PDMA**](pcie/p2pdma.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
 - [**NVLink 技术**](nvlink/nvlink_intro.md)：突破 PCIe 瓶颈的 GPU 高速互连方案。
 
-### 3.4 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
+### 3.5 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
 
 详细解析 NVIDIA GPUDirect 系列技术，重点关注解决“内存墙”与“IO 墙”问题的核心方案。
 
@@ -69,6 +78,6 @@
 - **核心技术**：[GPUDirect RDMA](gpudirect/gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/gpudirect_technology.md#3-gpudirect-storage-gds-技术)
 - **原理解析**：PCI BAR 映射、DMA 路径优化、Zero-Copy 机制
 
-### 3.5 [性能参考](latency.md)
+### 3.6 [性能参考](performance/ai_latency_pyramid.md)
 
-- [**AI 基础设施延迟金字塔**](latency.md)：提供从寄存器访问到跨节点通信的各级延迟参考数据，辅助性能调优与架构设计。
+- [**AI 基础设施延迟金字塔**](performance/ai_latency_pyramid.md)：提供从寄存器访问到跨节点通信的各级延迟参考数据，辅助性能调优与架构设计。
