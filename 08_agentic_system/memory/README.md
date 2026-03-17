@@ -157,7 +157,6 @@
 ### 3.1 开源项目
 
 - [MemoryOS GitHub](https://github.com/memoryos/memoryos)
-- [Mem0 官方网站](https://mem0.ai/)
 - [Mem0 GitHub](https://github.com/mem0ai/mem0)
 - [LangChain 官方文档](https://python.langchain.com/docs/modules/memory/)
 

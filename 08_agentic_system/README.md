@@ -39,6 +39,7 @@
 - [**上下文工程原理**](./context/上下文工程原理.md) - 动态上下文组装的理论基础与实现机制
 - [**Anthropic 上下文工程指南**](./context/anthropic_context_engineering_zh.md) - 来自 Anthropic 的最佳实践译文
 - [**LangChain 上下文工程实践**](./context/langchain_with_context_engineering.md) - 结合 LangChain 框架的工程化落地
+- [**OpenViking 深度剖析**](./context/OpenVikin-deep-dive.md) - 字节跳动开源的 AI Agent 上下文数据库，基于文件系统范式统一管理记忆与资源
 
 ### 2.2 记忆系统
 
