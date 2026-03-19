@@ -2,7 +2,7 @@
 
 ## 1. 学习目标
 
-完成本章学习后，您将能够：
+完成本章学习后，大家将能够：
 
 - **项目创建**：使用 Trae 创建完整的多语言项目结构
 - **代码实现**：实现 Python、JavaScript、Java、Go 四种语言的 Hello World 程序
@@ -12,9 +12,11 @@
 
 ## 2. 前置技能检查
 
-在开始实战练习前，请确认您已掌握以下技能：
+在开始实战练习前，请确认已掌握以下技能：
 
 ### 2.1 第一章必备技能
+
+确保基础环境已就绪：
 
 - Trae 环境配置完成
 - AI 助手和智能体正常工作
@@ -22,6 +24,8 @@
 - 熟悉 Trae 界面和基本操作
 
 ### 2.2 第二章必备技能
+
+确保基础交互能力已掌握：
 
 - 能够使用自然语言编程指令
 - 掌握代码生成和补全技巧
@@ -34,7 +38,11 @@
 
 ## 3. 项目创建与初始化
 
+本节将演示如何从零开始，使用 Builder 创建一个多语言的完整项目结构。
+
 ### 3.1 使用 Trae 创建项目
+
+我们将使用 Trae 的核心能力来快速生成项目脚手架。
 
 #### 3.1.1 项目初始化
 
@@ -48,21 +56,21 @@
 
 2. **使用 AI 助手创建项目**（推荐方式）
 
-   在 Trae 聊天窗口中输入以下提示词：
+   在 Trae 的 Builder 模式（Cmd/Ctrl + Shift + L）中输入以下提示词：
 
    ```text
    创建一个多语言 Hello World 项目，具体要求：
-   
+
    项目名称：hello-world-multiverse
    支持语言：Python、JavaScript、Java、Go
-   
+
    项目结构要求：
    1. 每种语言独立文件夹
    2. 包含完整的依赖管理文件
    3. 统一的测试框架
    4. 完整的文档结构
    5. 适当的 .gitignore 配置
-   
+
    请创建完整的项目结构并生成基础代码文件。
    ```
 
@@ -110,7 +118,7 @@
 
 **使用 Trae 优化项目配置**：
 
-在 Trae 中输入以下提示词来完善项目配置：
+在 Builder 中输入以下提示词来完善项目配置：
 
 ```text
 请为刚创建的 hello-world-multiverse 项目添加以下配置：
@@ -140,7 +148,11 @@
 
 ## 4. 多语言实现
 
+接下来，我们将分别使用四种主流编程语言来实现 Hello World 的核心逻辑。
+
 ### 4.1 Python 实现
+
+Python 版本将重点展示面向对象和类型注解特性。
 
 #### 4.1.1 实现目标
 
@@ -207,6 +219,8 @@
 
 ### 4.2 JavaScript 实现
 
+JavaScript 版本将重点展示现代 ES6+ 语法和异步处理。
+
 #### 4.2.1 基础代码生成
 
 **Trae 提示词**：
@@ -267,6 +281,8 @@
 **预期输出概要**：完整的 Jest 测试配置和测试文件。
 
 ### 4.3 Java 实现
+
+Java 版本将展示 Maven 构建和面向对象设计。
 
 #### 4.3.1 基础代码生成
 
@@ -329,6 +345,8 @@
 **预期输出概要**：完整的 JUnit 5 测试类和配置。
 
 ### 4.4 Go 实现
+
+Go 版本将展示结构体和并发特性。
 
 #### 4.4.1 基础代码生成
 
@@ -393,7 +411,11 @@
 
 ## 5. 代码优化与重构
 
+完成基础实现后，我们将利用 Trae 的代码审查能力进行质量提升。
+
 ### 5.1 使用 Trae 进行代码分析
+
+借助 AI 能力，我们可以快速识别代码中的潜在问题。
 
 #### 5.1.1 代码质量分析提示词
 
@@ -413,6 +435,8 @@
 **预期输出概要**：Trae 将提供详细的代码分析报告，包含具体的改进建议和重构方案。
 
 ### 5.2 代码重构最佳实践
+
+以下是一些使用 AI 进行代码重构的实用模板。
 
 #### 5.2.1 使用 Trae 重构代码
 
@@ -437,11 +461,13 @@
 
 ---
 
-## 4. 项目管理和版本控制
+## 6. 项目管理和版本控制
 
-### 4.1 Git 版本控制最佳实践
+项目开发完成后，我们需要通过版本控制和 CI/CD 进行规范化管理。
 
-#### 4.1.1 初始化和基础配置
+### 6.1 Git 版本控制最佳实践
+
+#### 6.1.1 初始化和基础配置
 
 **Git 仓库初始化：**
 
@@ -511,7 +537,7 @@ go.work
 Thumbs.db
 ```
 
-#### 4.1.2 提交策略和分支管理
+#### 6.1.2 提交策略和分支管理
 
 **提交信息规范：**
 
@@ -549,7 +575,7 @@ git merge feature/python-implementation
 git branch -d feature/python-implementation
 ```
 
-#### 4.1.3 协作开发流程
+#### 6.1.3 协作开发流程
 
 **Pull Request 工作流：**
 
@@ -574,9 +600,9 @@ git branch -d feature/python-implementation
 □ 性能是否满足要求
 ```
 
-### 4.2 项目部署指导
+### 6.2 项目部署指导
 
-#### 4.2.1 本地开发环境部署
+#### 6.2.1 本地开发环境部署
 
 **Python 项目部署：**
 
@@ -655,7 +681,7 @@ go build -o hello-world src/go/hello_world.go
 ./hello-world
 ```
 
-#### 4.2.2 容器化部署
+#### 6.2.2 容器化部署
 
 **Docker 部署策略：**
 
@@ -716,7 +742,7 @@ CMD ["./hello-world"]
 **Docker Compose 配置：**
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   python-hello:
@@ -725,21 +751,21 @@ services:
       dockerfile: docker/Dockerfile.python
     ports:
       - "8001:8000"
-    
+
   node-hello:
     build:
       context: .
       dockerfile: docker/Dockerfile.node
     ports:
       - "3001:3000"
-    
+
   java-hello:
     build:
       context: .
       dockerfile: docker/Dockerfile.java
     ports:
       - "8081:8080"
-    
+
   go-hello:
     build:
       context: .
@@ -748,7 +774,7 @@ services:
       - "8091:8090"
 ```
 
-#### 4.2.3 云平台部署
+#### 6.2.3 云平台部署
 
 **GitHub Actions CI/CD：**
 
@@ -757,72 +783,72 @@ name: Multi-Language Hello World CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test-python:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run tests
-      run: python -m pytest tests/test_python.py
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest tests/test_python.py
 
   test-node:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-    - name: Install dependencies
-      run: npm ci
-    - name: Run tests
-      run: npm test
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
 
   test-java:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-    - name: Run tests
-      run: mvn test
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "11"
+          distribution: "temurin"
+      - name: Run tests
+        run: mvn test
 
   test-go:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.19'
-    - name: Run tests
-      run: go test ./tests/...
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.19"
+      - name: Run tests
+        run: go test ./tests/...
 
   deploy:
     needs: [test-python, test-node, test-java, test-go]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-    - uses: actions/checkout@v3
-    - name: Deploy to production
-      run: |
-        echo "Deploying to production..."
-        # 添加实际的部署脚本
+      - uses: actions/checkout@v3
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # 添加实际的部署脚本
 ```
 
 **Heroku 部署配置：**
@@ -868,9 +894,9 @@ web: node src/javascript/hello_world.js
 }
 ```
 
-### 4.3 性能监控和优化
+### 6.3 性能监控和优化
 
-#### 4.3.1 性能测试
+#### 6.3.1 性能测试
 
 **基准测试脚本：**
 
@@ -883,13 +909,13 @@ import statistics
 def benchmark_language(command, iterations=10):
     """对指定语言实现进行基准测试"""
     times = []
-    
+
     for _ in range(iterations):
         start_time = time.time()
         subprocess.run(command, shell=True, capture_output=True)
         end_time = time.time()
         times.append(end_time - start_time)
-    
+
     return {
         'mean': statistics.mean(times),
         'median': statistics.median(times),
@@ -910,7 +936,7 @@ for lang, command in languages.items():
     print(f"{lang}: {result}")
 ```
 
-#### 4.3.2 监控和日志
+#### 6.3.2 监控和日志
 
 **日志记录最佳实践：**
 
@@ -936,29 +962,29 @@ def hello_world():
 
 ```javascript
 // Node.js 日志配置
-const winston = require('winston');
+const winston = require("winston");
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    winston.format.json(),
   ),
   transports: [
-    new winston.transports.File({ filename: 'hello_world.log' }),
-    new winston.transports.Console()
-  ]
+    new winston.transports.File({ filename: "hello_world.log" }),
+    new winston.transports.Console(),
+  ],
 });
 
 function helloWorld() {
-  logger.info('Hello World function called');
-  return 'Hello, World!';
+  logger.info("Hello World function called");
+  return "Hello, World!";
 }
 ```
 
-### 4.4 项目文档和维护
+### 6.4 项目文档和维护
 
-#### 4.4.1 文档自动生成
+#### 6.4.1 文档自动生成
 
 **使用 AI 助手生成文档：**
 
@@ -986,7 +1012,7 @@ javadoc -d docs src/java/com/example/*.java
 godoc -http=:6060
 ```
 
-#### 4.4.2 维护和更新策略
+#### 6.4.2 维护和更新策略
 
 **依赖管理：**
 
@@ -1038,11 +1064,13 @@ go list -json -m all | nancy sleuth
 
 ---
 
-## 6. 实践练习
+## 7. 实践练习
 
-### 6.1 基础练习
+通过以下练习，巩固本章学到的知识：
 
-#### 6.1.1 扩展问候语
+### 7.1 基础练习
+
+#### 7.1.1 扩展问候语
 
 **目标**：为项目添加更多语言支持
 
@@ -1074,7 +1102,7 @@ go list -json -m all | nancy sleuth
 
 **预期输出概要**：Trae 将为所有四种语言生成扩展的问候语支持和自动检测功能。
 
-#### 6.1.2 添加日志功能
+#### 7.1.2 添加日志功能
 
 **目标**：为项目添加完整的日志系统
 
@@ -1094,7 +1122,7 @@ go list -json -m all | nancy sleuth
 
 **预期输出概要**：完整的日志系统实现，支持多种输出格式和配置选项。
 
-#### 6.1.3 配置管理优化
+#### 7.1.3 配置管理优化
 
 **目标**：实现更灵活的配置管理
 
@@ -1114,9 +1142,9 @@ go list -json -m all | nancy sleuth
 
 **预期输出概要**：灵活的配置管理系统，支持多种格式和高级功能。
 
-### 6.2 进阶练习
+### 7.2 进阶练习
 
-#### 6.2.1 微服务化改造
+#### 7.2.1 微服务化改造
 
 **目标**：将 Hello World 改造为微服务架构
 
@@ -1141,7 +1169,7 @@ go list -json -m all | nancy sleuth
 
 **预期输出概要**：完整的微服务架构实现，包含 API、监控、部署等功能。
 
-#### 6.2.2 容器化部署
+#### 7.2.2 容器化部署
 
 **目标**：为项目添加容器化支持
 
@@ -1172,13 +1200,15 @@ go list -json -m all | nancy sleuth
 
 ---
 
-## 7. 项目总结与最佳实践
+## 8. 项目总结与最佳实践
 
-### 7.1 技能总结
+让我们回顾一下在这个多语言项目中积累的经验。
 
-通过本章的学习，您应该掌握了：
+### 8.1 技能总结
 
-#### 7.1.1 核心技能清单
+通过本章的学习，大家应该掌握了：
+
+#### 8.1.1 核心技能清单
 
 - **项目创建**：使用 Trae 快速创建多语言项目结构
 - **代码生成**：利用 AI 助手生成高质量的代码
@@ -1188,39 +1218,39 @@ go list -json -m all | nancy sleuth
 - **错误处理**：建立完善的错误处理机制
 - **文档编写**：创建清晰的文档
 
-#### 7.1.2 语言特性掌握
+#### 8.1.2 语言特性掌握
 
 - **Python**：面向对象设计、类型注解、异常处理
 - **JavaScript**：异步编程、模块化、测试框架
 - **Java**：Maven 构建、依赖注入、单元测试
 - **Go**：并发编程、接口设计、包管理
 
-### 7.2 Trae 使用最佳实践
+### 8.2 Trae 使用最佳实践
 
-#### 7.2.1 提示词设计原则
+#### 8.2.1 提示词设计原则
 
 1. **明确具体**：清楚描述需求和约束条件
 2. **结构化**：使用列表和分类组织需求
 3. **示例驱动**：提供具体的输入输出示例
 4. **迭代优化**：根据结果调整提示词
 
-#### 7.2.2 代码质量保证
+#### 8.2.2 代码质量保证
 
 1. **代码审查**：使用 Trae 进行代码审查
 2. **测试驱动**：先写测试再实现功能
 3. **持续重构**：定期优化代码结构
 4. **文档同步**：保持代码和文档一致
 
-### 7.3 下一步学习方向
+### 8.3 下一步学习方向
 
-#### 7.3.1 推荐学习路径
+#### 8.3.1 推荐学习路径
 
 1. **第四章**：深入学习 Trae 高级功能
 2. **Web 开发**：使用 Trae 构建 Web 应用
 3. **数据科学**：探索 Trae 在数据分析中的应用
 4. **DevOps**：学习 Trae 在运维自动化中的使用
 
-#### 7.3.2 实践项目建议
+#### 8.3.2 实践项目建议
 
 1. **个人博客系统**：全栈 Web 应用开发
 2. **数据分析工具**：Python 数据科学项目
@@ -1229,19 +1259,21 @@ go list -json -m all | nancy sleuth
 
 ---
 
-## 8. 延伸阅读
+## 9. 延伸阅读
 
-### 8.1 官方文档
+如果您想了解更多细节，请参考以下资源：
 
-- [Trae 官方文档](https://docs.trae.ai)
-- [Trae 最佳实践指南](https://docs.trae.ai/best-practices)
+### 9.1 官方文档
 
-### 8.2 社区资源
+- [Trae 官方文档](https://docs.trae.cn)
+- [Trae 最佳实践指南](https://docs.trae.cn/best-practices)
 
-- [Trae 社区论坛](https://community.trae.ai)
+### 9.2 社区资源
+
+- [Trae 社区论坛](https://community.trae.cn)
 - [Trae GitHub 仓库](https://github.com/trae-ai)
 
-### 8.3 相关技术文档
+### 9.3 相关技术文档
 
 - [Python 官方文档](https://docs.python.org)
 - [Node.js 官方文档](https://nodejs.org/docs)
@@ -1250,4 +1282,4 @@ go list -json -m all | nancy sleuth
 
 ---
 
-> **恭喜！** 您已经完成了第三章的学习。现在您具备了使用 Trae 进行实际项目开发的基础技能。在下一章中，我们将总结第一部分的学习内容，并为进入更高级的主题做好准备。
+> **恭喜！** 大家已经完成了第三章的学习。现在已经具备了使用 Trae 进行实际项目开发的基础技能。在下一章中，我们将总结第一部分的学习内容，并为进入更高级的主题做好准备。
