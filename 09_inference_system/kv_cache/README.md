@@ -12,7 +12,7 @@ KV Cache 是 LLM 推理加速的基石。在自回归生成过程中，通过缓
 
 Prefix Caching（前缀缓存）是 KV Cache 优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 TTFT 并提升系统吞吐量。
 
-- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](prefix_caching/radix_attention.md)**：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制。
+- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](prefix_caching/radix_attention.md)**：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
 - **[Prefix Caching 原理与实现](prefix_caching/prefix_caching.md)**：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 
 ## 3. 进阶架构与管理系统
@@ -61,7 +61,7 @@ KVBM 是 NVIDIA Dynamo 项目中的核心组件，服务于 vLLM 和 TensorRT-LL
 
 Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推理架构。
 
-- **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](mooncake/mooncake_architecture.md)**：介绍了其基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
+- **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](mooncake/mooncake_architecture.md)**：介绍了基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
 
 ## 4. 关键技术分析
 
