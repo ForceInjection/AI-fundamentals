@@ -11,7 +11,7 @@
 
 如果每次请求都从零开始计算这些重复前缀的 KV Cache，将造成巨大的**计算浪费**。以一个 8K token 的 System Prompt 为例：
 
-- 按照 [KV Cache 原理简介](basic/kv_cache_原理简介.md) 中的分析，Prefill 阶段 Attention 部分的计算复杂度为 $O(N^2)$
+- 按照 [KV Cache 原理简介](../basic/kv_cache_原理简介.md) 中的分析，Prefill 阶段 Attention 部分的计算复杂度为 $O(N^2)$
 - 如果每秒有 100 个请求，每个请求都重复计算这 8K token 的 KV Cache，将消耗大量 GPU 算力
 - 这些重复计算本质上是**完全冗余的**——相同的输入总是产生相同的 KV 输出
 
@@ -60,7 +60,7 @@ Prefix Caching 的核心机制可以分为三个步骤：
 请求 C: [Query C] + [System Prompt]  → 无法复用（前缀不匹配）✗
 ```
 
-> **注**：对于打破前缀约束的非前缀复用场景（如 RAG 中的乱序文档），可以使用 [CacheBlend](lmcache/cache_blend.md) 等高级技术通过选择性重算实现近似复用。
+> **注**：对于打破前缀约束的非前缀复用场景（如 RAG 中的乱序文档），可以使用 [CacheBlend](../lmcache/cache_blend.md) 等高级技术通过选择性重算实现近似复用。
 
 ### 2.3 哈希 Key 的设计
 
@@ -178,7 +178,7 @@ def hash_block_tokens(
 
 ### 3.4 Prefix Caching 与混合注意力模型
 
-对于采用混合注意力机制的模型（如 Gemma-3 的 Sliding Window + Full Attention），vLLM 的 [Hybrid KV Cache Manager](../vllm/vllm_hybrid_kv_cache_manager_deep_dive.md) 提供了分层的 Prefix Caching 支持：
+对于采用混合注意力机制的模型（如 Gemma-3 的 Sliding Window + Full Attention），vLLM 的 [Hybrid KV Cache Manager](../../vllm/vllm_hybrid_kv_cache_manager_deep_dive.md) 提供了分层的 Prefix Caching 支持：
 
 - **Full Attention 层**：标准的从左到右前缀匹配
 - **Sliding Window 层**：从右到左匹配，只关心最近 `sliding_window_size` 个 token
@@ -198,7 +198,7 @@ vLLM 原生 APC 的主要局限在于：
 
 ## 4. LMCache 的多级 Prefix Caching
 
-[LMCache](lmcache/lmcache_overview.md) 在 vLLM APC 的基础上，提供了**跨介质、跨实例**的 Prefix Caching 能力。
+[LMCache](../lmcache/lmcache_overview.md) 在 vLLM APC 的基础上，提供了**跨介质、跨实例**的 Prefix Caching 能力。
 
 ### 4.1 架构概览
 
@@ -246,7 +246,7 @@ class TokenDatabase:
 
 ### 4.3 多级缓存查找
 
-LMCache 的 [StorageManager](lmcache/lmcache_storage_overview.md) 实现了 **Waterfall（瀑布式）** 检索策略：
+LMCache 的 [StorageManager](../lmcache/lmcache_storage_overview.md) 实现了 **Waterfall（瀑布式）** 检索策略：
 
 ```mermaid
 flowchart TD
@@ -426,7 +426,7 @@ $$
 
 ### 6.2 与 PD 分离架构的结合
 
-在 [Prefill-Decode 分离架构](lmcache/pd_backend.md) 中，Prefix Caching 可以显著优化 Prefill 节点的负载：
+在 [Prefill-Decode 分离架构](../lmcache/pd_backend.md) 中，Prefix Caching 可以显著优化 Prefill 节点的负载：
 
 - Prefill 节点维护热门前缀的缓存
 - 相同前缀的请求路由到同一 Prefill 节点
@@ -434,7 +434,7 @@ $$
 
 ### 6.3 RAG 场景的非前缀复用
 
-对于 RAG 场景中检索文档顺序不固定的情况，[CacheBlend](lmcache/cache_blend.md) 提供了一种创新的解决方案：
+对于 RAG 场景中检索文档顺序不固定的情况，[CacheBlend](../lmcache/cache_blend.md) 提供了一种创新的解决方案：
 
 - 允许复用非前缀位置的 KV Cache
 - 通过选择性重算修正 Attention 偏差
@@ -468,11 +468,11 @@ Prefix Caching 是 LLM 推理优化中的关键技术，通过缓存和复用重
 
 ### 8.1 延伸阅读
 
-- [KV Cache 原理简介](basic/kv_cache_原理简介.md) - KV Cache 基础概念
-- [LMCache 架构概览](lmcache/lmcache_overview.md) - LMCache 系统设计
-- [LMCacheConnector 源码分析](lmcache/lmcache_connector.md) - vLLM 集成实现
-- [CacheBlend 技术详解](lmcache/cache_blend.md) - RAG 场景的非前缀复用
-- [Hybrid KV Cache Manager](../vllm/Hybrid_KV_Cache_Manager.md) - 混合注意力模型的 Prefix Caching
+- [KV Cache 原理简介](../basic/kv_cache_原理简介.md) - KV Cache 基础概念
+- [LMCache 架构概览](../lmcache/lmcache_overview.md) - LMCache 系统设计
+- [LMCacheConnector 源码分析](../lmcache/lmcache_connector.md) - vLLM 集成实现
+- [CacheBlend 技术详解](../lmcache/cache_blend.md) - RAG 场景的非前缀复用
+- [Hybrid KV Cache Manager](../../vllm/Hybrid_KV_Cache_Manager.md) - 混合注意力模型的 Prefix Caching
 
 ### 8.2 项目文档
 
