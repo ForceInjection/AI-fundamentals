@@ -2,20 +2,20 @@
 
 想象一下，你招聘了一位极其聪明的实习生（Claude）。你给了他计算器、字典和浏览器（Tools），他能完美地执行“计算这个数字”或“查找那个单词”这样的原子任务。
 
-但是，当你要求他“完成这份年度市场分析报告”时，问题出现了。尽管他有工具，但他不知道公司的报告格式标准是什么，不知道数据该去哪里抓取，也不知道分析的逻辑顺序。
+但是，当要求他“完成这份年度市场分析报告”时，问题出现了。尽管他有工具，但他不知道公司的报告格式标准是什么，不知道数据该去哪里抓取，也不知道分析的逻辑顺序。
 
-这时候，你有两种选择：
+这时候，我们有两种选择：
 
 1. **口头传授**：每次都在对话中把几十条规则絮絮叨叨说一遍（费时费力，还容易遗漏）。
 2. **给他一本标准操作手册（SOP）**：写好一份标准的作业流程文档，告诉他：“遇到这类任务，就按这个手册做。”
 
 **Claude Agent Skills，就是这本“标准操作手册”。**
 
-本文将带你从零开始，通过亲手构建一个 **PDF 翻译助手**，来直观感受什么是 Agent Skills，并深入探讨为什么它是构建高级 AI Agent 的关键拼图。
+本文将带大家从零开始，通过亲手构建一个 **PDF 翻译助手**，来直观感受什么是 Agent Skills，并深入探讨为什么它是构建高级 AI Agent 的关键拼图。
 
 ---
 
-## 1. 动手实战：构建你的第一个 Skill
+## 1. 动手实战：构建第一个 Skill
 
 `Show me the code`：让我们通过动手构建一个 `pdf-translator` Skill 来直观地理解这些概念。
 
@@ -111,7 +111,7 @@ Follow these steps to translate a PDF file:
 7.  Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
 ```
 
-### 1.4 第二步：打造工具 (Python 脚本)
+### 1.4 第二步：打造 Python 脚本工具
 
 “标准操作手册”里提到了要使用工具来提取文本和保存文件。Claude 自己没有手，我们得给它造一双。
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     generate_markdown(content, args.output_path, args.source_filename)
 ```
 
-### 1.5 第三步：上岗实操 (注册与验证)
+### 1.5 第三步：上岗实操
 
 一切准备就绪，现在我们需要告诉 Claude：“嘿，你学会了一项新技能。”
 
@@ -229,17 +229,17 @@ if __name__ == "__main__":
 ```
 
 **开始验证**：
-你可以像对待一位同事一样对 Claude 说：
+大家可以像对待一位同事一样对 Claude 说：
 
 > "请帮我把 `skills/pdf-translator/test_sample.pdf` 翻译成中文。"
 
-此时，你会看到一个关键变化：Claude 不再只是“会聊天”，而是开始按你定义的流程执行：调用脚本 -> 提取文字 -> 翻译 -> 保存文件。
+此时，我们会看到一个关键变化：Claude 不再只是“会聊天”，而是开始按定义的流程执行：调用脚本 -> 提取文字 -> 翻译 -> 保存文件。
 
 ---
 
 ## 2. 深度思考：为什么我们需要 Agent Skills？
 
-通过刚才的实战，你可能已经感觉到了 Skill 的威力。但你可能会问：_“我直接用 Function Calling 给 Claude 一个 `extract_pdf` 函数不就行了吗？为什么要搞这么复杂的 Skill 结构？”_
+通过刚才的实战，大家可能已经感觉到了 Skill 的威力。但可能会问：_“直接用 Function Calling 给 Claude 一个 `extract_pdf` 函数不就行了吗？为什么要搞这么复杂的 Skill 结构？”_
 
 ### 2.1 从“原子工具”到“工作流”
 
@@ -253,12 +253,12 @@ if __name__ == "__main__":
 4. 格式化输出。
 5. 保存文件。
 
-如果没有 Skill，你需要：
+如果没有 Skill，我们需要：
 
 - **要么**：在 System Prompt 里写一大堆规则（容易导致 Context 爆炸，且容易被遗忘）。
-- **要么**：在你的应用程序代码里写死这个逻辑（失去了 LLM 的灵活性）。
+- **要么**：在应用程序代码里写死这个逻辑（失去了 LLM 的灵活性）。
 
-**Agent Skills 填补了这一空白**。它允许你定义**“如何组合使用工具来完成特定任务”**的知识（Procedural Knowledge）。
+**Agent Skills 填补了这一空白**。它允许定义**“如何组合使用工具来完成特定任务”**的知识（Procedural Knowledge）。
 
 ### 2.2 核心概念辨析：Skills vs. Function Calling vs. MCP
 
@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
 Claude 是如何知道该用哪个 Skill 的？
 
-你可能会认为系统里写了复杂的正则表达式或分类器来匹配用户意图。**事实并非如此。**
+大家可能会认为系统里写了复杂的正则表达式或分类器来匹配用户意图。**事实并非如此。**
 
 这一切完全依赖于 **Pure LLM Reasoning (纯 LLM 推理)**：
 
@@ -318,9 +318,9 @@ Claude 是如何知道该用哪个 Skill 的？
 
 没有硬编码的路由，没有机器学习分类器，完全是 Claude 自己在做判断。
 
-### 3.3 幕后机制：渐进式披露 (Progressive Disclosure)
+### 3.3 幕后机制：渐进式披露
 
-你可能会担心：_“如果我有 100 个 Skill，全部注入到 Prompt 里，Context Window 岂不是瞬间爆炸？”_
+大家可能会担心：_“如果我有 100 个 Skill，全部注入到 Prompt 里，Context Window 岂不是瞬间爆炸？”_
 
 Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知识的过程非常相似：
 
@@ -340,8 +340,8 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 最后，一个容易被忽视的技术细节：
 
-- **Function Calling (Tools)** 通常是**无状态**且**并发安全**的。你可以同时让 Claude 查询 10 个城市的天气，它会并行执行。
-- **Agent Skills** 是**有状态**且**非并发安全**的。因为 Skill 本质上是修改了对话的上下文（Context），它改变了“当前的对话状态”。你不能在同一个对话线程里“并行”地运行两个 Skill，因为它们会争夺对上下文的控制权。
+- **Function Calling (Tools)** 通常是**无状态**且**并发安全**的。我们可以同时让 Claude 查询 10 个城市的天气，它会并行执行。
+- **Agent Skills** 是**有状态**且**非并发安全**的。因为 Skill 本质上是修改了对话的上下文（Context），它改变了“当前的对话状态”。我们不能在同一个对话线程里“并行”地运行两个 Skill，因为它们会争夺对上下文的控制权。
 
 工程上，一段对话线程建议一次只激活一个 Skill；需要并行时，用多个会话或任务队列拆分。
 
@@ -351,22 +351,22 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 除了像 `pdf-translator` 这样的顺序工作流，Agent Skills 还支持更复杂的模式：
 
-1. **Multi-MCP Coordination (多 MCP 协同)**
+1. **多 MCP 协同**
    - **场景**：设计交付。
    - **流程**：Figma (MCP1) 导出 -> Drive (MCP2) 存储 -> Linear (MCP3) 建票 -> Slack (MCP4) 通知。
    - **核心**：Skill 充当“指挥官”，协调多个独立工具完成端到端任务。
 
-2. **Iterative Refinement (迭代优化)**
+2. **迭代优化**
    - **场景**：撰写复杂报告。
    - **流程**：生成初稿 -> 运行验证脚本 (Checker) -> 发现问题 -> 修正 -> 再次验证 -> 直至通过。
    - **核心**：在 Skill 中定义“质量门禁”，让 Agent 自我纠错。
 
-3. **Context-Aware Tool Selection (上下文感知)**
+3. **上下文感知**
    - **场景**：文件存储。
    - **流程**：判断文件大小 -> 若 >10MB 用 S3，若 <10MB 用本地存储。
    - **核心**：在 Skill 中写入决策逻辑，而非硬编码在工具里。
 
-4. **Domain-Specific Intelligence (领域特定智能)**
+4. **领域特定智能**
    - **场景**：合规审查。
    - **流程**：在执行高风险操作（如转账）前，先强制运行合规检查步骤。
    - **核心**：将业务规则（Business Rules）内嵌到 Skill 中，确保 Agent 行为合规。
@@ -379,18 +379,33 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 ### 5.1 测试金字塔
 
-1. **Triggering Tests (触发测试)**：
+本节介绍了保障 Skill 在各种场景下稳定运行的三个主要测试层级。
+
+1. **触发测试**：
    - **正向测试**：确保用户说“帮我翻译这个”时能触发。
-   - **负向测试 (Negative Testing)**：确保用户说“帮我写代码”时**不会**误触发 `pdf-translator`。
-2. **Functional Tests (功能测试)**：
+   - **负向测试**：确保用户说“帮我写代码”时**不会**误触发 `pdf-translator`。
+2. **功能测试**：
    - 验证 API 调用是否成功，文件是否正确生成。
-3. **Performance Comparison (性能对比)**：
+3. **性能对比**：
    - 对比使用 Skill 前后的 Token 消耗、交互轮数。
 
 ### 5.2 迭代工具
 
-- **Skill Creator**：Anthropic 官方提供的 Skill，可以帮你生成、审查和优化你的 Skill。
+除了手动测试外，还可以借助官方提供的自动化工具来优化开发流程。
+
+- **Skill Creator**：Anthropic 官方提供的 Skill，可以帮大家生成、审查和优化 Skill。
   - _Prompt_: "Use the skill-creator skill to help me build a skill for..."
+
+### 5.3 原力注入 Agent Skill 合集
+
+为了让大家能直接在实际工作中使用这些高级能力，原力注入博主开源并维护了 [awesome-skills](https://github.com/ForceInjection/awesome-skills) 项目 [4]。目前该项目收录了我通过多智能体协作机制实现的一系列高级认知技能：
+
+- **code-reader**：通过技术作者、测试工程师和初级开发者三重智能体协作，系统性地阅读和理解陌生的代码库。
+- **project-analyzer**：在代码阅读基础上，协同模块专家、运维工程师和首席架构师，对整个代码仓库进行全面分析并生成综合性的项目白皮书。
+- **dir-organizer**：规范化和优化项目目录结构，遵循严格的状态收集与方案审核流程。
+- **doc-reviewer**：审查技术文档的准确性、一致性和专业性，支持在授权下自动应用修复。
+
+大家可以直接下载并使用这些技能，它们不仅提供了开箱即用的强大功能，其底层“受众隔离”（Agent 面向全英文，人类面向全中文）等设计理念，也为我们设计复杂的生产级工作流提供了极佳的参考范例。
 
 ---
 
@@ -404,8 +419,10 @@ Claude Agent Skills 代表了 AI Agent 开发的一种新范式：**通过自然
 
 ## 参考文献
 
-[1] Anthropic. "Agent Skills - Claude Code Docs." _Claude Code Documentation_. 2026-01-02. [Online]. Available: https://code.claude.com/docs/en/skills
+[1] Anthropic, "Agent Skills - Claude Code Docs," _Claude Code Documentation_, 2026-01-02. [Online]. Available: https://code.claude.com/docs/en/skills
 
-[2] Travisvn. "Awesome Claude Skills." _GitHub_. 2026-01-02. [Online]. Available: https://github.com/travisvn/awesome-claude-skills
+[2] Travisvn, "Awesome Claude Skills," _GitHub_, 2026-01-02. [Online]. Available: https://github.com/travisvn/awesome-claude-skills
 
-[3] Lee Hanchung. "First Principles Deep Dive: Claude Skills." _Blog_. 2025-10-26. [Online]. Available: https://leehanchung.github.io/blogs/2025/10/26/claude-skills-deep-dive/
+[3] Lee Hanchung, "First Principles Deep Dive: Claude Skills," _Blog_, 2025-10-26. [Online]. Available: https://leehanchung.github.io/blogs/2025/10/26/claude-skills-deep-dive/
+
+[4] ForceInjection, "Awesome Skills: Agent Skill 合集," _GitHub_. [Online]. Available: https://github.com/ForceInjection/awesome-skills
