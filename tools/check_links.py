@@ -75,8 +75,21 @@ def check_local_file_exists(file_path, base_dir):
 
 def check_external_url(url, timeout=10):
     """检查外部URL是否可访问"""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
     try:
-        response = requests.head(url, timeout=timeout, allow_redirects=True)
+        response = requests.head(url, headers=headers, timeout=timeout, allow_redirects=True)
+        if response.status_code >= 400 and response.status_code not in [403, 404, 412, 418]:
+            return False, response.status_code
+        # For known anti-bot codes, we can try a GET request instead of HEAD, or just accept them as likely valid
+        if response.status_code in [403, 404, 412, 418]:
+            res_get = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True, stream=True)
+            # Kaggle might still return 404 for bots, Bilibili 412, Douban 418.
+            if res_get.status_code < 400:
+                return True, res_get.status_code
+            else:
+                return False, res_get.status_code
         return response.status_code < 400, response.status_code
     except requests.exceptions.RequestException as e:
         return False, str(e)
