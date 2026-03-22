@@ -16,13 +16,13 @@ A general purpose graphics processing unit (GPU) provide parallel cores designed
 
 通用图形处理单元 (GPU) 提供并行核心，用于同时处理数据。与 CPU 中的单指令多数据 (SIMD) 类似，GPU 使用多个线程并行执行指令，这种模式称为单指令多线程 (SIMT)。现代 GPU 理论上可以在一个周期内跨数千个数据点运行一条指令。然而，实际应用通常需要在操作之间进行数据交换，这可能会消耗数百个时钟周期。为了解决这个问题，GPU 使用分层结构来管理通信延迟。
 
-# Architecture（架构）
+## 1. 架构 (Architecture)
 
 In this section, we explore the architecture of a typical GPU. While each GPU generation introduces unique optimizations, we focus on the core concepts that are common across most GPUs.
 
 在本节中，我们将探索典型 GPU 的架构。虽然每一代 GPU 都会引入独特的优化，但我们重点关注大多数 GPU 中常见的核心概念。
 
-## Warps
+### 1.1 Warps
 
 At the core level, each **_thread_** operates on individual scalar values with private registers. While running thousands of threads simultaneously is impractical, individual threads are not efficient on their own either. Instead, threads are organized into small groups called **_warps or wavefronts_**, typically consisting of 32 threads. Each warp executes a single instruction across 32 data points. For example, in matrix multiplication, a warp might process a row and column from two matrices, performing multiplication and accumulation to generate results as shown in the figure below.
 
@@ -34,7 +34,7 @@ A four thread warp performing matrix multiplication. The warp first performs ind
 
 执行矩阵乘法的四线程 Warp。Warp 首先执行独立的逐点乘法运算，然后使用一些共享内存执行累积运算。
 
-## Thread Blocks（线程块）
+### 1.2 线程块 (Thread Blocks)
 
 When operations exceed the warp size of 32 threads, GPUs use tiling to manage larger dimensions. This involves dividing the input into chunks or tiles that fit the warp size, processing these chunks, and then combining the results from all warps. To accumulate partial results, a placeholder is needed, which is where **_thread blocks_** come in. A thread block groups multiple warps, allowing them to share memory and synchronize their execution, as illustrated in the figure below.
 
@@ -46,7 +46,7 @@ A thread block comprising of two warps computing matrix multiplication. All the 
 
 一个线程块由两个计算矩阵乘法的 warp 组成。线程块中的所有 warp 都需要完成执行才能计算出最终的输出。
 
-## Grid
+### 1.3 网格 (Grid)
 
 The hierarchy from warps to blocks is repeated one more level: if the matrix is larger than what a single thread block can handle, we use a **_grid_** of thread blocks that share global memory. The grid enables the GPU to process large datasets by distributing the workload across multiple thread blocks.
 
@@ -56,7 +56,7 @@ All GPU programs, known as **_kernels_**, are executed within this grid structur
 
 所有 GPU 程序（称为 **_kernels_**）都在此网格结构中执行。启动内核时，我们可以指定网格大小（线程块数）和块大小（每个块的线程数）。这种分层方法可确保高效的计算和数据管理，从而使 GPU 能够有效地处理大量复杂的任务。
 
-## Memory Hierarchy（内存层次结构）
+### 1.4 内存层次结构 (Memory Hierarchy)
 
 Following the structure of the computations, memory is organized into a hierarchy starting from the small and fast registers with ultra low latency and a few kilobytes in size. Registers are private to threads. Next, warps within a thread block share state using **_shared memory_** comprising several hundred kilobytes. Finally, global memory is accessible across the device and provides large capacity on the order of tens of gigabytes with high throughput approaching a terabyte per second. Global memory has higher latency and thus caching is used to reduce latency. The figure below shows the relative scope of each memory type.
 
@@ -64,7 +64,9 @@ Following the structure of the computations, memory is organized into a hierarch
 
 ![Memory Hierarchy](assets/memory_hierarchy.png)
 
-# Programming（编程）
+---
+
+## 2. 编程 (Programming)
 
 Programming GPUs are supported by dedicated software libraries in C/C++ depending on the make of the GPU: NVIDIA GPUs can be programmed using Compute Unified Device Architecture (CUDA) interface whereas AMD GPUs offer a similar SDK known as HIP.
 
@@ -74,7 +76,7 @@ In this section we will briefly show how to run a hello world program on multipl
 
 在本节中，我们将简要展示如何使用 CUDA 在多个线程上运行 hello world 程序以及如何将两个矩阵相乘。
 
-## Hello World!
+### 2.1 Hello World!
 
 The entry point of a GPU program is called a kernel. The global ID of a thread can be calculated using three compiler intrinsics — _blockIdx, blockDim, and threadIdx,_ representing the id of the block, the total number of threads in a block, and the thread id within the thread block, respectively. A kernel is defined by the _\_\_global\_\__ qualifier as shown in the listing below. To launch a kernel the _<<<numBlocks, blockSize>>>_ is used. The kernel is executed asynchronously, i.e., the host code will continue to run right after making the kernel call. To sync memory between the host and the GPU device the _cudaDeviceSynchronize_ function is called, which blocks the execution on the host until the kernel finishes its work.
 
@@ -115,7 +117,7 @@ Hello World from Thread 2, Block 1, BlockDim 4
 Hello World from Thread 3, Block 1, BlockDim 4
 ```
 
-## Matrix Multiplication（矩阵乘法）
+### 2.2 矩阵乘法 (Matrix Multiplication)
 
 Now that we know the basic structure of a CUDA program, let’s look at a more involved example of matrix multiplication. The CUDA kernel for matrix multiplication is given in the listing below. CUDA provides block IDs and thread IDs in three dimensions. In our case, since we’re dealing with matrices, we use only two dimensions: x and y for the row and column indices.
 
