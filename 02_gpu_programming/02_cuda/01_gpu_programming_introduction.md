@@ -76,26 +76,26 @@ In this section we will briefly show how to run a hello world program on multipl
 
 在本节中，我们将简要展示如何使用 CUDA 在多个线程上运行 hello world 程序以及如何将两个矩阵相乘。
 
-### 2.1 Hello World!
+### 2.1 Hello World
 
-The entry point of a GPU program is called a kernel. The global ID of a thread can be calculated using three compiler intrinsics — _blockIdx, blockDim, and threadIdx,_ representing the id of the block, the total number of threads in a block, and the thread id within the thread block, respectively. A kernel is defined by the _\_\_global\_\__ qualifier as shown in the listing below. To launch a kernel the _<<<numBlocks, blockSize>>>_ is used. The kernel is executed asynchronously, i.e., the host code will continue to run right after making the kernel call. To sync memory between the host and the GPU device the _cudaDeviceSynchronize_ function is called, which blocks the execution on the host until the kernel finishes its work.
+The entry point of a GPU program is called a kernel. The global ID of a thread can be calculated using three compiler intrinsics — _blockIdx, blockDim, and threadIdx,_ representing the id of the block, the total number of threads in a block, and the thread id within the thread block, respectively. A kernel is defined by the \_\_global\_\_ qualifier as shown in the listing below. To launch a kernel the _<<<numBlocks, blockSize>>>_ is used. The kernel is executed asynchronously, i.e., the host code will continue to run right after making the kernel call. To sync memory between the host and the GPU device the _cudaDeviceSynchronize_ function is called, which blocks the execution on the host until the kernel finishes its work.
 
-GPU 程序的入口点称为内核。可以使用三个编译器内部函数（_blockIdx、blockDim 和 threadIdx_）计算线程的全局 ID，它们分别表示块的 ID、块中的线程总数以及线程块内的线程 ID。内核由 _\_\_global\_\__ 限定符定义，如下面的列表所示。要启动内核，请使用 _<<<numBlocks, blockSize>>>_。内核是异步执行的，即主机代码将在进行内核调用后继续运行。要同步主机和 GPU 设备之间的内存，请调用 _cudaDeviceSynchronize_ 函数，该函数会阻止主机上的执行，直到内核完成其工作。
+GPU 程序的入口点称为内核。可以使用三个编译器内部函数（_blockIdx、blockDim 和 threadIdx_）计算线程的全局 ID，它们分别表示块的 ID、块中的线程总数以及线程块内的线程 ID。内核由 \_\_global\_\_ 限定符定义，如下面的列表所示。要启动内核，请使用 _<<<numBlocks, blockSize>>>_。内核是异步执行的，即主机代码将在进行内核调用后继续运行。要同步主机和 GPU 设备之间的内存，请调用 _cudaDeviceSynchronize_ 函数，该函数会阻止主机上的执行，直到内核完成其工作。
 
 ```cpp
-#include <cuda_runtime.h>  
-#include <iostream>  
-  
-__global__ void helloFromGPU() {  
-    printf("Hello World from Thread %d, Block %d, BlockDim %d\\n",   
-            threadIdx.x, blockIdx.x, blockDim.x);  
-}  
-  
-int main() {  
-    // Launch the kernel with 2 blocks of 4 threads each  
-    helloFromGPU<<<2, 4>>>();  
-    cudaDeviceSynchronize();  // Wait for the GPU to finish  
-    return 0;  
+#include <cuda_runtime.h>
+#include <iostream>
+
+__global__ void helloFromGPU() {
+    printf("Hello World from Thread %d, Block %d, BlockDim %d\\n",
+            threadIdx.x, blockIdx.x, blockDim.x);
+}
+
+int main() {
+    // Launch the kernel with 2 blocks of 4 threads each
+    helloFromGPU<<<2, 4>>>();
+    cudaDeviceSynchronize();  // Wait for the GPU to finish
+    return 0;
 }
 ```
 
@@ -105,15 +105,15 @@ The above code can be compiled using the NVIDIA compiler and run as follows:
 
 ```bash
 
-> nvcc hello_gpu.cu -o hello_gpu  
-> ./hello_gpu  
-Hello World from Thread 0, Block 0, BlockDim 4  
-Hello World from Thread 1, Block 0, BlockDim 4  
-Hello World from Thread 2, Block 0, BlockDim 4  
-Hello World from Thread 3, Block 0, BlockDim 4  
-Hello World from Thread 0, Block 1, BlockDim 4  
-Hello World from Thread 1, Block 1, BlockDim 4  
-Hello World from Thread 2, Block 1, BlockDim 4  
+> nvcc hello_gpu.cu -o hello_gpu
+> ./hello_gpu
+Hello World from Thread 0, Block 0, BlockDim 4
+Hello World from Thread 1, Block 0, BlockDim 4
+Hello World from Thread 2, Block 0, BlockDim 4
+Hello World from Thread 3, Block 0, BlockDim 4
+Hello World from Thread 0, Block 1, BlockDim 4
+Hello World from Thread 1, Block 1, BlockDim 4
+Hello World from Thread 2, Block 1, BlockDim 4
 Hello World from Thread 3, Block 1, BlockDim 4
 ```
 
@@ -128,17 +128,17 @@ The kernel calculates the global row and column indices of each thread by combin
 内核通过结合块索引和线程索引来计算每个线程的全局行和列索引。然后，每个线程对矩阵 A 中相应的行和矩阵 B 中的列进行点积，并将结果存储在矩阵 C 中。这种方法确保输出矩阵的每个元素都是并行计算的，从而充分利用 GPU 同时处理多个线程的能力。
 
 ```cpp
-__global__ void matrixMul(const float* A, const float* B, float* C, int n) {  
-    int row = blockIdx.y * blockDim.y + threadIdx.y;  
-    int col = blockIdx.x * blockDim.x + threadIdx.x;  
-  
-    if (row < n && col < n) {  
-        float value = 0.0f;  
-        for (int k = 0; k < n; ++k) {  
-            value += A[row * n + k] * B[k * n + col];  
-        }  
-        C[row * n + col] = value;  
-    }  
+__global__ void matrixMul(const float* A, const float* B, float* C, int n) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n) {
+        float value = 0.0f;
+        for (int k = 0; k < n; ++k) {
+            value += A[row * n + k] * B[k * n + col];
+        }
+        C[row * n + col] = value;
+    }
 }
 ```
 
