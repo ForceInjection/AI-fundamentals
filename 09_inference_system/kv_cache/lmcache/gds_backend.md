@@ -16,7 +16,7 @@
 
 `GdsBackend` 的初始化逻辑不仅涉及配置参数的加载，还包含了对底层 GDS 环境的检测（如 `libcufile` 的加载）以及元数据索引的构建。它是整个后端启动的基石，确保了后续 I/O 操作能够在正确的环境和状态下执行。
 
-**代码位置**: [`lmcache/v1/storage_backend/gds_backend.py`](../lmcache/v1/storage_backend/gds_backend.py)
+**代码位置**: [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/gds_backend.py)
 
 ```python
 class GdsBackend(AllocatorBackendInterface):
@@ -139,7 +139,7 @@ def _load_bytes_from_disk_with_memory(self, ...):
 
 `GdsBackend` 的行为可以通过 `LMCacheEngineConfig` 进行灵活配置。除了基础的路径和缓冲区大小外，还可以通过 `extra_config` 字典微调 I/O 行为（如是否启用 GDS、O_DIRECT 或调整线程池大小）。
 
-**代码位置**: 配置解析主要发生在 [`lmcache/v1/storage_backend/gds_backend.py`](../lmcache/v1/storage_backend/gds_backend.py) 的 `__init__` 方法中，部分布尔值解析使用了 `get_extra_config_bool` 辅助函数。
+**代码位置**: 配置解析主要发生在 [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/gds_backend.py) 的 `__init__` 方法中，部分布尔值解析使用了 `get_extra_config_bool` 辅助函数。
 
 | 配置项               | 说明                                                             | 默认值   |
 | :------------------- | :--------------------------------------------------------------- | :------- |

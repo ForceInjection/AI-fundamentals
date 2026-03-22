@@ -17,7 +17,7 @@
 
 ## 1. 连接器架构与初始化
 
-代码主要位于 [lmcache/integration/vllm/vllm_v1_adapter.py](../lmcache/integration/vllm/vllm_v1_adapter.py)。本章介绍连接器的核心组件构成及其初始化流程。
+代码主要位于 [lmcache/integration/vllm/vllm_v1_adapter.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)。本章介绍连接器的核心组件构成及其初始化流程。
 
 ### 1.1 核心组件
 

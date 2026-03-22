@@ -33,7 +33,12 @@ def extract_markdown_links(content):
             i += 1
         
         if paren_count == 0:
-            url = content[start:i-1].strip()
+            url_part = content[start:i-1].strip()
+            # Handle title attributes e.g. url "title"
+            if ' ' in url_part:
+                url = url_part.split(' ', 1)[0].strip()
+            else:
+                url = url_part
             # 去除URL两端的尖括号（如果有）
             if url.startswith('<') and url.endswith('>'):
                 url = url[1:-1]
@@ -53,6 +58,10 @@ def is_local_file(url):
 
 def check_local_file_exists(file_path, base_dir):
     """检查本地文件是否存在，处理URL编码"""
+    # 移除锚点
+    if '#' in file_path:
+        file_path = file_path.split('#')[0]
+        
     # URL解码
     decoded_path = urllib.parse.unquote(file_path)
     

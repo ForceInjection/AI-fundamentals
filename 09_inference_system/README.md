@@ -51,17 +51,17 @@
   - **[LMCacheEngine 源码分析](kv_cache/lmcache/lmcache_engine.md)**
   - **[分层存储后端实现](kv_cache/lmcache/lmcache_storage_overview.md)**
 - **[Tair KVCache 架构与设计](kv_cache/ali_tair_kvcache/tair-kvcache-architecture-design.md)** - 阿里云高性能 KVCache 系统深度解析
-- **[Mooncake 架构详解](kv_cache/mooncake_architecture.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
+- **[Mooncake 架构详解](./kv_cache/mooncake/mooncake_architecture.md)** - Kimi 背后的分离式推理架构与 KV Cache 全局调度
 
 ### 3.3 Prefix Caching 与 KV Cache 复用
 
-- **[Prefix Caching 技术详解](kv_cache/prefix_caching.md)** - Prefix Caching 基础概念、vLLM APC 与 LMCache 多级缓存实践
-- **[RadixAttention 技术详解](kv_cache/radix_attention.md)** - 基于 Radix Tree 的 KV Cache 管理：原理、SGLang 实现与 vLLM APC 对比
+- **[Prefix Caching 技术详解](./kv_cache/prefix_caching/prefix_caching.md)** - Prefix Caching 基础概念、vLLM APC 与 LMCache 多级缓存实践
+- **[RadixAttention 技术详解](./kv_cache/prefix_caching/radix_attention.md)** - 基于 Radix Tree 的 KV Cache 管理：原理、SGLang 实现与 vLLM APC 对比
 
 ### 3.4 深度分析与前沿技术
 
-- **[层级流水线并行 (Layerwise Pipelining)](kv_cache/layerwise_pipeline.md)** - 解析 LMCache 和 DualPath 如何通过计算与 I/O 重叠解决存储瓶颈
-- **[vLLM KV Offloading 与 LMCache 对比](kv_cache/kv_offloading_analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCache 的架构差异与性能权衡
+- **[层级流水线并行 (Layerwise Pipelining)](./kv_cache/advanced_techniques/layerwise_pipeline.md)** - 解析 LMCache 和 DualPath 如何通过计算与 I/O 重叠解决存储瓶颈
+- **[vLLM KV Offloading 与 LMCache 对比](./kv_cache/advanced_techniques/kv_offloading_analysis.md)** - 深入剖析 vLLM 原生 KV Offloading 与 LMCache 的架构差异与性能权衡
 
 ---
 

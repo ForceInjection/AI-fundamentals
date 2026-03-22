@@ -42,7 +42,7 @@ Hybrid KV Cache Manager 的核心挑战是：**所有层共用一个物理内存
 
 ### 2.2 KV Cache Group 分组策略
 
-vLLM 将模型中的层按注意力类型分组，称为 **KV Cache Groups**。每个 group 内的层共享相同的 block table，由同一个 [SingleTypeKVCacheManager](../vllm/v1/core/single_type_kv_cache_manager.py) 管理。
+vLLM 将模型中的层按注意力类型分组，称为 **KV Cache Groups**。每个 group 内的层共享相同的 block table，由同一个 [SingleTypeKVCacheManager](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/single_type_kv_cache_manager.py) 管理。
 
 分组的两个核心约束：
 
@@ -100,7 +100,7 @@ Mamba 层的状态大小（state size）通常远大于 Attention 层的 kv_hidd
 - 一个请求分到 11 个 block（block_id 0-10），其中 0-6 分配给 Group 0，7-8 给 Group 1，9-10 给 Group 2；
 - 物理上，逻辑 block_id 映射到对应 `KVCacheTensor` 中的不同 offset，互不干扰。
 
-核心代码见 [vllm/v1/core/kv_cache_utils.py](../vllm/v1/core/kv_cache_utils.py) 中的 `_get_kv_cache_groups_uniform_page_size` 函数。
+核心代码见 [vllm/v1/core/kv_cache_utils.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_utils.py) 中的 `_get_kv_cache_groups_uniform_page_size` 函数。
 
 ---
 
@@ -141,7 +141,7 @@ cached_block_hash_to_block: BlockHashToBlockMap = BlockHashToBlockMap()
 
 > 当前限制：`HybridKVCacheCoordinator` 只支持**恰好两种注意力类型**（1 Full + 1 X）。超过两种类型的模型（如 Full + SW + Mamba）需要关闭 Prefix Caching 使用 `KVCacheCoordinatorNoPrefixCache`。
 
-代码实现见 [vllm/v1/core/kv_cache_coordinator.py](../vllm/v1/core/kv_cache_coordinator.py)。
+代码实现见 [vllm/v1/core/kv_cache_coordinator.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_coordinator.py)。
 
 ---
 
@@ -169,11 +169,11 @@ KVCacheManager                 ← 调度器与 KV Cache 系统的接口
 
 | 文件                                                                                            | 职责                                  |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------- |
-| [vllm/v1/core/kv_cache_manager.py](../vllm/v1/core/kv_cache_manager.py)                         | KVCacheManager 入口                   |
-| [vllm/v1/core/kv_cache_coordinator.py](../vllm/v1/core/kv_cache_coordinator.py)                 | 三类 Coordinator                      |
-| [vllm/v1/core/single_type_kv_cache_manager.py](../vllm/v1/core/single_type_kv_cache_manager.py) | 各注意力类型的 Manager                |
-| [vllm/v1/core/kv_cache_utils.py](../vllm/v1/core/kv_cache_utils.py)                             | 分组算法、unify_hybrid_kv_cache_specs |
-| [vllm/v1/core/block_pool.py](../vllm/v1/core/block_pool.py)                                     | 物理 block 的分配与 LRU 逐出          |
+| [vllm/v1/core/kv_cache_manager.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_manager.py)                         | KVCacheManager 入口                   |
+| [vllm/v1/core/kv_cache_coordinator.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_coordinator.py)                 | 三类 Coordinator                      |
+| [vllm/v1/core/single_type_kv_cache_manager.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/single_type_kv_cache_manager.py) | 各注意力类型的 Manager                |
+| [vllm/v1/core/kv_cache_utils.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_utils.py)                             | 分组算法、unify_hybrid_kv_cache_specs |
+| [vllm/v1/core/block_pool.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/block_pool.py)                                     | 物理 block 的分配与 LRU 逐出          |
 
 ---
 
@@ -187,7 +187,7 @@ KVCacheManager                 ← 调度器与 KV Cache 系统的接口
 
 **场景 1：保持 HMA 开启（默认行为）**：
 
-vLLM 的 `KVConnectorFactory`（[vllm/distributed/kv_transfer/kv_connector/factory.py](../vllm/distributed/kv_transfer/kv_connector/factory.py)）会在启动时强制检查 connector 是否支持 HMA：
+vLLM 的 `KVConnectorFactory`（[vllm/distributed/kv_transfer/kv_connector/factory.py](https://github.com/vllm-project/vllm/blob/main/vllm/distributed/kv_transfer/kv_connector/factory.py)）会在启动时强制检查 connector 是否支持 HMA：
 
 ```python
 hma_enabled = not config.scheduler_config.disable_hybrid_kv_cache_manager
@@ -223,7 +223,7 @@ class LMCacheConnectorV1(KVConnectorBase_V1):    # 未继承 SupportsHMA
     ...
 ```
 
-在 [vllm/distributed/kv_transfer/kv_connector/v1/lmcache_integration/vllm_v1_adapter.py](../vllm/distributed/kv_transfer/kv_connector/v1/lmcache_integration/vllm_v1_adapter.py) 中，建立 request tracker 时直接取 `block_ids[0]`：
+在 [vllm/distributed/kv_transfer/kv_connector/v1/lmcache_integration/vllm_v1_adapter.py](https://github.com/vllm-project/vllm/blob/main/vllm/distributed/kv_transfer/kv_connector/v1/lmcache_integration/vllm_v1_adapter.py) 中，建立 request tracker 时直接取 `block_ids[0]`：
 
 ```python
 # According to the vLLM code, only one KVCacheGroup is supported in connector for now.
@@ -236,7 +236,7 @@ unfolded_block_ids = new_request.block_ids[0].copy()
 
 ### 6.3 HMA 关闭后的降级行为
 
-当 Hybrid KV Cache Manager 被关闭时，调用 [unify_hybrid_kv_cache_specs](../vllm/v1/core/kv_cache_utils.py) 将所有 `SlidingWindowSpec` 和 `ChunkedLocalAttentionSpec` **强制转换为 `FullAttentionSpec`**：
+当 Hybrid KV Cache Manager 被关闭时，调用 [unify_hybrid_kv_cache_specs](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_utils.py) 将所有 `SlidingWindowSpec` 和 `ChunkedLocalAttentionSpec` **强制转换为 `FullAttentionSpec`**：
 
 ```python
 # unify_hybrid_kv_cache_specs 的核心逻辑
@@ -260,7 +260,7 @@ if has_full_attention and (has_sliding_window or has_chunked_local_attention):
 
 ### 6.4 如何为 KV Connector 添加 HMA 支持？
 
-vLLM 预留了扩展接口 [`SupportsHMA`](../vllm/distributed/kv_transfer/kv_connector/v1/base.py)，connector 开发者只需：
+vLLM 预留了扩展接口 [`SupportsHMA`](https://github.com/vllm-project/vllm/blob/main/vllm/distributed/kv_transfer/kv_connector/v1/base.py)，connector 开发者只需：
 
 1. 继承 `SupportsHMA` 并实现 `request_finished_all_groups` 方法；
 2. 在该方法中处理多个 KV Cache Group 的 block_ids；
@@ -281,7 +281,7 @@ class SupportsHMA(ABC):
         raise NotImplementedError
 ```
 
-调度器中的判断逻辑（[vllm/v1/core/sched/scheduler.py](../vllm/v1/core/sched/scheduler.py)）：
+调度器中的判断逻辑（[vllm/v1/core/sched/scheduler.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/scheduler.py)）：
 
 ```python
 if not isinstance(self.connector, SupportsHMA):

@@ -28,7 +28,7 @@ _GPU Architecture and Programming — An Introduction_：
 - 对比传统 SIMT (Thread 视角) 与 Tile-Based (Block/Tile 视角) 的编程思维。
 - 以矩阵乘法 (GEMM) 为例展示 Tensor Core 的抽象与使用。
 
-## 5. [CUDA 编程简介 - 基础与实践.pdf](CUDA%20编程简介%20-%20基础与实践.pdf)
+## 5. [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
 
 - 一份完整的 CUDA 编程入门讲义（PDF 格式）。
 - 涵盖环境搭建、基础语法、内存管理与实战案例。

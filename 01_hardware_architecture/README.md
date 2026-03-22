@@ -27,8 +27,8 @@
 - [**AI 基础设施延迟金字塔**](performance/ai_latency_pyramid.md) - **必读**！建立对系统性能数量级的第一性认知。
 - [**NVIDIA GB300 NVL72**](superchips/nvidia_gb300.md) - 下一代 AI 计算底座，Blackwell 架构与 NVL72 机架级互连。
 - [**NVLink-C2C 详解**](superchips/nvlink_c2c.md) - 突破内存墙的关键，Chip-to-Chip 异构互连技术。
-- [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化。
-- [**Linux PCIe P2PDMA 技术介绍**](pcie/p2pdma.md) - 详解设备直连 DMA 技术原理与 GDS 实践。
+- [**PCIe 总线技术大全**](./pcie/01_pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化。
+- [**Linux PCIe P2PDMA 技术介绍**](pcie/02_p2pdma_technology.md) - 详解设备直连 DMA 技术原理与 GDS 实践。
 - [**NVLink 技术入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景。
 - [**NVIDIA DGX SuperPOD**](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q) - 企业级 AI 超算集群的架构设计与部署实践。
 
@@ -64,10 +64,10 @@
 - **核心架构**：[NVIDIA GB300 NVL72](superchips/nvidia_gb300.md) - 机架级计算系统架构解析
 - **关键互连**：[NVLink-C2C](superchips/nvlink_c2c.md) - 芯片级高速互连技术详解
 
-### 3.4 [PCIe 与互连技术](pcie/pcie_comprehensive_guide.md)
+### 3.4 [PCIe 与互连技术](./pcie/01_pcie_comprehensive_guide.md)
 
-- [**PCIe 总线技术大全**](pcie/pcie_comprehensive_guide.md)：从物理层到协议层的全面解析。
-- [**Linux PCIe P2PDMA**](pcie/p2pdma.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
+- [**PCIe 总线技术大全**](./pcie/01_pcie_comprehensive_guide.md)：从物理层到协议层的全面解析。
+- [**Linux PCIe P2PDMA**](pcie/02_p2pdma_technology.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
 - [**NVLink 技术**](nvlink/nvlink_intro.md)：突破 PCIe 瓶颈的 GPU 高速互连方案。
 
 ### 3.5 [GPUDirect 技术](gpudirect/01_gpudirect_technology.md)

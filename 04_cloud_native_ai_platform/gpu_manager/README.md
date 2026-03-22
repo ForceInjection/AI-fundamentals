@@ -88,7 +88,7 @@
 ### 4.2 容器化与编排
 
 - [Kubernetes GPU 管理](../k8s/llm-d-intro.md)
-- [CUDA 编程基础](../../02_gpu_programming/cuda/README.md)
+- [CUDA 编程基础](../../02_gpu_programming/02_cuda/README.md)
 - [GPU 架构原理](../../01_hardware_architecture/README.md)
 
 ### 4.3 官方文档

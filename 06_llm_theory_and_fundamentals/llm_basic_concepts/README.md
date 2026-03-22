@@ -14,7 +14,7 @@
 
 ### 2.2 推理系统与优化
 
-- **[Mooncake 架构详解](../../09_inference_system/Mooncake%20%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3%EF%BC%9A%E4%BB%A5%20KV%20%E7%BC%93%E5%AD%98%E4%B8%BA%E4%B8%AD%E5%BF%83%E7%9A%84%E9%AB%98%E6%95%88%20LLM%20%E6%8E%A8%E7%90%86%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1.md)** - 以 KVCache 为中心的高效推理系统
+- **[Mooncake 架构详解](../../09_inference_system/kv_cache/mooncake/mooncake_architecture.md)** - 以 KVCache 为中心的高效推理系统
 - **[基于 LLM 的意图检测](Intent%20Detection%20using%20LLM.zh-CN.md)** - 意图识别系统设计与实现
 
 ## 3. AI Agent 相关

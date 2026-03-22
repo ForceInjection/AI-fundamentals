@@ -75,7 +75,7 @@ graph LR
 
 本章深入剖析 `PDBackend` 的实现细节。作为系统中最复杂的后端组件，`PDBackend` 不仅实现了标准的存储接口，还集成了 **内存分配器 (Allocator)**、**ZMQ 控制平面** 与 **数据传输平面**。接下来的分析将围绕 Sender (Prefiller) 与 Receiver (Decoder) 的状态流转展开，揭示其如何通过协同工作实现高效的 KV Cache 推送。
 
-代码位于 [`lmcache/v1/storage_backend/pd_backend.py`](../lmcache/v1/storage_backend/pd_backend.py)。
+代码位于 [`lmcache/v1/storage_backend/pd_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/pd_backend.py)。
 
 ### 2.1 初始化与配置
 

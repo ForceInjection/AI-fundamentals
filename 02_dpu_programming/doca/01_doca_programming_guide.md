@@ -27,7 +27,7 @@ NVIDIA DOCA (Data Center on a Chip Architecture) 是解锁 BlueField DPU 潜力�
 
 ## 2. DOCA 软件组件
 
-![DOCA Software Stack](doca-software.jpg)
+![DOCA Software Stack](https://developer.nvidia.com/networking/doca)
 
 DOCA 软件栈由一系列分层的库和驱动程序组成，旨在为 DPU 开发提供统一且高效的接口。其核心组件可以分为以下三类：
 

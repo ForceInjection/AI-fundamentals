@@ -81,7 +81,7 @@ LMCache 中的 CacheGen 实现采用了分层架构，将 Python 层的逻辑控
 
 ### 2.2 核心数据结构：CacheGenConfig
 
-配置类 `CacheGenConfig` 定义在 [cachegen_basics.py](lmcache/storage_backend/serde/cachegen_basics.py) 中，用于精细化管理量化策略。它支持根据模型名称自动加载预定义的配置。
+配置类 `CacheGenConfig` 定义在 `cachegen_basics.py` 中，用于精细化管理量化策略。它支持根据模型名称自动加载预定义的配置。
 
 ```python
 # lmcache/storage_backend/serde/cachegen_basics.py

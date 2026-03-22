@@ -107,15 +107,15 @@ KVBM 的代码主要分布在 `lib/llm`（运行时集成）和 `lib/kvbm-logica
 
 | 路径                                                                              | 描述                                                                                                                                     |
 | :-------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
-| [`lib/llm/src/block_manager.rs`](../lib/llm/src/block_manager.rs)                 | 定义了 `KvBlockManager` 入口结构体。                                                                                                     |
-| [`lib/llm/src/block_manager/state.rs`](../lib/llm/src/block_manager/state.rs)     | 实现了 `KvBlockManagerState`，管理各级 BlockPool 和 OffloadManager。                                                                     |
-| [`lib/llm/src/block_manager/pool/`](../lib/llm/src/block_manager/pool/)           | 实现了通用的 `ManagedBlockPool`，处理块的分配与回收逻辑。                                                                                |
-| [`lib/llm/src/block_manager/offload.rs`](../lib/llm/src/block_manager/offload.rs) | 实现了 `OffloadManager`，负责异步的数据传输任务。                                                                                        |
-| [`lib/kvbm-logical/src/blocks/`](../lib/kvbm-logical/src/blocks/)                 | 定义了状态机类型 (`MutableBlock`, `CompleteBlock`, `ImmutableBlock`, `WeakBlock`) 及内部 RAII Guard (`PrimaryBlock`, `DuplicateBlock`)。 |
-| [`lib/kvbm-logical/src/manager/`](../lib/kvbm-logical/src/manager/)               | 实现了 kvbm-logical 层的 `BlockManager`，编排三级 Pool 与 BlockRegistry。                                                                |
-| [`lib/kvbm-logical/src/registry/`](../lib/kvbm-logical/src/registry/)             | 实现了 `BlockRegistry`，基于 `PositionalRadixTree` 的全局索引与去重。                                                                    |
-| [`lib/kvbm-logical/src/pools/`](../lib/kvbm-logical/src/pools/)                   | 实现了三级 Pool（ResetPool / ActivePool / InactivePool）及可插拔驱逐后端。                                                               |
-| [`lib/kvbm-logical/src/tinylfu.rs`](../lib/kvbm-logical/src/tinylfu.rs)           | Count-Min Sketch 频率追踪器，为 MultiLRU 驱逐策略提供访问频率数据。                                                                      |
+| ``lib/llm/src/block_manager.rs``                 | 定义了 `KvBlockManager` 入口结构体。                                                                                                     |
+| ``lib/llm/src/block_manager/state.rs``     | 实现了 `KvBlockManagerState`，管理各级 BlockPool 和 OffloadManager。                                                                     |
+| ``lib/llm/src/block_manager/pool/``           | 实现了通用的 `ManagedBlockPool`，处理块的分配与回收逻辑。                                                                                |
+| ``lib/llm/src/block_manager/offload.rs`` | 实现了 `OffloadManager`，负责异步的数据传输任务。                                                                                        |
+| ``lib/kvbm-logical/src/blocks/``                 | 定义了状态机类型 (`MutableBlock`, `CompleteBlock`, `ImmutableBlock`, `WeakBlock`) 及内部 RAII Guard (`PrimaryBlock`, `DuplicateBlock`)。 |
+| ``lib/kvbm-logical/src/manager/``               | 实现了 kvbm-logical 层的 `BlockManager`，编排三级 Pool 与 BlockRegistry。                                                                |
+| ``lib/kvbm-logical/src/registry/``             | 实现了 `BlockRegistry`，基于 `PositionalRadixTree` 的全局索引与去重。                                                                    |
+| ``lib/kvbm-logical/src/pools/``                   | 实现了三级 Pool（ResetPool / ActivePool / InactivePool）及可插拔驱逐后端。                                                               |
+| ``lib/kvbm-logical/src/tinylfu.rs``           | Count-Min Sketch 频率追踪器，为 MultiLRU 驱逐策略提供访问频率数据。                                                                      |
 
 ### 3.2 核心数据结构
 

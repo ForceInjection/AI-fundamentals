@@ -81,7 +81,7 @@
 针对特定场景的实用工具库与示例，如文档处理与记忆集成，可作为构建复杂系统的积木。
 
 - [**PDF 智能翻译器**](./agent-skills/pdf-translator/README.md) - 结合 OCR 与 LLM 的文档处理工具，支持多模态解析
-- [**LangChain 记忆集成示例**](./memory/langchain/README.md) - 多种记忆模式 (ConversationBuffer, Summary 等) 的代码实现
+- [**LangChain 记忆集成示例**](./memory/langchain/langchain_memory.md) - 多种记忆模式 (ConversationBuffer, Summary 等) 的代码实现
 
 ---
 

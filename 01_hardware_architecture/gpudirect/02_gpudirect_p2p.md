@@ -298,7 +298,7 @@ GPUDirect P2P 不仅仅是一项数据传输技术，更是现代高性能计算
   - **编程范式革新**：支持 Unified Memory 和直接指针访问，简化了多卡编程复杂度。
 - **扩展路径**：
   - **节点内**：P2P 结合 NVSwitch 构建了单机超级计算机（如 DGX/HGX 系统）。
-  - **节点间**：当通信跨越服务器边界时，GPUDirect P2P 的理念通过 [GPUDirect RDMA](./gpudirect_technology.md#2-gpudirect-rdma-技术) 延伸至网络，实现跨节点的零拷贝通信。
+  - **节点间**：当通信跨越服务器边界时，GPUDirect P2P 的理念通过 [GPUDirect RDMA](./01_gpudirect_technology.md#2-gpudirect-rdma-技术) 延伸至网络，实现跨节点的零拷贝通信。
 
 ---
 

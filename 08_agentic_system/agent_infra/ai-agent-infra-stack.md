@@ -13,7 +13,7 @@
 
 在这个新时代，每个创始人都面临着一个关键选择：适应 AI 的变革力量，或者冒着落后的风险。Agent 采用的激增不仅仅是一个趋势——它是对软件如何构建、部署和扩展的根本性重新想象。
 
-[![AI Agent 基础设施——三层架构：工具、数据、编排](https://www.madrona.com/wp-content/uploads/2025/02/UPDATED-4-21-25-Ai-Agents-Infrastructure-Stack-Feb-2025.png)](https://www.madrona.com/wp-content/uploads/2025/02/UPDATED-4-21-25-Ai-Agents-Infrastructure-Stack-Feb-2025.png)
+![AI Agent 基础设施——三层架构：工具、数据、编排](https://www.madrona.com/wp-content/uploads/2025/02/UPDATED-4-21-25-Ai-Agents-Infrastructure-Stack-Feb-2025.png)
 
 ## 从效率到基础设施：更深层的信号
 

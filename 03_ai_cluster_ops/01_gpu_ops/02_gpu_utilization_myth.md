@@ -27,11 +27,11 @@
 
 `GPU` 具有[核心和多处理管理器](https://cvw.cornell.edu/gpu-architecture/gpu-characteristics/kernel_sm) 。在英伟达 `GPU` 中这些多处理管理器被称为流式多处理器（`SM`），而 `AMD` 硬件上则称为计算单元（`CU`）。下图展示了包含 `144` 个流式多处理器（`SM`）的 `GH100 GPU` 架构示意图。
 
-[![GH100 GPU结构示意图](assets/144-SMs.png)](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/)
+![GH100 GPU结构示意图](assets/144-SMs.png)
 
 这些多处理管理器可视为一组工人（即核心）的工头。当启动 `CUDA` 内核时，工作会通过一个或多个流式多处理器（`SM`）在 `CUDA` 核心上执行。如下图所示，`GH100` 芯片中的单个流式多处理器（`SM`）包含大量 `CUDA` 核心。
 
-[![img](assets/H100-SM.png "Illustration of a single SM within GH100 GPU")](https://developer.nvidia.com/blog/wp-content/uploads/2022/03/H100-SM.png)
+![img](assets/H100-SM.png)
 
 **这意味着 `GPU` 利用率这个指标仅测量内核在给定时间内是否正在执行。** 它无法反映内核是否使用了所有可用核心，或是否将工作负载并行化至 `GPU` 的最大处理能力。在最极端的情况下，仅通过内存读写操作（执行 `0` 次浮点运算）即可获得 `100%` 的 `GPU` 利用率。
 
@@ -45,7 +45,7 @@
 
 如下图所示，`Softmax` 内核显示出高 `GPU` 利用率，但名为流多处理器效率的指标却较低。这立即引起了我们的警觉，因为原生 `softmax` 是大型语言模型中众所周知的瓶颈，为此业界开发了诸如 [FlashAttention](https://github.com/Dao-AILab/flash-attention) 的 [内核融合技术](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html#motivations) 来解决其内存受限的特性。基于这些信息，流多处理器效率指标可能正揭示着我们模型执行过程中的低效环节。
 
-[![profiler_tool](assets/profiler_tool.png)](https://github.com/Dao-AILab/flash-attention)
+![profiler_tool](assets/profiler_tool.png)
 
 ## 但流多处理器效率究竟代表什么？
 
@@ -57,7 +57,7 @@
 
 既然我们可以轻松识别哪些内核在 `GPU` 上未充分运行，就可以着手优化这些层。由于这是一个 `Transformer` 堆栈，主要优化收益将来自对 `Transformer` 块定义中的层进行融合。下图总结了我们的优化内容。
 
-[![fused](assets/fused.png)](https://github.com/Dao-AILab/flash-attention)
+![fused](assets/fused.png)
 
 所谓融合，是指我们不使用 `PyTorch` 原生定义的层集合，而是将其替换为用 `CUDA` 或 `Triton` 实现的 `GPU` 内核——该内核将所有层合并为一个。这种加速源于：对于某些层（如 [Softmax](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html) ），相比执行数学运算的时间，减少内核读写 `GPU` 内存的时间更为关键。[Flash Attention](https://github.com/Dao-AILab/flash-attention) 就是这种融合内核的典型示例。其他需要融合的内核包括 [MLP](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f6639deb04c455b109c5311f55/flash_attn/ops/fused_dense.py#L531) 和 [dropout layer norm residual add](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f6639deb04c455b109c5311f55/flash_attn/ops/fused_dense.py#L531) 操作。
 

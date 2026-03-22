@@ -12,7 +12,7 @@
 
 `RemoteConnector` 是所有远程后端的基类，它屏蔽了底层存储协议的差异，向上层（Backend）提供统一的异步原语。
 
-代码位于 [lmcache/v1/storage_backend/connector/base_connector.py](../lmcache/v1/storage_backend/connector/base_connector.py)。
+代码位于 [lmcache/v1/storage_backend/connector/base_connector.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/connector/base_connector.py)。
 
 ### 1.1 核心职责
 
@@ -81,7 +81,7 @@ Redis Connector 是 LMCache 用于对接 **Redis**（远程存储后端）的适
 
 > **概念辨析**: **Redis** 是实际存储数据的服务（Backend），而 **Redis Connector** 是运行在 LMCache 进程内的客户端模块（Connector），负责将 KV 操作转化为 Redis 协议指令。
 
-代码位于 [lmcache/v1/storage_backend/connector/redis_connector.py](../lmcache/v1/storage_backend/connector/redis_connector.py)。
+代码位于 [lmcache/v1/storage_backend/connector/redis_connector.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/connector/redis_connector.py)。
 
 ### 2.1 存储模型
 
@@ -127,7 +127,7 @@ async with self.sem:
 
 这是 LMCache 自研的轻量级远程存储方案连接器，通过 TCP 协议与独立的 LMCache Server 通信，提供了开箱即用的远程存储能力。
 
-代码位于 [lmcache/v1/storage_backend/connector/lm_connector.py](../lmcache/v1/storage_backend/connector/lm_connector.py)。
+代码位于 [lmcache/v1/storage_backend/connector/lm_connector.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/connector/lm_connector.py)。
 
 > 关于 LMCache Server 服务端的详细架构与协议实现，请参考 [LMCache Server 源码分析](./lmcache_server.md)。
 
@@ -234,7 +234,7 @@ def receive_all(self, meta: ServerMetaMessage) -> Optional[MemoryObj]:
 
 **Mooncake Store Connector** 是 LMCache 对接 [Mooncake](https://github.com/kvcache-ai/Mooncake) 分布式存储系统的适配器。它通过封装 `mooncake.store` 的 Python 接口，利用底层的 RDMA/TCP 传输能力，为 LMCache 提供高性能的分布式 KV Cache 存取服务。
 
-代码位于 [lmcache/v1/storage_backend/connector/mooncakestore_connector.py](../lmcache/v1/storage_backend/connector/mooncakestore_connector.py)。
+代码位于 [lmcache/v1/storage_backend/connector/mooncakestore_connector.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/connector/mooncakestore_connector.py)。
 
 ### 4.1 核心特性
 
@@ -287,7 +287,7 @@ async def _batched_put_zero_copy(self, keys: List[CacheEngineKey], memory_objs: 
 
 **S3 Connector** 利用 AWS CRT (Common Runtime) 库实现，为 LMCache 提供了基于对象存储的低成本、高容量持久化存储后端。
 
-代码位于 [lmcache/v1/storage_backend/connector/s3_connector.py](../lmcache/v1/storage_backend/connector/s3_connector.py)。
+代码位于 [lmcache/v1/storage_backend/connector/s3_connector.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/connector/s3_connector.py)。
 
 ### 5.1 核心特性
 

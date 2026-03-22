@@ -8,7 +8,7 @@
 
 ## 1. 引擎概览
 
-`LMCacheEngine` 位于 [lmcache/v1/cache_engine.py](../lmcache/v1/cache_engine.py)，它是整个系统的控制中枢，集成了多个关键组件以实现高效的 KV Cache 管理。
+`LMCacheEngine` 位于 [lmcache/v1/cache_engine.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/cache_engine.py)，它是整个系统的控制中枢，集成了多个关键组件以实现高效的 KV Cache 管理。
 
 ### 1.1 核心组件
 

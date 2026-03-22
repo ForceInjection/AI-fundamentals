@@ -2792,7 +2792,7 @@ class FormattingAgent:
             formatted_content = content
             
             # 标准化标题格式
-            formatted_content = re.sub(r'^(#{1,6})([^\s])', r'[\1](\2) \2', formatted_content, flags=re.MULTILINE)
+            formatted_content = re.sub(r'^(#{1,6})([^\s])', r'`\1`(\2) \2', formatted_content, flags=re.MULTILINE)
             
             # 标准化列表格式
             formatted_content = re.sub(r'^(\s*)-([^\s])', r'\1- \2', formatted_content, flags=re.MULTILINE)

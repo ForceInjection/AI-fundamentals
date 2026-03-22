@@ -1485,7 +1485,7 @@ class PrivacyManager {
   detectSensitiveData(content: string): SensitiveDataMatch[] {
     const patterns = {
       apiKey: /[A-Za-z0-9]{32,}/,
-      password: /password\s*[:=]\s*[["']([^"']+)]([^"']+)["']/i,
+      password: /password\s*[:=]\s*(?:"|')([^"']+)(?:"|')/i,
       email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
       creditCard: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/
     };
@@ -1502,7 +1502,7 @@ class PrivacyManager {
   sanitizeData(content: string): string {
     return content
       .replace(/[A-Za-z0-9]{32,}/g, '[API_KEY_REDACTED]')
-      .replace(/password\s*[:=]\s*"'["']/gi, 'password="[REDACTED]"');
+      .replace(/password\s*[:=]\s*["'][^"']+["']/gi, 'password="[REDACTED]"');
   }
 }
 ```

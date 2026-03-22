@@ -33,4 +33,4 @@
 - [NVIDIA Nsight Compute Documentation](https://docs.nvidia.com/nsight-compute/)
 - [NVIDIA Nsight Systems Documentation](https://docs.nvidia.com/nsight-systems/)
 - [GPU 利用率是一个误导性指标](../../03_ai_cluster_ops/01_gpu_ops/02_gpu_utilization_myth.md)：解释为什么高 GPU 利用率并不总是意味着高效计算。
-- [CUDA 编程模型入门](../cuda/README.md)
+- [CUDA 编程模型入门](../02_cuda/README.md)

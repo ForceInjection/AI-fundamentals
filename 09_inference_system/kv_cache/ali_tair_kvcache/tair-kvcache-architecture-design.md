@@ -34,7 +34,7 @@
 
 在访问层，系统提供统一的服务接口并同时支持 **HTTP 和 gRPC** 两种主流协议。**MetaService** 处理缓存位置查询、实例注册等基础操作，**AdminService** 负责存储配置、实例组管理及系统监控，而 **DebugService** 则为集群内部状态的直接操作提供调试支持。为方便隔离，Tair KVCM 对元数据面和管控面做了分离，管控面提供 Storage、Instance Group、Instance 等对象的 CRUD 接口、Account 相关 API 用于权限管理控制、Metrics 相关 API 用于系统可观测性功能；元数据面提供 RegisterInstance 接口用于从元数据面创建 Instance 以简化推理接入流程，以及 GetCacheLocation（获取 KVCache 是否命中及存储位置）、startWriteCache（请求需要写入的 KVCache 及目标写入位置并通知 KVCM 开始写入）、finishWriteCache（上报写入完成）、removeCache&trimCache（KVCache 数据修剪和删除）等核心 API。API 参数设计支持 **block_keys 和 token_ids** 两种模式，兼容多种推理引擎的同时方便周边系统查询；主要接口均携带完整的前缀信息以便维护前缀元数据。这一层的关键特性包括多端口监听机制（主服务的 RPC 端口和 HTTP 端口，以及管理接口的专用端口）、线程池管理的 IO 服务以及完善的健康检查和集群状态监控功能。
 
-> **源码实现分析**：访问层在 [Server](./kv_cache_manager/service/server.h#L34-L85) 类中实现了多协议支持架构。[Server](./kv_cache_manager/service/server.h#L34-L85) 类维护了多个服务实例，包括 [MetaServiceGRpc](./kv_cache_manager/service/server.h#L23-L23)、[AdminServiceGRpc](./kv_cache_manager/service/server.h#L23-L23)、[DebugServiceGRpc](./kv_cache_manager/service/server.h#L23-L23) 以及相应的 HTTP 服务实现。通过 [StartRpcServer()](./kv_cache_manager/service/server.cc#L118-L130) 和 [StartHttpServer()](./kv_cache_manager/service/server.cc#L132-L150) 方法分别启动 gRPC 和 HTTP 服务。核心的 [MetaServiceImpl](./kv_cache_manager/service/meta_service_impl.h#L29-L31) 实现了 GetCacheLocation、StartWriteCache 等核心接口，这些接口直接调用 [CacheManager](./kv_cache_manager/manager/cache_manager.h#L32-L216) 的相应方法来处理业务逻辑。
+> **源码实现分析**：访问层在 `Server` 类中实现了多协议支持架构。`Server` 类维护了多个服务实例，包括 `MetaServiceGRpc`、`AdminServiceGRpc`、`DebugServiceGRpc` 以及相应的 HTTP 服务实现。通过 `StartRpcServer()` 和 `StartHttpServer()` 方法分别启动 gRPC 和 HTTP 服务。核心的 `MetaServiceImpl` 实现了 GetCacheLocation、StartWriteCache 等核心接口，这些接口直接调用 `CacheManager` 的相应方法来处理业务逻辑。
 
 ### 1.2 缓存逻辑层 (Cache Logic Layer)
 
@@ -49,11 +49,11 @@
 - **第一阶段**：写入前调用 StartWriteCache 接口从 Tair KVCM 获取元信息，本地调用不同存储后端的 SDK 进行写入。正在写入的 cache key 会被标记为 writing 状态，在指定超时时间内等待推理引起写入完成，保证相同 key 无法同时写入
 - **第二阶段**：写入后调用 FinishWriteCache 接口通知 Tair KVCM 写入完成，服务端将对应写入成功的 key 标记为 serving 状态，同时删除写入失败的 key
 
-该机制通过 [WriteLocationManager](./kv_cache_manager/manager/write_location_manager.h#L17-L55) 组件实现，使用超时队列管理写入会话，确保写入操作的原子性和可靠性。
+该机制通过 `WriteLocationManager` 组件实现，使用超时队列管理写入会话，确保写入操作的原子性和可靠性。
 
 同时，系统能够基于存储后端的实时可用性等关键指标动态选择最优的存储策略配置，并提供高可用读写支持：Tair KVCM 支持多种存储后端，支持动态切换不同存储后端进行读写，提高可用性；由于 KVCM 能同时对接多种存储后端，对于推理引擎来说可以方便地按需求将数据存储至不同的后端。例如将热数据存储到 TairMemPool，将冷数据存储到 3FS。同时也能保证某个后端挂掉时，cache 服务依然处于可用状态。
 
-> > **源码实现分析**：缓存逻辑层的核心实现在 [CacheManager](./kv_cache_manager/manager/cache_manager.h#L32-L216) 类中。该类定义了 [QueryType](./kv_cache_manager/manager/cache_manager.h#L35-L40) 枚举来区分不同的查询类型，包括 `QT_BATCH_GET`、`QT_PREFIX_MATCH` 和 `QT_REVERSE_ROLL_SW_MATCH`。[GetCacheLocation](./kv_cache_manager/manager/cache_manager.h#L89-L97) 方法根据查询类型调用相应的匹配逻辑。两阶段写入机制通过 [StartWriteCache](./kv_cache_manager/manager/cache_manager.h#L99-L104) 和 [FinishWriteCache](./kv_cache_manager/manager/cache_manager.h#L105-L108) 方法实现，其中 [WriteLocationManager](./kv_cache_manager/manager/write_location_manager.h#L17-L55) 负责管理写入过程中的状态转换（writing → serving）。[DataStorageSelector](./kv_cache_manager/manager/data_storage_selector.h#L32-L38) 负责根据存储后端的实时可用性动态选择最优的存储策略。
+> > **源码实现分析**：缓存逻辑层的核心实现在 `CacheManager` 类中。该类定义了 `QueryType` 枚举来区分不同的查询类型，包括 `QT_BATCH_GET`、`QT_PREFIX_MATCH` 和 `QT_REVERSE_ROLL_SW_MATCH`。`GetCacheLocation` 方法根据查询类型调用相应的匹配逻辑。两阶段写入机制通过 `StartWriteCache` 和 `FinishWriteCache` 方法实现，其中 `WriteLocationManager` 负责管理写入过程中的状态转换（writing → serving）。`DataStorageSelector` 负责根据存储后端的实时可用性动态选择最优的存储策略。
 
 ### 1.3 存储管理层 (Storage Management Layer)
 
@@ -66,7 +66,7 @@
 
 此外，针对无元数据管理能力或元数据性能有限的存储系统 NFS 和 3FS，提供 block 分配能力（分配少量大文件，切成小块使用）。通过统一的接口封装和数据位置描述，该层能够实时监控各存储后端的可用性和存储水位状态，并为上层 CacheManager 提供准确的存储状态信息。
 
-> **源码实现分析**：存储管理层的核心实现在 [DataStorageBackend](./kv_cache_manager/data_storage/data_storage_backend.h#L16-L68) 抽象类中，定义了 `Open`、`Close`、`Create`、`Delete`、`Exist` 等核心接口。具体的存储实现包括 [hf3fs_backend](./kv_cache_manager/data_storage/hf3fs_backend.h#L32-L44)、[mooncake_backend](./kv_cache_manager/data_storage/mooncake_backend.h#L32-L35)、[nfs_backend](./kv_cache_manager/data_storage/nfs_backend.h#L32-L34) 等。[DataStorageManager](./kv_cache_manager/data_storage/data_storage_manager.h#L34-L54) 负责统一管理所有存储后端实例，通过 [GetAvailableStorage](./kv_cache_manager/data_storage/data_storage_manager.cc#L129-L140) 方法检查存储后端的可用性，[RegisterStorage](./kv_cache_manager/data_storage/data_storage_manager.cc#L64-L73) 和 [UnRegisterStorage](./kv_cache_manager/data_storage/data_storage_manager.cc#L75-L84) 方法管理存储实例的生命周期。[StorageConfig](./kv_cache_manager/data_storage/storage_config.h#L32-L87) 类定义了存储配置参数，支持不同类型存储的差异化配置。
+> **源码实现分析**：存储管理层的核心实现在 `DataStorageBackend` 抽象类中，定义了 `Open`、`Close`、`Create`、`Delete`、`Exist` 等核心接口。具体的存储实现包括 `hf3fs_backend`、`mooncake_backend`、`nfs_backend` 等。`DataStorageManager` 负责统一管理所有存储后端实例，通过 `GetAvailableStorage` 方法检查存储后端的可用性，`RegisterStorage` 和 `UnRegisterStorage` 方法管理存储实例的生命周期。`StorageConfig` 类定义了存储配置参数，支持不同类型存储的差异化配置。
 
 ### 1.4 索引管理层 (Index Management Layer)
 
@@ -94,7 +94,7 @@
 
 底层存储支持灵活扩展，目前已支持本地存储和远端 Valkey/Redis 存储。通过统一控制元数据查询和更新操作，支持批量处理优化，并采用分片锁等机制确保更新操作的原子性，为整个系统提供了坚实的元数据基础。
 
-> **源码实现分析**：索引管理层的核心实现在 [MetaIndexer](./kv_cache_manager/meta/meta_indexer.h#L2-L138) 类中。该类定义了丰富的接口，包括 [Put](./kv_cache_manager/meta/meta_indexer.h#L36-L39)、[Update](./kv_cache_manager/meta/meta_indexer.h#L41-L45)、[ReadModifyWrite](./kv_cache_manager/meta/meta_indexer.h#L46-L47)、[Delete](./kv_cache_manager/meta/meta_indexer.h#L49-L49)、[Get](./kv_cache_manager/meta/meta_indexer.h#L51-L56) 等。[ReadModifyWrite](./kv_cache_manager/meta/meta_indexer.h#L46-L47) 方法接受 [ModifierFunc](./kv_cache_manager/meta/meta_indexer.h#L19-L19) 函数作为参数，实现线程安全的读改写操作。分片锁机制通过 [mutex_shards_](./kv_cache_manager/meta/meta_indexer.h#L129-L129) 成员实现，[GetShardIndex](./kv_cache_manager/meta/meta_indexer.cc#L433-L435) 方法根据 key 计算分片索引。[MetaSearchCache](./kv_cache_manager/meta/meta_search_cache.h#L29-L35) 实现了 LRU 缓存机制，[DoGetWithCache](./kv_cache_manager/meta/meta_indexer.cc#L320-L332) 方法优先从缓存获取数据，[cache_](./kv_cache_manager/meta/meta_indexer.h#L131-L131) 成员管理搜索缓存。[BatchMetaData](./kv_cache_manager/meta/meta_indexer.h#L80-L85) 结构支持批处理操作，[MakeBatches](./kv_cache_manager/meta/meta_indexer.cc#L334-L372) 方法将大批量操作拆分为小批次，避免长时间持有锁。
+> **源码实现分析**：索引管理层的核心实现在 `MetaIndexer` 类中。该类定义了丰富的接口，包括 `Put`、`Update`、`ReadModifyWrite`、`Delete`、`Get` 等。`ReadModifyWrite` 方法接受 `ModifierFunc` 函数作为参数，实现线程安全的读改写操作。分片锁机制通过 `mutex_shards_` 成员实现，`GetShardIndex` 方法根据 key 计算分片索引。`MetaSearchCache` 实现了 LRU 缓存机制，`DoGetWithCache` 方法优先从缓存获取数据，`cache_` 成员管理搜索缓存。`BatchMetaData` 结构支持批处理操作，`MakeBatches` 方法将大批量操作拆分为小批次，避免长时间持有锁。
 
 ### 1.5 容量管理层 (Capacity Management Layer)
 
@@ -110,7 +110,7 @@
 
 具体工程实现上，KVCM 通过将删除任务放入后台线程池等工程手段实现删除的异步执行，使得删除性能可扩展以支持较大的部署规模；同时支持 **TTL**、**LRU**、**LFU** 等多种常见逐出模式，可以灵活适配不同的容量管理需求；支持水位与 Quota 在 Runtime 的实时更新；支持结合 Optimizer 模块实现 Instance 级别的逐出参数动态调优；未来还将支持基于前缀的更精准的逐出能力，例如：后缀 block 先于父亲 block 逐出、混合注意力下 Linear 和 Full 的前后缀关联性逐出。该层支持多维度的容量控制策略，能够有效管理 Instance Group 等资源配额，同时通过控制后端存储水位防止资源超限。基于 Quota 和水位的驱逐策略配合 LRU 等多种算法，结合后台线程池实现的异步删除机制，确保了删除操作不会阻塞前台请求且具备良好的性能扩展性。
 
-> **源码实现分析**：容量管理层的核心实现在 [CacheReclaimer](./kv_cache_manager/manager/cache_reclaimer.h#L66-L423) 类中。该类负责定期检查并移除过期或使用频率较低的缓存条目，基于 LRU、LFU 和 TTL 等策略确定哪些条目需要回收。[IsTriggerReclaiming](./kv_cache_manager/manager/cache_reclaimer.cc#L242-L367) 方法根据实例组的用量百分比和配额阈值判断是否触发回收操作。[ReclaimByLRU](./kv_cache_manager/manager/cache_reclaimer.cc#L369-L428)、[ReclaimByLFU](./kv_cache_manager/manager/cache_reclaimer.cc#L430-L442)、[ReclaimByTTL](./kv_cache_manager/manager/cache_reclaimer.cc#L444-L456) 方法分别实现了不同的驱逐策略。[sampling_size_](./kv_cache_manager/manager/cache_reclaimer.h#L264-L264) 和 [batching_size_](./kv_cache_manager/manager/cache_reclaimer.h#L270-L270) 成员控制每次回收的样本大小和批量处理大小。[ReclaimCron](./kv_cache_manager/manager/cache_reclaimer.cc#L541-L589) 方法在独立线程中运行定时回收任务，[job_state_flag_](./kv_cache_manager/manager/cache_reclaimer.h#L255-L255) 控制任务状态。回收操作通过 [SchedulePlanExecutor](./kv_cache_manager/manager/schedule_plan_executor.h#L35-L106) 异步执行，避免阻塞主线程。
+> **源码实现分析**：容量管理层的核心实现在 `CacheReclaimer` 类中。该类负责定期检查并移除过期或使用频率较低的缓存条目，基于 LRU、LFU 和 TTL 等策略确定哪些条目需要回收。`IsTriggerReclaiming` 方法根据实例组的用量百分比和配额阈值判断是否触发回收操作。`ReclaimByLRU`、`ReclaimByLFU`、`ReclaimByTTL` 方法分别实现了不同的驱逐策略。`sampling_size_` 和 `batching_size_` 成员控制每次回收的样本大小和批量处理大小。`ReclaimCron` 方法在独立线程中运行定时回收任务，`job_state_flag_` 控制任务状态。回收操作通过 `SchedulePlanExecutor` 异步执行，避免阻塞主线程。
 
 ### 1.6 缓存优化器 (Cache Optimizer)
 
@@ -122,7 +122,7 @@
 
 该模块能够通过 Trace 数据回放来模拟真实的缓存读写操作，支持 LRU、RandomLRU 和 LeafAwareLRU 等多种驱逐策略的模拟对比，提供缓存命中率的实时统计分析，并通过 Radix Tree 索引结构可视化等工具帮助深入理解系统行为。
 
-> **源码实现分析**：缓存优化器的核心实现在 [OptimizerManager](./kv_cache_manager/optimizer/README.md#L34-L34) 类中（参考 README.md 架构描述）。[OptEvictionManager](./kv_cache_manager/optimizer/README.md#L35-L35) 负责管理多种驱逐策略，包括 LRU、RandomLRU 和 LeafAwareLRU。[OptIndexerManager](./kv_cache_manager/optimizer/README.md#L36-L36) 基于 Radix Tree 实现前缀匹配索引。[OptimizerRunner](./kv_cache_manager/optimizer/README.md#L37-L37) 负责 Trace 数据的回放执行。驱逐策略接口通过统一的基类设计支持多种算法扩展，[HitAnalysis](./kv_cache_manager/optimizer/README.md#L43-L43) 模块负责命中率统计分析。Trace 转换器支持多种格式（Publisher Log、Qwen Bailian 等），通过 [TraceConverter](./kv_cache_manager/optimizer/README.md#L40-L41) 实现不同格式的解析和标准化。
+> **源码实现分析**：缓存优化器的核心实现在 `OptimizerManager` 类中（参考 README.md 架构描述）。`OptEvictionManager` 负责管理多种驱逐策略，包括 LRU、RandomLRU 和 LeafAwareLRU。`OptIndexerManager` 基于 Radix Tree 实现前缀匹配索引。`OptimizerRunner` 负责 Trace 数据的回放执行。驱逐策略接口通过统一的基类设计支持多种算法扩展，`HitAnalysis` 模块负责命中率统计分析。Trace 转换器支持多种格式（Publisher Log、Qwen Bailian 等），通过 `TraceConverter` 实现不同格式的解析和标准化。
 
 ---
 
@@ -134,7 +134,7 @@
 
 系统采用基于分布式锁的主备选举机制来实现节点间的协调，通过 Redis 或 etcd 等分布式协调服务来维护集群状态。在典型的三节点部署场景中，各节点根据预设的选举策略竞争成为主节点，一旦获得锁的节点将承担主要服务职责，其他节点则作为备用节点随时准备接管服务。**Tair KVCM** 结合 3FS Master 等工作，可以仅使用 TCP 和推理引擎及后端存储进行交互，并不强依赖 RDMA 环境。对于 RDMA 环境内仅有 GPU 机型的场景，可以将 KVCM 部署在 RDMA 环境外的其他机型上，规避 GPU 机型故障率过高的问题。在通过 Tair KVCM 获取到 KVCache 的存储位置后，推理引擎内的 Connector 将直接读写后端存储，**KVCache 数据流完全绕过 Tair KVCM**，降低了 KVCache 读写延迟和对 Tair KVCM 的带宽需求。
 
-> **源码实现分析**：主备选举机制在 [Server](./kv_cache_manager/service/server.h#L34-L85) 类中实现，通过 [LeaderElector](./kv_cache_manager/service/server.h#L19-L19) 和 [DistributedLockBackend](./kv_cache_manager/service/server.h#L18-L18) 组件协调节点状态。[CreateLeaderElector](./kv_cache_manager/service/server.cc#L240-L249) 方法创建选举器，[OnBecomeLeader](./kv_cache_manager/service/server.cc#L251-L262) 和 [OnNoLongerLeader](./kv_cache_manager/service/server.cc#L264-L278) 回调函数处理角色变更。[kLeaderLockKey](./kv_cache_manager/service/server.h#L54-L54) 定义了分布式锁的键名 `_TAIR_KVCM_LEADER_KEY`。当节点成为领导者时，它会初始化 [CacheManager](./kv_cache_manager/manager/cache_manager.h#L32-L216) 并开始提供服务；当不再是领导者时，会执行清理操作 [DoCleanup()](./kv_cache_manager/manager/cache_manager.cc#L101-L134)。
+> **源码实现分析**：主备选举机制在 `Server` 类中实现，通过 `LeaderElector` 和 `DistributedLockBackend` 组件协调节点状态。`CreateLeaderElector` 方法创建选举器，`OnBecomeLeader` 和 `OnNoLongerLeader` 回调函数处理角色变更。`kLeaderLockKey` 定义了分布式锁的键名 `_TAIR_KVCM_LEADER_KEY`。当节点成为领导者时，它会初始化 `CacheManager` 并开始提供服务；当不再是领导者时，会执行清理操作 `DoCleanup()`。
 
 ```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -200,7 +200,7 @@ kvcm.distributed_lock.uri=redis://127.0.0.1:6379
 
 通过以上抽象，将存储、配额和实例解耦，允许灵活控制 KVCache 存储方式和容量，便于统一管理大量 KVCache 实例。在 Instance Group 上配置容量配额，避免了为 Instance 单独配置存储容量，简化了业务侧的接入流程，也便于模型版本切换时的容量转移。基于以上抽象，既满足了推理引擎的 KVCache 查询需求（混合注意力的复合匹配等），也在 Tair KVCM 内保留了 LLM 的相关业务特征和语义：多 Block 间的前缀关系，同 Location 多 Spec 的关联关系等。由于感知并保留了 LLM 相关特征，Tair KVCM 还可以针对 KVCache 存储场景实现更多优化，如：通过前缀对请求进行更细致的分类，针对性调整逐出策略。利用前缀依赖的数据关系，避免后缀的无效存储。为线性注意力选择最需要保留的 Block，在不牺牲命中率的情况下优化存储容量等。从底层存储视角看，降低了接入的复杂度（不需要了解任何推理概念，完全透明），同时还可以获取到提炼并翻译后的存储特征（存储对象间的生命周期关联等），为后续更进一步的优化和专用存储系统的开发留出了充足空间。
 
-> **源码实现分析**：系统基本概念在代码中有直接对应的实现。[StorageConfig](./kv_cache_manager/data_storage/storage_config.h#L32-L87) 类定义了存储配置，包括类型、全局唯一名称和存储规格参数。[InstanceGroup](./kv_cache_manager/config/instance_group.h#L31-L45) 类管理实例组，包含配额配置和可用存储列表。[InstanceInfo](./kv_cache_manager/config/instance_info.h#L33-L100) 类表示单个实例，包含模型配置和块大小等信息。[CacheLocation](./kv_cache_manager/manager/cache_location.h#L37-L83) 类定义了缓存位置，包含 URI、状态和位置规格信息。[LocationSpecInfo](./kv_cache_manager/config/instance_info.h#L31-L31) 结构体描述位置规格，支持不同 TP、PP 配置和混合注意力场景。[DataStorageUri](./kv_cache_manager/data_storage/data_storage_uri.h#L28-L30) 定义了统一的 URI 格式，支持不同存储类型的地址表示。
+> **源码实现分析**：系统基本概念在代码中有直接对应的实现。`StorageConfig` 类定义了存储配置，包括类型、全局唯一名称和存储规格参数。`InstanceGroup` 类管理实例组，包含配额配置和可用存储列表。`InstanceInfo` 类表示单个实例，包含模型配置和块大小等信息。`CacheLocation` 类定义了缓存位置，包含 URI、状态和位置规格信息。`LocationSpecInfo` 结构体描述位置规格，支持不同 TP、PP 配置和混合注意力场景。`DataStorageUri` 定义了统一的 URI 格式，支持不同存储类型的地址表示。
 
 ### 3.3 存储与实例组配置
 
@@ -268,7 +268,7 @@ kvcm.distributed_lock.uri=redis://127.0.0.1:6379
 
 在并发控制层面，系统通过分片锁机制有效减少锁竞争，采用读写锁提升并发读取性能，并在热点路径上运用无锁数据结构来最大化吞吐量。这些优化措施使得系统能够在高并发场景下保持稳定的响应性能。随着高性能网络技术不断演进，智算环境内网络带宽快速增长（单端口从 25Gbps 快速跃升至 200+Gbps），互联规模不断扩大（千卡、万卡甚至跨可用区），互联机型更加多样（eRDMA 等已覆盖主流存储机型），使得解耦算力资源和 KVCache 存储成为可能。以阿里云为例，智算场景下 KVCache 跨机传输的典型带宽约为 20GB/s：EGS 8 卡机型对应 20GB/s 通用网络带宽，灵骏 8 卡机型对应 25GB/s 存储带宽（另有 200~400GB/s ScaleOut 网络带宽）。20G/s 带宽均可以满足 KVCache 跨机传输需求。随着高性能网络的继续演进，KVCache 传输带宽还会进一步扩展，不断降低跨机传输代价。
 
-> **源码实现分析**：并发控制优化在多个层面实现。在 [MetaIndexer](./kv_cache_manager/meta/meta_indexer.h#L2-L138) 类中，[mutex_shards_](./kv_cache_manager/meta/meta_indexer.h#L129-L129) 成员实现了分片锁机制，通过 [GetShardIndex](./kv_cache_manager/meta/meta_indexer.cc#L433-L435) 方法将 key 映射到不同的锁分片，减少锁竞争。[ScopedBatchLock](./kv_cache_manager/meta/meta_indexer.h#L79-L79) 类确保批量操作的原子性。[BatchMetaData](./kv_cache_manager/meta/meta_indexer.h#L80-L85) 结构体和 [MakeBatches](./kv_cache_manager/meta/meta_indexer.cc#L334-L372) 方法实现了批处理优化，将大批量操作分解为小批次，避免长时间持有锁。[batch_key_size_](./kv_cache_manager/meta/meta_indexer.h#L138-L138) 配置参数控制批次大小，平衡并发性能和单批吞吐量。
+> **源码实现分析**：并发控制优化在多个层面实现。在 `MetaIndexer` 类中，`mutex_shards_` 成员实现了分片锁机制，通过 `GetShardIndex` 方法将 key 映射到不同的锁分片，减少锁竞争。`ScopedBatchLock` 类确保批量操作的原子性。`BatchMetaData` 结构体和 `MakeBatches` 方法实现了批处理优化，将大批量操作分解为小批次，避免长时间持有锁。`batch_key_size_` 配置参数控制批次大小，平衡并发性能和单批吞吐量。
 
 ### 5.2 内存管理优化
 
@@ -286,7 +286,7 @@ kvcm.distributed_lock.uri=redis://127.0.0.1:6379
 
 在扩展性设计方面，**Tair KVCache** 采用了插件化架构来支持系统的灵活扩展。存储后端的插件化设计提供了统一的接口规范，使得新的存储类型能够通过动态加载的方式集成到系统中，配合策略模式实现灵活的配置管理。驱逐策略的插件化同样采用工厂模式，不仅支持自定义驱逐算法的开发，还允许在运行时进行策略切换，为不同场景下的性能优化提供了便利。**Tair KVCache Manager** 的设计初衷便是考虑到大规模部署的需求，提供覆盖 KVCache 全生命周期的企业级管理能力，如：模型上线前的 ROI 评估和高收益场景筛选，模型在线服务过程中的可观测和高可用等。
 
-> **源码实现分析**：插件化架构在多个层面实现。存储后端通过 [DataStorageBackend](./kv_cache_manager/data_storage/data_storage_backend.h#L16-L68) 抽象基类实现插件化，具体存储类型如 [hf3fs_backend](./kv_cache_manager/data_storage/hf3fs_backend.h#L32-L44)、[mooncake_backend](./kv_cache_manager/data_storage/mooncake_backend.h#L32-L35)、[nfs_backend](./kv_cache_manager/data_storage/nfs_backend.h#L32-L34) 等继承该基类。[DataStorageBackendFactory](./kv_cache_manager/data_storage/data_storage_backend_factory.h#L32-L37) 使用工厂模式创建不同类型的存储后端实例。驱逐策略通过统一的接口设计支持多种算法扩展，[CacheReclaimer](./kv_cache_manager/manager/cache_reclaimer.h#L66-L423) 类支持 LRU、LFU、TTL 等多种驱逐策略。[MetaStorageBackend](./kv_cache_manager/meta/meta_storage_backend.h#L28-L31) 抽象类实现了元数据存储的插件化，有 [MetaLocalBackend](./kv_cache_manager/meta/meta_local_backend.h#L32-L36) 和 [MetaRedisBackend](./kv_cache_manager/meta/meta_redis_backend.h#L32-L36) 等具体实现。这种设计使得新功能可以轻松集成到系统中，无需修改核心逻辑。
+> **源码实现分析**：插件化架构在多个层面实现。存储后端通过 `DataStorageBackend` 抽象基类实现插件化，具体存储类型如 `hf3fs_backend`、`mooncake_backend`、`nfs_backend` 等继承该基类。`DataStorageBackendFactory` 使用工厂模式创建不同类型的存储后端实例。驱逐策略通过统一的接口设计支持多种算法扩展，`CacheReclaimer` 类支持 LRU、LFU、TTL 等多种驱逐策略。`MetaStorageBackend` 抽象类实现了元数据存储的插件化，有 `MetaLocalBackend` 和 `MetaRedisBackend` 等具体实现。这种设计使得新功能可以轻松集成到系统中，无需修改核心逻辑。
 
 ### 6.2 微服务化架构
 
@@ -330,7 +330,7 @@ kvcm.distributed_lock.uri=redis://127.0.0.1:6379
 
 该系统的核心价值不仅体现在技术实现的先进性上，更在于其完整的工程化实践。从高可用的主备选举机制到精细化的容量管理策略，从多层次的监控体系到灵活的配置管理，每一个设计决策都体现了对生产环境稳定运行的深度思考。**Optimizer** 等分析工具的引入，更是将系统的可运维性和可优化性提升到了新的高度。系统构建了一个专注于 LLM 语义适配和存储管理的元数据管理层，该层不替代底层存储，而是作为元数据管理器，向上对推理引擎暴露符合 LLM 语义的原生接口，向下将操作映射为对底层存储的高效调用，同时将提炼并转译后的存储特征提供给底层存储。这种添加抽象层的方式可以兼顾落地速度与长期演进——短期可快速利用现有存储系统支持大容量 KVCache 池化存储，中长期则为专用存储系统明确优化目标与接口边界，实现平滑演进。
 
-**核心实现回顾**：整个系统通过模块化的架构设计实现了高度的可维护性和可扩展性。[CacheManager](./kv_cache_manager/manager/cache_manager.h#L32-L216) 作为核心协调者，整合了 [MetaIndexerManager](./kv_cache_manager/manager/cache_manager.h#L158-L158)、[DataStorageManager](./kv_cache_manager/manager/cache_manager.h#L164-L164)、[CacheReclaimer](./kv_cache_manager/manager/cache_manager.h#L172-L172) 等多个组件。[Server](./kv_cache_manager/service/server.h#L34-L85) 层提供统一的服务接口，通过 [MetaServiceImpl](./kv_cache_manager/service/meta_service_impl.h#L29-L31)、[AdminServiceImpl](./kv_cache_manager/service/admin_service_impl.h#L31-L33)、[DebugServiceImpl](./kv_cache_manager/service/debug_service_impl.h#L31-L33) 实现具体的业务逻辑。[MetricsRegistry](./kv_cache_manager/service/server.h#L80-L80) 提供了完整的监控体系，支持多层次的指标收集。[EventManager](./kv_cache_manager/manager/cache_manager.h#L176-L176) 实现了事件发布机制，支持系统的可观测性。这种设计确保了系统的高可用性、可监控性和可维护性，为生产环境的稳定运行提供了坚实基础。
+**核心实现回顾**：整个系统通过模块化的架构设计实现了高度的可维护性和可扩展性。`CacheManager` 作为核心协调者，整合了 `MetaIndexerManager`、`DataStorageManager`、`CacheReclaimer` 等多个组件。`Server` 层提供统一的服务接口，通过 `MetaServiceImpl`、`AdminServiceImpl`、`DebugServiceImpl` 实现具体的业务逻辑。`MetricsRegistry` 提供了完整的监控体系，支持多层次的指标收集。`EventManager` 实现了事件发布机制，支持系统的可观测性。这种设计确保了系统的高可用性、可监控性和可维护性，为生产环境的稳定运行提供了坚实基础。
 
 ### 8.2 未来发展
 

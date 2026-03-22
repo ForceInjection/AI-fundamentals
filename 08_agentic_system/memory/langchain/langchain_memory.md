@@ -64,7 +64,7 @@ conversation = ConversationChain(
 response = conversation.predict(input="你好，我叫张三")
 ```
 
-**实现示例**：详见 [`basic_memory_examples.py`](code/basic_memory_examples.py) 中的 `demo_conversation_buffer_memory()` 方法。
+**实现示例**：详见 ``basic_memory_examples.py`` 中的 `demo_conversation_buffer_memory()` 方法。
 
 #### 2.1.2 ConversationSummaryMemory
 
@@ -86,7 +86,7 @@ memory = ConversationSummaryMemory(
 conversation = ConversationChain(llm=llm, memory=memory)
 ```
 
-**实现示例**：详见 [`basic_memory_examples.py`](code/basic_memory_examples.py) 中的 `demo_conversation_summary_memory()` 方法。
+**实现示例**：详见 ``basic_memory_examples.py`` 中的 `demo_conversation_summary_memory()` 方法。
 
 #### 2.1.3 ConversationBufferWindowMemory
 
@@ -107,7 +107,7 @@ memory = ConversationBufferWindowMemory(
 conversation = ConversationChain(llm=llm, memory=memory)
 ```
 
-**实现示例**：详见 [`basic_memory_examples.py`](code/basic_memory_examples.py) 中的 `demo_conversation_buffer_window_memory()` 方法。
+**实现示例**：详见 ``basic_memory_examples.py`` 中的 `demo_conversation_buffer_window_memory()` 方法。
 
 #### 2.1.4 ConversationSummaryBufferMemory
 
@@ -129,7 +129,7 @@ memory = ConversationSummaryBufferMemory(
 conversation = ConversationChain(llm=llm, memory=memory)
 ```
 
-**实现示例**：详见 [`basic_memory_examples.py`](code/basic_memory_examples.py) 中的 `demo_conversation_summary_buffer_memory()` 方法。
+**实现示例**：详见 ``basic_memory_examples.py`` 中的 `demo_conversation_summary_buffer_memory()` 方法。
 
 ### 2.2 现代化记忆管理：LangGraph
 
@@ -186,7 +186,7 @@ config = {"configurable": {"thread_id": "user_123"}}
 result = app.invoke(initial_state, config=config)
 ```
 
-**实现示例**：详见 [`langgraph_memory_example.py`](code/langgraph_memory_example.py) 中的完整实现。
+**实现示例**：详见 ``langgraph_memory_example.py`` 中的完整实现。
 
 ### 2.3 记忆类型选择指南
 
@@ -263,7 +263,7 @@ class CustomerServiceBot:
         return self.session_manager.chat(session_id, message, context)
 ```
 
-**实现代码**：详见 [`smart_customer_service.py`](code/smart_customer_service.py) 中的 `CustomerServiceBot` 类。
+**实现代码**：详见 ``smart_customer_service.py`` 中的 `CustomerServiceBot` 类。
 
 #### 3.2.2 进阶记忆管理
 
@@ -323,13 +323,13 @@ class SessionManager:
             raise ValueError(f"不支持的记忆类型: {memory_type}")
 ```
 
-**实现代码**：详见 [`smart_customer_service.py`](code/smart_customer_service.py) 中的 `SessionManager` 类。
+**实现代码**：详见 ``smart_customer_service.py`` 中的 `SessionManager` 类。
 
 #### 3.2.3 LangGraph 持久化记忆
 
 现代化实现使用 LangGraph 框架，提供了更强大的状态管理和持久化能力，支持跨会话的记忆保持。
 
-**实现代码**：详见 [`langgraph_memory_example.py`](code/langgraph_memory_example.py) 中的完整实现。
+**实现代码**：详见 ``langgraph_memory_example.py`` 中的完整实现。
 
 ### 3.3 高级功能
 
@@ -397,7 +397,7 @@ class SessionManager:
         return session_id
 ```
 
-**实现代码**：详见 [`smart_customer_service.py`](code/smart_customer_service.py) 中的多用户管理功能。
+**实现代码**：详见 ``smart_customer_service.py`` 中的多用户管理功能。
 
 #### 3.3.2 性能优化策略
 
@@ -503,7 +503,7 @@ class SessionManager:
                 del self.performance_metrics[session_id]
 ```
 
-**实现代码**：详见 [`smart_customer_service.py`](code/smart_customer_service.py) 中的性能监控功能。
+**实现代码**：详见 ``smart_customer_service.py`` 中的性能监控功能。
 
 ---
 
@@ -554,15 +554,15 @@ python main.py --interactive
 
 本项目的代码文件结构清晰，每个文件都有明确的功能定位：
 
-- **[`config.py`](code/config.py)**：LLM 配置管理，支持多种模型和参数设置
-- **[`config.example.py`](code/config.example.py)**：配置文件模板，包含详细的配置说明
-- **[`llm_factory.py`](code/llm_factory.py)**：LLM 工厂类，统一管理不同类型的语言模型
-- **[`basic_memory_examples.py`](code/basic_memory_examples.py)**：基础记忆类型演示，展示四种核心记忆机制
-- **[`smart_customer_service.py`](code/smart_customer_service.py)**：智能客服机器人完整实现
-- **[`langgraph_memory_example.py`](code/langgraph_memory_example.py)**：LangGraph 现代化记忆管理方案
-- **[`main.py`](code/main.py)**：主运行脚本，提供统一的命令行接口
-- **[`requirements.txt`](code/requirements.txt)**：项目依赖列表
-- **[`README.md`](code/README.md)**：详细的安装和使用说明文档
+- **``config.py``**：LLM 配置管理，支持多种模型和参数设置
+- **``config.example.py``**：配置文件模板，包含详细的配置说明
+- **``llm_factory.py``**：LLM 工厂类，统一管理不同类型的语言模型
+- **``basic_memory_examples.py``**：基础记忆类型演示，展示四种核心记忆机制
+- **``smart_customer_service.py``**：智能客服机器人完整实现
+- **``langgraph_memory_example.py``**：LangGraph 现代化记忆管理方案
+- **``main.py``**：主运行脚本，提供统一的命令行接口
+- **``requirements.txt``**：项目依赖列表
+- **``README.md``**：详细的安装和使用说明文档
 
 ### 4.4 验证测试
 

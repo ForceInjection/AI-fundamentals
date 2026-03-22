@@ -1179,7 +1179,7 @@ class EdgeManager:
     def add_conditional_edge(self, from_node: str, condition_func: callable, 
                            edge_map: Dict[str, str], data_transformer: Optional[callable] = None):
         """添加条件边"""
-        [edge_id](state) = f"{from_node}_conditional"
+        `edge_id`(state) = f"{from_node}_conditional"
         
         self.edges[edge_id] = {
             'type': 'conditional',
