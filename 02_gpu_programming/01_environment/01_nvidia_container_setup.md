@@ -66,7 +66,7 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 4. **库注入 (Inject Libraries)**：将宿主机上的驱动库（如 `libcuda.so`, `libnvidia-ml.so`）挂载到容器内，通常通过 `ld.so.conf` 机制确保容器内应用能加载到这些库。
 5. **Cgroups 配置**：配置设备控制组（Device Cgroup），确保容器内进程只能访问被允许的 GPU 设备，实现资源隔离。
 
-> **深度阅读**：关于 NVIDIA Container Toolkit 的源码级深度解析（含 CDI 规范、Hook 机制代码分析），请参考 [NVIDIA Container Toolkit 原理分析与代码深度解析](../../04_cloud_native_ai_platform/k8s/Nvidia%20Container%20Toolkit%20原理分析.md)。
+> **深度阅读**：关于 NVIDIA Container Toolkit 的源码级深度解析（含 CDI 规范、Hook 机制代码分析），请参考 [NVIDIA Container Toolkit 原理分析与代码深度解析](../../04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md)。
 
 ### 2.3 Docker / Container Runtime（必须）
 

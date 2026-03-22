@@ -4,7 +4,7 @@
 
 ## 1. 核心基础设施组件
 
-### 1.1 [NVIDIA Container Toolkit 原理分析](./Nvidia%20Container%20Toolkit%20原理分析.md)
+### 1.1 [NVIDIA Container Toolkit 原理分析](./01_nvidia_container_toolkit_analysis.md)
 
 深入解析 NVIDIA Container Toolkit 的核心原理和实现机制，包括：
 
@@ -14,7 +14,7 @@
 - **源码级别的架构分析**：核心组件的实现原理和代码解析
 - **性能优化策略**：最小化容器化开销的技术手段
 
-### 1.2 [Nvidia K8s Device Plugin 原理解析和源码分析](./nvidia-k8s-device-plugin-analysis.md)
+### 1.2 [Nvidia K8s Device Plugin 原理解析和源码分析](./02_nvidia_k8s_device_plugin_analysis.md)
 
 全面分析 NVIDIA Kubernetes Device Plugin 的实现原理，涵盖：
 
@@ -24,9 +24,17 @@
 - **健康检查与故障恢复**：设备健康监控和异常处理机制
 - **源码深度解析**：关键组件的实现细节和代码分析
 
+### 1.3 [容易被忽略的 containerd 运行时日志](./06_containerd_log_analysis.md)
+
+分析容器运行时日志，深入了解 `containerd` 的异常排查方法：
+
+- **runc 运行时日志位置与作用**：探索 `/run/containerd` 目录下的核心日志
+- **容器启动失败的深度定位**：绕过常规标准输出日志寻找关键线索
+- **底层异常问题诊断**：提升排查 OCI 运行时相关故障的效率
+
 ## 2. 高级调度与资源管理
 
-### 2.1 [Kueue + HAMi：Kubernetes 原生的 AI 工作负载管理与 GPU 虚拟化解决方案](./Kueue%20+%20HAMi.md)
+### 2.1 [Kueue + HAMi：Kubernetes 原生的 AI 工作负载管理与 GPU 虚拟化解决方案](./03_kueue_hami_integration.md)
 
 详细介绍 Kueue 作业队列系统与 HAMi GPU 虚拟化技术的集成方案：
 
@@ -47,7 +55,7 @@
 
 ## 3. 分布式推理框架
 
-### 3.1 [vLLM + LWS：Kubernetes 上的多机多卡推理方案](./lws_intro.md)
+### 3.1 [vLLM + LWS：Kubernetes 上的多机多卡推理方案](./04_lws_intro.md)
 
 深入探讨 vLLM 推理引擎与 LeaderWorkerSet (LWS) 控制器的集成方案：
 
@@ -66,7 +74,7 @@
   - 拓扑感知调度配置
   - 弹性伸缩和故障恢复策略
 
-### 3.2 [云原生高性能分布式 LLM 推理框架 llm-d 介绍](./llm-d-intro.md)
+### 3.2 [云原生高性能分布式 LLM 推理框架 llm-d 介绍](./05_llm_d_intro.md)
 
 全面介绍 llm-d 分布式推理框架的技术架构和核心优势：
 

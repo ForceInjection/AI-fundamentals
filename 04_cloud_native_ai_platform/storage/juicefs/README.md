@@ -21,8 +21,8 @@ JuiceFS 是一个高性能的云原生分布式文件系统，专为云环境和
 
 ### 3.1 技术文档
 
-- [JuiceFS 后端存储变更手册](./JuiceFS%20后端存储变更手册.md) - 详细介绍如何变更 JuiceFS 的后端存储配置
-- [JuiceFS 文件修改机制分析](./JuiceFS%20文件修改机制分析.md) - 深入分析 JuiceFS 的文件修改机制和实现原理
+- [JuiceFS 后端存储变更手册](./02_juicefs_backend_storage_migration_guide.md)：详细介绍如何平滑迁移和变更底层的对象存储。
+- [JuiceFS 文件修改机制分析](./01_juicefs_file_modification_mechanism_analysis.md)：深入分析 JuiceFS 是如何处理文件修改和数据一致性的。
 
 ### 3.2 官方资源
 

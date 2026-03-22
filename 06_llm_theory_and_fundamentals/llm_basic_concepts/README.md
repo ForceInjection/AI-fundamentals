@@ -8,7 +8,7 @@
 
 ### 2.1 模型架构与技术原理
 
-- **[量化技术图解指南](A%20Visual%20Guide%20to%20Quantization.zh-CN.md)** - 模型量化技术深度解析
+- **[量化技术图解指南](01_visual_guide_to_quantization.md)** - 模型量化技术深度解析
 - **[大模型文件格式完整指南](大模型文件格式完整指南.md)** - 模型存储格式技术规范
 - **[Token 机制解密](token/llm_token_intro.md)** - LLM 中 Token 处理机制详解
 
@@ -61,7 +61,7 @@
 
 ## 10. MCP 协议
 
-- [深度解析 MCP 与 AI 工具化的未来](../../08_agentic_system/mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md)
+- **[深度解析 MCP 与 AI 工具化的未来](../../08_agentic_system/mcp/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md)** - Model Context Protocol (MCP) 原理与实战
 
 ## 11. 应用场景
 

@@ -32,7 +32,7 @@
 
 > 注：上述延迟量级用于帮助理解 G1–G4 的相对层级差异；原文主要强调不同层级在推理场景中的职责分工与效率差异，并未在该处给出统一的端到端延迟测量数据。
 
-![KV cache memory hierarchy, from on‑GPU memory (G1) to shared storage (G4)](./kv-cache-memory-hierarchy-latency-efficiency-tradeoffs-png.webp)
+![KV cache memory hierarchy, from on‑GPU memory (G1) to shared storage (G4)](./img/kv-cache-memory-hierarchy-latency-efficiency-tradeoffs-png.webp)
 
 ---
 
@@ -59,7 +59,7 @@ ICMS 引入了一个新的层级 **G3.5**，作为以太网连接的闪存层，
 
 > 注：原文语境中关于 “共享” 与 “跨节点” 的讨论主要指 **同一 GPU pod 内** 的多节点共享与复用（跨节点但不必跨 pod）。
 
-![NVIDIA Inference Context Memory Storage architecture within the NVIDIA Rubin platform, from inference pool to BlueField-4 ICMS target nodes](./nvidia-inference-context-memory-storage-architecture-1536x1441-png.webp)
+![NVIDIA Inference Context Memory Storage architecture within the NVIDIA Rubin platform, from inference pool to BlueField-4 ICMS target nodes](./img/nvidia-inference-context-memory-storage-architecture-1536x1441-png.webp)
 
 ### 3.1 BlueField-4 DPU 作为架构核心
 

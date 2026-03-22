@@ -53,7 +53,7 @@
 
 关注智能体与外部世界的交互能力，特别是通过 Model Context Protocol (MCP) 实现的标准化工具互操作。
 
-- [**Model Context Protocol (MCP) 深度解析**](./mcp/A_Deep_Dive_Into_MCP_and_the_Future_of_AI_Tooling_zh_CN.md) - 定义 AI 工具互操作未来的通用标准
+- [**Model Context Protocol (MCP) 深度解析**](./mcp/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md) - Model Context Protocol (MCP) 原理与实战
 - [**Claude Skills 开发指南**](./agent-skills/claude_skills_guide.md) - 扩展智能体能力的工具定义与最佳实践
 
 ### 2.4 基础设施

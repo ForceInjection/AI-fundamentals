@@ -12,7 +12,7 @@
 
 ### 2.2 架构设计解析
 
-- **[设计笔记](../../04_cloud_native_ai_platform/storage/deepseek_3fs_design_notes.zh-CN.md)** - DeepSeek-V3 分布式文件系统架构设计
+- **[设计笔记](../../04_cloud_native_ai_platform/storage/deepseek_3fs/01_deepseek_3fs_design_notes.md)** - DeepSeek-V3 分布式文件系统架构设计
 
 ### 2.3 平台部署实践
 
