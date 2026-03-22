@@ -20,7 +20,7 @@
 > 详细内容请访问：[**硬件与架构**](01_hardware_architecture/README.md) - 核心文档门户，涵盖硬件基础知识与关键技术概览。
 
 **核心模块导航**：
-
+ 
 - **[GPU 与 AI 加速器架构](01_hardware_architecture/README.md)**：涵盖 NVIDIA GPU 架构、Google TPU 设计哲学、GPUDirect 核心技术及 GPGPU vs NPU 对比分析。
   - **PCIe 总线**
     - [PCIe 总线技术大全](./01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md)
