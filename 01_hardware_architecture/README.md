@@ -70,12 +70,12 @@
 - [**Linux PCIe P2PDMA**](pcie/p2pdma.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
 - [**NVLink 技术**](nvlink/nvlink_intro.md)：突破 PCIe 瓶颈的 GPU 高速互连方案。
 
-### 3.5 [GPUDirect 技术](gpudirect/gpudirect_technology.md)
+### 3.5 [GPUDirect 技术](gpudirect/01_gpudirect_technology.md)
 
 详细解析 NVIDIA GPUDirect 系列技术，重点关注解决“内存墙”与“IO 墙”问题的核心方案。
 
-- **基础技术**：[GPUDirect P2P](gpudirect/gpudirect_p2p.md) - 节点内 GPU 高速互联
-- **核心技术**：[GPUDirect RDMA](gpudirect/gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/gpudirect_technology.md#3-gpudirect-storage-gds-技术)
+- **基础技术**：[GPUDirect P2P](gpudirect/02_gpudirect_p2p.md) - 节点内 GPU 高速互联
+- **核心技术**：[GPUDirect RDMA](gpudirect/01_gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/01_gpudirect_technology.md#3-gpudirect-storage-gds-技术)
 - **原理解析**：PCI BAR 映射、DMA 路径优化、Zero-Copy 机制
 
 ### 3.6 [性能参考](performance/ai_latency_pyramid.md)
