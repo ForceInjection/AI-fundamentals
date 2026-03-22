@@ -73,120 +73,119 @@ def check_external_url(url, timeout=10):
         return False, str(e)
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='检查 Markdown 文件中的链接')
+    parser.add_argument('--all', action='store_true', help='检查所有 Markdown 文件')
+    parser.add_argument('--type', choices=['local', 'external', 'all'], default='all', help='指定检查的链接类型 (默认: all)')
+    args = parser.parse_args()
+
     # 设置基础目录
     # 自动获取脚本所在目录的上级目录作为项目根目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(current_dir)
-    readme_path = os.path.join(base_dir, 'README.md')
     
-    print(f"项目根目录: {base_dir}")
-    print(f"检查文件: {readme_path}")
+    md_files = []
+    if args.all:
+        for root, dirs, files in os.walk(base_dir):
+            # 排除隐藏目录和特定目录
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['venv', 'node_modules']]
+            for file in files:
+                if file.endswith('.md'):
+                    md_files.append(os.path.join(root, file))
+        print(f"找到 {len(md_files)} 个 Markdown 文件进行检查。")
+    else:
+        readme_path = os.path.join(base_dir, 'README.md')
+        md_files.append(readme_path)
+        print(f"项目根目录: {base_dir}")
+        print(f"检查文件: {readme_path}")
     
-    # 读取README.md文件
-    try:
-        with open(readme_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except FileNotFoundError:
-        print(f"错误：找不到文件 {readme_path}")
-        return
+    all_invalid_local = []
+    all_submodule_links = []
+    all_invalid_external = []
     
-    # 提取所有链接
-    links = extract_markdown_links(content)
-    
-    # 分类链接
-    local_links = []
-    external_links = []
-    
-    for text, url in links:
-        if is_local_file(url):
-            local_links.append((text, url))
-        else:
-            external_links.append((text, url))
-    
-    # 检查本地文件链接
-    valid_local = []
-    invalid_local = []
-    submodule_links = []
-    
-    print(f"检查 {len(local_links)} 个本地文件链接...")
-    for text, url in local_links:
-        exists, status = check_local_file_exists(url, base_dir)
-        if status == 'submodule_not_initialized':
-            submodule_links.append((text, url))
-        elif exists:
-            valid_local.append((text, url))
-        else:
-            invalid_local.append((text, url))
-    
-    # 检查外部URL链接
-    valid_external = []
-    invalid_external = []
-    
-    print(f"检查 {len(external_links)} 个外部URL链接...")
-    for text, url in external_links:
-        is_valid, status = check_external_url(url)
-        if is_valid:
-            valid_external.append((text, url, status))
-        else:
-            invalid_external.append((text, url, status))
+    total_valid_local = 0
+    total_valid_external = 0
+
+    for file_path in md_files:
+        print(f"\n正在检查文件: {file_path}")
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except FileNotFoundError:
+            print(f"错误：找不到文件 {file_path}")
+            continue
+        
+        # 提取所有链接
+        links = extract_markdown_links(content)
+        
+        # 分类链接
+        local_links = []
+        external_links = []
+        
+        for text, url in links:
+            if is_local_file(url):
+                local_links.append((text, url))
+            else:
+                external_links.append((text, url))
+        
+        # 检查本地文件链接
+        if args.type in ['local', 'all']:
+            print(f"  检查 {len(local_links)} 个本地文件链接...")
+            # 注意：本地链接的基准路径是当前 md 文件所在的目录，而不是项目根目录
+            file_dir = os.path.dirname(file_path)
+            for text, url in local_links:
+                exists, status = check_local_file_exists(url, file_dir)
+                if status == 'submodule_not_initialized':
+                    all_submodule_links.append((file_path, text, url))
+                elif exists:
+                    total_valid_local += 1
+                else:
+                    all_invalid_local.append((file_path, text, url))
+        
+        # 检查外部URL链接
+        if args.type in ['external', 'all']:
+            print(f"  检查 {len(external_links)} 个外部URL链接...")
+            for text, url in external_links:
+                is_valid, status = check_external_url(url)
+                if is_valid:
+                    total_valid_external += 1
+                else:
+                    all_invalid_external.append((file_path, text, url, status))
     
     # 生成报告
     report = []
-    report.append("README.md 链接检查报告（修正版）")
+    report.append("Markdown 链接检查报告（支持全量检查）")
     report.append("=" * 50)
     report.append(f"\n检查时间: {datetime.now()}")
+    report.append(f"检查文件数: {len(md_files)}")
     
     report.append(f"\n本地文件链接统计:")
-    report.append(f"  有效: {len(valid_local)}")
-    report.append(f"  无效: {len(invalid_local)}")
-    report.append(f"  Submodule未初始化: {len(submodule_links)}")
+    report.append(f"  有效: {total_valid_local}")
+    report.append(f"  无效: {len(all_invalid_local)}")
+    report.append(f"  Submodule未初始化: {len(all_submodule_links)}")
     
     report.append(f"\n外部URL链接统计:")
-    report.append(f"  有效: {len(valid_external)}")
-    report.append(f"  无效: {len(invalid_external)}")
+    report.append(f"  有效: {total_valid_external}")
+    report.append(f"  无效: {len(all_invalid_external)}")
     
     # 详细的无效链接列表
-    if invalid_local:
-        report.append(f"\n无效的本地文件链接 ({len(invalid_local)}个):")
-        for text, url in invalid_local:
-            report.append(f"  - [{text}]({url})")
+    if all_invalid_local:
+        report.append(f"\n无效的本地文件链接 ({len(all_invalid_local)}个):")
+        for file_path, text, url in all_invalid_local:
+            rel_file = os.path.relpath(file_path, base_dir)
+            report.append(f"  - [{rel_file}] 文本: '{text}' -> 链接: '{url}'")
     
-    if submodule_links:
-        report.append(f"\nSubmodule未初始化的链接 ({len(submodule_links)}个):")
-        for text, url in submodule_links:
-            report.append(f"  - [{text}]({url})")
+    if all_submodule_links:
+        report.append(f"\nSubmodule未初始化的链接 ({len(all_submodule_links)}个):")
+        for file_path, text, url in all_submodule_links:
+            rel_file = os.path.relpath(file_path, base_dir)
+            report.append(f"  - [{rel_file}] 文本: '{text}' -> 链接: '{url}'")
     
-    if invalid_external:
-        report.append(f"\n无效的外部URL链接 ({len(invalid_external)}个):")
-        for text, url, status in invalid_external:
-            report.append(f"  - [{text}]({url}) - 状态: {status}")
-    
-    # 路径问题分析
-    report.append(f"\n路径问题分析:")
-    
-    # 检查常见的路径错误
-    path_issues = []
-    
-    # 检查 coding vs ai_coding
-    coding_links = [url for text, url in invalid_local if url.startswith('coding/')]
-    if coding_links:
-        path_issues.append(f"发现 {len(coding_links)} 个 'coding/' 路径，应该是 'ai_coding/'")
-    
-    # 检查 context vs agent/context
-    context_links = [url for text, url in invalid_local if url.startswith('context/')]
-    if context_links:
-        path_issues.append(f"发现 {len(context_links)} 个 'context/' 路径，应该是 'agent/context/'")
-    
-    # 检查 memory vs agent/memory
-    memory_links = [url for text, url in invalid_local if url.startswith('memory/')]
-    if memory_links:
-        path_issues.append(f"发现 {len(memory_links)} 个 'memory/' 路径，应该是 'agent/memory/'")
-    
-    if path_issues:
-        for issue in path_issues:
-            report.append(f"  - {issue}")
-    else:
-        report.append("  - 未发现明显的路径问题")
+    if all_invalid_external:
+        report.append(f"\n无效的外部URL链接 ({len(all_invalid_external)}个):")
+        for file_path, text, url, status in all_invalid_external:
+            rel_file = os.path.relpath(file_path, base_dir)
+            report.append(f"  - [{rel_file}] 文本: '{text}' -> 链接: '{url}' - 状态: {status}")
     
     # 保存报告
     report_content = '\n'.join(report)
@@ -197,13 +196,9 @@ def main():
     
     print(f"\n检查完成！报告已保存到: {report_path}")
     print(f"\n总结:")
-    print(f"- 本地文件链接: {len(valid_local)} 有效, {len(invalid_local)} 无效, {len(submodule_links)} submodule未初始化")
-    print(f"- 外部URL链接: {len(valid_external)} 有效, {len(invalid_external)} 无效")
-    
-    if path_issues:
-        print(f"\n发现的路径问题:")
-        for issue in path_issues:
-            print(f"  - {issue}")
+    print(f"- 检查文件数: {len(md_files)}")
+    print(f"- 本地文件链接: {total_valid_local} 有效, {len(all_invalid_local)} 无效, {len(all_submodule_links)} submodule未初始化")
+    print(f"- 外部URL链接: {total_valid_external} 有效, {len(all_invalid_external)} 无效")
 
 if __name__ == '__main__':
     main()

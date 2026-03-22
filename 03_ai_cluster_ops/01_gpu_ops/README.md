@@ -18,7 +18,7 @@
 ## 3. 相关资源
 
 - [GPU 架构文档](../../01_hardware_architecture/README.md)
-- [NCCL 通信测试](../nccl/)
-- [性能分析工具](../../02_gpu_programming/profiling/)
+- **NCCL 通信测试**：[03_nccl](../03_nccl/README.md) - NVIDIA NCCL 分布式通信测试与基准工具。
+- **性能分析工具**：[04_profiling](../../02_gpu_programming/04_profiling/README.md) - CUDA 和 GPU 性能分析工具指南。
 
 ---

@@ -81,9 +81,9 @@
 
 ### 4.1 核心技术资源
 
-- [NCCL 通信优化](../../03_ai_cluster_ops/nccl/README.md)
+- [NCCL 通信优化](../../03_ai_cluster_ops/03_nccl/README.md)
 - [AI 推理优化](../../README.md)
-- [运维监控工具](../../03_ai_cluster_ops/gpu_ops/README.md)
+- **运维监控工具**：[01_gpu_ops](../../03_ai_cluster_ops/01_gpu_ops/README.md) - GPU 基础监控与管理工具。
 
 ### 4.2 容器化与编排
 
