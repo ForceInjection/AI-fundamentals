@@ -13,8 +13,8 @@
 
 相关文档：
 
-- [**CUDA 内核性能分析指南**](./s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)：NVIDIA 官方 CUDA 内核性能分析详细指南
-- [**nvbandwidth 深度解析**](./nvbandwidth_best_practices.md)：NVIDIA GPU 带宽测量工具全指南
+- [**CUDA 内核性能分析指南**](references/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)：NVIDIA 官方 CUDA 内核性能分析详细指南
+- [**nvbandwidth 深度解析**](01_nvbandwidth_best_practices.md)：NVIDIA GPU 带宽测量工具全指南
 
 ## 2. 性能分析实践
 

@@ -23,7 +23,6 @@
 - **KV Cache** 相当于推理过程中模型的“短期与长期记忆”，避免重复计算历史信息。
 - 随着上下文窗口扩展至百万级令牌，传统内存层（GPU HBM、系统内存）容量受限，通用存储层（对象/文件存储）虽然容量大，但访问延迟高，效率低。
 - 当前层级（G1–G4）从 HBM 到共享存储之间存在明显的延迟、带宽与能效断层：
-
   - **G1**：GPU HBM（纳秒级访问，最高效率）
   - **G2**：主机内存（十到百纳秒）
   - **G3**：本地 SSD（微秒级）
@@ -45,7 +44,6 @@ ICMS 引入了一个新的层级 **G3.5**，作为以太网连接的闪存层，
 
 - **用途**：专门存放可复用的、延迟敏感的 KV cache 数据；
 - **特性**：
-
   - 高带宽、低延迟访问；
   - 大规模共享上下文存储（每个 **GPU pod** 可提供 petabytes 级共享容量）；
   - 延长 GPU 内存层（HBM & DRAM）的有效容量边界；
@@ -132,5 +130,7 @@ G4: 共享对象/文件存储 ← 冷数据与日志等持久数据
 ---
 
 ## 六、参考文献
+
+- **参考资料**: 详见 [DOCA 编程入门](../../../02_dpu_programming/doca/01_doca_programming_guide.md) 中的相关章节。
 
 - NVIDIA Corporation. "Introducing NVIDIA BlueField-4-Powered Inference Context Memory Storage Platform for the Next Frontier of AI." NVIDIA Technical Blog. 2026-01-06. 访问日期: 2026-01-07. [Online]. Available: https://developer.nvidia.com/blog/introducing-nvidia-bluefield-4-powered-inference-context-memory-storage-platform-for-the-next-frontier-of-ai/

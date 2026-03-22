@@ -6,34 +6,31 @@
 
 工欲善其事，必先利其器。在开始 GPU 编程之前，首先需要构建一个标准化的容器开发环境。
 
-- [**NVIDIA GPU 容器环境：原理与构建指南**](environment/nvidia_container_setup.md) - 深入解析容器化架构原理，提供从驱动安装到实战配置的完整手册。
-- [**大模型训练与推理框架的 GPU 镜像构建深度解析**](environment/cuda_image_build_analysis.md) - 剖析 vLLM、TGI、Llama.cpp、DeepSpeed 四大框架的 Dockerfile，详解 CUDA 镜像变体选择与构建优化策略。
+- [**NVIDIA GPU 容器环境：原理与构建指南**](01_environment/01_nvidia_container_setup.md) - 深入解析容器化架构原理，提供从驱动安装到实战配置的完整手册。
+- [**大模型训练与推理框架的 GPU 镜像构建深度解析**](01_environment/02_cuda_image_build_analysis.md) - 剖析 vLLM、TGI、Llama.cpp、DeepSpeed 四大框架的 Dockerfile，详解 CUDA 镜像变体选择与构建优化策略。
 
 ---
 
 ## 2. 核心编程范式
 
-### 2.1 [CUDA 编程基础](cuda/README.md)
+### 2.1 [CUDA 编程基础](02_cuda/README.md)
 
 NVIDIA 官方标准的并行计算架构与编程模型，是 GPU 编程的基石。
 
-- **核心概念**：[CUDA 核心原理](cuda/cuda_cores_cn.md) | [流处理机制](cuda/cuda_streams.md)
-- **入门指南**：[CUDA 编程简介 - 基础与实践](cuda/CUDA%20编程简介%20-%20基础与实践.pdf)
-- **深度解析**：[GPU 编程导论](cuda/gpu_programming_introduction.md) | [SIMT vs Tile-Based 范式对比](cuda/simt_vs_tile_based_programming.md)
+- **核心概念**：[CUDA 核心原理](02_cuda/02_cuda_cores.md) | [流处理机制](02_cuda/03_cuda_streams.md)
+- **概念解析**：[GPU 编程导论](02_cuda/01_gpu_programming_introduction.md) | [SIMT 到 Tile-Based 编程范式的演进](02_cuda/04_simt_vs_tile_based.md)
 
-### 2.2 [Tile-Based 编程](tilelang/README.md)
+### 2.2 [Tile-Based 编程与 TileLang](03_tilelang/README.md)
 
-面向 Tensor Core 优化的新一代块级编程范式，专为大模型时代的高性能算子开发设计。
+针对现代硬件（如 Tensor Core）优化的更高级编程模型，以数据块（Tile）为中心。
 
-- **快速入门**：[TileLang 快速入门](tilelang/TileLang_快速入门.md)
+- [TileLang 快速入门](03_tilelang/01_tilelang_quick_start.md)
 
 ---
 
-## 3. 开发工具链
+## 3. [性能分析与优化](04_profiling/README.md)
 
-### 3.1 [性能分析与调优](profiling/README.md)
-
-- **Nsight Compute**：内核级性能分析工具，深入指令流水线挖掘性能瓶颈，参考文档：[Nsight Compute 核心分析指南 (PDF)](profiling/s9345-cuda-kernel-profiling-using-nvidia-nsight-compute.pdf)。
+- [**nvbandwidth 最佳实践**](04_profiling/01_nvbandwidth_best_practices.md) - 深入了解和测量 GPU 的显存带宽与 PCIe 传输带宽。
 
 ---
 
