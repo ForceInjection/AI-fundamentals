@@ -65,8 +65,7 @@
 
 ## 11. 应用场景
 
-- [读者来信：请问7b阅读分析不同中医古籍的能力怎么样？可以进行专项训练大幅度提高这方面能力么？](../../99_misc/scenario/traditional-chinese-medicine.md)
-- [中国大陆合同审核要点清单](../../99_misc/scenario/%E4%B8%AD%E5%9B%BD%E5%A4%A7%E9%99%86%E5%90%88%E5%90%8C%E5%AE%A1%E6%A0%B8%E8%A6%81%E7%82%B9%E6%B8%85%E5%8D%95.md)
+- [Agentic System 详解](../../08_agentic_system/README.md) - 构建复杂的 Agentic System 实践指南
 
 ## 12. 文档处理与转换
 
