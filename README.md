@@ -15,29 +15,43 @@
 
 ## 1. 硬件架构
 
-本章节主要构建 AI 系统的物理底座，深入探讨从单机计算芯片（GPU 或 TPU）到大规模集群内部组件互联的核心技术。
+本章深入解析 AI 计算硬件与系统互连架构，内容涵盖单机加速芯片（GPU、TPU）的设计哲学、高速互连总线（PCIe、NVLink）、GPUDirect 数据传输技术，以及系统级延迟与性能评估体系。详细内容请访问：**[GPU 与 AI 加速器架构](01_hardware_architecture/README.md)**。
 
-> 详细内容请访问：[**硬件与架构**](01_hardware_architecture/README.md) - 核心文档门户，涵盖硬件基础知识与关键技术概览。
-
-**核心模块导航**：
-
-- **[GPU 与 AI 加速器架构](01_hardware_architecture/README.md)**：涵盖 NVIDIA GPU 架构、Google TPU 设计哲学、GPUDirect 核心技术及 GPGPU vs NPU 对比分析。
-  - **GPUDirect**
-    - [NVIDIA GPUDirect RDMA 与 Storage 技术详解](./01_hardware_architecture/gpudirect/01_gpudirect_technology.md)
-    - [NVIDIA GPUDirect P2P 技术详解：节点内 GPU 高速互联](./01_hardware_architecture/gpudirect/02_gpudirect_p2p.md)
-  - **PCIe 总线**
-    - [PCIe 总线技术大全](./01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md)
-    - [Linux PCIe P2PDMA 技术介绍](./01_hardware_architecture/pcie/02_p2pdma_technology.md)
-- **[AI Superchip 架构](01_hardware_architecture/superchips/nvidia_gb300.md)**：深入解析 NVIDIA Grace Hopper/Blackwell 等 Superchip 的异构融合架构与 NVLink-C2C 互连技术。
-- **[性能参考](01_hardware_architecture/performance/ai_latency_pyramid.md)**：AI 基础设施延迟金字塔，建立对系统性能数量级的第一性认知。
+- **NVIDIA GPU 架构**
+  - [GPGPU vs NPU：大模型推理训练对比](./01_hardware_architecture/nvidia/GPGPU_vs_NPU_大模型推理训练对比.md)
+  - [GPU 架构基础与特性](./01_hardware_architecture/nvidia/gpu_characteristics.md)
+- **Google TPU 架构**
+  - [TPU 101：深度学习专用加速器架构解析](./01_hardware_architecture/tpu/tpu%20101.md)
+- **GPUDirect 技术**
+  - [NVIDIA GPUDirect RDMA 与 Storage 技术详解](./01_hardware_architecture/gpudirect/01_gpudirect_technology.md)
+  - [NVIDIA GPUDirect P2P 技术详解：节点内 GPU 高速互联](./01_hardware_architecture/gpudirect/02_gpudirect_p2p.md)
+- **PCIe 与互连技术**
+  - [PCIe 总线技术大全](./01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md)
+  - [Linux PCIe P2PDMA 技术介绍](./01_hardware_architecture/pcie/02_p2pdma_technology.md)
+  - [NVLink 技术入门](./01_hardware_architecture/nvlink/nvlink_intro.md)
+- **AI Superchip 架构**
+  - [NVIDIA GB300 NVL72：机架级计算系统架构解析](./01_hardware_architecture/superchips/nvidia_gb300.md)
+  - [NVLink-C2C：芯片级高速互连技术详解](./01_hardware_architecture/superchips/nvlink_c2c.md)
+- **性能参考**
+  - [AI 基础设施延迟金字塔](./01_hardware_architecture/performance/ai_latency_pyramid.md)
 
 ---
 
 ## 2. AI 集群运维与高性能通信
 
-本章涵盖从底层网络硬件到上层通信库的完整运维体系，包括高性能网络组网、GPU 基础监控运维以及分布式通信实战，为构建高吞吐的 AI 计算集群提供保障。
+本章涵盖从底层网络硬件到上层通信库的完整运维体系，包括高性能网络组网、GPU 基础监控运维以及分布式通信实战，为构建高吞吐的 AI 计算集群提供保障。详细内容请访问：**[AI 集群运维与通信](03_ai_cluster_ops/README.md)**。
 
-- **[AI 集群运维与通信](03_ai_cluster_ops/README.md)**：包含 GPU 基础运维、InfiniBand 高性能网络及 NCCL 分布式通信实战。
+- **GPU 基础运维**
+  - [设备查询：Device Query](./03_ai_cluster_ops/01_gpu_ops/01_device_query.md)
+  - [误区解读：GPU 利用率指标分析](./03_ai_cluster_ops/01_gpu_ops/02_gpu_utilization_myth.md)
+  - [状态监控：nvidia-smi 指南](./03_ai_cluster_ops/01_gpu_ops/03_nvidia_smi_guide.md)
+  - [状态监控：nvtop 指南](./03_ai_cluster_ops/01_gpu_ops/04_nvtop_guide.md)
+- **InfiniBand 高性能网络**
+  - [理论基础：IB 网络架构与协议](./03_ai_cluster_ops/02_infiniband/01_ib_network_theory.md)
+  - [网络运维：健康检查与性能监控实战](./03_ai_cluster_ops/02_infiniband/README.md)
+- **NCCL 分布式通信测试**
+  - [理论基础：NCCL 教程](./03_ai_cluster_ops/03_nccl/01_nccl_tutorial.md)
+  - [实战指南：基准测试与多节点部署](./03_ai_cluster_ops/03_nccl/README.md)
 
 ---
 
