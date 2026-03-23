@@ -13,12 +13,13 @@ from datetime import datetime
 from pathlib import Path
 
 def extract_markdown_links(content):
-    """提取Markdown格式的链接"""
-    # 匹配 [text](url) 格式的链接，支持URL中包含括号
+    """提取Markdown格式的链接（包括图片链接）和 HTML 图片链接"""
     links = []
-    pattern = r'\[([^\]]+)\]\('
     
-    for match in re.finditer(pattern, content):
+    # 匹配 Markdown 格式的链接和图片：[text](url) 或 ![alt](url)
+    pattern_md = r'(?:!?)\[([^\]]*)\]\('
+    
+    for match in re.finditer(pattern_md, content):
         start = match.end()
         text = match.group(1)
         
@@ -43,6 +44,12 @@ def extract_markdown_links(content):
             if url.startswith('<') and url.endswith('>'):
                 url = url[1:-1]
             links.append((text.strip(), url))
+            
+    # 匹配 HTML 格式的图片链接：<img src="url" ... />
+    pattern_html_img = r'<img[^>]+src=["\']([^"\']+)["\']'
+    for match in re.finditer(pattern_html_img, content, re.IGNORECASE):
+        url = match.group(1).strip()
+        links.append(('<img src>', url))
     
     return links
 
@@ -97,8 +104,9 @@ def check_external_url(url, timeout=10):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='检查 Markdown 文件中的链接')
+    parser.add_argument('file', nargs='?', help='指定要检查的 Markdown 文件路径（如果未指定且未使用 --all，则默认检查项目根目录的 README.md）')
     parser.add_argument('--all', action='store_true', help='检查所有 Markdown 文件')
-    parser.add_argument('--type', choices=['local', 'external', 'all'], default='all', help='指定检查的链接类型 (默认: all)')
+    parser.add_argument('--type', choices=['local', 'external', 'all'], default='local', help='指定检查的链接类型 (默认: local)')
     args = parser.parse_args()
 
     # 设置基础目录
@@ -115,11 +123,18 @@ def main():
                 if file.endswith('.md'):
                     md_files.append(os.path.join(root, file))
         print(f"找到 {len(md_files)} 个 Markdown 文件进行检查。")
+    elif args.file:
+        file_path = os.path.abspath(args.file)
+        if not os.path.exists(file_path):
+            print(f"错误：找不到指定的文件 {file_path}")
+            return
+        md_files.append(file_path)
+        print(f"检查指定文件: {file_path}")
     else:
         readme_path = os.path.join(base_dir, 'README.md')
         md_files.append(readme_path)
         print(f"项目根目录: {base_dir}")
-        print(f"检查文件: {readme_path}")
+        print(f"默认检查文件: {readme_path}")
     
     all_invalid_local = []
     all_submodule_links = []
