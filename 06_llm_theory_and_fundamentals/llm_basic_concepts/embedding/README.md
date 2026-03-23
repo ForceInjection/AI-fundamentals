@@ -1,44 +1,31 @@
-# LLM Embeddings 技术指南
+# 文本嵌入 (Text Embeddings) 技术指南
 
-本目录包含大语言模型嵌入（Embeddings）技术的详细介绍和实践指南。
+本目录包含大语言模型嵌入（Embeddings）技术的详细理论解析、演进历史和实践指南。嵌入技术是将自然语言转换为计算机可处理的高维稠密向量的核心基础。
 
-## 1. 内容概览
+## 1. 核心文档
 
-### 2.1 核心文档
+- **[深入了解文本嵌入技术 (Text Embeddings Comprehensive Guide)](text_embeddings_comprehensive_guide.md)** 🌟推荐阅读
+  - 一篇全面的深度长文，详细讲解了从词袋模型 (Bag of Words)、TF-IDF 到 Word2Vec、Transformer 句子嵌入的演进历史。
+  - 涵盖了向量距离计算（L2, 曼哈顿, 点积, 余弦相似度）、降维可视化（PCA, t-SNE）以及聚类、分类、异常检测和 RAG 等实际应用场景。
+- **[LLM 嵌入技术详解：图文指南 (LLM Embeddings Explained)](LLM_embeddings_explained_visual_guide.zh-CN.md)**
+  - 以直观的图解方式解释 LLM 中 Embedding 的工作原理及向量空间的几何意义。
+- **[文本嵌入技术快速入门 (Text Embeddings Guide)](text_embeddings_guide.md)**
+  - 快速上手指南，适合初学者了解 Embedding 的基本概念与调用方式。
+- **[大模型 Embedding 层与独立 Embedding 模型：区别与联系](embedding.md)**
+  - 深入剖析 LLM 内部自带的 Embedding 层与如 BGE、OpenAI text-embedding-3 等外部独立 Embedding 模型的架构差异与协作关系。
 
-- **[LLM Embeddings Explained - A Visual and Intuitive Guide.zh-CN.md](LLM%20Embeddings%20Explained%20-%20A%20Visual%20and%20Intuitive%20Guide.zh-CN.md)** - 可视化嵌入技术指南
-- **[embedding.md](embedding.md)** - 嵌入技术基础概念
-- **[text_embeddings_guide.md](text_embeddings_guide.md)** - 文本嵌入实践指南
+## 2. 图片资源说明
 
-## 2. 学习目标
+- **[`img/`](img/)**: 存放文档中使用的相关配图，包括公式、可视化散点图、热力图等，已根据内容统一规范命名。
+- **[`images/`](images/)**: 存放其他指南文档的历史参考图片。
 
-### 2.1 基础概念
+## 3. 学习路径建议
 
-- 理解嵌入向量的基本原理
-- 掌握嵌入技术的应用场景
-- 了解不同嵌入模型的特点
-
-### 2.2 技术实践
-
-- 学会选择合适的嵌入模型
-- 掌握嵌入向量的生成方法
-- 理解嵌入质量评估标准
-
-### 2.3 应用场景
-
-- 语义搜索与相似度计算
-- 文档检索与推荐系统
-- 聚类分析与分类任务
-
-## 3. 技术栈
-
-- **嵌入模型** - OpenAI、Sentence-BERT、BGE
-- **向量数据库** - Pinecone、Weaviate、Chroma
-- **相似度计算** - 余弦相似度、欧几里得距离
-- **评估指标** - MTEB、BEIR 基准测试
+1. 首先阅读 **[图文指南](LLM_embeddings_explained_visual_guide.zh-CN.md)** 建立直观的向量空间概念。
+2. 随后精读 **[深入了解文本嵌入技术](text_embeddings_comprehensive_guide.md)** 掌握算法演进、相似度计算与可视化实战。
+3. 了解架构差异，阅读 **[大模型 Embedding 层与独立 Embedding 模型的区别](embedding.md)**。
 
 ## 4. 相关资源
 
-- [RAG 技术实践](../../../README.md)
-- [LLM 智能体开发](../../../README.md)
-- [模型微调技术](../../../README.md)
+- [RAG 与向量检索技术](../../../07_rag_and_tools/README.md)
+- [Token 机制解析](../token/README.md)
