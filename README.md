@@ -63,41 +63,41 @@
 
 Kubernetes 已成为云原生 AI 基础设施的事实标准，特别是在推理场景中，它提供了不可替代的弹性调度与资源管理能力。通过 K8s，企业可以构建跨混合云的统一推理平台，实现从 GPU 资源池化到 Serverless 推理的完整闭环，从容应对大模型时代高并发、波动剧烈的流量挑战。
 
-- [**Kubernetes AI 平台实战**](04_cloud_native_ai_platform/k8s/README.md) - 云原生 AI 基础设施建设指南
-- [**Kueue + HAMi 集成方案**](04_cloud_native_ai_platform/k8s/03_kueue_hami_integration.md) - 原生的 AI 工作负载管理与 GPU 虚拟化解决方案
-- [**NVIDIA Container Toolkit 原理分析**](04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md) - 容器化 GPU 支持的底层机制
-- [**NVIDIA K8s Device Plugin 分析**](04_cloud_native_ai_platform/k8s/02_nvidia_k8s_device_plugin_analysis.md) - GPU 设备插件的架构与实现
+- [Kubernetes AI 平台实战](04_cloud_native_ai_platform/k8s/README.md)：云原生 AI 基础设施建设指南
+- [Kueue + HAMi 集成方案](04_cloud_native_ai_platform/k8s/03_kueue_hami_integration.md)：原生的 AI 工作负载管理与 GPU 虚拟化解决方案
+- [NVIDIA Container Toolkit 原理分析](04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md)：容器化 GPU 支持的底层机制
+- [NVIDIA K8s Device Plugin 分析](04_cloud_native_ai_platform/k8s/02_nvidia_k8s_device_plugin_analysis.md)：GPU 设备插件的架构与实现
 
 ### 3.2 存储加速与数据管理
 
-在大模型时代，存储系统面临着前所未有的挑战：海量数据的吞吐、低延迟的访问需求以及跨节点的共享能力。本节探讨了专为 AI 负载设计的存储解决方案。
+在大模型时代，存储系统面临着前所未有的挑战：海量数据的吞吐、低延迟的访问需求以及跨节点的共享能力。探讨专为 AI 负载设计的存储解决方案。
 
-- [**NVIDIA ICMS (Inference Context Memory Storage)**](04_cloud_native_ai_platform/storage/inference_context_memory_storage/01_icms_architecture.md) - 面向推理的 KV Cache 存储层架构
-- [**DeepSeek 3FS 分布式文件系统**](04_cloud_native_ai_platform/storage/deepseek_3fs/01_deepseek_3fs_design_notes.md) - DeepSeek 高性能存储架构设计解析
-- [**JuiceFS 云原生分布式文件系统**](04_cloud_native_ai_platform/storage/juicefs/README.md) - 数据与元数据分离的架构设计，兼容 POSIX 接口，适配多种对象存储后端
-  - [JuiceFS 后端存储变更手册](04_cloud_native_ai_platform/storage/juicefs/02_juicefs_backend_storage_migration_guide.md) - 存储后端迁移与配置变更指南
-  - [JuiceFS 文件修改机制分析](04_cloud_native_ai_platform/storage/juicefs/01_juicefs_file_modification_mechanism_analysis.md) - 深入探讨 JuiceFS 的文件更新与一致性机制
+- [NVIDIA ICMS (Inference Context Memory Storage)](04_cloud_native_ai_platform/storage/inference_context_memory_storage/01_icms_architecture.md)：面向推理的 KV Cache 存储层架构
+- [DeepSeek 3FS 分布式文件系统](04_cloud_native_ai_platform/storage/deepseek_3fs/01_deepseek_3fs_design_notes.md)：DeepSeek 高性能存储架构设计解析
+- [JuiceFS 云原生分布式文件系统](04_cloud_native_ai_platform/storage/juicefs/README.md)：数据与元数据分离的架构设计，兼容 POSIX 接口，适配多种对象存储后端
+  - [JuiceFS 后端存储变更手册](04_cloud_native_ai_platform/storage/juicefs/02_juicefs_backend_storage_migration_guide.md)
+  - [JuiceFS 文件修改机制分析](04_cloud_native_ai_platform/storage/juicefs/01_juicefs_file_modification_mechanism_analysis.md)
 
 ### 3.3 GPU 管理与虚拟化
 
-本节深入探讨 GPU 资源管理、虚拟化技术及切分方案，为构建高效的 GPU 资源池提供技术指导。
+深入探讨 GPU 资源管理、虚拟化技术及切分方案，为构建高效的 GPU 资源池提供技术指导。
 
-- [**GPU 管理技术深度解析**](04_cloud_native_ai_platform/gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md) - GPU 虚拟化、切分及远程调用技术全景
-- [**GPU 虚拟化与切分技术原理**](04_cloud_native_ai_platform/gpu_manager/GPU虚拟化与切分技术原理解析.md) - MIG、vGPU、时分复用等技术原理解析
+- [GPU 管理技术深度解析](04_cloud_native_ai_platform/gpu_manager/GPU%20管理相关技术深度解析%20-%20虚拟化、切分及远程调用.md)：GPU 虚拟化、切分及远程调用技术全景
+- [GPU 虚拟化与切分技术原理](04_cloud_native_ai_platform/gpu_manager/GPU虚拟化与切分技术原理解析.md)：MIG、vGPU、时分复用等技术原理解析
 
-**系列文档：**
+**系列文档**：
 
-- [第一部分：基础理论篇](04_cloud_native_ai_platform/gpu_manager/第一部分：基础理论篇.md) - GPU 架构基础与虚拟化概念
-- [第二部分：虚拟化技术篇](04_cloud_native_ai_platform/gpu_manager/第二部分：虚拟化技术篇.md) - 主流虚拟化技术详解
-- [第三部分：资源管理与优化篇](04_cloud_native_ai_platform/gpu_manager/第三部分：资源管理与优化篇.md) - 资源调度与优化策略
-- [第四部分：实践应用篇](04_cloud_native_ai_platform/gpu_manager/第四部分：实践应用篇.md) - 企业级落地实践
+- [第一部分：基础理论篇](04_cloud_native_ai_platform/gpu_manager/第一部分：基础理论篇.md)
+- [第二部分：虚拟化技术篇](04_cloud_native_ai_platform/gpu_manager/第二部分：虚拟化技术篇.md)
+- [第三部分：资源管理与优化篇](04_cloud_native_ai_platform/gpu_manager/第三部分：资源管理与优化篇.md)
+- [第四部分：实践应用篇](04_cloud_native_ai_platform/gpu_manager/第四部分：实践应用篇.md)
 
-**HAMi 专题：**
+**HAMi 专题**：
 
-- [KAI vs HAMi 对比分析](04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md) - 两种 GPU 共享方案的技术对比
-- [Flex AI 介绍](04_cloud_native_ai_platform/gpu_manager/hami/flex_ai_intro.md) - Flex AI GPU 虚拟化技术
-- [HAMi Prometheus 监控指标](04_cloud_native_ai_platform/gpu_manager/hami/hami-prometheus-metrics.md) - HAMi 可观测性指标详解
-- [HAMi GPU 资源指南](04_cloud_native_ai_platform/gpu_manager/hami/hmai-gpu-resources-guide.md) - HAMi 资源配置与使用指南
+- [KAI vs HAMi 对比分析](04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md)
+- [Flex AI 介绍](04_cloud_native_ai_platform/gpu_manager/hami/flex_ai_intro.md)
+- [HAMi Prometheus 监控指标](04_cloud_native_ai_platform/gpu_manager/hami/hami-prometheus-metrics.md)
+- [HAMi GPU 资源指南](04_cloud_native_ai_platform/gpu_manager/hami/hmai-gpu-resources-guide.md)
 
 ---
 
