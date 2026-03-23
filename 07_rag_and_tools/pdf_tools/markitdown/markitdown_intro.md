@@ -34,7 +34,7 @@ git clone https://github.com/microsoft/markitdown.git
 ```bash
 docker build --network=host -t markitdown:latest .
 
-docker run --network=host  --rm -i markitdown:latest < ~/deepseek_v3.pdf > deepseek_v3.md
+docker run --network=host  --rm -i markitdown:latest < ./assets/deepseek_v3.pdf > deepseek_v3.md
 ```
 
 ---

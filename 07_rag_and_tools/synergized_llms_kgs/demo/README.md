@@ -1,4 +1,4 @@
-# 反电诈 Demo（Synergized LLMs + KGs）— Neo4j + Moonshot LLM
+# 反电诈 Demo（synergized_llms_kgs）— Neo4j + Moonshot LLM
 
 ## 环境准备
 
@@ -13,7 +13,7 @@
 # 在仓库根目录创建虚拟环境
 python3 -m venv .venv
 # 安装 Demo 依赖（路径包含空格，需加引号）
-.venv/bin/python -m pip install -r 'KE/Synergized LLMs + KGs/demo/requirements.txt'
+.venv/bin/python -m pip install -r 'KE/synergized_llms_kgs/demo/requirements.txt'
 ```
 
 ## 启动 Neo4j 容器
@@ -22,7 +22,7 @@ python3 -m venv .venv
 
 ```bash
 # 进入 Demo 目录
-cd 'KE/Synergized LLMs + KGs/demo'
+cd 'KE/synergized_llms_kgs/demo'
 docker-compose up -d neo4j
 ```
 
@@ -35,7 +35,7 @@ docker-compose up -d neo4j
 
 ```bash
 # 从仓库根目录执行（路径包含空格，需加引号）
-.venv/bin/python 'KE/Synergized LLMs + KGs/demo/etl/generate_data.py'
+.venv/bin/python 'KE/synergized_llms_kgs/demo/etl/generate_data.py'
 ```
 
 - 生成至 `demo/data/`，容器已映射到 Neo4j `import` 目录
@@ -46,7 +46,7 @@ docker-compose up -d neo4j
 
 ```bash
 # 从仓库根目录执行（路径包含空格，需加引号）
-.venv/bin/python 'KE/Synergized LLMs + KGs/demo/etl/load_to_neo4j.py'
+.venv/bin/python 'KE/synergized_llms_kgs/demo/etl/load_to_neo4j.py'
 ```
 
 - 包含约束与设备日志、交易转账关系
@@ -57,7 +57,7 @@ docker-compose up -d neo4j
 
 ```bash
 # 从仓库根目录进入 Demo 包所在目录
-cd 'KE/Synergized LLMs + KGs'
+cd 'KE/synergized_llms_kgs'
 .venv/bin/python -m uvicorn demo.api.server:app --reload --port 8000
 ```
 
@@ -106,7 +106,7 @@ curl -s -X POST http://127.0.0.1:8000/agent/verdict_llm \
 
 ```bash
 # 1) 启动 Neo4j
-cd 'KE/Synergized LLMs + KGs/demo'
+cd 'KE/synergized_llms_kgs/demo'
 docker-compose up -d neo4j
 ```
 
@@ -119,18 +119,18 @@ docker-compose up -d neo4j
 ```bash
 # 2) 生成合成数据
 cd '/Users/wangtianqing/Project/AI-fundermentals'
-.venv/bin/python 'KE/Synergized LLMs + KGs/demo/etl/generate_data.py'
+.venv/bin/python 'KE/synergized_llms_kgs/demo/etl/generate_data.py'
 ```
 
 ```text
 # 输出示例
-Data generated in /Users/wangtianqing/Project/AI-fundermentals/KE/Synergized LLMs + KGs/demo/data
+Data generated in /Users/wangtianqing/Project/AI-fundermentals/KE/synergized_llms_kgs/demo/data
 ```
 
 ```bash
 # 3) 导入 Neo4j
 cd '/Users/wangtianqing/Project/AI-fundermentals'
-.venv/bin/python 'KE/Synergized LLMs + KGs/demo/etl/load_to_neo4j.py'
+.venv/bin/python 'KE/synergized_llms_kgs/demo/etl/load_to_neo4j.py'
 ```
 
 ```text
@@ -140,7 +140,7 @@ Import completed
 
 ```bash
 # 4) 验证图谱已落地（节点数）
-cd 'KE/Synergized LLMs + KGs/demo'
+cd 'KE/synergized_llms_kgs/demo'
 docker exec demo-neo4j cypher-shell -u neo4j -p password "MATCH (n) RETURN count(n) AS nodes"
 ```
 
@@ -152,7 +152,7 @@ nodes
 
 ```bash
 # 5) 启动 API（另开一个终端窗口执行）
-cd 'KE/Synergized LLMs + KGs'
+cd 'KE/synergized_llms_kgs'
 /Users/wangtianqing/Project/AI-fundermentals/.venv/bin/python -m uvicorn demo.api.server:app --port 8000
 ```
 
@@ -168,7 +168,7 @@ curl -s http://127.0.0.1:8000/health
 
 ```bash
 # 7) 选取“归集候选账户”（按两天内入账笔数排序）
-cd 'KE/Synergized LLMs + KGs/demo'
+cd 'KE/synergized_llms_kgs/demo'
 docker exec demo-neo4j cypher-shell -u neo4j -p password \
   "MATCH (src:Account)-[t:TRANSFER]->(dst:Account) \
    WHERE t.timestamp >= datetime() - duration({days: 2}) \

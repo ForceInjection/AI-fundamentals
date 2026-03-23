@@ -16,7 +16,7 @@
 
 ```bash
 # 1. 进入 demo 目录
-cd "../Synergized LLMs + KGs/demo"
+cd "../synergized_llms_kgs/demo"
 
 # 2. 启动 Neo4j 服务（后台运行）
 docker-compose up -d
@@ -207,7 +207,7 @@ docker-compose down
 **Q2: 执行 LOAD CSV 时报错 "Couldn't load the external resource"？**
 
 - **原因**: Neo4j 无法找到 CSV 文件。
-- **解决**: 我们的 `docker-compose.yml` 已经配置了自动映射。请确保您是在 `Synergized LLMs + KGs/demo` 目录下启动的 Docker，且该目录下的 `data` 文件夹中包含 CSV 文件。
+- **解决**: 我们的 `docker-compose.yml` 已经配置了自动映射。请确保您是在 `synergized_llms_kgs/demo` 目录下启动的 Docker，且该目录下的 `data` 文件夹中包含 CSV 文件。
 
 ---
 
