@@ -4,11 +4,11 @@
 
 ## 摘要
 
-* **状态驱动与有向图**：LangGraph 通过 `State`（通常用 `TypedDict` 定义）贯穿整个执行流程，所有节点读取并更新状态局部；有向图（Graph）则定义了节点之间的控制流 ([LangChain AI][1])。
-* **节点与边**：每个 **Node** 表示一个执行单元（如 LLM 调用、工具函数、决策逻辑），**Edge** 则可携带条件实现分支或循环，使流程更灵活可控 ([DEV Community][2])。
-* **可循环的工作流**：区别于传统的 DAG（有向无环图），LangGraph 支持**循环**结构（cycles），更适合实现多轮决策与重试机制 ([Medium][3])。
-* **与 LangChain 深度集成**：所有 LangChain 的 `Runnable`（例如 `Chain`、`Tool`、LLM 模型）都可直接作为节点使用，复用生态组件，增强扩展性 ([LangChain AI][1])。
-* **持久化与可视化**：可接入 LangSmith 进行调用跟踪与日志记录，也可通过 `graph.get_graph().draw()` 利用 NetworkX 和 matplotlib 输出流程图，便于调试与监控 ([LangChain][4])。
+- **状态驱动与有向图**：LangGraph 通过 `State`（通常用 `TypedDict` 定义）贯穿整个执行流程，所有节点读取并更新状态局部；有向图（Graph）则定义了节点之间的控制流 ([LangChain AI][1])。
+- **节点与边**：每个 **Node** 表示一个执行单元（如 LLM 调用、工具函数、决策逻辑），**Edge** 则可携带条件实现分支或循环，使流程更灵活可控 ([DEV Community][2])。
+- **可循环的工作流**：区别于传统的 DAG（有向无环图），LangGraph 支持**循环**结构（cycles），更适合实现多轮决策与重试机制 ([Medium][3])。
+- **与 LangChain 深度集成**：所有 LangChain 的 `Runnable`（例如 `Chain`、`Tool`、LLM 模型）都可直接作为节点使用，复用生态组件，增强扩展性 ([LangChain AI][1])。
+- **持久化与可视化**：可接入 LangSmith 进行调用跟踪与日志记录，也可通过 `graph.get_graph().draw()` 利用 NetworkX 和 matplotlib 输出流程图，便于调试与监控 ([LangChain][4])。
 
 ---
 
@@ -23,12 +23,12 @@
 
 ## 二、核心概念
 
-| **概念** | **说明** |
-| ----------- | -------------------------------------------------------- |
-| **State**   | 全局状态，由 `TypedDict` 定义，包含历史消息、中间结果等；每个节点接收并返回部分状态更新。 |
-| **Node**    | 执行单元，可以是调用 `LLM`、执行函数、判断逻辑等；输入当前 `State`，输出新的状态片段。 |
-| **Edge**    | 状态转移路径，可添加条件函数，实现 `if/else` 分支或循环控制。 |
-| **Graph**   | 有向图结构，将多个节点和边连接成完整工作流，编译后产生可执行 `graph.invoke(state)` 方法。 |
+| **概念**  | **说明**                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------- |
+| **State** | 全局状态，由 `TypedDict` 定义，包含历史消息、中间结果等；每个节点接收并返回部分状态更新。 |
+| **Node**  | 执行单元，可以是调用 `LLM`、执行函数、判断逻辑等；输入当前 `State`，输出新的状态片段。    |
+| **Edge**  | 状态转移路径，可添加条件函数，实现 `if/else` 分支或循环控制。                             |
+| **Graph** | 有向图结构，将多个节点和边连接成完整工作流，编译后产生可执行 `graph.invoke(state)` 方法。 |
 
 > **工作原理**：`LangGraph` 会根据图的拓扑与边的判断函数，自动执行对应节点，并将各节点的状态更新按定义合并到全局 `State` 中，直至到达指定的终点（`Finish Point`） ([DEV Community][2])。
 
@@ -93,16 +93,16 @@ def tool_node(_: AgentState) -> dict:
 def final_node(state: AgentState) -> dict:
     # 获取工具的响应，或者默认消息
     reply = state.get("tool_response", "很高兴为您服务！")
-    
+
     # 获取当前时间戳，作为元数据
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
     # 可以添加额外的元数据，例如，用户的原始输入
     user_input = state["messages"][-1].content
-    
+
     # 打印出回复信息及其附加内容
     print(f"回复: {reply}, 时间: {timestamp}, 用户输入: {user_input}")
-    
+
     # 返回包含原始消息和回复的消息记录
     return {
         "messages": state["messages"] + [AIMessage(content=reply)],
@@ -155,14 +155,14 @@ def test_run():
 
 ### 4.1 流程图生成
 
-```python
+````python
 #%% 8. 使用 Mermaid 可视化工作流
 def visualize_workflow_with_mermaid(graph):
     mermaid_code = graph.get_graph().draw_mermaid()  # 获取 Mermaid 格式代码
-    
+
     # 通过 IPython 显示 Mermaid 图
     display(Markdown(f"```mermaid\n{mermaid_code}\n```"))
-```
+````
 
 输出结果：
 
@@ -196,7 +196,7 @@ graph TD;
 #%% 9. LangSmith 追踪（可选）
 def run_with_langsmith(input_state):
     if "LANGSMITH_API_KEY" in os.environ:
-    
+
         @traceable
         def traced_fn(state):
             return graph.invoke(state)
@@ -207,7 +207,7 @@ def run_with_langsmith(input_state):
             print(f"[{msg.type}]: {msg.content}")
     else:
         print("\n跳过 LangSmith 集成：未设置 LANGSMITH_API_KEY")
-        
+
 #%% 10. 主入口
 if __name__ == "__main__":
     visualize_workflow_with_mermaid(graph)
@@ -237,19 +237,19 @@ if __name__ == "__main__":
 
 本文通过智能客服示例，演示了 `LangGraph` 的基本使用流程：
 
-* 定义全局 `State`，存放上下文与中间结果
-* 编写节点（`Node`）实现决策、工具调用、回复生成
-* 用有向图（`Graph`）组织节点与条件边
-* 编译并调用流程，结合 `NetworkX` 可视化
+- 定义全局 `State`，存放上下文与中间结果
+- 编写节点（`Node`）实现决策、工具调用、回复生成
+- 用有向图（`Graph`）组织节点与条件边
+- 编译并调用流程，结合 `NetworkX` 可视化
 
 `LangGraph` 使得复杂、有状态的 `AI` 智能体开发变得模块化、可视化且易于维护，是构建企业级对话系统和多智能体工作流的利器。
 
 ## 七、参考
 
-[1]: https://langchain-ai.github.io/langgraph/tutorials/introduction "LangGraph Quickstart - GitHub Pages"  
-[2]: https://dev.to/sreeni5018/langgraph-uncovered-building-stateful-multi-agent-applications-with-llms-part-i-p86 "LangGraph Uncovered: Building Stateful Multi-Agent Applications ..."  
-[3]: https://medium.com/%40lorevanoudenhove/how-to-build-ai-agents-with-langgraph-a-step-by-step-guide-5d84d9c7e832 "How to Build AI Agents with LangGraph: A Step-by-Step Guide"  
-[4]: https://www.langchain.com/langgraph "LangGraph - LangChain"  
-[5]: https://medium.com/%40kevinnjagi83/langgraph-building-stateful-multi-ai-agents-b8427238da91 "LangGraph: Building Stateful AI Agents | by Kevinnjagi | Medium"  
-[6]: https://www.linkedin.com/pulse/building-stateful-ai-agents-langgraph-short-tutorial-mukherjee-lf0me "Building Stateful AI Agents with LangGraph: A Short Tutorial with ..."  
+[1]: https://langchain-ai.github.io/langgraph/tutorials/introduction "LangGraph Quickstart - GitHub Pages"
+[2]: https://dev.to/sreeni5018/langgraph-uncovered-building-stateful-multi-agent-applications-with-llms-part-i-p86 "LangGraph Uncovered: Building Stateful Multi-Agent Applications ..."
+[3]: https://medium.com/%40lorevanoudenhove/how-to-build-ai-agents-with-langgraph-a-step-by-step-guide-5d84d9c7e832 "How to Build AI Agents with LangGraph: A Step-by-Step Guide"
+[4]: https://www.langchain.com/langgraph "LangGraph - LangChain"
+[5]: https://medium.com/%40kevinnjagi83/langgraph-building-stateful-multi-ai-agents-b8427238da91 "LangGraph: Building Stateful AI Agents | by Kevinnjagi | Medium"
+[6]: https://www.linkedin.com/pulse/building-stateful-ai-agents-langgraph-short-tutorial-mukherjee-lf0me "Building Stateful AI Agents with LangGraph: A Short Tutorial with ..."
 [7]: https://arxiv.org/abs/2412.03801 "Agent AI with LangGraph: A Modular Framework for Enhancing Machine Translation Using Large Language Models"
