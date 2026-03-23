@@ -167,8 +167,8 @@ KVCacheManager                 ← 调度器与 KV Cache 系统的接口
 
 核心文件：
 
-| 文件                                                                                            | 职责                                  |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 文件                                                                                                                                        | 职责                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | [vllm/v1/core/kv_cache_manager.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_manager.py)                         | KVCacheManager 入口                   |
 | [vllm/v1/core/kv_cache_coordinator.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_coordinator.py)                 | 三类 Coordinator                      |
 | [vllm/v1/core/single_type_kv_cache_manager.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/single_type_kv_cache_manager.py) | 各注意力类型的 Manager                |

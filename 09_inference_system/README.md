@@ -4,6 +4,8 @@
 
 本文档集介绍了在不同集群规模下进行推理优化的技术方案，涵盖从理论基础到实践应用的完整技术体系。
 
+---
+
 ## 2. 参考设计 (Reference Design)
 
 本章节按照“理论 → 选型与架构 → 场景优化 → 实施运维”的路径组织关键文档，覆盖从概念与指标定义到工程落地的主要决策点。
@@ -85,12 +87,12 @@
 
 ### 5.2 vLLM 引擎优化
 
-- **[Hybrid KV Cache Manager 深度解析](vllm/vllm_hybrid_kv_cache_manager_deep_dive.md)** - vLLM 针对混合注意力架构（Sliding Window/Mamba/Local Chunked）的显存优化机制与兼容性分析
-- **[vLLM WideEP 架构](vllm/vllm_deepseek_blackwell_wide_ep.md)** - vLLM 宽端点 (Wide Endpoint) 架构解析
-- **[vLLM Router 架构解析](vllm/vllm_router.md)** - 高性能、轻量级请求转发系统
-- **[vLLM Semantic Router 深度解析](vllm/vllm_semantic_router_deep_dive.md)** - 基于语义的智能路由策略
-- **[vLLM GB200 性能优化报告](vllm/vllm_gb200_optimization.pptx)**
-- **[Scaling DeepSeek on Blackwell](vllm/scaling_deepseek_blackwell.pptx)**
+- **[Hybrid KV Cache Manager 深度解析](vllm/module_analysis/vllm_hybrid_kv_cache_manager_deep_dive.md)** - vLLM 针对混合注意力架构（Sliding Window/Mamba/Local Chunked）的显存优化机制与兼容性分析
+- **[vLLM WideEP 架构](vllm/hardware_optimization/vllm_deepseek_blackwell_wide_ep.md)** - vLLM 宽端点 (Wide Endpoint) 架构解析
+- **[vLLM Router 架构解析](vllm/related_module/vllm_router.md)** - 高性能、轻量级请求转发系统
+- **[vLLM Semantic Router 深度解析](vllm/related_module/vllm_semantic_router_deep_dive.md)** - 基于语义的智能路由策略
+- **[vLLM GB200 性能优化报告](vllm/hardware_optimization/vllm_gb200_optimization.pptx)**
+- **[Scaling DeepSeek on Blackwell](vllm/hardware_optimization/scaling_deepseek_blackwell.pptx)**
 
 ---
 
