@@ -1,83 +1,64 @@
-# 硬件与架构 (Hardware Architecture)
+# 硬件架构与互连技术
 
-本章节深入探讨 AI 加速器的底层硬件架构，旨在帮助读者理解计算底座的设计原理与性能特征。
+## 1. 概述
 
-## 1. 硬件基础知识
+本模块聚焦于 AI 算力基础设施的最底层，即硬件加速器与系统互连架构。通过从单机计算芯片（GPU、TPU）的设计哲学，到系统内的互连总线（PCIe、NVLink），再到跨节点的数据传输技术（GPUDirect）的系统性解析，帮助读者建立对 AI 计算底座从微观到宏观的完整认知。这对于后续的性能评估与架构调优至关重要。
 
-在构建现代 AI 基础设施时，从 AI Infra 的视角来看，我们需要掌握以下核心硬件体系：
+---
 
-### 1.1 核心组件
+## 2. 基础计算芯片架构
 
-1. **计算硬件 (Compute)**
-   - **GPU 架构**：SIMT 线程模型、CUDA 核心原理、Tensor Core 加速单元。
-   - **内存层次**：寄存器 (Registers) -> 共享内存 (Shared Memory) -> 全局内存 (Global Memory) -> HBM/GDDR。
-   - **性能指标**：FLOPS (每秒浮点运算次数)、Memory Bandwidth (内存带宽)。
+本章节探讨 AI 计算中最核心的加速器架构设计，这是理解并行计算与张量运算的基础。我们分别剖析了通用图形处理器（GPU）与专门为神经网络设计的处理器（TPU、NPU）的底层特性。
 
-2. **互连技术 (Interconnect)**
-   - **片间互连**：NVLink、CXL，解决单机多卡通信瓶颈。
-   - **节点互连**：InfiniBand (IB)、RoCEv2，构建大规模分布式训练集群。
-   - **系统总线**：PCIe 4.0/5.0，CPU 与 GPU 之间的高速通道。
+### 2.1 NVIDIA GPU 架构
 
-3. **存储与网络 (Storage & Network)**
-   - **高性能存储**：NVMe SSD、GPUDirect Storage (GDS)。
-   - **网络架构**：Fat-Tree 拓扑、Rail-optimized 设计。
+NVIDIA GPU 是目前 AI 计算的主力。本小节提供了从架构特性到大模型算力选型的全面分析。
 
-### 1.2 深度阅读
+- **[深入理解 GPU 架构](nvidia/understand_gpu_architecture/README.md)**：包含 GPU 与 CPU 的特性对比、内存层次模型（全局内存、共享内存等），以及 Tesla V100、RTX 5000 等具体硬件实例的分析。
+- **[GPGPU vs NPU：大模型推理训练对比](nvidia/GPGPU_vs_NPU_大模型推理训练对比.md)**：探讨在大语言模型时代，不同架构芯片在训练与推理场景下的优劣势与选型指南。
 
-- [**AI 基础设施延迟金字塔**](performance/ai_latency_pyramid.md) - **必读**！建立对系统性能数量级的第一性认知。
-- [**NVIDIA GB300 NVL72**](superchips/nvidia_gb300.md) - 下一代 AI 计算底座，Blackwell 架构与 NVL72 机架级互连。
-- [**NVLink-C2C 详解**](superchips/nvlink_c2c.md) - 突破内存墙的关键，Chip-to-Chip 异构互连技术。
-- [**PCIe 总线技术大全**](./pcie/01_pcie_comprehensive_guide.md) - 深入理解 PCIe 总线架构、带宽计算和性能优化。
-- [**Linux PCIe P2PDMA 技术介绍**](pcie/02_p2pdma_technology.md) - 详解设备直连 DMA 技术原理与 GDS 实践。
-- [**NVLink 技术入门**](nvlink/nvlink_intro.md) - NVIDIA 高速互连技术的原理与应用场景。
-- [**NVIDIA DGX SuperPOD**](https://mp.weixin.qq.com/s/a64Qb6DuAAZnCTBy8g1p2Q) - 企业级 AI 超算集群的架构设计与部署实践。
+### 2.2 Google TPU 架构
 
-## 2. 芯片架构对比
+TPU 代表了另一条专为深度学习优化的技术路线，通过脉动阵列（Systolic Array）实现极高的能效比。
 
-针对不同场景（训练 vs 推理），选择合适的计算芯片至关重要。
+- **[TPU 101：深度学习专用加速器架构解析](tpu/tpu%20101.md)**：探索 TPU 的设计哲学、核心计算单元原理及其与 GPU 的差异。
 
-- [**GPGPU vs NPU：大模型推理训练对比**](nvidia/GPGPU_vs_NPU_大模型推理训练对比.md)
-  - 深入分析 GPGPU (通用图形处理器) 与 NPU (神经网络处理器) 的架构差异。
-  - 探讨两者在 LLM 训练与推理场景下的性能表现与适用性。
+---
 
-## 3. 目录导航
+## 3. 高速互连与数据传输技术
 
-### 3.1 [NVIDIA GPU 架构](nvidia/README.md)
+随着模型规模的增长，单芯片的算力已无法满足需求，芯片间、节点间的数据传输成为系统的主要瓶颈（即“内存墙”与“IO 墙”）。本章节从基础总线到高级直通技术，系统解析现代互连架构。
 
-深入解析 NVIDIA GPU 的硬件设计、内存层次结构及性能特性。
+### 3.1 基础系统总线与片间互连
 
-- **架构基础**：[GPU 特性](nvidia/gpu_characteristics.md)、[内存模型](nvidia/gpu_memory.md)
-- **硬件实例**：[Tesla V100](nvidia/tesla_v100.md)、[RTX 5000](nvidia/rtx_5000.md) 架构分析
-- **实践练习**：设备查询与带宽测试
+系统总线与专用互连链路构成了单机多卡以及异构计算的通信基础。
 
-### 3.2 [Google TPU 架构](tpu/tpu%20101.md)
+- **[PCIe 总线技术大全](pcie/01_pcie_comprehensive_guide.md)**：从物理层到协议层全面解析 PCIe 总线架构及带宽演进。
+- **[Linux PCIe P2PDMA 技术介绍](pcie/02_p2pdma_technology.md)**：详解设备直连 DMA 技术在 Linux 内核中的实现原理。
+- **[NVLink 技术入门](nvlink/nvlink_intro.md)**：介绍 NVIDIA 为突破 PCIe 带宽瓶颈而设计的专有高速 GPU 互连方案。
 
-探索 Google TPU (Tensor Processing Unit) 的设计哲学与脉动阵列架构。
+### 3.2 高级直通技术（GPUDirect）
 
-- **TPU 101**：深度学习专用加速器架构解析
-- **对比分析**：TPU vs GPU
+GPUDirect 是一系列旨在消除 CPU 与系统内存参与，实现设备间直接数据传输的高级技术。
 
-### 3.3 [AI Superchip 架构](superchips/nvidia_gb300.md)
+- **[NVIDIA GPUDirect P2P 技术详解](gpudirect/02_gpudirect_p2p.md)**：探讨节点内多 GPU 之间如何通过 PCIe 或 NVLink 实现高速对等通信。
+- **[NVIDIA GPUDirect RDMA 与 Storage 技术详解](gpudirect/01_gpudirect_technology.md)**：深入解析如何通过 RDMA 实现跨节点的网卡到 GPU 直接通信，以及通过 GDS 实现存储到 GPU 的直接数据加载。
 
-深入解析 NVIDIA Grace Hopper/Blackwell 等 Superchip 的异构融合架构。
+---
 
-- **核心架构**：[NVIDIA GB300 NVL72](superchips/nvidia_gb300.md) - 机架级计算系统架构解析
-- **关键互连**：[NVLink-C2C](superchips/nvlink_c2c.md) - 芯片级高速互连技术详解
+## 4. 异构融合架构与系统性能评估
 
-### 3.4 [PCIe 与互连技术](./pcie/01_pcie_comprehensive_guide.md)
+在掌握了基础芯片与互连技术后，本章节将视角提升至系统级与机架级，探讨下一代超级芯片架构以及如何对整体系统性能进行宏观评估。
 
-- [**PCIe 总线技术大全**](./pcie/01_pcie_comprehensive_guide.md)：从物理层到协议层的全面解析。
-- [**Linux PCIe P2PDMA**](pcie/02_p2pdma_technology.md)：深入内核与硬件实现，探讨如何打破数据传输墙。
-- [**NVLink 技术**](nvlink/nvlink_intro.md)：突破 PCIe 瓶颈的 GPU 高速互连方案。
+### 4.1 AI Superchip 与机架级架构
 
-### 3.5 [GPUDirect 技术](gpudirect/01_gpudirect_technology.md)
+随着 Blackwell 架构的推出，计算节点的边界正在被重新定义。
 
-详细解析 NVIDIA GPUDirect 系列技术，重点关注解决“内存墙”与“IO 墙”问题的核心方案。
+- **[NVLink-C2C 详解](superchips/nvlink_c2c.md)**：解析打破内存墙的关键——基于 `Chip-to-Chip` 的异构融合互连技术。
+- **[NVIDIA GB300 NVL72 架构解析](superchips/nvidia_gb300.md)**：探讨基于下一代 Blackwell 架构的机架级（Rack-Scale）计算系统设计。
 
-- **基础技术**：[GPUDirect P2P](gpudirect/02_gpudirect_p2p.md) - 节点内 GPU 高速互联
-- **核心技术**：[GPUDirect RDMA](gpudirect/01_gpudirect_technology.md#2-gpudirect-rdma-技术) 与 [GPUDirect Storage (GDS)](gpudirect/01_gpudirect_technology.md#3-gpudirect-storage-gds-技术)
-- **原理解析**：PCI BAR 映射、DMA 路径优化、Zero-Copy 机制
+### 4.2 性能参考指标
 
-### 3.6 [性能参考](performance/ai_latency_pyramid.md)
+在进行架构设计和性能调优时，建立对系统各层级延迟的数量级认知至关重要。
 
-- [**AI 基础设施延迟金字塔**](performance/ai_latency_pyramid.md)：提供从寄存器访问到跨节点通信的各级延迟参考数据，辅助性能调优与架构设计。
+- **[AI 基础设施延迟金字塔](performance/ai_latency_pyramid.md)**：提供从寄存器访问、内存读写到跨节点网络通信的各级延迟参考基准数据。
