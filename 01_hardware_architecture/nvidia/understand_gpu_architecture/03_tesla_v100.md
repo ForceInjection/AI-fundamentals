@@ -2,9 +2,9 @@
 
 **原文：[Cornell University -> Cornell Virtual Workshop -> Understanding GPU Architecture -> GPU Example: Tesla V100](https://cvw.cac.cornell.edu/gpu-architecture/gpus-frontera-rtx-5000/index)**
 
-It's fine to have a general understanding of what graphics processing units can be used for, and to know conceptually how they work. But at the actual hardware level, what does a particular GPU consist of, if one peeks "under the hood"? Sometimes the best way to learn about a certain type of device is to consider one or two concrete examples. First we'll take detailed look at the Tesla V100, one of the NVIDIA models that has been favored for HPC applications. In a subsequent topic, we do a similar deep dive into the [Quadro RTX 5000](04_04_rtx_5000.md), a GPU which is found in TACC's Frontera.
+It's fine to have a general understanding of what graphics processing units can be used for, and to know conceptually how they work. But at the actual hardware level, what does a particular GPU consist of, if one peeks "under the hood"? Sometimes the best way to learn about a certain type of device is to consider one or two concrete examples. First we'll take detailed look at the Tesla V100, one of the NVIDIA models that has been favored for HPC applications. In a subsequent topic, we do a similar deep dive into the [Quadro RTX 5000](04_rtx_5000.md), a GPU which is found in TACC's Frontera.
 
-大致了解图形处理单元的用途，并从概念上了解它们的工作原理，这很好。但在实际硬件层面，如果深入了解，特定 GPU 由什么组成？有时，了解某种设备的最佳方法是考虑一两个具体示例。首先，我们将详细了解 Tesla V100，这是 NVIDIA 型号之一，在 HPC 应用方面备受青睐。在后续主题中，我们将对 [Quadro RTX 5000](04_04_rtx_5000.md) 进行类似的深入研究，这是 TACC Frontera 中的 GPU。
+大致了解图形处理单元的用途，并从概念上了解它们的工作原理，这很好。但在实际硬件层面，如果深入了解，特定 GPU 由什么组成？有时，了解某种设备的最佳方法是考虑一两个具体示例。首先，我们将详细了解 Tesla V100，这是 NVIDIA 型号之一，在 HPC 应用方面备受青睐。在后续主题中，我们将对 [Quadro RTX 5000](04_rtx_5000.md) 进行类似的深入研究，这是 TACC Frontera 中的 GPU。
 
 ## NVIDIA Tesla V100
 
@@ -196,9 +196,9 @@ If each POWER9 processor had just one V100 attached to it, that single connectio
 
 如果每个 POWER9 处理器只连接一个 V100，那么该单一连接就可以达到 300 GB/s 的峰值双向带宽。实际上，其中一个处理器的带宽被分配给两个连接的 GPU，每个 GPU 提供 150 GB/s，而这些 GPU 又通过 150 GB/s 的链路相互连接。每个节点中的第二个处理器也有类似的安排，有 2 个自己的连接 GPU。
 
-The L2 cache plays a key role in moving data from the host to the device's global memory, as well as from global memory to the SMs and CUDA cores. The full memory hierarchy and the properties of the various caches within it were [detailed in the GPU Memory topic](02_02_gpu_memory.md).
+The L2 cache plays a key role in moving data from the host to the device's global memory, as well as from global memory to the SMs and CUDA cores. The full memory hierarchy and the properties of the various caches within it were [detailed in the GPU Memory topic](02_gpu_memory.md).
 
-L2 缓存在将数据从主机移动到设备的全局内存以及从全局内存移动到 SM 和 CUDA 核心方面发挥着关键作用。完整的内存层次结构及其内部各种缓存的属性[在 GPU 内存主题中详细介绍](02_02_gpu_memory.md)。
+L2 缓存在将数据从主机移动到设备的全局内存以及从全局内存移动到 SM 和 CUDA 核心方面发挥着关键作用。完整的内存层次结构及其内部各种缓存的属性[在 GPU 内存主题中详细介绍](02_gpu_memory.md)。
 
 In conclusion, the high flop rate of a GPU is only meaningful if the data rate from and to the host can keep up. NVLink 2.0 and HBM2 may therefore be crucial in allowing data-heavy applications to use the full speed of the V100. In any case, it is a viable option for applications that need FP64 precision.
 

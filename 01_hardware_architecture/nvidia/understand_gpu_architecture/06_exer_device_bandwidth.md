@@ -86,7 +86,7 @@ The final bandwidth test above has a rather deceptive name. It is _not_ a measur
 
 As a follow-on to the above tests, you can try building and running a different sample code that is supplied with CUDA, in order to measure the speed of transfers that go directly from each of the attached GPU devices to each of the other attached devices. NVIDIA's term for this is peer-to-peer transfers. If no direct path is present, the transfer is routed through the host.
 
-In practice, for the types of multi-GPU platforms described in this Virtual Workshop topic, the direct transfers should take place at least as fast as the host-to-device or device-to-host transfers. However, as mentioned in the [discussion of interconnects for the RTX 5000](04_04_rtx_5000.md), it turns out that direct routing may not be faster in practice.
+In practice, for the types of multi-GPU platforms described in this Virtual Workshop topic, the direct transfers should take place at least as fast as the host-to-device or device-to-host transfers. However, as mentioned in the [discussion of interconnects for the RTX 5000](04_rtx_5000.md), it turns out that direct routing may not be faster in practice.
 
 To complete this bonus exercise, repeat the above steps, but replace step 3 with the following:
 

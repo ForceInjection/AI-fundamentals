@@ -32,16 +32,16 @@ Worker (OffloadingHandler)
 
 Native Offloading 的核心代码分布在以下文件中：
 
-| 文件                                                                            | 职责                                          |
-| ------------------------------------------------------------------------------- | --------------------------------------------- |
-| [vllm/v1/kv_offload/abstract.py](../vllm/v1/kv_offload/abstract.py)             | `OffloadingManager` 抽象基类定义              |
-| [vllm/v1/kv_offload/arc_manager.py](../vllm/v1/kv_offload/arc_manager.py)       | ARC (Adaptive Replacement Cache) 淘汰策略实现 |
-| [vllm/v1/kv_offload/lru_manager.py](../vllm/v1/kv_offload/lru_manager.py)       | LRU 淘汰策略实现                              |
-| [vllm/v1/kv_offload/backends/cpu.py](../vllm/v1/kv_offload/backends/cpu.py)     | CPU 后端存储管理                              |
-| [vllm/v1/kv_offload/worker/cpu_gpu.py](../vllm/v1/kv_offload/worker/cpu_gpu.py) | GPU-CPU 数据传输处理器                        |
-| [vllm/v1/kv_offload/spec.py](../vllm/v1/kv_offload/spec.py)                     | Offloading 配置规范                           |
-| [vllm/v1/kv_offload/mediums.py](../vllm/v1/kv_offload/mediums.py)               | `BlockIDsLoadStoreSpec` 及子类定义            |
-| [vllm/config/cache.py](../vllm/config/cache.py)                                 | `CacheConfig` 中的 offloading 配置项          |
+| 文件                                                                                                                                           | 职责                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| [vllm/v1/kv_cache_interface/abstract.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/abstract.py)             | `OffloadingManager` 抽象基类定义              |
+| [vllm/v1/kv_cache_interface/arc_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/arc_manager.py)       | ARC (Adaptive Replacement Cache) 淘汰策略实现 |
+| [vllm/v1/kv_cache_interface/lru_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/lru_manager.py)       | LRU 淘汰策略实现                              |
+| [vllm/v1/kv_cache_interface/backends/cpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/backends/cpu.py)     | CPU 后端存储管理                              |
+| [vllm/v1/kv_cache_interface/worker/cpu_gpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/worker/cpu_gpu.py) | GPU-CPU 数据传输处理器                        |
+| [vllm/v1/kv_cache_interface/spec.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/spec.py)                     | Offloading 配置规范                           |
+| [vllm/v1/kv_cache_interface/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/mediums.py)               | `BlockIDsLoadStoreSpec` 及子类定义            |
+| [vllm/config/cache.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/config/cache.py)                                                 | `CacheConfig` 中的 offloading 配置项          |
 
 ---
 
@@ -138,7 +138,7 @@ class SingleDirectionOffloadingHandler:
 
 ### 4.3 底层操作
 
-核心是 [`swap_blocks`](../vllm/_custom_ops.py#L2580-L2606) CUDA kernel：
+核心是 [`swap_blocks`](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/_custom_ops.py#L2580-L2606) CUDA kernel：
 
 ```python
 def swap_blocks(
@@ -223,7 +223,7 @@ class ARCOffloadingManager:
 
 ### 6.2 代码证据
 
-在 [vllm/v1/kv_offload/mediums.py](../vllm/v1/kv_offload/mediums.py) 中，`CPULoadStoreSpec` 继承自 `BlockIDsLoadStoreSpec`，仅支持单个 `block_ids` 列表：
+在 [vllm/v1/kv_cache_interface/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/mediums.py) 中，`CPULoadStoreSpec` 继承自 `BlockIDsLoadStoreSpec`，仅支持单个 `block_ids` 列表：
 
 ```python
 class BlockIDsLoadStoreSpec(LoadStoreSpec, ABC):
@@ -246,7 +246,7 @@ block_ids: tuple[list[int], ...]  # 每个 group 一个 list
 
 ### 6.3 官方文档说明
 
-在 [docs/design/metrics.md](../docs/design/metrics.md#kv-cache-offloading) 中提到：
+在 [docs/design/metrics.md](https://github.com/vllm-project/vllm/blob/v0.18.0/docs/design/metrics.md#kv-cache-offloading) 中提到：
 
 > In this mode, when a request is preempted (e.g. to make room in KV cache to complete other requests), we swap kv cache blocks out to CPU memory. This is also known as "KV cache offloading" and is configured with `--swap-space` and `--preemption-mode`.
 
@@ -260,7 +260,7 @@ Native Offloading 的测试覆盖了单元测试和端到端两个层面。
 
 ### 7.1 基础功能测试
 
-文件：[tests/v1/kv_offload/test_cpu_manager.py](../tests/v1/kv_offload/test_cpu_manager.py)
+文件：[tests/v1/kv_cache_interface/test_cpu_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_cache_interface/test_cpu_manager.py)
 
 ```python
 def test_cpu_manager():
@@ -281,7 +281,7 @@ def test_cpu_manager():
 
 ### 7.2 端到端测试
 
-文件：[tests/v1/kv_offload/test_cpu_offloading.py](../tests/v1/kv_offload/test_cpu_offloading.py)
+文件：[tests/v1/kv_cache_interface/test_cpu_offloading.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_cache_interface/test_cpu_offloading.py)
 
 ```python
 def test_cpu_offloading(cpu_block_size, attn_backend):
@@ -428,6 +428,6 @@ vLLM 的 **Native KV Cache Offloading** 是一个轻量级、高性能的 CPU of
 ## 参考文献
 
 - [1] vLLM 项目仓库：[vllm](https://github.com/vllm-project/vllm)
-- [2] vLLM Metrics 设计文档（含 KV Cache Offloading 历史背景说明）：[docs/design/metrics.md](../docs/design/metrics.md#kv-cache-offloading)
+- [2] vLLM Metrics 设计文档（含 KV Cache Offloading 历史背景说明）：[docs/design/metrics.md](https://github.com/vllm-project/vllm/blob/v0.18.0/docs/design/metrics.md#kv-cache-offloading)
 - [3] LMCache 项目仓库：[LMCache](https://github.com/LMCache/LMCache)
 - [4] ARC 算法论文：Nimrod Megiddo, Dharmendra S. Modha, "ARC: A Self-Tuning, Low Overhead Replacement Cache", FAST 2003
