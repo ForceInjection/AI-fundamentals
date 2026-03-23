@@ -1,6 +1,8 @@
 # SFT 微调实战与指南
 
-本项目旨在提供大模型监督微调（Supervised Fine-Tuning, SFT）的实战示例与理论指南。包含基于 Qwen2 模型的微调代码以及垂域模型微调的详细文档，帮助开发者快速掌握从理论到实践的完整流程。
+本项目旨在提供**大模型监督微调**（Supervised Fine-Tuning, SFT）的实战示例与理论指南。包含基于 Qwen2 模型的微调代码以及垂域模型微调的详细文档，帮助开发者快速掌握从理论到实践的完整流程。
+
+---
 
 ## 1. 内容列表
 
@@ -9,7 +11,11 @@
 - **`train_qwen2.ipynb`**: Qwen2 大模型指令微调的 Jupyter Notebook 实战教程。演示了如何使用 SwanLab、ModelScope 和 Transformers 库对 Qwen2-1.5B-Instruct 模型进行微调。
 - **`一文入门垂域模型SFT微调.md`**: 深入解析垂域模型 SFT 微调的理论、流程与最佳实践。以金融领域“企业年报分析助手”为例，详细阐述了从数据准备到模型部署的全过程。
 
+---
+
 ## 2. 快速开始
+
+本节介绍了运行实战案例所需的基础环境与数据准备流程。
 
 ### 2.1 环境准备
 
@@ -30,12 +36,16 @@ pip install torch swanlab modelscope transformers datasets peft pandas accelerat
 
 ### 2.3 运行微调
 
-使用 Jupyter Lab 或 VS Code 打开 `train_qwen2.ipynb`，按顺序执行代码单元格即可开始微调流程。主要步骤包括：
+使用 Jupyter Lab 或 VS Code 打开 `train_qwen2.ipynb`，按顺序执行代码单元格即可开始微调流程。
 
-1. 环境与数据处理
-2. 模型与 Tokenizer 加载
-3. LoRA 配置与模型训练
-4. 推理验证
+主要步骤包括：
+
+1. 环境与数据处理。
+2. 模型与 Tokenizer 加载。
+3. LoRA 配置与模型训练。
+4. 推理验证。
+
+---
 
 ## 3. SFT 理论概览
 
@@ -53,7 +63,7 @@ pip install torch swanlab modelscope transformers datasets peft pandas accelerat
 
 ### 3.2 微调流程图解
 
-SFT 的核心工作流程如下：
+SFT 的核心工作流程如下。
 
 1. **数据准备**: 涉及文本抽取、清洗、去重以及 Prompt-Response 对的构建。
 2. **模型选择**: 根据场景需求与资源预算选择基座模型（如 Qwen, Baichuan, LLaMA 等）。
@@ -61,8 +71,10 @@ SFT 的核心工作流程如下：
 4. **验证评估**: 使用自动化评测工具评估模型的准确率、召回率等指标。
 5. **部署上线**: 灰度发布并进行持续的在线监控。
 
+---
+
 ## 4. 参考资源
 
-- [Qwen2 大模型指令微调入门实战](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA)
-- [SwanLab 官方文档](https://swanlab.cn)
-- [ModelScope 社区](https://modelscope.cn)
+- [Qwen2 大模型指令微调入门实战](https://mp.weixin.qq.com/s/Atf61jocM3FBoGjZ_DZ1UA) - 入门级实战教程。
+- [SwanLab 官方文档](https://swanlab.cn) - SwanLab 官方使用手册。
+- [ModelScope 社区](https://modelscope.cn) - 模型与数据集社区门户。
