@@ -557,8 +557,8 @@
 
 ### 必备资源
 
-- **理论文档**：Part1-Multi-Agent-AI-Fundamentals.md（多智能体AI系统基础：理论与框架）
-- **实战文档**：Part2-Enterprise-Multi-Agent-System-Implementation.md（企业级多智能体AI系统构建实战）
+- **理论文档**：part1_multi_agent_ai_fundamentals.md（多智能体AI系统基础：理论与框架）
+- **实战文档**：part2_enterprise_multi_agent_system_implementation.md（企业级多智能体AI系统构建实战）
 - **代码仓库**：完整的multi_agent_system项目代码
 - **开发环境**：Python 3.8+、Docker、相关依赖包
 
