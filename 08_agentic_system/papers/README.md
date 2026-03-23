@@ -4,8 +4,8 @@
 
 ## 1. 论文解读
 
-- [**A Survey on Agent Workflow**](./agent-workflow-survey.md) - 系统性梳理了 24 个主流 Agent 框架，提出了基于 11 维功能指标与 6 维架构指标的评估体系，是了解 Agent 工作流现状的首选资料。
-- [**Deep Research Agents**](./deepresearch-agent.md) - 深入定义了深度研究智能体（DR Agents）的核心能力，探讨了其在动态推理、长程规划与结构化报告生成方面的技术突破。
+- [**A Survey on Agent Workflow**](./agent_workflow_survey.md) - 系统性梳理了 24 个主流 Agent 框架，提出了基于 11 维功能指标与 6 维架构指标的评估体系，是了解 Agent 工作流现状的首选资料。
+- [**Deep Research Agents**](./deepresearch_agent.md) - 深入定义了深度研究智能体（DR Agents）的核心能力，探讨了其在动态推理、长程规划与结构化报告生成方面的技术突破。
 
 ---
 

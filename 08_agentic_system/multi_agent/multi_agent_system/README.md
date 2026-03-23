@@ -55,10 +55,13 @@ multi_agent_system/
 │   │   └── analysis_agent.py        # 📊 分析专家智能体
 │   ├── 📡 communication/             # 通信中间件
 │   │   └── message_bus.py           # 🚌 企业级消息总线
+│   ├── 📊 monitoring/                # 监控与追踪
+│   │   └── langsmith_integration.py # 📈 LangSmith 监控集成
 │   ├── 🔄 workflows/                 # 工作流引擎
 │   │   └── langgraph_workflow.py    # 🌊 LangGraph工作流编排
 │   ├── 🎯 examples/                  # 应用示例
 │   │   └── customer_service_system.py # 🎧 智能客服系统
+│   ├── __init__.py                  # 模块初始化
 │   └── 🚀 main.py                   # 主应用入口
 ├── 🧪 tests/                        # 测试套件
 │   ├── test_system.py              # 🔍 系统集成测试
@@ -68,6 +71,7 @@ multi_agent_system/
 ├── ⚙️ config.json                   # 系统配置文件
 ├── 📦 requirements.txt              # Python依赖清单
 ├── 🐳 Dockerfile                    # 容器化配置
+├── 🐳 .dockerignore                 # Docker 忽略文件
 ├── 🐙 docker-compose.yml           # 多服务编排
 └── 📖 README.md                     # 项目文档
 ```
@@ -78,6 +82,7 @@ multi_agent_system/
 | -------------------- | -------------- | -------------------------------------- |
 | `src/agents/`        | 智能体核心实现 | BDI 架构、专业化能力、协作机制         |
 | `src/communication/` | 通信基础设施   | 消息总线、发布订阅、请求响应           |
+| `src/monitoring/`    | 监控与追踪     | LangSmith 集成、链路追踪、性能分析     |
 | `src/workflows/`     | 工作流引擎     | LangGraph 集成、流程编排、状态管理     |
 | `src/examples/`      | 业务应用示例   | 智能客服、研究分析、最佳实践           |
 | `tests/`             | 测试覆盖       | 单元测试、集成测试、性能测试、API 测试 |

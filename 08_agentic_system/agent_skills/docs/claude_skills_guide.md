@@ -17,7 +17,7 @@
 
 ## 1. 动手实战：构建第一个 Skill
 
-`Show me the code`：让我们通过动手构建一个 `pdf-translator` Skill 来直观地理解这些概念。
+`Show me the code`：让我们通过动手构建一个 `pdf_translator` Skill 来直观地理解这些概念。
 
 ### 1.1 我们的目标
 
@@ -33,7 +33,7 @@
 
 ```text
 skills/
-└── pdf-translator/         # 文件夹名必须使用 kebab-case (短横线连接)
+└── pdf_translator/         # 文件夹名必须使用 kebab-case (短横线连接)
     ├── SKILL.md            # 核心：标准操作手册 (文件名必须严格大写)
     ├── requirements.txt    # 依赖清单
     ├── scripts/            # 可执行脚本 (extract_text.py, generate_md.py)
@@ -66,11 +66,11 @@ pip install PyPDF2 reportlab
 > - ✅ **Good**: "Extract text from PDF files... Use this skill when the user wants to translate a PDF document."
 > - ❌ **Bad**: "Helps with PDF files." (太模糊，Claude 不知道什么时候用)
 
-**文件路径**：`skills/pdf-translator/SKILL.md`
+**文件路径**：`skills/pdf_translator/SKILL.md`
 
 ```markdown
 ---
-name: pdf-translator
+name: pdf_translator
 description: Extract text from PDF files, translate it to a target language, and save the result as a Markdown file. Use this skill when the user wants to translate a PDF document or asks to "convert PDF to Chinese".
 ---
 
@@ -82,7 +82,7 @@ Follow these steps to translate a PDF file:
 
 1.  **Identify the PDF File**: Confirm the path to the PDF file the user wants to translate. If the path is relative, resolve it to an absolute path.
 2.  **Extract Text**: Use the `extract_text.py` script located in the `scripts` directory of this skill to extract text from the PDF.
-    - Command: `python3 skills/pdf-translator/scripts/extract_text.py <path_to_pdf>`
+    - Command: `python3 skills/pdf_translator/scripts/extract_text.py <path_to_pdf>`
     - Note: Ensure you are using the correct python environment.
 3.  **Translate Content**:
     - Read the output from the extraction step.
@@ -91,7 +91,7 @@ Follow these steps to translate a PDF file:
 4.  **Save Output**:
     - Write the translated content to a temporary text file (e.g., `temp_translation.txt`).
     - Use the `generate_md.py` script to create the final Markdown file with metadata.
-    - Command: `python3 skills/pdf-translator/scripts/generate_md.py <output_path> <original_filename> <temp_translation_file>`
+    - Command: `python3 skills/pdf_translator/scripts/generate_md.py <output_path> <original_filename> <temp_translation_file>`
     - Filename format: `<original_filename>_translated.md`.
     - Notify the user of the output file location.
     - Clean up the temporary text file.
@@ -103,10 +103,10 @@ Follow these steps to translate a PDF file:
 **Claude**:
 
 1.  Locates `papers/deep_learning.pdf`.
-2.  Runs: `python3 skills/pdf-translator/scripts/extract_text.py papers/deep_learning.pdf`
+2.  Runs: `python3 skills/pdf_translator/scripts/extract_text.py papers/deep_learning.pdf`
 3.  Translates the extracted text to Chinese.
 4.  Writes translation to `temp_translation.txt`.
-5.  Runs: `python3 skills/pdf-translator/scripts/generate_md.py papers/deep_learning_translated.md deep_learning.pdf temp_translation.txt`
+5.  Runs: `python3 skills/pdf_translator/scripts/generate_md.py papers/deep_learning_translated.md deep_learning.pdf temp_translation.txt`
 6.  Removes `temp_translation.txt`.
 7.  Responds: "I have translated the PDF and saved it to `papers/deep_learning_translated.md`."
 ```
@@ -168,7 +168,7 @@ def generate_markdown(content, output_path, source_file):
 title: Translated Document
 source: {source_file}
 date: {timestamp}
-generated_by: Claude Agent Skill (pdf-translator)
+generated_by: Claude Agent Skill (pdf_translator)
 ---
 
 """
@@ -225,13 +225,13 @@ if __name__ == "__main__":
 在终端中运行：
 
 ```bash
-/plugin add ./skills/pdf-translator
+/plugin add ./skills/pdf_translator
 ```
 
 **开始验证**：
 大家可以像对待一位同事一样对 Claude 说：
 
-> "请帮我把 `skills/pdf-translator/test_sample.pdf` 翻译成中文。"
+> "请帮我把 `skills/pdf_translator/test_sample.pdf` 翻译成中文。"
 
 此时，我们会看到一个关键变化：Claude 不再只是“会聊天”，而是开始按定义的流程执行：调用脚本 -> 提取文字 -> 翻译 -> 保存文件。
 
@@ -281,7 +281,7 @@ if __name__ == "__main__":
 - **MCP** 是**标准化厨房接口**：它规定了燃气灶怎么接、冰箱怎么开，让厨师可以连接并使用各种品牌的厨具（工具）和食材库（数据源）。
 - **Agent Skills** 是**菜谱 (SOP)**：它指导厨师“先切菜，再热油，最后炒制”，通过编排一系列动作来完成特定的烹饪任务。
 
-在我们的 `pdf-translator` 案例中：
+在我们的 `pdf_translator` 案例中：
 
 1. Python 脚本是具体的**厨具**。
 2. Claude 的 Function Calling 能力是**厨师的手**。
@@ -298,9 +298,9 @@ if __name__ == "__main__":
 根据 First Principles Deep Dive [3] 的深度解析，Claude Agent Skills 的架构其实包含两个层面：
 
 1. **Skill Meta-tool (大写的 Skill 工具)**：这是一个“元工具”，它像一个总管，管理着所有的具体技能。
-2. **Individual Skills (具体的技能)**：如我们的 `pdf-translator`，它们是“指令包”。
+2. **Individual Skills (具体的技能)**：如我们的 `pdf_translator`，它们是“指令包”。
 
-当 Claude 决定使用 `pdf-translator` 时，系统实际上执行了 **Prompt Expansion (提示词展开)**。它读取 `SKILL.md` 的内容，将其作为一段新的 System Prompt 或 Context 注入到当前的对话中。
+当 Claude 决定使用 `pdf_translator` 时，系统实际上执行了 **Prompt Expansion (提示词展开)**。它读取 `SKILL.md` 的内容，将其作为一段新的 System Prompt 或 Context 注入到当前的对话中。
 
 **关键点**：Skill 不仅仅注入文本，它还能修改 **Execution Context (执行上下文)**，比如改变当前可用的工具集合，甚至切换底层模型。这使得 Skill 是在**运行时 (Runtime)** 动态地重塑 Claude 的行为。
 
@@ -314,7 +314,7 @@ Claude 是如何知道该用哪个 Skill 的？
 
 1. 系统将所有可用 Skill 的 `name` 和 `description`（即 Frontmatter 里的信息）展示给 Claude。
 2. Claude 运用其强大的语言理解能力，阅读这些描述。
-3. 如果用户说“帮我翻译这个 PDF”，Claude 看到 `pdf-translator` 的描述是 "Extract text from PDF files..."，通过逻辑推理判定匹配。
+3. 如果用户说“帮我翻译这个 PDF”，Claude 看到 `pdf_translator` 的描述是 "Extract text from PDF files..."，通过逻辑推理判定匹配。
 
 没有硬编码的路由，没有机器学习分类器，完全是 Claude 自己在做判断。
 
@@ -349,7 +349,7 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 ## 4. 进阶设计模式：超越线性流程
 
-除了像 `pdf-translator` 这样的顺序工作流，Agent Skills 还支持更复杂的模式：
+除了像 `pdf_translator` 这样的顺序工作流，Agent Skills 还支持更复杂的模式：
 
 1. **多 MCP 协同**
    - **场景**：设计交付。
@@ -383,7 +383,7 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 1. **触发测试**：
    - **正向测试**：确保用户说“帮我翻译这个”时能触发。
-   - **负向测试**：确保用户说“帮我写代码”时**不会**误触发 `pdf-translator`。
+   - **负向测试**：确保用户说“帮我写代码”时**不会**误触发 `pdf_translator`。
 2. **功能测试**：
    - 验证 API 调用是否成功，文件是否正确生成。
 3. **性能对比**：
@@ -413,7 +413,7 @@ Claude 采用了一种**三层渐进式披露**机制，这与人类学习新知
 
 Claude Agent Skills 代表了 AI Agent 开发的一种新范式：**通过自然语言编程**。
 
-我们不再仅仅是编写 Python 函数供 LLM 调用，而是开始编写 **Markdown 文档** 来传授 LLM **流程性知识**。通过构建 `pdf-translator`，我们看到了这种范式的强大之处：它结合了代码的精确性（工具脚本）和自然语言的灵活性（SKILL.md），让构建复杂的智能助手变得前所未有的简单。
+我们不再仅仅是编写 Python 函数供 LLM 调用，而是开始编写 **Markdown 文档** 来传授 LLM **流程性知识**。通过构建 `pdf_translator`，我们看到了这种范式的强大之处：它结合了代码的精确性（工具脚本）和自然语言的灵活性（SKILL.md），让构建复杂的智能助手变得前所未有的简单。
 
 ---
 

@@ -1,6 +1,6 @@
 # PDF Text Extraction API Guide
 
-This document provides details on the internal Python scripts used by the `pdf-translator` skill.
+This document provides details on the internal Python scripts used by the `pdf_translator` skill.
 
 ## `extract_text.py`
 

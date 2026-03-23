@@ -1,6 +1,6 @@
 # 智能体工程现状
 
-> URL 来源: https://www.langchain.com/state-of-agent-engineering
+> URL 来源: <https://www.langchain.com/state-of-agent-engineering>
 > 发布时间: Tue, 16 Dec 2025 16:34:01 GMT
 
 我们调查了 1300 多名专业人士——从工程师和产品经理到商业领袖和高管——以揭示 AI 智能体的现状。让我们深入研究数据，剖析 AI 智能体在今天是如何被使用（或未被使用）的。
@@ -88,7 +88,7 @@ _贵组织是否已为智能体设置了可观测性能力？_
 
 _在将智能体投入生产的情况下，贵组织是否为智能体设置了可观测性能力？_
 
-![Image 7](https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/6941899aba66ac78283ecf29_6.Do%20you%20have%20observability%20for%20agents%20set%20up%20(given%20you%20have%20agents%20in%20production)_%402x.png)
+![Image 7](<https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/6941899aba66ac78283ecf29_6.Do%20you%20have%20observability%20for%20agents%20set%20up%20(given%20you%20have%20agents%20in%20production)_%402x.png>)
 
 ### 2.5 智能体的评估与测试
 
@@ -102,7 +102,7 @@ _贵组织从哪些方面评估智能体？（可多选）_
 
 _在将智能体投入生产的情况下，贵组织从哪些方面评估智能体？_
 
-![Image 9](https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/69401a7d899c3ea75afda7e2_8.%20What%20do%20you%20evaluate%20agents%20on%20(given%20you%20have%20agents%20in%20production)_%402x.png)
+![Image 9](<https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/69401a7d899c3ea75afda7e2_8.%20What%20do%20you%20evaluate%20agents%20on%20(given%20you%20have%20agents%20in%20production)_%402x.png>)
 
 大多数团队仍从 **离线评估** 开始，这可能是因为其门槛较低且设置更清晰，但许多团队正在采用分层方法。在运行任何评估的组织中，近四分之一结合了 **离线和在线评估**。
 

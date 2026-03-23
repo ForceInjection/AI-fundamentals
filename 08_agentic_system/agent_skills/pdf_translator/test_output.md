@@ -2,7 +2,7 @@
 title: Translated Document
 source: test_sample.pdf
 date: 2026-03-04 07:23:51
-generated_by: Claude Agent Skill (pdf-translator)
+generated_by: Claude Agent Skill (pdf_translator)
 ---
 
 Claude Agent Skills - PDF Translator Test

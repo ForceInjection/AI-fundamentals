@@ -5,10 +5,15 @@ This skill allows Claude to read PDF documents, extract their text, and translat
 ## Structure
 
 - `SKILL.md`: The main definition file for the skill.
+- `requirements.txt`: Python dependencies.
+- `references/`: Reference documentation.
+  - `api_guide.md`: API usage guide and examples.
 - `scripts/`: Helper scripts.
   - `extract_text.py`: Extracts text from a PDF file using `PyPDF2`.
   - `generate_md.py`: (Optional) Helper to save translated content with a metadata header.
   - `create_test_pdf.py`: Utility to generate a sample PDF for testing.
+- `test_sample.pdf`: Sample PDF for testing purposes.
+- `test_output.md`: Example output of a translated PDF.
 
 ## Setup
 
