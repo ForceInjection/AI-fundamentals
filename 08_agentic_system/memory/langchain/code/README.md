@@ -54,6 +54,10 @@ OPENAI_API_KEY = "your-openai-api-key"
 OPENAI_BASE_URL = "https://api.openai.com/v1"  # 或其他兼容的 API
 OPENAI_MODEL = "gpt-3.5-turbo"
 
+# MiniMax 配置
+MINIMAX_API_KEY = "your-minimax-api-key"
+MINIMAX_MODEL = "MiniMax-M2.7"
+
 # 或本地模型配置
 LOCAL_BASE_URL = "http://localhost:11434/v1"  # Ollama
 LOCAL_MODEL = "llama2"
@@ -66,6 +70,10 @@ LOCAL_MODEL = "llama2"
 export OPENAI_API_KEY="your-openai-api-key"
 export OPENAI_BASE_URL="https://api.openai.com/v1"
 export OPENAI_MODEL="gpt-3.5-turbo"
+
+# MiniMax
+export MINIMAX_API_KEY="your-minimax-api-key"
+export MINIMAX_MODEL="MiniMax-M2.7"
 
 # 或本地模型
 export LOCAL_BASE_URL="http://localhost:11434/v1"
@@ -162,6 +170,8 @@ python main.py --interactive
 | `OPENAI_API_KEY` | OpenAI API 密钥 | None |
 | `OPENAI_BASE_URL` | OpenAI API 基础URL | "<https://api.openai.com/v1>" |
 | `OPENAI_MODEL` | OpenAI 模型名称 | "gpt-3.5-turbo" |
+| `MINIMAX_API_KEY` | MiniMax API 密钥 | None |
+| `MINIMAX_MODEL` | MiniMax 模型名称 | "MiniMax-M2.7" |
 | `LOCAL_BASE_URL` | 本地模型 API URL | "<http://localhost:11434/v1>" |
 | `LOCAL_MODEL` | 本地模型名称 | "llama2" |
 
@@ -192,7 +202,21 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 OPENAI_MODEL = "gpt-3.5-turbo"  # 或 gpt-4
 ```
 
-### 5.2 本地模型 (Ollama)
+### 5.2 MiniMax
+
+```python
+MINIMAX_API_KEY = "your-minimax-api-key"
+MINIMAX_MODEL = "MiniMax-M2.7"  # 或 MiniMax-M2.7-highspeed
+```
+
+MiniMax 提供 OpenAI 兼容的 API 接口，支持以下模型：
+
+- `MiniMax-M2.7`: 最新旗舰模型，1M 上下文窗口
+- `MiniMax-M2.7-highspeed`: 高速推理版本
+
+更多信息请访问 [MiniMax 开放平台](https://platform.minimaxi.com/)。
+
+### 5.3 本地模型 (Ollama)
 
 ```bash
 # 安装 Ollama
@@ -211,7 +235,7 @@ LOCAL_BASE_URL = "http://localhost:11434/v1"
 LOCAL_MODEL = "llama2"  # 或 qwen:7b
 ```
 
-### 5.3 其他兼容 OpenAI API 的服务
+### 5.4 其他兼容 OpenAI API 的服务
 
 ```python
 # 例如：vLLM, FastChat, LocalAI 等

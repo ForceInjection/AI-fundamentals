@@ -212,6 +212,18 @@
     "model": "deepseek-chat",
     "temperature": 0.7,
     "max_tokens": 4000,
-    "timeout": 60
+    "timeout": 60,
+    "alternatives": {
+      "minimax": {
+        "base_url": "https://api.minimax.io/v1",
+        "model": "MiniMax-M2.7",
+        "description": "MiniMax M2.7 - 1M context window, OpenAI-compatible API"
+      },
+      "openai": {
+        "base_url": "https://api.openai.com/v1",
+        "model": "gpt-4o",
+        "description": "OpenAI GPT-4o"
+      }
+    }
   }
 }

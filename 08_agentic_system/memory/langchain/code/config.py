@@ -25,6 +25,11 @@ class LLMConfig:
         self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY", "")
         self.deepseek_base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
         self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+        # MiniMax 配置
+        self.minimax_api_key = os.getenv("MINIMAX_API_KEY", "")
+        self.minimax_base_url = os.getenv("MINIMAX_BASE_URL", "https://api.minimax.io/v1")
+        self.minimax_model = os.getenv("MINIMAX_MODEL", "MiniMax-M2.7")
         
         # 其他模型配置（如本地部署的模型）
         self.local_api_key = os.getenv("LOCAL_API_KEY", "")
@@ -63,6 +68,17 @@ class LLMConfig:
             "timeout": self.timeout
         }
     
+    def get_minimax_config(self) -> dict:
+        """获取MiniMax配置"""
+        return {
+            "api_key": self.minimax_api_key,
+            "base_url": self.minimax_base_url,
+            "model": self.minimax_model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "timeout": self.timeout
+        }
+
     def get_local_config(self) -> dict:
         """获取本地模型配置"""
         return {
@@ -78,13 +94,16 @@ class LLMConfig:
         """验证配置是否完整"""
         if provider is None:
             # 检查是否有任何可用的配置
-            return (bool(self.openai_api_key) or 
-                   bool(self.deepseek_api_key) or 
+            return (bool(self.openai_api_key) or
+                   bool(self.deepseek_api_key) or
+                   bool(self.minimax_api_key) or
                    bool(self.local_base_url))
         elif provider == "openai":
             return bool(self.openai_api_key)
         elif provider == "deepseek":
             return bool(self.deepseek_api_key)
+        elif provider == "minimax":
+            return bool(self.minimax_api_key)
         elif provider == "local":
             return bool(self.local_base_url)
         return False
@@ -112,6 +131,10 @@ def check_config(provider: str = "openai") -> None:
             raise ValueError(
                 "DeepSeek API Key 未设置！请设置环境变量 DEEPSEEK_API_KEY 或修改 config.py"
             )
+        elif provider == "minimax":
+            raise ValueError(
+                "MiniMax API Key 未设置！请设置环境变量 MINIMAX_API_KEY 或修改 config.py"
+            )
         elif provider == "local":
             raise ValueError(
                 "本地模型URL未设置！请设置环境变量 LOCAL_BASE_URL 或修改 config.py"
@@ -127,6 +150,9 @@ if __name__ == "__main__":
     print(f"DeepSeek API Key: {'已设置' if config.deepseek_api_key else '未设置'}")
     print(f"DeepSeek Base URL: {config.deepseek_base_url}")
     print(f"DeepSeek Model: {config.deepseek_model}")
+    print(f"MiniMax API Key: {'已设置' if config.minimax_api_key else '未设置'}")
+    print(f"MiniMax Base URL: {config.minimax_base_url}")
+    print(f"MiniMax Model: {config.minimax_model}")
     print(f"Local Base URL: {config.local_base_url}")
     print(f"Local Model: {config.local_model}")
     print(f"Temperature: {config.temperature}")
@@ -142,7 +168,12 @@ if __name__ == "__main__":
         check_config("deepseek")
     except ValueError as e:
         print(f"❌ {e}")
-    
+
+    try:
+        check_config("minimax")
+    except ValueError as e:
+        print(f"❌ {e}")
+
     try:
         check_config("local")
     except ValueError as e:
