@@ -27,6 +27,17 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 OPENAI_MODEL = "gpt-3.5-turbo"
 
 # ================================
+# MiniMax 配置（可选）
+# ================================
+
+# MiniMax API Key
+# 获取地址：https://platform.minimaxi.com/
+MINIMAX_API_KEY = "your-minimax-api-key-here"
+
+# MiniMax 模型名称
+MINIMAX_MODEL = "MiniMax-M2.7"
+
+# ================================
 # 本地模型配置（可选）
 # ================================
 
@@ -77,6 +88,8 @@ MAX_TOKEN_LIMIT = 1000
 export OPENAI_API_KEY="sk-your-openai-api-key-here"
 export OPENAI_BASE_URL="https://api.openai.com/v1"
 export OPENAI_MODEL="gpt-3.5-turbo"
+export MINIMAX_API_KEY="your-minimax-api-key-here"
+export MINIMAX_MODEL="MiniMax-M2.7"
 export LOCAL_BASE_URL="http://localhost:8000/v1"
 export LOCAL_MODEL="qwen2.5:7b"
 export LLM_TEMPERATURE="0.7"
@@ -89,6 +102,8 @@ export MAX_TOKEN_LIMIT="1000"
 set OPENAI_API_KEY=sk-your-openai-api-key-here
 set OPENAI_BASE_URL=https://api.openai.com/v1
 set OPENAI_MODEL=gpt-3.5-turbo
+set MINIMAX_API_KEY=your-minimax-api-key-here
+set MINIMAX_MODEL=MiniMax-M2.7
 set LOCAL_BASE_URL=http://localhost:8000/v1
 set LOCAL_MODEL=qwen2.5:7b
 set LLM_TEMPERATURE=0.7
@@ -106,6 +121,10 @@ set MAX_TOKEN_LIMIT=1000
 - gpt-4o: 最新的GPT-4模型
 - gpt-4o-mini: 轻量版GPT-4模型
 - gpt-3.5-turbo: 经典的GPT-3.5模型
+
+# MiniMax 模型（https://platform.minimaxi.com/）
+- MiniMax-M2.7: 最新旗舰模型，1M上下文窗口
+- MiniMax-M2.7-highspeed: 高速推理版本
 
 # 本地模型（Ollama）
 - qwen2.5:7b: 通义千问2.5 7B参数版本
