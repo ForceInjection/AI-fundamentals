@@ -10,7 +10,7 @@ anthropic==0.34.2
 # Web框架
 fastapi==0.135.1
 uvicorn[standard]==0.34.0
-streamlit==1.42.0
+streamlit==1.54.0
 
 # 数据处理
 pandas==2.2.3
