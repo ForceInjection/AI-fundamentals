@@ -70,7 +70,14 @@ Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推
 - **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](advanced_techniques/kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
 - **[KV Cache 层级流水线并行](advanced_techniques/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
 
-## 5. 目录结构说明
+## 5. 容量规划与 ROI 分析
+
+在大模型推理系统建设中，KV Cache 的容量规划与 ROI 评估是资源配置的核心。
+
+- **[KV Cache 引入收益评估](capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
+- **[GLM-5 模型 KV Cache 容量规划报告](capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
+
+## 6. 目录结构说明
 
 | 目录/文件              | 说明                                     |
 | :--------------------- | :--------------------------------------- |
@@ -81,3 +88,4 @@ Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推
 | `lmcache/`             | LMCache 项目相关文档及组件详解           |
 | `ali_tair_kvcache/`    | 阿里云 Tair KVCache 架构文档             |
 | `kvbm/`                | NVIDIA KV Block Manager 技术文档         |
+| `capacity_planning/`   | KV Cache 容量规划与 ROI 收益评估         |
