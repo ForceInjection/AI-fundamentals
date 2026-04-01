@@ -8,6 +8,7 @@
 - [2. 需求摄入与上下文组装](#2-需求摄入与上下文组装)
   - [2.1 终端指令与意图解析](#21-终端指令与意图解析)
   - [2.2 动态系统提示词构建与记忆检索](#22-动态系统提示词构建与记忆检索)
+  - [2.3 多粒度上下文压缩机制](#23-多粒度上下文压缩机制)
 - [3. 探索与代码库认知（Agent 核心循环）](#3-探索与代码库认知agent-核心循环)
   - [3.1 语义检索与拓扑发现](#31-语义检索与拓扑发现)
   - [3.2 代码内容精准提取与防抖机制](#32-代码内容精准提取与防抖机制)
@@ -40,7 +41,7 @@ stateDiagram-v2
         UserInput: 开发者终端输入
         Parse: 解析指令与意图
         BuildPrompt: 动态构建 System Prompt\n(融合多级记忆与环境上下文)
-        
+
         UserInput --> Parse
         Parse --> BuildPrompt
     }
@@ -48,13 +49,13 @@ stateDiagram-v2
     %% 阶段 2: 探索与代码库认知 (Agent Loop)
     state "2. 探索与代码库认知" as Phase2 {
         Evaluate: 大模型意图推理
-        
+
         state "本地工具调度器" as Tools {
             Glob: Glob (广度检索文件)
             Read: Read (精准读取与防抖)
             LSP: LSP (语法树与调用链)
         }
-        
+
         Evaluate --> Tools: 下发探索指令
         Tools --> Evaluate: 返回代码上下文
     }
@@ -64,7 +65,7 @@ stateDiagram-v2
         Plan: 意图对齐与方案设计
         EditTool: FileEditTool 块级替换
         state CheckMtime <<choice>>
-        
+
         Plan --> EditTool: 实施修改方案
         EditTool --> CheckMtime: 校验 mtime
     }
@@ -73,7 +74,7 @@ stateDiagram-v2
     state "4. 自动化验证与自我纠错" as Phase4 {
         BashTool: 沙箱执行测试/编译
         state HasError <<choice>>
-        
+
         BashTool --> HasError: 验证退出码
     }
 
@@ -81,20 +82,20 @@ stateDiagram-v2
     Done: 功能稳定交付
 
     [*] --> UserInput
-    
+
     %% Phase1 -> Phase2
     BuildPrompt --> Evaluate
-    
+
     %% Phase2 -> Phase3 (认知充足时跳出循环)
     Evaluate --> Plan: 认知充足，准备编码
-    
+
     %% Phase3 -> Phase4 (修改成功)
     CheckMtime --> BashTool: 校验通过，落盘修改
-    
+
     %% 错误与异常回滚链路 (流向 Evaluate 进入新一轮 Agent Loop)
     CheckMtime --> Evaluate: 脏读/防抖拦截
     HasError --> Evaluate: 验证失败 (捕获异常与 stdout)
-    
+
     %% 最终成功出口
     HasError --> Done: 验证通过
     Done --> [*]
@@ -197,10 +198,86 @@ startInteractionSpan(userPromptText);
  *    - Otherwise: agent prompt REPLACES default
  * 3. Custom system prompt (if specified via --system-prompt)
  * 4. Default system prompt (the standard Claude Code prompt)
- *
  * Plus appendSystemPrompt is always added at the end if specified (except when override is set).
  */
 ```
+
+### 2.3 多粒度上下文压缩机制
+
+在长对话场景中，信息的“保质期”存在显著差异，为避免 `Token` 消耗过载并精准保留核心业务背景，系统通过四种不同粒度的压缩机制按需逐层递进，对历史消息进行动态治理：
+
+- **HISTORY_SNIP**：直接删减最细粒度的纯噪声。例如工具返回海量数据但模型仅引用极少部分时，直接剔除未被使用的多余行，避免无意义的摘要带来额外开销。
+
+  ```typescript
+  // src/utils/messages.ts
+  if (!options?.includeSnipped && feature("HISTORY_SNIP")) {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { projectSnippedView } =
+      require("../services/compact/snipProjection.js") as typeof import("../services/compact/snipProjection.js");
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    return projectSnippedView(sliced as Message[]) as T[];
+  }
+  ```
+
+- **Microcompact**：在缓存架构层面进行干预，利用 API 的 `cache_deleted_input_tokens` 能力，标记部分缓存失效。此举在不篡改原始消息数据结构的前提下，有效降低了冗余的 `Token` 占用。
+
+  ```typescript
+  // src/services/api/claude.ts
+  // cache_deleted_input_tokens: returned by the API when cache editing
+  // deletes KV cache content, but not in SDK types.
+  ...(feature('CACHED_MICROCOMPACT')
+    ? {
+        cache_deleted_input_tokens:
+          (partUsage as unknown as { cache_deleted_input_tokens?: number })
+            .cache_deleted_input_tokens != null &&
+          (partUsage as unknown as { cache_deleted_input_tokens: number })
+            .cache_deleted_input_tokens > 0
+            ? (partUsage as unknown as { cache_deleted_input_tokens: number })
+                .cache_deleted_input_tokens
+            : ((usage as unknown as { cache_deleted_input_tokens?: number })
+                .cache_deleted_input_tokens ?? 0),
+      }
+    : {}),
+  ```
+
+- **CONTEXT_COLLAPSE**：将历史对话轮次归档为摘要，同时维护类似 `git log` 的拓扑结构。该机制完整保留了操作与结论之间的逻辑因果，在后续重放时提供更清晰的执行背景。
+
+  ```typescript
+  // src/query.ts
+  // Nothing is yielded — the collapsed view is a read-time projection
+  // over the REPL's full history. Summary messages live in the collapse
+  // store, not the REPL array.
+  if (feature("CONTEXT_COLLAPSE") && contextCollapse) {
+    const collapseResult = await contextCollapse.applyCollapsesIfNeeded(
+      messagesForQuery,
+      toolUseContext,
+      querySource,
+    );
+    messagesForQuery = collapseResult.messages;
+  }
+  ```
+
+- **Autocompact**：系统最终的兜底策略，通过额外调用模型将完整历史压缩为一段全局摘要。得益于前置三层机制的过滤拦截，此高成本操作在实际运行中极少被触发。
+
+  ```typescript
+  // src/query.ts
+  queryCheckpoint("query_autocompact_start");
+  const { compactionResult, consecutiveFailures } = await deps.autocompact(
+    messagesForQuery,
+    toolUseContext,
+    {
+      systemPrompt,
+      userContext,
+      systemContext,
+      toolUseContext,
+      forkContextMessages: messagesForQuery,
+    },
+    querySource,
+    tracking,
+    snipTokensFreed,
+  );
+  queryCheckpoint("query_autocompact_end");
+  ```
 
 ---
 
@@ -209,7 +286,7 @@ startInteractionSpan(userPromptText);
 当用户提出一个代码变更需求时，大模型本身并不具备当前工作目录的全局视图。为了准确理解业务逻辑并定位需要修改的宿主文件，智能体必须在本地文件系统中进行一系列的“侦察”操作。
 
 **LLM 调度机制说明：**
-在这个阶段，大模型的调用并不是一次性的，而是深度嵌套在一个**持续流式循环（Agent Loop）**中：
+大模型的调用并非单次请求即可完成，而是由 `src/query.ts` 中核心的 `while(true)` 循环引擎（`Agentic Loop`）持续驱动。在这个循环体中，系统能够在接收流式输出的同时检查 `tool_use` 调用，实现不间断的执行与结果回传闭环：
 
 1. **意图推理（LLM 调用）**：模型分析用户需求与当前上下文，决定下发 `GlobTool` 或 `GrepTool` 指令。
 2. **本地执行（非 LLM）**：本地调度器并发执行工具，获取文件列表或代码片段。
@@ -242,6 +319,8 @@ In plan mode, you'll:
 ### 3.1 语义检索与拓扑发现
 
 智能体通常会率先调用大范围检索工具进行文件模式匹配和关键词搜索。这些操作在 `StreamingToolExecutor` 调度器中均被标记为 `isConcurrencySafe: true`，允许并发执行以榨取 I/O 极限，大幅缩短了探索阶段的耗时。
+
+值得注意的是，该调度器实现了一种高级的**流式工具调用并发（Streaming Tool Execution）**机制：大模型在流式输出文本时，只要前端解析出完整的 `tool_use` 块，调度器便会立刻触发该本地工具的执行，而无需等待模型当前轮次发言完毕。这一设计将工具执行的 I/O 延迟无缝隐藏在了模型推理的时间窗口内，同时按接收顺序缓冲和排队结果，在保证输出确定性的同时，为终端用户带来了极速的响应体验。
 
 ```typescript
 // src/services/tools/StreamingToolExecutor.ts
@@ -508,6 +587,8 @@ if (interpretationResult.isError && !isInterrupt) {
 如果编译失败或测试未通过（退出码非 0 且被判定为 `isError`），主事件循环并不会终止。上述代码中的 `ShellError` 会被抛出并由调度器捕获。这一机制确保了智能体在面对意外情况时具备强大的自我恢复能力。
 
 系统会将截断后的终端标准输出（可能包含了长达数百行的报错堆栈）作为 `tool_result`，并将 `is_error: true` 标记位一同发还给大模型。大模型读取到这个报错信息后，会自动分析错误根因，重新发起一轮 `FileEditTool` 修复代码，并再次运行测试。这个“代码修改 -> 终端验证 -> 错误分析”的循环将持续进行，直到终端返回成功的退出码，最终才会向用户输出任务完成的总结报告。
+
+此外，除了针对业务代码逻辑错误的捕获，系统还针对大模型本身的生成边界设计了极具韧性的静默恢复机制。当模型输出的文本量意外触碰 `max_output_tokens` 限制时，主循环并不会将错误直接抛出导致会话中断，而是会在后台主动“扣留”该错误信息并悄悄发起重试。通过常量 `MAX_OUTPUT_TOKENS_RECOVERY_LIMIT`（最高支持 3 次），系统能以对用户完全无感的方式完成自我恢复，大幅降低了由于 Token 溢出导致的失败率。
 
 ---
 
