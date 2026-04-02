@@ -12,6 +12,8 @@ __pycache__/
 #Qoder
 .qoder
 
+gpu_evaluation.md
+
 # C extensions
 *.so
 
@@ -178,3 +180,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+link_check_report_v2.txt
