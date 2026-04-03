@@ -28,6 +28,7 @@
 |                | [MemMachine 深度解析](./docs/systems/MemMachine深度解析.md)                           | 重新定义智能体交互体验与长程记忆管理。             |
 |                | [Mem0 快速入门](./docs/systems/mem0快速入门.md)                                       | 托管平台与自建版本的快速集成指南，适合应用开发者。 |
 | **案例与分析** | [Claude Code 记忆分析](./docs/case-studies/claude-code-memory-analysis.md)            | 基于 Markdown 文件的极简本地持久化记忆生态。       |
+|                | [Claude-Mem 系统介绍](./docs/case-studies/claude-mem-system-analysis.md)         | 基于 SQLite 与 Chroma 的持久化记忆系统架构解析。   |
 |                | [Claude Code 执行流](./docs/case-studies/claude-code-agent-execution-flow.md)         | Agent 核心循环与深度 AST 结构感知的代码库探索。    |
 |                | [SuperMemory 集成分析](./docs/case-studies/supermemory-agent-integration-analysis.md) | 针对第二大脑应用的外部记忆集成方案剖析。           |
 | **实战代码**   | [LangChain 记忆实践](./langchain/langchain_memory.md)                                 | 核心 API 详解及 LangGraph 状态管理应用。           |
