@@ -1,12 +1,16 @@
 # AI 智能体记忆系统
 
-本合集包含 AI 智能体记忆系统的技术文档，涵盖理论基础、架构设计和工程实践。
+AI 智能体长程记忆系统的技术演进脉络，完整覆盖了从底层机制理论、多层架构设计模式到基于主流框架的工程落地实践。
+
+---
 
 ## 1. 记忆系统架构与内容导览
 
+AI 智能体记忆系统的主流分层架构模型与核心文档的分类索引地图，共同构筑了从理论概念到工程代码的完整认知链路，旨在帮助开发者快速定位并掌握记忆系统设计所需的关键技术。
+
 ### 1.1 通用架构总览
 
-> **架构说明**：以下通用架构图基于现有 AI Agent 记忆系统的主流设计模式，综合参考了 MemoryOS、Mem0、LangChain Memory 等系统的架构特点。
+> **架构说明**：以下通用架构图基于现有 AI Agent 记忆系统的主流设计模式，综合参考了 MemoryOS [3]、Mem0 [4]、LangChain Memory 等系统的架构特点。
 
 ![架构图](./architecture_diagram.svg)
 
@@ -18,7 +22,7 @@
 
 ### 1.2 核心文档索引
 
-本项目包含从基础理论到真实案例的多维度文档，帮助开发者全面掌握大模型记忆系统的设计。
+从基础理论研究到真实业务案例的多维度文档体系，深度剖析了大语言模型记忆系统的底层实现逻辑与上层集成方案。
 
 | 分类           | 文档链接                                                                              | 核心内容与适用对象                                 |
 | -------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -28,7 +32,6 @@
 |                | [MemMachine 深度解析](./docs/systems/MemMachine深度解析.md)                           | 重新定义智能体交互体验与长程记忆管理。             |
 |                | [Mem0 快速入门](./docs/systems/mem0快速入门.md)                                       | 托管平台与自建版本的快速集成指南，适合应用开发者。 |
 | **案例与分析** | [Claude Code 记忆分析](./docs/case-studies/claude-code-memory-analysis.md)            | 基于 Markdown 文件的极简本地持久化记忆生态。       |
-|                | [Claude-Mem 系统介绍](./docs/case-studies/claude-mem-system-analysis.md)         | 基于 SQLite 与 Chroma 的持久化记忆系统架构解析。   |
 |                | [Claude Code 执行流](./docs/case-studies/claude-code-agent-execution-flow.md)         | Agent 核心循环与深度 AST 结构感知的代码库探索。    |
 |                | [SuperMemory 集成分析](./docs/case-studies/supermemory-agent-integration-analysis.md) | 针对第二大脑应用的外部记忆集成方案剖析。           |
 | **实战代码**   | [LangChain 记忆实践](./langchain/langchain_memory.md)                                 | 核心 API 详解及 LangGraph 状态管理应用。           |
@@ -41,6 +44,8 @@
 为帮助开发者在选型时快速决策，以下对比了三种主流的记忆系统框架（MemoryOS、Mem0 和 LangChain Memory）。
 
 ### 2.1 架构与特性对比
+
+下表从核心架构、存储介质、适用场景及性能表现等关键维度，对这三种主流记忆系统进行了全面对比。
 
 | 特性         | MemoryOS                     | Mem0                         | LangChain Memory             |
 | ------------ | ---------------------------- | ---------------------------- | ---------------------------- |
@@ -65,6 +70,8 @@
 
 ## 3. 参考资源
 
+记忆系统领域的官方开源项目矩阵与前沿学术研究文献 [6]，为追踪行业动态、深入探索从人类启发到 AI 记忆的理论演进提供了权威参考路径。
+
 ### 3.1 官方与开源项目
 
 - [MemoryOS GitHub](https://github.com/memoryos/memoryos)
@@ -73,9 +80,9 @@
 
 ### 3.2 核心学术文献
 
-- [1] Y. Wu et al., "From Human Memory to AI Memory: A Survey on Memory Mechanisms in the Era of LLMs," *arXiv preprint*, 2025. [Online]. Available: https://arxiv.org/abs/2504.15965
-- [2] Z. Zhang et al., "A Survey on the Memory Mechanism of Large Language Model based Agents," *arXiv preprint*, 2024. [Online]. Available: https://arxiv.org/abs/2404.13501
-- [3] J. Kang et al., "Memory OS of AI Agent," *arXiv preprint*, 2025. [Online]. Available: https://arxiv.org/abs/2506.06326
-- [4] P. Chhikara et al., "Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory," *arXiv preprint*, 2025. [Online]. Available: https://arxiv.org/abs/2504.19413
-- [5] Z. He et al., "Human-inspired Perspectives: A Survey on AI Long-term Memory," *arXiv preprint*, 2024. [Online]. Available: https://arxiv.org/abs/2411.00489
-- [6] OpenAI, "GPT-4 Technical Report," *arXiv preprint*, 2023. [Online]. Available: https://arxiv.org/abs/2303.08774
+- [1] Yaxiong Wu et al., "From Human Memory to AI Memory: A Survey on Memory Mechanisms in the Era of LLMs," _arXiv preprint arXiv:2504.15965_, 2025. [Online]. Available: <https://arxiv.org/abs/2504.15965>
+- [2] Zeyu Zhang et al., "A Survey on the Memory Mechanism of Large Language Model based Agents," _arXiv preprint arXiv:2404.13501_, 2024. [Online]. Available: <https://arxiv.org/abs/2404.13501>
+- [3] Jiazheng Kang et al., "Memory OS of AI Agent," _arXiv preprint arXiv:2506.06326_, 2025. [Online]. Available: <https://arxiv.org/abs/2506.06326>
+- [4] Prateek Chhikara et al., "Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory," _arXiv preprint arXiv:2504.19413_, 2025. [Online]. Available: <https://arxiv.org/abs/2504.19413>
+- [5] Zihong He et al., "Human-inspired Perspectives: A Survey on AI Long-term Memory," _arXiv preprint arXiv:2411.00489_, 2024. [Online]. Available: <https://arxiv.org/abs/2411.00489>
+- [6] OpenAI, "GPT-4 Technical Report," _arXiv preprint arXiv:2303.08774_, 2023. [Online]. Available: <https://arxiv.org/abs/2303.08774>
