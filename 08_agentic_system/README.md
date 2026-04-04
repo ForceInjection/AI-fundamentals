@@ -19,17 +19,17 @@
 
 总结了业界成熟的智能体设计范式，探讨在不同业务场景下如何组织智能体的推理、规划与执行流程。
 
-- [ReAct Agent 模式详解](./agent_design/react_agent.md) - 剖析推理 (Reasoning) 与行动 (Acting) 深度协同的经典机制，提升智能体解决复杂任务的可靠性。
-- [写作 Agentic Agent 设计](./agent_design/写作_Agentic_Agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
-- [多轮指代消解对话系统](./agent_design/如何设计支持多轮指代消解的对话系统.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
-- [12-Factor Agents](./concepts/12_factor_agents_intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
-- [TradingAgents-CN 多智能体设计](./agent_design/trading_agents_cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
+- [ReAct Agent 模式详解](./agent_design/react-agent.md) - 剖析推理 (Reasoning) 与行动 (Acting) 深度协同的经典机制，提升智能体解决复杂任务的可靠性。
+- [写作 Agentic Agent 设计](./agent_design/writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
+- [多轮指代消解对话系统](./agent_design/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
+- [12-Factor Agents](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
+- [TradingAgents-CN 多智能体设计](./agent_design/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
 
 ### 1.3 智能体认知模型 (Cognitive Models)
 
 探讨智能体如何像人类一样理解物理与数字世界、预测未来变化并进行长远规划的内部认知机制。
 
-- [世界模型简介](./concepts/world_model_introduction.md) - 解析智能体理解世界的内部引擎，涵盖 RSSM、JEPA 架构及生成式世界模型的最新进展。
+- [世界模型简介](./concepts/world-model-introduction.md) - 解析智能体理解世界的内部引擎，涵盖 RSSM、JEPA 架构及生成式世界模型的最新进展。
 
 ---
 
@@ -41,22 +41,22 @@
 
 探讨如何高效管理和优化 LLM 的上下文窗口，通过动态数据组装、压缩与检索技术，在有限的 Token 限制下提升系统的响应质量与性能。
 
-- [上下文工程原理](./context/上下文工程原理.md) - 介绍动态上下文组装的理论基础、实现机制及性能权衡。
-- [Anthropic 上下文工程指南](./context/anthropic_context_engineering_zh.md) - 深度翻译并解读来自 Anthropic 官方的 Context Engineering 最佳实践与提示词技巧。
-- [LangChain 上下文工程实践](./context/langchain_with_context_engineering.md) - 结合 LangChain 框架，展示如何在实际工程中落地上下文组装与管理策略。
-- [OpenViking 深度剖析](./context/openviking_deep_dive.md) - 字节跳动开源的 AI Agent 上下文数据库深度解读，学习其基于文件系统范式统一管理记忆与资源的架构创新。
-- [上下文工程原理简介](./context/上下文工程原理简介.md) - 以通俗易懂的方式介绍上下文工程的核心概念，从提示词工程到动态上下文组装的演进。
+- [上下文工程原理](./context/context-engineering-principles.md) - 介绍动态上下文组装的理论基础、实现机制及性能权衡。
+- [Anthropic 上下文工程指南](./context/anthropic-context-engineering-zh.md) - 深度翻译并解读来自 Anthropic 官方的 Context Engineering 最佳实践与提示词技巧。
+- [LangChain 上下文工程实践](./context/langchain-with-context-engineering.md) - 结合 LangChain 框架，展示如何在实际工程中落地上下文组装与管理策略。
+- [OpenViking 深度剖析](./context/openviking-deep-dive.md) - 字节跳动开源的 AI Agent 上下文数据库深度解读，学习其基于文件系统范式统一管理记忆与资源的架构创新。
+- [上下文工程原理简介](./context/context-engineering-intro.md) - 以通俗易懂的方式介绍上下文工程的核心概念，从提示词工程到动态上下文组装的演进。
 
 ### 2.2 记忆系统 (Memory Systems)
 
 介绍赋予智能体长期记忆与个性化能力的核心机制，从理论模型到 MemoryOS 与 Mem0 等实战架构，解决大模型"遗忘"的痛点。
 
 - [AI 智能体记忆系统架构总览](./memory/README.md) - 涵盖基于主流设计模式的增强型分层记忆架构设计图及各子模块导读说明。
-- [AI 智能体记忆系统综述](./memory/docs/AI_智能体记忆系统_理论与实践.md) - 系统性梳理记忆系统的理论模型、技术路线与演进方向。
-- [MemoryOS 架构设计](./memory/docs/MemoryOS智能记忆系统架构设计与开发指南.md) - 模块化智能记忆管理系统的详细设计，涵盖多模态记忆、实体识别与图谱构建。
-- [Mem0 快速入门](./memory/docs/mem0快速入门.md) - 个性化记忆库 Mem0 的实战指南，展示如何为应用快速接入用户记忆能力。
-- [MemMachine 深度解析](./memory/docs/MemMachine深度解析.md) - 深度解析 MemMachine 如何通过创新架构重新定义智能体交互体验与长记忆管理。
-- [大模型 Agent 记忆综述](./memory/docs/大模型Agent记忆综述.md) - 系统梳理大语言模型 Agent 记忆系统的理论基础、分类机制与最新学术研究进展。
+- [AI 智能体记忆系统综述](./memory/research/theory/ai-agent-memory-theory.md) - 系统性梳理记忆系统的理论模型、技术路线与演进方向。
+- [MemoryOS 架构设计](./memory/research/memoryos-architecture-guide.md) - 模块化智能记忆管理系统的详细设计，涵盖多模态记忆、实体识别与图谱构建。
+- [Mem0 快速入门](./memory/research/systems/mem0-quickstart.md) - 个性化记忆库 Mem0 的实战指南，展示如何为应用快速接入用户记忆能力。
+- [MemMachine 深度解析](./memory/research/systems/memmachine-deep-dive.md) - 深度解析 MemMachine 如何通过创新架构重新定义智能体交互体验与长记忆管理。
+- [大模型 Agent 记忆综述](./memory/research/theory/llm-agent-memory-survey.md) - 系统梳理大语言模型 Agent 记忆系统的理论基础、分类机制与最新学术研究进展。
 
 ### 2.3 工具与互操作性 (Tools & MCP)
 
@@ -70,8 +70,8 @@
 
 解析支撑大规模智能体运行的技术栈，涵盖从开发框架、编排引擎到监控部署等关键环节，构建稳健的生产级运行环境。
 
-- [AI Agent 基础设施技术栈](./agent_infra/ai_agent_infra_stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
-- [AI Agent 基础设施的崛起](./agent_infra/the_rise_of_ai_agent_infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
+- [AI Agent 基础设施技术栈](./agent_infra/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
+- [AI Agent 基础设施的崛起](./agent_infra/the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
 
 ---
 
@@ -83,7 +83,7 @@
 
 包含经过验证的端到端系统实现，展示了多智能体协作与 MCP 服务的完整代码结构与工程细节。
 
-- [多轮指代消解对话系统源码](./memory/code/README.md) - 基于深度学习和 NLP 技术的多轮指代消解对话系统完整实现，支持实体识别、状态管理与微服务部署。
+- [多轮指代消解对话系统源码](./agent_design/coref-dialogue-system/README.md) - 基于深度学习和 NLP 技术的多轮指代消解对话系统完整实现，支持实体识别、状态管理与微服务部署。
 - [企业级多智能体系统源码](./multi_agent/multi_agent_system/README.md) - 基于 Python 构建的完整 MAS (Multi-Agent System) 实现，包含异步通信总线、状态监控与容错机制集成。
 - [MCP 智能体演示项目](./mcp/mcp_demo/README.md) - Model Context Protocol 服务端与客户端完整示例代码，展示如何快速暴露本地计算资源与数据。
 
@@ -105,12 +105,12 @@
 
 汇集主流技术社区与咨询机构的深度调研报告，分析 Agent 工程化的现状、痛点与开发者生态演进。
 
-- [LangChain Agent 工程现状报告](./reports/langchain_state_of_agent_engineering.md) - 解析 2024 年度 Agent 领域的最新技术趋势、主流框架占比与开发者核心诉求。
+- [LangChain Agent 工程现状报告](./reports/langchain-state-of-agent-engineering.md) - 解析 2024 年度 Agent 领域的最新技术趋势、主流框架占比与开发者核心诉求。
 
 ### 4.2 学术前沿论文
 
 精选 AI Agent 领域的核心论文，涵盖工作流综述与深度研究智能体等前沿突破。
 
-- [Deep Research Agents](./papers/deepresearch_agent.md) - 探讨深度研究智能体的定义、多步推理规划能力、核心架构设计与评估基准。
-- [Agent Workflow 综述](./papers/agent_workflow_survey.md) - 系统性总结涵盖 24 种主流 Agent 工作流模式的权威综述论文。
+- [Deep Research Agents](./papers/deep-research-agent.md) - 探讨深度研究智能体的定义、多步推理规划能力、核心架构设计与评估基准。
+- [Agent Workflow 综述](./papers/agent-workflow-survey.md) - 系统性总结涵盖 24 种主流 Agent 工作流模式的权威综述论文。
 - [论文资源库](./papers/README.md) - AI Agent 领域必读核心论文的持续更新索引与解读。
