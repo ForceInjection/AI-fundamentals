@@ -769,9 +769,9 @@ class IntelligentStateManager:
 
 > 详细实现代码请参考：
 >
-> - [entity_recognition.py](../memory/code/entity_recognition.py)
-> - [coreference_resolution.py](../memory/code/coreference_resolution.py)
-> - [dialogue_state_manager.py](../memory/code/dialogue_state_manager.py)
+> - [entity_recognition.py](./coref-dialogue-system/entity_recognition.py)
+> - [coreference_resolution.py](./coref-dialogue-system/coreference_resolution.py)
+> - [dialogue_state_manager.py](./coref-dialogue-system/dialogue_state_manager.py)
 
 #### 4.1.4 性能优化策略集成
 
@@ -796,7 +796,7 @@ class BatchOptimizer:
         return processed_results
 ```
 
-> 详细实现请参考：[system_integration.py](../memory/code/system_integration.py)
+> 详细实现请参考：[system_integration.py](./coref-dialogue-system/system_integration.py)
 
 #### 4.1.5 架构优势分析
 
@@ -910,7 +910,7 @@ class ProductionCoreferenceEngine:
         return CoreferenceResult(entity, confidence, alternatives)
 ```
 
-> 详细实现请参考：[coreference_resolution.py](../memory/code/coreference_resolution.py)
+> 详细实现请参考：[coreference_resolution.py](./coref-dialogue-system/coreference_resolution.py)
 
 #### 4.2.3 对话状态管理器
 
@@ -936,7 +936,7 @@ class AdvancedDialogueStateTracker:
         return updated_state
 ```
 
-> 详细实现请参考：[dialogue_state_manager.py](../memory/code/dialogue_state_manager.py)
+> 详细实现请参考：[dialogue_state_manager.py](./coref-dialogue-system/dialogue_state_manager.py)
 
 #### 4.2.4 任务处理与响应生成
 
@@ -961,7 +961,7 @@ class TaskProcessingEngine:
         return final_response
 ```
 
-> 详细实现请参考：[system_integration.py](../memory/code/system_integration.py)
+> 详细实现请参考：[system_integration.py](./coref-dialogue-system/system_integration.py)
 
 ### 4.3 指代消解系统架构
 
@@ -1315,7 +1315,7 @@ class EfficientCandidateFilter:
         pass
 ```
 
-详细的性能优化实现请参考：[性能优化实现代码](../memory/code/performance_optimization.py)。
+详细的性能优化实现请参考：[性能优化实现代码](./coref-dialogue-system/performance_optimization.py)。
 
 #### 5.4.2 缓存机制
 
@@ -1337,7 +1337,7 @@ class BatchProcessor:
         pass
 ```
 
-批处理优化的详细实现已包含在：[performance_optimization.py](../memory/code/performance_optimization.py)。
+批处理优化的详细实现已包含在：[performance_optimization.py](./coref-dialogue-system/performance_optimization.py)。
 
 ### 5.5 内存优化
 
@@ -1363,7 +1363,7 @@ class MemoryManager:
         pass
 ```
 
-详细的内存管理实现请参考：[memory_management.py](../memory/code/memory_management.py)。
+详细的内存管理实现请参考：[memory_management.py](./coref-dialogue-system/memory_management.py)。
 
 ### 5.6 模型压缩与加速
 
@@ -1802,7 +1802,7 @@ class MultiModalCoreferenceResolver:
         pass
 ```
 
-详细的多模态指代消解实现请参考：[multimodal_coref.py](../memory/code/multimodal_coref.py)。
+详细的多模态指代消解实现请参考：[multimodal_coref.py](./coref-dialogue-system/multimodal_coref.py)。
 
 #### 7.1.2 零样本和少样本学习
 
