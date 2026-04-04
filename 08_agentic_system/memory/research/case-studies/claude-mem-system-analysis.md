@@ -10,7 +10,7 @@
 
 ### 1.1 Claude Code 的原生记忆机制
 
-正如我之前在 [《Claude Code 源码解析：基于 Markdown 文件的持久化记忆机制》](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/memory/docs/case-studies/claude-code-memory-analysis.md) 一文中所剖析的，Claude Code 官方选择了一条极简且内聚的**纯文本工程化路线**。其原生系统完全基于本地的 Markdown 文件，通过巧妙的个人与团队双层目录架构，实现了对话上下文与规则知识的长效留存。
+正如我之前在 [《Claude Code 源码解析：基于 Markdown 文件的持久化记忆机制》](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/memory/research/case-studies/claude-code-memory-analysis.md) 一文中所剖析的，Claude Code 官方选择了一条极简且内聚的**纯文本工程化路线**。其原生系统完全基于本地的 Markdown 文件，通过巧妙的个人与团队双层目录架构，实现了对话上下文与规则知识的长效留存。
 
 在这个机制下，为了避免每次会话加载全量文件导致 Token 消耗过大，原生系统采用了“轻量级索引 + 结构化实体文件”的解耦模式。大语言模型在初始化时仅读取轻量级索引，当判定某一记忆条目与当前任务相关时，再主动去检索并读取具体的 `.md` 实体文件内容。同时，系统结合后台的 `AutoDream` 防劣化机制来自动合并和沉淀临时日志。这种架构的优势在于部署门槛极低，非常适合用来存储类似于“团队代码规范”、“数据库连接配置”这样相对静态且全局的**规则型知识**（Rule/Knowledge）。
 
