@@ -6,9 +6,6 @@ __pycache__/
 #Mac
 .DS_Store
 
-# 本地工具检查输出
-link_check_report_v2.txt
-
 #Trae
 .trae
 
