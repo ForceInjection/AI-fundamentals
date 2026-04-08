@@ -230,6 +230,8 @@ $$
 
 相比于传统的 13B 级模型（单 Token 约 0.8 MB），小模型配合 GQA 技术使得 KV Cache 极小，这意味着在同样的显存预算下可以支持极大的并发或超长的上下文。对于采用 MLA/DSA 等机制的模型，请参见 4.5 速查表获取按实现口径整理的数据。
 
+**注意：若模型未显式定义 `head_dim`，应优先按 $H/N_{attn}$ 保守估算。**
+
 ---
 
 ### 4.5 不同模型 KV Cache 速查表
@@ -272,7 +274,7 @@ $$
 1. **固定系统开销**：CUDA Context、框架运行时（如 PyTorch 的 CUDA 初始化与内存分配器元数据）、算子 workspace 等。该值受驱动版本、CUDA 版本、框架版本与算子选择影响较大，业界没有统一的“固定值”。实践中常见量级为数百 MB 到 1 GB+，建议以实际环境 `nvidia-smi`/框架统计为准（机制说明见参考资料 3-4）。
 2. **动态激活**：与 Batch Size 呈线性关系。
 
-因此，原本“权重显存的 20%”这一经验法则在不同推理框架/模型结构下并不稳健，且对小模型尤其容易低估固定开销。对于 Qwen3-0.6B 这样的小模型，更建议预留 **1 GB ~ 2 GB** 的固定余量作为工程 buffer（并在上线前以真实工作负载压测校准），而不是按权重比例计算。
+因此，原本“权重显存的 20%”这一经验法则在不同推理框架/模型结构下并不稳健，且对小模型尤其容易低估固定开销。对于 Qwen3-0.6B 这样的小模型，更建议预留 **1 GB ~ 2 GB** 的固定余量作为工程 buffer（并在上线前以真实工作负载压测校准），而不是按权重比例计算。此外，对于 MoE 模型（如 Qwen3-30B-A3B），由于专家路由计算产生的临时激活张量规模通常大于同量级 Dense 模型，其固定预留量应适当上浮（例如建议预留 2 ~ 4 GB）。
 
 $$
 \text{Memory}_{\text{overhead}} \approx 1~\text{GiB} + \alpha \times B
@@ -319,7 +321,7 @@ bkv = 2           # FP16/BF16：2 bytes
 mem_weights = P * bw
 
 # 计算：KV Cache 显存（Bytes）
-# 注意：引入 GQA 系数 N_kv / N_attn
+# 注意：引入 GQA 系数 N_kv / N_attn，其中 H * (N_kv / N_attn) 等价于 N_kv * head_dim
 S_total = S_prompt + S_gen
 mem_kv = 2 * bkv * L * B * S_total * H * (N_kv / N_attn)
 
@@ -338,8 +340,10 @@ mem_total = mem_weights + mem_kv + mem_overhead
 
 ### 7.1 静态门槛
 
-- 权重显存：约 1.12 GiB（即 1.2 GB）。
-- 系统开销预留：约 1.4 GiB（即 1.5 GB，含 CUDA Context + Activation + 余量）。
+*注：工程计算中建议统一使用 GiB（$1 \text{ GiB} \approx 1.074 \text{ GB}$）进行容量评估，以避免与硬件厂商标称容量产生混淆。*
+
+- 权重显存：约 1.12 GiB。
+- 系统开销预留：约 1.4 GiB（含 CUDA Context + Activation + 余量）。
 - **可用显存**： $40 - 1.12 - 1.4 \approx 37.48\,\text{GiB}$（其中 “40” 为示例预算，工程上请以实际机器 `nvidia-smi` 读数替换该值）。
 
 ### 7.2 并发与长度的约束（KV Cache 主导近似）
@@ -406,3 +410,4 @@ $$
 3. PyTorch Documentation, "CUDA memory management", URL: <https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-management>
 4. NVIDIA, "CUDA C++ Programming Guide", URL: <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html>
 5. vLLM Recipes, "GLM‑5 Usage (FP8 部署指南)", URL: <https://github.com/vllm-project/recipes/blob/main/GLM/GLM5.md>
+6. vLLM Blog, "vLLM: Easy, Fast, and Cheap LLM Serving with PagedAttention", URL: <https://vllm.ai/blog/vllm>
