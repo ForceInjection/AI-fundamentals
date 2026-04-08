@@ -12,8 +12,8 @@ KV Cache 是 LLM 推理加速的基石。在自回归生成过程中，通过缓
 
 Prefix Caching（前缀缓存）是 KV Cache 优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 TTFT 并提升系统吞吐量。
 
-- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](prefix_caching/radix_attention.md)**：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
-- **[Prefix Caching 原理与实现](prefix_caching/prefix_caching.md)**：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
+- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](prefix_caching/radix_attention.md)** ([配套 PPT](prefix_caching/radix_attention.pptx))：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
+- **[Prefix Caching 原理与实现](prefix_caching/prefix_caching.md)** ([配套 PPT](prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 
 ## 3. 进阶架构与管理系统
 
