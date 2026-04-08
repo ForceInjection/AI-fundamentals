@@ -25,7 +25,15 @@
 - [12-Factor Agents](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
 - [TradingAgents-CN 多智能体设计](./agent_design/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
 
-### 1.3 智能体认知模型 (Cognitive Models)
+### 1.3 数据智能体 (Data Agents)
+
+专注于连接自然语言与企业数据系统（数据库、API、数据仓库），实现“对话即分析”的数据智能代理系统设计与落地。
+
+- [数据智能体综述](./data-agent/data-agent-survey.md) ([配套 PPT](./data-agent/data-agent-survey.pptx)) - 探讨 Data Agent 作为新兴范式的核心架构、能力分级（L0-L5）及在企业复杂数据场景下的应用挑战与过度炒作风险。
+- [企业级 Data Agent 产品需求文档](./data-agent/enterprise-data-agent-prd.md) ([配套 PPT](./data-agent/enterprise-data-agent-prd.pptx)) - 一份完整的商业级 L2 条件自动化 Data Agent PRD，涵盖 NL2SQL、语义模型、混合查询及成本硬拦截等生产级特性。
+- [企业级 Data Agent 敏捷落地规划](./data-agent/data-agent-skill-mvp.md) ([配套 PPT](./data-agent/data-agent-skill-mvp.pptx)) - 针对 MVP 阶段的“降维打击”战术板，通过“技能挂载（Skill Integration）”优先盘活存量 API 资产，快速建立业务信任。
+
+### 1.4 智能体认知模型 (Cognitive Models)
 
 探讨智能体如何像人类一样理解物理与数字世界、预测未来变化并进行长远规划的内部认知机制。
 
