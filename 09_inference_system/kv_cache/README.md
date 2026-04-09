@@ -6,14 +6,14 @@
 
 KV Cache 是 LLM 推理加速的基石。在自回归生成过程中，通过缓存 Attention 层的 Key 和 Value 矩阵，避免了对历史 Token 的重复计算，从而实现了推理计算量从 $O(N^3)$ 到 $O(N^2)$ 的显著降低（在单步生成层面是从 $O(N^2)$ 降至 $O(N)$）。
 
-- **[KV Cache 原理简介](basic/kv_cache_原理简介.md)**：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
+- **[KV Cache 原理简介](01_concepts/basic/kv_cache_原理简介.md)**：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 
 ## 2. Prefix Caching
 
 Prefix Caching（前缀缓存）是 KV Cache 优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 TTFT 并提升系统吞吐量。
 
-- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](prefix_caching/radix_attention.md)** ([配套 PPT](prefix_caching/radix_attention.pptx))：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
-- **[Prefix Caching 原理与实现](prefix_caching/prefix_caching.md)** ([配套 PPT](prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
+- **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](01_concepts/prefix_caching/radix_attention.md)** ([配套 PPT](01_concepts/prefix_caching/radix_attention.pptx))：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
+- **[Prefix Caching 原理与实现](01_concepts/prefix_caching/prefix_caching.md)** ([配套 PPT](01_concepts/prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 
 ## 3. 进阶架构与管理系统
 
@@ -49,43 +49,37 @@ LMCache 是一个专为 LLM 推理引擎设计的 KV Cache 管理系统，旨在
 
 Tair KVCache 是阿里云推出的企业级 KVCache 解决方案，基于 Tair 数据库技术，提供了高性能的分布式 KV Cache 管理能力。
 
-- **[Tair KVCache 架构与设计深度分析](ali_tair_kvcache/tair-kvcache-architecture-design.md)**：深入分析了 Tair KVCache Manager (KVCM) 的架构。它采用中心化元数据管理 + 分布式存储的模式，支持 KV 匹配、前缀匹配和滑动窗口匹配，并实现了两阶段写入机制以保障数据一致性。
+- **[Tair KVCache 架构与设计深度分析](02_systems/tair_kvcache/tair-kvcache-architecture-design.md)**：深入分析了 Tair KVCache Manager (KVCM) 的架构。它采用中心化元数据管理 + 分布式存储的模式，支持 KV 匹配、前缀匹配和滑动窗口匹配，并实现了两阶段写入机制以保障数据一致性。
 
 ### 3.3 NVIDIA KVBM (KV Block Manager)
 
 KVBM 是 NVIDIA Dynamo 项目中的核心组件，服务于 vLLM 和 TensorRT-LLM 等高性能推理框架。
 
-- **[KV Block Manager (KVBM) 深度解析](kvbm/KVBM_Analysis.md)**：剖析了 KVBM 如何通过统一内存 API 管理异构存储（GPU/CPU/SSD），利用 Block 机制和状态机管理内存生命周期，并结合 NIXL 库实现高效的数据传输（如 GDS、RDMA）。
+- **[KV Block Manager (KVBM) 深度解析](02_systems/kvbm/KVBM_Analysis.md)**：剖析了 KVBM 如何通过统一内存 API 管理异构存储（GPU/CPU/SSD），利用 Block 机制和状态机管理内存生命周期，并结合 NIXL 库实现高效的数据传输（如 GDS、RDMA）。
 
 ### 3.4 Mooncake 架构
 
 Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推理架构。
 
-- **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](mooncake/mooncake_architecture.md)**：介绍了基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
+- **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](02_systems/mooncake/mooncake_architecture.md)**：介绍了基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
 
 ## 4. 关键技术分析
 
 除了具体的系统架构，本目录还包含对特定技术点的深度分析。
 
-- **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](advanced_techniques/kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
-- **[KV Cache 层级流水线并行](advanced_techniques/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
+- **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](01_concepts/advanced/kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
+- **[KV Cache 层级流水线并行](01_concepts/advanced/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
 
 ## 5. 容量规划与 ROI 分析
 
 在大模型推理系统建设中，KV Cache 的容量规划与 ROI 评估是资源配置的核心。
 
-- **[KV Cache 引入收益评估](capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
-- **[GLM-5 模型 KV Cache 容量规划报告](capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
+- **[KV Cache 引入收益评估](01_concepts/capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
+- **[GLM-5 模型 KV Cache 容量规划报告](01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
 
 ## 6. 目录结构说明
 
-| 目录/文件              | 说明                                     |
-| :--------------------- | :--------------------------------------- |
-| `basic/`               | KV Cache 基础原理及图解                  |
-| `prefix_caching/`      | Prefix Caching & RadixAttention 相关技术 |
-| `advanced_techniques/` | 层级流水线与卸载策略等进阶优化           |
-| `mooncake/`            | Mooncake 推理系统架构解析                |
-| `lmcache/`             | LMCache 项目相关文档及组件详解           |
-| `ali_tair_kvcache/`    | 阿里云 Tair KVCache 架构文档             |
-| `kvbm/`                | NVIDIA KV Block Manager 技术文档         |
-| `capacity_planning/`   | KV Cache 容量规划与 ROI 收益评估         |
+| 目录/文件      | 说明                                                                                  |
+| :------------- | :------------------------------------------------------------------------------------ |
+| `01_concepts/` | 核心概念与技术 (包含 basic, compression, prefix_caching, advanced, capacity_planning) |
+| `02_systems/`  | 具体系统实现 (包含 lmcache, tair_kvcache, kvbm, mooncake)                             |
