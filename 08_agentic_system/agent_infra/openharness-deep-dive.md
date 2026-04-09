@@ -30,7 +30,7 @@
 
 为了填补纯粹的模型智能与复杂的物理环境执行之间的鸿沟，`OpenHarness` 应运而生。作为一个轻量级且高度可扩展的开源智能体基础设施项目，它将复杂的设计哲学高度浓缩为了一个“智能体能力等式”，并以此为基石构建了整个工程架构：
 
-![Harness Equation](../assets/harness-equation.png)
+![Harness Equation](assets/harness-equation.png)
 
 > [!TIP]
 > **Harness = Tools + Knowledge + Observation + Action + Permissions**
