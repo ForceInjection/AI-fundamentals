@@ -171,12 +171,12 @@ Level 4: System-Level Compression（系统层压缩）
 
 下表详细展示了这四个层级对应的具体压缩对象、代表性核心方法以及相应的性能折中情况，为实际工程选型提供直接参考。
 
-| 层级             | 压缩对象            | 核心方法                                | 代表性工作                                | 压缩率范围 | 精度代价       |
-| ---------------- | ------------------- | --------------------------------------- | ----------------------------------------- | ---------- | -------------- |
+| 层级             | 压缩对象            | 核心方法                                | 代表性工作                                           | 压缩率范围 | 精度代价       |
+| ---------------- | ------------------- | --------------------------------------- | ---------------------------------------------------- | ---------- | -------------- |
 | **Token 层**     | KV 序列长度         | Pruning / Eviction                      | SnapKV [2], H2O [3], StreamingLLM [10], OBCache [12] | 2×–5×      | 低–中          |
-| **Feature 层**   | 隐层维度 / 数值精度 | Quantization / Low-rank / Vector Quant. | KIVI [4], TurboQuant [16], KQ-SVD [5], ReCalKV [18] | 3×–10×     | 低             |
-| **Structure 层** | 层间冗余            | Cross-layer Sharing                     | MiniCache [19], CommonKV [6], xKV [7]               | 2×–3×      | 低             |
-| **System 层**    | 存储位置 / 访问模式 | Offloading / Paging / Prefix            | PagedAttention [8], ShadowKV [9]                    | 3×–6×      | 无（延迟代价） |
+| **Feature 层**   | 隐层维度 / 数值精度 | Quantization / Low-rank / Vector Quant. | KIVI [4], TurboQuant [16], KQ-SVD [5], ReCalKV [18]  | 3×–10×     | 低             |
+| **Structure 层** | 层间冗余            | Cross-layer Sharing                     | MiniCache [19], CommonKV [6], xKV [7]                | 2×–3×      | 低             |
+| **System 层**    | 存储位置 / 访问模式 | Offloading / Paging / Prefix            | PagedAttention [8], ShadowKV [9]                     | 3×–6×      | 无（延迟代价） |
 
 ### 3.3 核心洞察
 
