@@ -294,7 +294,7 @@ startInteractionSpan(userPromptText);
 
 整个代码库认知流程可以分为由广入深的三个阶段，这也是系统在其内置智能体（如 `ExploreAgent` 和 `PlanMode`）的系统提示词中强制规定的工作流。
 
-正如源码 [prompt.ts](src/tools/EnterPlanModeTool/prompt.ts) 中所定义的标准探索流程：
+正如源码 `src/tools/EnterPlanModeTool/prompt.ts` 中所定义的标准探索流程：
 
 ```typescript
 // 摘自 src/tools/EnterPlanModeTool/prompt.ts 的系统提示词

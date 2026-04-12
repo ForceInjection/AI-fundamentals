@@ -61,10 +61,12 @@
 
 - [AI 智能体记忆系统架构总览](./memory/README.md) - 涵盖基于主流设计模式的增强型分层记忆架构设计图及各子模块导读说明。
 - [AI 智能体记忆系统综述](./memory/research/theory/ai-agent-memory-theory.md) - 系统性梳理记忆系统的理论模型、技术路线与演进方向。
-- [MemoryOS 架构设计](./memory/research/memoryos-architecture-guide.md) - 模块化智能记忆管理系统的详细设计，涵盖多模态记忆、实体识别与图谱构建。
+- [MemoryOS 架构设计](./memory/research/systems/memoryos-architecture-guide.md) - 模块化智能记忆管理系统的详细设计，涵盖多模态记忆、实体识别与图谱构建。
 - [Mem0 快速入门](./memory/research/systems/mem0-quickstart.md) - 个性化记忆库 Mem0 的实战指南，展示如何为应用快速接入用户记忆能力。
 - [MemMachine 深度解析](./memory/research/systems/memmachine-deep-dive.md) - 深度解析 MemMachine 如何通过创新架构重新定义智能体交互体验与长记忆管理。
+- [Hermes 内存架构解析](./memory/research/systems/hermes-agent-memory-management.md) - 深度解析 Hermes Agent 的四层内存栈架构与设计哲学。
 - [大模型 Agent 记忆综述](./memory/research/theory/llm-agent-memory-survey.md) - 系统梳理大语言模型 Agent 记忆系统的理论基础、分类机制与最新学术研究进展。
+- [记忆系统演进思考](./memory/research/theory/memory-systems-are-dead.md) - 探讨独立记忆系统向 Agent 框架内化的结构性演进趋势。
 
 ### 2.3 工具与互操作性 (Tools & MCP)
 
