@@ -83,7 +83,8 @@
 - [AI Agent 基础设施技术栈](./agent_infra/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
 - [AI Agent 基础设施的崛起](./agent_infra/the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
 - [OpenHarness 深入浅出：解密开源智能体基础设施](./agent_infra/openharness-deep-dive.md) ([配套 PPT](./agent_infra/openharness-agent-infrastructure.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
-- [Agent Sandbox 的演进与设计范式](./agent_infra/agent-sandbox-design.md) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
+- [Agent Sandbox 的演进与设计范式](./agent_infra/agent-sandbox-design.md) ([配套 PPT](./agent_infra/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
+- [深度解析 Kagent：以构建 Kubernetes 运维智能体为例](./agent_infra/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
 
 ---
 
