@@ -33,7 +33,7 @@ typer==0.15.0
 rich==13.9.4
 
 # 测试
-pytest==8.4.1
+pytest==9.0.3
 pytest-asyncio==0.24.0
 pytest-cov==6.0.0
 
