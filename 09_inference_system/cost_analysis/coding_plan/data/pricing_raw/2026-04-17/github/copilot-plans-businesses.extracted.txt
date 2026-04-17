@@ -1,0 +1,14 @@
+source_url: https://github.com/features/copilot/plans
+accessed_at: 2026-04-17
+method: browser_snapshot + screenshot + OCR
+
+screenshots:
+- github-copilot-plans-businesses.png
+- github-copilot-plans-enterprise.png
+
+ocr_text_businesses:
+- Business: $19 USD per user / month
+
+ocr_text_enterprise:
+- Enterprise: $39 USD per user / month
+- notes: 页面为 “Contact sales” 入口，但价格字段以页面可视文本为准

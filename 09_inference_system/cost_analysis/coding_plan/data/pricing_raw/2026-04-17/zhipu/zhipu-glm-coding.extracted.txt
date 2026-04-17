@@ -1,0 +1,18 @@
+source_url: https://bigmodel.cn/glm-coding
+accessed_at: 2026-04-17
+method: browser_snapshot + screenshot + OCR + webfetch_text
+
+screenshots:
+- zhipu-glm-coding-plans.png
+- zhipu-glm-coding-max.png
+- zhipu-glm-coding-fullpage.png
+
+key_pricing_from_ocr:
+- Lite：¥49 / 月；连续包季 9 折：¥44.1 / 月；连续包年 8 折（以官方页面说明为准）
+- Pro：¥149 / 月；连续包季 9 折：¥134.1 / 月；连续包年 8 折（以官方页面说明为准）
+- Max：¥469 / 月；连续包季 9 折：¥422.1 / 月；连续包年 8 折（以官方页面说明为准）
+
+raw_webfetch_excerpt:
+连续包月连续包季 9折 连续包年 8折 Lite 连续包季 9 折 ￥44.1/月￥49/月
+Pro 连续包季 9 折 ￥134.1/月￥149/月
+Max 连续包季 9 折 ￥422.1/月￥469/月

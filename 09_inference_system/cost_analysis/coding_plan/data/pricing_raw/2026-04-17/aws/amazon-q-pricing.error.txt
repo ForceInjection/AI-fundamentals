@@ -1,0 +1,2 @@
+url: https://aws.amazon.com/cn/q/developer/pricing/
+error: URLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)'))

@@ -1,0 +1,49 @@
+source_url: https://www.bigmodel.cn/claw-plan-team
+accessed_at: 2026-04-17
+method: browser_snapshot + screenshot + OCR
+
+screenshots:
+- zhipu-claw-plan-team.png
+- zhipu-claw-plan-team-cards.png
+- zhipu-claw-plan-team-faq.png
+
+key_text_from_snapshot:
+- 龙虾体验卡：￥39，有效期：1 个月；包含 3500 万 tokens；模型：GLM-5-Turbo
+- 龙虾进阶卡：￥99，有效期：1 个月；包含 1 亿 tokens；模型：GLM-5-Turbo
+- 联系销售：按需定制报价（页面显示已售罄）
+- 每个账号每类月卡限购 5 张
+- 龙虾套餐目前仅支持 GLM-5-Turbo
+- 龙虾套餐相较常规 API 更优惠；若账号同时拥有龙虾套餐与 Coding Plan，系统优先消耗最新购买的套餐资源
+
+ocr_text_from_zhipu-claw-plan-team-cards.png:
+Z 智谱 | BigModel
+从轻量试用到高频协作，灵活匹配不同团队的使用需求
+
+龙虾体验卡
+低门槛体验，适合团队试用与轻量协作场景
+- 包含 3500万 tokens GLM-5-Turbo
+- 轻量并发，满足日常办公需求
+- 适合个人体验与企业试点
+购买数量
+¥39
+有效期：1个月
+已售罄
+
+龙虾进阶卡 最受欢迎
+更高频协作，适合团队协作与并行任务处理
+- 包含 1亿 tokens GLM-5-Turbo
+- 更高并发，满足团队协同与持续使用
+- 适合团队正式使用与多场景接入
+购买数量
+¥99
+有效期：1个月
+已售罄
+
+联系销售
+适合大型组织场景，支持按需定制资源额度
+- 支持专项业务场景接入
+- 提供专属服务与售前咨询
+购买数量 按需定制
+按需定制报价
+有效期：1个月
+已售罄
