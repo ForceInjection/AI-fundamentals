@@ -1,0 +1,2 @@
+url: https://www.jetbrains.com/help/ai-assistant/licensing-and-subscriptions.html
+error: TimeoutError('Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to "https://www.jetbrains.com/help/ai-assistant/licensing-and-subscriptions.html", waiting until "networkidle"\n')

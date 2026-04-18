@@ -1,0 +1,2 @@
+url: https://help.aliyun.com/zh/model-studio/coding-plan
+error: Error('Page.goto: Navigation to "https://help.aliyun.com/zh/model-studio/coding-plan" is interrupted by another navigation to "https://replit.com/pricing"\nCall log:\n  - navigating to "https://help.aliyun.com/zh/model-studio/coding-plan", waiting until "networkidle"\n')

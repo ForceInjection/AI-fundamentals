@@ -1,0 +1,2 @@
+url: https://old-www.tabnine.com/pricing
+error: URLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] ssl/tls alert handshake failure (_ssl.c:1081)'))

@@ -1,0 +1,2 @@
+url: https://platform.minimaxi.com/docs/guides/pricing-token-plan
+error: Error('Page.goto: Navigation to "https://platform.minimaxi.com/docs/guides/pricing-token-plan" is interrupted by another navigation to "https://www.volcengine.com/activity/codingplan"\nCall log:\n  - navigating to "https://platform.minimaxi.com/docs/guides/pricing-token-plan", waiting until "networkidle"\n')

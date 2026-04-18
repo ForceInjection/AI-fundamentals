@@ -1,0 +1,2 @@
+url: https://bigmodel.cn/glm-coding
+error: Error('Page.goto: Navigation to "https://bigmodel.cn/glm-coding" is interrupted by another navigation to "chrome-error://chromewebdata/"\nCall log:\n  - navigating to "https://bigmodel.cn/glm-coding", waiting until "networkidle"\n')

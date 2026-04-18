@@ -1,0 +1,2 @@
+url: https://www.volcengine.com/activity/codingplan
+error: Error('Page.goto: Navigation to "https://www.volcengine.com/activity/codingplan" is interrupted by another navigation to "https://cloud.tencent.com/act/pro/codingplan"\nCall log:\n  - navigating to "https://www.volcengine.com/activity/codingplan", waiting until "networkidle"\n')

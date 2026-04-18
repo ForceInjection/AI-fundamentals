@@ -1,0 +1,2 @@
+url: https://www.cursor.com/pricing
+error: TimeoutError('Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to "https://www.cursor.com/pricing", waiting until "networkidle"\n')

@@ -1,0 +1,2 @@
+url: https://cloud.tencent.com/act/pro/codingplan
+error: Error('Page.goto: Navigation to "https://cloud.tencent.com/act/pro/codingplan" is interrupted by another navigation to "https://help.aliyun.com/zh/model-studio/coding-plan"\nCall log:\n  - navigating to "https://cloud.tencent.com/act/pro/codingplan", waiting until "networkidle"\n')

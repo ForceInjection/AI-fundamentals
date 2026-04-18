@@ -1,0 +1,2 @@
+url: https://www.bigmodel.cn/claw-plan-team
+error: Error('Page.goto: net::ERR_CONNECTION_CLOSED at https://www.bigmodel.cn/claw-plan-team\nCall log:\n  - navigating to "https://www.bigmodel.cn/claw-plan-team", waiting until "networkidle"\n')

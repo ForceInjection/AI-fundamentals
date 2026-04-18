@@ -3,14 +3,14 @@
 | AWS | Amazon Q Developer | Pro | USD | 19 |  |  | 每月代理请求次数与包含的 LOC 额度以官方页面为准 |  | https://aws.amazon.com/q/developer/pricing/ | 2026-04-17 | ok |
 | Anthropic | Claude (含 Claude Code) | Max | USD | 100 |  |  | Max 套餐存在不同用量档位（5x 或 20x），以官方页面说明为准 |  | https://claude.com/pricing | 2026-04-17 | ok |
 | Anthropic | Claude (含 Claude Code) | Pro | USD | 20 | 17 |  | 约 4.4 万 Tokens（以官方页面说明为准） |  | https://claude.com/pricing | 2026-04-17 | ok |
-| Cursor | Cursor | Business | USD | 40.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-17 | ok |
-| Cursor | Cursor | Hobby | USD | 0.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-17 | ok |
-| Cursor | Cursor | Pro | USD | 20.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-17 | ok |
+| Cursor | Cursor | Business | USD | 40.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-18 | ok |
+| Cursor | Cursor | Hobby | USD | 0.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-18 | ok |
+| Cursor | Cursor | Pro | USD | 20 |  |  | 500 次快速请求/月 |  | https://www.cursor.com/pricing | 2026-04-18 | ok |
 | Cursor | Cursor | Pro+ | USD | 60 |  |  | 1,500 次快速请求/月 |  | https://www.cursor.com/pricing | 2026-04-17 | ok |
-| Cursor | Cursor | Ultra | USD | 200.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-17 | ok |
+| Cursor | Cursor | Ultra | USD | 200.0 |  |  |  |  | https://www.cursor.com/pricing | 2026-04-18 | ok |
 | GitHub | GitHub Copilot | Business | USD | 19 |  |  |  |  | https://github.com/features/copilot/plans | 2026-04-17 | ok |
 | GitHub | GitHub Copilot | Enterprise | USD | 39 |  |  |  | 购买入口为 Contact sales（以官方页面说明为准） | https://github.com/features/copilot/plans | 2026-04-17 | ok |
-| GitHub | GitHub Copilot | Free | USD | 0.0 |  |  |  |  | https://github.com/features/copilot/plans | 2026-04-17 | ok |
+| GitHub | GitHub Copilot | Free | USD | 0.0 |  |  |  |  | https://github.com/features/copilot/plans | 2026-04-18 | ok |
 | GitHub | GitHub Copilot | Pro | USD | 10 |  |  | 每月高级请求次数与额度以官方页面为准 |  | https://github.com/features/copilot/plans | 2026-04-17 | ok |
 | GitHub | GitHub Copilot | Pro+ | USD | 39 |  |  | 1,500 次高级请求/月（以官方页面为准） |  | https://github.com/features/copilot/plans | 2026-04-17 | ok |
 | JetBrains | JetBrains AI | AI Enterprise | USD |  |  |  |  |  | https://www.jetbrains.com/help/ai-assistant/licensing-and-subscriptions.html | 2026-04-17 | needs_review |
@@ -25,8 +25,8 @@
 | MiniMax | MiniMax Token Plan | Starter（标准版） | CNY | 29 | 24.17 |  | M2.7：600 次请求/5 小时（以官方定价文档为准） |  | https://platform.minimaxi.com/docs/guides/pricing-token-plan | 2026-04-17 | ok |
 | Replit | Replit | Core | USD | 25 | 20 |  |  |  | https://replit.com/pricing | 2026-04-17 | ok |
 | Replit | Replit | Pro | USD | 100 | 95 |  | $100 monthly credits（以官方页面说明为准） |  | https://replit.com/pricing | 2026-04-17 | ok |
-| Tabnine | Tabnine | unknown |  |  |  |  |  |  | https://old-www.tabnine.com/pricing | 2026-04-17 | download_failed |
-| Windsurf | Windsurf (Codeium) | Free | USD | 0.0 |  |  |  |  | https://windsurf.com/pricing | 2026-04-17 | ok |
+| Tabnine | Tabnine | unknown |  |  |  |  |  |  | https://old-www.tabnine.com/pricing | 2026-04-18 | download_failed |
+| Windsurf | Windsurf (Codeium) | Free | USD | 0.0 |  |  |  |  | https://windsurf.com/pricing | 2026-04-18 | ok |
 | Windsurf | Windsurf (Codeium) | Pro | USD | 20 |  |  | Prompt Credits 与模型支持范围以官方页面为准 |  | https://windsurf.com/pricing | 2026-04-17 | ok |
 | Windsurf | Windsurf (Codeium) | Teams | USD | 40 |  |  |  |  | https://windsurf.com/pricing | 2026-04-17 | ok |
 | 智谱 | 智谱 GLM Coding Plan | Lite | CNY | 49 |  | 44.1 |  |  | https://bigmodel.cn/glm-coding | 2026-04-17 | ok |

@@ -1,0 +1,2 @@
+url: https://replit.com/pricing
+error: Error('Page.goto: Navigation to "https://replit.com/pricing" is interrupted by another navigation to "chrome-error://chromewebdata/"\nCall log:\n  - navigating to "https://replit.com/pricing", waiting until "networkidle"\n')

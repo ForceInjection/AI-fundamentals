@@ -1,0 +1,2 @@
+url: https://www.kimi.com/code
+error: Error('Page.goto: Navigation to "https://www.kimi.com/code" is interrupted by another navigation to "https://platform.minimaxi.com/docs/guides/pricing-token-plan"\nCall log:\n  - navigating to "https://www.kimi.com/code", waiting until "networkidle"\n')
