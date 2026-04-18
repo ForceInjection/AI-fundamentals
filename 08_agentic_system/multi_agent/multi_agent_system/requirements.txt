@@ -1,7 +1,7 @@
 # 核心框架
 langchain==1.2.10
 langgraph==1.0.10
-langsmith==0.7.14
+langsmith==0.7.31
 
 # AI模型
 openai==1.94.0
