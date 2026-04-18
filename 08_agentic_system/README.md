@@ -54,6 +54,7 @@
 - [LangChain 上下文工程实践](./context/langchain-with-context-engineering.md) - 结合 LangChain 框架，展示如何在实际工程中落地上下文组装与管理策略。
 - [OpenViking 深度剖析](./context/openviking-deep-dive.md) - 字节跳动开源的 AI Agent 上下文数据库深度解读，学习其基于文件系统范式统一管理记忆与资源的架构创新。
 - [上下文工程原理简介](./context/context-engineering-intro.md) - 以通俗易懂的方式介绍上下文工程的核心概念，从提示词工程到动态上下文组装的演进。
+- [Claude Code 上下文压缩机制深度解析](./context/claude-code-context-compression.md) - 深度剖析 Claude Code 如何在不丢失核心逻辑的前提下主动丢弃冗余信息，保证复杂任务长时稳定运行。
 
 ### 2.2 记忆系统 (Memory Systems)
 
