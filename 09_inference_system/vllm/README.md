@@ -10,6 +10,7 @@
 
 - [Native KV Offloading 解析](./module_analysis/vllm_native_kv_offloading.md)：详细分析了 vLLM 原生的 KV Cache 卸载机制，探讨其如何在 GPU 显存受限的情况下，利用主机内存提升吞吐量。
 - [Hybrid KV Cache Manager 深度解析](./module_analysis/vllm_hybrid_kv_cache_manager_deep_dive.md)：探讨混合 KV 缓存管理器的设计原理与实现，分析其如何优化多层级存储资源分配。
+- [CUDA Graphs 深度解析](./module_analysis/vllm_cuda_graph_deep_dive.md)：探讨 vLLM 在解码阶段如何利用 CUDA Graphs 技术大幅降低 CPU 调度开销及其底层内存固化机制。
 
 ---
 
