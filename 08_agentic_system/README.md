@@ -87,6 +87,8 @@
 - [Agent Sandbox 的演进与设计范式](./agent_infra/agent-sandbox-design.md) ([配套 PPT](./agent_infra/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
 - [深度解析 Kagent：以构建 Kubernetes 运维智能体为例](./agent_infra/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
 - [云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析](./agent_infra/openclaw-operator-deep-dive.md) - 深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践，涵盖从 Server-Side Apply 的冲突解决到 StatefulSet 的持久化绑定，以及容器级软隔离与进程级沙箱的安全边界设计。
+- [Claude Code Sandbox 安全隔离机制解析](./agent_infra/claude-code-sandbox.md) - 从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界，深度剖析基于 Bubblewrap 的底层隔离架构与工程实现。
+- [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
 
 ---
 
