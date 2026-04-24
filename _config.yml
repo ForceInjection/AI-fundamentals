@@ -1,9 +1,8 @@
 # Jekyll 站点配置
 title: AI Fundamentals
-email: your-email@example.com
+email: wang.tianqing.cn@gmail.com
 description: >-
-  全面的人工智能基础设施（AI Infrastructure）学习资源集合，
-  涵盖从底层硬件架构到上层高级应用的完整技术栈。
+  AI 基础知识 - GPU 架构、CUDA 编程、大模型基础及AI Agent 相关知识。
 
 # GitHub Pages 官方支持的主题
 theme: minima
@@ -14,12 +13,12 @@ url: "https://wangtianqing.github.io"
 
 # 作者信息
 author:
-  name: AI Infra Learner
+  name: Grissom Wang
 
 # 社交媒体链接（Minima 主题支持）
 minima:
   social_links:
-    - { platform: github,  user_url: "https://github.com/wangtianqing" }
+    - { platform: github,  user_url: "https://github.com/grissomsh" }
 
 # 构建设置
 markdown: kramdown
