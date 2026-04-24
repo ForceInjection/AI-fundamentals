@@ -1,0 +1,47 @@
+# Jekyll 站点配置
+title: AI Fundamentals
+email: your-email@example.com
+description: >-
+  全面的人工智能基础设施（AI Infrastructure）学习资源集合，
+  涵盖从底层硬件架构到上层高级应用的完整技术栈。
+
+# GitHub Pages 官方支持的主题
+theme: minima
+
+# 站点基础配置
+baseurl: "/AI-fundermentals"
+url: "https://wangtianqing.github.io"
+
+# 作者信息
+author:
+  name: AI Infra Learner
+
+# 社交媒体链接（Minima 主题支持）
+minima:
+  social_links:
+    - { platform: github,  user_url: "https://github.com/wangtianqing" }
+
+# 构建设置
+markdown: kramdown
+highlighter: rouge
+
+# 插件
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# 包含的文件和目录
+include:
+  - README.md
+  - AGENTS.md
+
+# 排除的文件和目录
+exclude:
+  - .git/
+  - .gitignore
+  - .qoder/
+  - .trae/
+  - .DS_Store
+  - img/alipay.JPG
+  - img/weixinpay.JPG
+  - "*/.DS_Store"
