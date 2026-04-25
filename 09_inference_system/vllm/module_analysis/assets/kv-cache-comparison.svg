@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 720" width="1020" height="720">
+  <style>
+    text { font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", "Microsoft JhengHei", "SimHei", sans-serif; }
+  </style>
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#6b7280"/>
+    </marker>
+  </defs>
+  <rect width="1020" height="720" fill="#ffffff"/>
+  <g transform="translate(0, 0)">
+  <text x="250" y="32" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">DeepSeek V3.2 KV Cache</text>
+  <rect x="110" y="52" width="16" height="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <text x="132" y="60" font-size="13" fill="#374151">Indexer (128 bf16)</text>
+  <rect x="290" y="50" width="16" height="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="312" y="60" font-size="13" fill="#374151">Main MLA (576 bf16)</text>
+  <rect x="15" y="88" width="470" height="352" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="27" y="110" font-size="13" font-weight="600" fill="#111827">Full-Attention Cache</text>
+  <text x="58" y="150" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L0</text>
+  <rect x="65" y="124" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="136" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="58" y="194" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L1</text>
+  <rect x="65" y="168" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="180" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="58" y="238" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L2</text>
+  <rect x="65" y="212" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="224" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="250" y="264" text-anchor="middle" font-size="12" fill="#9ca3af">⋮   55 More Identical Layers   ⋮</text>
+  <text x="58" y="302" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L58</text>
+  <rect x="65" y="276" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="288" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="58" y="346" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L59</text>
+  <rect x="65" y="320" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="332" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="58" y="390" text-anchor="end" font-size="12" font-weight="600" fill="#374151">L60</text>
+  <rect x="65" y="364" width="380" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="65" y="376" width="380" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <line x1="65" y1="412" x2="445" y2="412" stroke="#9ca3af" stroke-width="1"/>
+  <line x1="65" y1="408" x2="65" y2="416" stroke="#9ca3af" stroke-width="1"/>
+  <line x1="445" y1="408" x2="445" y2="416" stroke="#9ca3af" stroke-width="1"/>
+  <text x="65" y="427" font-size="11" fill="#6b7280">Token 0</text>
+  <text x="445" y="427" text-anchor="end" font-size="11" fill="#6b7280">Token N</text>
+  <rect x="15" y="448" width="470" height="256" rx="8" ry="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+  <text x="250" y="570" text-anchor="middle" font-size="22" font-weight="700" fill="#991b1b">1408 B × 1M × 61  ≈  83.9 GiB / Seq</text>
+  <text x="250" y="605" text-anchor="middle" font-size="14" font-weight="600" fill="#b91c1c">For a presumed 1M-context sequence</text>
+  </g>
+  <line x1="510" y1="24" x2="510" y2="696" stroke="#d1d5db" stroke-width="1.5"/>
+  <g transform="translate(520, 0)">
+  <text x="250" y="32" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">DeepSeek V4 Hybrid KV Cache</text>
+  <rect x="55" y="52" width="14" height="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <text x="75" y="60" font-size="12" fill="#374151">Indexer</text>
+  <rect x="145" y="50" width="14" height="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="165" y="60" font-size="12" fill="#374151">Main MLA</text>
+  <rect x="255" y="52" width="14" height="10" fill="#fed7aa" stroke="#ea580c" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="275" y="60" font-size="12" fill="#374151">Sliding Window</text>
+  <rect x="15" y="88" width="230" height="352" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="27" y="110" font-size="13" font-weight="600" fill="#111827">Full-Attention Caches</text>
+  <text x="27" y="150" font-size="12" fill="#374151"><tspan font-weight="600">L0</tspan>  C128A</text>
+  <rect x="95" y="133" width="16" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="27" y="188" font-size="12" fill="#374151"><tspan font-weight="600">L1</tspan>  C128A</text>
+  <rect x="95" y="171" width="16" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="27" y="231" font-size="12" fill="#374151"><tspan font-weight="600">L2</tspan>  C4A</text>
+  <rect x="95" y="209" width="145" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="95" y="221" width="145" height="30" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="27" y="280" font-size="12" fill="#374151"><tspan font-weight="600">L3</tspan>  C128A</text>
+  <rect x="95" y="263" width="16" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="130.0" y="308" text-anchor="middle" font-size="12" fill="#9ca3af">⋮   55 More Layers   ⋮</text>
+  <text x="27" y="340" font-size="12" fill="#374151"><tspan font-weight="600">L59</tspan> C128A</text>
+  <rect x="95" y="323" width="16" height="26" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="27" y="383" font-size="12" fill="#374151"><tspan font-weight="600">L60</tspan> C4A</text>
+  <rect x="95" y="361" width="145" height="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <rect x="95" y="373" width="145" height="30" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="27" y="419" font-size="12" fill="#111827">30 × C4A    ≈ 320 MiB / Layer</text>
+  <text x="27" y="435" font-size="12" fill="#111827">31 × C128A ≈   8 MiB / Layer</text>
+  <rect x="255" y="88" width="230" height="352" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+  <text x="267" y="110" font-size="13" font-weight="600" fill="#111827">Sliding-Window Caches</text>
+  <rect x="269" y="128" width="202" height="48" rx="6" ry="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <text x="281" y="148" font-size="13" font-weight="600" fill="#7c2d12">SWA KV</text>
+  <text x="281" y="166" font-size="12" fill="#9a3412">128-tok window · 61 Layers</text>
+  <rect x="269" y="186" width="202" height="48" rx="6" ry="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <text x="281" y="206" font-size="13" font-weight="600" fill="#7c2d12">C4 Indexer Compressor State</text>
+  <text x="281" y="224" font-size="12" fill="#9a3412">8-tok window · 30 Layers</text>
+  <rect x="269" y="244" width="202" height="48" rx="6" ry="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <text x="281" y="264" font-size="13" font-weight="600" fill="#7c2d12">C4 Main Compressor State</text>
+  <text x="281" y="282" font-size="12" fill="#9a3412">8-tok window · 30 Layers</text>
+  <rect x="269" y="302" width="202" height="48" rx="6" ry="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.3" stroke-dasharray="4,2"/>
+  <text x="281" y="322" font-size="13" font-weight="600" fill="#7c2d12">C128 Main Compressor State</text>
+  <text x="281" y="340" font-size="12" fill="#9a3412">128-tok window · 31 Layers</text>
+  <text x="370" y="385" text-anchor="middle" font-size="13" font-weight="600" fill="#7c2d12">Constant Size per Request</text>
+  <text x="370" y="405" text-anchor="middle" font-size="12" fill="#9a3412">Independent of seq_len</text>
+  <path d="M 130 444 L 130 468" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <path d="M 370 444 L 370 468" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  <rect x="15" y="472" width="470" height="138" rx="10" ry="10" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.8"/>
+  <text x="250.0" y="494" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">Hybrid KV Cache Manager</text>
+  <text x="250.0" y="512" text-anchor="middle" font-size="12" fill="#6b7280">A Single Block Pool Shared by Different Types of Blocks</text>
+  <rect x="37" y="526" width="188" height="72" rx="6" ry="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.2"/>
+  <text x="131.0" y="554" text-anchor="middle" font-size="13" font-weight="600" fill="#1e3a8a">(a) Full-Attention Blocks</text>
+  <text x="131.0" y="578" text-anchor="middle" font-size="12" fill="#1e40af">Token-Proportional</text>
+  <rect x="275" y="526" width="188" height="72" rx="6" ry="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.2" stroke-dasharray="4,2"/>
+  <text x="369.0" y="554" text-anchor="middle" font-size="13" font-weight="600" fill="#7c2d12">(b) Sliding-Window Blocks</text>
+  <text x="369.0" y="578" text-anchor="middle" font-size="12" fill="#9a3412">Fixed per Request</text>
+  <path d="M 227 556 L 273 556" stroke="#6b7280" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>
+  <path d="M 273 576 L 227 576" stroke="#6b7280" stroke-width="1.6" fill="none" marker-end="url(#arr)"/>
+  <rect x="15" y="624" width="470" height="80" rx="8" ry="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text x="250" y="654" text-anchor="middle" font-size="15" font-weight="700" fill="#14532d">30 × 320 MiB + 31 × 8 MiB  ≈  9.62 GiB / Seq</text>
+  <text x="250" y="682" text-anchor="middle" font-size="13" font-weight="600" fill="#166534">≈ 8.7× Smaller than DSV3.2 at 1M Context</text>
+  </g>
+</svg>

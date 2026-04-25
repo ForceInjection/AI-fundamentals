@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1020" width="1280" height="1020">
+  <style>
+    text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .title { font-size: 20px; font-weight: 600; fill: #111827; }
+    .node { font-size: 13px; fill: #111827; }
+    .node-split { font-size: 12px; fill: #111827; }
+    .node-pink { font-size: 13px; fill: #7f1d1d; font-weight: 600; }
+    .legend { font-size: 12px; fill: #374151; }
+    .stream-lbl { font-size: 18px; font-weight: 700; }
+    .stream-lbl-small { font-size: 13px; }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="1020" fill="#ffffff"/>
+  <text x="640" y="36" text-anchor="middle" class="title">DeepSeek V4 - C4A Decode Path</text>
+  <rect x="30" y="185" width="610" height="317" rx="10" fill="#3b82f6" fill-opacity="0.07"/>
+  <text x="440" y="496" text-anchor="middle" class="stream-lbl" fill="#1e40af">Default stream</text>
+  <rect x="640" y="185" width="610" height="547" rx="10" fill="#f59e0b" fill-opacity="0.07"/>
+  <text x="1080" y="710" text-anchor="middle" class="stream-lbl" fill="#92400e">Indexer stream</text>
+  <rect x="44" y="201" width="202" height="103" rx="12" ry="12" fill="#fce7f3" fill-opacity="0.45" stroke="#be185d" stroke-width="1.75"/>
+  <rect x="1034" y="201" width="202" height="103" rx="12" ry="12" fill="#fce7f3" fill-opacity="0.45" stroke="#be185d" stroke-width="1.75"/>
+  <rect x="254" y="201" width="382" height="48" rx="12" ry="12" fill="#fce7f3" fill-opacity="0.45" stroke="#be185d" stroke-width="1.75"/>
+  <rect x="644" y="303" width="182" height="123" rx="12" ry="12" fill="#fce7f3" fill-opacity="0.45" stroke="#be185d" stroke-width="1.75"/>
+  <rect x="844" y="199" width="182" height="52" rx="12" ry="12" fill="#fce7f3" fill-opacity="0.45" stroke="#be185d" stroke-width="1.75"/>
+  <path d="M 844,251 L 844,299 L 826,299" fill="none" stroke="#be185d" stroke-width="1.25" stroke-dasharray="4,3"/>
+  <rect x="44" y="308" width="202" height="175" rx="12" ry="12" fill="#ede9fe" fill-opacity="0.45" stroke="#a855f7" stroke-width="1.75"/>
+  <rect x="1034" y="308" width="202" height="175" rx="12" ry="12" fill="#ede9fe" fill-opacity="0.45" stroke="#a855f7" stroke-width="1.75"/>
+  <rect x="354" y="763" width="182" height="119" rx="12" ry="12" fill="#fed7aa" fill-opacity="0.45" stroke="#ea580c" stroke-width="1.75"/>
+  <rect x="254" y="252" width="182" height="101" rx="12" ry="12" fill="#dcfce7" fill-opacity="0.45" stroke="#16a34a" stroke-width="1.75"/>
+  <rect x="454" y="303" width="182" height="125" rx="12" ry="12" fill="#dcfce7" fill-opacity="0.45" stroke="#16a34a" stroke-width="1.75"/>
+  <path d="M 436,325 L 454,325" stroke="#16a34a" stroke-width="1.25" stroke-dasharray="4,3" fill="none"/>
+  <path d="M 445,100 L 445,114 L 145,114 L 145,128" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,100 L 445,135" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,100 L 445,114 L 935,114 L 935,135" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,100 L 445,114 L 1135,114 L 1135,128" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,182 L 145,205" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,245 L 145,260" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,300 L 145,312" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,338 L 145,347" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,373 L 145,380" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,420 L 145,435" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 145,475 L 145,590 L 395,590 L 395,720" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,175 L 445,190 L 345,190 L 345,205" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,175 L 445,190 L 545,190 L 545,205" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 345,245 L 345,260" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 345,300 L 345,305" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 345,345 L 345,540 L 427,540 L 427,720" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 545,245 L 545,260" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 545,300 L 545,315" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 545,355 L 545,380" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 545,420 L 545,565 L 463,565 L 463,720" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 545,245 L 545,252 L 735,252 L 735,260" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 735,300 L 735,305" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 735,345 L 735,380" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 735,420 L 735,500 L 856,500" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,175 L 935,205" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,245 L 935,480" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,520 L 935,535" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,575 L 935,590" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,630 L 935,645" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 935,685 L 935,740 L 524,740" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,182 L 1135,205" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,245 L 1135,260" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,300 L 1135,312" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,338 L 1135,347" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,373 L 1135,380" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,420 L 1135,435" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 1135,475 L 1135,500 L 1014,500" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,760 L 445,775" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,815 L 445,830" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,870 L 445,885" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 445,925 L 445,940" fill="none" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <g id="rms_norm">
+    <rect x="366" y="60" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="445" y="85" text-anchor="middle" class="node">RMS Norm</text>
+  </g>
+  <g id="comp_wkv">
+    <rect x="56" y="128" width="178" height="54" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="145" y="152" text-anchor="middle" class="node-pink">Compressor</text>
+    <text x="145" y="170" text-anchor="middle" class="node-pink">W_KV + W_S</text>
+  </g>
+  <g id="wqa_wkv">
+    <rect x="366" y="135" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="445" y="160" text-anchor="middle" class="node-pink">W_Q_A + W_KV</text>
+  </g>
+  <g id="idx_w">
+    <rect x="856" y="135" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="935" y="160" text-anchor="middle" class="node-pink">Indexer W</text>
+  </g>
+  <g id="idx_comp">
+    <rect x="1046" y="128" width="178" height="54" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="1135" y="152" text-anchor="middle" class="node-pink">Indexer Compressor</text>
+    <text x="1135" y="170" text-anchor="middle" class="node-pink">W_KV + W_S</text>
+  </g>
+  <g id="comp_ape">
+    <rect x="66" y="205" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="230" text-anchor="middle" class="node">APE</text>
+  </g>
+  <g id="comp_state">
+    <rect x="66" y="260" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="285" text-anchor="middle" class="node">State Cache</text>
+  </g>
+  <g id="comp_kv">
+    <rect x="66" y="312" width="158" height="26" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="329" text-anchor="middle" class="node-split">KV Compression</text>
+  </g>
+  <g id="comp_rmsn">
+    <rect x="66" y="347" width="158" height="26" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="364" text-anchor="middle" class="node-split">RMSNorm</text>
+  </g>
+  <g id="comp_rope">
+    <rect x="66" y="380" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="405" text-anchor="middle" class="node">RoPE</text>
+  </g>
+  <g id="comp_fp8">
+    <rect x="66" y="435" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="145" y="460" text-anchor="middle" class="node">FP8 + Cache</text>
+  </g>
+  <g id="kv_rms">
+    <rect x="266" y="205" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="345" y="230" text-anchor="middle" class="node">KV RMS Norm</text>
+  </g>
+  <g id="kv_rope">
+    <rect x="266" y="260" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="345" y="285" text-anchor="middle" class="node">KV RoPE</text>
+  </g>
+  <g id="kv_fp8">
+    <rect x="266" y="305" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="345" y="330" text-anchor="middle" class="node">KV FP8 + Cache</text>
+  </g>
+  <g id="q_rms">
+    <rect x="466" y="205" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="545" y="230" text-anchor="middle" class="node">Q RMS Norm</text>
+  </g>
+  <g id="wqb">
+    <rect x="466" y="260" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="545" y="285" text-anchor="middle" class="node-pink">W_Q_B</text>
+  </g>
+  <g id="q_hn">
+    <rect x="466" y="315" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="545" y="340" text-anchor="middle" class="node">Q Head Norm</text>
+  </g>
+  <g id="q_rope">
+    <rect x="466" y="380" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="545" y="405" text-anchor="middle" class="node">Q RoPE</text>
+  </g>
+  <g id="idx_wqb">
+    <rect x="656" y="260" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="735" y="285" text-anchor="middle" class="node-pink">Indexer W_Q_B</text>
+  </g>
+  <g id="idx_qrope">
+    <rect x="656" y="305" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="735" y="330" text-anchor="middle" class="node">Indexer Q RoPE</text>
+  </g>
+  <g id="idx_qfp8">
+    <rect x="656" y="380" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="735" y="405" text-anchor="middle" class="node">Indexer Q FP8</text>
+  </g>
+  <g id="idx_wscale">
+    <rect x="856" y="205" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="935" y="230" text-anchor="middle" class="node">Indexer W Scale</text>
+  </g>
+  <g id="idx_mqa">
+    <rect x="856" y="480" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="935" y="505" text-anchor="middle" class="node-pink">Indexer MQA</text>
+  </g>
+  <g id="topk_logits">
+    <rect x="856" y="535" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="935" y="560" text-anchor="middle" class="node-pink">Top-K Logits</text>
+  </g>
+  <g id="topk_pgidx">
+    <rect x="856" y="590" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="935" y="615" text-anchor="middle" class="node">Top-K Page Indices</text>
+  </g>
+  <g id="topk_len">
+    <rect x="856" y="645" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="935" y="670" text-anchor="middle" class="node">Top-K Lengths</text>
+  </g>
+  <g id="ic_ape">
+    <rect x="1056" y="205" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="230" text-anchor="middle" class="node">APE</text>
+  </g>
+  <g id="ic_state">
+    <rect x="1056" y="260" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="285" text-anchor="middle" class="node">State Cache</text>
+  </g>
+  <g id="ic_kv">
+    <rect x="1056" y="312" width="158" height="26" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="329" text-anchor="middle" class="node-split">KV Compression</text>
+  </g>
+  <g id="ic_rmsn">
+    <rect x="1056" y="347" width="158" height="26" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="364" text-anchor="middle" class="node-split">RMSNorm</text>
+  </g>
+  <g id="ic_rope">
+    <rect x="1056" y="380" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="405" text-anchor="middle" class="node">RoPE</text>
+  </g>
+  <g id="ic_fp8">
+    <rect x="1056" y="435" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="1135" y="460" text-anchor="middle" class="node">FP8 + Cache</text>
+  </g>
+  <g id="flash_mla">
+    <rect x="366" y="720" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="445" y="745" text-anchor="middle" class="node-pink">Flash MLA</text>
+  </g>
+  <g id="inv_rope">
+    <rect x="366" y="775" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="445" y="800" text-anchor="middle" class="node">Inverse RoPE</text>
+  </g>
+  <g id="fp8_q">
+    <rect x="366" y="830" width="158" height="40" rx="6" ry="6" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="445" y="855" text-anchor="middle" class="node">FP8 Quant</text>
+  </g>
+  <g id="fp8_bmm">
+    <rect x="366" y="885" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="445" y="910" text-anchor="middle" class="node-pink">FP8 Batched MM</text>
+  </g>
+  <g id="wob">
+    <rect x="366" y="940" width="158" height="40" rx="6" ry="6" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="445" y="965" text-anchor="middle" class="node-pink">W_O_B</text>
+  </g>
+  <g transform="translate(680,768)" id="legend">
+    <rect x="0" y="0"   width="18" height="16" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="26" y="13" class="legend">Weighted / tensor-core op</text>
+    <rect x="0" y="26"  width="18" height="16" rx="4" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+    <text x="26" y="39" class="legend">Small / memory-bound kernel</text>
+    <rect x="0" y="58"  width="18" height="16" rx="4" fill="#ede9fe" fill-opacity="0.6" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="26" y="71" class="legend">Fusion 1: Compressor + RMSNorm + RoPE + Cache</text>
+    <rect x="0" y="84"  width="18" height="16" rx="4" fill="#fed7aa" fill-opacity="0.6" stroke="#ea580c" stroke-width="1.5"/>
+    <text x="26" y="97" class="legend">Fusion 2: Inverse RoPE + FP8 Quant</text>
+    <rect x="0" y="110" width="18" height="16" rx="4" fill="#dcfce7" fill-opacity="0.6" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="26" y="123" class="legend">Fusion 3: Q Norm + KV RoPE + K insert  (horizontal)</text>
+    <rect x="0" y="136" width="18" height="16" rx="4" fill="#fce7f3" fill-opacity="0.6" stroke="#be185d" stroke-width="1.5"/>
+    <text x="26" y="149" class="legend">Auxiliary fusion: APE+State Cache; QK RMSNorm; Indexer Q RoPE+quant+W Scale</text>
+    <rect x="0" y="162" width="18" height="16" rx="4" fill="#3b82f6" fill-opacity="0.18"/>
+    <text x="26" y="175" class="legend">Default stream  (C4A: main KV compression + SWA insertion, serial)</text>
+    <rect x="0" y="188" width="18" height="16" rx="4" fill="#f59e0b" fill-opacity="0.18"/>
+    <text x="26" y="201" class="legend">Indexer stream  (C4A: full indexer pipeline in parallel)</text>
+  </g>
+</svg>
