@@ -78,9 +78,9 @@ async def determine_next_step(natural_language_input: str) -> ToolCall:
         prompt=f"""
         将以下用户请求转换为结构化的工具调用：
         用户说：{natural_language_input}
-        
+
         可用的工具：create_payment_link, list_customers, list_products
-        
+
         请输出 JSON 格式的工具调用。
         """,
         response_format=ToolCall
@@ -140,33 +140,33 @@ result = agent.run("部署最新后端到生产环境")
 **✅ 自有提示词方式**：
 
 ```rust
-function DetermineNextStep(thread: string) -> 
+function DetermineNextStep(thread: string) ->
     DoneForNow | ListGitTags | DeployBackend | DeployFrontend | RequestMoreInformation {
   prompt #"
     {{ _.role("system") }}
-    
+
     你是一个专业的部署助手，负责管理前端和后端系统的部署。
     你遵循最佳实践，确保部署的安全性和成功率。
-    
+
     部署前的检查清单：
     - 确认部署环境（staging vs production）
     - 验证部署标签/版本是否正确
     - 检查当前系统状态
     - 高风险部署需要人工审批
-    
+
     可用工具：deploy_backend, deploy_frontend, check_deployment_status
     敏感操作使用 request_approval 获取人工验证。
-    
+
     思考步骤：
     1. 先检查当前部署状态
     2. 验证部署标签是否存在
     3. 如需要则请求审批
     4. 先部署到 staging 测试
     5. 监控部署进度
-    
+
     {{ _.role("user") }}
     {{ thread }}
-    
+
     下一步应该做什么？
   "#
 }
@@ -205,23 +205,17 @@ function DetermineNextStep(thread: string) ->
 
 ```yaml
 [
-  {
-    "role": "system",
-    "content": "你是一个部署助手..."
-  },
-  {
-    "role": "user", 
-    "content": "能否部署后端？"
-  },
+  { "role": "system", "content": "你是一个部署助手..." },
+  { "role": "user", "content": "能否部署后端？" },
   {
     "role": "assistant",
     "content": null,
-    "tool_calls": [{"name": "list_git_tags", "arguments": {}}]
+    "tool_calls": [{ "name": "list_git_tags", "arguments": {} }]
   },
   {
     "role": "tool",
     "name": "list_git_tags",
-    "content": "{\"tags\": [...长 JSON...]}"
+    "content": '{"tags": [...长 JSON...]}'
   }
 ]
 ```
@@ -231,7 +225,7 @@ function DetermineNextStep(thread: string) ->
 ```xml
 <slack_message>
   来自：@alex
-  频道：#deployments  
+  频道：#deployments
   内容：能否部署最新后端到生产环境？
 </slack_message>
 
@@ -316,7 +310,7 @@ class CreateIssue(BaseModel):
     issue: Issue
 
 class SearchIssues(BaseModel):
-    intent: Literal["search_issues"] 
+    intent: Literal["search_issues"]
     query: str
     what_youre_looking_for: str
 
@@ -374,7 +368,7 @@ class Thread:
     """统一的状态容器"""
     events: List[Event]           # 业务状态：所有发生的事情
     current_step: Optional[str]   # 执行状态：从事件中推断
-    
+
     def get_execution_state(self) -> dict:
         """从业务状态推断执行状态"""
         last_event = self.events[-1] if self.events else None
@@ -383,7 +377,7 @@ class Thread:
             "waiting_for": self._infer_waiting_for(),
             "retry_count": self._count_retries()
         }
-    
+
     def serialize(self) -> str:
         """序列化整个状态用于存储"""
         return json.dumps({
@@ -424,19 +418,19 @@ class AgentAPI:
         thread_id = await self.store.save(thread)
         await self._process_next_step(thread_id)
         return thread_id
-    
+
     async def pause(self, thread_id: str, reason: str):
         """暂停执行，等待外部输入"""
         thread = await self.store.load(thread_id)
         thread.events.append(PauseEvent(reason=reason))
         await self.store.save(thread)
-    
+
     async def resume(self, thread_id: str, external_input: dict):
         """通过外部输入恢复执行"""
         thread = await self.store.load(thread_id)
         thread.events.append(ResumeEvent(data=external_input))
         await self._process_next_step(thread_id)
-    
+
     async def get_status(self, thread_id: str) -> dict:
         """查询当前执行状态"""
         thread = await self.store.load(thread_id)
@@ -482,7 +476,7 @@ class RequestHumanInput(BaseModel):
     context: str
     options: Options
     urgency: Literal["low", "medium", "high"]
-    
+
 class Options(BaseModel):
     format: Literal["free_text", "yes_no", "multiple_choice"]
     choices: List[str] = []
@@ -492,14 +486,14 @@ class Options(BaseModel):
 async def handle_human_request(request: RequestHumanInput):
     # 格式化消息
     message = format_human_message(request)
-    
+
     # 通过多渠道发送
     await send_to_slack(
         channel="#deployments",
         message=message,
         thread_ts=get_thread_id()
     )
-    
+
     # 记录等待状态
     await save_waiting_state(
         waiting_for="human_response",
@@ -565,26 +559,26 @@ async def handle_human_request(request: RequestHumanInput):
 ```python
 async def handle_next_step(thread: Thread) -> None:
     """自定义控制流处理"""
-    
+
     while True:
         next_step = await determine_next_step(thread_to_prompt(thread))
-        
+
         # 模式1：需要人工澄清 - 中断并等待
         if next_step.intent == 'request_clarification':
             await handle_clarification_request(thread, next_step)
             break  # 等待人工响应
-            
+
         # 模式2：简单查询 - 同步执行并继续
         elif next_step.intent == 'fetch_git_tags':
             result = await git_client.list_tags()
             thread.add_event('git_tags', result)
             continue  # 直接继续下一步
-            
+
         # 模式3：高风险操作 - 需要审批
         elif next_step.intent == 'deploy_production':
             await request_approval(thread, next_step)
             break  # 等待审批
-            
+
         # 模式4：批量处理 - 汇总多个结果
         elif next_step.intent == 'batch_process':
             results = await execute_batch(next_step.items)
@@ -628,37 +622,37 @@ class CompactError(BaseModel):
     message: str
     retryable: bool
     suggestion: Optional[str] = None
-    
+
 class ErrorHandler:
     def __init__(self, max_retries: int = 3):
         self.max_retries = max_retries
         self.consecutive_errors = defaultdict(int)
-    
+
     async def handle_error(
-        self, 
-        error: Exception, 
+        self,
+        error: Exception,
         tool_name: str,
         thread: Thread
     ) -> str:
         """处理错误并决定下一步"""
-        
+
         # 转换为紧凑错误格式
         compact_error = self._create_compact_error(error, tool_name)
-        
+
         # 记录错误到上下文
         thread.add_event('error', compact_error.dict())
-        
+
         # 检查重试次数
         self.consecutive_errors[tool_name] += 1
-        
-        if (compact_error.retryable and 
+
+        if (compact_error.retryable and
             self.consecutive_errors[tool_name] < self.max_retries):
             return "retry"
         elif self.consecutive_errors[tool_name] >= self.max_retries:
             return "escalate_to_human"
         else:
             return "skip_tool"
-    
+
     def _create_compact_error(self, error: Exception, tool: str) -> CompactError:
         """将异常转换为紧凑错误格式"""
         if isinstance(error, APIError):
@@ -685,16 +679,16 @@ class ErrorHandler:
 ```python
 async def execute_with_recovery(thread: Thread, tool_call: ToolCall):
     """执行工具调用并处理错误"""
-    
+
     try:
         result = await execute_tool(tool_call)
         thread.add_event('success', result)
         return result
-        
+
     except Exception as e:
         handler = ErrorHandler()
         action = await handler.handle_error(e, tool_call.intent, thread)
-        
+
         if action == "retry":
             # LLM会看到错误信息并决定如何调整
             return await execute_with_recovery(thread, tool_call)
@@ -728,69 +722,69 @@ async def execute_with_recovery(thread: Thread, tool_call: ToolCall):
 
 **智能体规模指导原则**：
 
-| 智能体类型 | 步骤范围 | 示例场景 |
-|-----------|----------|----------|
-| 原子操作 | 1-3步 | 创建付款链接、查询用户信息 |
-| 简单工作流 | 3-10步 | 处理客户退款、部署单个服务 |
-| 复杂工作流 | 10-20步 | 完整的发布流程、多系统协调 |
+| 智能体类型 | 步骤范围 | 示例场景                   |
+| ---------- | -------- | -------------------------- |
+| 原子操作   | 1-3步    | 创建付款链接、查询用户信息 |
+| 简单工作流 | 3-10步   | 处理客户退款、部署单个服务 |
+| 复杂工作流 | 10-20步  | 完整的发布流程、多系统协调 |
 
 **智能体组合模式**：
 
 ```python
 class SmallAgent:
     """小型专注智能体基类"""
-    
+
     def __init__(self, name: str, max_steps: int = 10):
         self.name = name
         self.max_steps = max_steps
-        
+
     async def execute(self, input_data: dict) -> dict:
         """执行智能体任务"""
         thread = Thread()
         thread.add_event('start', input_data)
-        
+
         for step in range(self.max_steps):
             next_action = await self.determine_next_step(thread)
-            
+
             if next_action.intent == 'complete':
                 return self.format_result(thread)
-                
+
             result = await self.execute_action(next_action)
             thread.add_event('step_result', result)
-            
+
         # 如果达到步骤限制，升级到更大的智能体
         return await self.escalate_to_larger_agent(thread)
 
 # 实际使用：组合多个小智能体
 class DeploymentOrchestrator:
     """通过组合小智能体实现复杂部署"""
-    
+
     def __init__(self):
         self.agents = {
             'code_check': CodeCheckAgent(),
-            'build': BuildAgent(), 
+            'build': BuildAgent(),
             'test': TestAgent(),
             'deploy': DeployAgent()
         }
-    
+
     async def deploy_application(self, config: dict):
         """协调多个小智能体完成部署"""
-        
+
         # 1. 代码检查
         check_result = await self.agents['code_check'].execute(config)
         if not check_result['success']:
             return check_result
-            
+
         # 2. 构建
         build_result = await self.agents['build'].execute(check_result)
         if not build_result['success']:
             return build_result
-            
+
         # 3. 测试
         test_result = await self.agents['test'].execute(build_result)
         if not test_result['success']:
             return test_result
-            
+
         # 4. 部署
         return await self.agents['deploy'].execute(test_result)
 ```
@@ -826,18 +820,18 @@ class DeploymentOrchestrator:
 ```python
 class ChannelAdapter:
     """渠道适配器基类"""
-    
+
     async def receive_message(self, raw_message: dict) -> dict:
         """将原始消息转换为标准格式"""
         raise NotImplementedError
-    
+
     async def send_response(self, response: dict, context: dict):
         """将响应发送到对应渠道"""
         raise NotImplementedError
 
 class SlackAdapter(ChannelAdapter):
     """Slack渠道适配器"""
-    
+
     async def receive_message(self, slack_event: dict) -> dict:
         return {
             "user": slack_event["user"],
@@ -846,7 +840,7 @@ class SlackAdapter(ChannelAdapter):
             "timestamp": slack_event["ts"],
             "thread_ts": slack_event.get("thread_ts")
         }
-    
+
     async def send_response(self, response: dict, context: dict):
         await slack_client.chat_postMessage(
             channel=context["channel"],
@@ -856,7 +850,7 @@ class SlackAdapter(ChannelAdapter):
 
 class EmailAdapter(ChannelAdapter):
     """邮件渠道适配器"""
-    
+
     async def receive_message(self, email_data: dict) -> dict:
         return {
             "user": email_data["from"],
@@ -864,7 +858,7 @@ class EmailAdapter(ChannelAdapter):
             "subject": email_data["subject"],
             "message_id": email_data["message_id"]
         }
-    
+
     async def send_response(self, response: dict, context: dict):
         await email_client.send_mail(
             to=context["user"],
@@ -878,7 +872,7 @@ class EmailAdapter(ChannelAdapter):
 ```python
 class UniversalTrigger:
     """统一触发器管理"""
-    
+
     def __init__(self):
         self.adapters = {
             'slack': SlackAdapter(),
@@ -886,29 +880,29 @@ class UniversalTrigger:
             'webhook': WebhookAdapter(),
             'cron': CronAdapter()
         }
-    
+
     async def handle_incoming(self, channel: str, raw_data: dict):
         """处理来自任何渠道的请求"""
-        
+
         # 1. 使用对应适配器转换消息
         adapter = self.adapters[channel]
         message = await adapter.receive_message(raw_data)
-        
+
         # 2. 创建或恢复线程
         thread = await self.get_or_create_thread(
             user=message["user"],
             channel=channel
         )
-        
+
         # 3. 执行智能体逻辑
         response = await self.agent.execute({
             "message": message,
             "thread": thread
         })
-        
+
         # 4. 通过相同渠道响应
         await adapter.send_response(response, message)
-        
+
         # 5. 保存线程状态
         await self.save_thread(thread)
 ```
@@ -946,7 +940,7 @@ class AgentState(BaseModel):
     events: List[dict]
     current_step: Optional[str] = None
     waiting_for: Optional[str] = None
-    
+
 class AgentEvent(BaseModel):
     """智能体事件"""
     type: str
@@ -955,34 +949,34 @@ class AgentEvent(BaseModel):
 
 class StatelessReducer:
     """无状态归约器实现"""
-    
+
     @staticmethod
     def reducer(state: AgentState, event: AgentEvent) -> AgentState:
         """纯函数归约器"""
-        
+
         # 创建新状态（不修改原状态）
         new_state = state.copy()
         new_state.events = state.events + [event.dict()]
-        
+
         # 根据事件类型更新状态
         if event.type == "tool_call":
             new_state.current_step = event.data["tool"]
             new_state.waiting_for = "tool_result"
-            
+
         elif event.type == "tool_result":
             new_state.current_step = None
             new_state.waiting_for = None
-            
+
         elif event.type == "human_request":
             new_state.current_step = "waiting_for_human"
             new_state.waiting_for = "human_response"
-            
+
         elif event.type == "human_response":
             new_state.current_step = "processing"
             new_state.waiting_for = None
-            
+
         return new_state
-    
+
     @staticmethod
     def process_events(events: List[AgentEvent]) -> AgentState:
         """处理事件序列"""
@@ -1008,7 +1002,7 @@ final_state = StatelessReducer.process_events(events)
 ```python
 class AgentComposer:
     """智能体组合器"""
-    
+
     @staticmethod
     def compose(*reducers: Callable) -> Callable:
         """组合多个归约器"""
@@ -1017,7 +1011,7 @@ class AgentComposer:
                 state = reducer(state, event)
             return state
         return combined_reducer
-    
+
     @staticmethod
     def with_logging(reducer: Callable) -> Callable:
         """添加日志功能的装饰器"""

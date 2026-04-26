@@ -82,38 +82,35 @@ graph LR
 ### 4.2 常用节点说明
 
 1. 触发器节点（`Trigger Node`）：触发器节点负责启动工作流，常见的触发方式包括：
-
-- `Webhook Trigger`：监听外部 HTTP 请求，适用于接收外部系统的调用。
-- `Schedule Trigger`：定时触发工作流，适用于周期性任务。
-- `Manual Trigger`：手动启动工作流，适用于测试和调试。
-- 更多关于触发器节点的信息，请参考官方文档：
-- [n8n Trigger Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.n8ntrigger/)
-- [Manual Trigger Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.manualworkflowtrigger/)
+   - `Webhook Trigger`：监听外部 HTTP 请求，适用于接收外部系统的调用。
+   - `Schedule Trigger`：定时触发工作流，适用于周期性任务。
+   - `Manual Trigger`：手动启动工作流，适用于测试和调试。
+   - 更多关于触发器节点的信息，请参考官方文档：
+   - [n8n Trigger Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.n8ntrigger/)
+   - [Manual Trigger Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.manualworkflowtrigger/)
 
 2. 核心处理节点（`Core Processing Node`）：核心处理节点负责执行智能体的主要逻辑，包括：
-
-- `Function Node`：编写自定义 `JavaScript` 代码，处理数据和实现逻辑。
-- `LLM Integration Node`：集成大语言模型（如 `OpenAI`、`DeepSeek`）进行自然语言处理。
-- `If Node`：根据条件判断执行不同的路径。
-- `Set Node`：设置或修改数据字段。 ￼
-- 这些节点的组合使用，可以实现复杂的业务逻辑和数据处理。
+   - `Function Node`：编写自定义 `JavaScript` 代码，处理数据和实现逻辑。
+   - `LLM Integration Node`：集成大语言模型（如 `OpenAI`、`DeepSeek`）进行自然语言处理。
+   - `If Node`：根据条件判断执行不同的路径。
+   - `Set Node`：设置或修改数据字段。 ￼
+   - 这些节点的组合使用，可以实现复杂的业务逻辑和数据处理。
 
 3. 通信接口节点（`Communication Interface Node`）：通信接口节点用于智能体之间或与外部系统的数据交互，常见的节点包括：
-
-- `HTTP Request Node`：发送 `HTTP` 请求，与外部 `API` 或其他智能体通信。
-- `Execute Workflow Node`：调用其他工作流，实现模块化和复用。
-- `Redis Node`：读写 `Redis` 数据库，进行状态管理和数据共享。
+   - `HTTP Request Node`：发送 `HTTP` 请求，与外部 `API` 或其他智能体通信。
+   - `Execute Workflow Node`：调用其他工作流，实现模块化和复用。
+   - `Redis Node`：读写 `Redis` 数据库，进行状态管理和数据共享。
 
 ### 4.3 常用节点功能小结
 
-| **节点类型** | **功能说明** | **官方文档链接**|
-| ---------------- | -----------------------| ----------------------- |
-| **Webhook**      | 接收外部 `HTTP` 请求以触发工作流，支持多种 `HTTP` 方法（`GET`、`POST` 等），可配置响应方式（立即响应、等待工作流完成等）。 | [Webhook 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/) |
-| **HTTP Request** | 向其他智能体或外部 `API` 主动发起 `HTTP` 请求，支持多种请求方法，适用于数据获取、任务下发等场景。                | [HTTP Request 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/) |
-| **LLM 节点**       | 集成大语言模型（如 `OpenAI`、`DeepSeek`）处理自然语言任务，实现文本生成、意图识别等功能。                  | [OpenAI Functions Agent 节点文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/openai-functions-agent/) |
-| **Function**     | 编写自定义 `JavaScript` 代码，处理数据转换、逻辑判断等，增强工作流的灵活性。                         | [Function 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.code/) |
-| **Redis**        | 与 Redis 数据库交互，实现状态追踪、结果存储、消息发布等功能，适用于缓存和快速数据访问。                     | [Redis 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.redis/) |
-| **Postgres**     | 与 `PostgreSQL` 数据库交互，支持执行查询、插入、更新等操作，适用于持久化存储和复杂数据管理。                 | [Postgres 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/) |
+| **节点类型**     | **功能说明**                                                                                                               | **官方文档链接**                                                                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Webhook**      | 接收外部 `HTTP` 请求以触发工作流，支持多种 `HTTP` 方法（`GET`、`POST` 等），可配置响应方式（立即响应、等待工作流完成等）。 | [Webhook 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)                                                        |
+| **HTTP Request** | 向其他智能体或外部 `API` 主动发起 `HTTP` 请求，支持多种请求方法，适用于数据获取、任务下发等场景。                          | [HTTP Request 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/)                                               |
+| **LLM 节点**     | 集成大语言模型（如 `OpenAI`、`DeepSeek`）处理自然语言任务，实现文本生成、意图识别等功能。                                  | [OpenAI Functions Agent 节点文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/openai-functions-agent/) |
+| **Function**     | 编写自定义 `JavaScript` 代码，处理数据转换、逻辑判断等，增强工作流的灵活性。                                               | [Function 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.code/)                                                          |
+| **Redis**        | 与 Redis 数据库交互，实现状态追踪、结果存储、消息发布等功能，适用于缓存和快速数据访问。                                    | [Redis 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.redis/)                                                             |
+| **Postgres**     | 与 `PostgreSQL` 数据库交互，支持执行查询、插入、更新等操作，适用于持久化存储和复杂数据管理。                               | [Postgres 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/)                                                       |
 
 ---
 
@@ -144,11 +141,13 @@ graph TD
 #### 5.2.2 输入提取节点（Function）
 
 ```javascript
-return [{
-  json: {
-    user_input: $json.body.text
-  }
-}];
+return [
+  {
+    json: {
+      user_input: $json.body.text,
+    },
+  },
+];
 ```
 
 #### 5.2.3 LLM 提示词设置（Prompt）
@@ -171,11 +170,13 @@ return [{
 
 ```javascript
 const task = $json.task;
-return [{ 
-  json: { 
-    result: `任务【${task}】执行完成，耗时 ${Math.random().toFixed(2)} 秒`
-  } 
-}];
+return [
+  {
+    json: {
+      result: `任务【${task}】执行完成，耗时 ${Math.random().toFixed(2)} 秒`,
+    },
+  },
+];
 ```
 
 ### 5.4 审核智能体工作流实现
@@ -189,8 +190,8 @@ return [{
 #### 5.4.2 状态判断逻辑（Function）
 
 ```javascript
-const completedTasks = $input.all().map(item => item.json);
-if(completedTasks.length === 3) {
+const completedTasks = $input.all().map((item) => item.json);
+if (completedTasks.length === 3) {
   return [{ json: { final_report: completedTasks } }];
 } else {
   return [];
@@ -207,11 +208,11 @@ if(completedTasks.length === 3) {
 
 在多智能体系统中，状态管理是确保各智能体协同工作的关键。`n8n` 提供了多种方式来实现状态的跟踪和管理，适用于不同的应用场景。
 
-| **方案类型** | **实现方式** | **适用场景** |
-|------------------|------------------------------|------------------------------|
-| 上下文变量       | 使用 `Set` / `Get` 节点          | 简单、短期状态管理           |
-| `Redis Hash` 存储  | 利用 `Redis` 节点存储任务状态  | 并发任务、临时状态           |
-| `PostgreSQL`       | 通过表结构建模持久化存储任务信息 | 复杂流程、长期状态管理       |
+| **方案类型**      | **实现方式**                     | **适用场景**           |
+| ----------------- | -------------------------------- | ---------------------- |
+| 上下文变量        | 使用 `Set` / `Get` 节点          | 简单、短期状态管理     |
+| `Redis Hash` 存储 | 利用 `Redis` 节点存储任务状态    | 并发任务、临时状态     |
+| `PostgreSQL`      | 通过表结构建模持久化存储任务信息 | 复杂流程、长期状态管理 |
 
 **说明：**
 
@@ -299,12 +300,12 @@ graph LR
 
 #### 8.1.3 关键智能体设计建议
 
-| **智能体**| **功能说明** | **n8n 实现建议** |
-|------------------|---------------------------|-------------------|
-| **意图识别 Agent** | 调用 `NLP` 模型识别用户问题类型 | `LLM` 节点 + 条件路由 |
-| **知识库检索 Agent** | 根据识别结果匹配 FAQ 或调用向量数据库 | `HTTP Request` + `Qdrant`/`Weaviate` 节点 |
-| **应答生成 Agent** | 使用 `Prompt Template` 生成多轮回答内容 | `LLM` 节点 + 模板填充 |
-| **满意度反馈 Agent** | 收集用户评价用于后续优化 | 表单 `Webhook` + 数据存储 |
+| **智能体**           | **功能说明**                            | **n8n 实现建议**                          |
+| -------------------- | --------------------------------------- | ----------------------------------------- |
+| **意图识别 Agent**   | 调用 `NLP` 模型识别用户问题类型         | `LLM` 节点 + 条件路由                     |
+| **知识库检索 Agent** | 根据识别结果匹配 FAQ 或调用向量数据库   | `HTTP Request` + `Qdrant`/`Weaviate` 节点 |
+| **应答生成 Agent**   | 使用 `Prompt Template` 生成多轮回答内容 | `LLM` 节点 + 模板填充                     |
+| **满意度反馈 Agent** | 收集用户评价用于后续优化                | 表单 `Webhook` + 数据存储                 |
 
 ### 8.2 自动化数据分析系统
 
@@ -324,13 +325,13 @@ graph LR
 
 #### 8.2.3 关键智能体设计建议
 
-| **智能体** | **功能说明** | **n8n 实现建议** |
-|--------------------|--------------------------------------------------|-------------------------------------------|
-| **数据采集 Agent** | 定时抓取数据来源（`API`、`RSS`、数据库等） | `Cron` 节点 + `HTTP Request` / `Query` 节点 |
-| **预处理 Agent** | 数据清洗、格式化、缺失处理 | `Function` 节点 + `Set` 节点 |
-| **模型分析 Agent** | 调用外部 ML 服务进行聚类/分类/预测分析 | `HTTP Request` 节点 + `Python` 后端服务 |
-| **可视化报告 Agent** | 生成图表、表格或自然语言分析总结 | `Chart API` 调用或 `Markdown` 汇总            |
-| **通知发送 Agent** | 发送到 `Email`、`Slack`、飞书或生成日报 `PDF` 存档  | `Email` 节点 / `Webhook` / `Telegram` 节点等 |
+| **智能体**           | **功能说明**                                       | **n8n 实现建议**                             |
+| -------------------- | -------------------------------------------------- | -------------------------------------------- |
+| **数据采集 Agent**   | 定时抓取数据来源（`API`、`RSS`、数据库等）         | `Cron` 节点 + `HTTP Request` / `Query` 节点  |
+| **预处理 Agent**     | 数据清洗、格式化、缺失处理                         | `Function` 节点 + `Set` 节点                 |
+| **模型分析 Agent**   | 调用外部 ML 服务进行聚类/分类/预测分析             | `HTTP Request` 节点 + `Python` 后端服务      |
+| **可视化报告 Agent** | 生成图表、表格或自然语言分析总结                   | `Chart API` 调用或 `Markdown` 汇总           |
+| **通知发送 Agent**   | 发送到 `Email`、`Slack`、飞书或生成日报 `PDF` 存档 | `Email` 节点 / `Webhook` / `Telegram` 节点等 |
 
 ### 8.3 内容生成流水线
 
@@ -350,13 +351,13 @@ graph LR
 
 #### 8.3.3 关键智能体设计建议
 
-| **智能体** | **功能说明** | **n8n 实现建议** |
-|----------------------|-----------------------------------------------|----------------------------------------------|
-| **选题规划 Agent** | 调用 `LLM` 生成内容主题，结合关键词/热点 | `LLM` 节点 + `Google Trends API` / `RSS Feed` |
-| **结构设计 Agent** | 输出标题、副标题、段落结构草稿 | `LLM` 节点 + `Prompt` 结构模板 |
-| **文案撰写 Agent** | 按结构生成文章主体内容 | `LLM` 节点 + 语气/风格控制 `Prompt`|
-| **质量审核 Agent** | 调用 `LLM` 评估逻辑完整性、可读性与语法问题 | `LLM` 节点 + 多轮交互 / 规则检查 `Function` 节点 |
-| **多平台发布 Agent** | 将内容同步发布至微信公众号、`WordPress`、知乎等 | `HTTP Request` + 第三方平台 `API` 节点 |
+| **智能体**           | **功能说明**                                    | **n8n 实现建议**                                 |
+| -------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| **选题规划 Agent**   | 调用 `LLM` 生成内容主题，结合关键词/热点        | `LLM` 节点 + `Google Trends API` / `RSS Feed`    |
+| **结构设计 Agent**   | 输出标题、副标题、段落结构草稿                  | `LLM` 节点 + `Prompt` 结构模板                   |
+| **文案撰写 Agent**   | 按结构生成文章主体内容                          | `LLM` 节点 + 语气/风格控制 `Prompt`              |
+| **质量审核 Agent**   | 调用 `LLM` 评估逻辑完整性、可读性与语法问题     | `LLM` 节点 + 多轮交互 / 规则检查 `Function` 节点 |
+| **多平台发布 Agent** | 将内容同步发布至微信公众号、`WordPress`、知乎等 | `HTTP Request` + 第三方平台 `API` 节点           |
 
 ---
 
@@ -373,12 +374,12 @@ graph LR
 
 为了实现更复杂、更智能的多智能体协作系统，可逐步引入以下能力：
 
-| **方向** | **说明** |
-| ------- | ----------------------------------------------------- |
+| **方向**           | **说明**                                                                          |
+| ------------------ | --------------------------------------------------------------------------------- |
 | **向量数据库集成** | 使用如 `Weaviate`、`Qdrant` 提供知识检索支持，提升智能体记忆力与语义推理能力      |
-| **智能体协商机制** | 引入规则引擎或强化学习，实现智能体之间的任务分配、冲突处理与协商能力 |
-| **可观测性支持** | 接入 `Prometheus` + `Grafana`，实现运行状态监控、性能瓶颈分析与智能体健康状态追踪 |
-| **安全控制机制** | 加入身份验证、接口权限控制和数据脱敏机制，确保多智能体系统可控可信 |
-| **自适应能力提升** | 利用 `Prompt` 优化与模型微调，让智能体具备环境感知与策略自适应能力 |
+| **智能体协商机制** | 引入规则引擎或强化学习，实现智能体之间的任务分配、冲突处理与协商能力              |
+| **可观测性支持**   | 接入 `Prometheus` + `Grafana`，实现运行状态监控、性能瓶颈分析与智能体健康状态追踪 |
+| **安全控制机制**   | 加入身份验证、接口权限控制和数据脱敏机制，确保多智能体系统可控可信                |
+| **自适应能力提升** | 利用 `Prompt` 优化与模型微调，让智能体具备环境感知与策略自适应能力                |
 
 ---
