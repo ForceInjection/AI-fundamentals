@@ -53,8 +53,8 @@ $$
   - 它定义了 Token Embedding 的大小，通常也决定了注意力头的维度： $d_{head} = H / N_{attn}$。
   - 直接影响模型权重大小和 KV Cache 的总容量。
 - **num_hidden_layers ($L$)**：模型的层数（Transformer Blocks）。层数越多，需要缓存的 KV 对就越多。
-- **num_attention_heads ($N_{attn}$)**：注意力头的总数量。
-- **num_key_value_heads ($N_{kv}$)**：用于 Key 和 Value 的头数量。
+- **num*attention_heads ($N*{attn}$)**：注意力头的总数量。
+- **num*key_value_heads ($N*{kv}$)**：用于 Key 和 Value 的头数量。
   - 在标准 **MHA** (Multi-Head Attention) 中， $N_{kv} = N_{attn}$。
   - 在 **GQA** (Grouped-Query Attention) 或 **MQA** (Multi-Query Attention) 中， $N_{kv} < N_{attn}$，这能显著降低 KV Cache 的显存占用。
 - **max_position_embeddings**：模型支持的最大上下文窗口长度。这是 $S$ (Sequence Length) 的理论上限。
@@ -209,6 +209,8 @@ $$
 \text{Memory}_{KV} \approx 4 \times L \times H \times B \times S \times \frac{N_{kv}}{N_{attn}}
 $$
 
+> **适用范围与限制**：上述公式适用于 MHA、GQA、MQA 以及 MLA（通过 $N_{kv}/N_{attn}$ 或等效的 `head_dim` 处理）等标准注意力机制。对于采用**跨 Token 压缩**（如 DeepSeek V4 的 c4a/c128a）、**K=V 共享**等新范式的模型，上述公式不再适用，需使用 4.6 节的分层计算方式。
+
 ### 4.3 每 Token 的 KV Cache 体积
 
 为了计算**单个并发请求下，每增加 1 个 Token** 所带来的显存开销（即 KV Cache 的单位密度），我们将 $B=1$（单并发）和 $S=1$（单 Token）代入上式（FP16/BF16）：
@@ -238,18 +240,19 @@ $$
 
 本小节在统一假设与公开配置下，给出常见模型的 KV Cache 单 Token 密度与满上下文体积，便于容量规划与横向对比。除特别说明外，统一采用 bfloat16（2 bytes）。Qwen3 dense 系列统一使用 head_dim = 128；DeepSeek-R1 使用 MLA 压缩存储；GLM-5 的计算依据其公开配置中的 num_hidden_layers、num_key_value_heads 及 qk_head_dim / v_head_dim 等字段。除非特别说明，“满上下文 KV Cache 总量”按单请求（B=1）计算，公式为“KV/token × 上下文长度”。单位采用 1024 进制（KB、MB、GB 为 KiB、MiB、GiB 的近似标法）。
 
-| 模型                  | 层数 | KV Heads              | KV/token                             | 上下文长度 | 满上下文 KV Cache 总量 |
-| --------------------- | ---- | --------------------- | ------------------------------------ | ---------- | ---------------------- |
-| Qwen3-0.6B            | 28   | 8                     | **114,688 B ≈ 112 KB**               | 32K        | ~3.5 GB                |
-| Qwen3-1.7B            | 28   | 8                     | **114,688 B ≈ 112 KB**               | 32K        | ~3.5 GB                |
-| Qwen3-4B              | 36   | 8                     | **147,456 B ≈ 144 KB**               | 128K       | ~18.0 GB               |
-| Qwen3-8B              | 36   | 8                     | **147,456 B ≈ 144 KB**               | 128K       | ~18 GB                 |
-| Qwen3-14B             | 40   | 8                     | **163,840 B ≈ 160 KB**               | 128K       | ~20 GB                 |
-| Qwen3-32B             | 64   | 8                     | **262,144 B ≈ 256 KB**               | 128K       | ~32 GB                 |
-| Qwen3-30B-A3B (MoE)   | 48   | 4                     | **98,304 B ≈ 96 KB**                 | 128K       | ~12 GB                 |
-| Qwen3-235B-A22B (MoE) | 94   | 4                     | **192,512 B ≈ 188 KB**               | 128K       | ~23.5 GB               |
-| DeepSeek-R1 (MLA)     | 61   | MLA                   | **70,272 B ≈ 69 KB**                 | 160K       | ~10.7 GB               |
-| GLM-5 (MoE DSA)       | 78   | 64（逻辑）/ 1（物理） | **100,152 B ≈ 97.8 KB（BF16 上限）** | 202K       | ~18.9 GB（BF16 上限）  |
+| 模型                    | 层数              | KV Heads                 | KV/token                             | 上下文长度 | 满上下文 KV Cache 总量               |
+| ----------------------- | ----------------- | ------------------------ | ------------------------------------ | ---------- | ------------------------------------ |
+| Qwen3-0.6B              | 28                | 8                        | **114,688 B ≈ 112 KB**               | 32K        | ~3.5 GB                              |
+| Qwen3-1.7B              | 28                | 8                        | **114,688 B ≈ 112 KB**               | 32K        | ~3.5 GB                              |
+| Qwen3-4B                | 36                | 8                        | **147,456 B ≈ 144 KB**               | 128K       | ~18.0 GB                             |
+| Qwen3-8B                | 36                | 8                        | **147,456 B ≈ 144 KB**               | 128K       | ~18 GB                               |
+| Qwen3-14B               | 40                | 8                        | **163,840 B ≈ 160 KB**               | 128K       | ~20 GB                               |
+| Qwen3-32B               | 64                | 8                        | **262,144 B ≈ 256 KB**               | 128K       | ~32 GB                               |
+| Qwen3-30B-A3B (MoE)     | 48                | 4                        | **98,304 B ≈ 96 KB**                 | 128K       | ~12 GB                               |
+| Qwen3-235B-A22B (MoE)   | 94                | 4                        | **192,512 B ≈ 188 KB**               | 128K       | ~23.5 GB                             |
+| DeepSeek-R1 (MLA)       | 61                | MLA                      | **70,272 B ≈ 69 KB**                 | 160K       | ~10.7 GB                             |
+| GLM-5 (MoE DSA)         | 78                | 64（逻辑）/ 1（物理）    | **100,152 B ≈ 97.8 KB（BF16 上限）** | 202K       | ~18.9 GB（BF16 上限）                |
+| DeepSeek V4 (Pro/Flash) | 30 c4a + 31 c128a | 共享 K=V + 跨 Token 压缩 | **~9.4 KB（BF16 等效平均）**         | 1M         | ~9.62 GB（BF16）/ ~4.3 GB（fp8+fp4） |
 
 > 注意：
 >
@@ -258,7 +261,113 @@ $$
 > 3. GLM‑5 的上限口径依据公开配置：num_hidden_layers = 78、num_key_value_heads = 64、kv_lora_rank = 512、qk_rope_head_dim = 64、index_head_dim = 128、max_position_embeddings = 202,752。按 bfloat16 上限计算：MLA 主 KV 每层每 Token ≈ 1,152 B（head_size = 576），Indexer 每层每 Token ≈ 132 B，合计每层每 Token ≈ 1,284 B；跨 78 层得到 KV/token ≈ 100,152 B（≈ 97.8 KB），满上下文（≈ 202K）约 18.9 GB（上限）。配置参考： [GLM‑5 config.json](https://huggingface.co/zai-org/GLM-5/blob/main/config.json)。
 > 4. GLM‑5 的注意力采用 DSA（Top‑K KV 稀疏检索）+ MLA（Latent KV 压缩）。Indexer 典型参数：index_topk = 2048、index_n_heads = 32、index_head_dim = 128；全序列只保留压缩的 latent KV（物理 num_kv_heads = 1），查询时通过 Indexer 稀疏选取 Top‑K 位置参与注意力。论文说明： [GLM‑5: from Vibe Coding to Agentic Engineering](https://arxiv.org/html/2602.15763v1)；模型卡： [HF Model Card](https://huggingface.co/zai-org/GLM-5)。
 > 5. 工程实态下，稀疏 MLA 通常采用 fp8_ds_mla KV 格式（主 KV ≈ 656 B/层/Token，Indexer ≈ 132 B/层/Token），KV/token ≈ 61,464 B（≈ 60 KB），满上下文约 11.6 GB，显著低于表中 bfloat16 上限；因此 GLM‑5 的容量规划应结合实际后端与 dtype 选择（如 fp8_ds_mla 优先，必要时再按 BF16 上限预留）。vLLM 官方指南推荐以 GLM‑5‑FP8 部署 [5]。
-> 6. GLM‑5 的 “64（逻辑）/ 1（物理）” 表示索引与计算采用多头逻辑（index_n_heads × index_head_dim），而实际持久化的 latent KV 采用 1 个物理头进行压缩存储；因此 GLM‑5 的 KV 显存随上下文增长以 latent KV 为主，Top‑K 稀疏缓冲与 index_topk 成正比。
+> 6. GLM‑5 的 "64（逻辑）/ 1（物理）" 表示索引与计算采用多头逻辑（index_n_heads × index_head_dim），而实际持久化的 latent KV 采用 1 个物理头进行压缩存储；因此 GLM‑5 的 KV 显存随上下文增长以 latent KV 为主，Top‑K 稀疏缓冲与 index_topk 成正比。
+> 7. DeepSeek V4（含 Pro 与 Flash）采用共享 K=V 的跨 Token 压缩注意力：c4a 层（30 层）按 1/4 压缩且带有 Indexer 缓存，c128a 层（31 层）按 1/128 压缩，每层另含 128 个 Token 的滑动窗口。BF16 下 1M 上下文的 KV Cache 仅 ~9.62 GiB，相比传统 MLA 设计减少约 88.5%；工程部署中可采用 fp8 KV + fp4 indexer 进一步压缩至约 4.3 GiB。详见 4.6 节。部署指南参考 [vLLM DeepSeek V4](https://recipes.vllm.ai/deepseek-ai/DeepSeek-V4-Pro)。
+
+---
+
+### 4.6 跨 Token 压缩注意力（以 DeepSeek V4 为例）
+
+DeepSeek V4 引入了一种全新的注意力范式，其 KV Cache 计算无法沿用第 4.2 节的通用公式。核心差异在于以下三个设计：
+
+1. **K=V 共享**：Key 和 Value 共用同一矩阵，不再有 $2\times$ 系数。为保证正确性，注意力输出需应用**逆 RoPE**（Inverse RoPE），使输出仅依赖相对位置信息。
+2. **跨 Token 压缩**：不再按注意力头压缩（GQA/MLA），而是将连续多个 Token 的 KV 加权合并为一个压缩 Token。DeepSeek V4 使用两种压缩：
+   - **c4a**：压缩比 $C_{c4a}=4$，步长 4，每 8 个未压缩 Token 加权压缩为 1 个。
+   - **c128a**：压缩比 $C_{c128a}=128$，步长 128，每 128 个未压缩 Token 加权压缩为 1 个。
+3. **层类型异构**：不同层采用不同的注意力策略（c4a / c128a / 仅滑动窗口），不能简单地乘以统一层数 $L$。
+
+此外，c4a 层还包含额外的 **Indexer Cache**，用于稀疏注意力的 Top-$k$ 索引计算。
+
+#### 4.6.1 核心参数
+
+| 符号        | 含义                                   | DeepSeek V4 典型值 |
+| ----------- | -------------------------------------- | ------------------ |
+| $d_{kv}$    | 共享 KV 的 latent 维度（kv_lora_rank） | 512                |
+| $W$         | 滑动窗口大小（未压缩 Token 数）        | 128                |
+| $C_{c4a}$   | c4a 压缩比                             | 4                  |
+| $C_{c128a}$ | c128a 压缩比                           | 128                |
+| $d_{idx}$   | Indexer 维度                           | 128                |
+| $L_{c4a}$   | c4a 层数                               | 30                 |
+| $L_{c128a}$ | c128a 层数                             | 31                 |
+| $S$         | 总序列长度（Prompt + Generated）       | ≤ 1M               |
+| $B$         | 并发请求数                             | —                  |
+| $b_{kv}$    | KV 精度（Bytes）                       | 2 (BF16), 1 (FP8)  |
+
+#### 4.6.2 分层计算公式
+
+**c4a 层（每层、每序列）**：
+
+$$
+M_{\text{c4a\_layer}} = b_{kv} \times \left[ \left(W + \frac{S}{C_{c4a}}\right) \times d_{kv} + \frac{S}{C_{c4a}} \times d_{idx} \right]
+$$
+
+- 第一项 $(W + S/C_{c4a}) \times d_{kv}$：主 KV Cache（含滑动窗口未压缩部分 + 压缩后的部分）。
+- 第二项 $(S/C_{c4a}) \times d_{idx}$：Indexer Cache，用于稀疏检索。
+
+> **注**：严格计算时应使用 $\min(S, W)$ 替代 $W$，以正确处理 $S < W$ 的短序列情况。当 $S \gg W$ 时，$\min(S, W) = W$，上式不变。
+
+**c128a 层（每层、每序列）**：
+
+$$
+M_{\text{c128a\_layer}} = b_{kv} \times \left(W + \frac{S}{C_{c128a}}\right) \times d_{kv}
+$$
+
+c128a 层 $k$ 值（8192）足够大，可视为全注意力，因此无需独立的 Indexer Cache。
+
+**全模型总 KV Cache**：
+
+$$
+M_{KV,\text{total}} = B \times \left[ L_{c4a} \times M_{\text{c4a\_layer}} + L_{c128a} \times M_{\text{c128a\_layer}} \right]
+$$
+
+#### 4.6.3 数值示例：1M 上下文（BF16）
+
+以 61 层 DeepSeek V4（30 c4a + 31 c128a）、$S = 1{,}048{,}576$、$B=1$、BF16 为例：
+
+**c4a 层**：
+
+$$
+\begin{aligned}
+M_{\text{c4a\_layer}} &= 2 \times \left[ \left(128 + \frac{1{,}048{,}576}{4}\right) \times 512 + \frac{1{,}048{,}576}{4} \times 128 \right] \\
+&= (128 + 262{,}144) \times 1024 + 262{,}144 \times 256 \\
+&\approx 268{,}582{,}912 + 67{,}108{,}864 \approx 335{,}691{,}776 \ \text{Bytes} \approx 320.1 \ \text{MiB}
+\end{aligned}
+$$
+
+**c128a 层**：
+
+$$
+\begin{aligned}
+M_{\text{c128a\_layer}} &= 2 \times \left(128 + \frac{1{,}048{,}576}{128}\right) \times 512 \\
+&= (128 + 8{,}192) \times 1024 \approx 8{,}519{,}680 \ \text{Bytes} \approx 8.1 \ \text{MiB}
+\end{aligned}
+$$
+
+**全模型**：
+
+$$
+\begin{aligned}
+M_{KV,\text{total}} &= 30 \times 320.1 \ \text{MiB} + 31 \times 8.1 \ \text{MiB} \\
+&\approx 9{,}603 + 251 \approx 9.62 \ \text{GiB}
+\end{aligned}
+$$
+
+#### 4.6.4 混合精度部署（工程实态）
+
+在实际工程部署（vLLM）中，推荐使用混合精度进一步压缩：
+
+- 主 KV Cache：**FP8**（$b_{kv}=1$）
+- Indexer Cache：**FP4**（$b_{idx}=0.5$）
+
+在此配置下，1M 上下文的 KV Cache 总量约为 **4.3 GiB**，相比 BF16 全精度减少约 55%。
+
+> **为什么是 55% 而非 50%？** 若仅将主 KV 从 BF16 降至 FP8（2× 压缩），总量约为 4.8 GiB（恰好减半）。但 Indexer Cache 从 BF16 降至 **FP4**（4× 压缩），进一步从 64 MiB/层 缩减至 16 MiB/层。由于 c4a 层（30 层）的 Indexer 占总 KV 的近 20%，FP4 带来的额外节省将整体压缩率从 50% 拉升至 55%。
+
+#### 4.6.5 与 4.2 节通用公式的对比
+
+若将同等配置的 MLA 模型套入第 4.2 节公式（$L=61$，等效 $H=d_{kv}+d_{idx}=640$，$S=1$M，BF16），结果为约 83.9 GiB。DeepSeek V4 通过跨 Token 压缩 + K=V 共享设计，在 BF16 下节省约 **88.5%**。
+
+> **范式判断指南**：第 4.2 节的通用公式适用于 MHA / GQA / MQA / MLA 等需要在每层、每 Token 存储独立 K 与 V 矩阵的传统注意力机制。当模型在 `config.json` 中引入 `compress_ratio` 或类似跨 Token 压缩参数时，必须使用本节的分层公式。
 
 ## 5. 中间激活与临时缓冲
 
@@ -332,6 +441,37 @@ mem_overhead = 1.4 * 1024**3
 mem_total = mem_weights + mem_kv + mem_overhead
 ```
 
+对于**跨 Token 压缩注意力模型**（如 DeepSeek V4），上述 $M_{KV}$ 估算需替换为以下分层计算：
+
+```python
+# 输入：DeepSeek V4 模型结构与服务目标
+d_kv = 512         # 共享 KV 的 latent 维度（kv_lora_rank）
+d_idx = 128        # Indexer 维度
+W = 128            # 滑动窗口大小
+C_c4a = 4          # c4a 压缩比
+C_c128a = 128      # c128a 压缩比
+L_c4a = 30         # c4a 层数
+L_c128a = 31       # c128a 层数
+B = 1              # 并发数
+S = 1_048_576      # 总序列长度（1M token）
+bkv = 2            # BF16：2 bytes
+
+# c4a 层：主 KV + Indexer
+mem_c4a_layer = bkv * ((min(S, W) + S / C_c4a) * d_kv + (S / C_c4a) * d_idx)
+
+# c128a 层：仅主 KV（无 Indexer）
+mem_c128a_layer = bkv * (min(S, W) + S / C_c128a) * d_kv
+
+mem_kv = B * (L_c4a * mem_c4a_layer + L_c128a * mem_c128a_layer)
+
+# 混合精度（工程推荐）：主 KV 用 fp8 + Indexer 用 fp4
+bkv_fp8 = 1
+bidx_fp4 = 0.5
+mem_c4a_layer_mixed = bkv_fp8 * (min(S, W) + S / C_c4a) * d_kv + bidx_fp4 * (S / C_c4a) * d_idx
+mem_c128a_layer_mixed = bkv_fp8 * (min(S, W) + S / C_c128a) * d_kv
+mem_kv_mixed = B * (L_c4a * mem_c4a_layer_mixed + L_c128a * mem_c128a_layer_mixed)
+```
+
 ## 7. 案例：A100-40G + Qwen3-0.6B（FP16）
 
 为便于手算，本节使用 GiB；速查表统一按 1024 制（KB/MB/GB 为 KiB/MiB/GiB 的近似标法）。
@@ -340,7 +480,7 @@ mem_total = mem_weights + mem_kv + mem_overhead
 
 ### 7.1 静态门槛
 
-*注：工程计算中建议统一使用 GiB（$1 \text{ GiB} \approx 1.074 \text{ GB}$）进行容量评估，以避免与硬件厂商标称容量产生混淆。*
+_注：工程计算中建议统一使用 GiB（$1 \text{ GiB} \approx 1.074 \text{ GB}$）进行容量评估，以避免与硬件厂商标称容量产生混淆。_
 
 - 权重显存：约 1.12 GiB。
 - 系统开销预留：约 1.4 GiB（含 CUDA Context + Activation + 余量）。
@@ -383,18 +523,34 @@ $$
 在估算 LLM 推理资源需求时，可使用以下速查公式：
 
 1. 总显存需求（预算）：
+
    $$
    M_{\text{total}} = M_{\text{weights}} + M_{\text{kv cache}} + M_{\text{overhead}}
    $$
 
 2. KV Cache 估算（单卡、FP16/BF16）：
+
    $$
    M_{\text{kv}} (\text{GiB}) \approx \frac{4 \times L \times H \times B \times S}{1024^3} \times \frac{N_{kv}}{N_{attn}}
    $$
 
 3. 最大并发数估算（KV 主导近似）：
+
    $$
    B_{\text{max}} \approx \frac{\text{GPU Mem Budget} - M_{\text{weights}} - M_{\text{overhead}}}{(4LH \cdot \frac{N_{kv}}{N_{attn}}) \times S}
+   $$
+
+4. 跨 Token 压缩模型的 KV Cache（DeepSeek V4 范式）：
+
+   $$
+   M_{\text{kv}} = B \times \sum_{t \in \text{types}} L_{t} \times b_{kv} \times \left[ \left(W + \frac{S}{C_{t}}\right) \times d_{kv} + \mathbf{1}_{\text{has\_indexer}}(t) \times \frac{S}{C_{t}} \times d_{idx} \right]
+   $$
+
+   其中 $C_{t}$ 为层类型 $t$ 的压缩比，$L_{t}$ 为对应层数。对 c128a 层，无 Indexer 项。严格计算时用 $\min(S, W)$ 替代 $W$，当 $S \gg W$ 时两者等价。
+
+5. DeepSeek V4 BF16 单序列速算（$S$ 较大时滑动窗口项可近似忽略）：
+   $$
+   M_{\text{kv}} (\text{GiB}) \approx \frac{2 \times S \times d_{kv} \times (L_{c4a}/C_{c4a} + L_{c128a}/C_{c128a}) + 2 \times S \times d_{idx} \times L_{c4a}/C_{c4a}}{1024^3}
    $$
 
 其中 $\text{GPU Mem Budget}, M_{\text{weights}}, M_{\text{overhead}}$ 的单位需要与分母保持一致（推荐统一使用 Bytes，或统一使用 GiB 并在分子分母同时除以 $1024^3$）。
@@ -411,3 +567,6 @@ $$
 4. NVIDIA, "CUDA C++ Programming Guide", URL: <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html>
 5. vLLM Recipes, "GLM‑5 Usage (FP8 部署指南)", URL: <https://github.com/vllm-project/recipes/blob/main/GLM/GLM5.md>
 6. vLLM Blog, "vLLM: Easy, Fast, and Cheap LLM Serving with PagedAttention", URL: <https://vllm.ai/blog/vllm>
+7. vLLM, "DeepSeek V4 — Efficient Long-Context Attention in vLLM", 项目内参考文档: [vllm_deepseek_v4.md](../vllm/module_analysis/vllm_deepseek_v4.md)
+8. DeepSeek-AI, "DeepSeek-V4-Pro", URL: <https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro>
+9. 本仓库, "DeepSeek V4 显存估算脚本", 项目内参考文件: [calculate_deepseek_v4_memory.py](calculate_deepseek_v4_memory.py)
