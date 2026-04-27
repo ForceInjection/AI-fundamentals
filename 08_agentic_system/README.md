@@ -24,6 +24,7 @@
 - [多轮指代消解对话系统](./agent_design/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
 - [12-Factor Agents](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
 - [TradingAgents-CN 多智能体设计](./agent_design/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
+- [All Agentic Architectures 深入详解](./agent_design/all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
 
 ### 1.3 数据智能体 (Data Agents)
 
