@@ -1,0 +1,611 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1342" width="1600" height="1342" style="background:#f8f9fa;font-family:'Segoe UI',Arial,sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0f4f8"/>
+      <stop offset="100%" stop-color="#e8eef5"/>
+    </linearGradient>
+    <linearGradient id="gpuGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d5a3f"/>
+      <stop offset="100%" stop-color="#1a3d2e"/>
+    </linearGradient>
+    <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e4a6e"/>
+      <stop offset="100%" stop-color="#0d2d4a"/>
+    </linearGradient>
+    <linearGradient id="dramGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a6741"/>
+      <stop offset="100%" stop-color="#2d4a2e"/>
+    </linearGradient>
+    <linearGradient id="nvmeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a3d7a"/>
+      <stop offset="100%" stop-color="#3d2659"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0f4c81"/>
+      <stop offset="100%" stop-color="#1a6fc4"/>
+    </linearGradient>
+    <!-- Arrow markers (8x6) -->
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ea580c"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#6b7280"/>
+    </marker>
+    <!-- Rank gradient for Section 4 -->
+    <linearGradient id="rankGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="20%" stop-color="#22c55e"/>
+      <stop offset="40%" stop-color="#84cc16"/>
+      <stop offset="60%" stop-color="#eab308"/>
+      <stop offset="80%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1342" fill="url(#bgGrad)"/>
+
+  <!-- ==================== TITLE (FULL WIDTH) ==================== -->
+  <rect x="20" y="10" width="1560" height="60" rx="6" fill="url(#titleGrad)"/>
+  <text x="800" y="40" text-anchor="middle" fill="white" font-size="20" font-weight="bold">PHYSICAL DATA PATHS: GPU ↔ CPU MEMORY AND GPU ↔ NVMe STORAGE</text>
+  <text x="800" y="60" text-anchor="middle" fill="#bfdbfe" font-size="13">Physical Topologies and Data Flow Paths in Modern Servers</text>
+
+  <!-- ==================== SECTION 1: GPU ↔ CPU MEMORY (left column) ==================== -->
+  <rect x="20" y="85" width="760" height="520" rx="8" fill="white" stroke="#2563eb" stroke-width="2"/>
+  <rect x="20" y="85" width="760" height="32" rx="6" fill="#2563eb"/>
+  <text x="400" y="106" text-anchor="middle" fill="white" font-size="14" font-weight="bold">1. GPU ↔ CPU MEMORY DATA PATH</text>
+  <text x="400" y="137" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">(GPU to Host Memory and Host Memory to GPU)</text>
+
+  <!-- Physical Path Label -->
+  <rect x="30" y="150" width="740" height="22" rx="4" fill="#dbeafe"/>
+  <text x="400" y="165" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">PHYSICAL PATH  (Typical Single-Socket System)</text>
+
+  <!-- Section 1 Components (device row) -->
+  <!-- GPU -->
+  <rect x="45" y="190" width="80" height="70" rx="5" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="85" y="213" text-anchor="middle" fill="white" font-size="11" font-weight="bold">GPU</text>
+  <text x="85" y="232" text-anchor="middle" fill="#86efac" font-size="9">GPU VRAM</text>
+  <text x="85" y="248" text-anchor="middle" fill="#86efac" font-size="8">(Device Memory)</text>
+
+  <!-- PCIe Endpoint -->
+  <rect x="155" y="195" width="95" height="60" rx="4" fill="#e0e7ff" stroke="#4338ca" stroke-width="1"/>
+  <text x="202" y="215" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="bold">PCIe Endpoint</text>
+  <text x="202" y="230" text-anchor="middle" fill="#4338ca" font-size="9">(GPU)</text>
+  <text x="202" y="245" text-anchor="middle" fill="#6366f1" font-size="8">DMA Engine</text>
+
+  <!-- PCIe Switch -->
+  <rect x="280" y="195" width="90" height="60" rx="4" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="325" y="218" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">PCIe Switch</text>
+  <text x="325" y="235" text-anchor="middle" fill="#b45309" font-size="9">(Optional)</text>
+
+  <!-- CPU Root Complex -->
+  <rect x="400" y="190" width="110" height="70" rx="5" fill="url(#cpuGrad)" stroke="#0d2d4a" stroke-width="1"/>
+  <text x="455" y="211" text-anchor="middle" fill="white" font-size="10" font-weight="bold">CPU Root Complex</text>
+  <text x="455" y="227" text-anchor="middle" fill="#93c5fd" font-size="9">(PCIe Root Port)</text>
+  <text x="455" y="245" text-anchor="middle" fill="#93c5fd" font-size="8">Routing / Switching</text>
+
+  <!-- Memory Controller -->
+  <rect x="540" y="195" width="95" height="60" rx="4" fill="#fdf4ff" stroke="#a855f7" stroke-width="1"/>
+  <text x="587" y="215" text-anchor="middle" fill="#7e22ce" font-size="10" font-weight="bold">Memory</text>
+  <text x="587" y="230" text-anchor="middle" fill="#7e22ce" font-size="10" font-weight="bold">Controller</text>
+  <text x="587" y="245" text-anchor="middle" fill="#7e22ce" font-size="8">(Inside CPU die)</text>
+
+  <!-- System DRAM -->
+  <rect x="665" y="190" width="95" height="70" rx="5" fill="url(#dramGrad)" stroke="#2d4a2e" stroke-width="1"/>
+  <text x="712" y="213" text-anchor="middle" fill="white" font-size="11" font-weight="bold">System DRAM</text>
+  <text x="712" y="232" text-anchor="middle" fill="#86efac" font-size="9">(Host Memory)</text>
+  <text x="712" y="248" text-anchor="middle" fill="#86efac" font-size="8">DDR4 / DDR5</text>
+
+  <!-- Forward arrows (blue, top) -->
+  <line x1="125" y1="220" x2="155" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="250" y1="220" x2="280" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="370" y1="220" x2="400" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="510" y1="220" x2="540" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="635" y1="220" x2="665" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- Return arrows (blue, bottom) — same semantic as forward: via CPU Memory -->
+  <line x1="155" y1="232" x2="125" y2="232" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="280" y1="232" x2="250" y2="232" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="400" y1="232" x2="370" y2="232" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="540" y1="232" x2="510" y2="232" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="665" y1="232" x2="635" y2="232" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- Zone labels -->
+  <text x="85" y="285" text-anchor="middle" fill="#1a3d2e" font-size="9" font-weight="bold">On GPU Board</text>
+  <text x="325" y="280" text-anchor="middle" fill="#b45309" font-size="9" font-weight="bold">PCIe Fabric</text>
+  <text x="325" y="293" text-anchor="middle" fill="#b45309" font-size="8">(Optional Switch)</text>
+  <text x="455" y="285" text-anchor="middle" fill="#0d2d4a" font-size="9" font-weight="bold">CPU / Chipset</text>
+  <text x="712" y="285" text-anchor="middle" fill="#2d4a2e" font-size="9" font-weight="bold">System Memory</text>
+
+  <!-- Details Box -->
+  <rect x="30" y="315" width="365" height="280" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="40" y="335" fill="#1e40af" font-size="11" font-weight="bold">DETAILS</text>
+  <text x="40" y="355" fill="#374151" font-size="10">• The GPU's DMA engine initiates PCIe transactions</text>
+  <text x="40" y="370" fill="#374151" font-size="10">  to read / write host memory.</text>
+  <text x="40" y="390" fill="#374151" font-size="10">• Transactions traverse the PCIe fabric (may include</text>
+  <text x="40" y="405" fill="#374151" font-size="10">  switches) to reach the CPU Root Complex.</text>
+  <text x="40" y="425" fill="#374151" font-size="10">• The CPU Root Complex routes the requests to the</text>
+  <text x="40" y="440" fill="#374151" font-size="10">  memory controller (on-die).</text>
+  <text x="40" y="460" fill="#374151" font-size="10">• The memory controller drives DDR commands to the</text>
+  <text x="40" y="475" fill="#374151" font-size="10">  system DRAM (host memory).</text>
+  <text x="40" y="495" fill="#374151" font-size="10">• CPU cores are NOT in the data path — they only</text>
+  <text x="40" y="510" fill="#374151" font-size="10">  set up descriptors, not copy the payload.</text>
+  <text x="40" y="530" fill="#374151" font-size="10">• Bandwidth is bounded by the PCIe link (Gen3/4/5)</text>
+  <text x="40" y="545" fill="#374151" font-size="10">  and the DRAM subsystem (channels × DDR rate).</text>
+  <text x="40" y="565" fill="#374151" font-size="10">• Pinned / page-locked host buffers avoid OS paging</text>
+  <text x="40" y="580" fill="#374151" font-size="10">  and enable zero-copy DMA from the kernel side.</text>
+
+  <!-- Key Points Box -->
+  <rect x="405" y="315" width="365" height="280" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <text x="415" y="335" fill="#92400e" font-size="11" font-weight="bold">KEY POINTS</text>
+  <text x="415" y="355" fill="#374151" font-size="10">• No CPU memcpy on the data path.</text>
+  <text x="415" y="375" fill="#374151" font-size="10">• Every request must go through the CPU Root</text>
+  <text x="415" y="390" fill="#374151" font-size="10">  Complex; DRAM is only reachable via the memory</text>
+  <text x="415" y="405" fill="#374151" font-size="10">  controller.</text>
+  <text x="415" y="425" fill="#374151" font-size="10">• Bandwidth ceiling = min(PCIe link, DRAM BW).</text>
+  <text x="415" y="445" fill="#374151" font-size="10">• Latency includes PCIe traversal + Root Complex</text>
+  <text x="415" y="460" fill="#374151" font-size="10">  arbitration + DDR access.</text>
+  <text x="415" y="480" fill="#374151" font-size="10">• On multi-socket systems, crossing UPI / Infinity</text>
+  <text x="415" y="495" fill="#374151" font-size="10">  Fabric further raises latency (see Section 3-A).</text>
+  <text x="415" y="515" fill="#374151" font-size="10">• Peer memory (GPU↔GPU) with NVLink bypasses</text>
+  <text x="415" y="530" fill="#374151" font-size="10">  this path entirely (out of scope here).</text>
+  <text x="415" y="550" fill="#374151" font-size="10">• Bounce-buffer overhead only appears for storage</text>
+  <text x="415" y="565" fill="#374151" font-size="10">  paths without GDS — see Section 2.</text>
+
+  <!-- ==================== SECTION 2: GPU ↔ NVMe STORAGE (right column, vertically split) ==================== -->
+  <rect x="790" y="85" width="790" height="520" rx="8" fill="white" stroke="#16a34a" stroke-width="2"/>
+  <rect x="790" y="85" width="790" height="32" rx="6" fill="#16a34a"/>
+  <text x="1185" y="106" text-anchor="middle" fill="white" font-size="14" font-weight="bold">2. GPU ↔ NVMe STORAGE DATA PATHS</text>
+
+  <!-- 2-A: Traditional Path -->
+  <rect x="800" y="125" width="770" height="230" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="1185" y="142" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">2-A. Traditional Path (Without GPUDirect Storage)</text>
+  <rect x="810" y="150" width="750" height="20" rx="3" fill="#fee2e2"/>
+  <text x="1185" y="164" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="bold">PHYSICAL PATH (With CPU Memory Bounce Buffer)</text>
+
+  <!-- 2-A device row (evenly distributed across 810..1560) -->
+  <rect x="810" y="180" width="100" height="60" rx="4" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="860" y="202" text-anchor="middle" fill="white" font-size="10" font-weight="bold">NVMe SSD</text>
+  <text x="860" y="218" text-anchor="middle" fill="#d8b4fe" font-size="9">Controller</text>
+  <text x="860" y="232" text-anchor="middle" fill="#d8b4fe" font-size="8">(Storage Device)</text>
+
+  <rect x="1020" y="180" width="110" height="60" rx="4" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+  <text x="1075" y="202" text-anchor="middle" fill="#374151" font-size="10" font-weight="bold">CPU Root Complex</text>
+  <text x="1075" y="218" text-anchor="middle" fill="#6b7280" font-size="9">(PCIe Root Port)</text>
+  <text x="1075" y="232" text-anchor="middle" fill="#9ca3af" font-size="8">Routing</text>
+
+  <rect x="1240" y="180" width="110" height="60" rx="5" fill="#fee2e2" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,2"/>
+  <text x="1295" y="202" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="bold">System DRAM</text>
+  <text x="1295" y="218" text-anchor="middle" fill="#991b1b" font-size="9">Bounce Buffer</text>
+  <text x="1295" y="232" text-anchor="middle" fill="#991b1b" font-size="8">(Host Memory)</text>
+
+  <rect x="1460" y="180" width="100" height="60" rx="4" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="1510" y="202" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU</text>
+  <text x="1510" y="218" text-anchor="middle" fill="#86efac" font-size="9">GPU VRAM</text>
+  <text x="1510" y="232" text-anchor="middle" fill="#86efac" font-size="8">(Device Memory)</text>
+
+  <!-- 2-A forward arrows (blue) — two DMA operations with a bounce hop in between -->
+  <line x1="910" y1="205" x2="1020" y2="205" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <text x="965" y="198" text-anchor="middle" fill="#2563eb" font-size="9" font-weight="bold">① NVMe DMA</text>
+
+  <line x1="1130" y1="205" x2="1240" y2="205" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <text x="1185" y="198" text-anchor="middle" fill="#2563eb" font-size="9" font-weight="bold">→ DRAM bounce</text>
+
+  <line x1="1350" y1="205" x2="1460" y2="205" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <text x="1405" y="198" text-anchor="middle" fill="#2563eb" font-size="9" font-weight="bold">② GPU DMA</text>
+
+  <!-- 2-A return arrows (blue, all still via bounce buffer) -->
+  <line x1="1460" y1="220" x2="1350" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="1240" y1="220" x2="1130" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <line x1="1020" y1="220" x2="910" y2="220" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- 2-A details & key points -->
+  <rect x="810" y="250" width="460" height="95" rx="4" fill="white" stroke="#fca5a5" stroke-width="1"/>
+  <text x="820" y="266" fill="#dc2626" font-size="10" font-weight="bold">DETAILS</text>
+  <text x="820" y="282" fill="#374151" font-size="9">• NVMe controller DMA reads data from NAND and writes to system DRAM.</text>
+  <text x="820" y="296" fill="#374151" font-size="9">• GPU DMA reads data from system DRAM and writes to its VRAM.</text>
+  <text x="820" y="310" fill="#374151" font-size="9">• Two PCIe data transfers + CPU memory bounce buffer.</text>
+  <text x="820" y="324" fill="#374151" font-size="9">• Buffered I/O: 2 memcpy per transfer; O_DIRECT: 1 memcpy.</text>
+  <text x="820" y="338" fill="#374151" font-size="9">• Applies symmetrically to Read (NVMe→GPU) and Write (GPU→NVMe).</text>
+
+  <rect x="1280" y="250" width="280" height="95" rx="4" fill="white" stroke="#fca5a5" stroke-width="1"/>
+  <text x="1290" y="266" fill="#dc2626" font-size="10" font-weight="bold">KEY POINTS</text>
+  <text x="1290" y="282" fill="#374151" font-size="9">• Involves system memory bounce buffer.</text>
+  <text x="1290" y="296" fill="#374151" font-size="9">• Consumes CPU memory bandwidth.</text>
+  <text x="1290" y="310" fill="#374151" font-size="9">• Higher latency and lower</text>
+  <text x="1290" y="322" fill="#374151" font-size="9">  effective bandwidth.</text>
+  <text x="1290" y="338" fill="#374151" font-size="9">• Both directions pay 2× PCIe cost.</text>
+
+  <!-- 2-B: GPUDirect Storage Path -->
+  <rect x="800" y="365" width="770" height="235" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="1185" y="383" text-anchor="middle" fill="#166534" font-size="12" font-weight="bold">2-B. GPUDirect Storage (GDS) Path (Direct)</text>
+  <rect x="810" y="390" width="750" height="20" rx="3" fill="#dcfce7"/>
+  <text x="1185" y="404" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="bold">PHYSICAL PATH (Direct Storage to GPU Memory)</text>
+
+  <!-- 2-B device row (evenly distributed across 810..1560) -->
+  <rect x="810" y="420" width="100" height="60" rx="4" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="860" y="442" text-anchor="middle" fill="white" font-size="10" font-weight="bold">NVMe SSD</text>
+  <text x="860" y="458" text-anchor="middle" fill="#d8b4fe" font-size="9">Controller</text>
+  <text x="860" y="472" text-anchor="middle" fill="#d8b4fe" font-size="8">(Storage Device)</text>
+
+  <rect x="1120" y="420" width="130" height="60" rx="4" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="1185" y="442" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">PCIe Switch</text>
+  <text x="1185" y="458" text-anchor="middle" fill="#b45309" font-size="9">or shared Root Complex</text>
+  <text x="1185" y="472" text-anchor="middle" fill="#b45309" font-size="8">(PIX topology preferred)</text>
+
+  <rect x="1460" y="420" width="100" height="60" rx="4" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="1510" y="442" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU</text>
+  <text x="1510" y="458" text-anchor="middle" fill="#86efac" font-size="9">GPU VRAM</text>
+  <text x="1510" y="472" text-anchor="middle" fill="#86efac" font-size="8">(Device Memory)</text>
+
+  <!-- 2-B forward arrows (green, direct) -->
+  <line x1="910" y1="445" x2="1120" y2="445" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="1015" y="438" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="bold">DMA Read (Direct)</text>
+
+  <line x1="1250" y1="445" x2="1460" y2="445" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="1355" y="438" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="bold">DMA Write (Direct)</text>
+
+  <!-- 2-B return arrows (green) -->
+  <line x1="1460" y1="460" x2="1250" y2="460" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <line x1="1120" y1="460" x2="910" y2="460" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- Direct Data Path highlight (spans full device row width) -->
+  <rect x="810" y="488" width="750" height="24" rx="3" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="1185" y="504" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="bold">Direct Data Path (No CPU Memory Involved)</text>
+
+  <!-- 2-B details (left, wider) -->
+  <rect x="810" y="520" width="500" height="75" rx="4" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="820" y="535" fill="#166534" font-size="10" font-weight="bold">DETAILS  /  STACK  /  REQUIREMENTS</text>
+  <text x="820" y="549" fill="#374151" font-size="9">• NVMe DMA writes directly into GPU VRAM; CPU memory entirely bypassed.</text>
+  <text x="820" y="562" fill="#374151" font-size="9">• Stack (NV): libcufile API + nvidia-fs.ko  |  AMD analog: DirectGMA + ROCm / DMA-BUF + upstream pci_p2pdma.</text>
+  <text x="820" y="575" fill="#374151" font-size="9">• Legacy mode: nvidia-fs.ko + MOFED-patched NVMe driver (pre-CUDA 12.8).</text>
+  <text x="820" y="588" fill="#374151" font-size="9">• Modern mode: Linux ≥ 6.2 upstream pci_p2pdma + CUDA 12.8+ (no MOFED patch).</text>
+
+  <!-- 2-B key points (right) -->
+  <rect x="1320" y="520" width="240" height="75" rx="4" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="1330" y="535" fill="#166534" font-size="10" font-weight="bold">KEY POINTS</text>
+  <text x="1330" y="549" fill="#374151" font-size="9">• No CPU memory bounce buffer.</text>
+  <text x="1330" y="562" fill="#374151" font-size="9">• Lower latency, higher bandwidth.</text>
+  <text x="1330" y="575" fill="#374151" font-size="9">• Preconditions: ACS bypass,</text>
+  <text x="1330" y="588" fill="#374151" font-size="9">  IOMMU=pt, ReBAR, O_DIRECT align.</text>
+
+  <!-- ==================== SECTION 3: VARIATIONS AND TOPOLOGIES (bottom-left) ==================== -->
+  <rect x="20" y="625" width="980" height="365" rx="8" fill="white" stroke="#7c3aed" stroke-width="2"/>
+  <rect x="20" y="625" width="980" height="32" rx="6" fill="#7c3aed"/>
+  <text x="510" y="646" text-anchor="middle" fill="white" font-size="14" font-weight="bold">3. VARIATIONS AND TOPOLOGIES</text>
+
+  <!-- 3-A: Multiple Socket (NUMA) -->
+  <rect x="30" y="665" width="310" height="300" rx="5" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1"/>
+  <text x="185" y="683" text-anchor="middle" fill="#6b21a8" font-size="11" font-weight="bold">3-A. Multiple Socket (NUMA) System</text>
+  <text x="185" y="696" text-anchor="middle" fill="#991b1b" font-size="8" font-style="italic">≈ §4: SYS (cross-socket) / NODE (cross-PHB)</text>
+
+  <!-- Socket 0 -->
+  <rect x="45" y="700" width="115" height="70" rx="4" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+  <text x="103" y="717" text-anchor="middle" fill="#374151" font-size="9" font-weight="bold">CPU Socket 0</text>
+  <text x="103" y="730" text-anchor="middle" fill="#6b7280" font-size="8">(Root Complex 0)</text>
+  <text x="103" y="744" text-anchor="middle" fill="#6b7280" font-size="8">Memory Ctrl 0</text>
+  <text x="103" y="758" text-anchor="middle" fill="#6b7280" font-size="8">Local DRAM 0</text>
+
+  <!-- Socket 1 -->
+  <rect x="210" y="700" width="115" height="70" rx="4" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+  <text x="268" y="717" text-anchor="middle" fill="#374151" font-size="9" font-weight="bold">CPU Socket 1</text>
+  <text x="268" y="730" text-anchor="middle" fill="#6b7280" font-size="8">(Root Complex 1)</text>
+  <text x="268" y="744" text-anchor="middle" fill="#6b7280" font-size="8">Memory Ctrl 1</text>
+  <text x="268" y="758" text-anchor="middle" fill="#6b7280" font-size="8">Local DRAM 1</text>
+
+  <!-- UPI / IF Link -->
+  <line x1="160" y1="735" x2="210" y2="735" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowOrange)"/>
+  <text x="185" y="728" text-anchor="middle" fill="#ea580c" font-size="8" font-weight="bold">UPI / IF</text>
+  <text x="185" y="782" text-anchor="middle" fill="#ea580c" font-size="8">Inter-Socket Link</text>
+
+  <!-- GPU connected to Socket 0 -->
+  <rect x="65" y="800" width="90" height="45" rx="4" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="110" y="820" text-anchor="middle" fill="white" font-size="9" font-weight="bold">GPU</text>
+  <text x="110" y="835" text-anchor="middle" fill="#86efac" font-size="8">on Socket 0</text>
+
+  <line x1="110" y1="800" x2="110" y2="775" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+  <!-- Note 3A -->
+  <rect x="40" y="865" width="290" height="90" rx="4" fill="white" stroke="#d8b4fe" stroke-width="1"/>
+  <text x="50" y="880" fill="#6b21a8" font-size="9" font-weight="bold">NOTE</text>
+  <text x="50" y="894" fill="#374151" font-size="8">• GPU sits on Socket 0. Accessing Socket 1 local DRAM</text>
+  <text x="50" y="906" fill="#374151" font-size="8">  traverses UPI / Infinity Fabric — extra latency and</text>
+  <text x="50" y="918" fill="#374151" font-size="8">  reduced bandwidth.</text>
+  <text x="50" y="932" fill="#374151" font-size="8">• Some platforms disable cross-socket P2P entirely.</text>
+  <text x="50" y="946" fill="#374151" font-size="8">• NUMA affinity: pin workload to same socket as GPU.</text>
+
+  <!-- 3-B: Multi-NVMe + Switch (Ideal GDS) -->
+  <rect x="345" y="665" width="310" height="300" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+  <text x="500" y="683" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">3-B. Multi-NVMe + Switch (Ideal GDS)</text>
+  <text x="500" y="696" text-anchor="middle" fill="#166534" font-size="8" font-style="italic">≈ §4: PIX (single PCIe switch)</text>
+
+  <!-- NVMe drives -->
+  <rect x="360" y="700" width="65" height="40" rx="3" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="392" y="720" text-anchor="middle" fill="white" font-size="9" font-weight="bold">NVMe 1</text>
+
+  <rect x="442" y="700" width="65" height="40" rx="3" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="474" y="720" text-anchor="middle" fill="white" font-size="9" font-weight="bold">NVMe 2</text>
+
+  <text x="530" y="725" text-anchor="middle" fill="#6b7280" font-size="12" font-weight="bold">…</text>
+
+  <rect x="555" y="700" width="65" height="40" rx="3" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="587" y="720" text-anchor="middle" fill="white" font-size="9" font-weight="bold">NVMe N</text>
+
+  <!-- Switch -->
+  <rect x="390" y="785" width="220" height="40" rx="4" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="500" y="801" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">PCIe Switch</text>
+  <text x="500" y="815" text-anchor="middle" fill="#b45309" font-size="8">Fabric / Aggregation</text>
+
+  <!-- NVMe-to-switch connectors -->
+  <line x1="392" y1="740" x2="430" y2="785" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="474" y1="740" x2="490" y2="785" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="587" y1="740" x2="560" y2="785" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+
+  <!-- GPU -->
+  <rect x="455" y="855" width="90" height="45" rx="4" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="500" y="874" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU</text>
+  <text x="500" y="890" text-anchor="middle" fill="#86efac" font-size="8">(VRAM target)</text>
+
+  <line x1="500" y1="825" x2="500" y2="855" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- Note 3B -->
+  <rect x="355" y="910" width="290" height="45" rx="4" fill="white" stroke="#fcd34d" stroke-width="1"/>
+  <text x="365" y="924" fill="#92400e" font-size="9" font-weight="bold">NOTE</text>
+  <text x="365" y="938" fill="#374151" font-size="8">• Same-switch P2P has lowest latency — recommended</text>
+  <text x="365" y="950" fill="#374151" font-size="8">  GDS layout (PIX label in nvidia-smi topo -m).</text>
+
+  <!-- 3-C: Functional Path via Root Complex -->
+  <rect x="660" y="665" width="330" height="300" rx="5" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="825" y="681" text-anchor="middle" fill="#166534" font-size="11" font-weight="bold">3-C. Functional Path via Root Complex</text>
+  <text x="825" y="696" text-anchor="middle" fill="#16a34a" font-size="9">(No Switch) · <tspan fill="#92400e" font-style="italic">≈ §4: PHB (via Root Complex) / PXB</tspan></text>
+
+  <!-- NVMe -->
+  <rect x="680" y="720" width="75" height="50" rx="3" fill="url(#nvmeGrad)" stroke="#3d2659" stroke-width="1"/>
+  <text x="718" y="740" text-anchor="middle" fill="white" font-size="10" font-weight="bold">NVMe</text>
+  <text x="718" y="756" text-anchor="middle" fill="#d8b4fe" font-size="8">SSD</text>
+
+  <!-- Root Complex -->
+  <rect x="795" y="720" width="110" height="50" rx="3" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+  <text x="850" y="738" text-anchor="middle" fill="#374151" font-size="10" font-weight="bold">CPU Root</text>
+  <text x="850" y="752" text-anchor="middle" fill="#6b7280" font-size="9">Complex</text>
+  <text x="850" y="766" text-anchor="middle" fill="#6b7280" font-size="8">(Root Port)</text>
+
+  <!-- GPU -->
+  <rect x="940" y="720" width="40" height="50" rx="3" fill="url(#gpuGrad)" stroke="#1a3d2e" stroke-width="1"/>
+  <text x="960" y="745" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU</text>
+
+  <!-- Direct lines (forward green) -->
+  <line x1="755" y1="740" x2="795" y2="740" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <line x1="905" y1="740" x2="940" y2="740" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <line x1="940" y1="752" x2="905" y2="752" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <line x1="795" y1="752" x2="755" y2="752" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- Dashed highlight -->
+  <rect x="675" y="708" width="315" height="70" rx="4" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="830" y="800" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="bold">Direct Path (No Switch Required)</text>
+
+  <!-- Note 3C -->
+  <rect x="670" y="820" width="310" height="135" rx="4" fill="white" stroke="#86efac" stroke-width="1"/>
+  <text x="680" y="836" fill="#166534" font-size="9" font-weight="bold">NOTE</text>
+  <text x="680" y="852" fill="#374151" font-size="8">• When NVMe and GPU share the same Root Complex</text>
+  <text x="680" y="864" fill="#374151" font-size="8">  (no switch), GDS still works, subject to Root Complex</text>
+  <text x="680" y="876" fill="#374151" font-size="8">  P2P forwarding and ACS configuration.</text>
+  <text x="680" y="892" fill="#374151" font-size="8">• Functional, but not the most efficient topology.</text>
+  <text x="680" y="904" fill="#374151" font-size="8">• Typically shows as PHB/PXB in nvidia-smi topo -m.</text>
+  <text x="680" y="920" fill="#374151" font-size="8">• Prefer a dedicated PCIe Switch (3-B) for production</text>
+  <text x="680" y="932" fill="#374151" font-size="8">  GDS when bandwidth matters.</text>
+  <text x="680" y="948" fill="#374151" font-size="8">• Some server CPUs disable RC-internal P2P altogether.</text>
+
+  <!-- ==================== LEGEND / NOTES / ABBREVIATIONS (bottom-right) ==================== -->
+  <rect x="1010" y="625" width="570" height="365" rx="8" fill="white" stroke="#6b7280" stroke-width="2"/>
+
+  <!-- Legend: Path Types -->
+  <rect x="1020" y="640" width="275" height="155" rx="5" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="1030" y="658" fill="#111827" font-size="11" font-weight="bold">LEGEND (Path Types)</text>
+
+  <line x1="1035" y1="678" x2="1075" y2="678" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <text x="1082" y="681" fill="#374151" font-size="9">PCIe Data Flow (Via CPU Memory)</text>
+
+  <line x1="1035" y1="700" x2="1075" y2="700" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="1082" y="703" fill="#374151" font-size="9">PCIe Data Flow (Direct / GPUDirect)</text>
+
+  <line x1="1035" y1="722" x2="1075" y2="722" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowOrange)"/>
+  <text x="1082" y="725" fill="#374151" font-size="9">Inter-Socket Link (UPI / IF)</text>
+
+  <line x1="1035" y1="744" x2="1075" y2="744" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <text x="1082" y="747" fill="#374151" font-size="9">Structural PCIe Link (bridge / switch hop)</text>
+
+  <rect x="1035" y="762" width="40" height="10" rx="2" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="1082" y="771" fill="#374151" font-size="9">Direct Data Path Highlight</text>
+
+  <!-- Legend: Components -->
+  <rect x="1305" y="640" width="265" height="155" rx="5" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="1315" y="658" fill="#111827" font-size="11" font-weight="bold">LEGEND (Components)</text>
+
+  <rect x="1320" y="670" width="14" height="10" rx="2" fill="url(#gpuGrad)"/>
+  <text x="1342" y="679" fill="#374151" font-size="9">GPU / Graphics Card</text>
+
+  <rect x="1320" y="685" width="7" height="10" rx="2" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+  <rect x="1327" y="685" width="7" height="10" rx="2" fill="url(#cpuGrad)" stroke="#0d2d4a" stroke-width="1"/>
+  <text x="1342" y="694" fill="#374151" font-size="9">CPU / Chipset / Root Complex</text>
+
+  <rect x="1320" y="700" width="14" height="10" rx="2" fill="#e0e7ff" stroke="#4338ca" stroke-width="1"/>
+  <text x="1342" y="709" fill="#374151" font-size="9">PCIe Endpoint (GPU-side interface)</text>
+
+  <rect x="1320" y="715" width="14" height="10" rx="2" fill="url(#dramGrad)"/>
+  <text x="1342" y="724" fill="#374151" font-size="9">Memory (DRAM)</text>
+
+  <rect x="1320" y="730" width="14" height="10" rx="2" fill="#fee2e2" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="1342" y="739" fill="#374151" font-size="9">DRAM Bounce Buffer (non-GDS)</text>
+
+  <rect x="1320" y="745" width="14" height="10" rx="2" fill="url(#nvmeGrad)"/>
+  <text x="1342" y="754" fill="#374151" font-size="9">Storage (NVMe SSD)</text>
+
+  <rect x="1320" y="760" width="14" height="10" rx="2" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="1342" y="769" fill="#374151" font-size="9">PCIe Switch / Fabric</text>
+
+  <rect x="1320" y="775" width="14" height="10" rx="2" fill="#fdf4ff" stroke="#a855f7" stroke-width="1"/>
+  <text x="1342" y="784" fill="#374151" font-size="9">Memory Controller (on CPU die)</text>
+
+  <!-- Important Notes -->
+  <rect x="1020" y="805" width="275" height="175" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+  <text x="1030" y="823" fill="#92400e" font-size="11" font-weight="bold">IMPORTANT NOTES</text>
+  <text x="1030" y="840" fill="#374151" font-size="8">1. PCIe is the underlying physical transport in all</text>
+  <text x="1030" y="852" fill="#374151" font-size="8">   host-adjacent paths shown above.</text>
+  <text x="1030" y="868" fill="#374151" font-size="8">2. GPU cannot reach system DRAM without going</text>
+  <text x="1030" y="880" fill="#374151" font-size="8">   through the CPU Root Complex + Memory Ctrl.</text>
+  <text x="1030" y="896" fill="#374151" font-size="8">3. GDS allows storage DMA to hit GPU VRAM directly,</text>
+  <text x="1030" y="908" fill="#374151" font-size="8">   bypassing the system-memory bounce buffer.</text>
+  <text x="1030" y="924" fill="#374151" font-size="8">4. Best GDS topology: same PCIe Switch (PIX). Same-</text>
+  <text x="1030" y="936" fill="#374151" font-size="8">   RC (PHB/PXB) is functional but less optimal.</text>
+  <text x="1030" y="952" fill="#374151" font-size="8">5. NVLink GPU↔GPU paths are out of scope here.</text>
+  <text x="1030" y="968" fill="#374151" font-size="8">6. GPU↔GPU peer paths classified in Section 4.</text>
+
+  <!-- Abbreviations -->
+  <rect x="1305" y="805" width="265" height="175" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="1315" y="823" fill="#1e40af" font-size="11" font-weight="bold">ABBREVIATIONS</text>
+  <text x="1315" y="840" fill="#374151" font-size="8">• DMA: Direct Memory Access</text>
+  <text x="1315" y="854" fill="#374151" font-size="8">• PCIe: Peripheral Component Interconnect Express</text>
+  <text x="1315" y="868" fill="#374151" font-size="8">• GDS: GPUDirect Storage</text>
+  <text x="1315" y="882" fill="#374151" font-size="8">• NUMA: Non-Uniform Memory Access</text>
+  <text x="1315" y="896" fill="#374151" font-size="8">• UPI: Intel Ultra Path Interconnect</text>
+  <text x="1315" y="910" fill="#374151" font-size="8">• IF: AMD Infinity Fabric</text>
+  <text x="1315" y="924" fill="#374151" font-size="8">• ACS: PCIe Access Control Services</text>
+  <text x="1315" y="938" fill="#374151" font-size="8">• ReBAR: Resizable Base Address Register</text>
+  <text x="1315" y="952" fill="#374151" font-size="8">• Topology labels (Section 4): X, PIX, PXB,</text>
+  <text x="1315" y="964" fill="#374151" font-size="8">  PHB, NODE, SYS (nvidia-smi topo -m)</text>
+
+  <!-- ==================== SECTION 4: PEER TOPOLOGY CLASSIFICATION ==================== -->
+  <rect x="20" y="990" width="1560" height="282" rx="8" fill="white" stroke="#0891b2" stroke-width="2"/>
+  <rect x="20" y="990" width="1560" height="32" rx="6" fill="#0891b2"/>
+  <text x="800" y="1011" text-anchor="middle" fill="white" font-size="14" font-weight="bold">4. PEER TOPOLOGY CLASSIFICATION (per nvidia-smi topo -m)</text>
+  <text x="800" y="1040" text-anchor="middle" fill="#0e7490" font-size="11" font-weight="bold">GPU↔GPU peer paths within a single host. Left → Right = Best → Worst.</text>
+
+  <!-- Panel 1: X — Self -->
+  <rect x="30" y="1048" width="248" height="155" rx="5" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <rect x="30" y="1048" width="248" height="22" rx="5" fill="#16a34a"/>
+  <text x="154" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">X — Self</text>
+  <text x="154" y="1086" text-anchor="middle" fill="#166534" font-size="9" font-style="italic">(same GPU, no path)</text>
+  <rect x="129" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="154" y="1128" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU</text>
+  <path d="M 180,1108 Q 210,1122 180,1136" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#arrowGray)"/>
+  <text x="154" y="1170" text-anchor="middle" fill="#166534" font-size="9" font-weight="bold">loopback (self)</text>
+  <text x="154" y="1183" text-anchor="middle" fill="#6b7280" font-size="8" font-weight="bold">GPUDirect P2P: N/A (diagonal)</text>
+  <text x="154" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: N/A  |  BW: intra-device</text>
+
+  <!-- Panel 2: PIX — Single PCIe Bridge -->
+  <rect x="288" y="1048" width="248" height="155" rx="5" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <rect x="288" y="1048" width="248" height="22" rx="5" fill="#22c55e"/>
+  <text x="412" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">PIX — Single PCIe Bridge</text>
+  <text x="412" y="1086" text-anchor="middle" fill="#166534" font-size="9" font-style="italic">(Through 1 PCIe Switch)</text>
+  <rect x="298" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="323" y="1128" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU A</text>
+  <rect x="386" y="1110" width="52" height="24" rx="3" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="412" y="1126" text-anchor="middle" fill="#92400e" font-size="9" font-weight="bold">Switch</text>
+  <rect x="476" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="501" y="1128" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU B</text>
+  <line x1="348" y1="1122" x2="384" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="438" y1="1122" x2="474" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <text x="412" y="1170" text-anchor="middle" fill="#15803d" font-size="9" font-weight="bold">A ↔ Switch ↔ B</text>
+  <text x="412" y="1183" text-anchor="middle" fill="#15803d" font-size="8" font-weight="bold">✓ GPUDirect P2P — supported (best)</text>
+  <text x="412" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: very low  |  BW: full PCIe</text>
+
+  <!-- Panel 3: PXB — Multiple PCIe Bridges -->
+  <rect x="546" y="1048" width="248" height="155" rx="5" fill="#f7fee7" stroke="#84cc16" stroke-width="1.5"/>
+  <rect x="546" y="1048" width="248" height="22" rx="5" fill="#84cc16"/>
+  <text x="670" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">PXB — Multiple PCIe Bridges</text>
+  <text x="670" y="1086" text-anchor="middle" fill="#3f6212" font-size="9" font-style="italic">(Below Host Bridge)</text>
+  <rect x="565" y="1100" width="40" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="585" y="1128" text-anchor="middle" fill="white" font-size="9" font-weight="bold">GPU A</text>
+  <rect x="619" y="1110" width="44" height="24" rx="3" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="641" y="1126" text-anchor="middle" fill="#92400e" font-size="8" font-weight="bold">SW 1</text>
+  <rect x="677" y="1110" width="44" height="24" rx="3" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+  <text x="699" y="1126" text-anchor="middle" fill="#92400e" font-size="8" font-weight="bold">SW 2</text>
+  <rect x="735" y="1100" width="40" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="755" y="1128" text-anchor="middle" fill="white" font-size="9" font-weight="bold">GPU B</text>
+  <line x1="605" y1="1122" x2="617" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="663" y1="1122" x2="675" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="721" y1="1122" x2="733" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <text x="670" y="1170" text-anchor="middle" fill="#4d7c0f" font-size="9" font-weight="bold">A ↔ SW1 ↔ SW2 ↔ B</text>
+  <text x="670" y="1183" text-anchor="middle" fill="#4d7c0f" font-size="8" font-weight="bold">✓ GPUDirect P2P — supported</text>
+  <text x="670" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: low  |  BW: high</text>
+
+  <!-- Panel 4: PHB — PCIe Host Bridge -->
+  <rect x="804" y="1048" width="248" height="155" rx="5" fill="#fefce8" stroke="#eab308" stroke-width="1.5"/>
+  <rect x="804" y="1048" width="248" height="22" rx="5" fill="#eab308"/>
+  <text x="928" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">PHB — PCIe Host Bridge</text>
+  <text x="928" y="1086" text-anchor="middle" fill="#854d0e" font-size="9" font-style="italic">(Via CPU Root Complex)</text>
+  <rect x="816" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="841" y="1128" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU A</text>
+  <rect x="886" y="1110" width="84" height="24" rx="3" fill="url(#cpuGrad)" stroke="#0d2d4a" stroke-width="1"/>
+  <text x="928" y="1126" text-anchor="middle" fill="white" font-size="9" font-weight="bold">CPU Root Complex</text>
+  <rect x="990" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="1015" y="1128" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU B</text>
+  <line x1="866" y1="1122" x2="884" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="970" y1="1122" x2="988" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <text x="928" y="1170" text-anchor="middle" fill="#a16207" font-size="9" font-weight="bold">A ↔ Root Complex ↔ B</text>
+  <text x="928" y="1183" text-anchor="middle" fill="#a16207" font-size="8" font-weight="bold">△ P2P — thru Host Bridge, platform-dependent</text>
+  <text x="928" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: medium  |  BW: RC-shared</text>
+
+  <!-- Panel 5: NODE — Cross-PHB, Same NUMA -->
+  <rect x="1062" y="1048" width="248" height="155" rx="5" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+  <rect x="1062" y="1048" width="248" height="22" rx="5" fill="#f97316"/>
+  <text x="1186" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">NODE — Cross-PHB</text>
+  <text x="1186" y="1086" text-anchor="middle" fill="#9a3412" font-size="9" font-style="italic">(Same NUMA Node, diff PHB)</text>
+  <rect x="1084" y="1100" width="40" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="1104" y="1128" text-anchor="middle" fill="white" font-size="9" font-weight="bold">GPU A</text>
+  <rect x="1138" y="1110" width="44" height="24" rx="3" fill="url(#cpuGrad)" stroke="#0d2d4a" stroke-width="1"/>
+  <text x="1160" y="1126" text-anchor="middle" fill="white" font-size="8" font-weight="bold">RC 0</text>
+  <line x1="1182" y1="1122" x2="1190" y2="1122" stroke="#6b7280" stroke-width="1" stroke-dasharray="2,1.5"/>
+  <rect x="1190" y="1110" width="44" height="24" rx="3" fill="url(#cpuGrad)" stroke="#0d2d4a" stroke-width="1"/>
+  <text x="1212" y="1126" text-anchor="middle" fill="white" font-size="8" font-weight="bold">RC 1</text>
+  <rect x="1248" y="1100" width="40" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="1268" y="1128" text-anchor="middle" fill="white" font-size="9" font-weight="bold">GPU B</text>
+  <line x1="1124" y1="1122" x2="1136" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <line x1="1234" y1="1122" x2="1246" y2="1122" stroke="#6b7280" stroke-width="1.2" marker-end="url(#arrowGray)"/>
+  <text x="1186" y="1170" text-anchor="middle" fill="#c2410c" font-size="9" font-weight="bold">Same socket, cross Host-Bridge</text>
+  <text x="1186" y="1183" text-anchor="middle" fill="#c2410c" font-size="8" font-weight="bold">△ P2P — allowlist / platform-dependent</text>
+  <text x="1186" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: higher  |  BW: reduced</text>
+
+  <!-- Panel 6: SYS — Cross-NUMA via SMP -->
+  <rect x="1320" y="1048" width="248" height="155" rx="5" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <rect x="1320" y="1048" width="248" height="22" rx="5" fill="#dc2626"/>
+  <text x="1444" y="1064" text-anchor="middle" fill="white" font-size="11" font-weight="bold">SYS — Cross-NUMA</text>
+  <text x="1444" y="1086" text-anchor="middle" fill="#991b1b" font-size="9" font-style="italic">(Via SMP: UPI / IF)</text>
+  <rect x="1332" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="1357" y="1120" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU A</text>
+  <text x="1357" y="1136" text-anchor="middle" fill="#86efac" font-size="7">Socket 0</text>
+  <line x1="1382" y1="1122" x2="1494" y2="1122" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowOrange)"/>
+  <text x="1438" y="1115" text-anchor="middle" fill="#ea580c" font-size="9" font-weight="bold">UPI / IF</text>
+  <rect x="1506" y="1100" width="50" height="44" rx="3" fill="url(#gpuGrad)"/>
+  <text x="1531" y="1120" text-anchor="middle" fill="white" font-size="10" font-weight="bold">GPU B</text>
+  <text x="1531" y="1136" text-anchor="middle" fill="#86efac" font-size="7">Socket 1</text>
+  <text x="1444" y="1170" text-anchor="middle" fill="#991b1b" font-size="9" font-weight="bold">Cross-NUMA via SMP link</text>
+  <text x="1444" y="1183" text-anchor="middle" fill="#991b1b" font-size="8" font-weight="bold">✗ GPUDirect P2P — not supported</text>
+  <text x="1444" y="1193" text-anchor="middle" fill="#374151" font-size="8">Latency: high  |  BW: UPI-bound</text>
+
+  <!-- Ranking strip -->
+  <text x="60" y="1216" text-anchor="middle" fill="#15803d" font-size="9" font-weight="bold">Best</text>
+  <rect x="90" y="1210" width="1420" height="8" rx="3" fill="url(#rankGrad)"/>
+  <text x="1540" y="1216" text-anchor="middle" fill="#991b1b" font-size="9" font-weight="bold">Worst</text>
+  <text x="60" y="1232" text-anchor="middle" fill="#15803d" font-size="7" font-style="italic">latency↓  BW↑</text>
+  <text x="800" y="1232" text-anchor="middle" fill="#374151" font-size="9" font-style="italic">Left → Right:  latency increases ↑   ·   effective bandwidth decreases ↓</text>
+  <text x="1540" y="1232" text-anchor="middle" fill="#991b1b" font-size="7" font-style="italic">latency↑  BW↓</text>
+
+  <!-- P2P Badge Legend -->
+  <text x="800" y="1250" text-anchor="middle" font-size="8" fill="#374151"><tspan font-weight="bold">P2P Badge Key:</tspan>  <tspan fill="#15803d" font-weight="bold">✓ supported</tspan> <tspan fill="#6b7280">(PIX, PXB)</tspan>   ·   <tspan fill="#a16207" font-weight="bold">△ platform-dependent</tspan> <tspan fill="#6b7280">(PHB, NODE — via Host Bridge, kernel allowlist)</tspan>   ·   <tspan fill="#991b1b" font-weight="bold">✗ not supported</tspan> <tspan fill="#6b7280">(SYS — cross-socket)</tspan></text>
+  <text x="800" y="1263" text-anchor="middle" font-size="8" font-style="italic" fill="#6b7280">GPUDirect P2P ⊆ PCIe P2PDMA capability; NVLink (NV#) is an additional non-PCIe path, out of scope here.</text>
+
+  <!-- ==================== BOTTOM TITLE (FULL WIDTH) ==================== -->
+  <rect x="20" y="1282" width="1560" height="45" rx="6" fill="#1f2937"/>
+  <text x="800" y="1311" text-anchor="middle" fill="white" font-size="15" font-weight="bold">GPU ↔ CPU 内存 / GPU ↔ NVMe 存储 / GPU↔GPU 对等拓扑分级 — 整合注释版</text>
+
+</svg>
