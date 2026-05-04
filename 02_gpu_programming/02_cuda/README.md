@@ -1,6 +1,8 @@
 # CUDA 编程 (CUDA Programming)
 
-本目录包含 NVIDIA CUDA 编程的核心概念介绍与基础实践指南。
+这个目录给出了理解 CUDA 所需的一个完整的入门回路：从 GPU 的分层执行模型出发，看硬件是怎么组织线程的；再回到 CUDA 核心这个计算单元本身，看单条指令如何被并行执行；然后引入 Streams，理解 GPU 上的异步并发；最后从 SIMT 过渡到 Tile-Based，看当代 GPU 编程范式是如何被 Tensor Core 推着向前演进的。
+
+下面的四篇文档基本就按这个顺序展开。
 
 ## 1. [GPU 编程导论](01_gpu_programming_introduction.md)
 

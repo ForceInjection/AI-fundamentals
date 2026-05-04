@@ -1,29 +1,53 @@
 # AI 集群运维与通信 (AI Cluster Operations & Communication)
 
-本章节专注于 AI 基础设施的运维管理、网络通信与性能监控，构建稳定高效的 AI 算力集群。
+## 1. 概述
 
-## 内容概览
+单卡能跑起来的模型和一个几百卡的集群能稳定跑起来的模型，完全是两件事。这一章的目标就是回答一个很实际的问题：**当 GPU 数量从 1 张变成几十上百张之后，我们要看什么、要调什么、要防什么？**
 
-### 1. [GPU 基础运维](01_gpu_ops/README.md)
+大致分成三条主线：
 
-GPU 设备的基础监控与状态查询工具。
+- **看得见**：GPU 本身的状态、温度、利用率得有工具能实时观察，出问题才不会两眼一抹黑。
+- **连得通**：多机之间要靠 InfiniBand / RoCE 这种高性能网络撑起集合通信的带宽与延迟，否则再强的算力也会被网络吃掉。
+- **通得快**：NCCL 把 AllReduce、AllGather 这些集合操作做成标准抽象，真正决定分布式训练扩展效率的往往是它的调优。
 
-- **设备查询**：[Device Query](01_gpu_ops/01_device_query.md)
-- **状态监控**：[nvidia-smi](01_gpu_ops/03_nvidia_smi_guide.md), [nvtop](01_gpu_ops/04_nvtop_guide.md)
-- **误区解读**：[GPU 利用率指标分析](01_gpu_ops/02_gpu_utilization_myth.md)
+把这三条线串起来，基本就是 AI 集群日常运维的主干。
 
-### 2. [InfiniBand 高性能网络](02_infiniband/README.md)
+---
 
-InfiniBand 网络技术的理论与实践。
+## 2. [GPU 基础运维](01_gpu_ops/README.md)
 
-- **理论基础**：[IB 网络架构与协议](02_infiniband/01_ib_network_theory.md)
-- **健康检查**：网络连通性与状态监测
-- **性能监控**：网络带宽与状态实时监控
+集群里每一张卡的健康情况都得看得见。这一节围绕最常用的几类工具展开：查设备属性、看实时状态、理解那些容易被误读的指标。
 
-### 3. [NCCL 分布式通信测试](03_nccl/README.md)
+一个常被忽视的点是：**`nvidia-smi` 里的 GPU-Util 并不等于 SM 真的在忙**——它只说明某段时间有 Kernel 在执行，并不代表算力被用满了。判断一张卡到底有没有被压榨干净，还得结合 SM occupancy、HBM 带宽、功耗等多个维度一起看。
 
-NVIDIA 分布式通信库 (NCCL) 的测试与部署。
+- **设备查询**：[Device Query](01_gpu_ops/01_device_query.md) ——通过 CUDA API 拿到设备属性和硬件规格。
+- **状态监控**：[nvidia-smi 使用指南](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 使用指南](01_gpu_ops/04_nvtop_guide.md)——前者是日常第一入口，后者补齐交互式 TUI 体验。
+- **误区解读**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)——解释为什么高利用率 ≠ 高效计算。
 
-- **基准测试**：NCCL Benchmark
-- **多节点部署**：K8s 与原生环境部署
-- **性能优化**：PXN 模式与网络调优
+---
+
+## 3. [InfiniBand 高性能网络](02_infiniband/README.md)
+
+当训练规模迈入多机多卡，网络就从“能通”变成了“决定吞吐”。InfiniBand 之所以在 AI 集群里占据主流，根本原因是它把 **超低延迟（μs 级）、高带宽（400 Gbps 起步）和无损传输** 同时做到位。
+
+运维视角看 IB，主要关心三件事：
+
+- **理论基础**：[IB 网络架构与协议](02_infiniband/01_ib_network_theory.md)——理解 RDMA、Verbs、SubnetManager 等核心概念，才能看懂诊断信息。
+- **健康检查**：链路状态、端口错误计数、子网管理器状态，这些是排查通信异常时的第一手线索。
+- **性能监控**：实时带宽、丢包、拥塞指标能够反映集合通信是否被网络拖慢。
+
+一句话：**IB 出问题的时候，训练任务的表现往往是“莫名变慢”而不是“直接报错”**，所以监控比修复更重要。
+
+---
+
+## 4. [NCCL 分布式通信测试](03_nccl/README.md)
+
+NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vLLM）背后实际在跑的集合通信库。它把 AllReduce、AllGather、Broadcast 这些操作按照 GPU 之间的物理拓扑自动选择最优路径（NVLink / PCIe / IB），开发者基本感受不到它的存在——直到它变慢。
+
+这一节围绕实战展开：
+
+- **基准测试**：用 NCCL Benchmark 跑出 AllReduce / AllGather 等操作的真实带宽，和理论上限对比，确认链路是否被用满。
+- **多节点部署**：在裸机与 K8s 两种环境下把多机多卡的通信环境拉通，包含镜像、网络插件、拓扑感知调度等细节。
+- **性能优化**：PXN 模式、网络调优参数（`NCCL_IB_HCA`、`NCCL_SOCKET_IFNAME` 等）以及 GPU↔NIC 亲和性，是调优时最常触及的旋钮。
+
+当你看到训练吞吐“突然掉了一截”却找不到代码原因时，十有八九要去 NCCL 这一层找答案。

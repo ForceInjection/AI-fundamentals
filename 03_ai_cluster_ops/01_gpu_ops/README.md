@@ -1,24 +1,26 @@
-# AI 系统运维与监控
+# GPU 基础运维与监控
 
 ## 1. 概述
 
-本目录包含 AI 系统运维与监控的实用工具、脚本和最佳实践文档，涵盖 GPU 监控、InfiniBand 网络诊断等关键运维领域。
+集群里每一张 GPU 的状态是不是健康、有没有真的被用起来、出了问题能不能第一时间发现——这几件事都得靠基础监控工具来回答。这个目录把日常运维中使用频率最高的几类工具还有一个典型的误区整理在一起，方便快速查阅。
+
+需要特别提醒的是：**别把 `nvidia-smi` 里的 GPU-Util 当成算力使用率**。它只表示“某段时间有 Kernel 在跑”，背后是一个线程在忙还是全部 SM 都在忙，从这一个数字里完全看不出来。
 
 ---
 
 ## 2. 核心文档
 
-- **[GPU 设备查询工具](01_device_query.md)** - 查询 GPU 卡详细参数的工具和方法
-- **[GPU 利用率监控误区](02_gpu_utilization_myth.md)** - 深入分析 GPU 利用率指标的局限性
-- **[nvidia-smi 使用指南](03_nvidia_smi_guide.md)** - NVIDIA 系统管理接口快速入门
-- **[nvtop 监控工具](04_nvtop_guide.md)** - GPU 实时监控工具使用指南
+- **[GPU 设备查询](01_device_query.md)** —— 用 CUDA API 读取设备属性和硬件规格，是写 CUDA 代码前的基本动作。
+- **[GPU 利用率是一个误导性指标](02_gpu_utilization_myth.md)** —— 解释为什么高利用率 ≠ 高效计算，以及正确的判断方式。
+- **[nvidia-smi 使用指南](03_nvidia_smi_guide.md)** —— 日常查询 GPU 状态时的第一入口，涵盖常用子命令与指标解读。
+- **[nvtop 监控工具](04_nvtop_guide.md)** —— 交互式 TUI，适合在终端里实时观察多卡负载。
 
 ---
 
 ## 3. 相关资源
 
-- [GPU 架构文档](../../01_hardware_architecture/README.md)
-- **NCCL 通信测试**：[03_nccl](../03_nccl/README.md) - NVIDIA NCCL 分布式通信测试与基准工具。
-- **性能分析工具**：[04_profiling](../../02_gpu_programming/04_profiling/README.md) - CUDA 和 GPU 性能分析工具指南。
+- [GPU 架构文档](../../01_hardware_architecture/README.md) —— 向下看硬件层结构。
+- [NCCL 通信测试](../03_nccl/README.md) —— 多卡工作正常后，再往分布式通信方向延伸。
+- [性能分析工具](../../02_gpu_programming/04_profiling/README.md) —— 想从“有没有在跑”深入到“跑得好不好”的时候，切到这条线。
 
 ---
