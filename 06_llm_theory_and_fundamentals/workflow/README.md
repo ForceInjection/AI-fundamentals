@@ -1,23 +1,20 @@
-# 工作流编排与应用平台 (Workflow)
+# 工作流编排与应用平台（Workflow）
 
-本目录集中探讨大语言模型应用的工作流编排、平台部署指南以及多智能体 (Multi-Agent) 系统的构建实践。
+写一个调 ChatGPT 的 demo 很简单；但要把 LLM 嵌入真实业务里，还得解决数据接入、多步流程、权限与审计、插件扩展、线上观测等一堆工程问题。工作流编排平台（Dify / n8n / Coze / AnythingLLM / Ragflow 等）就是填这道鸿沟的通用中间层。本目录聚焦选型对比与两套典型平台的落地实践。
 
 ## 1. 核心内容
 
 ### 1.1 平台对比与选型
 
-- **[开源大模型应用编排平台功能与商用许可对比分析](open_source_llm_orchestration_platforms_comparison.md)**:
-  全面对比 Dify、AnythingLLM、Ragflow 与 n8n 等主流开源 LLM 编排平台，涵盖功能特性、适用场景以及商用许可（License）合规性分析，为企业选型提供参考。
+- **[开源 LLM 应用编排平台对比](open_source_llm_orchestration_platforms_comparison.md)** — 横向对比 Dify、AnythingLLM、Ragflow、n8n 在工作流建模、RAG 能力、Agent 支持、插件生态以及商用许可（License）上的差异，帮助企业按合规约束与功能需求做选型。
 
 ### 1.2 部署与配置指南
 
-- **[Coze 部署和配置手册](coze_deployment_and_configuration_guide.md)**:
-  详细记录 Coze（扣子）平台的工作流配置、插件集成及 Agent 部署最佳实践。
+- **[Coze（扣子）部署与配置手册](coze_deployment_and_configuration_guide.md)** — Coze 开源版的私有化部署、工作流搭建、插件接入与 Agent 发布的端到端操作指引。
 
 ### 1.3 多智能体实践
 
-- **[使用 n8n 构建多智能体系统的实践指南](n8n_multi_agent_guide.md)**:
-  深入讲解如何利用 n8n 工作流自动化工具，结合 LLM 节点，从零构建协同工作的多智能体系统。
+- **[n8n 多智能体系统实战](n8n_multi_agent_guide.md)** — 以 n8n 作为编排引擎，用工作流节点串联多个 LLM Agent 形成协作链路，覆盖分工、消息路由与状态回收的完整范式。
 
 ## 2. 相关资源
 
