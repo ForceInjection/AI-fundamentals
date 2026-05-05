@@ -11,6 +11,8 @@
 - [Native KV Offloading 解析](./module_analysis/vllm_native_kv_offloading.md)：详细分析了 vLLM 原生的 KV Cache 卸载机制，探讨其如何在 GPU 显存受限的情况下，利用主机内存提升吞吐量。
 - [Hybrid KV Cache Manager 深度解析](./module_analysis/vllm_hybrid_kv_cache_manager_deep_dive.md)：探讨混合 KV 缓存管理器的设计原理与实现，分析其如何优化多层级存储资源分配。
 - [CUDA Graphs 深度解析](./module_analysis/vllm_cuda_graph_deep_dive.md)：探讨 vLLM 在解码阶段如何利用 CUDA Graphs 技术大幅降低 CPU 调度开销及其底层内存固化机制。
+- [注意力机制演进与 vLLM 支持全景（MHA / MLA / NSA）](./module_analysis/vllm_attention_mha_mla_nsa.md)：系统梳理 **MHA / MQA / GQA**、**DeepSeek 风格 MLA**、**DeepSeek-V3.2 / GLM-5 稀疏 MLA（NSA 语义）** 三类机制的理论演进与 vLLM 代码层适配现状，覆盖 CUDA / ROCm / CPU 跨平台兼容性、Sparse MLA 后端与 Indexer 机制、以及 Hybrid KV Cache Manager 场景下 OffloadingConnector / LMCacheConnectorV1 的支持边界。
+  - [注意力机制演进讲稿](./module_analysis/vllm_attention_mha_mla_nsa.pptx)：配套幻灯片，可用于内部培训或方案评审。
 - [DeepSeek V4 长上下文注意力支持解析](./module_analysis/vllm_deepseek_v4.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
 
 ---
