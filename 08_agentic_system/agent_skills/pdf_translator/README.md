@@ -1,6 +1,6 @@
 # PDF Translator Skill
 
-This skill allows Claude to read PDF documents, extract their text, and translate them into a target language, saving the result as a Markdown file.
+PDFs are still the dominant carrier for papers and technical specs, but they're hostile to downstream workflows: locked layout, mixed encodings, no easy way to post-process translated output. This skill closes that gap by letting Claude extract text from a PDF, translate it into a target language, and write back a clean Markdown file you can keep iterating on.
 
 ## Structure
 

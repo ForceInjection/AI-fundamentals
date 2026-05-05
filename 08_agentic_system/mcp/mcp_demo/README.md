@@ -1,11 +1,15 @@
 # MCP 智能体演示项目
 
+Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」这条原本每家各自为政的接入通道统一成了可互操作的标准。本 Demo 用最小闭环的 math server 和 LangChain 客户端，完整走一遍「定义工具 → 暴露服务端 → 客户端接入大模型 → 由模型自主调用」的全链路，并附上 Kubernetes 场景下的实战变体，帮你快速搭建自己的 MCP 集成。
+
+延伸阅读：
+
 * [**LangChain + 模型上下文协议（MCP）：AI 智能体 Demo**](https://mp.weixin.qq.com/s/D5d3F3xKeqstBataPBVbFA)
 * [**MCP-K8s 实践：构建大模型驱动的 Kubernetes 运维管理能力**](https://mp.weixin.qq.com/s/FqIyBz3nr4Ywe17c5a5sfA)
 
 ## 介绍
 
-`MCP` 是一个基于模型上下文协议的智能体演示项目，旨在展示如何使用模型上下文协议（`MCP`）来实现智能体的交互和通信。
+本项目通过一组简化的 server / client 实现演示 MCP 的核心技术要点：如何定义可被模型调用的工具、如何选择传输模式，以及客户端如何把 MCP 工具挂载到 LangChain Agent 上交由大模型自主调度。
 
 ### 项目结构
 
@@ -24,12 +28,14 @@
 
 ### 功能说明
 
-* 使用模型上下文协议（`MCP`）实现智能体的交互和通信
-* 支持两种传输模式：`Stdio`模式和`SSE`模式
+* 基于模型上下文协议（`MCP`）统一封装工具调用接口，由 LangChain Agent 配合大模型自主规划与触发工具
+* 同时提供 `Stdio` 与 `SSE` 两种传输模式，方便本地调试和跨进程 / 远程部署两种场景
 
 ### 传输模式说明
 
-1. **Stdio模式** - 本地进程间通信
+选择哪种传输模式取决于服务端与客户端是否在同一进程 / 同一机器：
+
+1. **Stdio 模式** - 本地进程间通信
    * 服务端与客户端通过标准输入输出通信
    * 适用于本地开发调试
 2. **SSE模式** - 远程`HTTP`通信
@@ -146,5 +152,11 @@ Processing request of type CallToolRequest
               ToolMessage(content='8', name='add', id='3b0c7226-f94e-4894-b02e-99dfd77a1a11', tool_call_id='call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7'),
               ToolMessage(content='144', name='multiply', id='263650f7-1de0-4bc3-a032-9dc386aaae8d', tool_call_id='call_1_b1cb086a-3568-441e-a5c0-19783b1c0609'),
               AIMessage(content='The calculation is incorrect. Let me re-evaluate it properly.\n\nFirst, \\(3 + 5 = 8\\).\n\nThen, \\(8 \\times 12 = 96\\).\n\nSo, the correct answer is **96**.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 276, 'total_tokens': 321, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 256}, 'prompt_cache_hit_tokens': 256, 'prompt_cache_miss_tokens': 20}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': '1e6cd941-a5f8-45a9-a6d9-cad3e9236ef6', 'finish_reason': 'stop', 'logprobs': None}, id='run-dc5f9eac-a886-4a3d-977f-9d2bf9b699fc-0', usage_metadata={'input_tokens': 276, 'output_tokens': 45, 'total_tokens': 321, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}})]}
-{'messages': [HumanMessage(content="what's (3 + 5) x 12?", additional_kwargs={}, response_metadata={}, id='e3b25678-9085-49d4-85ee-65743211b6f3'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7', 'function': {'arguments': '{"a": 3, "b": 5}', 'name': 'add'}, 'type': 'function', 'index': 0}, {'id': 'call_1_b1cb086a-3568-441e-a5c0-19783b1c0609', 'function': {'arguments': '{"a": 12, "b": 12}', 'name': 'multiply'}, 'type': 'function', 'index': 1}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 48, 'prompt_tokens': 218, 'total_tokens': 266, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 192}, 'prompt_cache_hit_tokens': 192, 'prompt_cache_miss_tokens': 26}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': 'cbca7535-abc8-41ac-8182-2fa4427809e5', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-4a52fe6f-f83f-4628-a299-30f96d76876a-0', tool_calls=[{'name': 'add', 'args': {'a': 3, 'b': 5}, 'id': 'call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7', 'type': 'tool_call'}, {'name': 'multiply', 'args': {'a': 12, 'b': 12}, 'id': 'call_1_b1cb086a-3568-441e-a5c0-19783b1c0609', 'type': 'tool_call'}], usage_metadata={'input_tokens': 218, 'output_tokens': 48, 'total_tokens': 266, 'input_token_details': {'cache_read': 192}, 'output_token_details': {}}), ToolMessage(content='8', name='add', id='3b0c7226-f94e-4894-b02e-99dfd77a1a11', tool_call_id='call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7'), ToolMessage(content='144', name='multiply', id='263650f7-1de0-4bc3-a032-9dc386aaae8d', tool_call_id='call_1_b1cb086a-3568-441e-a5c0-19783b1c0609'), AIMessage(content='The calculation is incorrect. Let me re-evaluate it properly.\n\nFirst, \\(3 + 5 = 8\\).\n\nThen, \\(8 \\times 12 = 96\\).\n\nSo, the correct answer is **96**.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 276, 'total_tokens': 321, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 256}, 'prompt_cache_hit_tokens': 256, 'prompt_cache_miss_tokens': 20}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': '1e6cd941-a5f8-45a9-a6d9-cad3e9236ef6', 'finish_reason': 'stop', 'logprobs': None}, id='run-dc5f9eac-a886-4a3d-977f-9d2bf9b699fc-0', usage_metadata={'input_tokens': 276, 'output_tokens': 45, 'total_tokens': 321, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}})]}
+{'messages': [HumanMessage(content="what's (3 + 5) x 12?", additional_kwargs={}, response_metadata={}, id='e3b25678-9085-49d4-85ee-65743211b6f3'), AIMessage(content='', additional_kwargs={'tool_calls': [{'id': 'call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7', 'function': {'arguments': '{"a": 3, "b": 5}', 'name': 'add'}, 'type': 'function', 'index': 0}, {'id': 'call_1_b1cb086a-3568-441e-a5c0-19783b1c0609', 'function': {'arguments': '{"a": 12, "b": 12}', 'name': 'multiply'}, 'type': 'function', 'index': 1}], 'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 48, 'prompt_tokens': 218, 'total_tokens': 266, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 192}, 'prompt_cache_hit_tokens': 192, 'prompt_cache_miss_tokens': 26}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': 'cbca7535-abc8-41ac-8182-2fa4427809e5', 'finish_reason': 'tool_calls', 'logprobs': None}, id='run-4a52fe6f-f83f-4628-a299-30f96d76876a-0', tool_calls=[{'name': 'add', 'args': {'a': 3, 'b': 5}, 'id': 'call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7', 'type': 'tool_call'}, {'name': 'multiply', 'args': {'a': 12, 'b': 12}, 'id': 'call_1_b1cb086a-3568-441e-a5c0-19783b1c0609', 'type': 'tool_call'}], usage_metadata={'input_tokens': 218, 'output_tokens': 48, 'total_tokens': 266, 'input_token_details': {'cache_read': 192}, 'output_token_details': {}}), ToolMessage(content='8', name='add', id='3b0c7226-f94e-4894-b02e-99dfd77a1a11', tool_call_id='call_0_5911ffbb-efd2-4753-af04-5841b3dfe1c7'), ToolMessage(content='144', name='multiply', id='263650f7-1de0-4bc3-a032-9dc386aaae8d', tool_call_id='call_1_b1cb086a-3568-441e-a5c0-19783b1c0609'), AIMessage(content='The calculation is incorrect. Let me re-evaluate it properly.
+
+First, \\(3 + 5 = 8\\).
+
+Then, \\(8 \\times 12 = 96\\).
+
+So, the correct answer is **96**.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 276, 'total_tokens': 321, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 256}, 'prompt_cache_hit_tokens': 256, 'prompt_cache_miss_tokens': 20}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': '1e6cd941-a5f8-45a9-a6d9-cad3e9236ef6', 'finish_reason': 'stop', 'logprobs': None}, id='run-dc5f9eac-a886-4a3d-977f-9d2bf9b699fc-0', usage_metadata={'input_tokens': 276, 'output_tokens': 45, 'total_tokens': 321, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}})]}
 ```
