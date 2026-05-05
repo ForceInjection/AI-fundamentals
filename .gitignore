@@ -186,3 +186,8 @@ _site/
 .jekyll-metadata
 vendor/
 Gemfile.lock
+
+# LangChain memory demo：本地密钥与会话数据不入库
+# config.py 可能包含 API Key（从 config.example.py 复制后填写）；sessions/ 写入会话 JSON 与 SqliteSaver checkpoint
+08_agentic_system/memory/langchain/code/config.py
+08_agentic_system/memory/langchain/code/sessions/
