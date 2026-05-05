@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-主运行脚本 - LangChain 记忆功能演示
+主运行脚本 - LangChain 记忆功能演示（LangChain 0.3+ / LangGraph）
 
 使用方法：
-    python main.py --demo basic          # 基础记忆演示
-    python main.py --demo customer       # 智能客服演示
-    python main.py --demo langgraph      # LangGraph记忆演示
-    python main.py --demo all            # 运行所有演示
-    python main.py --interactive         # 交互式聊天
-    python main.py --config-check        # 检查配置
+    python main.py --demo basic                 # 基础记忆演示（Legacy + Modern）
+    python main.py --demo customer               # 智能客服演示
+    python main.py --demo langgraph               # LangGraph 记忆演示
+    python main.py --demo all                     # 运行所有演示
+    python main.py --interactive                 # 交互式聊天
+    python main.py --config-check                 # 检查配置
+    python main.py --demo customer  --persistent  # 启用 SqliteSaver（跨进程短期记忆）
+    python main.py --demo langgraph --persistent  # 同上；可验证进程重启后记忆仍在
 """
 
 import os
@@ -106,49 +108,51 @@ def run_basic_demo():
         import traceback
         traceback.print_exc()
 
-def run_customer_service_demo():
+def run_customer_service_demo(persistent: bool = False):
     """运行智能客服演示"""
     print("🚀 运行智能客服演示")
     print("=" * 40)
-    
+
     try:
         from smart_customer_service import demo_customer_service
-        demo_customer_service()
+        demo_customer_service(persistent=persistent)
     except Exception as e:
         print(f"❌ 客服演示失败: {e}")
         import traceback
         traceback.print_exc()
 
-def run_langgraph_demo():
+def run_langgraph_demo(persistent: bool = False):
     """运行LangGraph记忆演示"""
     print("🚀 运行LangGraph记忆演示")
     print("=" * 40)
-    
+
     if not LANGGRAPH_AVAILABLE:
         print("⚠️ LangGraph 未正确安装，无法运行演示")
         print("请运行: pip install langgraph")
         return
-    
+
     try:
         from langgraph_memory_example import demo_langgraph_memory
-        demo_langgraph_memory()
+        demo_langgraph_memory(persistent=persistent)
     except Exception as e:
         print(f"❌ LangGraph演示失败: {e}")
         import traceback
         traceback.print_exc()
 
-def run_interactive_chat():
+def run_interactive_chat(persistent: bool = False):
     """运行交互式聊天"""
     print("💬 交互式聊天模式")
     print("=" * 40)
     print("输入 'quit' 或 'exit' 退出")
     print("输入 'clear' 清除对话历史")
     print("输入 'summary' 查看对话摘要")
+    if persistent:
+        print("🗂️  已启用 SqliteSaver，对话短期记忆会写入磁盘")
     print("=" * 40)
-    
+
     try:
         # 创建客服机器人
-        bot = CustomerServiceBot()
+        bot = CustomerServiceBot(persistent=persistent)
         
         # 开始对话
         user_id = "interactive_user"
@@ -236,7 +240,13 @@ def main():
         action="store_true",
         help="检查配置"
     )
-    
+
+    parser.add_argument(
+        "--persistent",
+        action="store_true",
+        help="启用 SqliteSaver 作为 LangGraph checkpointer（跨进程短期记忆）"
+    )
+
     args = parser.parse_args()
     
     # 显示标题
@@ -252,32 +262,32 @@ def main():
             print("❌ 配置验证失败！请先配置LLM")
             check_config()
             return
-        run_interactive_chat()
+        run_interactive_chat(persistent=args.persistent)
     elif args.demo:
         # 先检查配置
         if not config.validate_config():
             print("❌ 配置验证失败！请先配置LLM")
             check_config()
             return
-        
+
         if args.demo == "basic":
             run_basic_demo()
         elif args.demo == "customer":
-            run_customer_service_demo()
+            run_customer_service_demo(persistent=args.persistent)
         elif args.demo == "langgraph":
-            run_langgraph_demo()
+            run_langgraph_demo(persistent=args.persistent)
         elif args.demo == "all":
             print("🚀 运行所有演示")
             print("=" * 50)
-            
+
             print("\n1️⃣ 基础记忆演示")
             run_basic_demo()
-            
+
             print("\n2️⃣ 智能客服演示")
-            run_customer_service_demo()
-            
+            run_customer_service_demo(persistent=args.persistent)
+
             print("\n3️⃣ LangGraph记忆演示")
-            run_langgraph_demo()
+            run_langgraph_demo(persistent=args.persistent)
             
             print("\n✅ 所有演示完成！")
     else:

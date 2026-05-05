@@ -1,608 +1,604 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-智能客服机器人 - 完整示例
+智能客服机器人 —— LangGraph 短期记忆版本（LangChain 0.3+）
 
-功能特性：
-1. 多用户会话管理
-2. 智能记忆选择
-3. 性能监控
-4. 会话持久化
-5. 异常处理
+本实现将原先基于 ConversationChain + ConversationBufferMemory 的写法
+全部迁移到 LangGraph：
+    - StateGraph(MessagesState) 定义对话状态
+    - MemorySaver / SqliteSaver 作为 checkpointer 实现短期记忆
+    - thread_id = session_id 实现多用户会话隔离
+    - trim_messages 实现"窗口"策略
+    - summarize_node + RemoveMessage 实现"摘要+窗口"策略
+
+会话元数据（用户信息、统计指标）仍以 JSON 形式落盘；对话内容本身由
+checkpointer 负责持久化，开启 ``persistent=True`` 后可跨进程恢复。
 """
 
-import os
+from __future__ import annotations
+
 import json
 import time
 import uuid
-from datetime import datetime
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional
 
-from langchain.memory import (
-    ConversationBufferMemory,
-    ConversationSummaryMemory,
-    ConversationBufferWindowMemory,
-    ConversationSummaryBufferMemory
+from langchain_core.messages import (
+    AIMessage,
+    HumanMessage,
+    RemoveMessage,
+    SystemMessage,
+    trim_messages,
 )
-from langchain.chains import ConversationChain
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain.schema import BaseMemory
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, MessagesState, StateGraph
 
 try:
-    from .llm_factory import get_llm
     from .config import config
+    from .llm_factory import get_llm
 except ImportError:
-    from llm_factory import get_llm
     from config import config
+    from llm_factory import get_llm
 
+
+MemoryType = Literal["buffer", "window", "summary_buffer", "auto"]
+
+
+# ---------------------------------------------------------------------------
+# 数据结构
+# ---------------------------------------------------------------------------
 @dataclass
 class SessionInfo:
-    """会话信息"""
+    """会话元数据（不包含对话正文）。"""
+
     session_id: str
     user_id: str
     created_at: datetime
     last_active: datetime
     message_count: int
-    memory_type: str
-    metadata: Dict[str, Any]
+    memory_type: MemoryType
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class PerformanceMetrics:
-    """性能指标"""
+    """单次 chat 调用的性能指标。"""
+
     response_time: float
     token_usage: int
     memory_size: int
     timestamp: datetime
 
+
+class CustomerServiceState(MessagesState):
+    """客服对话状态：MessagesState + summary。"""
+
+    summary: str
+
+
+# ---------------------------------------------------------------------------
+# SessionManager
+# ---------------------------------------------------------------------------
 class SessionManager:
-    """会话管理器"""
-    
-    def __init__(self, storage_dir: str = "./sessions"):
+    """基于 LangGraph 的多用户会话管理器。
+
+    线程安全性：当前实现 **不是线程安全的**。`sessions` / `performance_metrics` / `_graphs`
+    等可变字典没有加锁保护，适合 CLI 、单进程演示和测试。如需在多线程 Web 框架
+    （FastAPI workers、Flask 多线程等）中复用，请在外层自行加 `threading.Lock`，
+    或改为每个请求/会话单独实例化。
+    """
+
+    def __init__(
+        self,
+        storage_dir: str = "./sessions",
+        persistent: bool = False,
+        sqlite_path: Optional[str] = None,
+    ) -> None:
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(exist_ok=True)
+
+        # 元数据（正文由 checkpointer 管理）
         self.sessions: Dict[str, SessionInfo] = {}
-        self.memories: Dict[str, BaseMemory] = {}
-        self.conversations: Dict[str, ConversationChain] = {}
         self.performance_metrics: Dict[str, List[PerformanceMetrics]] = {}
-        
-        # 初始化LLM
+
+        # 持久化 checkpointer 的 context manager 引用（SqliteSaver 时非空）
+        self._sqlite_cm: Optional[Any] = None
+
         try:
             self.llm = get_llm()
             print(f"✅ 会话管理器初始化成功，使用模型: {type(self.llm).__name__}")
         except Exception as e:
-            print(f"❌ LLM初始化失败: {e}")
+            print(f"❌ LLM 初始化失败: {e}")
             raise
-    
+
+        # 按需创建 checkpointer（短期记忆）
+        self.checkpointer = self._build_checkpointer(persistent, sqlite_path)
+
+        # 三种记忆策略各编译一张图；所有图共享同一个 checkpointer，
+        # 因此相同的 thread_id 可被多次读写，会话内容不会丢失。
+        self._graphs: Dict[MemoryType, Any] = {
+            "buffer": self._build_graph("buffer"),
+            "window": self._build_graph("window"),
+            "summary_buffer": self._build_graph("summary_buffer"),
+        }
+
+    # ------------------------------------------------------------------
+    # checkpointer
+    # ------------------------------------------------------------------
+    def _build_checkpointer(self, persistent: bool, sqlite_path: Optional[str]):
+        if not persistent:
+            print("🗂️  使用 MemorySaver（进程内 checkpointer）")
+            return MemorySaver()
+
+        try:
+            from langgraph.checkpoint.sqlite import SqliteSaver
+
+            db_path = sqlite_path or str(self.storage_dir / "checkpoints.sqlite")
+            print(f"🗂️  使用 SqliteSaver（持久化）: {db_path}")
+            # SqliteSaver.from_conn_string 返回 context manager；
+            # 这里交给调用方长期持有，显式 __enter__ 保证 connection 存活。
+            cm = SqliteSaver.from_conn_string(db_path)
+            self._sqlite_cm = cm
+            return cm.__enter__()
+        except Exception as e:
+            print(f"⚠️  SqliteSaver 初始化失败，回退到 MemorySaver: {e}")
+            return MemorySaver()
+
+    def close(self) -> None:
+        """释放 SqliteSaver 的 context manager（MemorySaver 时为空操作）。
+
+        建议在长生命周期的 Web/服务场景中，在进程或 SessionManager 实例
+        退出前显式调用，避免 SQLite 连接泄漏。
+        """
+        if self._sqlite_cm is not None:
+            try:
+                self._sqlite_cm.__exit__(None, None, None)
+            finally:
+                self._sqlite_cm = None
+
+    # ------------------------------------------------------------------
+    # 图构建（三种记忆策略）
+    # ------------------------------------------------------------------
+    def _build_graph(self, memory_type: MemoryType):
+        llm = self.llm
+        window_size = max(4, config.max_history_length)
+        summarize_after = max(window_size + 2, config.summary_threshold * 2)
+
+        def _select_context(state: CustomerServiceState) -> List[Any]:
+            """按记忆策略挑选喂给 LLM 的消息列表。"""
+            messages = state["messages"]
+            if memory_type == "window":
+                messages = trim_messages(
+                    messages,
+                    strategy="last",
+                    token_counter=len,
+                    max_tokens=window_size,
+                    start_on="human",
+                    include_system=True,
+                    allow_partial=False,
+                )
+            elif memory_type == "summary_buffer":
+                messages = trim_messages(
+                    messages,
+                    strategy="last",
+                    token_counter=len,
+                    max_tokens=window_size,
+                    start_on="human",
+                    include_system=True,
+                    allow_partial=False,
+                )
+
+            system_msgs: List[Any] = []
+            if state.get("summary"):
+                system_msgs.append(
+                    SystemMessage(content=f"此前对话摘要：{state['summary']}")
+                )
+            return system_msgs + list(messages)
+
+        def chat_node(state: CustomerServiceState) -> Dict[str, Any]:
+            response = llm.invoke(_select_context(state))
+            return {"messages": [response]}
+
+        def summarize_node(state: CustomerServiceState) -> Dict[str, Any]:
+            if len(state["messages"]) <= summarize_after:
+                return {}
+            prev = state.get("summary", "")
+            prompt = (
+                (f"此前摘要：{prev}\n\n" if prev else "")
+                + "请把以下对话整合成一段简洁中文摘要，重点保留用户诉求、订单/商品信息与上一轮进展：\n"
+                + "\n".join(
+                    f"{'用户' if isinstance(m, HumanMessage) else '助手'}: {m.content}"
+                    for m in state["messages"]
+                    if isinstance(m, (HumanMessage, AIMessage))
+                )
+            )
+            summary = llm.invoke([HumanMessage(content=prompt)]).content
+            to_remove = [RemoveMessage(id=m.id) for m in state["messages"][:-window_size]]
+            return {"summary": summary, "messages": to_remove}
+
+        builder = StateGraph(CustomerServiceState)
+        builder.add_node("chat", chat_node)
+        builder.add_edge(START, "chat")
+
+        if memory_type == "summary_buffer":
+            builder.add_node("summarize", summarize_node)
+            builder.add_edge("chat", "summarize")
+            builder.add_edge("summarize", END)
+        else:
+            builder.add_edge("chat", END)
+
+        return builder.compile(checkpointer=self.checkpointer)
+
+    # ------------------------------------------------------------------
+    # 会话生命周期
+    # ------------------------------------------------------------------
     def create_session(
-        self, 
-        user_id: str, 
-        memory_type: str = "auto",
-        metadata: Optional[Dict[str, Any]] = None
+        self,
+        user_id: str,
+        memory_type: MemoryType = "auto",
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """
-        创建新会话
-        
-        Args:
-            user_id: 用户ID
-            memory_type: 记忆类型 ("buffer", "summary", "window", "summary_buffer", "auto")
-            metadata: 会话元数据
-            
-        Returns:
-            会话ID
-        """
         session_id = str(uuid.uuid4())
         now = datetime.now()
-        
-        # 自动选择记忆类型
+
         if memory_type == "auto":
             memory_type = self._auto_select_memory_type(user_id)
-        
-        # 创建会话信息
-        session_info = SessionInfo(
+
+        self.sessions[session_id] = SessionInfo(
             session_id=session_id,
             user_id=user_id,
             created_at=now,
             last_active=now,
             message_count=0,
             memory_type=memory_type,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
-        
-        # 创建记忆实例
-        memory = self._create_memory(memory_type)
-        
-        # 创建对话链
-        conversation = ConversationChain(
-            llm=self.llm,
-            memory=memory,
-            verbose=False
-        )
-        
-        # 存储会话
-        self.sessions[session_id] = session_info
-        self.memories[session_id] = memory
-        self.conversations[session_id] = conversation
         self.performance_metrics[session_id] = []
-        
-        print(f"📝 创建会话: {session_id[:8]}... (用户: {user_id}, 记忆类型: {memory_type})")
+
+        print(
+            f"📝 创建会话: {session_id[:8]}… "
+            f"(用户: {user_id}, 记忆类型: {memory_type})"
+        )
         return session_id
-    
-    def _auto_select_memory_type(self, user_id: str) -> str:
-        """
-        自动选择记忆类型
-        
-        Args:
-            user_id: 用户ID
-            
-        Returns:
-            记忆类型
-        """
-        # 获取用户历史会话统计
+
+    def _auto_select_memory_type(self, user_id: str) -> MemoryType:
         user_sessions = [s for s in self.sessions.values() if s.user_id == user_id]
-        
         if not user_sessions:
-            # 新用户，使用缓冲记忆
             return "buffer"
-        
-        # 计算平均消息数
         avg_messages = sum(s.message_count for s in user_sessions) / len(user_sessions)
-        
         if avg_messages < 10:
-            return "buffer"  # 短对话
+            return "buffer"
         elif avg_messages < 30:
-            return "window"  # 中等长度对话
-        else:
-            return "summary_buffer"  # 长对话
-    
-    def _create_memory(self, memory_type: str) -> BaseMemory:
-        """
-        创建记忆实例
-        
-        Args:
-            memory_type: 记忆类型
-            
-        Returns:
-            记忆实例
-        """
-        if memory_type == "buffer":
-            return ConversationBufferMemory(
-                return_messages=True,
-                memory_key="history"
-            )
-        elif memory_type == "summary":
-            return ConversationSummaryMemory(
-                llm=self.llm,
-                return_messages=True,
-                memory_key="history"
-            )
-        elif memory_type == "window":
-            return ConversationBufferWindowMemory(
-                k=config.max_history_length // 2,
-                return_messages=True,
-                memory_key="history"
-            )
-        elif memory_type == "summary_buffer":
-            return ConversationSummaryBufferMemory(
-                llm=self.llm,
-                max_token_limit=config.max_token_limit,
-                return_messages=True,
-                memory_key="history"
-            )
-        else:
-            raise ValueError(f"不支持的记忆类型: {memory_type}")
-    
+            return "window"
+        return "summary_buffer"
+
+    # ------------------------------------------------------------------
+    # 对话接口
+    # ------------------------------------------------------------------
     def chat(
-        self, 
-        session_id: str, 
+        self,
+        session_id: str,
         message: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        处理聊天消息
-        
-        Args:
-            session_id: 会话ID
-            message: 用户消息
-            context: 额外上下文信息
-            
-        Returns:
-            响应结果
-        """
         if session_id not in self.sessions:
             raise ValueError(f"会话不存在: {session_id}")
-        
-        start_time = time.time()
-        
+
+        start = time.time()
+        session_info = self.sessions[session_id]
+        graph = self._graphs[session_info.memory_type]
+
         try:
-            # 获取会话组件
-            session_info = self.sessions[session_id]
-            conversation = self.conversations[session_id]
-            memory = self.memories[session_id]
-            
-            # 构建输入
-            input_text = message
+            input_messages: List[Any] = []
             if context:
-                context_str = "\n".join([f"{k}: {v}" for k, v in context.items()])
-                input_text = f"上下文信息：\n{context_str}\n\n用户消息：{message}"
-            
-            # 生成响应
-            response = conversation.predict(input=input_text)
-            
-            # 更新会话信息
+                # 将业务上下文（如系统提示词、订单信息）以 SystemMessage 注入
+                input_messages.append(
+                    SystemMessage(
+                        content="\n".join(f"{k}: {v}" for k, v in context.items())
+                    )
+                )
+            input_messages.append(HumanMessage(content=message))
+
+            result = graph.invoke(
+                {"messages": input_messages},
+                config={"configurable": {"thread_id": session_id}},
+            )
+            last_ai = next(
+                (m for m in reversed(result["messages"]) if isinstance(m, AIMessage)),
+                None,
+            )
+            response = last_ai.content if last_ai else "(无响应)"
+
+            response_time = time.time() - start
+            memory_size = sum(len(getattr(m, "content", "")) for m in result["messages"])
+            token_usage = len(message) + len(response)
+
             session_info.last_active = datetime.now()
             session_info.message_count += 1
-            
-            # 记录性能指标
-            response_time = time.time() - start_time
-            self._record_performance(
-                session_id, 
-                response_time, 
-                len(message) + len(response),
-                self._get_memory_size(memory)
-            )
-            
+            self._record_performance(session_id, response_time, token_usage, memory_size)
+
             return {
                 "response": response,
                 "session_id": session_id,
                 "message_count": session_info.message_count,
                 "response_time": response_time,
-                "memory_type": session_info.memory_type
+                "memory_type": session_info.memory_type,
+                "memory_size": memory_size,
+                "summary": result.get("summary", ""),
             }
-            
         except Exception as e:
             print(f"❌ 聊天处理失败: {e}")
-            return {
-                "error": str(e),
-                "session_id": session_id
-            }
-    
+            return {"error": str(e), "session_id": session_id}
+
+    # ------------------------------------------------------------------
+    # 指标 / 信息查询
+    # ------------------------------------------------------------------
     def _record_performance(
-        self, 
-        session_id: str, 
-        response_time: float, 
-        token_usage: int, 
-        memory_size: int
-    ):
-        """
-        记录性能指标
-        """
+        self,
+        session_id: str,
+        response_time: float,
+        token_usage: int,
+        memory_size: int,
+    ) -> None:
         metrics = PerformanceMetrics(
             response_time=response_time,
             token_usage=token_usage,
             memory_size=memory_size,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
-        self.performance_metrics[session_id].append(metrics)
-        
-        # 保留最近100条记录
-        if len(self.performance_metrics[session_id]) > 100:
-            self.performance_metrics[session_id] = self.performance_metrics[session_id][-100:]
-    
-    def _get_memory_size(self, memory: BaseMemory) -> int:
-        """
-        获取记忆大小（估算）
-        """
-        try:
-            if hasattr(memory, 'buffer'):
-                return len(str(memory.buffer))
-            elif hasattr(memory, 'chat_memory'):
-                return len(str(memory.chat_memory.messages))
-            else:
-                return 0
-        except:
-            return 0
-    
+        buf = self.performance_metrics.setdefault(session_id, [])
+        buf.append(metrics)
+        if len(buf) > 100:
+            del buf[:-100]
+
     def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """
-        获取会话信息
-        """
         if session_id not in self.sessions:
             return None
-        
         session_info = self.sessions[session_id]
         metrics = self.performance_metrics.get(session_id, [])
-        
-        # 计算平均性能指标
-        avg_response_time = sum(m.response_time for m in metrics) / len(metrics) if metrics else 0
-        avg_token_usage = sum(m.token_usage for m in metrics) / len(metrics) if metrics else 0
-        
+        avg_rt = sum(m.response_time for m in metrics) / len(metrics) if metrics else 0
+        avg_tk = sum(m.token_usage for m in metrics) / len(metrics) if metrics else 0
         return {
             "session_info": asdict(session_info),
             "performance": {
-                "avg_response_time": avg_response_time,
-                "avg_token_usage": avg_token_usage,
-                "total_interactions": len(metrics)
-            }
+                "avg_response_time": avg_rt,
+                "avg_token_usage": avg_tk,
+                "total_interactions": len(metrics),
+            },
         }
-    
+
     def list_user_sessions(self, user_id: str) -> List[Dict[str, Any]]:
-        """
-        列出用户的所有会话
-        """
-        user_sessions = [
+        items = [
             {
-                "session_id": session_id,
-                "created_at": session_info.created_at.isoformat(),
-                "last_active": session_info.last_active.isoformat(),
-                "message_count": session_info.message_count,
-                "memory_type": session_info.memory_type
+                "session_id": sid,
+                "created_at": info.created_at.isoformat(),
+                "last_active": info.last_active.isoformat(),
+                "message_count": info.message_count,
+                "memory_type": info.memory_type,
             }
-            for session_id, session_info in self.sessions.items()
-            if session_info.user_id == user_id
+            for sid, info in self.sessions.items()
+            if info.user_id == user_id
         ]
-        
-        return sorted(user_sessions, key=lambda x: x["last_active"], reverse=True)
-    
+        return sorted(items, key=lambda x: x["last_active"], reverse=True)
+
+    def get_conversation_history(self, session_id: str) -> List[Dict[str, str]]:
+        """从 checkpointer 读取会话历史（不依赖 self.sessions 是否存在）。"""
+        memory_type = (
+            self.sessions[session_id].memory_type if session_id in self.sessions else "buffer"
+        )
+        graph = self._graphs[memory_type]
+        state = graph.get_state({"configurable": {"thread_id": session_id}})
+        messages = (state.values or {}).get("messages", []) if state else []
+        result = []
+        for m in messages:
+            if isinstance(m, HumanMessage):
+                result.append({"role": "user", "content": m.content})
+            elif isinstance(m, AIMessage):
+                result.append({"role": "assistant", "content": m.content})
+            elif isinstance(m, SystemMessage):
+                result.append({"role": "system", "content": m.content})
+        return result
+
+    # ------------------------------------------------------------------
+    # 元数据持久化（不再负责对话正文）
+    # ------------------------------------------------------------------
     def save_session(self, session_id: str) -> bool:
-        """
-        保存会话到磁盘
-        """
         if session_id not in self.sessions:
             return False
-        
         try:
-            session_file = self.storage_dir / f"{session_id}.json"
-            
-            # 准备保存数据
-            save_data = {
+            path = self.storage_dir / f"{session_id}.json"
+            payload = {
                 "session_info": asdict(self.sessions[session_id]),
-                "memory_type": self.sessions[session_id].memory_type,
                 "performance_metrics": [
                     asdict(m) for m in self.performance_metrics.get(session_id, [])
-                ]
+                ],
+                "_note": (
+                    "对话正文由 LangGraph checkpointer 持久化；"
+                    "本文件仅保存会话元数据与统计指标。"
+                ),
             }
-            
-            # 序列化datetime对象
-            def datetime_serializer(obj):
+
+            def _default(obj):
                 if isinstance(obj, datetime):
                     return obj.isoformat()
                 raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-            
-            with open(session_file, 'w', encoding='utf-8') as f:
-                json.dump(save_data, f, ensure_ascii=False, indent=2, default=datetime_serializer)
-            
+
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2, default=_default)
             return True
-            
         except Exception as e:
             print(f"❌ 保存会话失败: {e}")
             return False
-    
+
     def load_session(self, session_id: str) -> bool:
-        """
-        从磁盘加载会话
-        """
         try:
-            session_file = self.storage_dir / f"{session_id}.json"
-            
-            if not session_file.exists():
+            path = self.storage_dir / f"{session_id}.json"
+            if not path.exists():
                 return False
-            
-            with open(session_file, 'r', encoding='utf-8') as f:
-                save_data = json.load(f)
-            
-            # 恢复会话信息
-            session_data = save_data["session_info"]
-            session_data["created_at"] = datetime.fromisoformat(session_data["created_at"])
-            session_data["last_active"] = datetime.fromisoformat(session_data["last_active"])
-            
-            session_info = SessionInfo(**session_data)
-            
-            # 重新创建记忆和对话链
-            memory = self._create_memory(session_info.memory_type)
-            conversation = ConversationChain(
-                llm=self.llm,
-                memory=memory,
-                verbose=False
-            )
-            
-            # 恢复性能指标
-            metrics_data = save_data.get("performance_metrics", [])
-            metrics = [
+            with open(path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+
+            info = payload["session_info"]
+            info["created_at"] = datetime.fromisoformat(info["created_at"])
+            info["last_active"] = datetime.fromisoformat(info["last_active"])
+            self.sessions[session_id] = SessionInfo(**info)
+
+            self.performance_metrics[session_id] = [
                 PerformanceMetrics(
                     response_time=m["response_time"],
                     token_usage=m["token_usage"],
                     memory_size=m["memory_size"],
-                    timestamp=datetime.fromisoformat(m["timestamp"])
+                    timestamp=datetime.fromisoformat(m["timestamp"]),
                 )
-                for m in metrics_data
+                for m in payload.get("performance_metrics", [])
             ]
-            
-            # 存储到内存
-            self.sessions[session_id] = session_info
-            self.memories[session_id] = memory
-            self.conversations[session_id] = conversation
-            self.performance_metrics[session_id] = metrics
-            
-            print(f"✅ 成功加载会话: {session_id[:8]}...")
+            print(f"✅ 已加载会话元数据: {session_id[:8]}…")
             return True
-            
         except Exception as e:
             print(f"❌ 加载会话失败: {e}")
             return False
-    
-    def cleanup_inactive_sessions(self, hours: int = 24):
-        """
-        清理不活跃的会话
-        
-        Args:
-            hours: 不活跃时间阈值（小时）
-        """
-        from datetime import timedelta
-        
-        cutoff_time = datetime.now() - timedelta(hours=hours)
-        inactive_sessions = [
-            session_id for session_id, session_info in self.sessions.items()
-            if session_info.last_active < cutoff_time
-        ]
-        
-        for session_id in inactive_sessions:
-            # 保存会话
-            self.save_session(session_id)
-            
-            # 从内存中移除
-            del self.sessions[session_id]
-            del self.memories[session_id]
-            del self.conversations[session_id]
-            del self.performance_metrics[session_id]
-        
-        print(f"🧹 清理了 {len(inactive_sessions)} 个不活跃会话")
 
+    def cleanup_inactive_sessions(self, hours: int = 24) -> None:
+        cutoff = datetime.now() - timedelta(hours=hours)
+        inactive = [sid for sid, info in self.sessions.items() if info.last_active < cutoff]
+        for sid in inactive:
+            self.save_session(sid)
+            self.sessions.pop(sid, None)
+            self.performance_metrics.pop(sid, None)
+        print(f"🧹 清理了 {len(inactive)} 个不活跃会话")
+
+
+# ---------------------------------------------------------------------------
+# 客服门面
+# ---------------------------------------------------------------------------
 class CustomerServiceBot:
-    """智能客服机器人"""
-    
-    def __init__(self):
-        self.session_manager = SessionManager()
-        self.system_prompt = """
-你是一个专业的客服助手，具有以下特点：
-1. 友好、耐心、专业
-2. 能够记住对话历史
-3. 提供准确的帮助和建议
-4. 在无法解决问题时，会引导用户联系人工客服
+    """智能客服机器人（在 SessionManager 之上的业务层封装）。
 
-请根据用户的问题提供有帮助的回答。
-        """.strip()
-    
-    def start_conversation(self, user_id: str, user_name: str = None) -> str:
-        """
-        开始新对话
-        """
-        metadata = {}
-        if user_name:
-            metadata["user_name"] = user_name
-        
-        session_id = self.session_manager.create_session(
-            user_id=user_id,
-            memory_type="auto",
-            metadata=metadata
+    实例持有一个 `SessionManager`；如果启用了 `persistent=True`（SqliteSaver），
+    在服务退出前应调用 `close()` 释放底层连接。
+    """
+
+    def __init__(self, persistent: bool = False) -> None:
+        self.session_manager = SessionManager(persistent=persistent)
+        self.system_prompt = (
+            "你是一个专业的客服助手，具备以下特点：\n"
+            "1. 友好、耐心、专业；\n"
+            "2. 能够结合对话历史给出连贯回复；\n"
+            "3. 提供准确的帮助与建议；\n"
+            "4. 无法解决时引导用户联系人工客服。"
         )
-        
-        # 发送欢迎消息
-        welcome_msg = f"您好{user_name or ''}！我是智能客服助手，很高兴为您服务。请问有什么可以帮助您的吗？"
-        
-        return session_id, welcome_msg
-    
-    def chat(self, session_id: str, message: str) -> Dict[str, Any]:
-        """
-        处理用户消息
-        """
-        # 添加系统提示
-        context = {"系统角色": self.system_prompt}
-        
-        return self.session_manager.chat(session_id, message, context)
-    
-    def get_conversation_summary(self, session_id: str) -> str:
-        """
-        获取对话摘要
-        """
-        session_info = self.session_manager.get_session_info(session_id)
-        if not session_info:
-            return "会话不存在"
-        
-        info = session_info["session_info"]
-        perf = session_info["performance"]
-        
-        return f"""
-📊 对话摘要
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 用户ID: {info['user_id']}
-🕐 创建时间: {info['created_at']}
-💬 消息数量: {info['message_count']}
-🧠 记忆类型: {info['memory_type']}
-⚡ 平均响应时间: {perf['avg_response_time']:.2f}秒
-📝 平均Token使用: {perf['avg_token_usage']:.0f}
-        """.strip()
 
-def demo_customer_service():
-    """演示智能客服功能"""
-    print("🤖 智能客服机器人演示")
-    print("=" * 40)
-    
-    # 创建客服机器人
-    bot = CustomerServiceBot()
-    
-    # 模拟多个用户的对话
+    def close(self) -> None:
+        """释放底层 SessionManager 持有的 checkpointer 资源。"""
+        self.session_manager.close()
+
+    def start_conversation(
+        self, user_id: str, user_name: Optional[str] = None
+    ) -> tuple[str, str]:
+        metadata = {"user_name": user_name} if user_name else {}
+        session_id = self.session_manager.create_session(
+            user_id=user_id, memory_type="auto", metadata=metadata
+        )
+        welcome = (
+            f"您好{user_name or ''}！我是智能客服助手，很高兴为您服务。请问有什么可以帮助您的吗？"
+        )
+        return session_id, welcome
+
+    def chat(self, session_id: str, message: str) -> Dict[str, Any]:
+        return self.session_manager.chat(
+            session_id, message, context={"系统角色": self.system_prompt}
+        )
+
+    def get_conversation_summary(self, session_id: str) -> str:
+        info = self.session_manager.get_session_info(session_id)
+        if not info:
+            return "会话不存在"
+        s = info["session_info"]
+        p = info["performance"]
+        return (
+            "📊 对话摘要\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 用户ID: {s['user_id']}\n"
+            f"🕐 创建时间: {s['created_at']}\n"
+            f"💬 消息数量: {s['message_count']}\n"
+            f"🧠 记忆类型: {s['memory_type']}\n"
+            f"⚡ 平均响应时间: {p['avg_response_time']:.2f}秒\n"
+            f"📝 平均Token使用: {p['avg_token_usage']:.0f}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Demo 入口
+# ---------------------------------------------------------------------------
+def demo_customer_service(persistent: bool = False) -> None:
+    print("🤖 智能客服机器人演示（LangGraph 短期记忆）")
+    print("=" * 50)
+
+    bot = CustomerServiceBot(persistent=persistent)
+
     users = [
         {"user_id": "user_001", "name": "张三"},
-        {"user_id": "user_002", "name": "李四"}
+        {"user_id": "user_002", "name": "李四"},
     ]
-    
-    sessions = {}
-    
-    # 为每个用户创建会话
+    sessions: Dict[str, str] = {}
     for user in users:
-        session_id, welcome = bot.start_conversation(user["user_id"], user["name"])
-        sessions[user["user_id"]] = session_id
+        sid, welcome = bot.start_conversation(user["user_id"], user["name"])
+        sessions[user["user_id"]] = sid
         print(f"\n👤 {user['name']} 开始对话")
         print(f"🤖 {welcome}")
-    
-    # 模拟对话
+
     conversations = {
         "user_001": [
             "我想查询我的订单状态",
             "我的订单号是 ORD123456",
             "什么时候能发货？",
-            "好的，谢谢你的帮助"
+            "好的，谢谢你的帮助",
         ],
         "user_002": [
             "我收到的商品有质量问题",
             "是一件衣服，颜色和描述不符",
             "我想申请退货",
-            "需要什么手续吗？"
-        ]
+            "需要什么手续吗？",
+        ],
     }
-    
-    # 交替进行对话
-    max_rounds = max(len(convs) for convs in conversations.values())
-    
-    for round_num in range(max_rounds):
-        for user_id, convs in conversations.items():
-            if round_num < len(convs):
-                user_name = next(u["name"] for u in users if u["user_id"] == user_id)
-                session_id = sessions[user_id]
-                message = convs[round_num]
-                
-                print(f"\n👤 {user_name}: {message}")
-                
-                result = bot.chat(session_id, message)
-                if "response" in result:
-                    print(f"🤖 客服: {result['response']}")
-                    print(f"📊 响应时间: {result['response_time']:.2f}秒")
-                else:
-                    print(f"❌ 错误: {result.get('error', '未知错误')}")
-    
-    # 显示会话摘要
+
+    max_rounds = max(len(c) for c in conversations.values())
+    for r in range(max_rounds):
+        for user_id, turns in conversations.items():
+            if r >= len(turns):
+                continue
+            user_name = next(u["name"] for u in users if u["user_id"] == user_id)
+            sid = sessions[user_id]
+            print(f"\n👤 {user_name}: {turns[r]}")
+            result = bot.chat(sid, turns[r])
+            if "response" in result:
+                print(f"🤖 客服: {result['response']}")
+                print(f"📊 响应时间: {result['response_time']:.2f}秒")
+            else:
+                print(f"❌ 错误: {result.get('error', '未知错误')}")
+
     print("\n" + "=" * 50)
     print("📋 会话摘要")
     print("=" * 50)
-    
     for user in users:
-        session_id = sessions[user["user_id"]]
-        summary = bot.get_conversation_summary(session_id)
-        print(f"\n{summary}")
-    
-    # 保存会话
-    print("\n💾 保存会话...")
-    for session_id in sessions.values():
-        if bot.session_manager.save_session(session_id):
-            print(f"✅ 会话 {session_id[:8]}... 保存成功")
-        else:
-            print(f"❌ 会话 {session_id[:8]}... 保存失败")
+        print("\n" + bot.get_conversation_summary(sessions[user["user_id"]]))
 
-def main():
-    """主函数"""
-    print("智能客服机器人 - 完整示例")
+    print("\n💾 保存会话元数据…")
+    for sid in sessions.values():
+        ok = bot.session_manager.save_session(sid)
+        print(f"{'✅' if ok else '❌'} 会话 {sid[:8]}… 元数据保存{'成功' if ok else '失败'}")
+
+
+def main() -> None:
+    print("智能客服机器人 - LangGraph 版")
     print("=" * 40)
-    
-    # 检查配置
     if not config.validate_config():
         print("❌ 配置验证失败！请检查配置文件或环境变量")
         return
-    
-    # 运行演示
     demo_customer_service()
+
 
 if __name__ == "__main__":
     main()
