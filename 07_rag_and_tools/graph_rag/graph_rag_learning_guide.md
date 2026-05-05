@@ -241,11 +241,9 @@ print(response['result'])
 ## 常见问题 (FAQ)
 
 1. **Q: 必须使用 GPT-4 吗？**
-
    - A: 推荐使用 GPT-4 进行图谱提取（Text2Graph），因为它对指令的遵循能力更强，能生成更规范的 Schema。问答阶段可以使用 GPT-3.5 或其他模型。
 
 2. **Q: 如何处理实体消歧（Entity Resolution）？**
-
    - A: 比如 "Apple" 和 "Apple Inc."。可以在提取后使用简单的规则合并，或者在提取前给 LLM 提供明确的命名规范。
 
 3. **Q: 数据量很大怎么办？**
