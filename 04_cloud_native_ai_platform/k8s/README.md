@@ -1,8 +1,10 @@
-# Kubernetes GPU 管理与 AI 工作负载技术文档集
+# Kubernetes GPU 管理与 AI 工作负载
 
-本目录包含了关于 Kubernetes 环境下 GPU 管理、AI 工作负载调度和分布式推理的深度技术文档。这些文档涵盖了从底层硬件抽象到上层应用部署的完整技术栈，为在 Kubernetes 环境中构建高效的 AI 基础设施提供了全面的技术指导。
+Kubernetes 最初是为无状态 Web 服务设计的，它对“一个 Pod 就是一个任务”这种模型很熟练。但 AI 负载不是。一个训练任务可能要几十张卡同时起走、不允许部分就绪，一个推理服务可能要在 Leader-Worker 形态下跨节点协作，而 GPU 这种资源既不像 CPU 那样可以随意超分，也不像内存那样有成熟的 Swap 机制。这一章的内容就围绕一个问题展开：**要让 Kubernetes 真正跑好 AI 负载，从容器运行时到上层调度器，究竟要补哪几块？**
 
 ## 1. 核心基础设施组件
+
+要让容器内的进程看到 GPU、让 kubelet 知道一个节点有几张卡可用、让 Pod 挂掉时可以被快速诊断——这三件事背后并不是 Kubernetes 的原生能力，而是一套由 NVIDIA Container Toolkit、Device Plugin 和 containerd 日志组成的“暗管道”。这一节拆解这些基础组件，搞清楚每一层在干什么、出了问题去哪里看。
 
 ### 1.1 [NVIDIA Container Toolkit 原理分析](./01_nvidia_container_toolkit_analysis.md)
 
@@ -34,6 +36,8 @@
 
 ## 2. 高级调度与资源管理
 
+基础件就位之后，下一个绕不开的问题是：集群里的 GPU 是有限的，任务却是排队来的，谁先跑、谁后跑、一张卡能不能切开给几个人用——这就需要比 kube-scheduler 更懂 AI 负载的队列系统和 GPU 切分机制。
+
 ### 2.1 [Kueue + HAMi：Kubernetes 原生的 AI 工作负载管理与 GPU 虚拟化解决方案](./03_kueue_hami_integration.md)
 
 详细介绍 Kueue 作业队列系统与 HAMi GPU 虚拟化技术的集成方案：
@@ -54,6 +58,8 @@
   - 监控和可观测性最佳实践
 
 ## 3. 分布式推理框架
+
+训练端的“一份任务、多卡并行”到推理端会变成“一份服务、跨节点展开”：Leader 负责调度和请求编排，Worker 负责真正跑模型，而 KV Cache、参数广播都要跨节点协同。这一节的两篇文章正是围绕这个新范式。
 
 ### 3.1 [vLLM + LWS：Kubernetes 上的多机多卡推理方案](./04_lws_intro.md)
 

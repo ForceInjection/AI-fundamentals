@@ -2,68 +2,42 @@
 
 ## 概述
 
-本模块实现了GPU内存虚拟化的高级功能，包括内存压缩、交换、统一地址空间管理和QoS保障等技术。这些技术可以显著提高GPU内存利用率，支持内存过量分配，并为多租户环境提供性能隔离保障。
+GPU 显存贵、小、且不容许超分——这三件事把多租户 AI 平台逼到一个困境：任务要多、显存不够分。本模块用一组协同的技术来缓解这个紧张关系：压缩与交换把不热的显存换出去，超分机制让一张卡的逻辑容量超过物理容量，统一地址空间把 CPU/GPU 内存合并寻址，QoS 和 NUMA 感知把带宽和延迟的分配管起来；紧张之下还需要碎片整理、热迁移和故障恢复让共享状态不至于一出问题就雪崩。整体目标是在不破坏隔离的前提下，让一张卡的显存真正被几个任务共用起来。
 
 ## 核心功能
 
-### 1. 内存压缩技术 (`memory_compression.c`)
+九个模块按“先把容量省出来、再把地址和带宽管起来、最后让共享状态经得起故障”的顺序组织。每个模块对应一个源文件，代码可独立编译、独立演示，也可以组合起来形成一套完整的显存虚拟化栈。
 
-- **多算法支持**: LZ4、ZSTD、Snappy等压缩算法
-- **自适应压缩**: 根据数据特征自动选择最优算法
-- **并行压缩**: 支持多线程并行压缩以提高性能
-- **实时统计**: 压缩率、性能指标实时监控
+### 容量：把“不够分”变成“还能撑一撑”
 
-### 6. 内存碎片整理 (`memory_defragmentation.c`)
+显存天生紧张，这一组模块要回答的是：**不增加硬件的前提下，还能挤出多少可用容量？** 三条路径互相配合——冷数据压缩、热度分层交换、加一层逻辑超分。
 
-- **在线碎片整理**: 运行时减少内存碎片
-- **智能压缩**: 自动合并相邻空闲块
-- **内存重排**: 优化内存布局提高访问效率
-- **碎片率监控**: 实时跟踪内存碎片化程度
-- **自动触发**: 基于阈值的自动碎片整理
+#### 1. 内存压缩 (`memory_compression.c`)
 
-### 7. NUMA感知内存管理 (`numa_aware_memory.c`)
+思路是把冷数据压成更小的块，空出物理显存给热任务：
 
-- **NUMA拓扑感知**: 自动检测和适配NUMA架构
-- **智能内存分配**: 优先在本地节点分配内存
-- **跨节点迁移**: 基于访问模式的内存迁移
-- **带宽优化**: 最大化内存带宽利用率
-- **延迟最小化**: 减少跨节点访问延迟
-
-### 8. 内存热迁移 (`memory_hot_migration.c`)
-
-- **在线迁移**: 无需停止应用的内存迁移
-- **增量迁移**: 只迁移变化的数据
-- **一致性保障**: 确保迁移过程中数据一致性
-- **多种策略**: 支持预复制、后复制等策略
-- **故障恢复**: 迁移失败时的自动恢复
-
-### 9. 内存故障恢复 (`memory_fault_recovery.c`)
-
-- **ECC错误处理**: 自动检测和处理ECC错误
-- **内存检查点**: 定期创建内存快照
-- **自动故障转移**: 故障时自动切换到备用资源
-- **故障预测**: 基于历史数据预测潜在故障
-- **恢复策略**: 多种故障恢复策略选择
-
-**主要API:**
+- **多算法支持**：LZ4、ZSTD、Snappy 三种算法，速度与压缩率取舍不同
+- **自适应选择**：根据数据特征自动切换算法，无需人工标注数据类型
+- **并行压缩**：多线程流水线并行，压缩本身不成为瓶颈
+- **实时统计**：压缩率、吞吐、延迟等指标暴露给上层调度
 
 ```c
-int init_compression_system(compression_algorithm_t algorithm, 
-                           compression_quality_t quality, bool parallel_enabled);
-int compress_memory(const void *input, size_t input_size, 
-                   void **output, size_t *output_size, compression_algorithm_t algorithm);
+int init_compression_system(compression_algorithm_t algorithm,
+                            compression_quality_t quality, bool parallel_enabled);
+int compress_memory(const void *input, size_t input_size,
+                    void **output, size_t *output_size, compression_algorithm_t algorithm);
 int decompress_memory(const void *input, size_t input_size,
-                     void **output, size_t *output_size, compression_algorithm_t algorithm);
+                      void **output, size_t *output_size, compression_algorithm_t algorithm);
 ```
 
-### 2. 内存交换机制 (`memory_swap.c`)
+#### 2. 内存交换 (`memory_swap.c`)
 
-- **多级存储**: 支持系统内存、SSD、HDD、NVMe等存储层次
-- **智能预取**: 基于访问模式的预测性数据加载
-- **异步交换**: 后台异步执行交换操作，减少延迟
-- **热度管理**: LRU算法管理热点数据
+压缩救不了的那部分，就往更慢但更大的存储里换：
 
-**主要API:**
+- **多级存储**：系统内存、NVMe、SSD、HDD 逐级接力
+- **智能预取**：基于访问模式预测，在真正用到之前把数据拉回来
+- **异步交换**：换出/换入在后台跑，尽量不挡前台请求
+- **LRU 热度管理**：自动把冷数据推到下一层
 
 ```c
 int init_swap_system(size_t max_gpu_memory, size_t page_size, double swap_threshold);
@@ -72,46 +46,14 @@ void free_gpu_memory(void *ptr);
 void* access_gpu_memory(void *ptr);
 ```
 
-### 3. 统一地址空间管理 (`unified_address_space.c`)
+#### 3. 内存过量分配 (`memory_overcommit_advanced.c`)
 
-- **跨设备访问**: GPU和CPU之间的统一虚拟地址空间
-- **内存类型管理**: Host、Device、Managed、Pinned内存类型
-- **权限控制**: 细粒度的读写执行权限管理
-- **地址转换**: 高效的虚拟到物理地址转换
+在压缩和交换的基础上，把“逻辑显存总量”开得比物理显存还大：
 
-**主要API:**
-
-```c
-int init_unified_address_space(size_t total_size, size_t page_size);
-void* allocate_unified_memory(size_t size, memory_type_t type, access_permission_t permissions);
-void* access_unified_memory(void *ptr, access_permission_t required_permissions);
-int sync_memory_region(void *ptr, size_t size);
-```
-
-### 4. 内存QoS保障 (`memory_qos.c`)
-
-- **带宽控制**: 基于令牌桶的带宽限制
-- **延迟保障**: 不同优先级的延迟SLA保证
-- **优先级调度**: 多级优先级队列调度
-- **自适应调整**: 根据负载动态调整资源分配
-
-**主要API:**
-
-```c
-int init_memory_qos(uint32_t total_bandwidth_mbps, bandwidth_policy_t policy);
-int submit_memory_request(void *address, size_t size, memory_access_type_t type, 
-                         qos_level_t qos_level, uint32_t client_id);
-void get_qos_stats(void);
-```
-
-### 5. 内存过量分配 (`memory_overcommit_advanced.c`)
-
-- **智能过量分配**: 基于历史使用模式的内存过量分配
-- **压缩集成**: 与压缩技术集成，提高内存利用率
-- **优先级管理**: 基于优先级的内存回收策略
-- **统计监控**: 详细的内存使用统计和监控
-
-**主要API:**
+- **基于历史模式**：观测任务真实占用，超分比例有依据而不是拍脑袋
+- **与压缩联动**：超分之后的热点由压缩模块消化，而不是直接 OOM
+- **优先级回收**：显存紧张时按优先级决定谁先被换出
+- **细粒度统计**：每个租户的实际占用与申请值分开核算
 
 ```c
 int init_memory_overcommit(size_t physical_memory_size, double overcommit_ratio);
@@ -120,20 +62,104 @@ void free_overcommit_memory(void *ptr);
 void print_overcommit_stats(void);
 ```
 
+### 寻址与 QoS：让共享不再互相踩
+
+容量挤出来之后，多任务共用一张卡的下一个问题是：**地址怎么统一、带宽怎么分？** 前者让 CPU/GPU 可以共享同一套指针，后者让吵闹的邻居不把别人拖垮。
+
+#### 4. 统一地址空间 (`unified_address_space.c`)
+
+跨设备共享一套虚拟地址，省去大量显式拷贝：
+
+- **跨设备访问**：GPU 和 CPU 之间共享同一虚拟地址空间
+- **多种内存类型**：Host、Device、Managed、Pinned 按需选择
+- **权限控制**：读/写/执行权限按页粒度控制
+- **高效地址转换**：虚拟到物理地址的翻译路径做了优化
+
+```c
+int init_unified_address_space(size_t total_size, size_t page_size);
+void* allocate_unified_memory(size_t size, memory_type_t type, access_permission_t permissions);
+void* access_unified_memory(void *ptr, access_permission_t required_permissions);
+int sync_memory_region(void *ptr, size_t size);
+```
+
+#### 5. 内存 QoS (`memory_qos.c`)
+
+带宽和延迟是显存共享里最容易被忽略、又最容易出故障的维度：
+
+- **带宽控制**：令牌桶算法限制单租户对显存带宽的占用
+- **延迟 SLA**：不同优先级对应不同延迟上限
+- **优先级调度**：多级队列避免高优任务被低优任务堵死
+- **自适应调整**：根据实时负载动态调整配额
+
+```c
+int init_memory_qos(uint32_t total_bandwidth_mbps, bandwidth_policy_t policy);
+int submit_memory_request(void *address, size_t size, memory_access_type_t type,
+                          qos_level_t qos_level, uint32_t client_id);
+void get_qos_stats(void);
+```
+
+### 局部性与可靠性：让共享状态经得起折腾
+
+容量和带宽都管好了，最后一公里是：**长时间共享之后，显存会碎、访问会变慢、硬件会出错。** 这组模块负责让共享状态不因为时间和意外而崩掉。
+
+#### 6. 碎片整理 (`memory_defragmentation.c`)
+
+长期分配/释放会让可用空间碎成小块，大块申请开始失败：
+
+- **在线碎片整理**：运行时执行，不需要停服务
+- **相邻块合并**：自动识别并合并相邻空闲块
+- **内存重排**：优化布局，让热数据更靠近、访问更连续
+- **碎片率监控**：实时指标，超过阈值自动触发整理
+
+#### 7. NUMA 感知 (`numa_aware_memory.c`)
+
+多路 CPU/多卡服务器上，“分配在哪个节点”对延迟影响很大：
+
+- **NUMA 拓扑感知**：启动时自动探测节点结构
+- **本地优先分配**：尽量把内存分配在访问它的 CPU/GPU 同节点
+- **按访问模式迁移**：发现跨节点频繁访问时主动迁移页
+- **带宽与延迟联合优化**：既不浪费本地带宽，也不让跨节点访问拖后腿
+
+#### 8. 热迁移 (`memory_hot_migration.c`)
+
+节点要维护、负载要重平衡时，不能让任务停下来：
+
+- **在线迁移**：应用无感知地把显存搬到另一张卡或另一台机器
+- **增量迁移**：仅传输脏页，大幅降低总传输量
+- **一致性保障**：迁移过程中保证读写视图一致
+- **多策略可选**：预复制、后复制两种经典模式都支持
+- **失败可回滚**：迁移失败自动恢复到源端，不丢数据
+
+#### 9. 故障恢复 (`memory_fault_recovery.c`)
+
+显存硬件并非绝对可靠，ECC 错、掉卡、总线异常都要有预案：
+
+- **ECC 错误处理**：自动检测并按类型分级处理
+- **检查点机制**：周期性快照，故障后可以回滚到最近一致点
+- **自动故障转移**：检测到不可恢复错误时切换到备用资源
+- **故障预测**：基于历史错误模式提前预警
+- **多种恢复策略**：不同业务场景下可选不同 RTO/RPO 策略
+
+---
+
 ## 编译和安装
 
 ### 依赖项
 
+核心依赖：`pthread`、`lz4`、`zstd`（压缩）。NUMA 模块额外需要 `libnuma`。Makefile 中的填充实现预留了 Snappy 算法的枚举入口但未默认链接，如需启用在编译时自行补上 `-lsnappy` 即可。
+
 ```bash
 # Ubuntu/Debian
-sudo apt-get install build-essential liblz4-dev libzstd-dev libsnappy-dev libnuma-dev
+sudo apt-get install build-essential liblz4-dev libzstd-dev libnuma-dev
 
 # CentOS/RHEL
-sudo yum install gcc gcc-c++ lz4-devel libzstd-devel snappy-devel numactl-devel
+sudo yum install gcc gcc-c++ lz4-devel libzstd-devel numactl-devel
 
 # macOS
-brew install lz4 zstd snappy numactl
+brew install lz4 zstd
 ```
+
+> NUMA 相关接口仅在 Linux 下可用；macOS 环境可编译除 `numa_demo` 之外的模块。
 
 ### 编译
 
@@ -161,6 +187,8 @@ sudo make install
 make dist
 ```
 
+---
+
 ## 使用示例
 
 ### 基本演示
@@ -178,6 +206,8 @@ make run-stress
 
 ### 单模块测试
 
+基础四件套（压缩 / 交换 / 统一地址空间 / QoS）通过 Makefile 的 `--no-xxx` 开关组合测试：
+
 ```bash
 # 仅测试压缩模块
 make run-compression-only
@@ -188,21 +218,11 @@ make run-swap-only
 # 仅测试统一地址空间
 make run-unified-only
 
-# 仅测试QoS模块
+# 仅测试 QoS 模块
 make run-qos-only
-
-# 仅测试碎片整理模块
-make run-defrag-only
-
-# 仅测试NUMA感知模块
-make run-numa-only
-
-# 仅测试热迁移模块
-make run-migration-only
-
-# 仅测试故障恢复模块
-make run-fault-recovery-only
 ```
+
+碎片整理、NUMA、热迁移、故障恢复四个高级模块则通过 `advanced_memory_demo` 的子命令单独演示（见下一节）。
 
 ### 高级功能综合演示
 
@@ -212,7 +232,7 @@ make run-fault-recovery-only
 
 # 运行特定功能演示
 ./bin/advanced_memory_demo defrag      # 仅演示内存碎片整理
-./bin/advanced_memory_demo numa        # 仅演示NUMA感知内存管理
+./bin/advanced_memory_demo numa        # 仅演示 NUMA 感知内存管理
 ./bin/advanced_memory_demo migration   # 仅演示内存热迁移
 ./bin/advanced_memory_demo fault       # 仅演示内存故障恢复
 ./bin/advanced_memory_demo performance # 综合性能测试
@@ -231,6 +251,8 @@ make run-fault-recovery-only
 ./bin/memory_virtualization_demo --help
 ```
 
+---
+
 ## 代码集成
 
 ### C/C++项目集成
@@ -241,28 +263,28 @@ make run-fault-recovery-only
 int main() {
     // 初始化压缩系统
     init_compression_system(COMPRESS_LZ4, QUALITY_BALANCED, true);
-    
+
     // 初始化交换系统
     init_swap_system(512 * 1024 * 1024, 4096, 0.8);
-    
-    // 初始化NUMA感知内存管理
+
+    // 初始化 NUMA 感知内存管理
     init_numa_memory_manager();
-    
-    // 初始化碎片整理
-    init_defragmentation_manager(0.3, 60); // 30%碎片率阈值，60秒间隔
-    
-    // 分配GPU内存
+
+    // 初始化碎片整理（30% 碎片率阈值）
+    init_defragmenter(0.3);
+
+    // 分配 GPU 内存
     void *gpu_mem = allocate_gpu_memory(1024 * 1024);
-    
+
     // 使用内存...
-    
+
     // 清理
     free_gpu_memory(gpu_mem);
-    cleanup_defragmentation_manager();
+    cleanup_defragmenter();
     cleanup_numa_memory_manager();
     cleanup_swap_system();
     cleanup_compression_system();
-    
+
     return 0;
 }
 ```
@@ -270,8 +292,12 @@ int main() {
 ### 编译链接
 
 ```bash
-gcc -o myapp myapp.c -lmemory_virtualization -lpthread -lm -lz -llz4 -lzstd -lnuma
+gcc -o myapp myapp.c -lmemory_virtualization -lpthread -lm -lz -llz4 -lzstd
 ```
+
+如果用到 NUMA 模块（`numa_aware_memory.c`），额外链上 `-lnuma`。
+
+---
 
 ## 性能优化建议
 
@@ -313,6 +339,8 @@ init_memory_qos(10000, BANDWIDTH_POLICY_PRIORITY);
 init_memory_qos(15000, BANDWIDTH_POLICY_ADAPTIVE);
 ```
 
+---
+
 ## 监控和调试
 
 ### 性能监控
@@ -327,21 +355,20 @@ print_swap_stats();
 // 打印地址空间统计
 print_address_space_stats();
 
-// 打印QoS统计
+// 打印 QoS 统计
 get_qos_stats();
 
 // 打印碎片整理统计
-print_defragmentation_stats();
+print_defrag_stats();
 
-// 打印NUMA统计
+// 打印 NUMA 统计
 print_numa_stats();
-
-// 打印热迁移统计
-print_migration_stats();
 
 // 打印故障恢复统计
 print_fault_recovery_stats();
 ```
+
+> 热迁移模块目前未暴露独立的统计打印函数，需要直接读取 `memory_hot_migration.c` 中的会话状态或扩展 `advanced_memory_demo.c` 来采集指标。
 
 ### 调试工具
 
@@ -355,6 +382,8 @@ make valgrind-check
 # 生成文档
 make docs
 ```
+
+---
 
 ## 故障排除
 
@@ -384,19 +413,25 @@ export MEMORY_VIRT_LOG_LEVEL=DEBUG
 grep "Performance" /var/log/memory_virt.log
 ```
 
+---
+
 ## 技术架构
 
-### 模块关系图
+### 模块分层
+
+九个模块分布在三层：资源压力层（压缩 / 交换 / 超分）向上提供逻辑容量；共享调度层（统一地址空间 / QoS）解决多租户寻址与带宽分配；可靠性层（碎片整理 / NUMA / 热迁移 / 故障恢复）用来应对长时间共享之后不可避免的碎片、局部性退化和硬件故障。
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    应用程序接口层                              │
+│                      应用程序接口层                         │
 ├─────────────────────────────────────────────────────────────┤
-│  压缩模块      │  交换模块    │  统一地址空间  │  QoS模块        │
+│  碎片整理  │  NUMA 感知  │  热迁移  │  故障恢复             │
 ├─────────────────────────────────────────────────────────────┤
-│                    内存过量分配管理层                          │
+│        统一地址空间        │            内存 QoS            │
 ├─────────────────────────────────────────────────────────────┤
-│                    GPU硬件抽象层                              │
+│   压缩模块   │   交换模块   │      内存过量分配（超分）      │
+├─────────────────────────────────────────────────────────────┤
+│                      GPU 硬件抽象层                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -405,9 +440,11 @@ grep "Performance" /var/log/memory_virt.log
 1. **内存分配请求** → 过量分配管理 → 物理内存分配
 2. **内存访问** → 地址转换 → 权限检查 → 数据访问
 3. **内存压力** → 交换决策 → 压缩存储 → 后台交换
-4. **QoS请求** → 优先级队列 → 带宽控制 → 执行调度
+4. **QoS 请求** → 优先级队列 → 带宽控制 → 执行调度
 
-## 扩展开发
+---
+
+## 二次开发
 
 ### 添加新的压缩算法
 
@@ -440,9 +477,13 @@ static int init_new_storage_backend(const char *config) {
 }
 ```
 
+---
+
 ## 许可证
 
 本项目采用MIT许可证，详见LICENSE文件。
+
+---
 
 ## 贡献指南
 
@@ -452,11 +493,7 @@ static int init_new_storage_backend(const char *config) {
 4. 推送到分支 (`git push origin feature/new-feature`)
 5. 创建Pull Request
 
-## 联系方式
-
-- 项目主页: <https://github.com/your-org/gpu-memory-virtualization>
-- 问题报告: <https://github.com/your-org/gpu-memory-virtualization/issues>
-- 邮件联系: <gpu-virt@your-org.com>
+---
 
 ## 版本历史
 
