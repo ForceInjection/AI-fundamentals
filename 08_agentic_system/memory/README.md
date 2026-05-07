@@ -29,7 +29,7 @@
 > [!NOTE]
 > **架构说明**：以下通用架构图基于现有 AI Agent 记忆系统的主流设计模式，综合参考了 MemoryOS [3]、Mem0 [4]、LangChain Memory 等系统的架构特点。
 
-![架构图](./architecture_diagram.svg)
+![架构图](./assets/architecture_diagram.svg)
 
 现代智能体记忆系统通常采用增强型分层架构设计，融合了智能调度、多策略检索和质量评估等先进功能：
 

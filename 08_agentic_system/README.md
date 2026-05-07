@@ -21,20 +21,20 @@
 
 单个 Agent 内部到底如何组织「思考→行动→反思」？这里汇总了业界经过验证的主流模式，包括推理-行动交织的 ReAct、面向复杂长文本创作的写作工作流、对话系统中的指代消解，以及在真实业务中落地的 TradingAgents 等案例。
 
-- [ReAct Agent 模式详解](./agent_design/react-agent.md) - 剖析推理 (Reasoning) 与行动 (Acting) 深度协同的经典机制，提升智能体解决复杂任务的可靠性。
-- [写作 Agentic Agent 设计](./agent_design/writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
-- [多轮指代消解对话系统](./agent_design/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
+- [ReAct Agent 模式详解](./agent_design/docs/react-agent.md) - 剖析推理 (Reasoning) 与行动 (Acting) 深度协同的经典机制，提升智能体解决复杂任务的可靠性。
+- [写作 Agentic Agent 设计](./agent_design/docs/writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
+- [多轮指代消解对话系统](./agent_design/docs/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
 - [12-Factor Agents](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
-- [TradingAgents-CN 多智能体设计](./agent_design/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
-- [All Agentic Architectures 深入详解](./agent_design/all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
+- [TradingAgents-CN 多智能体设计](./agent_design/docs/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
+- [All Agentic Architectures 深入详解](./agent_design/docs/all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
 
 ### 1.3 数据智能体 (Data Agents)
 
 用自然语言直接查数据、做分析、出报表，是 Agent 在企业里最容易创造商业价值的场景之一。但真实的企业数据环境有权限、成本、语义歧义等一系列硬约束，本节从行业综述、产品 PRD 到 MVP 落地策略三个角度完整拆解 Data Agent 的设计与落地方式。
 
-- [数据智能体综述](./data-agent/data-agent-survey.md) ([配套 PPT](./data-agent/data-agent-survey.pptx)) - 探讨 Data Agent 作为新兴范式的核心架构、能力分级（L0-L5）及在企业复杂数据场景下的应用挑战与过度炒作风险。
-- [企业级 Data Agent 产品需求文档](./data-agent/enterprise-data-agent-prd.md) ([配套 PPT](./data-agent/enterprise-data-agent-prd.pptx)) - 一份完整的商业级 L2 条件自动化 Data Agent PRD，涵盖 NL2SQL、语义模型、混合查询及成本硬拦截等生产级特性。
-- [企业级 Data Agent 敏捷落地规划](./data-agent/data-agent-skill-mvp.md) ([配套 PPT](./data-agent/data-agent-skill-mvp.pptx)) - 针对 MVP 阶段的“降维打击”战术板，通过“技能挂载（Skill Integration）”优先盘活存量 API 资产，快速建立业务信任。
+- [数据智能体综述](./data_agent/data-agent-survey.md) ([配套 PPT](./data_agent/data-agent-survey.pptx)) - 探讨 Data Agent 作为新兴范式的核心架构、能力分级（L0-L5）及在企业复杂数据场景下的应用挑战与过度炒作风险。
+- [企业级 Data Agent 产品需求文档](./data_agent/enterprise-data-agent-prd.md) ([配套 PPT](./data_agent/enterprise-data-agent-prd.pptx)) - 一份完整的商业级 L2 条件自动化 Data Agent PRD，涵盖 NL2SQL、语义模型、混合查询及成本硬拦截等生产级特性。
+- [企业级 Data Agent 敏捷落地规划](./data_agent/data-agent-skill-mvp.md) ([配套 PPT](./data_agent/data-agent-skill-mvp.pptx)) - 针对 MVP 阶段的“降维打击”战术板，通过“技能挂载（Skill Integration）”优先盘活存量 API 资产，快速建立业务信任。
 
 ### 1.4 智能体认知模型 (Cognitive Models)
 
@@ -84,16 +84,16 @@ Agent 的能力边界很大程度上由它能调用哪些工具决定。以 MCP 
 
 Agent Infra 是「让 Agent 能真正可靠运行、能操作真实世界、能被规模化托管」的那层底座——沙箱隔离、执行环境、编排引擎、运维接入等环节决定了系统能否从 demo 走向生产。本节盘点了 OpenHarness、Kagent、Agent Sandbox 等主流方案的架构思路。
 
-- [AI Agent 基础设施技术栈](./agent_infra/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
-- [AI Agent 基础设施的崛起](./agent_infra/the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
-- [OpenHarness 深入浅出：解密开源智能体基础设施](./agent_infra/openharness-deep-dive.md) ([配套 PPT](./agent_infra/openharness-agent-infrastructure.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
-- [Agent Sandbox 的演进与设计范式](./agent_infra/agent-sandbox-design.md) ([配套 PPT](./agent_infra/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
-- [深度解析 Kagent：以构建 Kubernetes 运维智能体为例](./agent_infra/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
-- [云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析](./agent_infra/openclaw-operator-deep-dive.md) - 深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践，涵盖从 Server-Side Apply 的冲突解决到 StatefulSet 的持久化绑定，以及容器级软隔离与进程级沙箱的安全边界设计。
-- [Claude Code Sandbox 安全隔离机制解析](./agent_infra/claude-code-sandbox.md) - 从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界，深度剖析基于 Bubblewrap 的底层隔离架构与工程实现。
-- [DeepSeek-TUI 实战：长上下文命令行编程 Agent 指南](./agent_infra/deepseek-tui-in-practice.md) - 以 DeepSeek V4 的 1M 超长上下文与前缀缓存为切入点，走通从安装、配置到 Plan/Agent/YOLO 审批模式的完整实战闭环，并通过“发现 Bug → 修复 → 验证”演示 Coding Agent 的典型工作流。
-- [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
-- [在 Elasticsearch 之上实现一个虚拟文件系统](./agent_infra/virtual-filesystem-elasticsearch_zh.md) ([英文原文](./agent_infra/virtual-filesystem-elasticsearch.md)) - 以 Mintlify 的虚拟文件系统设计为蓝本，在 Elasticsearch Serverless 之上实现 `ElasticsearchFs`，通过 DLS 做访问控制、在内存中支撑 `ls`/`cd`/`find`，并用两阶段检索优化 `grep`，为 Agent 暴露一层形似 POSIX 的只读文件接口。
+- [AI Agent 基础设施技术栈](./agent_infra/docs/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
+- [AI Agent 基础设施的崛起](./agent_infra/docs/the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
+- [OpenHarness 深入浅出：解密开源智能体基础设施](./agent_infra/docs/openharness-deep-dive.md) ([配套 PPT](./agent_infra/docs/openharness-deep-dive.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
+- [Agent Sandbox 的演进与设计范式](./agent_infra/docs/agent-sandbox-design.md) ([配套 PPT](./agent_infra/docs/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
+- [深度解析 Kagent：以构建 Kubernetes 运维智能体为例](./agent_infra/docs/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/docs/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
+- [云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析](./agent_infra/docs/openclaw-operator-deep-dive.md) - 深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践，涵盖从 Server-Side Apply 的冲突解决到 StatefulSet 的持久化绑定，以及容器级软隔离与进程级沙箱的安全边界设计。
+- [Claude Code Sandbox 安全隔离机制解析](./agent_infra/docs/claude-code-sandbox.md) - 从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界，深度剖析基于 Bubblewrap 的底层隔离架构与工程实现。
+- [DeepSeek-TUI 实战：长上下文命令行编程 Agent 指南](./agent_infra/docs/deepseek-tui-in-practice.md) - 以 DeepSeek V4 的 1M 超长上下文与前缀缓存为切入点，走通从安装、配置到 Plan/Agent/YOLO 审批模式的完整实战闭环，并通过“发现 Bug → 修复 → 验证”演示 Coding Agent 的典型工作流。
+- [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/docs/scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
+- [在 Elasticsearch 之上实现一个虚拟文件系统](./agent_infra/docs/virtual-filesystem-elasticsearch_zh.md) ([英文原文](./agent_infra/docs/virtual-filesystem-elasticsearch.md)) - 以 Mintlify 的虚拟文件系统设计为蓝本，在 Elasticsearch Serverless 之上实现 `ElasticsearchFs`，通过 DLS 做访问控制、在内存中支撑 `ls`/`cd`/`find`，并用两阶段检索优化 `grep`，为 Agent 暴露一层形似 POSIX 的只读文件接口。
 
 ---
 
