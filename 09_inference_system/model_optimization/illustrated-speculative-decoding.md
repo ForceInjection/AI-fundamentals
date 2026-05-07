@@ -226,6 +226,7 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
   - 生成质量：困惑度（Perplexity）或人工偏好盲测。
 - **调优实验变量**：固定请求数据分布，分别扫描草拟步长 $K$、小模型规模与采样温度，绘制 $\alpha(K)$ 与 $\text{TPOT}(K)$ 的双轴曲线，选取“质量阈值内的最优 $K$ 区间”。
 - **工程监控侧重点**：记录各阶段（Draft/Verify）计时、`KV Cache` 命中率与碎片率，并重点监控尾延迟（P95/P99），以排查收益失常的系统瓶颈。
+- **投机指标作为质量探针**：除性能评估外，$\alpha$ 与 $E[A]$ 的统计分布还能反向指示底层 KV Cache 状态的健康度——一个原本高接受率的请求若突变为极低接受长度（$<1.0$），往往意味着目标模型读取到了被污染的上下文；若接受率飙升到 $>0.96$ 伴随输出复读，则提示 Attention 模式坍缩。故 $\alpha$ 可作为低成本、无侵入的在线质量监控信号 [5]。
 
 ### 3.3 技术对比与选型建议
 
@@ -262,6 +263,7 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 - **分布偏移（OOD）与长上下文**：当请求内容属于领域外知识或上下文极长时，小模型的预测能力会显著下降，导致接受率 $\alpha$ 暴跌，引入大量无效的验证和回退开销。
 - **高温度与强多样性**：高 `temperature` 会放大候选与大模型分布的分歧，导致回退频繁震荡，严重拖慢推理速度。
 - **多租户与尾延迟（Tail Latency）**：在在线高并发场景下，个别因接受率极低而反复重试的重负载请求，可能会放大队头阻塞效应，从而恶化系统整体的 P95/P99 尾延迟。
+- **底层竞态会伪装为“性能回落”**：在 PD 分离架构与异步流水线（如 HiCache）下，KV Cache 槽位复用、延迟到达的 RDMA 写入或 Read-before-ready 缺陷，均可能造成接受率雪崩与输出质量退化。SGLang 团队在生产环境中的排查实践表明，投机接受率可作为此类隐形竞态的早期预警信号 [5]。
 
 **缓解策略**：
 
@@ -291,3 +293,4 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 [2] T. Cai et al., "Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads," _arXiv preprint arXiv:2401.10774_, 2024. [Online]. Available: https://arxiv.org/abs/2401.10774
 [3] Y. Li et al., "EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty," _arXiv preprint arXiv:2401.15077_, 2024. [Online]. Available: https://arxiv.org/abs/2401.15077
 [4] vLLM Team, "Speculative Decoding in vLLM," _vLLM Documentation_. [Online]. Available: https://docs.vllm.ai/en/latest/features/speculative_decoding/
+[5] Z.ai Team, "Scaling Pain：超大规模 Coding Agent 推理实践," _z.ai Blog_, 2025. [Online]. Available: https://z.ai/blog/scaling-pain （翻译版见本仓 [SGLang Scaling Pain 超大规模推理调优案例](../inference_solutions/sglang_scaling_pain_case_study.md)）

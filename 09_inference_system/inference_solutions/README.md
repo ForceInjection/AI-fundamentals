@@ -15,9 +15,17 @@
 
 - **[Qwen2-VL-7B-Instruct 昇腾部署指南](qwen2_vl_7b_huawei.md)**：Atlas 800I A2（32G / 64G）硬件 + MindIE 1.0.0+ / CANN 8.0.RC1+ / OpenEuler 24.03 LTS 的完整软件栈，覆盖视觉 token 压缩、多分辨率图像输入、超 20 分钟视频理解等多模态推理的国产硬件适配要点
 
-## 3. 方法论抽象
+## 3. SGLang 超大规模 Coding Agent 推理调优
 
-两份案例共同展示了一条端到端部署方法论：
+部署只是起点——当 GLM-5 级别的模型每天需要处理数亿次长上下文 Coding Agent 请求时，**系统的隐藏假设会以模型输出质量缺陷的形式暴露**（乱码、复读、生僻字），而这些偶发现象在标准负载下无法稳定复现。本案例揭示了一条独特的工程路径：将投机采样（Speculative Decoding）的接受率与接受长度作为**在线质量探针**，用统计异常反向定位底层 KV Cache 竞态与异步流水线的时序缺陷。
+
+- **[SGLang Scaling Pain 超大规模推理调优案例](sglang_scaling_pain_case_study.md)**（译自 [z.ai blog](https://z.ai/blog/scaling-pain)）：覆盖三类异常现象的识别机制、投机采样指标（`spec_accept_length` / `spec_accept_rate`）在实时质量监控中的作用、PD 分离架构下 KV Cache 竞态（[PR #8352](https://github.com/sgl-project/sglang/pull/8352) / [#24522](https://github.com/sgl-project/sglang/pull/24522)）的修复、HiCache Read-before-ready 时序缺陷（[PR #22811](https://github.com/sgl-project/sglang/pull/22811)）、以及 LayerSplit 分层存储在 120K 上下文下 +132% TPS 的探索性收益
+
+> 核心启示：性能组件（投机采样、KV Cache 压缩）由于对底层状态高度敏感，可反向作为**低成本的质量反馈源**，实现“性能与鲁棒性”的双赢。
+
+## 4. 方法论抽象
+
+三份案例共同展示了一条端到端部署与运维方法论：
 
 1. **SLO 目标量化**：明确并发数、上下文长度、TTFT/TPOT/吞吐的 P50/P95/P99 分位数
 2. **硬件与并行策略匹配**：依据显存总量（见 [`memory_calc/`](../memory_calc/README.md)）与模型结构选 TP/EP/PP 组合
