@@ -64,45 +64,65 @@
 
 ```mermaid
 graph TB
-    Req[Incoming Request] --> Sched[Scheduler / HiRadixCache]
-    Sched -->|prefix match| Meta[HiRadixTree Metadata]
+    Req[Incoming Request] --> Sched[Scheduler]
+    Sched -->|prefix match| HRC[HiRadixCache<br/>HiRadixTree Metadata]
 
-    subgraph L1[L1 - GPU HBM]
+    subgraph L1[L1: GPU HBM]
         GPUKV[KV Cache Tensors]
     end
-    subgraph L2[L2 - Host DRAM]
+    subgraph L2[L2: Host DRAM]
         HostPool[MemoryPoolHost<br/>page_first / layer_first]
     end
-    subgraph L3[L3 - Distributed Storage]
+    subgraph L3[L3: Distributed Storage]
         Mooncake[Mooncake]
         HF3FS[HF3FS]
-        Other[NIXL / EIC / ...]
+        Other[NIXL / EIC / AIBrix]
     end
 
-    Meta --> L1
-    Meta --> L2
-    Meta --> L3
+    HRC --> L1
+    HRC --> L2
+    HRC --> L3
 
-    L3 -->|Prefetch| L2
-    L2 -->|GPU-assisted IO| L1
-    L1 -->|Evict / Write-through| L2
-    L2 -->|Write-back / Dedup| L3
+    L1 -->|Evict / Write-through ↓<br/>GPU-assisted Load ↑| L2
+    L2 -->|Write-back / Dedup ↓<br/>Prefetch ↑| L3
 ```
 
-至于实现层面，`HiCache` 由一组解耦的组件协同完成从调度决策到底层 I/O 的全链路，关键组件及其交互关系如下图：
+至于实现层面，`HiCache` 由一组解耦的组件协同完成从调度决策到底层 I/O 的全链路。控制面（HTTP `attach`/`detach`）与数据面（read / write）共享 `Scheduler → HiRadixCache → CacheController` 的调用栈，仅在 `BackendFactory` 层向不同的 L3 后端分叉，关键组件及其交互关系如下图：
 
 ```mermaid
 graph LR
-    HTTP[HTTP Admin API<br/>http_server.py] -->|attach/detach| SCH[Scheduler<br/>scheduler.py]
-    SCH --> HRC[HiRadixCache<br/>hiradix_cache.py]
-    HRC --> CC[CacheController<br/>cache_controller.py]
-    CC --> MPH[MemoryPoolHost<br/>memory_pool_host.py]
-    CC --> BF[Storage BackendFactory<br/>backend_factory.py]
-    BF --> MS[MooncakeStore]
-    BF --> HFS[HF3FSStore]
-    BF --> NIXL[NIXL / EIC / AIBrix]
-    MPH -.zero-copy page.-> BF
-    SCH -->|args validation| SA[server_args.py]
+    subgraph Admin[Control Plane]
+        HTTP[HTTP Admin API<br/>http_server.py]
+    end
+
+    subgraph CacheLayer[Cache Layer]
+        SCH[Scheduler<br/>scheduler.py]
+        HRC[HiRadixCache<br/>hiradix_cache.py]
+        CC[CacheController<br/>cache_controller.py]
+    end
+
+    subgraph Storage[Storage & Memory]
+        MPH[MemoryPoolHost<br/>memory_pool_host.py]
+        BF[StorageBackendFactory<br/>backend_factory.py]
+        MS[MooncakeStore]
+        HFS[HF3FSStore]
+        Other[Other Backends<br/>NIXL / EIC / AIBrix]
+    end
+
+    subgraph Config[Config]
+        SA[server_args.py]
+    end
+
+    HTTP -->|admin command| SCH
+    SCH -->|owns| HRC
+    HRC -->|delegates IO| CC
+    CC -->|L2| MPH
+    CC -->|L3 attach/detach| BF
+    BF -->|creates| MS
+    BF -->|creates| HFS
+    BF -->|creates| Other
+    MPH <-.zero-copy page.-> BF
+    SA -. args .-> SCH
 ```
 
 ### 3.1 HiRadixTree：前缀树驱动的元数据拓扑
