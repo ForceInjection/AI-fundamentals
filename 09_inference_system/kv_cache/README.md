@@ -1,23 +1,23 @@
 # KV Cache 技术体系
 
-本章节深入探讨大语言模型（LLM）推理中的关键优化技术 —— **KV Cache（键值缓存）**。作为提升推理性能、降低延迟（特别是 Time-To-First-Token, TTFT）和提高吞吐量的核心手段，KV Cache 及其管理系统已成为现代推理系统的基础设施。本目录涵盖了从基础原理到业界前沿的分布式 KV Cache 管理架构。
+**KV Cache（键值缓存）** 是现代 LLM 推理系统的核心基础设施——它通过缓存 Attention 的 Key/Value 矩阵把自回归生成的单步计算复杂度从 $O(N^2)$ 降至 $O(N)$，直接决定 TTFT、吞吐与长上下文可行性。围绕这一数据结构，业界已从单机显存缓存演进出涵盖 Prefix Caching、分层存储、跨实例共享、预填充-解码分离的完整技术栈，以下内容按「原理 → 前缀复用 → 分布式系统 → 关键技术 → 容量规划」五条主线组织。
 
 ## 1. 基础原理
 
-KV Cache 是 LLM 推理加速的基石。在自回归生成过程中，通过缓存 Attention 层的 Key 和 Value 矩阵，避免了对历史 Token 的重复计算，从而实现了推理计算量从 $O(N^3)$ 到 $O(N^2)$ 的显著降低（在单步生成层面是从 $O(N^2)$ 降至 $O(N)$）。
+自回归生成天然存在重复计算——每生成一个 Token 都需对全部历史 Token 重算 Attention。缓存 Key/Value 矩阵后，Prefill 阶段批量构造、Decode 阶段增量追加，整体计算量从 $O(N^3)$ 压缩到 $O(N^2)$，而显存占用则与 `layer × head × d_head × seq_len × dtype` 线性相关，构成后续所有优化的权衡起点。
 
 - **[KV Cache 原理简介](01_concepts/basic/kv_cache_原理简介.md)**：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 
 ## 2. Prefix Caching
 
-Prefix Caching（前缀缓存）是 KV Cache 优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 TTFT 并提升系统吞吐量。
+多轮对话、System Prompt、Few-shot 模板等场景下输入前缀高度重复——Prefix Caching 通过 Hash 或 Radix Tree 索引复用已计算的 KV 块，将命中请求的 Prefill 成本压到接近零，是长对话与 RAG 场景下 TTFT 优化的第一道防线。
 
 - **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](01_concepts/prefix_caching/radix_attention.md)** ([配套 PPT](01_concepts/prefix_caching/radix_attention.pptx))：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
 - **[Prefix Caching 原理与实现](01_concepts/prefix_caching/prefix_caching.md)** ([配套 PPT](01_concepts/prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 
 ## 3. 进阶架构与管理系统
 
-随着上下文长度的增加（Long Context）和分布式推理的需求，简单的显存内 KV Cache 已无法满足需求。业界涌现出多种分层存储和分布式管理方案，将 KV Cache 扩展到 CPU 内存、磁盘甚至远程存储。
+百万级上下文与分离式推理把 KV Cache 推出了单卡显存——业界沿着「分层存储（GPU/CPU/SSD/远程）+ 跨实例共享 + 元数据一致性」三条主线构建了 LMCache、Tair KVCache、KVBM、Mooncake、HiCache 五套代表性方案，设计取舍主要体现在中心化程度、传输协议（RDMA / NIXL / GDS）与面向的推理拓扑上。
 
 ### 3.1 LMCache
 
@@ -64,16 +64,22 @@ Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推
 
 - **[Mooncake 架构概览：以 KV Cache 为中心的高效 LLM 推理系统设计](02_systems/mooncake/mooncake_architecture.md)**：介绍了基于 KVCache 调度的预填充-解码分离架构。通过分块管道并行（CPP）和全局调度器（Conductor），Mooncake 实现了超长上下文场景下的高效推理和资源利用。
 
+### 3.5 SGLang HiCache
+
+HiCache 是 SGLang 自带的分层 KV Cache 架构，将 GPU 显存、宿主机内存与分布式存储后端（如 Mooncake、HF3FS）统一为 L1/L2/L3 三级缓存，突破单节点显存天花板并实现跨实例的前缀共享。
+
+- **[HiCache 深入详解](02_systems/hicache/hicache_deep_dive.md)**：系统梳理 HiCache 的演进背景、HiRadixTree 元数据拓扑、三种预取策略（`best_effort` / `wait_complete` / `timeout`）与三种写回策略（`write_through` / `write_through_selective` / `write_back`）、`page_first` 内存布局与 GPU 辅助 I/O 算子、存储后端热插拔控制面，以及根据容量 / 异构 TP / PD 一致性 / 存储成本 四维度展开的架构权衡与启动参数示例
+
 ## 4. 关键技术分析
 
-除了具体的系统架构，本目录还包含对特定技术点的深度分析。
+独立于某一具体系统、但跨方案共性的技术议题——涵盖 Offloading 策略的吞吐/带宽取舍，以及按层流水并行如何掩盖 PD 分离中的传输开销。
 
 - **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](01_concepts/advanced/kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
 - **[KV Cache 层级流水线并行](01_concepts/advanced/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
 
 ## 5. 容量规划与 ROI 分析
 
-在大模型推理系统建设中，KV Cache 的容量规划与 ROI 评估是资源配置的核心。
+KV Cache 本质是一次「用存储成本换计算成本」的投资——合理的分层容量（显存/CPU 内存/NVMe）与命中率假设决定整体 ROI，相关推演以 GLM-5 与 Agent 业务负载为基准。
 
 - **[KV Cache 引入收益评估](01_concepts/capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
 - **[GLM-5 模型 KV Cache 容量规划报告](01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
@@ -83,4 +89,4 @@ Mooncake 是 Moonshot AI（Kimi）推出的以 KV Cache 为中心的分离式推
 | 目录/文件      | 说明                                                                                  |
 | :------------- | :------------------------------------------------------------------------------------ |
 | `01_concepts/` | 核心概念与技术 (包含 basic, compression, prefix_caching, advanced, capacity_planning) |
-| `02_systems/`  | 具体系统实现 (包含 lmcache, tair_kvcache, kvbm, mooncake)                             |
+| `02_systems/`  | 具体系统实现 (包含 lmcache, tair_kvcache, kvbm, mooncake, hicache)                    |

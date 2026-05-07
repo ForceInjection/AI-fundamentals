@@ -142,6 +142,8 @@ sequenceDiagram
 
 在基于 DSA（Data Streaming Accelerator）的 HiCache 实现中，为了追求极致性能，系统将数据加载（Load Stream）与计算（Forward Stream）进行了异步重叠，但忽略了 Indexer Cache 的加载完成依赖。
 
+> 关于 HiCache 的完整架构（HiRadixTree、L1/L2/L3 三级存储、预取与写回策略、`page_first` 内存布局等）可参阅本仓 [HiCache 深入详解](../kv_cache/02_systems/hicache/hicache_deep_dive.md)。
+
 #### 4.1.1 原始时序缺陷
 
 ```mermaid
