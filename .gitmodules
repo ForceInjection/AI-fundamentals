@@ -1,0 +1,3 @@
+[submodule "09_inference_system/nano-vllm"]
+	path = 09_inference_system/nano-vllm
+	url = https://github.com/ForceInjection/nano-vllm
