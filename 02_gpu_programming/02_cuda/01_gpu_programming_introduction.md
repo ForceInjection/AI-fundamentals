@@ -144,4 +144,8 @@ __global__ void matrixMul(const float* A, const float* B, float* C, int n) {
 
 While this example provides a straightforward implementation of matrix multiplication, it is not optimized for performance. In real-world applications, achieving efficient computation requires careful consideration of memory access patterns and cache utilization. Techniques such as tiling and shared memory usage can significantly enhance performance by reducing memory access latency and improving data locality. Proper cache planning and optimization strategies are essential for scaling these algorithms to handle larger datasets and more complex computations efficiently.
 
-虽然此示例提供了矩阵乘法的直接实现，但它并未针对性能进行优化。在实际应用中，实现高效计算需要仔细考虑内存访问模式和缓存利用率。平铺和共享内存使用等技术可以通过减少内存访问延迟和改善数据局部性来显著提高性能。适当的缓存规划和优化策略对于扩展这些算法以有效处理更大的数据集和更复杂的计算至关重要。
+---
+
+虽然此示例提供了矩阵乘法的直接实现，但它并未针对性能进行优化。在实际应用中，实现高效计算需要仔细考虑内存访问模式和缓存利用率。平铺（Tiling）和共享内存使用等技术可以通过减少内存访问延迟和改善数据局部性来显著提高性能。适当的缓存规划和优化策略对于扩展这些算法以有效处理更大的数据集和更复杂的计算至关重要。
+
+> **👉 进阶阅读**：如果您想了解如何通过 Tiling（分块）技术来深度优化矩阵乘法性能，以及从传统 SIMT 到 Tile-Based 编程范式的演进，请参阅 [SIMT vs Tile-Based：CUDA 编程范式的演进与对比](04_simt_vs_tile_based.md)。

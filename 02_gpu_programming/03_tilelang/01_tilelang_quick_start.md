@@ -1,137 +1,188 @@
 # TileLang 快速入门
 
-## 1. 背景介绍
+TileLang 是一种面向现代异构加速器（如 NVIDIA GPU、AMD GPU）的高性能算子开发语言与编译器基础设施。它基于 Python DSL 提供了接近原生的表达能力，并通过底层 TVM 编译器引擎自动处理复杂的硬件资源分配与指令调度，使开发者能够在避免深陷 CUDA 底层细节的前提下，快速编写出性能媲美甚至超越手写 CUDA 的定制化算子。本文将带领大家从环境搭建开始，逐步掌握 TileLang 的核心编程范式与最佳实践。
 
-### 1.1 什么是 TileLang
+## 1. 为什么需要 TileLang？
 
-TileLang（Tile Language）是一种专为高性能 GPU/CPU 内核开发而设计的简洁领域特定语言（DSL）。它采用 Pythonic 语法，底层基于 [TVM](https://tvm.apache.org/) 编译器基础设施，旨在让开发者专注于生产力，同时不牺牲获得最先进性能所需的底层优化。
+手写高性能 CUDA Kernel 是一项门槛极高的工作——开发者不仅要设计算法，还要同时处理共享内存分配、线程同步、Bank Conflict 规避、寄存器布局和指令流水线等大量底层细节。一个高质量的 GEMM Kernel 动辄数百行代码，其中算法逻辑往往只占一小部分，其余全是硬件适配。
+
+TileLang 的出现，正是为了把开发者从这些繁琐的硬件细节中解放出来。
+
+### 1.1 手写 CUDA 的隐性成本
+
+下面是一个典型的分块矩阵乘法 Kernel 需要处理的事项：
+
+| 关注点        | 手写 CUDA 需要做什么                                    |
+| ------------- | ------------------------------------------------------- |
+| 共享内存      | 手动 `__shared__` 声明、加载、边界填充、`__syncthreads` |
+| 寄存器布局    | 手动分配合适数量的寄存器变量，避免 spill                |
+| 指令选择      | 手写 WMMA/MMA 指令，管理 Fragment 布局                  |
+| 流水线        | 手写 multi-buffering，管理 `cp.async` 和 commit group   |
+| 跨平台        | 为不同 GPU 架构编写不同的 Kernel 变体                   |
+| Bank Conflict | 手动 padding shared memory                              |
+
+这些工作量大、易出错，且与具体硬件强绑定。当新架构（如 Hopper → Blackwell）出现时，大量优化代码需要重写。
+
+### 1.2 编译器驱动的算子开发
+
+TileLang 的思路与 LLVM 类似：将算法描述与硬件适配解耦。开发者用 Pythonic DSL 描述**做什么**（数据分块、计算逻辑），编译器负责**怎么做**（内存分配、指令调度、流水线优化）。
+
+- **底层**：基于 [TVM](https://tvm.apache.org/) 编译器基础设施，复用成熟的 TIR 优化和 CodeGen
+- **语法**：Python 原生风格，`@tilelang.jit` 装饰器标记编译入口
+- **平台**：支持 CUDA（NVIDIA）、HIP（AMD）、CPU（x86 AVX2/AVX-512）
 
 > 项目地址：<https://github.com/tile-ai/tilelang/>
 > 文档地址：<https://tile-ai.github.io/tilelang/>
 
-### 1.2 TileLang 的核心优势
-
-1. **简洁的语法**：采用 Python 风格的语法，降低学习成本
-2. **高性能**：基于 TVM 编译器基础设施，提供底层优化能力
-3. **跨平台支持**：支持 NVIDIA GPU（CUDA）、AMD GPU（HIP）和 CPU
-4. **丰富的算子支持**：内置 GEMM、FlashAttention、LinearAttention 等高性能算子
-5. **自动优化**：支持自动流水线、内存布局优化、L2 缓存友好的重排等特性
-
-### 1.3 适用场景
-
-TileLang 特别适合以下场景：
-
-- 高性能矩阵运算（GEMM、量化 GEMM）
-- 注意力机制实现（FlashAttention、LinearAttention）
-- 自定义 GPU 内核开发
-- 深度学习算子优化
-
-### 1.4 支持的硬件平台
-
-TileLang 支持多种硬件平台，已在以下设备上经过测试和验证：
-
-- **NVIDIA GPU**：H100（支持 Auto TMA/WGMMA）、A100、V100、RTX 4090、RTX 3090、RTX A6000
-- **AMD GPU**：MI250（支持 Auto MatrixCore）、MI300X（支持 Async Copy）
-- **CPU**：x86_64 架构处理器（支持 AVX2/AVX-512 指令集）
-
-> 以上信息出自官方代码库，从目前的新闻看，TileLang 已经被国产 GPU 支持。
-
 ---
 
-## 2. 快速入门：矩阵乘法对比
+## 2. 环境搭建
 
-### 2.1 传统 CUDA 实现
+TileLang 依赖 Python 3.8+ 与 CUDA 11.0+ 基础环境，支持通过 PyPI 快速分发或源码编译，以适配 NVIDIA、AMD 等多种异构计算后端。
 
-首先，让我们看看传统的 CUDA 矩阵乘法实现：
+### 2.1 系统要求
 
-```cpp
-// CUDA 矩阵乘法内核
-__global__ void matmul_cuda(float* A, float* B, float* C, int M, int N, int K) {
-    // 计算线程索引
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
+**PyPI 安装**：Ubuntu 20.04+、Python 3.8+、CUDA 11.0+
 
-    // 边界检查
-    if (row < M && col < N) {
-        float sum = 0.0f;
+**源码编译**：Linux、Python 3.7+、CUDA 10.0+、LLVM < 20、CMake + GCC
 
-        // 计算点积
-        for (int k = 0; k < K; k++) {
-            sum += A[row * K + k] * B[k * N + col];
-        }
+**已验证的硬件**：H100 (Auto TMA/WGMMA)、A100、V100、RTX 4090/3090/A6000；AMD MI250 (Auto MatrixCore)、MI300X (Async Copy)；x86_64 CPU (AVX2/AVX-512)。国产 GPU 也已开始支持。
 
-        C[row * N + col] = sum;
-    }
-}
+### 2.2 安装
 
-// 优化版本：使用共享内存的分块矩阵乘法
-#define TILE_SIZE 16
+**推荐方式 — PyPI**：
 
-__global__ void matmul_cuda_tiled(float* A, float* B, float* C, int M, int N, int K) {
-    // 共享内存声明
-    __shared__ float As[TILE_SIZE][TILE_SIZE];
-    __shared__ float Bs[TILE_SIZE][TILE_SIZE];
+```bash
+pip install tilelang
 
-    // 线程和块索引
-    int bx = blockIdx.x, by = blockIdx.y;
-    int tx = threadIdx.x, ty = threadIdx.y;
-
-    // 计算全局索引
-    int row = by * TILE_SIZE + ty;
-    int col = bx * TILE_SIZE + tx;
-
-    float sum = 0.0f;
-
-    // 分块计算
-    for (int tile = 0; tile < (K + TILE_SIZE - 1) / TILE_SIZE; tile++) {
-        // 加载数据到共享内存
-        if (row < M && tile * TILE_SIZE + tx < K) {
-            As[ty][tx] = A[row * K + tile * TILE_SIZE + tx];
-        } else {
-            As[ty][tx] = 0.0f;
-        }
-
-        if (col < N && tile * TILE_SIZE + ty < K) {
-            Bs[ty][tx] = B[(tile * TILE_SIZE + ty) * N + col];
-        } else {
-            Bs[ty][tx] = 0.0f;
-        }
-
-        __syncthreads();
-
-        // 计算部分乘积
-        for (int k = 0; k < TILE_SIZE; k++) {
-            sum += As[ty][k] * Bs[k][tx];
-        }
-
-        __syncthreads();
-    }
-
-    // 写回结果
-    if (row < M && col < N) {
-        C[row * N + col] = sum;
-    }
-}
-
-// 主机代码
-void launch_matmul_cuda(float* A, float* B, float* C, int M, int N, int K) {
-    dim3 blockSize(TILE_SIZE, TILE_SIZE);
-    dim3 gridSize((N + TILE_SIZE - 1) / TILE_SIZE, (M + TILE_SIZE - 1) / TILE_SIZE);
-
-    matmul_cuda_tiled<<<gridSize, blockSize>>>(A, B, C, M, N, K);
-    cudaDeviceSynchronize();
-}
+# 或开发版本
+pip install git+https://github.com/tile-ai/tilelang
 ```
 
-### 2.2 TileLang 实现
+**源码编译**：
 
-现在让我们看看 TileLang 的实现方式。以下代码展示了一个简洁的矩阵乘法实现：
+```bash
+git clone https://github.com/tile-ai/tilelang.git
+cd tilelang
+pip install -r requirements-build.txt
+pip install -e . -v
+```
 
-> **代码来源**：[example_gemm.py](https://github.com/tile-ai/tilelang/blob/main/examples/gemm/example_gemm.py)
+**Nightly**：
+
+```bash
+pip install tilelang -f https://tile-ai.github.io/whl/nightly/cu121/
+```
+
+> 更多方式见 [官方安装指南](https://github.com/tile-ai/tilelang/blob/main/docs/get_started/Installation.md)。
+
+### 2.3 验证安装
+
+通过 JIT 编译一个简单的二维向量加法 Kernel，可完整验证 TileLang 的编译链路与硬件后端调用逻辑。
+
+> 代码参考：[example_elementwise_add.py](https://github.com/tile-ai/tilelang/blob/main/examples/elementwise/example_elementwise_add.py)
 
 ```python
 import tilelang
 import tilelang.language as T
+import torch
+
+# 打印基础环境信息
+print(f"TileLang 版本: {tilelang.__version__}")
+print(f"CUDA 可用: {torch.cuda.is_available()}")
+
+# 使用 jit 装饰器进行即时编译，out_idx 指定输出张量所在参数索引
+@tilelang.jit(out_idx=[-1])
+def vector_add(M, N, block_M, block_N, dtype="float32"):
+    # 声明一个计算原语
+    @T.prim_func
+    def add_kernel(
+        A: T.Tensor((M, N), dtype),
+        B: T.Tensor((M, N), dtype),
+        C: T.Tensor((M, N), dtype),
+    ):
+        # 划分 Grid 和 Block，每个 Block 包含 128 个线程
+        with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx, by):
+            # 自动并行化二维网格迭代
+            for i, j in T.Parallel(block_M, block_N):
+                # 计算全局线程索引
+                row = by * block_M + i
+                col = bx * block_N + j
+                # 边界检查并执行逐元素加法
+                if row < M and col < N:
+                    C[row, col] = A[row, col] + B[row, col]
+    return add_kernel
+
+# 测试参数初始化
+M, N = 1024, 1024
+kernel = vector_add(M, N, 128, 128)
+
+# 准备测试数据并运行 Kernel
+a = torch.randn(M, N).cuda()
+b = torch.randn(M, N).cuda()
+c = kernel(a, b)
+
+# 与 PyTorch 原生实现进行精度对比
+ref_c = a + b
+torch.testing.assert_close(c, ref_c, rtol=1e-5, atol=1e-5)
+print("TileLang 安装验证成功！")
+```
+
+```bash
+python test_installation.py
+```
+
+---
+
+## 3. 核心概念与第一个算子
+
+TileLang 采用声明式编程范式，通过 `@tilelang.jit` 与 `T.Kernel` 等核心原语，将复杂的硬件资源分配与多级调度逻辑抽象为紧凑的 Python 语法结构。
+
+### 3.1 基础语法结构
+
+TileLang 用 `@tilelang.jit` 装饰器标记编译入口。内核函数包含三个要素：
+
+```python
+import tilelang
+import tilelang.language as T
+
+@tilelang.jit(out_idx=[-1])             # 输出参数索引；可选 target="cuda"/"rocm"/"cpu"
+def my_kernel(M, N, K, block_M, block_N, block_K):
+    @T.prim_func                         # 标记为原始函数
+    def actual_kernel(
+        A: T.Tensor((M, K), dtype),      # 类型注解即形状声明
+        B: T.Tensor((K, N), dtype),
+        C: T.Tensor((M, N), dtype),
+    ):
+        with T.Kernel(grid_x, grid_y, threads=128) as (bx, by):  # 定义 Grid + Block
+            A_shared = T.alloc_shared((block_M, block_K), dtype)  # 共享内存
+            C_local  = T.alloc_fragment((block_M, block_N), accum_dtype)  # 寄存器
+            # 计算逻辑 ...
+    return actual_kernel
+```
+
+| 原语                      | 作用                                |
+| ------------------------- | ----------------------------------- |
+| `T.Kernel(gx, gy, t)`     | 定义 Block 网格与每 Block 线程数    |
+| `T.alloc_shared(shape)`   | 声明共享内存（相当于 `__shared__`） |
+| `T.alloc_fragment(shape)` | 声明寄存器片段（Tile 级别变量）     |
+| `T.Parallel(m, n)`        | 自动并行化迭代                      |
+| `T.Pipelined(n, stages)`  | 多级软件流水线                      |
+| `T.copy(src, dst)`        | 自动并行数据传输                    |
+| `T.gemm(A, B, C)`         | 调用最优矩阵乘实现                  |
+
+### 3.2 实战：矩阵乘法
+
+**传统 CUDA 需要处理什么**：一个分块矩阵乘法 Kernel 通常需要手动管理共享内存加载、边界检查、`__syncthreads()` 同步、循环展开等。朴素实现 30 行，优化版本轻松超过 80 行，且大部分代码与算法逻辑无关。
+
+**TileLang 实现** — 约 30 行，语义清晰：
+
+> 代码参考：[example_gemm.py](https://github.com/tile-ai/tilelang/blob/main/examples/gemm/example_gemm.py)
+
+```python
+import tilelang
+import tilelang.language as T
+import torch
 
 @tilelang.jit(out_idx=[-1])
 def matmul(M, N, K, block_M, block_N, block_K, dtype="float16", accum_dtype="float"):
@@ -141,256 +192,118 @@ def matmul(M, N, K, block_M, block_N, block_K, dtype="float16", accum_dtype="flo
         B: T.Tensor((K, N), dtype),
         C: T.Tensor((M, N), dtype),
     ):
+        # 划分 Grid 和 Block，并指定每 Block 的线程数
         with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx, by):
+            # 声明位于共享内存中的张量
             A_shared = T.alloc_shared((block_M, block_K), dtype)
             B_shared = T.alloc_shared((block_K, block_N), dtype)
-            C_local = T.alloc_fragment((block_M, block_N), accum_dtype)
+            # 声明位于寄存器中的本地累加片段
+            C_local  = T.alloc_fragment((block_M, block_N), accum_dtype)
 
+            # 初始化寄存器片段为 0
             T.clear(C_local)
+            # 开启 3 级流水线循环，自动处理异步加载与计算重叠
             for k in T.Pipelined(T.ceildiv(K, block_K), num_stages=3):
+                # 将全局内存中的数据分块拷贝到共享内存
                 T.copy(A[by * block_M, k * block_K], A_shared)
                 T.copy(B[k * block_K, bx * block_N], B_shared)
+                # 调用矩阵乘法指令，编译器将自动映射为 Tensor Core 指令
                 T.gemm(A_shared, B_shared, C_local)
 
+            # 计算完成后，将寄存器片段中的结果写回全局内存
             T.copy(C_local, C[by * block_M, bx * block_N])
     return gemm
 
-# 使用示例
-def main():
-    kernel = matmul(1024, 1024, 1024, 128, 128, 32)
+# 编译并使用
+M, N, K = 1024, 1024, 1024
+kernel = matmul(M, N, K, 128, 128, 32)
 
-    import torch
-    a = torch.randn(1024, 1024).cuda().half()
-    b = torch.randn(1024, 1024).cuda().half()
-    c = kernel(a, b)
+# 构建 PyTorch 输入数据
+a = torch.randn(M, K, device="cuda", dtype=torch.float16)
+b = torch.randn(K, N, device="cuda", dtype=torch.float16)
+c = kernel(a, b)
 
-    # 验证正确性
-    ref_c = a @ b
-    torch.testing.assert_close(c, ref_c, rtol=1e-2, atol=1e-2)
-    print("正确性验证通过")
+# 精度校验
+ref_c = a @ b
+torch.testing.assert_close(c, ref_c, rtol=1e-2, atol=1e-2)
+print("矩阵乘法验证通过")
 ```
 
-**关键特性说明**：
+关键 API：
 
-- `@tilelang.jit(out_idx=[-1])`：JIT 编译装饰器，指定最后一个参数为输出
-- `T.Pipelined`：自动实现多级流水线优化
-- `T.copy`：自动并行化数据传输
-- `T.gemm`：调用最优的矩阵乘法实现
+- `T.Pipelined(n, num_stages=3)`：自动生成 3 级流水线，隐藏全局内存延迟
+- `T.copy`：自动并行数据传输，处理合并访问与边界填充
+- `T.gemm`：编译器自动映射到目标架构最优的 Tensor Core/Warp 级指令
 
-### 2.3 对比分析
+### 3.3 CUDA → TileLang 对照表
 
-| 特性           | CUDA                           | TileLang                                   |
-| -------------- | ------------------------------ | ------------------------------------------ |
-| **代码行数**   | ~80 行                         | ~30 行                                     |
-| **内存管理**   | 手动管理共享内存、同步         | 自动管理，声明式语法                       |
-| **优化复杂度** | 需要手动实现分块、流水线等优化 | 内置自动优化（`T.Pipelined`、`T.copy` 等） |
-| **可读性**     | 底层细节较多，可读性较差       | 高层抽象，语义清晰                         |
-| **错误处理**   | 需要手动边界检查和错误处理     | 编译器自动处理                             |
-| **跨平台**     | 仅支持 NVIDIA GPU              | 支持 CUDA、HIP、CPU                        |
-| **性能**       | 手动优化可达到极致性能         | 自动优化达到接近手动优化的性能             |
+TileLang 编译器隐式接管了传统 CUDA 编程中繁琐的共享内存同步、边界检查与指令调度机制，开发者仅需关注高层数据流声明。
 
-### 2.4 TileLang 的关键优势
+| CUDA 概念               | TileLang 原语      | 变化                                 |
+| ----------------------- | ------------------ | ------------------------------------ |
+| `__shared__` 手动管理   | `T.alloc_shared`   | 声明式，编译器自动处理加载/同步      |
+| `__syncthreads()`       | — (隐式)           | 编译器自动插入，消除遗漏风险         |
+| 手动边界检查            | — (隐式)           | 编译器根据形状自动生成               |
+| `cudaMalloc`/`cudaFree` | — (自动)           | 张量生命周期由 PyTorch/TileLang 管理 |
+| WMMA/MMA 指令           | `T.gemm`           | 一行调用，编译器选最优指令           |
+| `cp.async` + commit     | `T.copy` 或隐式    | 编译器自动插入异步拷贝和流水线       |
+| 手动循环展开            | — (自动)           | TVM TIR 自动应用分块/融合/展开       |
+| CUDA Streams            | `T.Pipelined`      | 多级流水线自动处理异步执行           |
+| 寄存器分配              | `T.alloc_fragment` | 声明式，编译器优化 spill             |
 
-1. **简洁性**：TileLang 用 30 行代码实现了 CUDA 需要 80+ 行的功能
-2. **自动优化**：
-   - `T.Pipelined`：自动实现多级流水线优化
-   - `T.copy`：自动并行化数据传输
-   - `T.gemm`：自动调用最优的矩阵乘法实现
-3. **内存管理**：自动处理共享内存分配和同步
-4. **类型安全**：编译时类型检查，减少运行时错误
-
-### 2.5 高级特性对应
-
-对于有 CUDA 开发经验的用户，以下是 CUDA 高级特性与 TileLang 的对应关系：
-
-| CUDA 特性       | TileLang 对应      | 说明                                                     |
-| --------------- | ------------------ | -------------------------------------------------------- |
-| **动态并行**    | 自动并行化         | TileLang 编译器自动分析数据依赖，生成最优并行策略        |
-| **统一内存**    | 自动内存管理       | 无需手动 `cudaMalloc`/`cudaFree`，编译器自动处理内存分配 |
-| **流和事件**    | 自动调度优化       | `T.Pipelined` 自动实现异步执行和同步优化                 |
-| **共享内存**    | `T.alloc_shared`   | 声明式共享内存分配，自动优化访问模式                     |
-| **寄存器优化**  | `T.alloc_fragment` | 自动寄存器分配和数据局部性优化                           |
-| **Warp 级原语** | 内置算子           | `T.gemm`、`T.reduce` 等自动调用最优 Warp 级实现          |
-
-**核心理念**：TileLang 将 CUDA 的底层控制抽象为高级语义，让开发者专注于算法逻辑而非硬件细节。
+> **核心理念**：TileLang 不改变你思考算法的方式，它只是把"如何高效映射到硬件"这件事交给了编译器。
 
 ---
 
-## 3. 编译运行
+## 4. 进阶：编译原理与调试
 
-### 3.1 系统要求
+TileLang 依托 TVM TIR (Tensor Intermediate Representation) 基础设施，将 Python DSL 实时降级并应用 Tiling、Fusion 等硬件感知优化，最终生成特化的 PTX 或机器码（仅关注业务集成的开发者可跳过本章）。
 
-#### 3.1.1 PyPI 安装要求
+### 4.1 JIT 编译流程
 
-- **操作系统**：Ubuntu 20.04 或更高版本
-- **Python**：3.8 或更高版本
-- **CUDA**：11.0 或更高版本（NVIDIA GPU）
-
-#### 3.1.2 源码编译要求
-
-- **操作系统**：Linux
-- **Python**：3.7 或更高版本
-- **CUDA**：10.0 或更高版本（NVIDIA GPU）
-- **LLVM**：< 20（如果使用捆绑的 TVM 子模块）
-- **ROCm**：5.0 或更高版本（AMD GPU，可选）
-
-### 3.2 安装步骤
-
-#### 3.2.1 基础依赖安装
-
-```bash
-# 更新系统包
-sudo apt-get update
-sudo apt-get install -y python3-setuptools gcc libtinfo-dev zlib1g-dev \
-                        build-essential cmake libedit-dev libxml2-dev
-
-# 安装 Python 包管理器依赖
-pip install --upgrade pip setuptools wheel
-
-# 安装核心依赖
-pip install Cython>=3.0.0 numpy>=1.23.5 tqdm>=4.62.3 \
-            typing_extensions>=4.10.0 cloudpickle ml_dtypes psutil torch
-```
-
-#### 3.2.2 TileLang 安装
-
-**方法一：PyPI 安装（推荐）**：
-
-```bash
-# 安装最新稳定版本
-pip install tilelang
-
-# 或安装开发版本
-pip install git+https://github.com/tile-ai/tilelang
-```
-
-**方法二：源码编译安装**：
-
-```bash
-# 克隆仓库
-git clone https://github.com/tile-ai/tilelang.git
-cd tilelang
-
-# 安装构建依赖
-pip install -r requirements-build.txt
-
-# 编译安装
-pip install -e . -v
-```
-
-**方法三：Nightly 版本**：
-
-```bash
-# 安装最新开发版本（包含最新特性）
-pip install tilelang -f https://tile-ai.github.io/whl/nightly/cu121/
-```
-
-> **注意**：更多安装方式请参考官方文档：[Installation Guide](https://github.com/tile-ai/tilelang/blob/main/docs/get_started/Installation.md)
-
-### 3.3 编译原理与基础语法
-
-#### 3.3.1 JIT 编译流程
-
-TileLang 采用 **JIT（Just-In-Time）编译模式**，在运行时动态编译高性能内核。这种设计具有以下优势：
-
-**编译模式特点**：
-
-- **延迟编译**：只在首次调用时编译，避免不必要的编译开销
-- **参数特化**：根据具体的张量形状和数据类型生成优化代码
-- **缓存机制**：编译结果会被缓存，后续调用直接复用
-- **多目标支持**：同一份代码可编译到不同硬件平台
-
-**基本编译流程**：
+TileLang 采用 **JIT 编译模式**：首次调用时编译，编译结果缓存。
 
 ```python
-# 1. 定义内核函数
-@tilelang.jit(target="cuda")  # 指定编译目标
-def my_kernel(...):
-    # TileLang 高级语法
+@tilelang.jit(target="cuda")
+def my_kernel(...): ...
 
-# 2. 首次调用触发编译
-result = my_kernel(input_data)  # 此时进行 JIT 编译
-
-# 3. 后续调用直接执行
-result2 = my_kernel(input_data2)  # 复用已编译的内核
+result = my_kernel(input)   # 首次调用 → 编译 + 执行
+result2 = my_kernel(input2)  # 后续调用 → 缓存命中，直接执行
 ```
 
-这种 JIT 编译模式使得 TileLang 能够在保持高级语法简洁性的同时，生成与手写 CUDA 代码相当的高性能内核。
+编译流程：`TileLang DSL` → `TVM TIR` → `优化后的 TIR` → `CUDA C++` → `PTX` → `可执行 Kernel`
 
-#### 3.3.2 TileLang 到 CUDA 的编译过程
+关键特性：
 
-TileLang 通过 **TVM 编译器基础设施**将高级语法转换为高性能的 CUDA 代码。以下是 CUDA 特定的编译技术细节：
+- **参数特化**：编译器根据首次调用的形状和 dtype 生成特化代码
+- **缓存机制**：编译结果缓存到磁盘，跨进程复用
+- **多目标**：同一份 DSL 可编译到 CUDA / HIP / CPU
 
-**CUDA 代码生成架构**：
+### 4.2 TVM TIR 到 CUDA 的转换
 
-- **专用代码生成器**：`codegen_cuda.cc` 负责将 TVM TIR 转换为 CUDA C++ 代码
-- **内存层次优化**：自动管理全局内存、共享内存和寄存器的数据流
-- **线程块配置**：根据硬件特性自动选择最优的网格和线程块大小
+TileLang DSL 并非直接翻译为 CUDA C++，而是先降级为 TVM 的中间表示 TIR，经过与硬件无关的通用优化后，再由 `codegen_cuda.cc` 生成特化的 CUDA 源码。理解这一流程有助于在性能不达预期时判断瓶颈出在算法描述层还是代码生成层。
 
-**TVM TIR 优化策略**：
+编译器自动应用的优化：
 
-1. **循环优化策略**
+| 类别     | 优化策略                                        |
+| -------- | ----------------------------------------------- |
+| 循环     | 分块 (Tiling)、重排 (Reorder)、融合 (Fusion)    |
+| 内存访问 | 合并访问 (Coalesced)、共享内存分块、预取        |
+| 计算     | 循环展开、指令级并行 (ILP)、Tensor Core MMA     |
+| 算子融合 | 垂直融合（生产者-消费者）、水平融合（独立算子） |
 
-   - **循环分块（Loop Tiling）**：将大循环分解为缓存友好的小块
-   - **循环重排（Loop Reordering）**：调整循环嵌套顺序优化内存访问
-   - **循环融合（Loop Fusion）**：合并相邻循环减少内存往返
+**性能特点**：零开销抽象（DSL 无运行时开销）、硬件感知（根据 SM 版本选择最优策略）、在多数场景下达到与手写 CUDA 相当的性能。
 
-2. **内存访问模式优化**
+### 4.3 查看生成代码与调试
 
-   - **数据布局变换**：自动选择最优的数据排列方式（行优先/列优先）
-   - **预取优化**：在计算前预加载数据到共享内存
-   - **内存合并**：确保 Warp 内线程的内存访问模式最优
-
-3. **算子融合机制**
-   - **垂直融合**：将生产者-消费者算子合并，减少中间结果存储
-   - **水平融合**：合并并行的独立算子，提高硬件利用率
-   - **自动调度**：基于硬件特性自动选择最优的融合策略
-
-**CUDA 特定优化技术**：
-
-1. **内存访问优化**
-
-   - 合并访问（Coalesced Access）：确保连续线程访问连续内存
-   - 共享内存分块（Shared Memory Tiling）：减少全局内存访问
-   - 寄存器重用：最大化寄存器利用率
-
-2. **计算优化**
-   - 循环展开（Loop Unrolling）：减少分支开销
-   - 指令级并行（ILP）：充分利用 GPU 流水线
-   - Tensor Core 利用：自动生成 MMA 指令（支持的硬件上）
-
-**生成的 CUDA 代码示例**：
-
-```cpp
-extern "C" __global__ void __launch_bounds__(256) main_kernel(
-    float* __restrict__ A,
-    float* __restrict__ B,
-    float* __restrict__ C
-) {
-    // 共享内存声明
-    __shared__ float A_shared[128][32];
-    __shared__ float B_shared[32][128];
-
-    // 寄存器数组
-    float C_local[8][8];
-
-    // 优化的内存访问和计算逻辑
-    #pragma unroll
-    for (int k = 0; k < 32; ++k) {
-        // 向量化加载和计算
-    }
-}
-```
-
-**调试和性能分析工具**：
+通过 `tilelang.compile` 导出 CUDA 源码或注册 `postproc_callback` 钩子函数，开发者可以下钻至指令层级进行性能瓶颈排查与逻辑验证。
 
 ```python
 # 查看生成的 CUDA 源码
 kernel = tilelang.compile(your_function, target="cuda")
-cuda_source = kernel.get_kernel_source()
-print("Generated CUDA kernel:\n", cuda_source)
+print(kernel.get_kernel_source())
 
-# 编译过程调试回调
+# 编译过程回调
 from tilelang.engine.callback import register_cuda_postproc_callback
 
 @register_cuda_postproc_callback
@@ -399,207 +312,60 @@ def debug_cuda_code(code, target):
     return code
 ```
 
-**性能特点**：
+---
 
-- **零开销抽象**：高级语法不会引入额外的运行时开销
-- **硬件感知优化**：根据目标 GPU 架构（如 SM 版本）进行特定优化
-- **与手写 CUDA 相当的性能**：在许多场景下可达到或超越手写 CUDA 代码的性能
+## 5. 实践建议
 
-#### 3.3.3 基础语法结构
+在生产环境中引入 TileLang 时，需严格评估其 JIT 编译延迟对系统的影响，并结合具体架构特性选择最优的算子下发与显存管理策略。
 
-TileLang 使用 `@tilelang.jit` 装饰器来标记需要编译的函数：
+### 5.1 适合与不适合的场景
 
-```python
-import tilelang
-import tilelang.language as T
+**适合 TileLang**：
 
-# 基本用法
-@tilelang.jit(out_idx=[-1])  # 指定最后一个参数为输出
-def kernel_function(M, N, K, block_M, block_N, block_K):
-    @T.prim_func
-    def actual_kernel(
-        A: T.Tensor((M, K), dtype),
-        B: T.Tensor((K, N), dtype),
-        C: T.Tensor((M, N), dtype),
-    ):
-        # 1. 定义内核网格和线程配置
-        with T.Kernel(grid_x, grid_y, threads=128) as (bx, by):
-            # 2. 分配共享内存和寄存器
-            A_shared = T.alloc_shared((block_M, block_K), dtype)
-            B_shared = T.alloc_shared((block_K, block_N), dtype)
-            C_local = T.alloc_fragment((block_M, block_N), accum_dtype)
+- 你需要快速开发一个性能接近手写 CUDA 的 Kernel，但不想花几天调试 Bank Conflict 和寄存器 spill
+- 你需要一个跨 NVIDIA/AMD 的算子，不想维护两套代码
+- 你在做算子研发的快速迭代阶段，后期可替换为手写 CUDA
 
-            # 3. 计算逻辑
-            # ...
+**不适合 TileLang（建议手写 CUDA/使用 Triton）**：
 
-    return actual_kernel
-```
+- 你需要极致性能的最后一两个百分点（如 cublas 竞品），必须控制每条指令
+- 你的算法需要非标准 Warp 级原语或特殊硬件特性，而 TileLang 尚未暴露
+- 你的工作流中 JIT 编译延迟不可接受（如高频推理服务的热更新）
+- 你的团队已有成熟的手写 CUDA 资产，迁移成本高于收益
 
-**编译选项说明**：
+| 对比维度     | TileLang         | Triton            | 手写 CUDA         |
+| ------------ | ---------------- | ----------------- | ----------------- |
+| 性能天花板   | 接近手写         | 接近手写          | 最高              |
+| 开发效率     | 高               | 高                | 低                |
+| AMD GPU      | 支持 (HIP)       | 有限支持          | 不支持（需 ROCm） |
+| 跨架构兼容   | 强（TIR 抽象层） | 中                | 弱                |
+| JIT 启动延迟 | TVM 编译 ~秒级   | Triton 编译 ~秒级 | 无（AOT）         |
+| 学习曲线     | 中（需理解 DSL） | 中                | 高                |
+
+### 5.2 内存管理
+
+TileLang 完全复用 PyTorch 的显存分配器，支持隐式张量创建与显式预分配复用，合理的张量生命周期管理可有效消除 CUDA OOM 与分配开销。
 
 ```python
-@tilelang.jit(
-    out_idx=[-1],           # 输出参数索引
-    target="cuda",          # 目标平台：cuda, rocm, cpu
-    debug=False,            # 调试模式
-)
-```
+# 自动管理（推荐）
+c = kernel(a, b)       # 自动分配输出张量
 
-### 3.4 安装验证与第一个程序
-
-#### 3.4.1 安装验证
-
-创建测试文件 `test_installation.py`：
-
-> **代码来源**：参考 [example_elementwise_add.py](https://github.com/tile-ai/tilelang/blob/main/examples/elementwise/example_elementwise_add.py)
-
-```python
-import tilelang
-import tilelang.language as T
-import torch
-
-print(f"TileLang 版本: {tilelang.__version__}")
-print(f"CUDA 可用: {torch.cuda.is_available()}")
-
-# 简单的向量加法测试
-@tilelang.jit(out_idx=[-1])
-def vector_add(M, N, block_M, block_N, dtype="float32"):
-    @T.prim_func
-    def add_kernel(
-        A: T.Tensor((M, N), dtype),
-        B: T.Tensor((M, N), dtype),
-        C: T.Tensor((M, N), dtype),
-    ):
-        with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx, by):
-            for i, j in T.Parallel(block_M, block_N):
-                row = by * block_M + i
-                col = bx * block_N + j
-                if row < M and col < N:
-                    C[row, col] = A[row, col] + B[row, col]
-    return add_kernel
-
-# 测试执行
-M, N = 1024, 1024
-kernel = vector_add(M, N, 128, 128)
-
-a = torch.randn(M, N).cuda()
-b = torch.randn(M, N).cuda()
-c = kernel(a, b)
-
-# 验证结果
-ref_c = a + b
-torch.testing.assert_close(c, ref_c, rtol=1e-5, atol=1e-5)
-print("TileLang 安装验证成功！")
-```
-
-运行验证：
-
-```bash
-python test_installation.py
-```
-
-#### 3.4.2 完整的矩阵乘法示例
-
-以下是一个完整的矩阵乘法示例，展示了 TileLang 的编译和运行流程：
-
-> **代码来源**：参考 [quickstart.py](https://github.com/tile-ai/tilelang/blob/main/examples/quickstart.py)
-
-```python
-import tilelang
-import tilelang.language as T
-import torch
-
-@tilelang.jit(out_idx=[-1])
-def matmul(M, N, K, block_M, block_N, block_K, dtype="float16", accum_dtype="float"):
-    @T.prim_func
-    def matmul_kernel(
-        A: T.Tensor((M, K), dtype),
-        B: T.Tensor((K, N), dtype),
-        C: T.Tensor((M, N), dtype),
-    ):
-        with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=128) as (bx, by):
-            # 分配共享内存和寄存器
-            A_shared = T.alloc_shared((block_M, block_K), dtype)
-            B_shared = T.alloc_shared((block_K, block_N), dtype)
-            C_local = T.alloc_fragment((block_M, block_N), accum_dtype)
-            T.clear(C_local)
-
-            # 流水线化的矩阵乘法计算
-            for ko in T.Pipelined(T.ceildiv(K, block_K), num_stages=3):
-                T.copy(A[by * block_M, ko * block_K], A_shared)
-                T.copy(B[ko * block_K, bx * block_N], B_shared)
-                T.gemm(A_shared, B_shared, C_local)
-
-            T.copy(C_local, C[by * block_M, bx * block_N])
-
-    return matmul_kernel
-
-# 使用示例
-def main():
-    M, N, K = 1024, 1024, 1024
-    block_M, block_N, block_K = 128, 128, 32
-
-    # 编译内核（一次性）
-    kernel = matmul(M, N, K, block_M, block_N, block_K)
-
-    # 创建测试数据
-    a = torch.randn(M, K, device="cuda", dtype=torch.float16)
-    b = torch.randn(K, N, device="cuda", dtype=torch.float16)
-
-    # 执行内核
-    c = kernel(a, b)
-
-    # 验证正确性
-    ref_c = a @ b
-    torch.testing.assert_close(c, ref_c, rtol=1e-2, atol=1e-2)
-    print("矩阵乘法验证通过")
-
-if __name__ == "__main__":
-    main()
-```
-
-### 3.5 内存管理与错误处理
-
-#### 3.5.1 内存管理策略
-
-```python
-# 自动内存管理（推荐）
-c = kernel(a, b)  # 自动分配输出张量
-
-# 手动内存管理（高性能场景）
+# 手动管理（复用预分配张量）
 c = torch.empty(M, N, device="cuda", dtype=torch.float16)
-kernel(a, b, c)  # 复用预分配的张量
+kernel(a, b, c)
 ```
 
-#### 3.5.2 常见错误处理
+**常见错误**：
 
-```python
-try:
-    kernel = matmul(M, N, K, block_M, block_N, block_K)
-    c = kernel(a, b)
-    ref_c = a @ b
-    torch.testing.assert_close(c, ref_c, rtol=1e-2, atol=1e-2)
-    print("正确性验证通过")
-except RuntimeError as e:
-    if "out of memory" in str(e):
-        torch.cuda.empty_cache()
-        print("建议：减少矩阵大小或分块大小")
-    else:
-        print(f"内核执行失败: {e}")
-except Exception as e:
-    print(f"执行失败: {e}")
-```
+| 错误               | 原因                | 解决                          |
+| ------------------ | ------------------- | ----------------------------- |
+| CUDA out of memory | 形状或分块过大      | 减小 `block_M/N/K` 或清理缓存 |
+| 编译错误           | 参数类型/形状不匹配 | 检查 `@T.prim_func` 签名      |
+| 运行时错误         | 张量不在正确设备上  | 确保 `.cuda()` 且 dtype 匹配  |
 
-**常见错误类型**：
+### 5.3 延伸阅读
 
-- **CUDA out of memory**：减少分块大小或清理 GPU 缓存
-- **编译错误**：检查内核函数定义和参数类型
-- **运行时错误**：验证输入张量的设备和数据类型
-
----
-
-## 4. 总结
-
-本文通过快速入门指南，让开发者可以快速理解 TileLang 的优势，掌握基本的使用方法。
-
----
+- [SIMT vs Tile-Based：CUDA 编程范式的演进与对比](../02_cuda/04_simt_vs_tile_based.md) — 理解 Tile-Based 编程范式的设计哲学
+- [GPU 编程导论](../02_cuda/01_gpu_programming_introduction.md) — CUDA Grid/Block/Warp/Thread 基础
+- [TileLang 官方文档](https://tile-ai.github.io/tilelang/)
+- [TileLang 示例仓库](https://github.com/tile-ai/tilelang/tree/main/examples)
