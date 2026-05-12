@@ -9,8 +9,6 @@
 
 ## 1. 核心编程框架
 
-### 1.1 DOCA 框架
-
 **DOCA（Data Center-on-a-Chip Architecture）** 是 NVIDIA 提供的官方软件栈，也是解锁 BlueField DPU 潜力的主要入口，包含驱动、运行时、各种库和参考应用。
 
 从使用场景看，DOCA 主要解决三类卸载需求：
@@ -19,7 +17,7 @@
 - **安全卸载**：IPsec、TLS、深包检测等安全能力在 DPU 上执行，不再占用主机资源。
 - **存储卸载**：NVMe-oF、加密/压缩、存储初始化等存储路径上的热点负载。
 
-- **编程指南**：[DOCA 编程入门](doca/01_doca_programming_guide.md) - 涵盖架构简介、核心组件、环境搭建及零拷贝传输、控制卸载等典型场景的编程实践。
+- **编程指南**：[DOCA 编程入门](doca/doca_programming_guide.md) - 涵盖架构简介、核心组件、环境搭建及零拷贝传输、控制卸载等典型场景的编程实践。
 
 ---
 

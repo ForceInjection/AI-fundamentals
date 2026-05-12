@@ -139,10 +139,10 @@
 
 ### 4.2 DPU 编程
 
-基于 DOCA 框架的数据处理单元 (DPU) 开发指南，解析架构组件与典型网络加速场景的编程实践。详细内容请访问：[DPU 编程](02_dpu_programming/README.md)。
+基于 DOCA 框架的数据处理单元 (DPU) 开发指南，解析架构组件与网络加速、零拷贝 DMA、控制平面卸载、压缩、NVMe 模拟及近数据处理等典型场景的编程实践。详细内容请访问：[DPU 编程](02_dpu_programming/README.md)。
 
 - **DOCA 框架**
-  - [DOCA 编程入门](./02_dpu_programming/doca/01_doca_programming_guide.md)：涵盖架构简介、核心组件及典型场景编程实践
+  - [DOCA 编程入门](./02_dpu_programming/doca/doca_programming_guide.md)：涵盖架构简介、核心组件及典型场景编程实践
 
 ---
 
