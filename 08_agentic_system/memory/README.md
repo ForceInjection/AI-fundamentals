@@ -53,6 +53,7 @@
 | **案例与分析** | [Claude Code 记忆分析](./research/case-studies/claude-code-memory-analysis.md)            | 基于 Markdown 文件的极简本地持久化记忆生态。            |
 |                | [Claude Code 执行流](./research/case-studies/claude-code-agent-execution-flow.md)         | Agent 核心循环与深度 AST 结构感知的代码库探索。         |
 |                | [SuperMemory 集成分析](./research/case-studies/supermemory-agent-integration-analysis.md) | 针对第二大脑应用的外部记忆集成方案剖析。                |
+|                | [Claude 记忆系统分析](./research/case-studies/claude-mem-system-analysis.md)              | 探讨从临时上下文向项目级长期记忆的知识演化路径。        |
 | **实战代码**   | [LangChain 记忆实践](./langchain/langchain_memory.md)                                     | 核心 API 详解及 LangGraph 状态管理应用。                |
 |                | [实战代码目录](./langchain/code/README.md)                                                | 包含指代消解对话系统与微服务部署的完整演示项目。        |
 

@@ -338,7 +338,7 @@ python tests/test_api_client.py        # API 客户端测试
 
 项目包含完整的测试套件，验证系统的各个功能模块：
 
-#### 5.5.1 🔄 test_interactions.py - 基础交互测试
+#### test_interactions.py - 基础交互测试
 
 验证多智能体系统的核心交互功能：
 
@@ -357,7 +357,7 @@ python tests/test_interactions.py
 - ✅ 错误处理机制
 - ✅ 性能指标收集
 
-#### 5.5.2 🚀 test_api_server.py - API 服务器测试
+#### test_api_server.py - API 服务器测试
 
 启动完整的 FastAPI 服务器进行测试：
 
@@ -381,7 +381,7 @@ python tests/test_api_server.py
 - 健康检查：<http://localhost:8000/health>
 - 系统指标：<http://localhost:8000/metrics>
 
-#### 5.5.3 📡 test_api_client.py - API 客户端测试
+#### test_api_client.py - API 客户端测试
 
 验证所有 API 接口的功能：
 
@@ -399,7 +399,7 @@ python tests/test_api_client.py
 - ✅ 智能客服对话 (`POST /chat`)
 - ✅ 系统监控 (`GET /metrics`)
 
-#### 5.5.4 🔍 test_system.py - 系统集成测试
+#### test_system.py - 系统集成测试
 
 原有的系统集成测试，使用 pytest 框架：
 
@@ -408,7 +408,7 @@ python tests/test_api_client.py
 python -m pytest tests/test_system.py -v
 ```
 
-#### 5.5.5 📋 测试执行顺序建议
+#### 测试执行顺序建议
 
 1. **基础功能验证**：
 
@@ -436,7 +436,7 @@ python -m pytest tests/test_system.py -v
 
 > 💡 **提示**：API 客户端测试需要先启动 API 服务器，建议在不同终端窗口中运行。
 
-## 5.5 使用指南
+### 5.5 使用指南
 
 ### 5.5.1 核心功能
 
@@ -446,6 +446,14 @@ python -m pytest tests/test_system.py -v
 | 📊 数据分析 | `POST /analysis` | 用户行为、趋势预测 |
 | 🎧 智能客服 | `POST /chat`     | 问答、工单处理     |
 | 📈 系统监控 | `GET /metrics`   | 性能指标、健康检查 |
+
+---
+
+## 6. API 参考
+
+### 6.1 接口概览
+
+详细接口说明参见 [5.5.1 核心功能](#551-核心功能) 中的 API 表格。
 
 ### 6.2 API 使用示例
 
@@ -1001,6 +1009,8 @@ async def retry_example(system):
     else:
         print("💥 任务执行失败")
 ```
+
+---
 
 ## 7. 监控和调试
 
