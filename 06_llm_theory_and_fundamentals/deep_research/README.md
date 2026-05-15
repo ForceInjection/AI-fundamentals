@@ -7,7 +7,7 @@
 这四份文档分别对应一条技术路径：从 IDE 内的代码检索、到通用研究模型、到数据分析 Agent、再到方法论层面的 tech-insights 研究流水线。
 
 - **[《Building Research Agents for Tech Insights》解读](research_agents/building_research_agents_for_tech_insights.md)** — 梳理构建面向技术洞察的研究 Agent 所需的数据源、推理模板与评估反馈闭环。
-- **[Cursor DeepSearch 技术解析](research_agents/cursor-deepsearch.md)** — Cursor 的代码 / 文档深搜路径，重点是索引策略与上下文窗口管理。
+- **[Cursor IDE 架构概览](research_agents/cursor-deepsearch.md)** — 覆盖 Cursor 编辑器内核、ReAct 模式、上下文管理、工具调用系统与 MCP 集成，其中 DeepSearch 是核心的代码/文档深搜路径。
 - **[Databricks Data Agent](research_agents/databricks_data_agent.md)** — 在数据仓库与笔记本语境下的 Agent 实践，关注 SQL 生成、工具编排与结果回收。
 - **[通义 DeepResearch 分析](research_agents/qwen_deepresearch_analysis.md)** — Qwen DeepResearch 的模型与流程拆解，覆盖规划、检索、合成三阶段。
 

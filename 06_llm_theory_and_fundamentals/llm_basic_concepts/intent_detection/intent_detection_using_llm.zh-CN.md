@@ -102,7 +102,7 @@ graph LR
 
 1. `RECIPE_QA`：针对食谱的问答交互
 2. `RECIPE_SUGGEST`：食谱改进建议或调整需求
-3. `方案转换协议`：对食谱整体或部分内容进行形式转换
+3. `RECIPE_TRANSLATE`：对食谱整体或部分内容进行形式转换
 4. `RECIPE_EXPLAIN`：食谱深度解析（如菜系分类等属性说明）
 5. `GENERAL_QA`：通用型聊天机器人问答
 6. `GENREAL_RECOMMENDATION`：与食谱推荐相关的查询请求
@@ -226,7 +226,6 @@ export class Messages {
     recipe: string
     role: MessageRole
 }
-}
 ```
 
 接下来构建我们的意图预测函数`predictIntent`：
@@ -238,7 +237,7 @@ async predictIntent(messages: Messages)
     const { content, recipe, role } = message;
 
     // get userContext
-    const userContext = (content == null && recipe != null): recipe ? content; 
+    const userContext = (content == null && recipe != null) ? recipe : content;
 
     // deduce foodContextType from message
     const foodContextType = !recipe ? FoodContextType.GENERAL : FoodContextType.RECIPE ;

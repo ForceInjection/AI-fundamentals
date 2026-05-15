@@ -93,7 +93,7 @@ graph LR
    - `Function Node`：编写自定义 `JavaScript` 代码，处理数据和实现逻辑。
    - `LLM Integration Node`：集成大语言模型（如 `OpenAI`、`DeepSeek`）进行自然语言处理。
    - `If Node`：根据条件判断执行不同的路径。
-   - `Set Node`：设置或修改数据字段。 ￼
+   - `Set Node`：设置或修改数据字段。
    - 这些节点的组合使用，可以实现复杂的业务逻辑和数据处理。
 
 3. 通信接口节点（`Communication Interface Node`）：通信接口节点用于智能体之间或与外部系统的数据交互，常见的节点包括：

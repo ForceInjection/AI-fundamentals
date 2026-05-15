@@ -6,7 +6,7 @@
 
 ### 1.1 平台对比与选型
 
-- **[开源 LLM 应用编排平台对比](open_source_llm_orchestration_platforms_comparison.md)** — 横向对比 Dify、AnythingLLM、Ragflow、n8n 在工作流建模、RAG 能力、Agent 支持、插件生态以及商用许可（License）上的差异，帮助企业按合规约束与功能需求做选型。
+- **[开源 LLM 应用编排平台对比](open_source_llm_orchestration_platforms_comparison.md)** — 横向对比 Dify、AnythingLLM、Ragflow、n8n 与 Coze Studio 在工作流建模、RAG 能力、Agent 支持、插件生态以及商用许可（License）上的差异，帮助企业按合规约束与功能需求做选型。
 
 ### 1.2 部署与配置指南
 
