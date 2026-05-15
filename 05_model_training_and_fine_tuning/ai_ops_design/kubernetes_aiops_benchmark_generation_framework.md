@@ -119,7 +119,7 @@
 - **Pod 状态诊断准确率**：
   $$\text{Pod-State Accuracy} = \frac{\text{正确诊断的 Pod 状态数}}{\text{总 Pod 状态数}}$$
 - **容器日志分析 F1 分数**：
-  $$\text{Container-Log F1} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}}$$
+  $$\text{Container-Log F1} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
 - **资源限制诊断准确率**：基于 CPU/内存限制、请求配置、资源配额等指标的诊断准确率
 
 **数据来源与采样方法**：
