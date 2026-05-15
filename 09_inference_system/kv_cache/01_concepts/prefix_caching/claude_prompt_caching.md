@@ -110,7 +110,7 @@ Claude Code 没有停留在 API 层面的简单开关，而是围绕“前缀稳
 
 系统提示词同时承载长期稳定的工作流规则，以及高频变化的时间、环境和会话态字段。如果两者混排在前缀头部，任何动态字段抖动都可能击穿整段缓存。因此，Claude Code 通过边界标记把静态区与动态区分离，并只让稳定区承担更强的缓存职责。
 
-在 [api.ts](../../../code_examples/claude_prompt_caching/src/utils/api.ts) 中，`splitSysPromptPrefix()` 并非始终执行同一套切分策略，而是根据 `shouldUseGlobalCacheScope()`、`skipGlobalCacheForSystemPrompt` 和边界标记是否存在选择 3 种模式。启用 `global` 作用域缓存且命中边界时，系统提示词会被拆成 attribution header、prefix、静态区和动态区，其中仅静态区携带内部 `cacheScope: 'global'`。若存在 MCP 工具，则退化为 `tool_based` 路径，对应诊断与日志中的 `globalCacheStrategy = 'tool_based'`。若未命中边界或未启用 `global` 作用域缓存，则退化为 `system_prompt` 或 `none` 路径下的 `org` 级拼接策略。这里的 `org` 只是一个不影响 API 请求的内部缓存作用域抽象。最终 API 请求中，只有 `scope: 'global'` 会被显式序列化到 `cache_control` 字段。
+在 `api.ts` 中，`splitSysPromptPrefix()` 并非始终执行同一套切分策略，而是根据 `shouldUseGlobalCacheScope()`、`skipGlobalCacheForSystemPrompt` 和边界标记是否存在选择 3 种模式。启用 `global` 作用域缓存且命中边界时，系统提示词会被拆成 attribution header、prefix、静态区和动态区，其中仅静态区携带内部 `cacheScope: 'global'`。若存在 MCP 工具，则退化为 `tool_based` 路径，对应诊断与日志中的 `globalCacheStrategy = 'tool_based'`。若未命中边界或未启用 `global` 作用域缓存，则退化为 `system_prompt` 或 `none` 路径下的 `org` 级拼接策略。这里的 `org` 只是一个不影响 API 请求的内部缓存作用域抽象。最终 API 请求中，只有 `scope: 'global'` 会被显式序列化到 `cache_control` 字段。
 
 ```typescript
 // 示意化伪代码：刻意省略 attribution header、prefix 和 fallback 分支，
@@ -146,13 +146,13 @@ export function splitSysPromptPrefix(
 
 工具定义在 Agent 请求中通常占据大量稳定 Token，但其 JSON Schema 极易因键顺序、可选字段或功能开关波动而产生字节级变化。Claude Code 因而通过名称与序列化 Schema 的联合缓存键，锁定工具层的哈希签名与输出结果，从而降低工具层前缀漂移带来的缓存失效风险。
 
-在 [api.ts](../../../code_examples/claude_prompt_caching/src/utils/api.ts) 中的实现里，系统使用工具名称和序列化后的 `inputJSONSchema` 作为联合缓存键，并把名称、描述、`input_schema`、`strict`、`eager_input_streaming` 等 `session-stable` 字段缓存下来。这样可以避免 GrowthBook 开关或 `tool.prompt()` 漂移导致工具数组序列化结果抖动。`toolToAPISchema()` 仅在调用方显式传入 `options.cacheControl` 时，才会把 `cache_control` 透传到工具定义。主请求链路中的缓存断点，主要仍由系统提示词块和消息块承担，而不是默认给每个工具定义附加 `{ type: 'ephemeral' }`。原因也很直接：每次请求最多只有 4 个缓存断点预算，而工具数量往往远超这一上限。若把断点预算分散到工具定义层，反而会挤压系统提示词与消息前缀的缓存收益。
+在 `api.ts` 中的实现里，系统使用工具名称和序列化后的 `inputJSONSchema` 作为联合缓存键，并把名称、描述、`input_schema`、`strict`、`eager_input_streaming` 等 `session-stable` 字段缓存下来。这样可以避免 GrowthBook 开关或 `tool.prompt()` 漂移导致工具数组序列化结果抖动。`toolToAPISchema()` 仅在调用方显式传入 `options.cacheControl` 时，才会把 `cache_control` 透传到工具定义。主请求链路中的缓存断点，主要仍由系统提示词块和消息块承担，而不是默认给每个工具定义附加 `{ type: 'ephemeral' }`。原因也很直接：每次请求最多只有 4 个缓存断点预算，而工具数量往往远超这一上限。若把断点预算分散到工具定义层，反而会挤压系统提示词与消息前缀的缓存收益。
 
 ### 4.3 消息列表的动态游标推进
 
 多轮对话会持续追加用户消息、助手回复和工具结果。缓存断点如果固定不动，很快就无法覆盖最新稳定前缀。Claude Code 因此把断点位置设计为可随请求语义前移或后移的动态游标，以便在常规对话与无痕探测分支之间维持缓存可复用性。
 
-在 [claude.ts](../../../code_examples/claude_prompt_caching/src/services/api/claude.ts) 中，`addCacheBreakpoints()` 负责在消息数组中只保留一个消息级 `cache_control` 标记。默认情况下，标记位于最新消息；当系统执行 `skipCacheWrite = true` 的无痕探测分支时，标记会前移到倒数第二条消息。这种游标平移策略使分支请求能够复用主干共享前缀，同时避免把分支尾部内容写入新的缓存尾点。
+在 `claude.ts` 中，`addCacheBreakpoints()` 负责在消息数组中只保留一个消息级 `cache_control` 标记。默认情况下，标记位于最新消息；当系统执行 `skipCacheWrite = true` 的无痕探测分支时，标记会前移到倒数第二条消息。这种游标平移策略使分支请求能够复用主干共享前缀，同时避免把分支尾部内容写入新的缓存尾点。
 
 ```typescript
 // 示意化伪代码：刻意省略 querySource、cached microcompact 和 cache_edits 参数，
@@ -193,7 +193,7 @@ export function addCacheBreakpoints(
 
 长周期缓存通常意味着更高的写入费用，因此系统不会全局开启该选项。源码中的 `should1hCacheTTL()` 会同时检查计费环境、用户资格和请求来源匹配关系。在一方 API 下，需要会话锁存后的用户资格成立，并命中 GrowthBook 下发的 `allowlist`。在 Bedrock 场景下，则还支持通过环境变量显式启用 1 小时 TTL。
 
-根据 [claude.ts](../../../code_examples/claude_prompt_caching/src/services/api/claude.ts) 中的实现，`getCacheControl()` 只有在 `should1hCacheTTL(querySource)` 返回 true 时才会附加 `ttl: '1h'`。`querySource` 只是匹配条件之一，而非唯一条件。例如主线程 `repl_main_thread*` 常被纳入 `allowlist`。这是因为这类会话更容易出现长时间思考、代码审查或暂离终端的高价值挂机场景。系统还通过 bootstrap state 锁存资格与 `allowlist`，避免会话中途因 overage 状态或远端配置刷新而引入 TTL 抖动。
+根据 `claude.ts` 中的实现，`getCacheControl()` 只有在 `should1hCacheTTL(querySource)` 返回 true 时才会附加 `ttl: '1h'`。`querySource` 只是匹配条件之一，而非唯一条件。例如主线程 `repl_main_thread*` 常被纳入 `allowlist`。这是因为这类会话更容易出现长时间思考、代码审查或暂离终端的高价值挂机场景。系统还通过 bootstrap state 锁存资格与 `allowlist`，避免会话中途因 overage 状态或远端配置刷新而引入 TTL 抖动。
 
 ### 5.2 结合缓存引用的精准驱逐
 
@@ -209,4 +209,4 @@ export function addCacheBreakpoints(
 
 由于底层前缀匹配机制具有脆弱性，模型切换、系统提示词变化、工具 Schema 漂移、beta 头变动或额外请求体参数变化都可能导致缓存重建。为此，系统构建了针对提示词状态与缓存读入 Token 的联合观测模块，而不是仅凭单次输入规模波动做粗粒度判断。
 
-在 [promptCacheBreakDetection.ts](../../../code_examples/claude_prompt_caching/src/services/api/promptCacheBreakDetection.ts) 诊断模块中，系统维护了涵盖系统哈希、工具哈希、`cacheControlHash`、beta 列表、`globalCacheStrategy`、`effortValue` 和 `extraBodyHash` 在内的全状态快照。这里的 `globalCacheStrategy` 明确区分 `tool_based`、`system_prompt` 和 `none` 三种缓存策略来源。它们分别对应“因 MCP 工具存在而退化为工具侧策略”“系统提示词拆分路径生效”以及“未启用或未命中 `global` 作用域缓存”。`cacheControlHash` 则用于捕捉文本内容不变但 `scope` 或 TTL 改变的情况。每次请求发出前，模块会先记录这些快照。待响应返回后，再比较 `cache_read_input_tokens` 是否相较上次下降超过 5%，且绝对下降值超过阈值 `MIN_CACHE_MISS_TOKENS = 2_000`。只有同时满足这两个条件时，诊断器才会将其视为缓存断裂（cache break）。随后，它会继续区分是模型切换、TTL 到期、Tool Schema 漂移、beta 变化、缓存策略切换，还是更可能的服务端侧路由或驱逐导致的命中下降。与之相对，`cache_creation_input_tokens` 更适合观测本轮新写入缓存的成本规模，而不是直接用于判定是否发生缓存断裂。
+在 `promptCacheBreakDetection.ts` 诊断模块中，系统维护了涵盖系统哈希、工具哈希、`cacheControlHash`、beta 列表、`globalCacheStrategy`、`effortValue` 和 `extraBodyHash` 在内的全状态快照。这里的 `globalCacheStrategy` 明确区分 `tool_based`、`system_prompt` 和 `none` 三种缓存策略来源。它们分别对应“因 MCP 工具存在而退化为工具侧策略”“系统提示词拆分路径生效”以及“未启用或未命中 `global` 作用域缓存”。`cacheControlHash` 则用于捕捉文本内容不变但 `scope` 或 TTL 改变的情况。每次请求发出前，模块会先记录这些快照。待响应返回后，再比较 `cache_read_input_tokens` 是否相较上次下降超过 5%，且绝对下降值超过阈值 `MIN_CACHE_MISS_TOKENS = 2_000`。只有同时满足这两个条件时，诊断器才会将其视为缓存断裂（cache break）。随后，它会继续区分是模型切换、TTL 到期、Tool Schema 漂移、beta 变化、缓存策略切换，还是更可能的服务端侧路由或驱逐导致的命中下降。与之相对，`cache_creation_input_tokens` 更适合观测本轮新写入缓存的成本规模，而不是直接用于判定是否发生缓存断裂。
