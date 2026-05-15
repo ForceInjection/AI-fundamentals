@@ -1,6 +1,6 @@
 # Neo4j Cypher 快速上手实战指南
 
-本指南旨在配合 `Neo4j_Cypher_Tutorial.md`，带您一步步搭建本地 Neo4j 图数据库环境，并通过**银行反欺诈**场景的真实数据进行实战演练。
+本指南旨在配合 `neo4j_cypher_tutorial.md`，带您一步步搭建本地 Neo4j 图数据库环境，并通过**银行反欺诈**场景的真实数据进行实战演练。
 
 ---
 
@@ -211,4 +211,4 @@ docker-compose down
 
 ---
 
-**祝您学习愉快！更多语法细节请参考同目录下的 `Neo4j_Cypher_Tutorial.md`。**
+**祝您学习愉快！更多语法细节请参考同目录下的 `neo4j_cypher_tutorial.md`。**

@@ -7,7 +7,7 @@
 真正决定 RAG 线上效果的是「切、嵌、编排」三件事。详细索引见 [`rag_basics/README.md`](rag_basics/README.md)。
 
 - [RAG 快速开发实战（从 0 到 1 搭建）](https://mp.weixin.qq.com/s/89-bwZ4aPor4ySj5U3n5zw) — RAG 技术全景导航。
-- [RAG 策略对比](rag_basics/rag_comparison.md) — 10 类 Agentic RAG 架构的选型矩阵（Naive / Router / Multi-Agent / Corrective / Adaptive / Graph / Agent-G / GeAR / ADW）。
+- [RAG 策略对比](rag_basics/rag_comparison.md) — 多类 Agentic RAG 架构的选型矩阵（Router / Multi-Agent / Corrective / Adaptive / Graph / Agent-G / GeAR / ADW）。
 - [Chunking 策略评估](rag_basics/evaluating_chunking_strategies_summary.md) — token 级 Precision / Recall / IoU 替代 nDCG@K 的新评估方法。
 - [中文 Embedding 模型选型](rag_basics/chinese_rag_embedding_model_selection.md) — BGE / GTE / M3E / Conan 等主流模型的 MTEB-zh 对比与场景推荐。
 

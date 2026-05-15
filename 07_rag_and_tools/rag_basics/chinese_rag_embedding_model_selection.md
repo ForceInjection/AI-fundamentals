@@ -6,7 +6,7 @@
 | -------- | ------------------------------ |
 | 文档版本 | v3.0                           |
 | 创建日期 | 2025-06-10                     |
-| 更新日期 | 2025-11                        |
+| 更新日期 | 2025-11-01                     |
 | 适用场景 | 中文检索增强生成（RAG）系统    |
 | 技术领域 | 信息检索、表示学习、向量数据库 |
 
@@ -366,12 +366,12 @@ top-100 召回（bge-large，双塔，毫秒级）
 
 ## 9. 参考资料
 
-### 基准与榜单
+### 9.1 基准与榜单
 
 - [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard)（动态更新）
 - [C-MTEB 仓库](https://github.com/FlagOpen/FlagEmbedding/tree/master/C_MTEB)
 
-### 模型与论文
+### 9.2 模型与论文
 
 - [BGE 系列 / FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [BGE-M3 论文（2024）](https://arxiv.org/abs/2402.03216)
@@ -382,14 +382,14 @@ top-100 召回（bge-large，双塔，毫秒级）
 - [MTEB: Massive Text Embedding Benchmark（2022）](https://arxiv.org/abs/2210.07316)
 - [Sentence-BERT（2019）](https://arxiv.org/abs/1908.10084)
 
-### 工程与部署
+### 9.3 工程与部署
 
 - [Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference)
 - [Milvus 向量库](https://milvus.io/)
 - [Qdrant 向量库](https://qdrant.tech/)
 - [bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3)
 
-### 延伸阅读
+### 9.4 延伸阅读
 
 - [大模型 RAG 基础：信息检索、文本向量化及 BGE-M3 embedding 实践](https://arthurchiao.art/blog/rag-basis-bge-zh/)
 - [智源研究院官网](https://www.baai.ac.cn/)

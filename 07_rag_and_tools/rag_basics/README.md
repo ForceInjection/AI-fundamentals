@@ -6,7 +6,7 @@
 
 ### 1.1 架构演进与对比
 
-- **[RAG 策略对比](rag_comparison.md)** — 系统梳理 10 类 Agentic RAG 架构（单智能体路由器、多智能体系统、分层 RAG、Corrective RAG、Adaptive RAG、GraphRAG、Agent-G、GeAR、Agentic Document Workflow 等），分别给出核心思想、优势、挑战与典型应用场景，用于在项目启动阶段做架构选型。
+- **[RAG 策略对比](rag_comparison.md)** — 系统梳理多类 Agentic RAG 架构（单智能体路由器、多智能体系统、分层 RAG、Corrective RAG、Adaptive RAG、GraphRAG、Agent-G、GeAR、Agentic Document Workflow 等），分别给出核心思想、优势、挑战与典型应用场景，用于在项目启动阶段做架构选型。
 
 ### 1.2 分块策略评估
 
