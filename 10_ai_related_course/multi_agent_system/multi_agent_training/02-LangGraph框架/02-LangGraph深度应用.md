@@ -20,11 +20,11 @@
 
 - `langgraph_workflow.py` - 企业级工作流管理引擎
 - `multi_agent_system/src/workflows/` - 工作流模板和实现
-- `multi_agent_system/src/core/state_manager.py` - 状态管理机制
-- `customer_service_system.py` - 客服系统工作流案例
-- `monitoring/performance_monitor.py` - 工作流性能监控
+- `multi_agent_system/src/workflows/langgraph_workflow.py` - 状态管理机制
+- `src/examples/customer_service_system.py` - 客服系统工作流案例
+- `src/monitoring/langsmith_integration.py` - 工作流性能监控
 
-**代码引用**: 完整的企业级工作流引擎实现请参考 `multi_agent_system/src/workflow/langgraph_workflow.py`
+**代码引用**: 完整的企业级工作流引擎实现请参考 `multi_agent_system/src/workflows/langgraph_workflow.py`
 
 企业级LangGraph工作流引擎的核心特性：
 

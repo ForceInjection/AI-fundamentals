@@ -16,10 +16,10 @@
 **💡 实际代码参考**：完整的LangSmith监控集成实现可参考项目中的以下文件：
 
 - `langsmith_integration.py` - 企业级全链路追踪系统
-- `monitoring/system_monitor.py` - 系统性能监控
-- `monitoring/alert_manager.py` - 智能告警管理
+- `src/monitoring/langsmith_integration.py` - 系统性能监控
+- `src/monitoring/langsmith_integration.py` - 智能告警管理
 - `multi_agent_system/src/monitoring/` - 监控组件集合
-- `customer_service_system.py` - 客服系统监控案例
+- `src/examples/customer_service_system.py` - 客服系统监控案例
 
 **模拟环境说明**：本培训使用模拟的LangSmith环境进行教学，所有功能和API接口与真实LangSmith保持一致。在实际项目中，只需要替换为真实的LangSmith API密钥即可无缝切换到生产环境。
 
