@@ -1,822 +1,495 @@
 # 第六章 高性能后端 API 开发
 
-**课程定位说明**：本章对应课程提纲"第六章：高性能后端 API 开发"，是第二部分"核心功能开发"的重要组成部分。本章整合了 Web 开发实战和 API 设计开发的核心内容，重点关注企业级 RESTful API 设计、GraphQL 实现、高性能数据库连接池优化、多层缓存机制、API 文档自动生成和测试自动化等关键技能。
-
-**技术深度**：本章将深入探讨现代后端 API 开发的最佳实践，包括微服务架构设计、API 网关实现、性能监控与优化、安全防护机制等企业级开发必备技能。
-
-**学习价值**：通过本章学习，您将掌握构建高并发、高可用、高安全性的企业级 API 服务的完整技能体系，结合前面学过的前端开发（第五章），为后续的安全认证（第八章）奠定坚实基础。
-
 ## 1. 学习目标
 
-完成本章学习后，您将能够：
+本章将第一部分建立的提示词工程和审查技能应用到后端 API 开发：用 Express.js / Flask 从零构建包含认证、鉴权、输入校验、错误处理和速率限制的 RESTful API 平台；以四步审查法检查每个端点的输入校验完整性、密钥管理安全性和错误响应一致性；用 `curl` 与压测工具量化 AI 生成 API 的边界鲁棒性。完成本章学习后，大家将能够：用结构化提示词驱动 AI 生成完整的 Express.js / Flask API 项目骨架；用 `curl -X POST -d '{}'` / 超长字符串 / 特殊字符等手段手动验证 AI 生成端点的边界处理；在 AI 生成的 API 代码中识别缺失输入校验、硬编码密钥、CORS 过宽与不一致的错误响应格式；以 P95 延迟、QPS 与错误率三项硬指标判断后端代码是否达到生产可用水平。
 
-- **现代 Web 开发**：掌握使用 Trae AI 助手构建现代 Web 应用
-- **API 设计实践**：学会 RESTful API 设计和实现最佳实践
-- **框架应用**：熟练运用主流 Web 框架（Express.js、Flask）
-- **数据库集成**：掌握数据库集成和数据持久化技术
-- **安全防护**：理解身份验证、授权和安全防护机制
-- **文档与测试**：学会 API 文档生成和测试自动化
+### 1.1 学习路径图
+
+```mermaid
+graph TD
+    A[前置技能检查] --> B[API 设计理论基础]
+    B --> C[技术栈与项目架构]
+    C --> D[Express.js + Flask 实战]
+    D --> E[进阶: GraphQL / 微服务 / 安全 / 性能]
+    E --> F[AI 后端代码审查闭环]
+    F --> G[三档实践练习]
+    G --> H[进入第七章: 数据库设计]
+
+    style A fill:#e1f5fe
+    style H fill:#c8e6c9
+```
+
+### 1.2 预期学习成果
+
+本章结束时将形成三份可验证的交付物：一个本地可运行的 Express.js + TypeScript API 服务（含 JWT 认证、Joi/Zod 请求校验、Swagger 文档、Helmet 安全头）；一个 Flask + SQLAlchemy API 服务（含 Flask-Migrate 迁移、Marshmallow 序列化、JWT-Extended 认证）；一份针对 AI 生成 API 端点的「审查 + 压测」记录（含至少一处缺失校验/CORS 过宽的修复证据，与 P95/QPS/错误率三项压测数字）。这三份交付物会作为第七章数据库设计的接口契约依据。
+
+---
 
 ## 2. 前置技能检查
 
-在开始本章学习前，请确认您已掌握以下技能：
+本章假设第一部分已完成且能写出含四要素的提示词，并对 HTTP 协议与 RESTful 风格有基本理解。下面以 Ch1-Ch5 同款方式给出可执行自检清单。
 
-### 2.1 第一部分基础技能
+### 2.1 环境与能力自检
 
-- Trae 环境配置和 AI 助手使用
-- 自然语言编程指令编写
-- 代码生成、解释和优化技巧
-- 多语言项目管理经验
+| 维度                     | 必备能力                                                    | 自检方法                                              |
+| :----------------------- | :---------------------------------------------------------- | :---------------------------------------------------- |
+| **Trae 基础操作**        | 熟练使用 Chat / Builder / CUE 三大入口                      | 用 `/plan` 生成一个 REST API 的开发计划               |
+| **提示词工程**           | 能写出含「动作词 + 目标 + 要求 + 约束」四要素的结构化提示词 | 不参考模板独立写一个 Express.js 路由的完整提示词      |
+| **JavaScript / Python**  | 异步编程、模块系统、基本错误处理                            | 能读懂 §2.2 的 `async/await` 和 `try/except` 代码片段 |
+| **HTTP 协议**            | GET/POST/PUT/DELETE/PATCH 语义、2xx/4xx/5xx 状态码、请求头  | 能解释 200/201/204/400/401/403/409/422/500 的语义差异 |
+| **RESTful 设计**         | 资源命名、幂等性、状态码与错误响应结构                      | 能手写一个 `POST /users` 创建用户的成功与错误响应     |
+| **命令行工具**           | `curl`、`jq`、基础 shell pipe                               | 用 `curl -i` 调一个公网 API 并用 `jq` 提取响应字段    |
+| **Node / Python 工具链** | Node 18+、Python 3.10+ 与 `pip` / `pnpm` 可用               | `node -v` / `python --version` 输出符合最低版本       |
+| **Git 基础**             | clone / add / commit / branch / merge                       | 能独立完成一次 feature 分支提交                       |
 
-### 2.2 Web 开发基础知识
+### 2.2 代码阅读自测
 
-- HTTP 协议和 RESTful API 基本概念
-- JavaScript/Python 基础语法
-- 数据库基本操作（SQL/NoSQL）
-- JSON 数据格式和 API 调用
+请确认能在 30 秒内读懂以下两段代码——它们代表本章默认的后端基线水平。读不懂的部分需要回到第一部分或 MDN / Python 官方文档补齐基础。
 
-> **重要提示**：如果以上技能有不熟练的地方，建议先回顾第一部分相应章节内容。
+```javascript
+// Express.js 异步路由
+router.post("/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await userService.verify(email, password);
+    if (!user) return res.status(401).json({ code: "INVALID_CREDENTIALS" });
+    const token = signJwt({ uid: user.id });
+    res.json({ token });
+  } catch (err) {
+    next(err);
+  }
+});
+```
+
+```python
+# Flask + SQLAlchemy
+@app.post("/api/tasks")
+@jwt_required()
+def create_task():
+    data = TaskSchema().load(request.get_json() or {})
+    task = Task(owner_id=get_jwt_identity(), **data)
+    db.session.add(task)
+    db.session.commit()
+    return TaskSchema().dump(task), 201
+```
+
+> 任一项验证失败请回到对应章节排查；HTTP / RESTful 基础不达标会显著拉低 AI 生成 API 的审查有效性——审查不是"读代码"，而是"用业务语义判断对错"。
 
 ---
 
-## 3. 项目概述：智能任务管理 API 平台
+## 3. 理论基础：AI 生成后端代码的策略与陷阱
 
-### 3.1 项目目标
+后端代码是数据的守门人——一个未经检查的 API 端点可以将整个数据库暴露给攻击者。理解以下三组概念，能让 AI 生成的后端代码从"能跑"提升到"安全可靠"。
 
-我们将使用 Trae AI 助手构建一个完整的智能任务管理系统 API，包含：
+### 3.1 RESTful vs GraphQL vs 微服务：AI 生成策略对比
 
-- 用户注册、登录和权限管理
-- 任务的 CRUD 操作和智能分类
-- 项目管理和团队协作
-- 文件上传和处理
-- 实时通知系统
-- 完整的 API 文档和自动化测试
+| 架构模式              | AI 生成质量                   | 典型优势                          | 典型缺陷                                       |
+| :-------------------- | :---------------------------- | :-------------------------------- | :--------------------------------------------- |
+| **RESTful (Express)** | 高 — 训练数据最丰富           | 路由结构清晰、中间件链完整        | 容易遗漏输入校验、错误响应格式不一致           |
+| **RESTful (Flask)**   | 中高 — Python 后端生态成熟    | SQLAlchemy 模型准确、JWT 配置完整 | CORS 配置常被忽略、SQLAlchemy session 管理欠佳 |
+| **GraphQL**           | 中 — Schema 解析器结构可预测  | 类型定义准确、DataLoader 集成     | N+1 查询问题、query depth 无限制               |
+| **微服务**            | 中低 — 复杂度高，上下文易超限 | 单服务模块结构清晰                | 服务间通信、事务一致性、分布式链路追踪缺失     |
 
-### 3.2 技能应用提示
+> 选型建议：先用 RESTful 跑通业务闭环，再按"读多写少→GraphQL""高隔离需求→微服务"的顺序演进。直接让 AI 生成微服务架构的命中率极低。
 
-本章将重点展示如何运用 **Trae 提示词工程** 来：
+### 3.2 AI 生成后端代码的六类高频缺陷
 
-- **快速搭建** 完整的 Web API 架构
-- **智能生成** 数据库模型和业务逻辑
-- **自动实现** 安全认证和权限控制
-- **一键创建** API 文档和测试用例
-- **轻松配置** 部署和监控方案
+| 类别                 | 典型表现                                               | 如何发现                                          | 审查优先级 | 修正提示词模板（按 [Ch2 §4.9](../第一部分-Trae基础入门/第二章-基础交互模式.md)）                                                                   |
+| :------------------- | :----------------------------------------------------- | :------------------------------------------------ | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **缺失输入校验**     | 未检查 `req.body` 字段类型、长度、格式                 | `curl -X POST -d '{}'` 或超长字符串看是否静默通过 | **P0**     | 保留 handler 路径不变，加 `zod` / `joi` schema 校验 `req.body`（类型+长度+格式）。不要动业务逻辑。验证：超长字符串与空对象返回 400 而非 500        |
+| **硬编码密钥**       | JWT_SECRET / DB_PASSWORD 写在代码中                    | `grep -rE "secret\|password\|api_key" src/`       | **P0**     | 保留 sign / connect 调用位置，迁 secret 到 `process.env.*` + 写 `.env.example`。不要动算法。验证：`grep -rE "secret\|password" src/` 返回 0 字面量 |
+| **CORS 过于宽松**    | `Access-Control-Allow-Origin: *` + `credentials: true` | 检查 `cors()` 配置和 OPTIONS 响应头               | **P0**     | 保留 `cors()` 调用位置，origin 改白名单数组；`credentials:true` 时禁 `*`。不要动 methods 列表。验证：跨域 OPTIONS 仅放行白名单 origin              |
+| **错误响应不一致**   | 有的返回 `{error}`，有的返回 `{message}`               | 访问各个端点，对比错误响应结构                    | P1         | 保留各 handler 业务，统一错误中间件返回 `{ code, message, traceId }`。不要动 status code。验证：所有 4xx/5xx 响应同一 schema                       |
+| **无速率限制**       | 无 `express-rate-limit` 或 `flask-limiter`             | 循环发送 100 个请求，看是否全部通过               | P1         | 保留 routes 不变，在 `/login` `/register` 加 `express-rate-limit`（5 次/分钟，IP+username 维度）。不要动业务逻辑。验证：第 6 次请求返回 429        |
+| **日志泄露敏感信息** | JWT token / password 被写入日志                        | 检查 `logger.info(req.body)` 是否出现在代码中     | **P0**     | 保留日志埋点位置，logger 中间件加字段过滤（password/token/authorization）。不要动 log level。验证：`grep -E "password\|Bearer" logs/*` 返 0        |
 
-通过精心设计的自然语言指令，您将体验到 AI 辅助开发的强大效率！
+> 在接受 AI 生成的任何 API 端点前，对照这张表逐项 `curl` 测试边界：空 body、超长字符串（>10KB）、特殊字符（`'; DROP TABLE`）、缺失 Authorization 头。后端代码的审查不是"看了就行"，而是"测了才行"。
 
-### 3.3 技术栈选择
+### 3.3 传统后端开发 vs AI 辅助后端开发
 
-**后端框架**：Express.js (Node.js) + Flask (Python)
-**数据库**：MongoDB + PostgreSQL
-**身份验证**：JWT + OAuth 2.0
-**文档工具**：Swagger/OpenAPI
-**测试框架**：Jest + pytest
-**部署**：Docker + Docker Compose
+| 维度           | 传统手动开发                  | AI 辅助开发 (Trae)              | 核心转变                          |
+| :------------- | :---------------------------- | :------------------------------ | :-------------------------------- |
+| **路由实现**   | 手写 controller、middleware   | Builder 一句话生成完整路由文件  | 从「实现」→「审查」               |
+| **数据模型**   | 设计 schema、写 ORM 定义      | AI 生成模型 + 关联关系          | 从「建模」→「校验关联」           |
+| **错误处理**   | 逐个 endpoint 添加 try/catch  | AI 自动生成全局错误处理中间件   | 从「写 boilerplate」→「验证覆盖」 |
+| **安全防护**   | 逐一配置 CORS、Helmet、限流   | AI 一次生成完整安全中间件栈     | 从「装配」→「渗透测试」           |
+| **文档与测试** | 手写 Swagger 注释、写测试用例 | AI 生成 Swagger + Jest 测试骨架 | 从「编写」→「补完边界」           |
 
-### 3.4 项目架构
+---
+
+## 4. 技术栈与项目架构
+
+进入实战前先固化本章使用的技术组合与目录结构。版本统一是让 AI 输出可复用的前提——任意一处版本漂移都会导致 AI 沿用旧版 API（如 Express 4 vs 5、Flask 1 vs 3、SQLAlchemy 1.x vs 2.x）。
+
+### 4.1 技术栈选型
+
+下表给出本章默认采用的版本组合。**最低版本**列必须显式写在提示词的「约束条件」中，否则 AI 容易回退到训练数据中最常见但已过时的版本。
+
+| 技术分类     | 主要技术                                               | 最低版本     | 在本章中的角色                         |
+| :----------- | :----------------------------------------------------- | :----------- | :------------------------------------- |
+| **JS 框架**  | Express.js 4.x、Fastify 4（可选）                      | Express 4.18 | 默认主框架；Fastify 用于性能进阶对照   |
+| **PY 框架**  | Flask 3.x、Flask-RESTful、FastAPI（可选）              | Flask 3.0    | Python 主框架；FastAPI 用于异步对照    |
+| **开发语言** | TypeScript 5.0+、Python 3.10+                          | TS 5.0       | Express 强制 TS 严格模式               |
+| **数据库**   | PostgreSQL 16、MongoDB 7                               | PG 15        | SQL 用 PG，文档型用 Mongo              |
+| **ORM/ODM**  | Prisma 5（Node）、SQLAlchemy 2（Py）、Mongoose 8       | 各自最新     | 强制使用类型化 ORM，避免裸 SQL         |
+| **认证**     | JWT (jsonwebtoken / PyJWT)、OAuth 2.0、bcrypt          | 各自最新     | 默认 JWT；bcrypt cost ≥ 12             |
+| **校验**     | Zod 3 / Joi 17 (Node)、Marshmallow 3 / Pydantic 2 (Py) | 各自最新     | 所有入口必校验，禁止裸用 `req.body`    |
+| **文档**     | Swagger / OpenAPI 3.1                                  | 3.1          | 通过 `swagger-jsdoc` / `flasgger` 生成 |
+| **测试**     | Jest 29 + Supertest、pytest 8 + httpx                  | 各自最新     | 单测 + API 集成测试                    |
+| **部署**     | Docker 24、Docker Compose v2、Nginx 1.25               | 各自最新     | 多阶段构建，runtime 镜像 < 80MB        |
+
+**选型原则**：安全优先（ORM + 类型化校验是基线，禁止 AI 生成裸 SQL 与未校验路由）、可观测（Winston/Loguru + 请求 ID 全链路）、可压测（默认集成 `autocannon` / `wrk`）、版本统一（同一仓库内禁止 Express 4 / 5 混用）。
+
+### 4.2 项目架构
+
+本章实战项目 `task-management-api` 采用双语言并行架构，便于对比 Express 与 Flask 在同一业务场景下的差异。
 
 ```bash
 task-management-api/
-├── README.md
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
+├── README.md                       # 项目总览与对比说明
+├── docker-compose.yml              # 开发环境编排（Postgres + Redis + 双 API）
+├── .env.example                    # 环境变量模板（DB / JWT_SECRET / CORS_ORIGIN）
 ├── docs/
-│   ├── api-specification.yml
+│   ├── api-specification.yml       # OpenAPI 3.1 规范
 │   └── deployment-guide.md
-├── express-api/                # Node.js 实现
+├── express-api/                    # Node.js + TypeScript 实现
 │   ├── package.json
-│   ├── Dockerfile
-│   ├── src/
-│   │   ├── app.js
-│   │   ├── config/
-│   │   │   ├── database.js
-│   │   │   └── auth.js
-│   │   ├── controllers/
-│   │   │   ├── authController.js
-│   │   │   ├── taskController.js
-│   │   │   └── userController.js
-│   │   ├── middleware/
-│   │   │   ├── auth.js
-│   │   │   ├── validation.js
-│   │   │   └── errorHandler.js
-│   │   ├── models/
-│   │   │   ├── User.js
-│   │   │   ├── Task.js
-│   │   │   └── Project.js
-│   │   ├── routes/
-│   │   │   ├── auth.js
-│   │   │   ├── tasks.js
-│   │   │   └── users.js
-│   │   └── utils/
-│   │       ├── logger.js
-│   │       └── helpers.js
-│   └── tests/
-│       ├── auth.test.js
-│       ├── tasks.test.js
-│       └── setup.js
-├── flask-api/                  # Python 实现
-│   ├── requirements.txt
+│   ├── tsconfig.json
+│   ├── Dockerfile                  # 多阶段构建
+│   └── src/
+│       ├── app.ts                  # 应用装配（中间件链 + 路由注册）
+│       ├── config/                 # database.ts / auth.ts / cors.ts
+│       ├── controllers/            # auth / task / user
+│       ├── middleware/             # auth.ts / validate.ts / errorHandler.ts / rateLimit.ts
+│       ├── models/                 # Prisma schema 派生类型
+│       ├── routes/                 # 路由聚合
+│       ├── schemas/                # Zod 校验 schema
+│       └── utils/                  # logger.ts / asyncHandler.ts
+├── flask-api/                      # Python 实现
+│   ├── pyproject.toml
 │   ├── Dockerfile
 │   ├── app.py
 │   ├── config.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── user.py
-│   │   ├── task.py
-│   │   └── project.py
-│   ├── resources/
-│   │   ├── __init__.py
-│   │   ├── auth.py
-│   │   ├── tasks.py
-│   │   └── users.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── auth.py
-│   │   └── validators.py
+│   ├── models/                     # SQLAlchemy 2 declarative
+│   ├── resources/                  # Flask-RESTful Resource 类
+│   ├── schemas/                    # Marshmallow schema
+│   ├── utils/                      # auth.py / validators.py
 │   └── tests/
-│       ├── __init__.py
-│       ├── test_auth.py
-│       └── test_tasks.py
 └── shared/
-    ├── database/
-    │   ├── init.sql
-    │   └── seed.sql
-    └── nginx/
-        └── nginx.conf
+    ├── database/                   # init.sql / seed.sql
+    └── nginx/                      # 反向代理配置
 ```
+
+> 双实现的目的是让大家在同一业务问题上对比两种生态的 AI 生成质量。**实际项目只需选一种**——Node 优先选 Express + Prisma，Python 优先选 Flask + SQLAlchemy 2。
 
 ---
 
-## 4. 使用 Trae 创建项目基础架构
+## 5. Express.js 与 Flask 实战
 
-### 4.1 Express.js API 实现
+本节走通两个主框架的「提示词 → 生成 → 审查 → 改进」完整链路。GraphQL / 微服务 / 安全 / 性能等进阶模式在 §6 集中以参考表与差异化提示词处理。
 
-#### 4.1.1 项目初始化
+### 5.1 Express.js + TypeScript
 
-**Trae 指令**：
-
-```text
-创建一个 Express.js RESTful API 项目，要求：
-
-1. 使用 TypeScript 进行类型安全开发
-2. 集成 MongoDB 数据库连接
-3. 实现 JWT 身份验证中间件
-4. 添加请求验证和错误处理
-5. 配置 CORS 和安全头
-6. 集成 Winston 日志系统
-7. 添加 API 限流和缓存
-
-请生成完整的项目结构和基础代码。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **项目结构**：标准化的 MVC 架构目录
-- **核心应用类**：TaskManagementAPI 主应用类
-- **安全中间件**：Helmet、CORS、速率限制配置
-- **日志系统**：Morgan + Winston 集成日志
-- **路由管理**：模块化路由系统
-- **错误处理**：全局错误处理和 404 处理
-- **健康检查**：系统状态监控端点
-- **API 文档**：Swagger UI 集成
-- **数据模型**：Mongoose 模型和验证
-- **认证系统**：JWT 中间件和用户管理
-
-### 4.2 Flask API 实现
-
-#### 4.2.1 项目初始化
-
-**Trae 指令**：
+#### 5.1.1 提示词模板
 
 ```text
-创建一个 Flask RESTful API 项目，要求：
+创建一个 Express.js 4.18 + TypeScript 5 API 项目骨架，要求：
 
-1. 使用 Flask-RESTful 构建 API
-2. 集成 SQLAlchemy ORM 和 PostgreSQL
-3. 实现 JWT 身份验证
-4. 添加请求验证和序列化
-5. 配置 Flask-CORS
-6. 集成 Flask-Migrate 数据库迁移
-7. 添加 API 文档生成
+【项目基本信息】
+- 名称：express-api（属于 task-management-api 单体仓库）
+- 业务：用户注册/登录、任务 CRUD、JWT 鉴权、RBAC（user / admin）
+- 数据库：PostgreSQL 16 + Prisma 5
 
-请生成完整的项目结构和基础代码。
+【架构要求】
+- 严格 TypeScript：tsconfig 开启 strict / noUncheckedIndexedAccess
+- 中间件链：helmet → cors（白名单）→ rate-limit → request-id → body-parser → 路由 → 全局 errorHandler
+- 校验：所有入口用 Zod schema 校验，失败返回 422 + { code, fields }
+- 鉴权：JWT (RS256)，access 15 min + refresh 7 days；密钥从 env 加载，禁止硬编码
+
+【可观测】
+- 请求日志：Winston JSON 格式，包含 request-id / user-id / latency
+- 错误响应统一结构：{ code, message, requestId }
+- 健康检查：GET /healthz 返回数据库连通性
+
+【生成约束】
+- 输出文件树 + 关键文件 diff，而非整段代码
+- 禁止裸 SQL；所有数据库访问经 Prisma
+- 不返回 stack trace 给客户端；生产环境屏蔽 errorHandler 详情
 ```
 
-**预期输出概要**：
+#### 5.1.2 AI 生成的登录端点（带审查标注）
 
-Trae 将自动生成以下组件：
+下面是 Trae 通常会为登录路由生成的 Express.js + TypeScript 代码。**注释标出了 AI 做对的地方与遗漏的地方**——审查闭环不是"看 AI 写了什么"，而是"看 AI 漏了什么"。
 
-- **Flask 应用类**：TaskManagementAPI 主应用类
-- **SQLAlchemy 模型**：User、Task、Project 数据模型
-- **JWT 认证系统**：完整的认证和授权机制
-- **RESTful 资源**：Flask-RESTful 资源类
-- **数据库迁移**：Flask-Migrate 集成
-- **安全配置**：CORS、限流、安全头
-- **日志系统**：结构化日志记录
-- **健康检查**：应用状态监控
-- **API 文档**：自动生成的 API 文档
+```typescript
+// ✅ 用 Zod 做了输入校验
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(72),
+});
+
+router.post(
+  "/auth/login",
+  rateLimit({ windowMs: 60_000, max: 5 }), // ✅ 登录端点单独限流
+  validate(LoginSchema),
+  async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const user = await prisma.user.findUnique({ where: { email } });
+      // ⚠️ AI 经常遗漏：用户不存在时也要走 bcrypt 比对，避免 timing attack
+      if (!user) return res.status(401).json({ code: "INVALID_CREDENTIALS" });
+      const ok = await bcrypt.compare(password, user.passwordHash);
+      if (!ok) return res.status(401).json({ code: "INVALID_CREDENTIALS" });
+
+      const token = jwt.sign(
+        { uid: user.id, role: user.role },
+        process.env.JWT_PRIVATE_KEY!, // ✅ 从 env 读取
+        { algorithm: "RS256", expiresIn: "15m" },
+      );
+      // ⚠️ AI 经常遗漏：refresh token 应写入 httpOnly + Secure + SameSite=Strict cookie
+      res.json({ token });
+
+      // ⚠️ AI 经常遗漏：应记录登录成功审计日志（不含 password）
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+```
+
+**审查发现**：AI 正确实现了 Zod 校验、限流、bcrypt、env 密钥；但 (1) 用户不存在时直接 return，存在 timing-attack 风险，需补一次 dummy `bcrypt.compare`；(2) refresh token 未走 httpOnly cookie，存在 XSS 窃取风险；(3) 缺登录审计日志。这三处遗漏需要在第二轮提示词中明确要求补齐。
+
+### 5.2 Flask + SQLAlchemy 2
+
+#### 5.2.1 提示词模板
+
+```text
+创建一个 Flask 3 + SQLAlchemy 2 API 项目骨架，要求：
+
+【项目基本信息】
+- 名称：flask-api（与 express-api 业务等价）
+- 数据库：PostgreSQL 16 + SQLAlchemy 2 declarative + Alembic 迁移
+- 序列化：Marshmallow 3
+- 鉴权：Flask-JWT-Extended，access + refresh 双 token
+
+【架构要求】
+- 应用工厂模式：create_app() 接收 config_class 参数
+- Blueprint 拆分：auth / tasks / users 各一个 blueprint
+- 全局错误处理：@app.errorhandler(HTTPException) + 自定义 ApiError
+- CORS：Flask-CORS 仅放行白名单域名 + credentials=True
+- 限流：Flask-Limiter，登录端点 5/min，全局 100/min
+
+【生成约束】
+- 全部使用 SQLAlchemy 2 typed Mapped/MappedColumn 写法，禁止 1.x 风格
+- 所有入口必经 Marshmallow load 校验
+- 数据库 session 用 db.session.scoped_session 自动清理
+- 密码用 bcrypt.hashpw（cost=12），禁止 md5/sha1/sha256
+```
+
+#### 5.2.2 关键差异点（与 Express 对照）
+
+| 维度         | Express.js (TS)                          | Flask (Python)                            |
+| :----------- | :--------------------------------------- | :---------------------------------------- |
+| **路由风格** | `router.post()` 装饰器                   | `@bp.route()` 或 `MethodView`             |
+| **校验**     | Zod / Joi schema + `validate` 中间件     | Marshmallow / Pydantic schema + `.load()` |
+| **异步**     | 原生 async/await（事件循环单线程）       | 默认同步 (WSGI)，异步用 ASGI/FastAPI 替代 |
+| **AI 陷阱**  | bcrypt timing-attack、refresh token 存储 | SQLAlchemy 1.x/2.x 写法混用、CORS 默认 \* |
+| **审查重点** | TypeScript 类型 + 中间件链顺序           | session 生命周期 + Marshmallow 必校验     |
+
+> 同一业务 Express 与 Flask 都会跑通，但 Flask 默认同步带来的 P95 延迟通常高 30%-60%；若高并发场景（如订单峰值）建议直接选 FastAPI 或 Express。
 
 ---
 
-## 4.3 GraphQL API 服务架构
+### 5.3 Vibe Coding 循环实录：注册接口 422 语义修正
 
-> **技能应用提示**
->
-> 本节将指导您使用 Trae 构建现代化的 GraphQL API 服务，体验声明式数据查询的强大功能和灵活性。
+> **修正语法**：「修正提示词」按 [Ch2 §4.9 修正提示词语法](../第一部分-Trae基础入门/第二章-基础交互模式.md) 模板；3 轮未收敛触发 §4.10。模式选择查 [Ch1 §5.4](../第一部分-Trae基础入门/第一章-Trae简介与环境配置.md)。
 
-**Trae 指令：**
+| 轮次 | AI 输出摘要                           | 发现的缺陷                                | 修正提示词（按 §4.9）                                                                                                                                                                                                                             | 验证信号                        |
+| :--- | :------------------------------------ | :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
+| R1   | 所有 zod 校验失败返回 400             | 语法错误与语义错误未区分，不符合 RFC 4918 | 保留 zod schema 与路由处理器不变，修复状态码：JSON 语法错误返 400，校验通过但业务语义错误（如 email 格式）返 422。原因：RFC 4918 区分 syntactic vs semantic。不要动 zod schema。验证：`curl -d '{"email":"x"}' .../register \| jq .status` 返 422 | `curl ... \| jq .status` 返 422 |
+| R2   | 422 响应体含 `error.stack` 整个错误栈 | 泄露内部路径、 node_modules 堆栈          | 保留 422 状态码与 error 字段名，修复响应体：只返 `{ field: issue.path.join('.'), message: issue.message }` 的数组，移除 stack。原因：stack 在生产是信息泄露。不要动状态码。验证：响应 JSON 不含 'node_modules'                                    | response 不含 'node_modules'    |
+| R3   | OpenAPI yaml 缺 422 schema            | 契约文档与实现偏离，前端生成 SDK 丢 422   | 保留现有 200 / 400 响应定义，修复契约文档：在 `/register` 路径 responses 下补 422 schema，字段同实际响应体。原因：SDK 生成需要完整契约。不要动其他路由。验证：`npx swagger-cli validate openapi.yaml` exit 0                                      | swagger-cli validate exit 0     |
 
-```text
-构建企业级 GraphQL API 服务，包含以下功能：
-
-项目基本信息：
-- 项目名称：Enterprise GraphQL API Service
-- 技术栈：Apollo Server, TypeScript, Prisma ORM, PostgreSQL
-- 架构模式：Schema-First 设计模式
-
-核心功能模块：
-1. GraphQL Schema 设计
-   - 类型定义（Types）
-   - 查询操作（Queries）
-   - 变更操作（Mutations）
-   - 订阅操作（Subscriptions）
-
-2. 解析器（Resolvers）实现
-   - 数据获取优化
-   - N+1 查询问题解决
-   - 数据加载器（DataLoader）
-   - 缓存策略实现
-
-3. 实时功能
-   - WebSocket 订阅
-   - 实时数据推送
-   - 事件驱动架构
-   - 消息队列集成
-
-4. 安全与性能
-   - 查询复杂度分析
-   - 查询深度限制
-   - 速率限制
-   - 权限控制
-
-5. 开发工具集成
-   - GraphQL Playground
-   - Schema 文档生成
-   - 类型安全代码生成
-   - 测试工具集成
-
-技术要求：
-- Apollo Server 4 + TypeScript
-- Prisma ORM + PostgreSQL
-- Redis 缓存层
-- JWT 认证机制
-- DataLoader 批量查询
-- 完整的单元测试和集成测试
-```
-
-**预期输出概要：**
-Trae 将自动生成以下核心组件：
-
-- **GraphQL Schema**：类型定义、查询、变更、订阅
-- **解析器系统**：高效的数据获取和处理逻辑
-- **数据加载器**：批量查询优化和缓存机制
-- **实时订阅**：WebSocket 实时数据推送
-- **安全机制**：查询复杂度控制和权限验证
-- **开发工具**：Playground、文档生成、类型生成
-
-### 4.4 微服务架构与API网关
-
-> **技能应用提示**
->
-> 本节将指导您使用 Trae 设计和实现微服务架构，包括服务拆分、API网关、服务发现等企业级架构模式。
-
-**Trae 指令：**
-
-```text
-构建微服务架构的API生态系统，包含以下功能：
-
-项目基本信息：
-- 项目名称：Microservices API Ecosystem
-- 技术栈：Node.js, Express, Kong Gateway, Docker, Kubernetes
-- 架构模式：微服务架构 + API网关模式
-
-核心服务模块：
-1. 用户服务（User Service）
-   - 用户注册、登录、资料管理
-   - JWT 令牌生成和验证
-   - 用户权限管理
-   - 数据库：PostgreSQL
-
-2. 产品服务（Product Service）
-   - 产品信息管理
-   - 库存管理
-   - 价格策略
-   - 数据库：MongoDB
-
-3. 订单服务（Order Service）
-   - 订单创建和处理
-   - 支付集成
-   - 订单状态跟踪
-   - 数据库：MySQL
-
-4. 通知服务（Notification Service）
-   - 邮件通知
-   - 短信通知
-   - 推送通知
-   - 消息队列：RabbitMQ
-
-API网关功能：
-1. 路由管理
-   - 动态路由配置
-   - 负载均衡
-   - 健康检查
-   - 故障转移
-
-2. 安全控制
-   - 统一认证
-   - API密钥管理
-   - 速率限制
-   - IP白名单
-
-3. 监控与分析
-   - 请求日志
-   - 性能指标
-   - 错误追踪
-   - 业务分析
-
-4. 开发者工具
-   - API文档聚合
-   - 测试工具
-   - SDK生成
-   - 版本管理
-
-技术要求：
-- Kong API Gateway
-- Docker容器化
-- Kubernetes编排
-- Prometheus监控
-- ELK日志系统
-- CI/CD流水线
-```
-
-**预期输出概要：**
-Trae 将自动生成以下核心组件：
-
-- **微服务架构**：独立的服务模块和数据库设计
-- **API网关配置**：Kong Gateway 路由和插件配置
-- **容器化部署**：Docker 镜像和 Kubernetes 部署文件
-- **监控系统**：Prometheus 指标收集和 Grafana 仪表板
-- **CI/CD流水线**：自动化构建、测试和部署
-- **文档系统**：API文档聚合和开发者门户
-
-### 4.5 高性能API优化策略
-
-> **技能应用提示**
->
-> 本节将指导您使用 Trae 实现各种API性能优化策略，包括缓存、数据库优化、CDN等。
-
-**Trae 指令：**
-
-```text
-实现高性能API优化策略，包含以下功能：
-
-项目基本信息：
-- 项目名称：High Performance API Optimization
-- 技术栈：Node.js, Redis, Nginx, CDN, Elasticsearch
-- 优化目标：响应时间 < 100ms，并发 > 10000 QPS
-
-性能优化策略：
-1. 多层缓存架构
-   - 应用层缓存（内存缓存）
-   - 分布式缓存（Redis Cluster）
-   - CDN缓存（静态资源）
-   - 数据库查询缓存
-
-2. 数据库优化
-   - 索引优化策略
-   - 查询语句优化
-   - 连接池配置
-   - 读写分离
-   - 分库分表
-
-3. 负载均衡
-   - Nginx负载均衡
-   - 健康检查
-   - 故障转移
-   - 会话保持
-
-4. 异步处理
-   - 消息队列
-   - 异步任务处理
-   - 事件驱动架构
-   - 流式处理
-
-5. 监控与调优
-   - 性能指标监控
-   - 慢查询分析
-   - 内存使用优化
-   - CPU使用优化
-
-6. 压力测试
-   - 负载测试
-   - 压力测试
-   - 容量规划
-   - 性能基准
-
-技术要求：
-- Redis Cluster 高可用缓存
-- Nginx 反向代理和负载均衡
-- Elasticsearch 日志分析
-- Prometheus + Grafana 监控
-- Apache JMeter 压力测试
-- 完整的性能测试报告
-```
-
-**预期输出概要：**
-Trae 将自动生成以下核心组件：
-
-- **缓存系统**：多层缓存架构和策略实现
-- **数据库优化**：索引设计和查询优化方案
-- **负载均衡**：Nginx 配置和健康检查
-- **监控系统**：性能指标收集和分析
-- **测试工具**：压力测试脚本和性能基准
-- **优化报告**：性能分析和调优建议
-
-### 4.6 API安全防护机制
-
-> **技能应用提示**
->
-> 本节将指导您使用 Trae 实现企业级API安全防护，包括认证、授权、防攻击等安全机制。
-
-**Trae 指令：**
-
-```text
-实现企业级API安全防护机制，包含以下功能：
-
-项目基本信息：
-- 项目名称：Enterprise API Security Framework
-- 技术栈：Node.js, JWT, OAuth 2.0, Helmet.js, Rate Limiting
-- 安全等级：企业级安全标准
-
-安全防护策略：
-1. 身份认证
-   - JWT令牌认证
-   - OAuth 2.0授权
-   - 多因子认证（MFA）
-   - 单点登录（SSO）
-
-2. 权限控制
-   - 基于角色的访问控制（RBAC）
-   - 基于属性的访问控制（ABAC）
-   - API权限矩阵
-   - 动态权限验证
-
-3. 安全防护
-   - SQL注入防护
-   - XSS攻击防护
-   - CSRF攻击防护
-   - DDoS攻击防护
-
-4. 数据安全
-   - 数据加密传输（HTTPS）
-   - 敏感数据加密存储
-   - 数据脱敏
-   - 数据备份加密
-
-5. 安全监控
-   - 异常行为检测
-   - 安全事件日志
-   - 实时告警
-   - 安全审计
-
-6. 合规性
-   - GDPR合规
-   - SOX合规
-   - HIPAA合规
-   - 等保合规
-
-技术要求：
-- Helmet.js 安全头设置
-- express-rate-limit 速率限制
-- bcrypt 密码加密
-- crypto 数据加密
-- winston 安全日志
-- 完整的安全测试用例
-```
-
-**预期输出概要：**
-Trae 将自动生成以下核心组件：
-
-- **认证系统**：JWT、OAuth 2.0、MFA 实现
-- **权限控制**：RBAC、ABAC 权限模型
-- **安全中间件**：各种攻击防护机制
-- **加密服务**：数据加密和传输安全
-- **监控系统**：安全事件监控和告警
-- **合规工具**：各种合规性检查和报告
-
-### 7. API 文档与测试
-
-### 7.1 Swagger/OpenAPI 文档
-
-#### 7.1.1 API 文档生成
-
-**Trae 指令**：
-
-```text
-生成完整的 API 文档，包含：
-
-1. OpenAPI 3.0 规范
-2. 交互式 API 文档界面
-3. 请求/响应示例
-4. 认证配置
-5. 错误代码说明
-6. 自动化文档更新
-
-请为所有 API 端点生成详细文档。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **OpenAPI 规范**：完整的 API 规范文档
-- **Swagger UI**：交互式 API 测试界面
-- **接口文档**：详细的端点说明和示例
-- **认证配置**：JWT 认证集成
-- **错误处理**：标准化错误响应
-- **自动更新**：代码变更自动同步文档
-- **示例数据**：真实的请求响应示例
-- **数据模型**：Schema 定义和验证
-
-### 7.2 自动化测试
-
-#### 7.2.1 测试套件创建
-
-**Trae 指令**：
-
-```text
-创建全面的 API 测试套件，包含：
-
-1. 单元测试（Jest/pytest）
-2. 集成测试
-3. API 端点测试
-4. 性能测试
-5. 安全测试
-6. 测试覆盖率报告
-
-请生成完整的测试代码和配置。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **单元测试**：Jest/pytest 测试用例
-- **集成测试**：端到端测试流程
-- **API 测试**：所有端点的功能测试
-- **性能测试**：负载和压力测试
-- **安全测试**：认证和授权测试
-- **覆盖率报告**：代码覆盖率分析
-- **自动化 CI/CD**：持续集成测试
-- **测试报告**：详细的测试结果分析
+> **收敛信号**：422 语义正确 + 响应体无 stack + OpenAPI 含 422。如未收敛触发 §4.10 信号 1，拆 prompt 为「区分状态码」 / 「裁剪响应」 / 「补契约」三个独立轮。
 
 ---
 
-## 8. 部署与运维
+## 6. 进阶：GraphQL、微服务、安全与性能
 
-### 8.1 Docker 容器化
+四类进阶场景的提示词共享同一个范式："基础能力先用 RESTful 跑通 → 局部场景按需引入"。下表给出关键差异点与精简提示词，按需展开。
 
-#### 8.1.1 容器化配置
+### 6.1 进阶场景速查表
 
-**Trae 指令**：
+| 场景           | 适用条件                        | 关键差异                                                                      | 核心提示词（精简版）                                                                                                                    |
+| :------------- | :------------------------------ | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| **GraphQL**    | 前端字段诉求多变 / 多客户端聚合 | Schema-First、DataLoader 解决 N+1、query depth 限制、订阅用 WebSocket         | `用 Apollo Server 4 + Prisma 5 + DataLoader 3 创建 GraphQL API，限制 query depth ≤ 7 与 complexity ≤ 1000，启用持久化查询白名单`        |
+| **微服务**     | 团队边界清晰、服务隔离需求强    | 单一服务边界 + Kong 网关 + 服务间用 gRPC 或事件总线                           | `用 Express + Kong Gateway + RabbitMQ 将 user / order / notification 拆为三个微服务，定义 contract 测试与 saga 事务回滚`                |
+| **安全加固**   | 面向公网或承载敏感数据          | Helmet 安全头、CSP、CSRF token、签名校验、防重放（nonce + timestamp）         | `为 express-api 增强安全：helmet 全套头、CSP 严格白名单、HMAC 签名校验、5 分钟 nonce 防重放、登录 5 次失败锁定`                         |
+| **高性能优化** | P95 > 200ms 或 QPS 需求 > 5k    | Redis 多级缓存、读写分离、autocannon/wrk 压测、Node cluster / gunicorn worker | `优化 express-api：Redis 缓存热点接口（cache-aside + 60s TTL）、Postgres 读副本读写分离、autocannon 压测，目标 P95 < 100ms / QPS > 10k` |
 
-```text
-创建完整的 Docker 部署方案，包含：
+### 6.2 进阶提示词使用约定
 
-1. 多阶段构建 Dockerfile
-2. Docker Compose 编排
-3. 环境变量配置
-4. 健康检查
-5. 日志收集
-6. 监控集成
+进阶场景的提示词必须满足三个条件，否则 AI 输出几乎不可用：
 
-请生成生产级的容器化配置。
-```
+1. **承接已有项目**：明确指出"在 express-api 基础上扩展"而非重新生成项目，否则 AI 会重写已有结构导致冲突。
+2. **量化目标**：写明 P95、QPS、错误率、缓存命中率等具体指标，AI 才会选择恰当的技术方案；模糊描述如"高性能"会得到通用模板。
+3. **审查检查点**：在提示词末尾追加"输出后对照 §3.2 六类缺陷自检"，AI 会主动给出自检 checklist，便于人工复核。
 
-**预期输出概要**：
+> 不要在第一轮就让 AI 生成"GraphQL + 微服务 + 安全 + 性能"四合一架构——上下文超限会导致每个模块都做不彻底。逐个引入、每次审查通过后再叠加是更稳妥的做法。
 
-Trae 将自动生成以下组件：
+### 6.3 性能优化基线指标
 
-- **Dockerfile**：多阶段构建优化镜像
-- **Docker Compose**：完整的服务编排
-- **环境配置**：开发、测试、生产环境
-- **健康检查**：容器状态监控
-- **日志配置**：集中化日志收集
-- **监控集成**：Prometheus + Grafana
-- **安全配置**：容器安全最佳实践
-- **部署脚本**：一键部署和更新
-
----
-
-## 9. 实践练习
-
-### 9.1 练习 1：智能文件管理系统
-
-#### 9.1.1 功能扩展
-
-**目标**：为任务管理 API 添加智能文件管理功能
-
-**Trae 指令**：
-
-```text
-扩展任务管理 API，添加智能文件管理功能：
-
-1. 多格式文件上传（图片、文档、视频）
-2. 文件预览和在线编辑
-3. 智能文件分类和标签
-4. 文件版本控制
-5. 文件分享和权限管理
-6. 文件搜索和过滤
-
-请生成完整的文件管理模块。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **文件控制器**：上传、下载、预览接口
-- **智能分类**：AI 驱动的文件自动分类
-- **在线编辑**：集成文档编辑器
-- **版本控制**：文件历史版本管理
-- **权限系统**：细粒度文件访问控制
-
-### 9.2 练习 2：实时协作通知系统
-
-#### 9.2.1 实时通信实现
-
-**目标**：实现实时协作通知系统
-
-**Trae 指令**：
-
-```text
-实现实时协作通知系统：
-
-1. WebSocket 实时通信
-2. 任务状态变更通知
-3. 团队协作消息
-4. 邮件和短信通知
-5. 通知偏好设置
-6. 消息历史和搜索
-
-请生成完整的通知系统。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **通知引擎**：多渠道通知系统
-- **WebSocket 服务**：实时双向通信
-- **邮件服务**：模板化邮件发送
-- **推送服务**：移动端推送通知
-- **偏好管理**：用户通知设置
-
-### 9.3 练习 3：API 安全加固
-
-#### 9.3.1 安全方案实现
-
-**目标**：实现企业级 API 安全方案
-
-**Trae 指令**：
-
-```text
-实现企业级 API 安全方案：
-
-1. OAuth 2.0 + OpenID Connect 集成
-2. API 版本控制和向后兼容
-3. 请求签名和防重放攻击
-4. API 网关和限流策略
-5. 安全审计和日志分析
-6. 漏洞扫描和安全测试
-
-请生成完整的安全加固方案。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **OAuth 2.0 服务**：标准化认证授权
-- **版本控制**：API 版本管理策略
-- **安全中间件**：请求签名验证
-- **API 网关**：统一入口和限流
-- **审计系统**：安全事件记录
-
-### 9.4 练习 4：高性能优化方案
-
-#### 9.4.1 性能优化实现
-
-**目标**：实现高性能 API 优化方案
-
-**Trae 指令**：
-
-```text
-实现高性能 API 优化方案：
-
-1. Redis 多级缓存策略
-2. 数据库查询优化和索引
-3. CDN 静态资源加速
-4. 负载均衡和水平扩展
-5. 性能监控和告警
-6. 压力测试和容量规划
-
-请生成完整的性能优化方案。
-```
-
-**预期输出概要**：
-
-Trae 将自动生成以下组件：
-
-- **缓存系统**：Redis 多层缓存架构
-- **数据库优化**：查询优化和分库分表
-- **CDN 集成**：静态资源分发网络
-- **负载均衡**：Nginx + 健康检查
-- **性能监控**：实时性能指标分析
+| 指标              | 目标值（默认场景）           | 测量工具                  | 主要优化手段                  |
+| :---------------- | :--------------------------- | :------------------------ | :---------------------------- |
+| **P95 延迟**      | < 100ms（读）/ < 200ms（写） | autocannon / wrk / k6     | 缓存、索引、连接池            |
+| **QPS**           | > 5k（单节点 4C8G）          | autocannon `-c 100 -d 30` | Node cluster、gunicorn worker |
+| **错误率**        | < 0.1%                       | 压测工具内置              | 限流、熔断、超时              |
+| **缓存命中率**    | > 80%（热点查询）            | Redis `INFO stats`        | 合理 TTL + LRU 策略           |
+| **DB 连接池占用** | < 70%                        | Prisma metrics / pg_stat  | 连接池大小、慢查询治理        |
 
 ---
 
-## 10. 小结
+## 7. AI 生成的后端代码审查
 
-### 10.1 学习成果回顾
+回顾第一章 §7 的「四步审查法」，后端 API 代码的安全性审查至关重要——后端是数据的大门，一处缺陷足以让整库泄露。
 
-通过本章学习，您已经掌握了使用 **Trae AI 助手** 进行现代 Web 开发的核心技能：
+### 7.1 四步审查清单（后端特化）
 
-#### 10.1.1 核心技能掌握
+| 步骤         | 后端特定检查                                                                           |
+| :----------- | :------------------------------------------------------------------------------------- |
+| **正确性**   | 路由是否响应？HTTP 状态码是否符合语义（201/204/409/422）？错误响应格式是否一致？       |
+| **安全性**   | 每个端点是否都有认证中间件？输入是否经 schema 校验？SQL 是否参数化？密钥是否走 env？   |
+| **性能**     | 是否有 N+1 查询？关键字段是否建索引？是否设置了限流与超时？是否禁用 stack trace 输出？ |
+| **可维护性** | 路由是否模块化？错误处理是否统一中间件？是否有 request-id 全链路日志？                 |
 
-- **智能 API 开发**：使用自然语言指令快速构建 RESTful API
-- **多技术栈精通**：Express.js 和 Flask 双栈开发能力
-- **安全体系构建**：JWT 认证、权限控制、安全防护
-- **数据库集成**：MongoDB 和 PostgreSQL 深度集成
-- **文档化开发**：Swagger 自动文档生成
-- **测试驱动开发**：完整的自动化测试体系
-- **容器化部署**：Docker 生产级部署方案
+### 7.2 必跑的 curl 边界测试
 
-### 10.2 技术亮点总结
+在接受 Trae 生成的任何 API 端点前，依次跑完以下五条 `curl` 命令；任意一条返回 5xx 或静默 200，都说明 AI 出了错。
 
-#### 10.2.1 Trae 提示词工程的威力
+```bash
+# 1. 空 body：必须 422 而非 500
+curl -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" -d '{}'
 
-1. **开发效率提升 10 倍**：从项目初始化到部署上线，全程 AI 辅助
-2. **代码质量保证**：自动生成的代码遵循最佳实践和安全标准
-3. **学习曲线平缓**：通过自然语言描述需求，降低技术门槛
-4. **架构设计优化**：AI 助手提供企业级架构建议
+# 2. 超长字符串：必须 422 而非崩溃
+curl -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" \
+     -d "{\"title\":\"$(python -c 'print("a"*100000)')\"}"
 
-### 10.3 实际应用价值
+# 3. SQL 注入特征字符：必须 422 或正常入库（取决于校验策略），禁止数据库报错
+curl -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" \
+     -d "{\"title\":\"'; DROP TABLE tasks;--\"}"
 
-#### 10.3.1 职场竞争力
+# 4. 缺失 Authorization：必须 401，错误结构与其他 401 一致
+curl -X GET http://localhost:3000/api/tasks
 
-- **快速原型开发**：能够在短时间内构建完整的 API 服务
-- **安全意识强化**：掌握现代 Web 应用安全最佳实践
-- **性能优化能力**：具备数据库和 API 性能调优技能
-- **DevOps 实践**：熟悉容器化部署和 CI/CD 流程
+# 5. 速率限制：必须在第 6 次返回 429
+for i in {1..10}; do curl -s -o /dev/null -w "%{http_code}\n" \
+     -X POST http://localhost:3000/api/auth/login \
+     -H "Content-Type: application/json" -d '{"email":"a@a.com","password":"x"}'; done
+```
 
-### 10.4 进阶学习方向
+> **铁律**：发现 5xx 不是"框架在偶尔抖"，而是 AI 没处理某条边界。修不掉就重提示词，禁止"先 commit 再说"。
 
-#### 10.4.1 技能进阶路径
+### 7.3 扫到问题后用什么提示词改？
 
-1. **微服务架构**：学习服务拆分和分布式系统设计
-2. **GraphQL 开发**：掌握现代 API 查询语言
-3. **云原生开发**：Kubernetes、服务网格等云原生技术
-4. **实时系统**：WebSocket、消息队列、事件驱动架构
+上面五条 curl 只识别「失败」；下一步必须按统一语法把修复意图写回 AI（参照 [Ch2 §4.9](../第一部分-Trae基础入门/第二章-基础交互模式.md)）。
 
----
+| #   | curl 命中场景           | 命中后修正提示词模板                                                                                                                                                            |
+| :-- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | 空 body 返 500          | 保留 router 路径，handler 头部加 `zod` / `joi` schema 校验，缺字段返 `422` + `{ code, fields }`。不要动业务 service。验证：`curl -d '{}'` 返 422 + `code='VALIDATION_FAILED'`。 |
+| 2   | 超长字符串崩溃          | 保留校验 schema，字符串字段加 `maxLength: 256`（按业务）；`express.json({ limit: '100kb' })`。不要动 router。验证：10 万字符 title 返 422 而非 500。                            |
+| 3   | SQL 注入触发数据库报错  | 保留入库逻辑，改参数化查询（`?` / `$1`）+ ORM 转义；title 列加 `^[\w\s\-\.]+$` 校验。不要动 schema。验证：`'; DROP --` 入库为字面量，无 22P02 错。                              |
+| 4   | 缺 Authorization 非 401 | 保留 router，前置装 `requireAuth` 中间件，缺/坏 token 统一返 `401` + `{ code: 'UNAUTHORIZED' }`。不要动业务 handler。验证：无 header 必 401，错误结构与其他 401 一致。          |
+| 5   | 第 6 次未触发 429       | 保留 login handler，入口加 `rateLimit({ windowMs: 60000, max: 5 })`。不要动响应结构。验证：第 6 次返 `429` + `Retry-After` 头。                                                 |
 
-## 11. 延伸阅读
-
-### 11.1 经典教材
-
-- 《RESTful Web APIs》 - Leonard Richardson & Mike Amundsen
-- 《Node.js 设计模式》 - Mario Casciaro & Luciano Mammino
-- 《Flask Web 开发》 - Miguel Grinberg
-- 《高性能 MySQL》 - Baron Schwartz
-
-### 11.2 在线资源
-
-- [Express.js 官方文档](https://expressjs.com/)
-- [Flask 官方文档](https://flask.palletsprojects.com/)
-- [JWT.io](https://jwt.io/) - JWT 学习资源
-- [OpenAPI 规范](https://swagger.io/specification/)
-
-### 11.3 开源项目
-
-- [NestJS](https://nestjs.com/) - 企业级 Node.js 框架
-- [FastAPI](https://fastapi.tiangolo.com/) - 现代 Python API 框架
-- [Strapi](https://strapi.io/) - 开源 Headless CMS
-- [Hasura](https://hasura.io/) - GraphQL API 引擎
+> 3 轮未收敛触发 [§4.10](../第一部分-Trae基础入门/第二章-基础交互模式.md) 的「换模式 / 缩范围 / 拆步骤」。
 
 ---
 
-**下一章预告**：第七章《数据库设计与优化》将学习如何使用 Trae AI 进行高效的数据库设计、优化和管理，包括关系型数据库、NoSQL 数据库、缓存系统等内容。
+## 8. 实践练习
+
+以下练习按难度递增分三档，要求**自己编写提示词**。每完成一项，按 §3.2 的六类缺陷表与 §7 的四步审查法逐项验证。
+
+### 8.1 基础题：单端点实战
+
+#### 8.1.1 用户注册端点
+
+**要求**：基于 §5.1 的 Express + Prisma 项目，独立实现 `POST /api/auth/register`。规则：email 唯一、密码长度 8-72、用 bcrypt cost=12 哈希；冲突返回 409 + `{ code: "EMAIL_TAKEN" }`，其他错误统一 422 + `{ code, fields }`。
+
+**你的任务**：自己写提示词（参考 §5.1.1 模板），提交给 Trae，对照 §3.2 与 §7.2 的 curl 边界测试，记录至少一处需要修复的问题。
+
+#### 8.1.2 任务列表查询
+
+**要求**：基于 §5.2 的 Flask + SQLAlchemy 2 项目，实现 `GET /api/tasks?status=&page=&pageSize=` 支持分页（最大 pageSize=100）与按状态筛选（`open` / `done`）；响应结构 `{ items, total, page, pageSize }`。
+
+**你的任务**：自己写提示词独立实现。验收点：pageSize=10000 必须被截断为 100；status 传非法值必须 422；空结果必须返回 `{ items: [], total: 0, ...}` 而非 404。
+
+### 8.2 进阶题：多端点协同与压测
+
+#### 8.2.1 RBAC 权限模型
+
+**要求**：在 Express 项目中实现基于角色的访问控制：`user` 只能 CRUD 自己的任务，`admin` 可访问全部。要求中间件可复用：`requireRole("admin")` / `requireOwnerOrRole("admin")`。
+
+**性能验收**：用 autocannon `-c 100 -d 30` 压测 `GET /api/tasks`，P95 < 80ms / 错误率 < 0.1%。
+
+#### 8.2.2 缓存与压测
+
+**要求**：在 §5.1 的项目中为 `GET /api/tasks` 增加 Redis 缓存（cache-aside + 60s TTL + 写后失效）。让 Trae 生成实现，然后用 wrk 对比缓存前后的 P95 延迟与 QPS。
+
+**你的任务**：自己设计提示词；对比缓存前后 P95、QPS、缓存命中率三项数字；确认在缓存击穿场景（同一 key 100 个并发首次未命中）下未引发 thundering herd。
+
+### 8.3 开放题：AI 输出审查与提示词复用
+
+#### 8.3.1 缺陷植入与命中表
+
+**要求**：让 Trae 生成一个含 5 个端点（注册 / 登录 / 任务 CRUD / 文件上传 / 通知订阅）的 Express API。**不告诉 AI 任何审查要求**。然后用 §3.2 的六类缺陷表 + §7.2 的 curl 测试逐项检查，统计 AI 各类缺陷的命中率。
+
+**交付物**：一份 5×6 的"端点 × 缺陷"命中表，列出哪个端点缺哪类校验、严重程度、复现 curl。
+
+#### 8.3.2 提示词模板沉淀
+
+**要求**：基于 §8.1 与 §8.2 的产出，沉淀一份本团队可复用的"后端 API 项目骨架提示词模板"。要求包含：固定的中间件链顺序、强制的校验/限流/审计日志条款、明确的 §3.2 六类缺陷自检 checklist。
+
+**交付物**：一份不超过 800 字的模板，作为后续章节（数据库设计、安全加固）的复用资产。
+
+> 三档练习产出的提示词与缺陷记录会作为第七章数据库设计的输入；请认真完成并存档，特别是 §8.3.2 的提示词模板会在第八章身份认证中再次使用。
+
+---
+
+## 9. 小结
+
+本章以 Express.js 与 Flask 为主线，把第一部分的提示词工程与代码审查能力放进真实的后端 API 工程问题里检验。核心收获包括：**框架选型直接影响 AI 输出质量**——Express 训练数据最丰富首版可用率最高，Flask 紧随其后，GraphQL 需要 schema-first 约束，微服务上下文超限不建议一次性生成；**后端代码的审查必须落到 curl 与压测**——空 body / 超长字符串 / 特殊字符 / 缺鉴权头 / 限流 这五条 curl 测试比阅读静态代码更高效；**安全是不可妥协的硬约束**——每个 AI 生成端点都必须显式声明输入校验、CORS 白名单、密钥 env 化、错误响应统一结构，缺一不可；**性能优化必须先压测后改**——P95 / QPS / 错误率 / 缓存命中率四项数字才是判断"AI 输出是否生产可用"的硬标尺。
+
+下一章进入数据库设计与优化，本章产出的 API 接口契约（§5/§8）将作为第七章数据建模与索引设计的直接输入；审查重心会从中间件链转移到表结构、索引选型与慢查询治理。
+
+---
+
+## 10. 延伸阅读
+
+以下资源覆盖框架官方文档、API 安全与性能、AI 辅助后端开发实践三条主线。
+
+### 10.1 框架与生态
+
+- [Express.js 官方文档](https://expressjs.com/) — 中间件链与路由设计的权威参考；建议先读 4.x guide 再看 5.x 迁移指南。
+- [Flask 官方文档](https://flask.palletsprojects.com/) — 应用工厂、blueprint、上下文机制的完整说明，是审查 AI 生成 Flask 代码的标尺。
+- [Prisma 官方文档](https://www.prisma.io/docs) — TypeScript 优先 ORM，强类型 schema 能显著降低 AI 生成数据访问层的出错率。
+- [SQLAlchemy 2.0 官方文档](https://docs.sqlalchemy.org/en/20/) — 重点关注 typed `Mapped[]` 写法，避免 AI 生成 1.x 风格的 legacy 代码。
+- [GraphQL 官方文档](https://graphql.org/) — 与 [Apollo Server 文档](https://www.apollographql.com/docs/apollo-server/) 一并阅读，覆盖 schema 设计与 N+1 问题缓解。
+
+### 10.2 安全、性能与可观测
+
+- [OWASP API Security Top 10 (2023)](https://owasp.org/API-Security/) — 后端 API 安全的事实标准，§3.2 与 §7.1 的安全性检查项均可在此找到详细背景。
+- [JWT Best Current Practices (RFC 8725)](https://datatracker.ietf.org/doc/html/rfc8725) — JWT 选型与算法约束的权威参考，禁止使用 HS256 弱密钥。
+- [autocannon 文档](https://github.com/mcollina/autocannon) / [wrk 文档](https://github.com/wg/wrk) — 本章 §6.3 与 §8.2 推荐的两款轻量级压测工具。
+- [Pino 日志最佳实践](https://getpino.io/) / [Loguru 文档](https://loguru.readthedocs.io/) — 高性能结构化日志，搭配 request-id 实现全链路追踪。
+
+### 10.3 测试、部署与 AI 辅助
+
+- [Swagger / OpenAPI 3.1](https://swagger.io/specification/) — 文档优先开发的事实标准；与 [openapi-typescript](https://github.com/drwpow/openapi-typescript) 联用可生成端到端类型。
+- [Docker 多阶段构建指南](https://docs.docker.com/build/building/multi-stage/) — 本章 §4.1 的 Dockerfile 设计依据，目标镜像 < 80MB。
+- [Trae 官方文档](https://docs.trae.ai/) — Skills 系统与 MCP 工具生态的最新指南，是沉淀 §8.3.2 团队提示词模板的基础。
+- [Anthropic · Building Effective Agents](https://www.anthropic.com/research/building-effective-agents) — Workflow vs Agent 的设计模式综述，对应本章「一次提示词生成项目骨架 + 审查 + 压测」的工作流。
+
+---
+
+> **进入第七章前**：完成 §8 的至少一道基础题与一道开放题，把产出的提示词模板（§8.3.2）与缺陷记录（§8.3.1）归档；这是第七章数据库设计章节展开的前置输入。

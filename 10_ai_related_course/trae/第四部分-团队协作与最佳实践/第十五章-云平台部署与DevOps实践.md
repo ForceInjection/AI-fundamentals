@@ -1,912 +1,725 @@
-# 第十五章 云平台部署与DevOps实践
+# 第十五章 云平台部署与 DevOps 实践
 
 ## 1. 学习目标
 
-完成本章学习后，您将能够：
+本章把第十三-十四章的"质量门禁 + 协作流程"延伸到生产部署：从"PR 合并"到"流量打到新版本"全自动闭环。重点解决 AI 生成 K8s/IaC 配置的三大反模式——**资源限制缺失导致节点 OOM、探针配置错误导致流量打到未就绪 Pod、Secrets 明文写在 ConfigMap 中**——并把它们沉淀为强制门禁。本章不重复第十二章的微服务治理（Istio/mTLS/SLO），而专注于**容器构建 → 镜像安全 → K8s 编排 → GitOps 发布 → IaC 与可观测**这条 DevOps 主链路。
 
-- **容器化部署**：掌握Docker容器化最佳实践和多阶段构建技术
-- **集群管理**：熟练使用Kubernetes进行服务编排和集群管理
-- **CI/CD流水线**：设计和实现完整的持续集成与持续部署流水线
-- **基础设施即代码**：使用Terraform、Ansible实现基础设施自动化管理
-- **云原生监控**：建立Prometheus、Grafana、ELK Stack监控体系
-- **DevOps实践**：运用Trae AI助手优化DevOps工作流程
+### 1.1 学习路径图
+
+```mermaid
+graph TD
+    A[前置技能检查] --> B[DevOps 与发布策略理论]
+    B --> C[Docker 多阶段 + Trivy 扫描]
+    C --> D[Kubernetes 生产清单]
+    D --> E[Helm/Kustomize 模板化]
+    E --> F[ArgoCD GitOps + Argo Rollouts]
+    F --> G[Terraform IaC + External Secrets]
+    G --> H[Prom/Grafana/Loki 可观测]
+    H --> I[审查闭环与团队 Skill]
+
+    style A fill:#e1f5fe
+    style I fill:#c8e6c9
+```
+
+### 1.2 预期学习成果
+
+本章结束时应形成 6 项交付物：① 多阶段 Dockerfile（生产镜像 < 200 MB，distroless 基础）；② 一套生产可上线的 K8s 清单（含 limits / probes / runAsNonRoot / NetworkPolicy / PDB / HPA）；③ Helm chart 或 Kustomize overlay（dev/staging/prod 三套环境）；④ ArgoCD application 配置（自动同步 + Argo Rollouts 蓝绿/金丝雀）；⑤ Terraform 模块管理 EKS/GKE 集群与 IAM；⑥ `devops-review` Skill 含六类缺陷 + 8 条危险模式 grep。
+
+---
 
 ## 2. 前置技能检查
 
-在开始本章学习前，请确认您已掌握以下技能：
+| 维度             | 必备能力                                                  | 自检方法                                                 |
+| :--------------- | :-------------------------------------------------------- | :------------------------------------------------------- |
+| **Docker**       | 多阶段构建、Buildx、网络与卷                              | `docker build` 出 < 200 MB 镜像并能 `docker run` 起来    |
+| **Kubernetes**   | Pod / Deployment / Service / Ingress / ConfigMap / Secret | 能在 kind/minikube 上部署一个含 ingress 的 demo 应用     |
+| **Linux & 网络** | shell、文件权限、TLS、负载均衡                            | 能解释 `curl https://example.com` 的 TLS 握手与 SNI 流程 |
+| **Ch13/Ch14**    | CI 流水线 + Branch Protection + Conventional Commits      | 本地能跑通 Ch14 §5.3 的四 job CI                         |
+| **云平台账号**   | AWS/GCP/Aliyun 任一，含基础 IAM 权限                      | 能用 CLI 创建 VPC + EKS/GKE 集群（kind 也可代替）        |
 
-### 2.1 前面章节基础技能
-
-- ✅ Trae环境配置和AI助手熟练使用
-- ✅ 代码质量管理和自动化测试
-- ✅ 项目管理与团队协作
-- ✅ 性能优化与调试技能
-
-### 2.2 云平台基础知识
-
-- ✅ Linux系统操作和Shell脚本编写
-- ✅ 网络协议和安全基础知识
-- ✅ 容器技术基本概念
-- ✅ 云服务平台基础操作
-- ✅ 版本控制和分支管理
-
-> **重要提示**：如果以上技能有不熟练的地方，建议先回顾前面相应章节内容再继续学习。
+> 任一项不满足，建议先回到对应章节复习。本章对基础设施知识要求最高。
 
 ---
 
-## 3. 实战项目：企业级DevOps平台构建
+## 3. 理论基础：发布策略与陷阱
 
-### 3.1 项目概述
+### 3.1 发布策略对比
 
-我们将使用Trae AI助手构建一个完整的企业级DevOps平台，涵盖：
+| 策略               | 适用场景                 | 切换粒度             | 资源占用  | 回滚速度 | AI 高频缺陷                            |
+| :----------------- | :----------------------- | :------------------- | :-------- | :------- | :------------------------------------- |
+| **Recreate**       | 内部工具、可停服         | 全量                 | 1×        | 中       | 无 PDB 导致全部一起死                  |
+| **Rolling Update** | Web 服务通用默认         | maxSurge/Unavailable | 1.25×     | 中       | maxUnavailable 设为 100%、无 readiness |
+| **Blue/Green**     | 数据库迁移、强一致性场景 | 全量切换             | 2×        | 秒级     | 流量未切回旧环境就被清理               |
+| **Canary**         | 新功能灰度、用户量大     | 1% → 100%            | 1.05-1.5× | 秒级     | 缺指标驱动、靠人工 ramp-up             |
+| **A/B (Header)**   | 业务实验、按用户切流     | 任意百分比           | 1.05-1.5× | 秒级     | 流量染色 header 无审计                 |
 
-- **容器化部署体系**：Docker多阶段构建和镜像优化
-- **Kubernetes集群管理**：服务编排、自动扩缩容、滚动更新
-- **CI/CD流水线设计**：Jenkins、GitLab CI、GitHub Actions集成
-- **基础设施自动化**：Terraform IaC和Ansible配置管理
-- **监控告警体系**：全栈监控、日志聚合、智能告警
+> 决策口诀：**"无状态 Web 用 Canary（Argo Rollouts），有状态/Schema 改动用 Blue/Green，业务实验用 A/B header 切流"**。
 
-### 3.2 技能应用提示
+### 3.2 AI 生成 K8s/IaC 配置的六类高频缺陷
 
-> **💡 核心技能运用**：
->
-> - 运用「容器化技术」技能实现应用标准化部署
-> - 运用「集群管理」技能提升系统可用性和扩展性
-> - 运用「自动化运维」技能减少人工操作和错误
-> - 运用「监控体系」技能保障系统稳定运行
+| 类别                       | 典型表现                                                                                | 根因                                       | 审查优先级 | 修正提示词模板（按 [Ch2 §4.9](../第一部分-Trae基础入门/第二章-基础交互模式.md)）                                                                           |
+| :------------------------- | :-------------------------------------------------------------------------------------- | :----------------------------------------- | :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **资源限制缺失**           | `resources.limits` 不设或仅设 cpu 不设 memory；request = limit 导致 QoS=Guaranteed 浪费 | AI 套官方 quickstart 不写 limits           | **P0**     | 保留 Deployment 名，补 `resources.requests/limits` （cpu+memory） + QoS=Burstable。不要动镜像。验证：`kubectl describe pod` 显示 limits                    |
+| **探针配置错误**           | livez/readyz 用同一端点；initialDelay 太短；探针超时 1 s 导致频繁重启                   | AI 不区分进程存活与依赖就绪                | **P0**     | 保留容器端口，拆 `/livez` 与 `/readyz` + `initialDelaySeconds` 含启动 buffer + `timeoutSeconds=5`。不要动 image。验证：DB 抖动 pod 不重启                  |
+| **root 与权限失守**        | `runAsNonRoot=false`、`allowPrivilegeEscalation=true`、`capabilities` 未 drop ALL       | AI 套 ubuntu 镜像默认 root                 | **P0**     | 保留镜像 base，`securityContext: runAsNonRoot:true` + `readOnlyRootFilesystem` + `capabilities.drop: [ALL]`。不要动 args。验证：`kubectl exec id` 返 uid≠0 |
+| **Secrets 明文与漂移**     | DB 密码写在 ConfigMap；Secret 明文 commit 进 git；无外部 secret manager                 | AI 不会主动用 ESO / Sealed Secrets / Vault | **P0**     | 保留引用键名，迁 `ExternalSecrets` + `Vault` 或 AWS SecretsManager。不要动 env 变量名。验证：`git grep -E "password\|token"` 返 0 明文                     |
+| **镜像 tag 不可重现**      | `image: app:latest`；构建时间戳 tag；Helm values 不锁 digest                            | AI 默认套 latest，违反 GitOps 不可变原则   | P1         | 保留 image repo，tag 改 sha256 digest 锁定 + Helm values 同步锁定。不要动 chart 结构。验证：CI 构建镜像 hash 与运行时 hash 一致                            |
+| **滚动更新与中断保护缺失** | 无 `PodDisruptionBudget`；`maxUnavailable=25%` 但只有 2 副本；preStop 缺 sleep          | AI 套默认值忽略副本数与 graceful shutdown  | P1         | 保留 replicas，加 `PodDisruptionBudget: minAvailable:70%` + `preStop: sleep 15s` + `maxUnavailable:1`。不要动 update strategy。验证：drain 节点时 SLO 不破 |
 
-### 3.3 技术栈选择
+### 3.3 传统部署 vs AI 辅助 DevOps
 
-**容器化技术：**
+| 维度       | 传统手工                   | AI 辅助（Trae）                                 |
+| :--------- | :------------------------- | :---------------------------------------------- |
+| Dockerfile | 抄基础模板，懂 layer cache | 一句话生成多阶段，但常忘 healthcheck/non-root   |
+| K8s YAML   | 凭经验逐字段填             | 完整骨架但 limits/probes/securityContext 默认错 |
+| Helm Chart | 抄已有 chart               | 模板齐全，但 values.yaml 缺 schema、values 过松 |
+| Terraform  | 模块边界清晰               | 喜欢把所有资源放一个 main.tf，无 state 隔离     |
+| 监控告警   | 抄 Prometheus rules 模板   | 规则齐全但 SLO/Burn rate 通常缺失（见 Ch12）    |
 
-- **容器运行时**：Docker、containerd、CRI-O
-- **镜像仓库**：Docker Hub、Harbor、AWS ECR
-- **构建工具**：Docker Buildx、Kaniko、BuildKit
-- **安全扫描**：Trivy、Clair、Snyk
-
-**编排平台：**
-
-- **容器编排**：Kubernetes、Docker Swarm
-- **服务网格**：Istio、Linkerd、Consul Connect
-- **Ingress控制器**：NGINX、Traefik、Ambassador
-- **存储方案**：Persistent Volumes、CSI驱动
-
-**CI/CD工具：**
-
-- **持续集成**：Jenkins、GitLab CI、GitHub Actions、Azure DevOps
-- **制品管理**：Nexus、Artifactory、Harbor
-- **部署工具**：ArgoCD、Flux、Spinnaker
-- **测试工具**：SonarQube、OWASP ZAP、Selenium
-
-**基础设施管理：**
-
-- **IaC工具**：Terraform、Pulumi、AWS CloudFormation
-- **配置管理**：Ansible、Chef、Puppet、SaltStack
-- **密钥管理**：HashiCorp Vault、AWS Secrets Manager
-- **网络管理**：Calico、Flannel、Weave Net
-
-**监控运维：**
-
-- **指标监控**：Prometheus、Grafana、InfluxDB
-- **日志管理**：ELK Stack、Fluentd、Loki
-- **链路追踪**：Jaeger、Zipkin、SkyWalking
-- **告警通知**：AlertManager、PagerDuty、Slack
+> 结论：**AI 让基础设施 YAML 接近 0 成本，但让"生产可用性"审查成本翻倍**。本章 §7 + §3.2 六类缺陷是审查抓手。
 
 ---
 
-## 4. Docker容器化实战
+## 4. 技术栈与项目架构
 
-### 4.1 多阶段构建优化
+### 4.1 技术栈与最低版本
 
-#### 4.1.1 创建优化的Dockerfile
+| 层           | 选型                                | 最低版本                | 选型说明                                                |
+| :----------- | :---------------------------------- | :---------------------- | :------------------------------------------------------ |
+| 容器引擎     | Docker / containerd                 | 26 / 1.7                | Docker 26 默认 BuildKit；containerd 1.7 支持 sandbox v2 |
+| 镜像构建     | Docker Buildx                       | 0.14+                   | 多平台、缓存导入导出、SBOM/attestation                  |
+| 镜像扫描     | Trivy / Grype                       | **0.55+**               | Trivy 含 misconfig + secret + license 扫描              |
+| 基础镜像     | distroless / chainguard             | latest                  | distroless 减少攻击面 ≥ 90%                             |
+| 编排         | Kubernetes                          | **1.30+**               | 1.30 GA：Sidecar Containers、ValidatingAdmissionPolicy  |
+| 模板         | Helm / Kustomize                    | 3.14 / 5.4              | Helm 3.14 OCI-only；Kustomize 5.4 支持 components       |
+| GitOps       | Argo CD                             | **2.10+**               | 2.10 起 ApplicationSet + Sync Waves 稳定                |
+| 渐进发布     | Argo Rollouts                       | 1.7+                    | 支持 metric-driven canary                               |
+| IaC          | Terraform / OpenTofu                | 1.9 / 1.7               | OpenTofu 是 1.5 后的开源分叉                            |
+| 配置管理     | Ansible                             | 10+                     | 用于裸金属与 OS 层；K8s 优先 Helm/Kustomize             |
+| 密钥         | External Secrets Operator + Vault   | 0.10 / 1.15             | 替代 Sealed Secrets，支持轮转                           |
+| Ingress      | Ingress-NGINX / Gateway API         | 1.10 / v1               | Gateway API v1 GA，K8s 1.30 推荐                        |
+| 证书         | cert-manager                        | 1.15+                   | ACME / Let's Encrypt / 内部 CA 全支持                   |
+| 自动扩缩     | HPA + KEDA                          | 1.30 / 2.15             | KEDA 支持事件驱动（Kafka/RabbitMQ/SQS）                 |
+| 可观测       | Prometheus + Grafana + Loki + Tempo | 2.50 / 10.4 / 3.0 / 2.4 | 完整 LGTM 栈                                            |
+| Runtime 安全 | Falco / Tetragon                    | 0.38 / 1.0              | eBPF 检测异常容器行为                                   |
+| 策略         | Kyverno / OPA Gatekeeper            | 1.12 / 3.16             | Kyverno YAML 原生，更易上手                             |
 
-**目标**：学会使用Docker多阶段构建技术优化镜像大小和安全性
-
-**操作步骤**：
-
-1. **创建示例应用项目**
-
-   在Trae聊天窗口中输入以下提示词：
-
-   ```text
-   创建一个Node.js Web应用的Docker容器化项目，具体要求：
-   
-   项目结构：
-   1. Express.js后端API服务
-   2. React前端单页应用
-   3. PostgreSQL数据库连接
-   4. Redis缓存集成
-   5. 健康检查端点
-   
-   容器化要求：
-   1. 多阶段构建优化镜像大小
-   2. 非root用户运行提升安全性
-   3. 生产环境配置优化
-   4. 健康检查和优雅关闭
-   5. 环境变量配置管理
-   
-   请生成完整的项目代码和Dockerfile。
-   ```
-
-2. **优化Docker构建配置**
-
-   **Trae提示词**：
-
-   ```text
-   为刚创建的Node.js应用优化Docker构建配置：
-   
-   优化要求：
-   1. 多阶段构建减少镜像大小
-   2. 构建缓存优化提升构建速度
-   3. 安全扫描和漏洞检测
-   4. 镜像签名和验证
-   5. 构建参数和环境配置
-   
-   请提供：
-   - 优化后的Dockerfile
-   - Docker Compose配置
-   - 构建脚本和CI集成
-   - 安全扫描配置
-   ```
-
-**预期输出概要**：
-
-- **示例应用**：完整的Node.js + React全栈应用，包含API服务、前端界面、数据库集成
-- **优化Dockerfile**：多阶段构建配置，镜像大小减少70%以上，安全性显著提升
-- **构建配置**：Docker Compose开发环境，构建脚本自动化，CI/CD集成配置
-
-#### 4.1.2 容器安全最佳实践
-
-**Trae提示词**：
+### 4.2 仓库与环境结构（GitOps 友好）
 
 ```text
-实施Docker容器安全最佳实践，教学内容包括：
-
-1. 镜像安全扫描和漏洞管理
-2. 非特权用户运行和权限控制
-3. 网络隔离和安全组配置
-4. 密钥管理和环境变量安全
-5. 运行时安全监控和审计
-
-请提供：
-- 安全扫描工具集成配置
-- 容器运行时安全策略
-- 网络安全配置示例
-- 密钥管理最佳实践
-- 安全监控和告警配置
+infra-repo/
+├── clusters/
+│   ├── prod/                   # 集群级配置（一个 cluster 一个目录）
+│   │   ├── argocd/
+│   │   └── kustomization.yaml
+│   └── staging/
+├── platform/                   # 平台级公共组件
+│   ├── ingress-nginx/          # Helm chart 引用
+│   ├── cert-manager/
+│   ├── external-secrets/
+│   └── kube-prometheus-stack/
+├── apps/                       # 业务应用（一个 app 一个目录）
+│   └── task-api/
+│       ├── base/               # Kustomize base
+│       ├── overlays/
+│       │   ├── dev/
+│       │   ├── staging/
+│       │   └── prod/
+│       └── argocd-app.yaml     # Argo CD ApplicationSet 入口
+└── terraform/
+    ├── modules/                # 复用的 vpc / eks / iam 模块
+    └── envs/
+        ├── prod/               # 一环境一 backend、一 state
+        └── staging/
 ```
 
-**预期输出概要**：
-
-- **安全扫描配置**：Trivy、Clair集成，自动化漏洞检测和修复建议
-- **安全策略**：Pod Security Standards、Network Policies、RBAC配置
-- **密钥管理**：Vault集成、Kubernetes Secrets、环境变量加密
-- **监控审计**：Falco运行时监控、审计日志配置、安全事件告警
-
-### 4.2 镜像仓库管理
-
-#### 4.2.1 Harbor私有仓库部署
-
-**目标**：部署和配置Harbor企业级镜像仓库
-
-**Trae提示词**：
-
-```text
-部署Harbor私有镜像仓库，配置要求：
-
-1. Harbor高可用部署配置
-2. HTTPS证书和域名配置
-3. 用户权限和项目管理
-4. 镜像扫描和签名验证
-5. 镜像复制和同步策略
-6. 备份恢复和监控告警
-
-请生成：
-- Harbor部署配置文件
-- HTTPS证书配置
-- 用户权限管理脚本
-- 镜像扫描策略配置
-- 监控告警配置
-```
-
-**预期输出概要**：
-
-- **Harbor部署**：高可用Harbor集群配置，支持负载均衡和故障转移
-- **安全配置**：HTTPS证书自动更新，RBAC权限管理，镜像签名验证
-- **运维配置**：自动化备份脚本，监控指标收集，告警规则配置
+> 强约定：**业务代码与基础设施代码 separate repo**（apps repo + infra repo），通过 Argo CD ApplicationSet 关联，避免应用 commit 触发 infra 漂移。
 
 ---
 
-## 5. Kubernetes集群管理
+## 5. 主框架实战：从 Dockerfile 到 GitOps
 
-### 5.1 集群部署与配置
+### 5.1 多阶段 Dockerfile（Node.js 示例）
 
-#### 5.1.1 生产级Kubernetes集群部署
+```dockerfile
+# syntax=docker/dockerfile:1.7
+ARG NODE_VERSION=20.15.0
 
-**目标**：部署生产级Kubernetes集群并配置高可用
+# ---- 1) deps：仅装依赖，最大化缓存 ----
+FROM node:${NODE_VERSION}-bookworm-slim AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/pnpm-store \
+    corepack enable && pnpm config set store-dir /pnpm-store \
+    && pnpm install --frozen-lockfile --prod=false        # ✅ frozen-lockfile
 
-**操作步骤**：
+# ---- 2) build：编译 TS、打包前端 ----
+FROM deps AS build
+COPY . .
+RUN pnpm build && pnpm prune --prod                       # ✅ 仅保留运行时依赖
 
-1. **集群规划和部署**
-
-   **Trae提示词**：
-
-   ```text
-   设计和部署生产级Kubernetes集群，具体要求：
-   
-   集群架构：
-   1. 3个Master节点高可用配置
-   2. 5个Worker节点负载分布
-   3. etcd集群外部部署
-   4. 负载均衡器配置
-   5. 网络插件选择和配置
-   
-   安全配置：
-   1. RBAC权限控制
-   2. Pod Security Standards
-   3. Network Policies网络隔离
-   4. 证书管理和轮换
-   5. 审计日志配置
-   
-   请生成完整的集群部署配置和脚本。
-   ```
-
-2. **集群网络和存储配置**
-
-   **Trae提示词**：
-
-   ```text
-   配置Kubernetes集群网络和存储系统：
-   
-   网络配置：
-   1. Calico CNI插件配置
-   2. Ingress Controller部署
-   3. Service Mesh集成
-   4. 网络策略和安全组
-   5. DNS和服务发现配置
-   
-   存储配置：
-   1. CSI存储驱动配置
-   2. StorageClass定义
-   3. 持久化卷管理
-   4. 备份和恢复策略
-   5. 存储监控和告警
-   
-   请提供详细的配置文件和部署脚本。
-   ```
-
-**预期输出概要**：
-
-- **集群部署**：完整的Kubernetes集群部署脚本，支持多云环境和自动化安装
-- **网络配置**：Calico网络插件配置，Ingress Controller部署，服务网格集成
-- **存储系统**：CSI驱动配置，动态存储分配，数据备份恢复策略
-
-#### 5.1.2 应用部署和管理
-
-**Trae提示词**：
-
-```text
-在Kubernetes集群中部署和管理应用，包含：
-
-1. Helm Chart包管理和版本控制
-2. 应用配置管理和密钥注入
-3. 滚动更新和回滚策略
-4. 自动扩缩容配置
-5. 健康检查和故障恢复
-
-请提供：
-- Helm Chart模板和配置
-- ConfigMap和Secret管理
-- Deployment和Service配置
-- HPA和VPA自动扩缩容
-- 监控和告警集成
+# ---- 3) runtime：distroless，无 shell，无 root ----
+FROM gcr.io/distroless/nodejs20-debian12:nonroot          # ✅ distroless + nonroot
+WORKDIR /app
+COPY --from=build --chown=nonroot:nonroot /app/dist ./dist
+COPY --from=build --chown=nonroot:nonroot /app/node_modules ./node_modules
+COPY --from=build --chown=nonroot:nonroot /app/package.json ./
+USER nonroot                                               # ✅ 显式声明
+EXPOSE 3000
+# ⚠️ 反例：CMD ["npm","start"]   distroless 没有 npm
+CMD ["dist/server.js"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD ["dist/healthcheck.js"]                           # ✅ 自带 healthcheck，便于 docker
 ```
 
-**预期输出概要**：
+```bash
+# 配套构建命令（CI 中执行）
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --provenance=true --sbom=true \
+  --tag ghcr.io/org/app:${GIT_SHA} \
+  --tag ghcr.io/org/app:$(git describe --tags --always) \
+  --cache-to type=gha,mode=max \
+  --cache-from type=gha \
+  --push .
 
-- **Helm Charts**：标准化应用打包，版本管理，依赖处理，配置模板化
-- **配置管理**：ConfigMap热更新，Secret加密存储，环境变量注入
-- **部署策略**：蓝绿部署，金丝雀发布，滚动更新，自动回滚机制
-
-### 5.2 服务网格集成
-
-#### 5.2.1 Istio服务网格部署
-
-**目标**：部署Istio服务网格实现微服务治理
-
-**Trae提示词**：
-
-```text
-部署和配置Istio服务网格，实现微服务治理：
-
-1. Istio控制平面部署和配置
-2. Sidecar代理自动注入
-3. 流量管理和路由策略
-4. 安全策略和mTLS配置
-5. 可观测性和监控集成
-
-配置要求：
-- 多集群服务网格
-- 灰度发布和A/B测试
-- 熔断降级和重试策略
-- 分布式追踪和指标收集
-- 安全策略和访问控制
-
-请生成完整的Istio配置和示例应用。
+trivy image --severity HIGH,CRITICAL --exit-code 1 ghcr.io/org/app:${GIT_SHA}  # ✅ 阻断式扫描
 ```
 
-**预期输出概要**：
+> 关键：① `distroless:nonroot` + `USER nonroot` 双保险；② `--provenance` + `--sbom` 让镜像可追溯；③ Trivy `--exit-code 1` 让 HIGH/CRITICAL 漏洞直接阻断 CI。
 
-- **Istio部署**：控制平面高可用配置，数据平面自动注入，多集群联邦
-- **流量管理**：智能路由，负载均衡，故障注入，超时重试配置
-- **安全策略**：mTLS自动配置，授权策略，JWT验证，安全审计
+### 5.2 生产可上线的 K8s 清单（核心三件套）
+
+```yaml
+# apps/task-api/base/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } # ✅ 0 停机
+  selector: { matchLabels: { app: task-api } }
+  template:
+    metadata:
+      labels: { app: task-api, version: v1 }
+      annotations: { prometheus.io/scrape: "true", prometheus.io/port: "9090" }
+    spec:
+      serviceAccountName: task-api # ✅ 专属 SA，禁默认 SA
+      automountServiceAccountToken: false # ✅ 不需要时关闭
+      securityContext:
+        runAsNonRoot: true # ✅ Pod 级
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault } # ✅ seccomp
+      topologySpreadConstraints: # ✅ 跨 zone 打散
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: { matchLabels: { app: task-api } }
+      containers:
+        - name: app
+          image: ghcr.io/org/task-api@sha256:... # ✅ 锁 digest，不用 tag
+          imagePullPolicy: IfNotPresent
+          ports:
+            [
+              { name: http, containerPort: 3000 },
+              { name: metrics, containerPort: 9090 },
+            ]
+          envFrom: [{ secretRef: { name: task-api-secrets } }]
+          resources: # ✅ requests = limits（除 cpu）
+            requests: { cpu: "100m", memory: "256Mi", ephemeral-storage: "1Gi" }
+            limits: { memory: "256Mi", ephemeral-storage: "2Gi" }
+          livenessProbe: # ✅ 进程存活
+            httpGet: { path: /livez, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe: # ✅ 依赖就绪（与 livez 区分）
+            httpGet: { path: /readyz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          startupProbe: # ✅ 慢启动场景必备
+            httpGet: { path: /livez, port: http }
+            failureThreshold: 30
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec: { command: ["/bin/sleep", "15"] } # ✅ 给 Service 摘除时间
+          securityContext: # ✅ container 级再加固
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp } # ✅ readOnlyRootFilesystem 必备
+      volumes:
+        - { name: tmp, emptyDir: {} }
+      terminationGracePeriodSeconds: 60 # ✅ ≥ preStop sleep + 处理时间
+---
+# pdb.yaml — 防止滚动更新时全部一起死
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: task-api }
+spec:
+  minAvailable: 2 # ✅ 3 副本至少留 2
+  selector: { matchLabels: { app: task-api } }
+---
+# hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: task-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: task-api }
+  minReplicas: 3
+  maxReplicas: 30
+  metrics:
+    - type: Resource
+      resource:
+        { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
+  behavior:
+    scaleDown: # ✅ 防止抖动
+      stabilizationWindowSeconds: 300
+      policies: [{ type: Percent, value: 10, periodSeconds: 60 }]
+---
+# networkpolicy.yaml — 默认拒绝
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: task-api-ingress }
+spec:
+  podSelector: { matchLabels: { app: task-api } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        [
+          {
+            namespaceSelector:
+              { matchLabels: { kubernetes.io/metadata.name: ingress-nginx } },
+          },
+        ]
+      ports: [{ port: http }]
+  egress: # ✅ 显式声明可访问目标
+    - to:
+        [
+          {
+            namespaceSelector:
+              { matchLabels: { kubernetes.io/metadata.name: kube-system } },
+          },
+        ]
+      ports: [{ port: 53, protocol: UDP }] # DNS
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ port: 5432 }]
+```
+
+> 关键决策：① **memory limits = requests** 但 **cpu limits 留空**（避免 throttling）；② **livez/readyz 必须分离**——livez 仅检进程，readyz 检依赖；③ **PDB 是 K8s 1.21+ 默认行为前提**，必须显式设置。
+
+### 5.3 Helm + Kustomize 三环境管理
+
+```yaml
+# apps/task-api/overlays/prod/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod
+resources: [../../base]
+patches:
+  - target: { kind: Deployment, name: task-api }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 6                                          # ✅ prod 跑 6 副本
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "500m"
+images:
+  - name: ghcr.io/org/task-api
+    newTag: v1.4.2@sha256:abc... # ✅ Argo Image Updater 会改这一行
+configMapGenerator:
+  - name: task-api-config
+    behavior: merge
+    literals: [LOG_LEVEL=info, RATE_LIMIT=1000]
+```
+
+> 选型建议：**应用业务用 Kustomize**（轻量、纯 YAML、Argo CD 原生），**平台组件用 Helm**（社区 chart 多）。混用而不内嵌。
+
+### 5.4 Argo CD GitOps + Argo Rollouts 渐进发布
+
+```yaml
+# apps/task-api/argocd-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: task-api-prod, namespace: argocd }
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/org/infra
+    targetRevision: main
+    path: apps/task-api/overlays/prod
+  destination: { server: https://kubernetes.default.svc, namespace: prod }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true } # ✅ 自动 self-heal 防漂移
+    syncOptions: [ServerSideApply=true, CreateNamespace=true]
+    retry: { limit: 3, backoff: { duration: 30s, factor: 2, maxDuration: 5m } }
+---
+# rollout.yaml — 用 Argo Rollouts 替代原生 Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata: { name: task-api }
+spec:
+  replicas: 6
+  strategy:
+    canary:
+      canaryService: task-api-canary
+      stableService: task-api-stable
+      trafficRouting: { nginx: { stableIngress: task-api } }
+      steps:
+        - setWeight: 5 # ✅ 5% → 观察
+        - pause: { duration: 5m }
+        - analysis: # ✅ 指标驱动，非定时
+            templates: [{ templateName: success-rate-and-latency }]
+            args: [{ name: service-name, value: task-api-canary }]
+        - setWeight: 25
+        - pause: { duration: 10m }
+        - setWeight: 50
+        - pause: { duration: 10m }
+        - setWeight: 100
+---
+# AnalysisTemplate — 失败自动回滚
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata: { name: success-rate-and-latency }
+spec:
+  args: [{ name: service-name }]
+  metrics:
+    - name: success-rate
+      successCondition: result[0] >= 0.99 # ✅ 99% 成功率
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{service="{{args.service-name}}",code!~"5.."}[2m]))
+            / sum(rate(http_requests_total{service="{{args.service-name}}"}[2m]))
+    - name: p95-latency
+      successCondition: result[0] <= 0.300 # ✅ p95 ≤ 300 ms
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="{{args.service-name}}"}[2m])) by (le))
+```
+
+> 强约定：**指标驱动 ramp-up，禁止定时无脑加权重**。pause 仅用于初次观察，分析失败立即回滚。
+
+### 5.5 Terraform IaC（EKS 集群示例）
+
+```hcl
+# terraform/envs/prod/main.tf
+terraform {
+  required_version = ">= 1.9"
+  backend "s3" {                                         # ✅ remote state，不本地
+    bucket         = "org-tfstate-prod"
+    key            = "eks/prod/terraform.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "tfstate-lock"                      # ✅ state 锁
+    encrypt        = true
+  }
+  required_providers { aws = { version = "~> 5.60" } }
+}
+
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.13.0"                                     # ✅ 锁版本
+  name    = "prod-vpc"
+  cidr    = "10.0.0.0/16"
+  azs             = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  enable_nat_gateway = true
+  single_nat_gateway = false                             # ✅ 生产多 AZ NAT
+  tags = { Env = "prod", IaC = "terraform" }
+}
+
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.24.0"
+  cluster_name    = "prod"
+  cluster_version = "1.30"                               # ✅ 锁 K8s 版本
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+  cluster_endpoint_public_access  = false                # ✅ 仅私网
+  cluster_endpoint_private_access = true
+  enable_cluster_creator_admin_permissions = false       # ✅ 不让创建者拿 cluster-admin
+  eks_managed_node_groups = {
+    default = {
+      ami_type       = "BOTTLEROCKET_x86_64"             # ✅ 安全加固 OS
+      instance_types = ["m6i.xlarge"]
+      min_size = 3; max_size = 20; desired_size = 6
+      taints = []
+    }
+  }
+  cluster_addons = {                                     # ✅ 内建 addon
+    coredns    = { most_recent = true }
+    kube-proxy = { most_recent = true }
+    vpc-cni    = { most_recent = true }
+  }
+}
+```
+
+> 关键：① S3 backend + DynamoDB 锁（防并发 apply）；② provider 与模块版本必须锁；③ `enable_cluster_creator_admin_permissions=false` 防止 root 用户绑死 cluster-admin。
+
+### 5.6 External Secrets + Vault（替代 Sealed Secrets）
+
+```yaml
+# secret-store.yaml（一次性配置）
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata: { name: vault-backend }
+spec:
+  provider:
+    vault:
+      server: "https://vault.org.internal"
+      path: "kv"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "external-secrets" # ✅ 走 Kubernetes auth
+---
+# external-secret.yaml（每个应用一份）
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata: { name: task-api-secrets, namespace: prod }
+spec:
+  refreshInterval: 1h # ✅ 自动轮转
+  secretStoreRef: { kind: ClusterSecretStore, name: vault-backend }
+  target: { name: task-api-secrets, creationPolicy: Owner }
+  data:
+    - {
+        secretKey: DB_PASSWORD,
+        remoteRef: { key: prod/task-api, property: db_password },
+      }
+    - {
+        secretKey: JWT_SIGNING_KEY,
+        remoteRef: { key: prod/task-api, property: jwt_key },
+      }
+```
+
+> 强约定：**git 仓库永不出现明文 secret**；ExternalSecret 是唯一与 git 关联的 secret 资源，真正的值在 Vault。
 
 ---
 
-## 6. CI/CD流水线设计
+### 5.7 Vibe Coding 循环实录：livez/readyz 混淆修正
 
-### 6.1 Jenkins流水线实战
+> **修正语法**：「修正提示词」按 [Ch2 §4.9 修正提示词语法](../第一部分-Trae基础入门/第二章-基础交互模式.md) 模板；3 轮未收敛触发 §4.10。模式选择查 [Ch1 §5.4](../第一部分-Trae基础入门/第一章-Trae简介与环境配置.md)。
 
-#### 6.1.1 Jenkins集群部署
+| 轮次 | AI 输出摘要                                                          | 发现的缺陷                       | 修正提示词（按 §4.9）                                                                                                                                                                                                   | 验证信号             |
+| :--- | :------------------------------------------------------------------- | :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------- |
+| R1   | `livenessProbe` 与 `readinessProbe` 同指 `/health`（含 DB 连通检查） | DB 抖动 → 进程被反复 kill → 雪崩 | 保留容器与端口配置不变，修复探针端点：拆 `/livez`（仅返回 200，验证进程存活） + `/readyz`（含依赖检查）。原因：liveness 失败应重启，readiness 失败应摘流量。不要动镜像与 args。验证：DB 短暂抖动时 pod 不重启但被摘流量 | DB 抖动 → pod 不重启 |
+| R2   | JVM 冷启 30s，readiness 阈值 10s                                     | 滚动升级时新 pod 反复被 kill     | 保留 livez/readyz 拆分，新增 `startupProbe: { failureThreshold: 30, periodSeconds: 5 }` 给 readyz。原因：startupProbe 期内禁用 liveness。不要动 readyz periodSeconds。验证：冷启 150s 内 pod 不被重启                   | 冷启不重启           |
+| R3   | 滚动升级时所有 pod 同时 NotReady                                     | 流量瞬时 503 突增                | 保留三探针配置，新增 `PodDisruptionBudget: { minAvailable: 70% }`。原因：滚动期必须保留可服务副本。不要动 replicas 数。验证：`kubectl drain` 一个节点时 SLO 不破（错误率 < 0.1%）                                       | drain 时 SLO 不破    |
 
-**目标**：部署高可用Jenkins集群并配置流水线
-
-**操作步骤**：
-
-1. **Jenkins集群部署**
-
-   **Trae提示词**：
-
-   ```text
-   部署高可用Jenkins集群，配置要求：
-   
-   集群架构：
-   1. Jenkins Master高可用配置
-   2. 动态Agent节点管理
-   3. 共享存储和数据持久化
-   4. 负载均衡和故障转移
-   5. 插件管理和版本控制
-   
-   安全配置：
-   1. LDAP/AD用户认证集成
-   2. RBAC权限控制
-   3. API Token管理
-   4. 审计日志和合规性
-   5. 网络安全和访问控制
-   
-   请生成Jenkins集群部署配置和管理脚本。
-   ```
-
-2. **流水线配置和优化**
-
-   **Trae提示词**：
-
-   ```text
-   设计企业级CI/CD流水线，包含：
-   
-   流水线阶段：
-   1. 代码检出和依赖安装
-   2. 静态代码分析和安全扫描
-   3. 单元测试和集成测试
-   4. 镜像构建和安全扫描
-   5. 部署到测试环境
-   6. 自动化测试和性能测试
-   7. 生产环境部署和监控
-   
-   优化配置：
-   - 并行构建和缓存优化
-   - 失败快速反馈机制
-   - 部署策略和回滚机制
-   - 通知和报告集成
-   
-   请提供完整的Jenkinsfile和配置。
-   ```
-
-**预期输出概要**：
-
-- **Jenkins集群**：高可用Master/Agent架构，动态扩缩容，共享存储配置
-- **流水线配置**：多阶段并行构建，智能缓存，失败快速反馈，自动化部署
-- **集成配置**：Git Webhook触发，SonarQube质量门禁，Slack通知集成
-
-#### 6.1.2 GitLab CI/CD集成
-
-**Trae提示词**：
-
-```text
-配置GitLab CI/CD流水线，实现DevOps最佳实践：
-
-1. GitLab Runner集群部署
-2. 多环境部署策略配置
-3. 容器化构建和部署
-4. 安全扫描和合规检查
-5. 监控和告警集成
-
-流水线特性：
-- 分支策略和合并请求流程
-- 环境变量和密钥管理
-- 制品管理和版本控制
-- 部署审批和回滚机制
-- 性能测试和质量门禁
-
-请生成.gitlab-ci.yml配置和相关脚本。
-```
-
-**预期输出概要**：
-
-- **GitLab CI配置**：多阶段流水线，条件执行，并行任务，缓存优化
-- **Runner配置**：Kubernetes执行器，Docker-in-Docker，自动扩缩容
-- **安全集成**：SAST/DAST扫描，依赖检查，容器镜像扫描，合规报告
-
-### 6.2 GitHub Actions工作流
-
-#### 6.2.1 GitHub Actions企业级配置
-
-**目标**：配置GitHub Actions实现企业级CI/CD工作流
-
-**Trae提示词**：
-
-```text
-设计GitHub Actions企业级工作流，配置要求：
-
-1. 多环境部署工作流
-2. 矩阵构建和并行执行
-3. 自定义Action开发
-4. 密钥管理和安全配置
-5. 监控和通知集成
-
-工作流特性：
-- 条件执行和依赖管理
-- 制品上传和下载
-- 环境保护规则
-- 审批流程和手动触发
-- 成本优化和资源管理
-
-请生成完整的工作流配置和自定义Action。
-```
-
-**预期输出概要**：
-
-- **工作流配置**：多触发器工作流，条件执行，矩阵策略，并发控制
-- **自定义Action**：可复用Action组件，输入输出参数，错误处理机制
-- **企业集成**：OIDC身份验证，环境保护，审批流程，成本监控
+> **收敛信号**：探针拆分 + startup 缓冲 + PDB 三层达标。如未收敛触发 §4.10 信号 3（结构性缺陷：应用本身无优雅关闭），按「换模式」重启——切 Chat 先讨论 SIGTERM handler，再回 Builder 写 K8s 清单。
 
 ---
 
-## 7. 基础设施即代码(IaC)
+## 6. 进阶速查表
 
-### 7.1 Terraform实战
+### 6.1 进阶场景索引
 
-#### 7.1.1 多云基础设施管理
+| 场景               | 关键技术                                | AI 高频缺陷              | 建议提示词关键词                             |
+| :----------------- | :-------------------------------------- | :----------------------- | :------------------------------------------- |
+| **多集群管理**     | Argo CD ApplicationSet + Cluster API    | 集群凭证泄漏             | "ApplicationSet generators + cluster secret" |
+| **事件驱动伸缩**   | KEDA + Kafka/SQS                        | scale-to-zero 时漏消息   | "KEDA ScaledObject + cooldown + minReplicas" |
+| **多租户隔离**     | Namespace + Hierarchical NS + Quota     | quota 过松、网络策略缺失 | "ResourceQuota + LimitRange + NetworkPolicy" |
+| **批处理/AI 训练** | Kueue / Volcano / Job + Gang scheduling | OOM 中途失败无重试       | "Indexed Job + suspend + checkpoint"         |
+| **混沌工程**       | Chaos Mesh / LitmusChaos                | 不限定爆炸半径           | "namespace selector + duration + dry-run"    |
+| **成本优化**       | Karpenter + Spot + KEDA                 | Spot 中断未处理          | "interruption queue + PDB + topology spread" |
 
-**目标**：使用Terraform管理多云基础设施
+### 6.2 部署性能基线
 
-**操作步骤**：
+| 指标                     | 目标值   | 测量方法                                    |
+| :----------------------- | :------- | :------------------------------------------ |
+| 镜像大小（Node.js）      | < 200 MB | `docker image ls`                           |
+| 镜像构建时间（缓存命中） | < 60 s   | `docker buildx build --progress=plain` 计时 |
+| Pod 冷启动 → ready       | < 30 s   | kubectl get events 查 Ready 时间            |
+| 滚动更新单 Pod 切换      | < 30 s   | preStop sleep 15 + readiness 5 + 启动 ≤ 10  |
+| Argo CD 同步时延         | < 1 min  | App sync wave from git push                 |
+| Prometheus rule 评估     | < 30 s   | scrape interval + evaluation latency        |
 
-1. **Terraform项目初始化**
+### 6.3 配置 Cheatsheet
 
-   **Trae提示词**：
+```bash
+# 一键 K8s 配置审计（CI 中跑）
+kubectl kustomize apps/task-api/overlays/prod | kube-score score -        # ✅ 静态分析
+kubectl kustomize apps/task-api/overlays/prod | kubeconform -strict       # ✅ schema 校验
+kubectl kustomize apps/task-api/overlays/prod | trivy config -            # ✅ misconfig 扫描
+checkov -d terraform/envs/prod                                            # ✅ Terraform 安全扫描
 
-   ```text
-   创建Terraform多云基础设施项目，具体要求：
-   
-   项目结构：
-   1. 模块化设计和代码复用
-   2. 多环境配置管理
-   3. 状态文件远程存储
-   4. 变量和输出管理
-   5. 版本控制和协作
-   
-   基础设施组件：
-   1. VPC网络和子网配置
-   2. 安全组和防火墙规则
-   3. 负载均衡器和DNS配置
-   4. 数据库和存储服务
-   5. Kubernetes集群和节点组
-   
-   请生成完整的Terraform项目结构和配置文件。
-   ```
-
-2. **状态管理和协作配置**
-
-   **Trae提示词**：
-
-   ```text
-   配置Terraform状态管理和团队协作：
-   
-   状态管理：
-   1. 远程状态存储配置
-   2. 状态锁定和并发控制
-   3. 状态备份和恢复
-   4. 敏感数据加密
-   5. 状态文件版本管理
-   
-   团队协作：
-   1. Terraform Cloud/Enterprise集成
-   2. 工作空间和环境隔离
-   3. 策略即代码和合规检查
-   4. 成本估算和预算控制
-   5. 审计日志和变更追踪
-   
-   请提供详细的配置和最佳实践。
-   ```
-
-**预期输出概要**：
-
-- **Terraform项目**：模块化基础设施代码，支持多云部署，环境隔离配置
-- **状态管理**：远程状态存储，状态锁定，加密备份，版本控制集成
-- **协作配置**：工作空间管理，策略检查，成本控制，审计追踪
-
-#### 7.1.2 基础设施安全和合规
-
-**Trae提示词**：
-
-```text
-实施Terraform基础设施安全和合规最佳实践：
-
-1. 安全策略即代码实现
-2. 合规检查和审计配置
-3. 密钥管理和加密配置
-4. 网络安全和访问控制
-5. 监控和告警集成
-
-安全配置：
-- IAM角色和权限最小化
-- 网络分段和安全组配置
-- 数据加密和密钥轮换
-- 审计日志和合规报告
-- 漏洞扫描和修复自动化
-
-请生成安全配置模板和检查脚本。
+# 镜像 SBOM + 签名 + 验证
+syft ghcr.io/org/app:${SHA} -o cyclonedx-json > sbom.json
+cosign sign --key cosign.key ghcr.io/org/app:${SHA}                       # ✅ 镜像签名
+cosign verify --key cosign.pub ghcr.io/org/app:${SHA}                     # ✅ 部署前验证
 ```
-
-**预期输出概要**：
-
-- **安全模板**：IAM最小权限配置，网络安全策略，加密配置模板
-- **合规检查**：自动化合规扫描，策略违规检测，修复建议生成
-- **监控集成**：基础设施变更监控，安全事件告警，审计报告生成
-
-### 7.2 Ansible配置管理
-
-#### 7.2.1 Ansible自动化运维
-
-**目标**：使用Ansible实现配置管理和自动化运维
-
-**Trae提示词**：
-
-```text
-设计Ansible自动化运维体系，配置要求：
-
-1. Playbook模块化设计
-2. Inventory动态管理
-3. 变量和模板配置
-4. 角色和集合管理
-5. 安全和权限控制
-
-自动化场景：
-- 服务器初始化和配置
-- 应用部署和更新
-- 配置变更和回滚
-- 安全补丁和更新
-- 监控和日志配置
-
-请生成完整的Ansible项目结构和配置。
-```
-
-**预期输出概要**：
-
-- **Ansible项目**：模块化Playbook设计，动态Inventory，角色复用配置
-- **自动化脚本**：服务器配置，应用部署，安全加固，监控配置
-- **运维工具**：配置变更追踪，回滚机制，批量操作，错误处理
 
 ---
 
-## 8. 监控运维体系
+## 7. 审查闭环：把 DevOps 配置变成可强制门禁
 
-### 8.1 Prometheus监控体系
+### 7.1 四步审查法（DevOps 配置专用）
 
-#### 8.1.1 Prometheus集群部署
+| 步骤         | 关键检查项                                                                                                                                |
+| :----------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| **正确性**   | livez/readyz 是否分离？preStop sleep 是否 ≥ Service 摘除时间？PDB 是否设置？HPA 是否覆盖 maxReplicas？rolling 时是否能保持 N-1 副本可用？ |
+| **安全性**   | runAsNonRoot=true？capabilities drop ALL？readOnlyRootFilesystem=true？NetworkPolicy 默认拒绝？Secrets 是否走 ESO/Vault？                 |
+| **性能**     | request/limits 是否合理（无 cpu limits 防 throttling）？镜像 < 200 MB？distroless？scrape interval ≥ 15 s 防 cardinality 爆炸？           |
+| **可维护性** | 镜像锁 digest 而非 tag？Helm/Kustomize 是否分环境？Argo CD self-heal 是否启用？Terraform state 是否 remote + 锁？                         |
 
-**目标**：部署高可用Prometheus监控集群
+### 7.2 三类生产事故场景测试（AI 最容易遗漏）
 
-**操作步骤**：
+```bash
+# 1) 节点丢失：删除一个 node，验证 Pod 在 60 s 内迁移完成且不超过 PDB 限制
+kubectl drain node/<n> --ignore-daemonsets --delete-emptydir-data
+kubectl get pods -l app=task-api -w   # ✅ 不应低于 minAvailable
 
-1. **Prometheus集群配置**
+# 2) 配置漂移：手动改 prod 中 Deployment replicas，验证 Argo CD 自动 self-heal 还原
+kubectl scale deploy/task-api -n prod --replicas=99
+sleep 60
+kubectl get deploy task-api -n prod   # ✅ 应被 Argo CD 改回 6
 
-   **Trae提示词**：
-
-   ```text
-   部署Prometheus高可用监控集群，配置要求：
-   
-   集群架构：
-   1. Prometheus联邦集群配置
-   2. Thanos长期存储集成
-   3. AlertManager高可用配置
-   4. Grafana可视化集群
-   5. 服务发现和自动配置
-   
-   监控配置：
-   1. 基础设施监控指标
-   2. 应用性能监控
-   3. 业务指标监控
-   4. 日志和事件监控
-   5. 自定义指标和告警
-   
-   请生成完整的监控集群部署配置。
-   ```
-
-2. **告警规则和通知配置**
-
-   **Trae提示词**：
-
-   ```text
-   配置Prometheus告警规则和通知系统：
-   
-   告警规则：
-   1. 基础设施告警规则
-   2. 应用性能告警规则
-   3. 业务指标告警规则
-   4. 安全事件告警规则
-   5. 告警聚合和抑制规则
-   
-   通知配置：
-   1. 多渠道通知集成
-   2. 告警级别和路由配置
-   3. 值班轮换和升级机制
-   4. 告警静默和维护窗口
-   5. 告警统计和分析
-   
-   请提供详细的告警配置和通知脚本。
-   ```
-
-**预期输出概要**：
-
-- **监控集群**：高可用Prometheus集群，Thanos长期存储，联邦配置
-- **告警系统**：分层告警规则，智能路由，多渠道通知，升级机制
-- **可视化配置**：Grafana仪表板，自定义图表，告警面板，趋势分析
-
-#### 8.1.2 自定义监控和指标
-
-**Trae提示词**：
-
-```text
-开发自定义监控指标和仪表板：
-
-1. 应用指标暴露和收集
-2. 业务指标定义和监控
-3. SLI/SLO指标体系设计
-4. 自定义Exporter开发
-5. 监控数据分析和优化
-
-监控维度：
-- 应用性能和错误率
-- 用户体验和业务转化
-- 基础设施资源利用率
-- 安全事件和合规性
-- 成本和资源优化
-
-请生成监控指标定义和收集配置。
+# 3) 镜像不可达：把 Image 改成不存在的 tag，验证滚动更新自动停止 + 回滚
+kubectl set image deploy/task-api app=ghcr.io/org/app:nonexistent -n prod
+kubectl rollout status deploy/task-api -n prod --timeout=2m  # ✅ 必须失败
+kubectl rollout undo deploy/task-api -n prod                  # ✅ 一键回滚
 ```
 
-**预期输出概要**：
+### 7.3 危险模式 grep 规则（沉淀进 `devops-review` Skill）
 
-- **指标体系**：分层监控指标，SLI/SLO定义，业务指标映射
-- **数据收集**：自定义Exporter，指标暴露，数据聚合配置
-- **分析工具**：趋势分析，异常检测，容量规划，成本优化
+```bash
+# 1. 镜像 tag 用 latest / 浮动 tag
+grep -rEn 'image:\s*[^@]+:(latest|main|master|develop)\b' apps/ platform/
 
-### 8.2 ELK日志管理
+# 2. 资源 limits 缺失
+yq '.. | select(has("containers")) | .containers[] | select(.resources.limits == null)' apps/**/*.yaml
 
-#### 8.2.1 ELK Stack部署
+# 3. probes 缺失或 livez/readyz 共用同一 path
+yq '.. | select(has("livenessProbe")) | select(.livenessProbe.httpGet.path == .readinessProbe.httpGet.path)' apps/**/*.yaml
 
-**目标**：部署ELK Stack实现集中化日志管理
+# 4. runAsNonRoot 未设
+grep -rL "runAsNonRoot:\s*true" apps/
 
-**Trae提示词**：
+# 5. Secrets 明文写在 ConfigMap
+grep -rEn 'kind:\s*ConfigMap' apps/ | xargs grep -lEi 'password|secret|token|api[_-]?key'
 
-```text
-部署ELK Stack集中化日志管理系统：
+# 6. PDB 缺失
+test -z "$(find apps -name '*.yaml' -exec grep -l 'PodDisruptionBudget' {} \;)" && echo "MISSING PDB!"
 
-1. Elasticsearch集群部署和配置
-2. Logstash数据处理和转换
-3. Kibana可视化和分析
-4. Beats数据收集和传输
-5. 安全和权限控制
+# 7. NetworkPolicy 缺失
+grep -rL "kind:\s*NetworkPolicy" apps/
 
-日志管理：
-- 应用日志收集和解析
-- 系统日志聚合和分析
-- 安全日志监控和告警
-- 审计日志合规和存储
-- 日志生命周期管理
-
-请生成完整的ELK Stack部署配置。
+# 8. Terraform 资源未 tag（成本归因失败）
+grep -rEn 'resource\s+"aws_' terraform/ | xargs grep -L 'tags\s*='
 ```
 
-**预期输出概要**：
+### 7.4 扫到问题后用什么提示词改？
 
-- **ELK集群**：高可用Elasticsearch集群，Logstash处理管道，Kibana仪表板
-- **日志收集**：Filebeat、Metricbeat配置，日志解析规则，数据转换
-- **安全配置**：X-Pack安全，RBAC权限，数据加密，审计日志
+上面 8 条扫描只识别「DevOps 危信号」；下一步必须按统一语法把意图写回 AI（参照 [Ch2 §4.9](../第一部分-Trae基础入门/第二章-基础交互模式.md)）。
+
+| #   | 命中后修正提示词模板                                                                                                                                                                                                     |
+| :-- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 保留 deployment 名，tag 改 `:v1.2.3` 或 `@sha256:...` digest + `imagePullPolicy: IfNotPresent`。不要动 replicas。验证：grep 返 0；Argo CD diff 无漂移。                                                                  |
+| 2   | 保留 requests，补 `resources.limits`（CPU = requests×2、Memory = requests）+ `LimitRange`。不要动 selector。验证：`kubectl describe` 显示 limits；OOMKilled 事件 0。                                                     |
+| 3   | 保留 livez 路径，readyz 改独立路径（依赖 DB/Redis）+ 补 `startupProbe: { initialDelaySeconds:0, periodSeconds:10, failureThreshold:30 }`。不要动端口。验证：滑动更新期间 0 5xx；`kubectl describe pod` 显示三探针独立。  |
+| 4   | 保留 image，`securityContext` 加 `runAsNonRoot: true` + `runAsUser: 1000` + `readOnlyRootFilesystem: true` + `capabilities.drop: [ALL]`。不要动 volume mounts。验证：`kubectl exec -- id` 显示非 0；kube-bench 红项 -1。 |
+| 5   | 保留 key 名称，迁 `kind: Secret` + ESO/Vault；`envFrom: secretRef:`。不要动 env name。验证：grep 返 0；Secret 可轮换（kubectl rollout restart 不需改 manifest）。                                                        |
+| 6   | 保留 deployment 名，加 `PodDisruptionBudget: { minAvailable: 1 }`；HA 服务设 `minAvailable: replicas-1`。不要动 replicas。验证：`kubectl drain` 节点时 ≥ 1 副本可用。                                                    |
+| 7   | 保留 namespace，落 default-deny + 按 label 放行。不要动 Service。验证：跨 ns curl 被拒；同 ns 同 label 能通。                                                                                                            |
+| 8   | 保留 resource 名，加 `tags = local.common_tags`（含 owner/env/cost-center/repo）；default `provider` 块加 `default_tags`。不要动 ARN。验证：成本看板按 tag 聚合 100% 覆盖。                                              |
+
+> 3 轮未收敛触发 [§4.10](../第一部分-Trae基础入门/第二章-基础交互模式.md) 的「换模式 / 缩范围 / 拆步骤」。
 
 ---
 
-## 9. 高级特性与优化
+## 8. 三档实践
 
-### 9.1 GitOps实践
+### 8.1 基础实践（必做）
 
-#### 9.1.1 ArgoCD部署和配置
+为第十三章的 `task-api` 项目交付：① 多阶段 distroless Dockerfile，最终镜像 < 200 MB；② kind 本地集群部署 Deployment + Service + Ingress + ConfigMap + Secret，含 limits / probes / runAsNonRoot；③ 用 `kube-score` + `kubeconform` + `trivy config` 三个工具审计，输出"修复前 / 修复后"对比报告。
 
-**目标**：实施GitOps工作流程和ArgoCD部署
+### 8.2 进阶实践（推荐）
 
-**Trae提示词**：
+接入完整 GitOps 链路：① Helm/Kustomize 三环境（dev/staging/prod）；② Argo CD 部署 + ApplicationSet；③ Argo Rollouts 金丝雀（5% → 25% → 100%）+ AnalysisTemplate 指标驱动；④ External Secrets Operator + Vault 接入；⑤ Prometheus + Grafana + Loki + Alertmanager（复用 Ch12 SLO + Burn Rate 配置）；⑥ 跑通 §7.2 三类生产事故场景演练。
 
-```text
-部署ArgoCD实现GitOps工作流程：
+### 8.3 开放实践（挑战）
 
-1. ArgoCD高可用部署配置
-2. Git仓库和应用配置
-3. 多环境部署策略
-4. 同步策略和健康检查
-5. RBAC和安全配置
-
-GitOps流程：
-- 声明式配置管理
-- 自动同步和部署
-- 配置漂移检测和修复
-- 回滚和版本管理
-- 审计和合规追踪
-
-请生成ArgoCD部署配置和GitOps工作流。
-```
-
-**预期输出概要**：
-
-- **ArgoCD部署**：高可用配置，多集群管理，SSO集成，RBAC权限
-- **GitOps流程**：声明式配置，自动同步，漂移检测，版本控制
-- **应用管理**：应用模板，环境配置，部署策略，健康检查
-
-### 9.2 成本优化和资源管理
-
-#### 9.2.1 云成本优化策略
-
-**目标**：实施云资源成本优化和管理策略
-
-**Trae提示词**：
-
-```text
-设计云资源成本优化和管理策略：
-
-1. 资源使用监控和分析
-2. 自动扩缩容和调度优化
-3. 预留实例和Spot实例策略
-4. 存储和网络成本优化
-5. 成本分摊和预算控制
-
-优化策略：
-- 资源右调和闲置资源清理
-- 工作负载调度和节点优化
-- 数据生命周期管理
-- 网络流量优化
-- 多云成本比较和迁移
-
-请生成成本优化配置和监控脚本。
-```
-
-**预期输出概要**：
-
-- **成本监控**：资源使用分析，成本趋势预测，预算告警配置
-- **优化策略**：自动扩缩容，资源调度，闲置清理，生命周期管理
-- **管理工具**：成本分摊，预算控制，优化建议，ROI分析
+为第十二章微服务平台搭建多集群 GitOps：① Terraform 模块化部署 EKS（prod / staging）+ VPC + IAM；② Argo CD Hub-and-Spoke 架构（一个管理集群推送到 N 个工作集群）；③ Karpenter + Spot 实现成本下降 ≥ 50%；④ Kyverno 策略强制 §7.3 八条规则在 admission 阶段拦截；⑤ 跑一次 Chaos Mesh 节点丢失实验并写故障报告；⑥ 把所有规约沉淀为 `.qoder/skills/devops-review/SKILL.md`。
 
 ---
 
-## 10. 学习资源与实践
+## 9. 小结
 
-### 10.1 推荐学习资源
+### 9.1 章节交付物清单
 
-**📚 技术文档：**
+| 编号   | 交付物                                                   | 复用去向              |
+| :----- | :------------------------------------------------------- | :-------------------- |
+| D-15-1 | 多阶段 distroless Dockerfile + Trivy 扫描门禁            | Ch16 镜像安全审查     |
+| D-15-2 | 生产可上线 K8s 清单（含 PDB/HPA/NetworkPolicy）          | Ch16 性能优化基础     |
+| D-15-3 | Helm/Kustomize 三环境模板                                | Ch16 资源调优实验环境 |
+| D-15-4 | Argo CD + Argo Rollouts GitOps 流水线                    | Ch16 性能回归门禁     |
+| D-15-5 | Terraform 模块（VPC + EKS + IAM + Backend）              | 跨章节基础设施基线    |
+| D-15-6 | `devops-review` Skill（六类缺陷 + 8 条 grep + 演练剧本） | Ch16 安全审查规约     |
 
-- **Kubernetes官方文档**：集群管理、应用部署、最佳实践
-- **Docker官方指南**：容器化技术、镜像构建、安全配置
-- **Terraform文档**：基础设施即代码、模块开发、状态管理
-- **Prometheus文档**：监控配置、告警规则、集群部署
+### 9.2 DevOps 能力自评 Rubric
 
-**🛠️ 实践平台：**
+| 维度       | 入门（1-2）           | 熟练（3-4）                                      | 精通（5）                                              |
+| :--------- | :-------------------- | :----------------------------------------------- | :----------------------------------------------------- |
+| Docker     | 能写单阶段 Dockerfile | 多阶段 + distroless + 镜像 < 200 MB + Trivy 扫描 | 能设计跨平台 + SBOM + cosign 签名 + 镜像供应链         |
+| Kubernetes | 能部署 demo           | 能写带 limits/probes/securityContext 的生产清单  | 能设计 PDB/HPA/NetworkPolicy/Kyverno 策略一体化的平台  |
+| GitOps     | 知道 Argo CD 概念     | 能配置 Argo CD + ApplicationSet 自动同步         | 能用 Argo Rollouts + AnalysisTemplate 指标驱动金丝雀   |
+| IaC        | 能跑通 Terraform demo | 能拆分 module + remote state + 锁版本            | 能设计多环境 + provider + state 隔离 + drift detection |
+| 可观测     | 会看 Grafana          | 能配 Prometheus rule + Alertmanager + Loki LogQL | 能设计 SLO + Burn Rate + 跨服务追踪关联                |
+| 审查能力   | 会跑 §7.3 grep        | 能识别六类缺陷 + 跑三类故障演练                  | 能输出可复用 Skill + 团队规约 + Kyverno admission 规则 |
 
-- **Katacoda**：交互式Kubernetes和Docker学习环境
-- **Play with Docker**：在线Docker实验环境
-- **Terraform Cloud**：基础设施管理和协作平台
-- **GitHub Actions**：CI/CD工作流实践和学习
+### 9.3 跨章节衔接
 
-**📖 推荐书籍：**
-
-- 《Kubernetes权威指南》：深入理解K8s架构和实践
-- 《Docker技术入门与实战》：容器化技术全面指南
-- 《DevOps实践指南》：DevOps文化和工具链实践
-- 《Site Reliability Engineering》：SRE理念和实践方法
-
-### 10.2 实践项目建议
-
-**💡 进阶实践项目：**
-
-1. **企业级DevOps平台**
-   - 多云基础设施管理
-   - 完整CI/CD流水线
-   - 监控告警体系
-   - 安全合规管理
-
-2. **微服务治理平台**
-   - 服务网格部署
-   - 流量管理和安全
-   - 可观测性集成
-   - 故障注入和混沌工程
-
-3. **云原生应用平台**
-   - Serverless架构设计
-   - 事件驱动架构
-   - 多租户资源隔离
-   - 成本优化和管理
-
-### 10.3 技能提升路径
-
-**🎯 短期目标（1-3个月）：**
-
-- 熟练掌握Docker容器化技术
-- 完成Kubernetes集群部署和管理
-- 实现基础CI/CD流水线
-- 建立基础监控告警体系
-
-**🚀 中期目标（3-6个月）：**
-
-- 掌握服务网格和微服务治理
-- 实施GitOps工作流程
-- 完善安全和合规体系
-- 优化成本和资源管理
-
-**🏆 长期目标（6-12个月）：**
-
-- 设计企业级DevOps平台
-- 实施SRE理念和实践
-- 建立云原生架构体系
-- 培养团队DevOps文化
+- ⬅️ Ch12：本章 K8s 清单与 GitOps 是 Ch12 微服务治理（Istio/SLO）的运行底座；本章不重复 Istio 配置；
+- ⬅️ Ch13/Ch14：本章 CI 中的 lint/test/build job 直接复用 Ch13/Ch14 配置，CD 链路在其后追加；
+- ➡️ Ch16：本章 §7.3 危险模式 grep 与三类故障演练是 Ch16 安全审查的输入；本章 Prometheus 指标是 Ch16 性能优化的观测基础；
+- ⬅️ Ch5-Ch11：所有业务应用的容器化与发布都走本章流水线。
 
 ---
 
-## 11. 总结与展望
+## 10. 延伸阅读
 
-### 11.1 本章总结
+### 10.1 经典必读（建立 DevOps 直觉）
 
-通过本章的学习和实践，您已经掌握了：
+- 《Kubernetes in Action》（第 2 版，Marko Lukša）— K8s 原理与最佳实践
+- 《Site Reliability Engineering》（Google）+《SRE Workbook》— SLO / 错误预算 / on-call
+- 《The DevOps Handbook》（Gene Kim 等）— 三步工作法与文化
+- 《Infrastructure as Code》（第 2 版，Kief Morris）— IaC 演进与权衡
+- 《Cloud Native Patterns》（Cornelia Davis）— 云原生设计模式
 
-- **容器化技术**：Docker多阶段构建、镜像优化、安全配置
-- **集群管理**：Kubernetes部署、服务编排、自动扩缩容
-- **CI/CD流水线**：Jenkins、GitLab CI、GitHub Actions集成
-- **基础设施即代码**：Terraform、Ansible自动化管理
-- **监控运维**：Prometheus、ELK Stack、告警体系
+### 10.2 工程化与官方规范
 
-### 11.2 技能提升路径
+- Kubernetes 1.30 官方文档：<https://kubernetes.io/docs/>（重点 Pod Security Standards / Gateway API / Sidecar Containers）
+- Argo CD：<https://argo-cd.readthedocs.io/>；Argo Rollouts：<https://argoproj.github.io/argo-rollouts/>
+- Terraform Best Practices：<https://www.terraform.io/cloud-docs/recommended-practices>
+- CIS Kubernetes Benchmark v1.9：集群安全加固清单
+- OWASP Kubernetes Top 10：<https://owasp.org/www-project-kubernetes-top-ten/>
+- SLSA Supply Chain Levels v1.0：<https://slsa.dev/>
 
-**🎯 核心技能清单：**
+### 10.3 前沿研究与实践报告
 
-- ✅ 容器化部署和镜像管理
-- ✅ Kubernetes集群运维和应用管理
-- ✅ CI/CD流水线设计和优化
-- ✅ 基础设施自动化和配置管理
-- ✅ 监控告警和日志管理
-- ✅ 安全合规和成本优化
+- DORA _State of DevOps Report_（最新版）— DF/LT/CFR/MTTR 跨企业基线
+- _Accelerate State of Continuous Delivery_（CD Foundation）
+- CNCF _Annual Survey_（最新版）— 工具采纳与趋势
+- _Securing the Software Supply Chain_（NIST SP 800-218）
+- _The Twelve-Factor App_（Heroku）— 云原生应用奠基方法论
 
-### 11.3 持续学习建议
+---
 
-**📈 技术发展趋势：**
-
-- **云原生技术演进**：Serverless、边缘计算、多云管理
-- **AI/ML运维**：MLOps、AIOps、智能运维
-- **安全左移**：DevSecOps、零信任架构、合规自动化
-- **可观测性**：分布式追踪、智能告警、根因分析
-
-**🔄 持续改进方向：**
-
-- 关注云原生技术发展趋势
-- 实践新的DevOps工具和方法
-- 参与开源社区和技术交流
-- 建立学习型团队文化
-
-通过本章的学习，您已经具备了企业级DevOps实践的核心技能，能够设计和实施完整的云原生DevOps平台，为下一章的综合项目实战打下了坚实的基础。
+> **完成判定**：能在 30 分钟内为新应用产出 ① 多阶段 Dockerfile（< 200 MB）；② 含 6 项审查通过的 K8s 生产清单；③ Argo CD application + 金丝雀 rollout；④ §7.3 八条 grep 全部通过。下一章我们将在此基础上深入安全与性能优化。
