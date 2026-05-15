@@ -1,6 +1,6 @@
 # JuiceFS 分布式文件系统
 
-## 概述
+## 1. 概述
 
 AI 场景下的存储需求是矛盾的：模型和检查点动辄几十上百 GB，然后要在第二天重新被几十张 GPU 同时读取；数据集动辄上亿张小文件，却希望读起来像本地盘一样快。**JuiceFS** 把元数据和数据拆开：元数据放到数据库里拿 POSIX 语义，数据本体放到对象存储里拿容量和持久化，再通过本地缓存和多级缓存把热数据留在靠近计算的地方——这是当前云原生分布式文件系统最成熟的一种解法。
 
@@ -24,7 +24,7 @@ AI 场景下的存储需求是矛盾的：模型和检查点动辄几十上百 G
 ### 3.1 技术文档
 
 - [JuiceFS 后端存储变更手册](./02_juicefs_backend_storage_migration_guide.md)：详细介绍如何平滑迁移和变更底层的对象存储。
-- [JuiceFS 文件修改机制分析](./01_juicefs_file_modification_mechanism_analysis.md)：深入分析 JuiceFS 是如何处理文件修改和数据一致性的。
+- [JuiceFS 文件修改时 chunk/slice/block 更新机制分析](./01_juicefs_file_modification_mechanism_analysis.md)：深入分析 JuiceFS 是如何处理文件修改和数据一致性的。
 
 ### 3.2 官方资源
 

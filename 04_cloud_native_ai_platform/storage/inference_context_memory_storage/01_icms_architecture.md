@@ -131,6 +131,6 @@ G4: 共享对象/文件存储 ← 冷数据与日志等持久数据
 
 ## 六、参考文献
 
-- **参考资料**: 详见 [DOCA 编程入门](../../../02_dpu_programming/doca/01_doca_programming_guide.md) 中的相关章节。
+- **参考资料**: 详见 [DOCA 编程入门](../../../02_dpu_programming/doca/doca_programming_guide.md) 中的相关章节。
 
 - NVIDIA Corporation. "Introducing NVIDIA BlueField-4-Powered Inference Context Memory Storage Platform for the Next Frontier of AI." NVIDIA Technical Blog. 2026-01-06. 访问日期: 2026-01-07. [Online]. Available: https://developer.nvidia.com/blog/introducing-nvidia-bluefield-4-powered-inference-context-memory-storage-platform-for-the-next-frontier-of-ai/
