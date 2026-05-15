@@ -1,6 +1,6 @@
 # Hybrid KV Cache Manager 深度解析
 
-**Hybrid KV Cache Manager**（混合 KV 缓存管理器，在代码中简称 HMA，即 Hybrid Memory Allocator）是 vLLM V1 引擎专为**混合注意力架构模型**设计的一套显存优化机制。它解决了传统统一分配策略在混合模型上的严重内存浪费问题，使得 Gemma-3、Qwen 3.5 MoE、Llama 4 等采用 Sliding Window、Mamba、Local Chunked 等高效注意力机制的模型能够高效运行。本文将从 HMA 的设计思想、内存布局、Prefix Caching 算法、三层架构以及与 KV Transfer 的兼容性问题等方面进行全面解析。
+**Hybrid KV Cache Manager**（混合 KV 缓存管理器，底层基于 HMA（Hybrid Memory Allocator）组件实现）是 vLLM V1 引擎专为**混合注意力架构模型**设计的一套显存优化机制。它解决了传统统一分配策略在混合模型上的严重内存浪费问题，使得 Gemma-3、Qwen 3.5 MoE、Llama 4 等采用 Sliding Window、Mamba、Local Chunked 等高效注意力机制的模型能够高效运行。本文将从 HMA 的设计思想、内存布局、Prefix Caching 算法、三层架构以及与 KV Transfer 的兼容性问题等方面进行全面解析。
 
 ## 1. 背景：混合注意力模型的兴起
 

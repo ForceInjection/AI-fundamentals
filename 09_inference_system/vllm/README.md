@@ -14,6 +14,7 @@
 - [注意力机制演进与 vLLM 支持全景（MHA / MLA / NSA）](./module_analysis/vllm_attention_mha_mla_nsa.md)：系统梳理 **MHA / MQA / GQA**、**DeepSeek 风格 MLA**、**DeepSeek-V3.2 / GLM-5 稀疏 MLA（NSA 语义）** 三类机制的理论演进与 vLLM 代码层适配现状，覆盖 CUDA / ROCm / CPU 跨平台兼容性、Sparse MLA 后端与 Indexer 机制、以及 Hybrid KV Cache Manager 场景下 OffloadingConnector / LMCacheConnectorV1 的支持边界。
   - [注意力机制演进讲稿](./module_analysis/vllm_attention_mha_mla_nsa.pptx)：配套幻灯片，可用于内部培训或方案评审。
 - [DeepSeek V4 长上下文注意力支持解析](./module_analysis/vllm_deepseek_v4.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
+- [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](./module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)：系统梳理 DeepSeek V2/V3/V4 三代注意力机制（MLA → NSA/DSA → CSA+HCA）的技术演进脉络与架构权衡。
 
 ---
 
