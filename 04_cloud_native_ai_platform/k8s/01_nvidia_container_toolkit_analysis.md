@@ -4,7 +4,7 @@
 >
 > 官方文档地址：<https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html>
 >
-> 本文地址：<https://github.com/ForceInjection/AI-fundermentals/blob/main/gpu_manager/Nvidia%20Container%20Toolkit%20%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90.md>
+> 本文地址：<https://github.com/ForceInjection/AI-fundermentals/blob/main/04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md>
 
 ## 1. 引言与背景
 
@@ -712,7 +712,7 @@ sequenceDiagram
 
 ### 4.2 容器启动流程
 
-#### 4.1.1 环境变量检测
+#### 4.2.1 环境变量检测
 
 当容器启动时，`nvidia-container-runtime`首先检查环境变量`NVIDIA_VISIBLE_DEVICES`：
 
@@ -727,15 +727,15 @@ NVIDIA_VISIBLE_DEVICES=all
 NVIDIA_VISIBLE_DEVICES=void
 ```
 
-#### 4.1.2 OCI规范修改流程
+#### 4.2.2 OCI规范修改流程
 
 1. **规范解析**：解析原始`OCI`规范
 2. **设备发现**：通过`libnvidia-container`发现可用`GPU`设备
 3. **权限检查**：验证容器是否有权限访问指定设备
 4. **规范修改**：添加设备挂载、环境变量和钩子
-5. **规范验证**：确保修改后的规范符合`OCI标准
+5. **规范验证**：确保修改后的规范符合`OCI`标准
 
-#### 4.1.3 设备挂载策略
+#### 4.2.3 设备挂载策略
 
 ```bash
 # internal/discover/devices.go - 设备文件挂载映射
@@ -748,11 +748,11 @@ NVIDIA_VISIBLE_DEVICES=void
 /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1 -> /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
 ```
 
-### 4.2 运行时模式深度分析
+### 4.3 运行时模式深度分析
 
 `NVIDIA Container Toolkit` 支持多种运行时模式，每种模式针对不同的使用场景和硬件平台进行了优化。
 
-#### 4.2.1 Legacy 模式 (v1.0.0+)
+#### 4.3.1 Legacy 模式 (v1.0.0+)
 
 **概述**：`Legacy` 模式是传统的 `GPU` 容器化方式，基于 `nvidia-docker v1` 的设计理念，通过 `nvidia-container-runtime-hook` 实现 `GPU` 资源的注入。
 
@@ -800,7 +800,7 @@ func (l *legacyRuntime) discoverDevices() error {
 - 需要与 `nvidia-docker v1` 兼容的场景
 - 简单的 `GPU` 容器化需求
 
-#### 4.2.2 CDI 模式 (v1.12.0+)
+#### 4.3.2 CDI 模式 (v1.12.0+)
 
 **概述**：`CDI` (`Container Device Interface`) 模式是基于 `CNCF` 标准的现代化设备管理方式，提供了标准化、可扩展的设备接口。
 
@@ -1007,7 +1007,7 @@ func NewCDIModifier(logger logger.Interface, cfg *config.Config, ociSpec oci.Spe
 - 多厂商设备混合部署
 - 云原生应用
 
-#### 4.2.3 CSV 模式 (v1.0.0+)
+#### 4.3.3 CSV 模式 (v1.0.0+)
 
 **概述**：`CSV` (`Comma-Separated Values`) 模式专为 `Tegra/Jetson` 等嵌入式 `GPU` 系统设计，通过 `CSV` 文件静态定义设备挂载规范。
 
@@ -1096,9 +1096,9 @@ NVIDIA_REQUIRE_JETPACK=csv-mounts=all
 - 边缘计算和`IoT`应用
 - 资源受限的嵌入式环境
 
-### 4.3 运行时模式对比分析
+### 4.4 运行时模式对比分析
 
-#### 4.3.1 功能特性对比
+#### 4.4.1 功能特性对比
 
 | 特性             | `Legacy` 模式      | `CDI` 模式       | `CSV` 模式           |
 | ---------------- | ------------------ | ---------------- | -------------------- |
@@ -1111,7 +1111,7 @@ NVIDIA_REQUIRE_JETPACK=csv-mounts=all
 | **复杂度**       | 中等               | 高               | 低                   |
 | **性能开销**     | 中等               | 低               | 最低                 |
 
-#### 4.3.2 适用场景分析
+#### 4.4.2 适用场景分析
 
 **Legacy模式适用场景**：
 
@@ -1136,7 +1136,7 @@ NVIDIA_REQUIRE_JETPACK=csv-mounts=all
 - **静态配置**：设备配置固定的场景
 - **IoT应用**：物联网`GPU`应用
 
-#### 4.3.3 性能与资源消耗对比
+#### 4.4.3 性能与资源消耗对比
 
 ```text
 资源消耗（从低到高）：
@@ -1152,7 +1152,7 @@ NVIDIA_REQUIRE_JETPACK=csv-mounts=all
 `Legacy` 模式 < `CSV` 模式 < `CDI` 模式
 ```
 
-#### 4.3.4 模式选择建议
+#### 4.4.4 模式选择建议
 
 **选择 Legacy 模式的情况**：
 
@@ -1194,9 +1194,9 @@ mode = "auto"
 - 检测到 `CDI` 规范文件 → `CDI` 模式
 - 其他情况 → `Legacy` 模式
 
-### 4.4 错误处理与日志记录
+### 4.5 错误处理与日志记录
 
-#### 4.4.1 错误处理机制
+#### 4.5.1 错误处理机制
 
 ```go
 // internal/oci/runtime_modifier.go
@@ -1214,7 +1214,7 @@ func (e *RuntimeError) Error() string {
 }
 ```
 
-#### 4.4.2 日志记录策略
+#### 4.5.2 日志记录策略
 
 ```go
 // internal/logger/logger.go

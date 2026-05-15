@@ -1447,7 +1447,7 @@ func (di *DeviceInfo) GetAllMigDevices() ([]resource.Device, error) {
 4. **云原生集成**：与 `Kubernetes` 生态系统的其他组件（如 `Scheduler`、`Autoscaler`）更深度集成；
 5. **可观测性增强**：提供更丰富的监控指标和诊断工具，便于运维管理。
 
-### 7.4 结语
+### 6.4 结语
 
 通过本文的全面分析，我们从理论到实践，从基础功能到高级特性，深入了解了 `NVIDIA K8s Device Plugin` 的方方面面。
 
