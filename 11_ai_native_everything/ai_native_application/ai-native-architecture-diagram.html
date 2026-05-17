@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Native 应用架构 — 分层架构图</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --agent: #F59E0B; --agent-light: #FFFBEB; --agent-border: #FCD34D; --agent-text: #92400E;
+    --skill: #3B82F6; --skill-light: #EFF6FF; --skill-border: #93C5FD; --skill-text: #1E40AF;
+    --tool: #10B981; --tool-light: #ECFDF5; --tool-border: #6EE7B7; --tool-text: #065F46;
+    --gov: #8B5CF6; --gov-light: #F5F3FF; --gov-border: #C4B5FD; --gov-text: #5B21B6;
+    --app: #0F172A; --app-light: #F1F5F9;
+    --bg: #F8FAFC; --card-bg: #FFFFFF; --text: #1E293B; --text2: #64748B;
+    --border: #E2E8F0; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,.1);
+    --radius: 12px; --radius-sm: 8px;
+    --transition: 0.25s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    min-height: 100vh; padding: 24px 16px 60px;
+  }
+
+  .container { max-width: 1300px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 2rem; font-weight: 800; color: var(--app); letter-spacing: -.02em; }
+  .header .subtitle { font-size: .95rem; color: var(--text2); margin-top: 6px; }
+  .header .oneliner {
+    margin-top: 16px; padding: 12px 20px; background: var(--app); color: #fff;
+    border-radius: var(--radius-sm); font-size: .88rem; font-weight: 600;
+    display: inline-block; letter-spacing: .02em;
+  }
+  .oneliner em { font-style: normal; color: #FBBF24; }
+
+  /* ── AI Native App Definition ── */
+  .app-def { margin-bottom: 36px; }
+  .app-def h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--app); display: flex; align-items: center; gap: 8px; }
+  .app-def h2::before { content: ''; display: inline-block; width: 4px; height: 20px; background: var(--app); border-radius: 2px; }
+  .def-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .def-card {
+    background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; transition: var(--transition); cursor: pointer; position: relative; overflow: hidden;
+  }
+  .def-card:hover { border-color: #94A3B8; box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .def-card .tag {
+    display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+    margin-bottom: 10px; letter-spacing: .04em;
+  }
+  .def-card:nth-child(1) .tag { background: #FEF3C7; color: #92400E; }
+  .def-card:nth-child(2) .tag { background: #DBEAFE; color: #1E40AF; }
+  .def-card:nth-child(3) .tag { background: #EDE9FE; color: #5B21B6; }
+  .def-card h3 { font-size: .9rem; font-weight: 700; margin-bottom: 4px; }
+  .def-card p { font-size: .8rem; color: var(--text2); }
+  .def-card .anti { font-size: .75rem; color: #EF4444; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .def-card .anti::before { content: '✗ 反例：'; font-weight: 600; }
+
+  /* ── Pyramid Architecture ── */
+  .architecture { margin-bottom: 20px; }
+  .section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; color: var(--app); display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: inline-block; width: 4px; height: 20px; background: var(--app); border-radius: 2px; }
+
+  .architecture .section-title { margin-bottom: 100px; }
+
+  .pyramid-frame {
+    position: relative; max-width: 1020px; margin: 0 auto; padding: 20px 2px 12px;
+  }
+
+  .pyr-bg {
+    position: absolute; top: 100px; left: -1px; right: -1px; bottom: -1px; z-index: 0;
+    width: 100%; height: 80%;
+    pointer-events: none; overflow: visible;
+  }
+  .pyr-bg polygon {
+    fill: url(#pyrGrad);
+    stroke: #A7F3D0;
+    stroke-width: 0.8;
+    opacity: 0.7;
+  }
+
+  .pyr-label {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 6px; z-index: 10;
+  }
+  .pyr-label.left  { left: 0; flex-direction: row; }
+  .pyr-label.right { right: 0; flex-direction: row; }
+
+  .pyr-text {
+    writing-mode: vertical-rl;
+    font-size: .76rem; font-weight: 700; color: var(--text2);
+    letter-spacing: .12em;
+  }
+
+  .pyr-line {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .pyr-line::before {
+    content: ''; display: block;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 9px solid #64748B;
+  }
+  .pyr-line::after {
+    content: ''; display: block; width: 2px; height: 44px;
+    background: linear-gradient(to top, #CBD5E1, #64748B);
+    border-radius: 1px;
+  }
+
+  .py-layer {
+    position: relative; overflow: hidden; width: 100%;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    transition: box-shadow .3s;
+  }
+  .py-layer + .py-layer { margin-top: 6px; }
+  .py-layer.agent {
+    max-width: 44%; margin-left: auto; margin-right: auto;
+    background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+    border: 1.5px solid #FDE68A; border-bottom: none;
+    z-index: 3;
+  }
+  .py-layer.skill {
+    max-width: 66%; margin-left: auto; margin-right: auto;
+    background: linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%);
+    border: 1.5px solid #93C5FD; border-bottom: none;
+    z-index: 2;
+  }
+  .py-layer.tool {
+    max-width: 100%;
+    background: linear-gradient(180deg, #ECFDF5 0%, #D1FAE5 100%);
+    border: 1.5px solid #6EE7B7; border-bottom: none;
+    border-radius: 10px 10px 12px 12px;
+    z-index: 1;
+  }
+
+  .py-inner { padding: 0 16px; }
+
+  .py-header {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+    transition: var(--transition);
+  }
+  .py-header:hover { filter: brightness(.96); }
+
+  .py-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 700; flex-shrink: 0;
+  }
+  .py-layer.agent .py-icon { background: #FEF3C7; color: #D97706; border: 1.5px solid #FCD34D; }
+  .py-layer.skill .py-icon { background: #DBEAFE; color: #2563EB; border: 1.5px solid #93C5FD; }
+  .py-layer.tool  .py-icon { background: #D1FAE5; color: #059669; border: 1.5px solid #6EE7B7; }
+
+  .py-info { text-align: center; }
+  .py-name { font-size: .88rem; font-weight: 700; }
+  .py-desc { font-size: .7rem; color: var(--text2); margin-top: 1px; }
+
+  .py-arrow {
+    font-size: .85rem; transition: transform .3s; color: var(--text2); flex-shrink: 0;
+  }
+  .py-layer.expanded .py-arrow { transform: rotate(180deg); }
+
+  .py-body {
+    max-height: 0; overflow: hidden; transition: max-height .5s ease;
+  }
+  .py-layer.expanded .py-body { max-height: 550px; }
+
+  .py-cards {
+    display: grid; gap: 10px; padding: 0 0 14px;
+  }
+  .py-layer.agent .py-cards { grid-template-columns: 1fr; }
+  .py-layer.skill .py-cards { grid-template-columns: repeat(2, 1fr); }
+  .py-layer.tool  .py-cards { grid-template-columns: repeat(3, 1fr); }
+
+  .lcard {
+    background: rgba(255,255,255,.82); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; cursor: pointer; transition: var(--transition); position: relative;
+    backdrop-filter: blur(4px);
+  }
+  .lcard:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); background: #fff; }
+  .lcard.active { border-width: 2px; background: #fff; }
+
+  .agent .lcard:hover, .agent .lcard.active { border-color: var(--agent-border); }
+  .skill .lcard:hover, .skill .lcard.active { border-color: var(--skill-border); }
+  .tool  .lcard:hover, .tool  .lcard.active  { border-color: var(--tool-border); }
+
+  .lcard .badge {
+    font-size: .66rem; font-weight: 700; padding: 1px 7px; border-radius: 10px; display: inline-block; margin-bottom: 5px;
+  }
+  .agent .badge { background: #FEF3C7; color: #92400E; }
+  .skill .badge { background: #DBEAFE; color: #1E40AF; }
+  .tool  .badge { background: #D1FAE5; color: #065F46; }
+
+  .lcard h4 { font-size: .84rem; font-weight: 700; }
+  .lcard .lcard-desc { font-size: .73rem; color: var(--text2); margin-top: 3px; }
+
+  /* ── Governance ── */
+  .governance { margin-bottom: 36px; }
+  .gov-cards {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .gov-cards .gov-item:last-child { grid-column: 1 / -1; }
+  .gov-item {
+    background: var(--card-bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 16px; cursor: pointer; transition: var(--transition);
+  }
+  .gov-item:hover { border-color: var(--gov-border); background: var(--gov-light); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+  .gov-item.active { border-color: var(--gov); border-width: 2px; background: var(--gov-light); }
+  .gov-item .gov-icon { font-size: 1.1rem; }
+  .gov-item h4 { font-size: .85rem; font-weight: 700; margin: 4px 0 2px; }
+  .gov-item p { font-size: .73rem; color: var(--text2); }
+
+  /* ── Heuristic Section ── */
+  .heuristic { margin-bottom: 36px; }
+  .heuristic-flow {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .h-step {
+    background: var(--card-bg); border: 1.5px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; text-align: center; min-width: 140px; transition: var(--transition);
+  }
+  .h-step:hover { box-shadow: var(--shadow-lg); }
+  .h-step .h-num { font-size: .7rem; font-weight: 700; color: var(--text2); margin-bottom: 4px; }
+  .h-step .h-q { font-size: .82rem; font-weight: 600; }
+  .h-step .h-ans { font-size: .75rem; font-weight: 700; margin-top: 6px; padding: 2px 10px; border-radius: 12px; display: inline-block; }
+  .h-step.q1 .h-ans { background: #D1FAE5; color: #065F46; }
+  .h-step.q2 .h-ans { background: #DBEAFE; color: #1E40AF; }
+  .h-step.q3 .h-ans { background: #FEF3C7; color: #92400E; }
+  .h-arrow { font-size: 1.4rem; color: var(--text2); font-weight: 300; }
+
+  /* ── Info Panel ── */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.4); z-index: 99; backdrop-filter: blur(2px); }
+  .overlay.show { display: block; }
+
+  .info-panel {
+    position: fixed; top: 0; right: 0; width: 440px; max-width: 92vw; height: 100vh;
+    background: var(--card-bg); box-shadow: -8px 0 30px rgba(0,0,0,.15);
+    z-index: 100; transform: translateX(100%); transition: transform .3s ease;
+    display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .info-panel.show { transform: translateX(0); }
+
+  .info-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card-bg); z-index: 1;
+  }
+  .info-header h3 { font-size: 1.05rem; font-weight: 700; }
+  .info-close {
+    width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg);
+    cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .info-close:hover { background: #E2E8F0; }
+
+  .info-body { padding: 20px 22px; flex: 1; }
+  .info-body .info-layer-tag {
+    display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 12px; margin-bottom: 12px;
+  }
+  .info-body .info-layer-tag.agent-tag { background: #FEF3C7; color: #92400E; }
+  .info-body .info-layer-tag.skill-tag { background: #DBEAFE; color: #1E40AF; }
+  .info-body .info-layer-tag.tool-tag  { background: #D1FAE5; color: #065F46; }
+  .info-body .info-layer-tag.gov-tag   { background: #EDE9FE; color: #5B21B6; }
+
+  .info-section { margin-bottom: 16px; }
+  .info-section h5 { font-size: .78rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .info-section p, .info-section li { font-size: .85rem; color: var(--text); }
+  .info-section ul { padding-left: 18px; }
+  .info-section li { margin-bottom: 3px; }
+
+  /* ── Five Roles Mapping Table ── */
+  .mapping { margin-bottom: 36px; }
+  .mapping-table { width: 100%; border-collapse: collapse; font-size: .82rem; background: var(--card-bg); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .mapping-table th { background: var(--app); color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; font-size: .78rem; }
+  .mapping-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .mapping-table tr:last-child td { border-bottom: none; }
+  .mapping-table .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .dot.agent-dot { background: var(--agent); }
+  .dot.skill-dot { background: var(--skill); }
+  .dot.tool-dot  { background: var(--tool); }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .def-cards { grid-template-columns: 1fr; }
+    .pyramid-frame { padding: 18px 8px 10px; }
+    .pyr-label { font-size: .68rem; }
+    .pyr-label.left { left: -2px; }
+    .pyr-label.right { right: -2px; }
+    .py-layer.agent { max-width: 60%; }
+    .py-layer.skill { max-width: 80%; }
+    .py-layer.tool  { max-width: 100%; }
+    .py-cards { gap: 8px; }
+    .py-layer.skill .py-cards { grid-template-columns: 1fr; }
+    .py-layer.tool  .py-cards { grid-template-columns: repeat(2, 1fr); }
+    .gov-cards { grid-template-columns: repeat(2, 1fr); }
+    .info-panel { width: 100vw; max-width: 100vw; }
+    .header h1 { font-size: 1.4rem; }
+  }
+  @media (max-width: 500px) {
+    .pyramid-frame { padding: 14px 4px 6px; }
+    .pyr-label { display: none; }
+    .py-layer.agent { max-width: 80%; }
+    .py-layer.skill { max-width: 92%; }
+    .py-layer.tool  { max-width: 100%; }
+    .py-layer.tool .py-cards { grid-template-columns: 1fr; }
+    .gov-cards { grid-template-columns: 1fr; }
+    .heuristic-flow { flex-direction: column; }
+    .h-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    <h1>🏗️ AI Native 应用架构 · 分层图</h1>
+    <p class="subtitle">以认知性质为唯一裁断准则的 Agent / Skill / Tool 三层架构</p>
+    <div class="oneliner">
+      <em>AI Native ≠ 处处用 LLM</em> — 新颖决策交 Agent，程序性知识交 Skill，确定性能力交 Tool（MCP 暴露）
+    </div>
+  </div>
+
+  <!-- ═══ AI NATIVE APPLICATION BREAKDOWN ═══ -->
+  <div class="app-def">
+    <h2>AI Native 应用 — 定义拆解</h2>
+    <div class="def-cards" id="defCards">
+      <div class="def-card" data-def="arch1">
+        <span class="tag">架构必要 ①</span>
+        <h3>至少一个能力的本质是「在新颖情况下决定下一步做什么」</h3>
+        <p>业务闭环中至少有一个能力必须由 LLM 推理循环承载，对应三问启发法的第三问为真。</p>
+        <div class="anti">将确定性分支逻辑伪装为 LLM 推理</div>
+      </div>
+      <div class="def-card" data-def="arch2">
+        <span class="tag">架构必要 ②</span>
+        <h3>非 Agent 能力退守 Skill / Tool</h3>
+        <p>其余能力按认知性质退守到 Skill 与普通 Tool，以「代价由低到高、能力由低到高」互逆对齐的三层结构组织。</p>
+        <div class="anti">Agent 化一切（每个函数都封 LLM Agent）</div>
+      </div>
+      <div class="def-card" data-def="prod">
+        <span class="tag">生产必要</span>
+        <h3>七项工程 + 共享治理平面同步落地</h3>
+        <p>HITL、版本管理、决策追溯、MCP 安全、对手建模 gap、成本可观测、组织拓扑 — 缺一不可。</p>
+        <div class="anti">只搭架构不建治理平面</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PYRAMID ARCHITECTURE ═══ -->
+  <div class="architecture">
+    <div class="section-title">AI Native 应用架构 — 三层金字塔结构</div>
+
+    <div class="pyramid-frame">
+      <svg class="pyr-bg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pyrGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#D1FAE5" stop-opacity="0.2"/>
+            <stop offset="40%" stop-color="#A7F3D0" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#6EE7B7" stop-opacity="0.5"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,-32 122,108 -22,108"/>
+      </svg>
+      <span class="pyr-label left">
+        <span class="pyr-line"></span>
+        <span class="pyr-text">能力递增</span>
+      </span>
+      <span class="pyr-label right">
+        <span class="pyr-text">代价递增</span>
+        <span class="pyr-line"></span>
+      </span>
+
+      <!-- Agent Layer (apex) -->
+      <div class="py-layer agent expanded" id="layer-agent">
+        <div class="py-inner">
+          <div class="py-header" onclick="toggleLayer('agent')">
+            <div class="py-icon">A</div>
+            <div class="py-info">
+              <div class="py-name">Agent 层 · 不确定下的目标驱动决策</div>
+              <div class="py-desc">LLM 循环 + 工具调用 + 记忆</div>
+            </div>
+            <span class="py-arrow">▾</span>
+          </div>
+          <div class="py-body">
+            <div class="py-cards">
+              <div class="lcard" data-comp="agent-trading" onclick="event.stopPropagation();showDetail('agent-trading')">
+                <span class="badge">唯一真 Agent</span>
+                <h4>🧠 交易策略 Agent</h4>
+                <p class="lcard-desc">ReAct / Plan-Execute · VaR 约束购售电组合 · 单轮 ≤ 15 min</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skill Layer (middle) -->
+      <div class="py-layer skill expanded" id="layer-skill">
+        <div class="py-inner">
+          <div class="py-header" onclick="toggleLayer('skill')">
+            <div class="py-icon">S</div>
+            <div class="py-info">
+              <div class="py-name">Skill 层 · 程序性知识与 SOP 编排</div>
+              <div class="py-desc">提示词 + 状态机 + 工作流</div>
+            </div>
+            <span class="py-arrow">▾</span>
+          </div>
+          <div class="py-body">
+            <div class="py-cards">
+              <div class="lcard" data-comp="skill-scheduling" onclick="event.stopPropagation();showDetail('skill-scheduling')">
+                <span class="badge">Skill</span>
+                <h4>📋 调度 SOP Skill</h4>
+                <p class="lcard-desc">峰谷套利 / 调频 / 备用容量 / 需求响应 SOP 编排</p>
+              </div>
+              <div class="lcard" data-comp="skill-settlement" onclick="event.stopPropagation();showDetail('skill-settlement')">
+                <span class="badge">Skill</span>
+                <h4>📊 结算流程 Skill</h4>
+                <p class="lcard-desc">账单生成 · 偏差归因 · 模型更新 DAG 编排</p>
+              </div>
+              <div class="lcard" data-comp="skill-compliance" onclick="event.stopPropagation();showDetail('skill-compliance')">
+                <span class="badge">Skill</span>
+                <h4>✅ 合规检查 Skill</h4>
+                <p class="lcard-desc">申报合规校验 · 市场规则匹配 · 监管报送</p>
+              </div>
+              <div class="lcard" data-comp="skill-risk" onclick="event.stopPropagation();showDetail('skill-risk')">
+                <span class="badge">Skill</span>
+                <h4>⚠️ 风险预案 Skill</h4>
+                <p class="lcard-desc">负电价 / 极端天气预案 · 兜底申报路径触发</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tool Layer (base) -->
+      <div class="py-layer tool expanded" id="layer-tool">
+        <div class="py-inner">
+          <div class="py-header" onclick="toggleLayer('tool')">
+            <div class="py-icon">T</div>
+            <div class="py-info">
+              <div class="py-name">Tool 层 · 确定性能力实现（通过 MCP 暴露）</div>
+              <div class="py-desc">普通应用 / 函数 + MCP Server</div>
+            </div>
+            <span class="py-arrow">▾</span>
+          </div>
+          <div class="py-body">
+            <div class="py-cards">
+              <div class="lcard" data-comp="tool-price" onclick="event.stopPropagation();showDetail('tool-price')">
+                <span class="badge">MCP Tool</span>
+                <h4>📈 电价预测 MCP</h4>
+                <p class="lcard-desc">96×3 分位点 · MAPE &lt; 8% · 推理 &lt; 1s</p>
+              </div>
+              <div class="lcard" data-comp="tool-load" onclick="event.stopPropagation();showDetail('tool-load')">
+                <span class="badge">MCP Tool</span>
+                <h4>📉 负荷预测 MCP</h4>
+                <p class="lcard-desc">NWP + SCADA 时序 · Informer / N-BEATS</p>
+              </div>
+              <div class="lcard" data-comp="tool-weather" onclick="event.stopPropagation();showDetail('tool-weather')">
+                <span class="badge">MCP Tool</span>
+                <h4>🌤️ 气象 MCP</h4>
+                <p class="lcard-desc">多源气象数据聚合 · 15 min 对齐</p>
+              </div>
+              <div class="lcard" data-comp="tool-market" onclick="event.stopPropagation();showDetail('tool-market')">
+                <span class="badge">MCP Tool</span>
+                <h4>💹 市场行情 MCP</h4>
+                <p class="lcard-desc">tick 行情 · 对手报价 · 出清价格</p>
+              </div>
+              <div class="lcard" data-comp="tool-iot" onclick="event.stopPropagation();showDetail('tool-iot')">
+                <span class="badge">MCP Tool</span>
+                <h4>🔌 IoT 控制 MCP</h4>
+                <p class="lcard-desc">鉴权 / 幂等 / 限流 · 物理安全闸门</p>
+              </div>
+              <div class="lcard" data-comp="tool-dw" onclick="event.stopPropagation();showDetail('tool-dw')">
+                <span class="badge">MCP Tool</span>
+                <h4>🗄️ 数仓结算 MCP</h4>
+                <p class="lcard-desc">查询 / 规则引擎 / 报表渲染 / 对账</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ GOVERNANCE PLANE ═══ -->
+  <div class="governance">
+    <div class="section-title">共享治理平面 — 七项工程实践（ML Platform + Audit Log 总线）</div>
+    <div class="gov-cards" id="govCards">
+      <div class="gov-item" data-comp="gov-hitl" onclick="showDetail('gov-hitl')">
+        <div class="gov-icon">🛑</div><h4>HITL 人在回路</h4><p>VaR 越限 / 负电价触发 → 挂起转人工</p>
+      </div>
+      <div class="gov-item" data-comp="gov-version" onclick="showDetail('gov-version')">
+        <div class="gov-icon">🔖</div><h4>版本管理与灰度</h4><p>回测 + shadow mode + 按租户灰度</p>
+      </div>
+      <div class="gov-item" data-comp="gov-trace" onclick="showDetail('gov-trace')">
+        <div class="gov-icon">🔍</div><h4>决策追溯链</h4><p>推理 / 调用 / 参数入溯源库</p>
+      </div>
+      <div class="gov-item" data-comp="gov-security" onclick="showDetail('gov-security')">
+        <div class="gov-icon">🔐</div><h4>MCP 安全中间层</h4><p>OAuth2 / mTLS + 配额 + 二次确认</p>
+      </div>
+      <div class="gov-item" data-comp="gov-adversary" onclick="showDetail('gov-adversary')">
+        <div class="gov-icon">🎯</div><h4>对手建模 gap</h4><p>KL / Wasserstein 漂移监测 + 降级策略</p>
+      </div>
+      <div class="gov-item" data-comp="gov-cost" onclick="showDetail('gov-cost')">
+        <div class="gov-icon">💰</div><h4>成本可观测性</h4><p>Token / 算力预算 · 超限熔断降档</p>
+      </div>
+      <div class="gov-item" data-comp="gov-org" onclick="showDetail('gov-org')">
+        <div class="gov-icon">🏛️</div><h4>组织拓扑适配</h4><p>平台工程 + 领域专家 + 风控合规 三角协同</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FIVE ROLES → THREE LAYERS MAPPING ═══ -->
+  <div class="mapping">
+    <div class="section-title">五个业务角色 → 三层技术映射</div>
+    <table class="mapping-table">
+      <thead>
+        <tr><th>业务角色</th><th>认知性质</th><th>技术落层</th><th>关键 KPI</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>电价 / 负荷预测智能体</td>
+          <td>数值计算（时序）</td>
+          <td><span class="dot tool-dot"></span>Tool（MCP 暴露）</td>
+          <td>MAPE &lt; 8%；推理 &lt; 1s</td>
+        </tr>
+        <tr>
+          <td>交易策略智能体</td>
+          <td>不确定下多步推理</td>
+          <td><span class="dot agent-dot"></span>Agent</td>
+          <td>日均 P&amp;L、命中率；单轮 ≤ 15 min</td>
+        </tr>
+        <tr>
+          <td>调节调度智能体</td>
+          <td>确定性流程编排</td>
+          <td><span class="dot skill-dot"></span>Skill + <span class="dot tool-dot"></span>Tool（MCP）</td>
+          <td>指令成功率 &gt; 99.9%</td>
+        </tr>
+        <tr>
+          <td>交易结算智能体</td>
+          <td>模板化工作流</td>
+          <td><span class="dot skill-dot"></span>Skill + <span class="dot tool-dot"></span>Tool（MCP）</td>
+          <td>偏差电量 &lt; 3%；T+1 出报告</td>
+        </tr>
+        <tr>
+          <td>市场主体仿真智能体</td>
+          <td>独立意志相互建模</td>
+          <td><span class="dot agent-dot"></span>多 Agent（MARL）</td>
+          <td>仿真-实盘 KL 距离下降</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ THREE QUESTIONS HEURISTIC ═══ -->
+  <div class="heuristic">
+    <div class="section-title">三问决策启发法 — 新增能力先过三问</div>
+    <div class="heuristic-flow">
+      <div class="h-step q1">
+        <div class="h-num">第一问（代价最低）</div>
+        <div class="h-q">能否用非 LLM 系统<br>以可验证正确性完成？</div>
+        <div class="h-ans">→ 是：Tool（MCP 暴露）</div>
+      </div>
+      <div class="h-arrow">→</div>
+      <div class="h-step q2">
+        <div class="h-num">第二问</div>
+        <div class="h-q">是否是固定流程<br>只需要被编排？</div>
+        <div class="h-ans">→ 是：Skill</div>
+      </div>
+      <div class="h-arrow">→</div>
+      <div class="h-step q3">
+        <div class="h-num">第三问（代价最高）</div>
+        <div class="h-q">是否需在新颖情况下<br>决定下一步做什么？</div>
+        <div class="h-ans">→ 是：Agent</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ OVERLAY ═══ -->
+<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+
+<!-- ═══ INFO PANEL ═══ -->
+<div class="info-panel" id="infoPanel">
+  <div class="info-header">
+    <h3 id="infoTitle">组件详情</h3>
+    <button class="info-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="info-body" id="infoBody"></div>
+</div>
+
+<script>
+// ── Component Detail Data ──
+const details = {
+  // Agent
+  'agent-trading': {
+    title: '交易策略 Agent',
+    layer: 'agent',
+    layerName: 'Agent 层',
+    ref: '§4.2',
+    sections: [
+      { h: '本质', c: '五个角色中唯一需要 LLM 推理循环的。目标：VaR < 5% 下最大化日内 P&L。' },
+      { h: '为什么必须是 Agent', c: '目标可表达但路径不可枚举；需多轮工具调用（8–20 次/轮）；需经验沉淀到记忆模块。' },
+      { h: '落地形态', c: 'ReAct / Plan-Execute Agent，挂载预测 MCP、行情 MCP、调度 Skill。强制 max-steps、token/成本预算与终止条件。' },
+      { h: '记忆模块', c: '短期工作记忆（向量库 + 滑动窗口）+ 长期经验库（结构化案例库 + 知识图谱），记忆条目带 TTL 与置信度。' },
+      { h: '求解器协同', c: '凸优化求解器预编译 + 热启动。INFEASIBLE 时触发次级规划（依次松弛 SOC → 爬坡率 → VaR 阈值），仍不可行则挂起转 HITL。' },
+      { h: '兜底申报', c: '临近 22:00 仍无可行解 → HITL + 回退常设报价或前一交易日已备案策略。' },
+      { h: 'KPI', c: '日均 P&L、命中率、VaR 越限率；单轮 ≤ 15 min。' }
+    ]
+  },
+  // Skills
+  'skill-scheduling': {
+    title: '调度 SOP Skill',
+    layer: 'skill', layerName: 'Skill 层', ref: '§4.3',
+    sections: [
+      { h: '本质', c: '把交易策略翻译成设备动作，SOP 已明确（峰谷套利、调频、备用容量、需求响应）。' },
+      { h: '落地形态', c: '提示词 + 状态机编排步骤。IoT MCP 内部封装安全约束模型，对每条指令做实时可行性校验。' },
+      { h: 'LLM 介入边界', c: '仅异常处置时介入：设备失联、电网拉闸、价格剧变。' },
+      { h: '安全闸门', c: '节点电压、线路潮流、爬坡率、SOC 上下限由 MCP 守住——这是「幻觉即事故」的最后一道闸。' },
+      { h: 'KPI', c: '指令成功率 > 99.9%；22:00 前申报完成。' }
+    ]
+  },
+  'skill-settlement': {
+    title: '结算流程 Skill',
+    layer: 'skill', layerName: 'Skill 层', ref: '§4.4',
+    sections: [
+      { h: '本质', c: '数据飞轮的入口。账单生成、偏差电量计算、应收应付对账几乎完全程序化。' },
+      { h: '落地形态', c: 'Skill 编排 DAG 工作流；MCP 提供数仓查询、规则引擎、报表渲染、对账冲销。关键步骤双签确认。' },
+      { h: 'LLM 价值点', c: '仅在生成自然语言复盘报告、解释异常波动、撰写监管报送说明时发挥。' },
+      { h: '数据飞轮代价', c: '偏差回写 ≠ 自动重训练。需显式设定更新频率、触发阈值、回滚机制；新版本先 shadow mode 双跑。' },
+      { h: 'KPI', c: '偏差电量 < 3%；T+1 出报告；周级决定是否切版。' }
+    ]
+  },
+  'skill-compliance': {
+    title: '合规检查 Skill',
+    layer: 'skill', layerName: 'Skill 层', ref: '§3.5',
+    sections: [
+      { h: '本质', c: 'SOP 编排的合规校验流程，对接市场行情 MCP 获取规则基准。' },
+      { h: '职责', c: '申报合规校验、市场规则匹配、监管报送材料生成。属于程序性知识，无需 LLM 推理循环。' }
+    ]
+  },
+  'skill-risk': {
+    title: '风险预案 Skill',
+    layer: 'skill', layerName: 'Skill 层', ref: '§3.5',
+    sections: [
+      { h: '本质', c: 'SOP 编排的风险应对流程。' },
+      { h: '职责', c: '负电价 / 极端天气预案激活、兜底申报路径触发。按既定规则链执行，不依赖 LLM 临场创造。' }
+    ]
+  },
+  // Tools
+  'tool-price': {
+    title: '电价预测 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§4.1',
+    sections: [
+      { h: '本质', c: '数值计算而非语言推理。预测模型作为普通服务部署，以 MCP Server 包装暴露。' },
+      { h: '能力', c: '输入历史负荷 + 气象 + 检修计划，输出 96×3 (P10/P50/P90) 时段曲线。' },
+      { h: '技术栈', c: 'Informer / N-BEATS / TimeGPT 等时序模型。训练节奏「周级全量 + 日级增量」。' },
+      { h: '可验证性', c: 'MAPE / RMSE / Pinball Loss 可回测。MLflow / DVC 锁定数据-模型版本对。' },
+      { h: 'KPI', c: 'MAPE < 8%；推理 < 1s。' }
+    ]
+  },
+  'tool-load': {
+    title: '负荷预测 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§4.1',
+    sections: [
+      { h: '本质', c: '与电价预测同质的数值计算能力。' },
+      { h: '能力', c: 'NWP + SCADA 出力 + 历史负荷 → 96×3 分位点负荷曲线。' },
+      { h: '技术栈', c: 'Informer / N-BEATS / TimeGPT。周级全量 + 日级增量训练。' }
+    ]
+  },
+  'tool-weather': {
+    title: '气象 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§3.5',
+    sections: [
+      { h: '本质', c: '多源气象数据聚合服务。' },
+      { h: '能力', c: 'NWP 数值天气预报 + 实时气象观测，15 min 粒度对齐，为预测 MCP 提供输入。' }
+    ]
+  },
+  'tool-market': {
+    title: '市场行情 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§3.5',
+    sections: [
+      { h: '本质', c: '实时市场数据服务。' },
+      { h: '能力', c: 'tick 行情抓取、对手报价分布、出清价格、市场规则变更推送。秒级刷新。' }
+    ]
+  },
+  'tool-iot': {
+    title: 'IoT 控制 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§4.3',
+    sections: [
+      { h: '本质', c: '物理设备控制的安全闸门——「幻觉即事故」的最后一道防线。' },
+      { h: '能力', c: '提供 dispatch_battery(id, kW, duration) 等强类型工具，内置鉴权、幂等、限流、可回滚。' },
+      { h: '安全约束', c: '内部封装节点电压、线路潮流、爬坡率、SOC 上下限校验。Skill 只编排业务，物理可行性由 MCP 守住。' },
+      { h: 'KPI', c: '指令成功率 > 99.9%；秒级下发。' }
+    ]
+  },
+  'tool-dw': {
+    title: '数仓结算 MCP',
+    layer: 'tool', layerName: 'Tool 层（MCP 暴露）', ref: '§4.4',
+    sections: [
+      { h: '本质', c: '结算与数据回流服务。' },
+      { h: '能力', c: '数仓查询、规则引擎、报表渲染、对账冲销。为结算 Skill 提供数据底座。' }
+    ]
+  },
+  // Governance
+  'gov-hitl': {
+    title: 'HITL 人在回路',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: '极端市场状态下避免 Agent 单边决策。' },
+      { h: '落地形态', c: '触发器（VaR 越限、负电价、单笔超额度）由风控可配置规则引擎驱动，命中即挂起 Agent 转人工复核。临近 22:00 触发兜底申报。' },
+      { h: '对齐预算', c: '22:00 申报截止；高频闭环不丢数据。' }
+    ]
+  },
+  'gov-version': {
+    title: '版本管理与灰度',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: 'Agent / Skill / Tool（MCP）迭代不冲击线上。' },
+      { h: '落地形态', c: '策略 Agent 支持回测 + shadow mode + champion-challenger 双跑，过分位再切流，按租户或容量灰度发布。' },
+      { h: '对齐预算', c: '周级决定是否切版。' }
+    ]
+  },
+  'gov-trace': {
+    title: '决策追溯链',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: '满足监管对负电价套利等行为的解释要求。' },
+      { h: '落地形态', c: 'Agent 每一步推理、工具调用、参数取值入溯源库。结算 Skill 输出可审计的「为什么这么交易」链条。' },
+      { h: '对齐预算', c: 'T+1 出报告；调度/交易/运营基于同一上下文协同。' }
+    ]
+  },
+  'gov-security': {
+    title: 'MCP 安全中间层',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: 'MCP 协议自身在认证授权上仍在演进，金融与电网不可裸奔。' },
+      { h: '落地形态', c: 'MCP Gateway 上叠加 OAuth2 / mTLS、调用配额、敏感操作二次确认。' },
+      { h: '对齐预算', c: '高频闭环 + 跨阶段重试幂等不丢数据。' }
+    ]
+  },
+  'gov-adversary': {
+    title: '对手建模 gap',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: '多 Agent 仿真分布与在线市场分布有差距（KL / Wasserstein 距离）。' },
+      { h: '落地形态', c: '离线博弈用于策略预训练，在线推理切换基于公开市场数据的鲁棒路径。漂移超阈则降级到规则基保守策略，冻结仿真侧推荐。' },
+      { h: '对齐预算', c: '市场主体 ≥ 5 类、独立意志需显式建模。' }
+    ]
+  },
+  'gov-cost': {
+    title: '成本可观测性',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: 'Token / 求解器 / Tool 调用（走 MCP）的经济性失控。' },
+      { h: '落地形态', c: '每决策回合设 Token 与算力预算上限。仪表盘按 Agent / Skill / Tool 维度归集成本，超限自动熔断或降档至更小模型。' },
+      { h: '对齐预算', c: '与单轮 ≤ 15 min 联动；Agent 化一切与缺终止条件的经济性约束。' }
+    ]
+  },
+  'gov-org': {
+    title: '组织拓扑适配',
+    layer: 'gov', layerName: '治理平面', ref: '§5.4',
+    sections: [
+      { h: '解决什么', c: '调度 / 交易 / 运营三方组织墙。' },
+      { h: '落地形态', c: '平台工程团队拥有 Skill + Tool / MCP；领域专家组贡献策略 Agent 提示词与回测；风险合规岗守 HITL 与追溯。' },
+      { h: '对齐预算', c: '调度 / 交易 / 运营基于同一上下文协同决策。' }
+    ]
+  }
+};
+
+// ── Toggle Layer Expand/Collapse ──
+function toggleLayer(layerType) {
+  const el = document.getElementById('layer-' + layerType);
+  el.classList.toggle('expanded');
+}
+
+// ── Show Detail Panel ──
+function showDetail(compId) {
+  const data = details[compId];
+  if (!data) return;
+
+  document.getElementById('infoTitle').textContent = data.title;
+
+  const layerTagMap = { agent: 'agent-tag', skill: 'skill-tag', tool: 'tool-tag', gov: 'gov-tag' };
+  let html = `<span class="info-layer-tag ${layerTagMap[data.layer] || 'gov-tag'}">${data.layerName}</span>`;
+
+  data.sections.forEach(s => {
+    html += `<div class="info-section"><h5>${s.h}</h5>`;
+    if (s.c.includes('\n')) {
+      html += '<ul>' + s.c.split('\n').filter(l => l.trim()).map(l => `<li>${l.trim()}</li>`).join('') + '</ul>';
+    } else {
+      html += `<p>${s.c}</p>`;
+    }
+    html += '</div>';
+  });
+
+  document.getElementById('infoBody').innerHTML = html;
+  document.getElementById('infoPanel').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+
+  // Highlight active card
+  document.querySelectorAll('.lcard.active, .gov-item.active').forEach(el => el.classList.remove('active'));
+  const activeEl = document.querySelector(`[data-comp="${compId}"]`);
+  if (activeEl) activeEl.classList.add('active');
+}
+
+// ── Close Detail Panel ──
+function closeDetail() {
+  document.getElementById('infoPanel').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.lcard.active, .gov-item.active').forEach(el => el.classList.remove('active'));
+}
+
+// ── Keyboard Escape ──
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// ── Initialize: expand all pyramid layers by default ──
+document.querySelectorAll('.py-layer').forEach(l => l.classList.add('expanded'));
+</script>
+
+</body>
+</html>
