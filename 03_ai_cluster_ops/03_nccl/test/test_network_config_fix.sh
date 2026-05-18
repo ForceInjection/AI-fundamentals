@@ -279,7 +279,7 @@ main() {
         log_success "✅ 所有测试通过，修复验证成功！"
         echo ""
         log_info "现在可以重新运行 NCCL 测试："
-        echo "  cd /Users/wangtianqing/Project/AI-fundermentals/nccl/k8s"
+        echo "  cd /Users/wangtianqing/Project/AI-fundamentals/nccl/k8s"
         echo "  ./deploy.sh"
         echo ""
         log_info "预期结果："

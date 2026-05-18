@@ -105,7 +105,7 @@ test_config_cache() {
     cat > /tmp/test_cache.sh << 'EOF'
 #!/bin/bash
 # 导入配置管理器函数
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # 初始化缓存 (使用 bash 3.x 兼容方式)
 # 如果是 bash 4+，使用 declare -A
@@ -151,7 +151,7 @@ test_batch_config() {
     
     cat > /tmp/test_batch.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then
@@ -200,7 +200,7 @@ test_network_presets() {
         
         cat > /tmp/test_preset.sh << EOF
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then
@@ -254,7 +254,7 @@ test_performance_presets() {
         
         cat > /tmp/test_perf_preset.sh << EOF
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then
@@ -307,7 +307,7 @@ test_system_info_cache() {
     
     cat > /tmp/test_sys_cache.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then
@@ -383,7 +383,7 @@ test_network_interface_config() {
         
         cat > /tmp/test_interface.sh << EOF
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then
@@ -431,7 +431,7 @@ test_config_manager_integration() {
     
     cat > /tmp/test_integration.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # Bash 3.x 兼容性处理
 if [ "${BASH_VERSINFO:-0}" -ge 4 ]; then

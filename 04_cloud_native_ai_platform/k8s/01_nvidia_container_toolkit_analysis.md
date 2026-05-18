@@ -4,7 +4,7 @@
 >
 > 官方文档地址：<https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html>
 >
-> 本文地址：<https://github.com/ForceInjection/AI-fundermentals/blob/main/04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md>
+> 本文地址：<https://github.com/ForceInjection/AI-fundamentals/blob/main/04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md>
 
 ## 1. 引言与背景
 

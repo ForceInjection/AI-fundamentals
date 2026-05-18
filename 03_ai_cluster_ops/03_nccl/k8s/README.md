@@ -68,7 +68,7 @@ kubectl get nodes -l nvidia.com/gpu.present=true
 
 ```bash
 # 进入 NCCL 目录
-cd /AI-fundermentals/nccl
+cd /AI-fundamentals/nccl
 
 # 部署默认配置
 ./k8s/deploy.sh deploy

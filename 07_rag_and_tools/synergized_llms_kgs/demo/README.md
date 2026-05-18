@@ -118,18 +118,18 @@ docker-compose up -d neo4j
 
 ```bash
 # 2) 生成合成数据
-cd '/Users/wangtianqing/Project/wechat/AI-fundermentals'
+cd '/Users/wangtianqing/Project/wechat/AI-fundamentals'
 .venv/bin/python '07_rag_and_tools/synergized_llms_kgs/demo/etl/generate_data.py'
 ```
 
 ```text
 # 输出示例
-Data generated in /Users/wangtianqing/Project/AI-fundermentals/07_rag_and_tools/synergized_llms_kgs/demo/data
+Data generated in /Users/wangtianqing/Project/AI-fundamentals/07_rag_and_tools/synergized_llms_kgs/demo/data
 ```
 
 ```bash
 # 3) 导入 Neo4j
-cd '/Users/wangtianqing/Project/wechat/AI-fundermentals'
+cd '/Users/wangtianqing/Project/wechat/AI-fundamentals'
 .venv/bin/python '07_rag_and_tools/synergized_llms_kgs/demo/etl/load_to_neo4j.py'
 ```
 
@@ -153,7 +153,7 @@ nodes
 ```bash
 # 5) 启动 API（另开一个终端窗口执行）
 cd '07_rag_and_tools/synergized_llms_kgs'
-/Users/wangtianqing/Project/AI-fundermentals/.venv/bin/python -m uvicorn demo.api.server:app --port 8000
+/Users/wangtianqing/Project/AI-fundamentals/.venv/bin/python -m uvicorn demo.api.server:app --port 8000
 ```
 
 ```bash

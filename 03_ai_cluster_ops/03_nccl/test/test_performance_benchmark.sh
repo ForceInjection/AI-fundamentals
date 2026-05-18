@@ -191,7 +191,7 @@ test_configuration_performance() {
     # 创建配置性能测试脚本
     cat > /tmp/config_perf_test.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 declare -A NCCL_CONFIG_CACHE
 declare -A SYSTEM_INFO_CACHE
@@ -265,7 +265,7 @@ test_memory_efficiency() {
     # 创建内存测试脚本
     cat > /tmp/memory_test.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # 测试配置缓存的内存效率
 declare -A NCCL_CONFIG_CACHE
@@ -319,7 +319,7 @@ test_function_call_performance() {
     # 创建函数调用性能测试
     cat > /tmp/function_perf_test.sh << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 declare -A NCCL_CONFIG_CACHE
 declare -A SYSTEM_INFO_CACHE

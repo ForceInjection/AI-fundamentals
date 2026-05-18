@@ -415,7 +415,7 @@ def cleanup_inactive_sessions(self, hours: int = 24) -> None:
 
 ```bash
 # 进入代码目录
-cd /path/to/AI-fundermentals/08_agentic_system/memory/langchain/code/
+cd /path/to/AI-fundamentals/08_agentic_system/memory/langchain/code/
 
 # 安装依赖（LangChain 0.3+ / LangGraph 0.2+）
 pip install -r requirements.txt

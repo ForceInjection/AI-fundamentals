@@ -377,7 +377,7 @@ test_config_manager() {
     # 创建测试脚本来验证配置管理器
     cat > "$MOCK_DIR/test_config.sh" << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # 测试配置缓存
 declare -A NCCL_CONFIG_CACHE
@@ -514,7 +514,7 @@ test_logging_functions() {
     # 创建测试脚本来验证日志功能
     cat > "$MOCK_DIR/test_logging.sh" << 'EOF'
 #!/bin/bash
-source /Users/wangtianqing/Project/AI-fundermentals/nccl/nccl_benchmark.sh
+source /Users/wangtianqing/Project/AI-fundamentals/nccl/nccl_benchmark.sh
 
 # 重定向日志到测试文件
 TEST_LOG_FILE="/tmp/test_logging_output.log"
