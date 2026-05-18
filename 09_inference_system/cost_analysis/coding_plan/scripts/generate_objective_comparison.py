@@ -22,7 +22,7 @@ def get_tier(plan_name):
     return "高级"
 
 def main():
-    base_dir = "/Users/wangtianqing/Project/study/AI-fundermentals/09_inference_system/cost_analysis/coding_plan"
+    base_dir = "/Users/wangtianqing/Project/study/AI-fundamentals/09_inference_system/cost_analysis/coding_plan"
     json_path = os.path.join(base_dir, "data/pricing_normalized.json")
     output_path = os.path.join(base_dir, "objective_pricing_comparison.md")
     
