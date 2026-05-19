@@ -189,7 +189,8 @@ EOF
         "graphics": $(echo "$clock_gpu" | tr -d ' '),
         "memory": $(echo "$clock_mem" | tr -d ' ')
       }
-    }EOF
+    }
+EOF
     done
     
     echo "" >> "$report_file"
