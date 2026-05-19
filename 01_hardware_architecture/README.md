@@ -60,6 +60,8 @@ PCIe 和 NVLink 在系统里扮演的是互补角色，而不是替代关系：
 - **[PCIe 拓扑可视化](pcie/03_pcie_topology_visualization.md)**：通过 sysfs 和 `nvidia-smi` 交叉验证 GPU 在 PCIe 树中的位置与链路状态。
 - **[PCIe AER 错误监控](pcie/04_pcie_aer_monitoring.md)**：sysfs AER 计数器解读、nvidia-smi Replay 监控、链路健康诊断流程与排查指南。
 - **[GPU BAR1 内存映射](pcie/05_bar1_memory_mapping.md)**：BAR1 窗口大小对 Unified Memory 性能的影响、ReBAR 状态检查、BAR1 vs FB 对比。
+- **[PCIe 拓扑层次](pcie/06_pcie_topology_hierarchy.md)**：Root Complex → Bridge/Switch → Device 四层模型，从 sysfs 识别各层，本环境 24 domain 完整拓扑。
+- **[PCIe Switch 识别与验证](pcie/07_pcie_switch_vs_bridge.md)**：从 sysfs 区分 Switch vs Bridge 的方法，多端口检测、ACS 验证，本环境确认无 Switch。
 
 ### 3.2 高级直通技术（GPUDirect）
 
@@ -109,6 +111,7 @@ Blackwell 代际实际上重新定义了“一台 AI 机器”的边界：
 - **[AI 基础设施延迟金字塔](performance/ai_latency_pyramid.md)**：提供从寄存器访问、内存读写到跨节点网络通信的各级延迟参考基准数据。
 - **[单卡 GPU 拓扑与 NUMA 深入分析](performance/02_single_gpu_topology_analysis.md)**：单 GPU 场景下 `nvidia-smi topo -m` 输出解读、NUMA 亲和性验证与跨 socket 延迟分析。
 - **[CPU AMX vs GPU Tensor Core](performance/03_amx_vs_tensorcore.md)**：Intel Sapphire Rapids AMX 矩阵引擎与 NVIDIA Tensor Core 的硬件对比与混合计算场景分析。
+- **[多 PCIe Domain 与 NUMA 映射](performance/04_pcie_domain_numa.md)**：Sapphire Rapids 多 domain 架构、BDF 编码的 NUMA 推断、跨 socket PCIe 访问的性能评估。
 
 ---
 
