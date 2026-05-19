@@ -26,6 +26,7 @@
 - [**PCIe 链路状态与带宽实测**](02_pcie_bandwidth_measurement.md)：零依赖 CUDA H2D/D2H 带宽测试程序，基于 RTX 5090 PCIe Gen 5 实测
 - [**GPU 显存带宽测试：片内 vs 片外**](03_hbm_bandwidth_test.md)：HBM D2D 带宽实测 (762-1341 GB/s)，与 PCIe 带宽形成完整对比
 - [**GPU 功耗管理实战**](04_power_management.md)：RTX 5090 功耗限制、时钟控制、Power Smoothing/Power Profiles 兼容性实测
+- [**PCIe 传输效率曲线**](05_pcie_transfer_efficiency.md)：1 KB - 1 GB 区间 PCIe 带宽爬升曲线，揭示效率拐点与最小传输大小建议
 
 ## 2. 性能分析实践
 
