@@ -335,6 +335,7 @@ cd k8s/
 
 ## 7. 详细文档
 
+- **[NCCL 单卡验证指南](./02_nccl_helloworld.md)** - 无需多卡/多机的 NCCL 安装验证 (Hello World)
 - **[详细使用教程](./01_nccl_tutorial.md)** - 完整的安装、配置和使用说明
 - **[Kubernetes 部署指南](./k8s/README.md)** - Kubernetes 多节点部署详细教程
 - **[故障排除](./01_nccl_tutorial.md#故障排除)** - 常见问题和解决方案

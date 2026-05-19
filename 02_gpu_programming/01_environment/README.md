@@ -9,3 +9,7 @@
 ## 2. [大模型训练与推理框架的 GPU 镜像构建深度解析](02_cuda_image_build_analysis.md)
 
 通过对 vLLM、TGI、Llama.cpp 以及 DeepSpeed 等开源框架 Dockerfile 的深度剖析，揭示在不同场景下如何构建与优化 CUDA 容器镜像。
+
+## 3. [裸金属 CUDA 环境安装指南](03_cuda_metal_install_guide.md)
+
+不依赖 Docker/SLURM 的裸金属 CUDA 环境安装指南。基于 Ubuntu 22.04 + RTX 5090 + CUDA 12.8 实际环境编写，涵盖驱动安装、CUDA Toolkit 安装、NCCL 安装及环境验证。
