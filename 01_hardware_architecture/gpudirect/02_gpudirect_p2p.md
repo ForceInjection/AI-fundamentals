@@ -262,7 +262,10 @@ void launch_p2p_kernel(float* d_ptr0, float* d_ptr1, int N, cudaStream_t stream)
 - **拓扑检测**：使用 `nvidia-smi topo -m` 查看矩阵。
   - **最佳路径 (`NV#`)**：通过 NVLink 连接，提供最高带宽（如 H100 上单向 450GB/s）和最低延迟。
   - **次优路径 (`PIX`)**：通过同一 PCIe Switch 连接。支持全速 PCIe P2P，但受限于 PCIe 代数（Gen4/Gen5）带宽。
-  - **受限路径 (`PHB`/`PXB`)**：跨 Host Bridge（即跨 CPU Socket）连接。数据需经过 CPU 间的互连总线（如 Intel UPI/AMD xGMI），不仅带宽受限，还会显著增加延迟。
+  - **良好路径 (`PXB`)**：穿越多个 PCIe Bridge/Switch，但不经过 PCIe Host Bridge。支持 GPUDirect P2P，延迟低。
+  - **一般路径 (`PHB`)**：经由 CPU Root Complex（同 CPU Socket，不同 Root Port）。P2P 支持视平台而定，延迟中等，带宽受 RC 共享限制。
+  - **受限路径 (`NODE`)**：同 Socket 内跨 PCIe Host Bridge（同 NUMA Node，不同 PHB）。P2P 支持视平台而定，需内核 allowlist。
+  - **不可用路径 (`SYS`)**：跨 NUMA Node / CPU Socket，数据经过 CPU 间互连总线（UPI/IF）。不支持 GPUDirect P2P，延迟高、带宽受限。
 - **NUMA 亲和性**：务必将控制 GPU 的 CPU 线程绑定到与该 GPU 最近的 NUMA 节点，以减少控制路径的延迟。
 
 ### 5.2 PCIe ACS (Access Control Services) 瓶颈

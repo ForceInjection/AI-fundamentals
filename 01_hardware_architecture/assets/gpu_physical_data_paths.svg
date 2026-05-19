@@ -213,7 +213,7 @@
   <text x="820" y="282" fill="#374151" font-size="9">• NVMe controller DMA reads data from NAND and writes to system DRAM.</text>
   <text x="820" y="296" fill="#374151" font-size="9">• GPU DMA reads data from system DRAM and writes to its VRAM.</text>
   <text x="820" y="310" fill="#374151" font-size="9">• Two PCIe data transfers + CPU memory bounce buffer.</text>
-  <text x="820" y="324" fill="#374151" font-size="9">• Buffered I/O: 2 memcpy per transfer; O_DIRECT: 1 memcpy.</text>
+  <text x="820" y="324" fill="#374151" font-size="9">• Buffered I/O: 2 data copies (page cache + GPU DMA); O_DIRECT: 1 data copy.</text>
   <text x="820" y="338" fill="#374151" font-size="9">• Applies symmetrically to Read (NVMe→GPU) and Write (GPU→NVMe).</text>
 
   <rect x="1280" y="250" width="280" height="95" rx="4" fill="white" stroke="#fca5a5" stroke-width="1"/>
@@ -267,7 +267,7 @@
   <text x="820" y="549" fill="#374151" font-size="9">• NVMe DMA writes directly into GPU VRAM; CPU memory entirely bypassed.</text>
   <text x="820" y="562" fill="#374151" font-size="9">• Stack (NV): libcufile API + nvidia-fs.ko  |  AMD analog: DirectGMA + ROCm / DMA-BUF + upstream pci_p2pdma.</text>
   <text x="820" y="575" fill="#374151" font-size="9">• Legacy mode: nvidia-fs.ko + MOFED-patched NVMe driver (pre-CUDA 12.8).</text>
-  <text x="820" y="588" fill="#374151" font-size="9">• Modern mode: Linux ≥ 6.2 upstream pci_p2pdma + CUDA 12.8+ (no MOFED patch).</text>
+  <text x="820" y="588" fill="#374151" font-size="9">• Modern mode: Linux ≥ 6.2 (Ubuntu) / 5.14 (RHEL 9.4+) upstream pci_p2pdma + CUDA 12.8+ (no MOFED patch).</text>
 
   <!-- 2-B key points (right) -->
   <rect x="1320" y="520" width="240" height="75" rx="4" fill="white" stroke="#86efac" stroke-width="1"/>
@@ -275,7 +275,7 @@
   <text x="1330" y="549" fill="#374151" font-size="9">• No CPU memory bounce buffer.</text>
   <text x="1330" y="562" fill="#374151" font-size="9">• Lower latency, higher bandwidth.</text>
   <text x="1330" y="575" fill="#374151" font-size="9">• Preconditions: ACS bypass,</text>
-  <text x="1330" y="588" fill="#374151" font-size="9">  IOMMU=pt, ReBAR, O_DIRECT align.</text>
+  <text x="1330" y="588" fill="#374151" font-size="9">  IOMMU=pt, O_DIRECT align.</text>
 
   <!-- ==================== SECTION 3: VARIATIONS AND TOPOLOGIES (bottom-left) ==================== -->
   <rect x="20" y="625" width="980" height="365" rx="8" fill="white" stroke="#7c3aed" stroke-width="2"/>

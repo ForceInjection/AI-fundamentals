@@ -40,8 +40,15 @@ ls /usr/local/cuda/targets/x86_64-linux/lib/libcufile.so*
 lsblk | grep nvme
 # 预期: 至少有一个 nvmeXnY 设备
 
-# 5. nvidia-fs.ko 内核模块（可选，优化 direct I/O）
+# 5. nvidia-fs.ko 内核模块
 lsmod | grep nvidia_fs
+# Legacy 模式 (pre-CUDA 12.8): 必须 + MOFED 补丁 NVMe 驱动
+# Modern 模式 (CUDA 12.8+ + Linux ≥ 6.2): 可选，上游 pci_p2pdma 替代
+
+# 6. 硬件/系统前提条件
+# - ACS 旁路: PCIe Switch 下行端口关闭 ACS 转发限制
+# - IOMMU=pt: 内核启动参数 iommu=pt (或 intel_iommu=pt / amd_iommu=pt)
+# - O_DIRECT: 文件打开必须使用 O_DIRECT 标志
 ```
 
 ### 2.1 本环境确认
@@ -114,14 +121,13 @@ nvcc -I/usr/local/cuda/include \
 
 ## 5. 常见限制
 
-| 限制                   | 说明                                                                                |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| **NVMe 必须直接挂载**  | 网络存储 (NFS/Ceph) 不支持 GDS                                                      |
-| **需 O_DIRECT**        | 绕过 page cache，直接 DMA                                                           |
-| **文件对齐**           | 偏移和大小需对齐到 4 KB                                                             |
-| **nvidia-fs 内核模块** | 可选，启用后性能更好（绕过 VFS（Virtual File System）层，直接从 NVMe 驱动发起 DMA） |
-| **消费级 GPU**         | 支持 GDS 但性能低于数据中心 GPU（BAR1 窗口限制）                                    |
-| **PCIe topology**      | GPU 和 NVMe 需在同一 PCIe domain 且支持 P2P                                         |
+| 限制                   | 说明                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| **NVMe 必须直接挂载**  | 网络存储 (NFS/Ceph) 不支持 GDS                                               |
+| **文件对齐**           | 偏移和大小需对齐到 4 KB                                                      |
+| **nvidia-fs 内核模块** | Legacy (pre-CUDA 12.8) 必须 + MOFED 补丁 NVMe 驱动；Modern (CUDA 12.8+) 可选 |
+| **消费级 GPU**         | 支持 GDS 但性能低于数据中心 GPU（BAR1 窗口限制）                             |
+| **PCIe topology**      | GPU 和 NVMe 需在同一 PCIe domain 且支持 P2P                                  |
 
 ---
 

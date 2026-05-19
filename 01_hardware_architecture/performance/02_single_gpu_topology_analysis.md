@@ -106,11 +106,11 @@ GPU0     X      52-103,156-207  1               N/A
 | 缩写 | 含义                                  | 延迟 |
 | ---- | ------------------------------------- | ---- |
 | X    | Self                                  | —    |
-| PIX  | 单 PCIe bridge 内                     | 低   |
-| PXB  | 多 PCIe bridge，不出 PCIe Host Bridge | 中   |
-| PHB  | 跨 PCIe Host Bridge                   | 中高 |
-| NODE | 跨 NUMA 节点内的 PCIe Host Bridge     | 高   |
-| SYS  | 跨 NUMA 节点（经 QPI/UPI）            | 最高 |
+| PIX  | 单 PCIe bridge 内                     | 极低 |
+| PXB  | 多 PCIe bridge，不出 PCIe Host Bridge | 低   |
+| PHB  | 跨 PCIe Host Bridge（经 CPU Root Complex） | 中   |
+| NODE | 同 NUMA 节点内跨 PCIe Host Bridge     | 高   |
+| SYS  | 跨 CPU Socket（经 UPI/IF）            | 高   |
 | NV#  | 经 NVLink                             | 极低 |
 
 多卡场景下，同一 NUMA 节点的 GPU 之间通常显示为 `NODE` 或 `PIX`，跨 NUMA 则为 `SYS`。
