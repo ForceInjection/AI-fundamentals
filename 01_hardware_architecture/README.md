@@ -57,6 +57,7 @@ PCIe 和 NVLink 在系统里扮演的是互补角色，而不是替代关系：
 - **[PCIe 总线技术大全](pcie/01_pcie_comprehensive_guide.md)**：从物理层到协议层全面解析 PCIe 总线架构及带宽演进。
 - **[Linux PCIe P2PDMA 技术介绍](pcie/02_p2pdma_technology.md)**：从 PCIe 硬件机制、Linux 内核实现到 GPUDirect Storage (GDS) 场景实践，全面解析设备直连 DMA 技术。
 - **[NVLink 技术入门](nvlink/nvlink_intro.md)**：介绍 NVIDIA 为突破 PCIe 带宽瓶颈而设计的专有高速 GPU 互连方案。
+- **[PCIe 拓扑可视化](pcie/03_pcie_topology_visualization.md)**：通过 sysfs 和 `nvidia-smi` 交叉验证 GPU 在 PCIe 树中的位置与链路状态。
 
 ### 3.2 高级直通技术（GPUDirect）
 
@@ -103,6 +104,8 @@ Blackwell 代际实际上重新定义了“一台 AI 机器”的边界：
 也就是说，数据落在哪一层，性能差距动辄上万倍。这个量级差是容量规划、KV Cache 分层存储、集合通信调度等决策的核心依据——**“别让热数据跑到慢介质上去”**，基本是所有优化的出发点。
 
 - **[AI 基础设施延迟金字塔](performance/ai_latency_pyramid.md)**：提供从寄存器访问、内存读写到跨节点网络通信的各级延迟参考基准数据。
+- **[单卡 GPU 拓扑与 NUMA 深入分析](performance/02_single_gpu_topology_analysis.md)**：单 GPU 场景下 `nvidia-smi topo -m` 输出解读、NUMA 亲和性验证与跨 socket 延迟分析。
+- **[CPU AMX vs GPU Tensor Core](performance/03_amx_vs_tensorcore.md)**：Intel Sapphire Rapids AMX 矩阵引擎与 NVIDIA Tensor Core 的硬件对比与混合计算场景分析。
 
 ---
 
