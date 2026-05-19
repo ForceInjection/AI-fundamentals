@@ -44,6 +44,12 @@ _GPU Architecture and Programming — An Introduction_：
 - Host Native Atomic 与数据中心 GPU 的能力差异。
 - RTX 5090 关键属性实测。
 
+## 7. [CUDA Streams 并发实战](07_cuda_streams_concurrency.md)
+
+- 单 GPU 上 H2D + Kernel + D2H 重叠执行的完整 demo。
+- 4 个 stream 的实测加速比 2.36x（RTX 5090，2 个 async copy engine）。
+- Nsight Systems 可视化概念图与 stream 最佳实践。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
