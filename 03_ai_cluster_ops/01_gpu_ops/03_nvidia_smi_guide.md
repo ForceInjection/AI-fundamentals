@@ -210,12 +210,85 @@ memory.total [MiB], memory.used [MiB], memory.free [MiB]
 nvidia-smi -i 0 -c 1
 ```
 
+## 13. GPU 性能监控 (gpm)
+
+`gpm` (GPU Performance Monitoring) 是 v595 新增的子命令，用于控制和查询 GPU 性能监控单元。
+
+```bash
+# 查看帮助
+nvidia-smi gpm -h
+
+# 查询 GPM 指标
+nvidia-smi gpm -q
+
+# 采样指定指标
+nvidia-smi gpm -i 0 -d 2
+```
+
+该功能适用于需要对 GPU 内部性能计数器进行细粒度监控的场景。
+
+## 14. 功耗管理 (power-smoothing / power-profiles)
+
+### 14.1 功耗平滑
+
+```bash
+# 查看功耗平滑状态
+nvidia-smi power-smoothing -q
+
+# 启用功耗平滑（需管理员权限）
+nvidia-smi power-smoothing -e 1
+```
+
+### 14.2 功耗配置
+
+```bash
+# 查询可用功耗配置
+nvidia-smi power-profiles -q
+
+# 列出支持的配置
+nvidia-smi power-profiles -l
+```
+
+功耗配置允许根据不同工作负载（训练/推理）预设功耗策略。
+
+## 15. PCI 信息查询 (pci)
+
+```bash
+# 查询 PCI 详细信息
+nvidia-smi pci -q
+
+# 查看 PCI 帮助
+nvidia-smi pci -h
+```
+
+比 `nvidia-smi -q -d PCIE` 提供更详细的 PCI 子系统和错误计数器信息。
+
+## 16. 时钟控制 (clocks / base-clocks)
+
+```bash
+# 查询当前时钟
+nvidia-smi clocks -q
+
+# 查询基准时钟
+nvidia-smi base-clocks -q
+
+# 锁定 GPU 时钟范围 (MHz)
+nvidia-smi -lgc 1500,2500
+
+# 锁定显存时钟 (MHz)
+nvidia-smi -lmc 12000,14001
+
+# 重置时钟为默认值
+nvidia-smi -rgc  # GPU 时钟
+nvidia-smi -rmc  # 显存时钟
+```
+
 ## 参考
 
 ```bash
 nvidia-smi -h
 
-NVIDIA System Management Interface -- v535.104.05
+NVIDIA System Management Interface -- v595.58.03
 
 NVSMI provides monitoring information for Tesla and select Quadro devices.
 The data is presented in either a plain text or an XML format, via stdout or a file.
@@ -240,6 +313,8 @@ Supported products:
 nvidia-smi [OPTION1 [ARG1]] [OPTION2 [ARG2]] ...
 
     -h,   --help                Print usage information and exit.
+
+          --version             Print version information and exit.
 
   LIST OPTIONS:
 
