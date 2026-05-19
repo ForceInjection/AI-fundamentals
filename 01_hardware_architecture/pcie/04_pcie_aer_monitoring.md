@@ -20,7 +20,7 @@
 ### 2.1 文件路径
 
 ```bash
-GPU_BDF="0000:98:00.0"  # 从 nvidia-smi 获取
+GPU_BDF="0000:98:00.0"  # BDF = Bus:Device.Function，PCIe 设备的唯一地址标识
 
 # 可纠正错误
 cat /sys/bus/pci/devices/$GPU_BDF/aer_dev_correctable
@@ -164,7 +164,9 @@ cat /sys/bus/pci/devices/0000:98:00.0/max_link_speed
 
 如果 `current` 持续低于 `max` 且 GPU 有负载，说明链路训练失败降级。
 
-### 5.2 ASPM 状态
+### 5.2 ASPM (Active State Power Management) 状态
+
+ASPM 是 PCIe 规范的省电机制，允许空闲链路进入低功耗状态（L0s/L1）。GPU 驱动通常禁用此功能以保证低延迟响应。
 
 ```bash
 cat /sys/bus/pci/devices/0000:98:00.0/power/runtime_status

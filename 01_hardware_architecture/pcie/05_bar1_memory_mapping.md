@@ -8,10 +8,10 @@
 
 GPU 通过 PCIe 暴露两类 BAR (Base Address Register)：
 
-| BAR      | 类型            | 大小 (RTX 5090) | 用途                           |
-| -------- | --------------- | --------------- | ------------------------------ |
-| **BAR0** | MMIO 寄存器映射 | 32 MB           | 驱动控制和配置 (NVML 指令通路) |
-| **BAR1** | GPU 显存窗口    | 256 MB          | Host 直接映射 GPU 显存         |
+| BAR      | 类型            | 大小 (RTX 5090) | 用途                                                                                        |
+| -------- | --------------- | --------------- | ------------------------------------------------------------------------------------------- |
+| **BAR0** | MMIO 寄存器映射 | 32 MB           | 驱动控制和配置 (NVML 指令通路)。NVML (NVIDIA Management Library) 是 nvidia-smi 的底层 C API |
+| **BAR1** | GPU 显存窗口    | 256 MB          | Host 直接映射 GPU 显存                                                                      |
 
 BAR1 是 Host 通过 PCIe **直接访问 GPU 显存**的窗口。CUDA Unified Memory、GPUDirect P2P 都依赖 BAR1。
 
@@ -85,6 +85,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/resource
 ```
 
 各字段解读：
+
 - `d4000000` — BAR 起始物理地址
 - `d7ffffff` — BAR 结束物理地址
 - `0x40200` — 属性标志（bit 1 = memory space, bit 9 = prefetchable, bit 18 = 64-bit）

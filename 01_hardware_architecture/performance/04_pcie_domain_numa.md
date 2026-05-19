@@ -87,7 +87,7 @@ done
 
 本环境所有 3 块 NVMe (nvme0-2n1) 均在 domain d7，与 GPU (domain 97) 同属 Socket 1。
 
-**这意味着**：GPU 和 NVMe 在同一 NUMA node，GDS (GPU Direct Storage) 场景下数据路径全部在本地 socket 内——无需跨 UPI。
+**这意味着**：GPU 和 NVMe 在同一 NUMA node，GDS (GPU Direct Storage) 场景下数据路径全部在本地 socket 内——无需跨 UPI（Ultra Path Interconnect，Intel 双路 CPU 之间的点对点互连总线）。
 
 ---
 

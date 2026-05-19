@@ -117,7 +117,7 @@ nvcc -I/usr/local/cuda/include \
 | **NVMe 必须直接挂载**  | 网络存储 (NFS/Ceph) 不支持 GDS                   |
 | **需 O_DIRECT**        | 绕过 page cache，直接 DMA                        |
 | **文件对齐**           | 偏移和大小需对齐到 4 KB                          |
-| **nvidia-fs 内核模块** | 可选，启用后性能更好（绕过 VFS 层）              |
+| **nvidia-fs 内核模块** | 可选，启用后性能更好（绕过 VFS（Virtual File System）层，直接从 NVMe 驱动发起 DMA）              |
 | **消费级 GPU**         | 支持 GDS 但性能低于数据中心 GPU（BAR1 窗口限制） |
 | **PCIe topology**      | GPU 和 NVMe 需在同一 PCIe domain 且支持 P2P      |
 
