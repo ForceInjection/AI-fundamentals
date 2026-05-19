@@ -4,7 +4,7 @@
 
 ---
 
-## 0. 为什么关注功耗
+## 1. 为什么关注功耗
 
 GPU 功耗直接影响三个维度：
 
@@ -22,7 +22,7 @@ P8 (180 MHz, ~11W)  ← 空闲
 
 ---
 
-## 1. RTX 5090 功耗规格
+## 2. RTX 5090 功耗规格
 
 ```bash
 nvidia-smi --query-gpu=power.draw,power.limit,power.default_limit --format=csv
@@ -38,11 +38,11 @@ nvidia-smi --query-gpu=power.draw,power.limit,power.default_limit --format=csv
 
 ---
 
-## 2. 功耗限制设置
+## 3. 功耗限制设置
 
 降低功耗上限是最直接的控制手段。设置后会立即生效——GPU 硬件会将 Boost 时钟限制在不超过新功耗上限的范围内。`persistence mode` 必须启用，否则 GPU 在无进程使用时会被释放。
 
-### 2.1 条件要求
+### 3.1 条件要求
 
 ```bash
 # 必须启用 persistence mode
@@ -55,7 +55,7 @@ nvidia-smi -pl 500 -i 0
 nvidia-smi -pl 575 -i 0
 ```
 
-### 2.2 云环境限制
+### 3.2 云环境限制
 
 在 Seetacloud 等云环境中，即使以 root 身份，`-pl` 可能返回 `Insufficient Permissions`。这是因为：
 
@@ -74,13 +74,13 @@ nvidia-smi -pl 400
 
 ---
 
-## 3. 时钟频率与 P-State
+## 4. 时钟频率与 P-State
 
 GPU 核心和显存的时钟频率不是固定值——它们随负载、温度和功耗动态调整。这个机制叫 **GPU Boost**：空闲时降到 P8（~180 MHz），负载时升到 P0（最高 3090 MHz）。显存频率通常固定在高位（14001 MHz）以保证显存带宽不成为瓶颈。
 
 `--query-supported-clocks` 列出了 GPU 硬件支持的所有合法时钟组合。每种组合对应一个电压点——频率越高，电压越高，功耗呈二次方增长（P ∝ fV²）。这也是为什么锁频在略低于最高频的位置可以显著降低功耗。
 
-### 3.1 查看当前状态
+### 4.1 查看当前状态
 
 ```bash
 # 当前 P-State 和时钟
@@ -93,7 +93,7 @@ nvidia-smi --query-gpu=pstate,clocks.current.sm,clocks.current.graphics,clocks.c
 P8, 180 MHz, 180 MHz, 405 MHz
 ```
 
-### 3.2 查看支持的所有时钟组合
+### 4.2 查看支持的所有时钟组合
 
 ```bash
 nvidia-smi --query-supported-clocks=memory,graphics --format=csv | head -20
@@ -111,7 +111,7 @@ RTX 5090 部分输出：
 
 显存固定在最高频，GPU 核心从 2955 到 3090 MHz 以 7-8 MHz 步进可调。
 
-### 3.3 锁定时钟（需管理员权限）
+### 4.3 锁定时钟（需管理员权限）
 
 ```bash
 # 锁定 GPU 核心到 2500 MHz
@@ -127,7 +127,7 @@ nvidia-smi -rmc
 
 ---
 
-## 4. Power Smoothing
+## 5. Power Smoothing
 
 `power-smoothing` 是 v595 新增功能，允许预设功耗 ramp 策略。
 
@@ -146,7 +146,7 @@ nvidia-smi power-smoothing -ppd
 
 ---
 
-## 5. Power Profiles
+## 6. Power Profiles
 
 ```bash
 nvidia-smi power-profiles -l
@@ -162,7 +162,7 @@ Power Profiles 仅数据中心 GPU 支持。
 
 ---
 
-## 6. 消费级 vs 数据中心功耗功能对比
+## 7. 消费级 vs 数据中心功耗功能对比
 
 | 功能                                | RTX 5090  | A100/H100 | 说明                      |
 | ----------------------------------- | --------- | --------- | ------------------------- |
@@ -177,9 +177,9 @@ Power Profiles 仅数据中心 GPU 支持。
 
 ---
 
-## 7. 功耗感知编程建议
+## 8. 功耗感知编程建议
 
-### 7.1 监控功耗趋势
+### 8.1 监控功耗趋势
 
 ```bash
 # 每秒采样
@@ -187,7 +187,7 @@ nvidia-smi --query-gpu=timestamp,power.draw,temperature.gpu,clocks.current.sm \
     --format=csv -l 1
 ```
 
-### 7.2 CUDA 侧查询功耗
+### 8.2 CUDA 侧查询功耗
 
 ```c
 // 通过 NVML (libnvidia-ml)

@@ -4,7 +4,7 @@
 
 ---
 
-## 0. NCCL 是什么
+## 1. NCCL 是什么
 
 **NCCL (NVIDIA Collective Communications Library)** 是 NVIDIA 提供的多 GPU 集合通信库，负责 AllReduce、AllGather、Broadcast、ReduceScatter 等操作。它是分布式训练的基础设施——PyTorch DDP、DeepSpeed、Megatron-LM 等框架的跨 GPU 通信最终都会调用 NCCL。
 
@@ -21,7 +21,7 @@ NCCL 的核心能力：
 
 ---
 
-## 1. 前置条件
+## 2. 前置条件
 
 - NVIDIA GPU + 驱动 (nvidia-smi 可用)
 - CUDA Toolkit (nvcc 可用)
@@ -38,7 +38,7 @@ ls /usr/include/nccl.h               # NCCL 头文件
 
 ---
 
-## 2. 编译运行
+## 3. 编译运行
 
 ```bash
 cat > /tmp/nccl_hello.cu << 'EOF'
@@ -126,7 +126,7 @@ NCCL verification complete.
 
 ---
 
-## 3. 进阶：单卡 AllReduce 测试
+## 4. 进阶：单卡 AllReduce 测试
 
 ```bash
 cat > /tmp/nccl_allreduce.cu << 'EOF'
@@ -189,7 +189,7 @@ nvcc -I/usr/include \
 
 ---
 
-## 4. 常用 NCCL 环境变量
+## 5. 常用 NCCL 环境变量
 
 单卡场景基本不需要调参，了解即可：
 
@@ -209,7 +209,7 @@ NCCL_DEBUG=INFO /tmp/nccl_hello
 
 ---
 
-## 5. 与 nccl-tests 的关系
+## 6. 与 nccl-tests 的关系
 
 `nccl-tests` 是 NVIDIA 官方的端到端性能测试套件，需要多 GPU 才能发挥价值。如果后续升级到多卡环境：
 
