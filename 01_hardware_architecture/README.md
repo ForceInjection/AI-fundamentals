@@ -1,5 +1,19 @@
 # 硬件架构与互连技术
 
+> **快速导航**
+>
+> | 目录           | 主题                                        | 关键词                   |
+> | -------------- | ------------------------------------------- | ------------------------ |
+> | `nvidia/`      | GPU 架构（Volta → Blackwell）、GPGPU vs NPU | Tensor Core, HBM, SM     |
+> | `tpu/`         | Google TPU 脉动阵列架构                     | Systolic Array, XLA      |
+> | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER      | Gen3–Gen6, Root Complex  |
+> | `nvlink/`      | NVLink / NVSwitch 高速互连                  | 1.8 TB/s, GPU-to-GPU     |
+> | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)        | Zero-copy, Bounce Buffer |
+> | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构          | Chip-to-Chip, Rack-Scale |
+> | `performance/` | NUMA 亲和性、延迟金字塔、AMX vs Tensor Core | Latency Hierarchy        |
+
+---
+
 ## 1. 概述
 
 在谈论大模型训练或推理的性能之前，我们首先需要理解算力是怎么"长"出来的——它不是一个单独的芯片，而是一整套自下而上叠起来的硬件体系。本章沿着**芯片 → 总线 → 链路 → 直通 → 系统**的拓扑层次，逐层讲清楚：
@@ -89,12 +103,22 @@ NVLink 是 NVIDIA 专门为 GPU 间通信设计的私有链路，第 5 代单卡
 
 GPUDirect 解决的是一个很具体的问题：数据从一个设备到另一个设备，为什么非得在 CPU 内存里"中转一下"？这个中转（Bounce Buffer）既浪费带宽又引入延迟。GPUDirect 家族通过让设备之间直接 DMA，把 CPU 从数据路径上拿掉，针对三种典型场景各有对应技术：
 
-- **P2P**：同一节点内 GPU 之间直接通信。
-- **RDMA**：跨节点场景下，网卡直接把数据写进远端 GPU 的显存。
-- **Storage（GDS）**：NVMe 上的数据直接加载进 GPU 显存，绕过主机内存。
+| 技术          | 场景         | 数据路径                    |
+| ------------- | ------------ | --------------------------- |
+| P2P           | 同节点多 GPU | GPU ↔ GPU（经 PCIe/NVLink） |
+| RDMA          | 跨节点       | NIC → 远端 GPU VRAM         |
+| Storage (GDS) | 存储加载     | NVMe → GPU VRAM（绕过 CPU） |
+
+### 4.1 GPUDirect P2P
 
 - **[NVIDIA GPUDirect P2P 技术详解](gpudirect/02_gpudirect_p2p.md)**：探讨节点内多 GPU 之间如何通过 PCIe 或 NVLink 实现高速对等通信。
+
+### 4.2 GPUDirect RDMA
+
 - **[NVIDIA GPUDirect RDMA 与 Storage 技术详解](gpudirect/01_gpudirect_technology.md)**：深入解析如何通过 RDMA 实现跨节点的网卡到 GPU 直接通信，以及通过 GDS 实现存储到 GPU 的直接数据加载。
+
+### 4.3 GPUDirect Storage (GDS)
+
 - **[GPU Direct Storage 基础](gpudirect/03_gds_basics.md)**：GDS 架构原理、cuFile API 基础、环境检查与性能对比。基于 GDS 1.13.1 + 3 块 NVMe 环境。
 
 ---
@@ -130,7 +154,7 @@ Blackwell 代际实际上重新定义了"一台 AI 机器"的边界：
 
 ---
 
-## 6. 可视化参考图（Visual Reference）
+## 6. 可视化参考图
 
 前面几节涉及到的拓扑概念比较抽象，这里用一组统一风格的示意图把它们整合起来，形成一张可以随时翻阅的"硬件拓扑地图"，涵盖：
 
