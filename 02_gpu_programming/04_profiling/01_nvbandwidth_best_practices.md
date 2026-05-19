@@ -964,4 +964,58 @@ nvbandwidth 是一款功能强大的 GPU 带宽测量工具，其核心优势在
 
 ---
 
+## 8. RTX 5090 实测数据
+
+以下数据来自 Ubuntu 22.04 + RTX 5090 (Blackwell, CC 12.0) + CUDA 12.8 + 驱动 595.58.03，nvbandwidth v0.9。
+
+### 8.1 基本环境
+
+```text
+nvbandwidth Version: v0.9
+CUDA Runtime Version: 13020
+CUDA Driver Version: 13020
+Device 0: NVIDIA GeForce RTX 5090 (00000000:98:00)
+Auto detection of gpu-archs: 120
+```
+
+### 8.2 Copy Engine (CE) 测试
+
+| 测试项 | 带宽 (GB/s) |
+|--------|-------------|
+| H2D memcpy CE | 56.30 |
+| D2H memcpy CE | 56.77 |
+| H2D bidirectional CE | 50.26 |
+| D2H bidirectional CE | 50.45 |
+
+### 8.3 SM 测试
+
+| 测试项 | 带宽 (GB/s) |
+|--------|-------------|
+| H2D memcpy SM | 51.44 |
+| D2H memcpy SM | 52.76 |
+| H2D bidirectional SM | 42.53 |
+| D2H bidirectional SM | 42.53 |
+
+### 8.4 Latency
+
+| 测试项 | 延迟 (ns) |
+|--------|-----------|
+| Host ↔ Device | 621.15 |
+
+### 8.5 Device Local Copy
+
+| 测试项 | 带宽 (GB/s) |
+|--------|-------------|
+| Device local copy | 762.33 |
+
+### 8.6 解读
+
+- **CE vs SM**：Copy Engine 比 SM 路径快约 10%（56.3 vs 51.4 GB/s），因为 CE 是专用 DMA 硬件
+- **Bidirectional**：双向带宽 ~50 GB/s 低于单向 ~56 GB/s，体现 PCIe 半双工特性和内部竞争
+- **Device local**：762 GB/s 是 `cudaMemcpyDeviceToDevice` 的实测带宽，约为理论峰值 (1792 GB/s) 的 43%
+- **自动 arch 检测**：CMake 的 `CMAKE_CUDA_ARCHITECTURES` 自动检测为 120（RTX 5090 的 compute capability 12.0），编译无需手动指定 `-arch`
+- **Waived 测试**：所有多 GPU 测试 (device_to_device_memcpy_, bidirectional 等) 因单卡环境自动跳过
+
+---
+
 _本文基于 nvbandwidth 源码分析撰写，如有疑问请参考官方文档或源码注释。_
