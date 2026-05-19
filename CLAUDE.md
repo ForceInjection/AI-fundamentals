@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 AI Fundamentals is a Chinese-language knowledge repository covering the full AI infrastructure stack: GPU architecture, CUDA programming, LLM theory, inference systems, cloud-native AI platforms, agentic systems, RAG, and more. All content is authored in Markdown.
 
 - **License**: Apache 2.0
-- **Content** is organized in semantically numbered top-level directories (`01_hardware_architecture/` through `10_ai_related_course/`, plus `98_llm_programming/` and `99_misc/`). Each directory corresponds to a major topic area with its own `README.md` portal.
+- **Content** is organized in semantically numbered top-level directories (`01_hardware_architecture/` through `11_ai_native_everything/`, plus `98_llm_programming/` and `99_misc/`). Each directory corresponds to a major topic area with its own `README.md` portal.
+- **`02_dpu_programming/` and `02_gpu_programming/`** share the `02_` prefix — both are sub-modules under "底层计算与异构编程."
 - **`AGENTS.md`** exists alongside this file and covers module-level architecture details for GitHub Copilot. This file focuses on project-level conventions that apply to all work in the repo.
 
 ## Commit conventions
@@ -21,7 +22,7 @@ refactor(scope): description
 feat(scope): description
 ```
 
-Scopes are derived from directory/topic areas (e.g., `dpu`, `readme`, `inference`, `kv_cache`, `vllm`, `agentic`, `agent_infra`). Look at `git log --oneline` for recent examples before committing.
+Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `training`, `llm-theory`, `rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `submodule`. Look at `git log --oneline` for recent examples before committing.
 
 ## Git submodule
 
