@@ -29,11 +29,11 @@ nvidia-smi --query-gpu=power.draw,power.limit,power.default_limit --format=csv
 # 输出: 11.51 W, 575.00 W, 575.00 W
 ```
 
-| 参数 | 值 |
-|------|-----|
-| 默认功耗上限 | 575 W |
-| 可设置范围 | 400 - 575 W |
-| 空闲功耗 | ~11 W (P8 状态) |
+| 参数            | 值                               |
+| --------------- | -------------------------------- |
+| 默认功耗上限    | 575 W                            |
+| 可设置范围      | 400 - 575 W                      |
+| 空闲功耗        | ~11 W (P8 状态)                  |
 | 最大 Boost 时钟 | 3090 MHz (GPU), 14001 MHz (显存) |
 
 ---
@@ -164,16 +164,16 @@ Power Profiles 仅数据中心 GPU 支持。
 
 ## 6. 消费级 vs 数据中心功耗功能对比
 
-| 功能 | RTX 5090 | A100/H100 | 说明 |
-|------|----------|-----------|------|
-| 功耗监控 (`power.draw`) | ✅ | ✅ | 基本功能 |
-| 功耗限制 (`-pl`) | ✅ 需权限 | ✅ | 云环境可能被锁定 |
-| 时钟监控 (`clocks`) | ✅ | ✅ | nvidia-smi + NVML |
-| 锁定时钟 (`-lgc/-lmc`) | ✅ | ✅ | 需管理员权限 |
-| Power Smoothing (`power-smoothing`) | ⚠️ 受限 | ✅ | 数据中心完整支持 |
-| Power Profiles (`power-profiles`) | ❌ | ✅ | 消费级不支持 |
-| GPM (`gpm`) | ✅ | ✅ | GPU 性能监控 |
-| DCGM | ⚠️ 部分 | ✅ | 需 datacenter-gpu-manager |
+| 功能                                | RTX 5090  | A100/H100 | 说明                      |
+| ----------------------------------- | --------- | --------- | ------------------------- |
+| 功耗监控 (`power.draw`)             | ✅        | ✅        | 基本功能                  |
+| 功耗限制 (`-pl`)                    | ✅ 需权限 | ✅        | 云环境可能被锁定          |
+| 时钟监控 (`clocks`)                 | ✅        | ✅        | nvidia-smi + NVML         |
+| 锁定时钟 (`-lgc/-lmc`)              | ✅        | ✅        | 需管理员权限              |
+| Power Smoothing (`power-smoothing`) | ⚠️ 受限   | ✅        | 数据中心完整支持          |
+| Power Profiles (`power-profiles`)   | ❌        | ✅        | 消费级不支持              |
+| GPM (`gpm`)                         | ✅        | ✅        | GPU 性能监控              |
+| DCGM                                | ⚠️ 部分   | ✅        | 需 datacenter-gpu-manager |
 
 ---
 

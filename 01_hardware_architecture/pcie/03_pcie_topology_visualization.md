@@ -6,13 +6,13 @@
 
 ## 1. 快速路线
 
-| 需求 | 工具 | 说明 |
-|------|------|------|
-| 列出所有 PCI 设备 | `lspci` | 需安装 `pciutils` |
-| 树状拓扑 | `lspci -t` | 显示 PCIe 树结构 |
-| GPU 链路状态 | sysfs 或 `nvidia-smi` | 零依赖 |
-| NUMA 亲和性 | sysfs | `/sys/bus/pci/devices/<bdf>/numa_node` |
-| 链路速度和宽度 | sysfs | `current_link_speed`, `current_link_width` |
+| 需求              | 工具                  | 说明                                       |
+| ----------------- | --------------------- | ------------------------------------------ |
+| 列出所有 PCI 设备 | `lspci`               | 需安装 `pciutils`                          |
+| 树状拓扑          | `lspci -t`            | 显示 PCIe 树结构                           |
+| GPU 链路状态      | sysfs 或 `nvidia-smi` | 零依赖                                     |
+| NUMA 亲和性       | sysfs                 | `/sys/bus/pci/devices/<bdf>/numa_node`     |
+| 链路速度和宽度    | sysfs                 | `current_link_speed`, `current_link_width` |
 
 ---
 
@@ -80,7 +80,7 @@ pci0000:97              ← PCI domain 0000, bus 97 (Root Complex)
 
 sysfs 路径体现了 PCIe 层次结构。以上述路径为例：
 
-```
+```text
 pci0000:97          → Root Port (CPU 的 PCIe Root Complex)
   0000:97:01.0      → PCIe Switch/Bridge 的上游端口
     0000:98:00.0    → GPU (下游设备)
@@ -109,24 +109,24 @@ ls "$GPU_PATH" | grep "0000:"
 
 ### 4.1 sysfs 信息 → nvidia-smi 列
 
-| sysfs | nvidia-smi 对应 |
-|-------|----------------|
-| `numa_node` | `topo -m` 的 NUMA Affinity |
+| sysfs                      | nvidia-smi 对应                     |
+| -------------------------- | ----------------------------------- |
+| `numa_node`                | `topo -m` 的 NUMA Affinity          |
 | `current_link_speed/width` | `--query-gpu=pcie.link.gen.current` |
-| `max_link_speed/width` | `--query-gpu=pcie.link.gen.max` |
-| `vendor/device` | `--query-gpu=pci.device_id` |
-| BDF (bus:device.function) | `--query-gpu=pci.bus_id` |
+| `max_link_speed/width`     | `--query-gpu=pcie.link.gen.max`     |
+| `vendor/device`            | `--query-gpu=pci.device_id`         |
+| BDF (bus:device.function)  | `--query-gpu=pci.bus_id`            |
 
 ### 4.2 对照表示例 (本环境)
 
-| 信息来源 | 值 |
-|----------|-----|
-| sysfs BDF | `0000:98:00.0` |
-| nvidia-smi BDF | `00000000:98:00.0` |
-| sysfs NUMA | 1 |
-| nvidia-smi NUMA | 1 (CPUs 52-103,156-207) |
-| sysfs max speed | 32.0 GT/s (Gen 5) |
-| nvidia-smi max gen | 5 |
+| 信息来源           | 值                      |
+| ------------------ | ----------------------- |
+| sysfs BDF          | `0000:98:00.0`          |
+| nvidia-smi BDF     | `00000000:98:00.0`      |
+| sysfs NUMA         | 1                       |
+| nvidia-smi NUMA    | 1 (CPUs 52-103,156-207) |
+| sysfs max speed    | 32.0 GT/s (Gen 5)       |
+| nvidia-smi max gen | 5                       |
 
 ### 4.3 完整的 PCIe 拓扑验证脚本
 
@@ -178,12 +178,12 @@ done
 
 ## 6. 与多卡/HPC 场景对比
 
-| 维度 | 单卡 RTX 5090 | 多卡 DGX/集群 |
-|------|---------------|---------------|
-| PCIe 树深度 | 浅 (RC → Bridge → GPU) | 深 (RC → Switch → 多层 → GPU) |
-| sysfs 路径数 | 1 | N 个 |
-| 拓扑关键信息 | NUMA node | PCIe Switch affinity |
-| 推荐工具 | sysfs + nvidia-smi | lspci -t + nvidia-smi topo -mp |
+| 维度         | 单卡 RTX 5090          | 多卡 DGX/集群                  |
+| ------------ | ---------------------- | ------------------------------ |
+| PCIe 树深度  | 浅 (RC → Bridge → GPU) | 深 (RC → Switch → 多层 → GPU)  |
+| sysfs 路径数 | 1                      | N 个                           |
+| 拓扑关键信息 | NUMA node              | PCIe Switch affinity           |
+| 推荐工具     | sysfs + nvidia-smi     | lspci -t + nvidia-smi topo -mp |
 
 ---
 

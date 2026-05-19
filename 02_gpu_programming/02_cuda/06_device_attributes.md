@@ -6,7 +6,15 @@
 
 ## 1. `cudaDeviceGetAttribute` 概述
 
-`cudaDeviceProp` 结构体只暴露了最常用的属性。`cudaDeviceGetAttribute` 能查询更底层的硬件能力：
+`cudaDeviceProp` 结构体只暴露了最常用的属性（SM 数量、显存大小、时钟频率等）。`cudaDeviceGetAttribute` 能查询更底层的硬件能力——这些属性不是简单的数字，而是**硬件特性的布尔开关或枚举值**，直接决定某些 CUDA API 是否可用。
+
+为什么这很重要？很多 CUDA 高级功能在不同 GPU 上的支持状态不同：
+
+- **GPU Direct P2P**：依赖 `HostNativeAtomicSupported`——如果为 0，无法用 GPU atomic 直接操作 Host 内存
+- **Unified Memory**：`ConcurrentManagedAccess` 决定 Host 和 GPU 能否同时访问同一块 managed memory
+- **Cooperative Launch**：`CooperativeLaunch` 决定能否使用 CUDA Cooperative Groups
+
+这个 API 的正确使用模式是**运行时能力检查 + 优雅降级**——不是在文档上假设某个功能存在，而是每次运行前去查询，并准备 fallback 路径。
 
 ```c
 int value;

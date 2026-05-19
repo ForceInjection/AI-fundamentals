@@ -20,6 +20,8 @@ GDS 是最晚加入的成员 (CUDA 11.4+)。它解决一个具体问题：训练
 GDS:    NVMe ──PCIe──────────▶ GPU VRAM              (1 次 PCIe 传输)
 ```
 
+**为什么这事重要？** 大模型训练的 checkpoint 文件动辄数百 GB。传统路径下，每个字节都要：NVMe DMA → CPU 内存 → CPU memcpy → pinned buffer → GPU DMA。CPU 全程参与内存拷贝，而 GPU 的 PCIe 带宽（~56 GB/s）可能被 CPU 内存带宽（~100 GB/s DDR5）限制到一半。GDS 让 NVMe 控制器直接通过 PCIe 把数据 DMA 到 GPU VRAM——GPU 的 GDDR7 控制器接收数据，不需要 CPU 侧的中间人。不仅少了一次 PCIe 穿越，还释放了 CPU 做更有意义的计算。
+
 ---
 
 ## 2. 前置条件
