@@ -157,14 +157,14 @@ numactl --cpunodebind=1 --membind=1 ./pcie_bw_test
 numactl --cpunodebind=0 --membind=0 ./pcie_bw_test
 ```
 
-**本环境结果**：
+**本环境实测（taskset 绑核）**：
 
-| 内存位置           | H2D 带宽                | D2H 带宽   | 延迟惩罚 |
-| ------------------ | ----------------------- | ---------- | -------- |
-| NUMA node 1 (本地) | ~52.5 GB/s              | ~53.3 GB/s | 基准     |
-| NUMA node 0 (远端) | 受 NUMA 距离 × 带宽影响 | —          | ~2.1×    |
+| CPU 绑定 | H2D 1 GB (GB/s) | D2H 1 GB (GB/s) |
+|----------|-----------------|------------------|
+| Node 0 (跨 NUMA) | 52.60 | 53.33 |
+| Node 1 (本地 NUMA) | 52.63 | 53.05 |
 
-> 本机未安装 numactl，以上是比较值；实际跨 NUMA 访问延迟约 2.1 倍（来自 NUMA distance 21 vs 10）。
+> 实测两个 NUMA 节点带宽几乎一致。这是因为 Seetacloud 容器环境中 `membind` 策略被限制（`set_mempolicy: Operation not permitted`），实际内存分配策略为 `default`（不受 CPU binding 影响）。容器/VM 环境常掩盖 NUMA 效应——裸金属环境预计可观测到 ~2.1× 差异。
 
 ### 4.2 建议
 
