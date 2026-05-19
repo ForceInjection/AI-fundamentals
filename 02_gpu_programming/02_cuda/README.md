@@ -50,6 +50,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 4 个 stream 的实测加速比 2.36x（RTX 5090，2 个 async copy engine）。
 - Nsight Systems 可视化概念图与 stream 最佳实践。
 
+## 8. [Kernel Launch 开销测量](08_kernel_launch_latency.md)
+
+- 空 kernel launch 延迟实测：2.6 μs（RTX 5090）。
+- 不同 block 数量对 launch 开销的影响。
+- CPU vs GPU 决策边界与 CUDA Graph 替代方案。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
