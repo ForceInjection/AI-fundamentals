@@ -6,9 +6,23 @@
 
 ## 1. 背景
 
-CUDA Streams 允许在同一 GPU 上并发执行多个操作序列。关键是**重叠**：当 stream 0 在执行 kernel 时，stream 1 可以同时做 H2D 拷贝，充分利用 GPU 的多个硬件引擎。
+### 1.1 Default Stream vs Explicit Streams
 
-RTX 5090 有 **2 个 async copy engine**，理论最多可实现 2 路并发数据传输。加上 compute engine，最多 3 个操作可同时进行。
+CUDA 的默认 stream（stream 0）是**同步的**——所有操作按提交顺序串行执行：H2D0 → Kernel0 → D2H0 → H2D1 → Kernel1 → D2H1。这意味着 GPU 的 compute engine 在数据传输时空闲，copy engine 在 kernel 执行时空闲——两个 engine 交替闲置，硬件利用率低下。
+
+显式 stream（`cudaStreamCreate`）打破了这种串行约束。每个 stream 内部仍然保持顺序，但**不同 stream 之间可以并发**。当 stream 0 的 kernel 在执行时，stream 1 的 H2D 可以同时进行——GPU 的三个硬件引擎（2 个 copy engine + 1 个 compute engine）可以同时忙。
+
+### 1.2 硬件并发能力
+
+RTX 5090 有 **2 个 async copy engine**，理论最多可实现 2 路并发数据传输。加上 compute engine，最多 3 个操作可同时进行。但实际并发度受限于：
+
+- **PCIe 带宽共享**：2 个 copy engine 共享同一 PCIe Gen 5 ×16 链路（~63 GB/s 单向理论值）。如果两个 engine 同时做 H2D，带宽对半分。
+- **H2D 和 D2H 的方向冲突**：H2D（写 GPU）和 D2H（读 GPU）共享 PCIe 双向带宽。同时做 H2D + D2H 时，双向带宽可能小于两个单向之和（nvbandwidth 实测：单向 56.3 GB/s，双向各 50.3 GB/s）。
+- **Kernel 执行时长**：只有当 kernel 执行时间与数据传输时间大致匹配时，才能最大化重叠。如果 kernel 太短，数据传输追不上；如果 kernel 太长，copy engine 闲置。
+
+### 1.3 测试策略
+
+以下程序用 4 个 stream 各处理 256 MB 数据（含 H2D + kernel + D2H），对比串行和并发的总耗时。kernel 的循环次数 (K=1024) 经过调整，使单 stream 的计算时间与传输时间大致相当——这是最大化重叠的前提。
 
 ---
 

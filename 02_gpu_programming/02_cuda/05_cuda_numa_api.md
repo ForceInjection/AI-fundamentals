@@ -6,11 +6,30 @@
 
 ## 1. 背景：为什么 NUMA 影响 GPU 程序
 
+### 1.1 NUMA 架构简述
+
+在双路 CPU 系统中，每个 CPU socket 拥有自己的内存控制器和本地 DDR5 内存。访问本地内存快（~70 ns），跨 socket 访问远端内存慢（~140 ns）。这种架构称为 **NUMA (Non-Uniform Memory Access)**——"非统一"指的是访问延迟因地址而异：
+
+```text
+Socket 0 (NUMA node 0)               Socket 1 (NUMA node 1)
+  ├── CPU 0-51, 104-155                ├── CPU 52-103, 156-207
+  ├── DDR5 385 GB (本地)               ├── DDR5 387 GB (本地)
+  └── PCIe domain 7e/7f                └── PCIe domain 97/d7 (GPU + NVMe)
+         ↓                                      ↓
+    本地访问: 10 (distance)               GPU 在这里!
+         ↓                                      ↓
+    跨 socket 访问: 21 (distance) ←── UPI ──→ 跨 socket 访问: 21
+```
+
+### 1.2 GPU 受 NUMA 影响的原因
+
 GPU 通过 PCIe 连接到特定 NUMA 节点（本例为 node 1）。当 CUDA 程序：
 
 1. 调用 `cudaMallocHost` 分配 pinned memory——内存从**当前线程所在的 NUMA 节点**分配
-2. 如果线程运行在远端 NUMA (node 0)，H2D/D2H 需经过 UPI 跨 socket 传输
+2. 如果线程运行在远端 NUMA (node 0)，H2D/D2H 需经过 UPI（Ultra Path Interconnect，Intel 双路 CPU 间的点对点互连总线）跨 socket 传输
 3. NUMA distance 为 21 vs 10，约 2.1× 延迟惩罚
+
+**关键洞察**：`cudaMallocHost` 不关心 GPU 在哪个 NUMA——它只关心调用线程在哪个 CPU。如果线程在 node 0 上调用 `cudaMallocHost`，分配的 pinned memory 就在 node 0 的 DDR5 上，而 GPU 在 node 1——每次 DMA 都必须穿过 UPI。这就是为什么理解并控制 NUMA 亲和性至关重要的原因。
 
 ---
 
