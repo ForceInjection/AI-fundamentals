@@ -1,6 +1,8 @@
 # NVLink 技术入门
 
 > 本文参考了 [NVIDIA 官方文档](https://www.nvidia.com/en-us/data-center/nvlink/) 及互联网相关技术资料整理而成，旨在深入解析 NVIDIA 高速互连技术 NVLink 的原理与演进。
+>
+> **适用 GPU 范围**：NVLink 是数据中心级 GPU（Tesla/Quadro/A100/H100/B200 等）的专有特性。**消费级 GeForce RTX 系列 GPU（包括 RTX 5090）不支持 NVLink**，可通过 `nvidia-smi nvlink -s` 确认（不支持时输出 `Device does not have or support Nvlink`）。
 
 ---
 
