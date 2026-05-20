@@ -103,15 +103,15 @@ GPU0     X      52-103,156-207  1               N/A
 
 图例：
 
-| 缩写 | 含义                                  | 延迟 |
-| ---- | ------------------------------------- | ---- |
-| X    | Self                                  | —    |
-| PIX  | 单 PCIe bridge 内                     | 极低 |
-| PXB  | 多 PCIe bridge，不出 PCIe Host Bridge | 低   |
+| 缩写 | 含义                                       | 延迟 |
+| ---- | ------------------------------------------ | ---- |
+| X    | Self                                       | —    |
+| PIX  | 单 PCIe bridge 内                          | 极低 |
+| PXB  | 多 PCIe bridge，不出 PCIe Host Bridge      | 低   |
 | PHB  | 跨 PCIe Host Bridge（经 CPU Root Complex） | 中   |
-| NODE | 同 NUMA 节点内跨 PCIe Host Bridge     | 高   |
-| SYS  | 跨 CPU Socket（经 UPI/IF）            | 高   |
-| NV#  | 经 NVLink                             | 极低 |
+| NODE | 同 NUMA 节点内跨 PCIe Host Bridge          | 高   |
+| SYS  | 跨 CPU Socket（经 UPI/IF）                 | 高   |
+| NV#  | 经 NVLink                                  | 极低 |
 
 多卡场景下，同一 NUMA 节点的 GPU 之间通常显示为 `NODE` 或 `PIX`，跨 NUMA 则为 `SYS`。
 
@@ -159,10 +159,10 @@ numactl --cpunodebind=0 --membind=0 ./pcie_bw_test
 
 **本环境实测（taskset 绑核）**：
 
-| CPU 绑定 | H2D 1 GB (GB/s) | D2H 1 GB (GB/s) |
-|----------|-----------------|------------------|
-| Node 0 (跨 NUMA) | 52.60 | 53.33 |
-| Node 1 (本地 NUMA) | 52.63 | 53.05 |
+| CPU 绑定           | H2D 1 GB (GB/s) | D2H 1 GB (GB/s) |
+| ------------------ | --------------- | --------------- |
+| Node 0 (跨 NUMA)   | 52.60           | 53.33           |
+| Node 1 (本地 NUMA) | 52.63           | 53.05           |
 
 > 实测两个 NUMA 节点带宽几乎一致。这是因为 Seetacloud 容器环境中 `membind` 策略被限制（`set_mempolicy: Operation not permitted`），实际内存分配策略为 `default`（不受 CPU binding 影响）。容器/VM 环境常掩盖 NUMA 效应——裸金属环境预计可观测到 ~2.1× 差异。
 

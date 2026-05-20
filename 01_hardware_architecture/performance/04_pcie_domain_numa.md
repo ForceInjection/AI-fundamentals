@@ -8,10 +8,10 @@
 
 Intel Sapphire Rapids (SPR) 的 PCIe 架构与之前代际显著不同：
 
-| 代际 | PCIe 拓扑 | 特点 |
-|------|----------|------|
-| Ice Lake | 单 RC per socket, 多 Root Port | 所有设备共享同一 domain |
-| **Sapphire Rapids** | **多 RC per socket** | 每个 RC 有独立 domain number，设备分布更分散 |
+| 代际                | PCIe 拓扑                      | 特点                                         |
+| ------------------- | ------------------------------ | -------------------------------------------- |
+| Ice Lake            | 单 RC per socket, 多 Root Port | 所有设备共享同一 domain                      |
+| **Sapphire Rapids** | **多 RC per socket**           | 每个 RC 有独立 domain number，设备分布更分散 |
 
 每个 socket 有多个独立的 Root Complex，各自分配唯一的 domain number。这增加了拓扑复杂度——GPU 可能在 domain 97，NVMe 在 domain 7f。
 
@@ -27,13 +27,13 @@ for d in /sys/devices/pci*; do
 done
 ```
 
-| Domain | 设备数 | 推测用途 | NUMA |
-|--------|--------|----------|------|
-| 00 | 18 | 芯片组, VGA | — |
-| 7e, 7f | 37, 122 | Socket 0 I/O, NVMe 阵列 | 0 |
-| 97 | **5** | **GPU** (RTX 5090) | **1** |
-| fe, ff | 37, 122 | Socket 1 I/O, NVMe 阵列 | 1 |
-| 其他 (15/26/37/ek) | 4-8 | 系统外设 | 分布 |
+| Domain             | 设备数  | 推测用途                | NUMA  |
+| ------------------ | ------- | ----------------------- | ----- |
+| 00                 | 18      | 芯片组, VGA             | —     |
+| 7e, 7f             | 37, 122 | Socket 0 I/O, NVMe 阵列 | 0     |
+| 97                 | **5**   | **GPU** (RTX 5090)      | **1** |
+| fe, ff             | 37, 122 | Socket 1 I/O, NVMe 阵列 | 1     |
+| 其他 (15/26/37/ek) | 4-8     | 系统外设                | 分布  |
 
 ---
 
@@ -67,8 +67,8 @@ done 2>/dev/null | head -20
 
 Sapphire Rapids 的 BDF 编码包含 NUMA 信息：
 
-| BDF Pattern | Socket/NUMA |
-|-------------|-------------|
+| BDF Pattern               | Socket/NUMA            |
+| ------------------------- | ---------------------- |
 | `0000:00:*` ~ `0000:7f:*` | Socket 0 (NUMA node 0) |
 | `0000:80:*` ~ `0000:ff:*` | Socket 1 (NUMA node 1) |
 
@@ -95,7 +95,7 @@ done
 
 ### 4.1 场景分析
 
-```
+```text
 Socket 0 (NUMA 0)          Socket 1 (NUMA 1)
   ├── NVMe (domain 7f) ←?→   ├── GPU (domain 97)
   └── NVMe (domain 7f)       └── NVMe (domain d7) ← ✓ 本地
@@ -107,7 +107,7 @@ Socket 0 (NUMA 0)          Socket 1 (NUMA 1)
 
 如果 GPU (Socket 1) 访问 Socket 0 的 NVMe (domain 7f)：
 
-```
+```text
 NVMe (S0) → RC (domain 7f) → UPI → RC (domain 97) → Bridge → GPU (S1)
 ```
 
@@ -137,13 +137,13 @@ DMA 通常可在同 domain 内自由进行。跨 domain 的 DMA（如 GPU 访问
 
 ## 6. 总结
 
-| 问题 | 本环境答案 |
-|------|-----------|
-| GPU 在哪个 NUMA? | Node 1 (BDF 0x98 > 0x7f) |
-| NVMe 在哪个 NUMA? | Node 1 (domain d7)，与 GPU 同 socket |
-| 有跨 NUMA PCIe 访问吗? | 本环境无——GPU 和 NVMe 在同一 socket |
-| BDF 编码规则 | 0x00-0x7f = S0, 0x80-0xff = S1 |
-| 多 domain 影响编程吗? | 需 `cudaDeviceGetByPCIBusId` 确保选对设备 |
+| 问题                   | 本环境答案                                |
+| ---------------------- | ----------------------------------------- |
+| GPU 在哪个 NUMA?       | Node 1 (BDF 0x98 > 0x7f)                  |
+| NVMe 在哪个 NUMA?      | Node 1 (domain d7)，与 GPU 同 socket      |
+| 有跨 NUMA PCIe 访问吗? | 本环境无——GPU 和 NVMe 在同一 socket       |
+| BDF 编码规则           | 0x00-0x7f = S0, 0x80-0xff = S1            |
+| 多 domain 影响编程吗?  | 需 `cudaDeviceGetByPCIBusId` 确保选对设备 |
 
 ---
 
