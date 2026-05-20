@@ -2,15 +2,15 @@
 
 > **快速导航**
 >
-> | 目录           | 主题                                        | 关键词                   |
-> | -------------- | ------------------------------------------- | ------------------------ |
-> | `nvidia/`      | GPU 架构（Volta → Blackwell）、GPGPU vs NPU | Tensor Core, HBM, SM     |
-> | `tpu/`         | Google TPU 脉动阵列架构                     | Systolic Array, XLA      |
-> | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER      | Gen3–Gen6, Root Complex  |
-> | `nvlink/`      | NVLink / NVSwitch 高速互连                  | 1.8 TB/s, GPU-to-GPU     |
-> | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)        | Zero-copy, Bounce Buffer |
-> | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构          | Chip-to-Chip, Rack-Scale |
-> | `performance/` | NUMA 亲和性、延迟金字塔、AMX vs Tensor Core | Latency Hierarchy        |
+> | 目录           | 主题                                                    | 关键词                       |
+> | -------------- | ------------------------------------------------------- | ---------------------------- |
+> | `nvidia/`      | GPU 架构（Volta → Blackwell）、GPGPU vs NPU             | Tensor Core, HBM, SM         |
+> | `tpu/`         | Google TPU 脉动阵列架构                                 | Systolic Array, XLA          |
+> | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER                  | Gen3–Gen6, Root Complex      |
+> | `nvlink/`      | NVLink / NVSwitch 高速互连                              | 1.8 TB/s, GPU-to-GPU         |
+> | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)                    | Zero-copy, Bounce Buffer     |
+> | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构                      | Chip-to-Chip, Rack-Scale     |
+> | `performance/` | NUMA 亲和性、延迟金字塔、带宽速查表、AMX vs Tensor Core | Latency Hierarchy, Bandwidth |
 
 ---
 
@@ -151,6 +151,7 @@ Blackwell 代际实际上重新定义了"一台 AI 机器"的边界：
 也就是说，数据落在哪一层，性能差距动辄上万倍。这个量级差是容量规划、KV Cache 分层存储、集合通信调度等决策的核心依据——**"别让热数据跑到慢介质上去"**，基本是所有优化的出发点。
 
 - **[AI 基础设施延迟金字塔](performance/ai_latency_pyramid.md)**：提供从寄存器访问、内存读写到跨节点网络通信的各级延迟参考基准数据。
+- **[PCIe & NVLink 带宽速查表](performance/05_pcie_nvlink_speed_reference.md)**：PCIe/NVLink 各代带宽、主流 GPU 互连规格、NVMe SSD 速度及典型场景瓶颈速查。
 
 ---
 
