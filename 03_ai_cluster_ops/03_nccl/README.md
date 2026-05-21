@@ -37,7 +37,7 @@ nccl/
 │   └── gpu_topology_detector.sh   # GPU 拓扑检测工具
 ├── 📚 配置文件
 │   ├── requirements.txt           # Python 依赖包配置
-│   └── tutorial.md               # 详细使用教程和最佳实践
+│   └── 03_nccl_tutorial.md        # 详细使用教程和最佳实践
 └── 📁 测试数据
     └── test/                      # 测试脚本和数据 (包含 PXN 测试套件)
         ├── test_pxn_mode.sh       # PXN 模式功能测试
@@ -165,7 +165,7 @@ Python 依赖包配置文件，包含：
 - NCCL 测试所需的 Python 库
 - 容器化部署依赖
 
-#### 3.5.2 `tutorial.md`
+#### 3.5.2 `03_nccl_tutorial.md`
 
 详细使用教程，包含：
 
@@ -335,11 +335,11 @@ cd k8s/
 
 ## 7. 详细文档
 
-- **[NCCL 单卡验证指南](./02_nccl_helloworld.md)** - 无需多卡/多机的 NCCL 安装验证 (Hello World)
-- **[详细使用教程](./01_nccl_tutorial.md)** - 完整的安装、配置和使用说明
-- **[Kubernetes 部署指南](./k8s/README.md)** - Kubernetes 多节点部署详细教程
-- **[故障排除](./01_nccl_tutorial.md#故障排除)** - 常见问题和解决方案
-- **[性能调优](./01_nccl_tutorial.md#性能调优)** - 最佳实践和优化建议
+- **[NCCL 技术理论深度解析](./01_nccl_theory.md)** — AllReduce 算法、RDMA 机制、性能建模、容错等理论主题（先理论）
+- **[NCCL 单卡验证指南](./02_nccl_helloworld.md)** — 无需多卡/多机的 NCCL 安装验证 (Hello World)
+- **[详细使用教程](./03_nccl_tutorial.md)** — 安装、配置、单/多节点测试、容器化部署
+- **[NCCL 基准测试方法论](./04_nccl_benchmark.md)** — `allreduce_perf` 编译、运行，A100 实测 (2/4/7 GPU)，含 GPU 7 MIG+NVLink 异常案例
+- **[Kubernetes 部署指南](./k8s/README.md)** — Kubernetes 多节点部署详细教程
 
 ## 8. 参考资料
 
