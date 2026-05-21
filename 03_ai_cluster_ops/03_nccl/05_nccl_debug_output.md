@@ -183,12 +183,14 @@ NCCL_DEBUG=INFO 输出拿到后：
 
 ---
 
-## 5. 与已有文档的联动
+## 5. 相关文档
 
 - [`03_nccl_tutorial.md`](03_nccl_tutorial.md)：§5.1 环境变量、§5.5 性能分析——二者是本文输出解读的下游
 - [`04_nccl_benchmark.md`](04_nccl_benchmark.md)：本文输出的 `bus_bw` 值需要与基准数据对比
 - [`06_gpu_health_check.md`](../01_gpu_ops/06_gpu_health_check.md)：本文 §3 的正常/异常对照是健康检查 L2 的核心
 - [`nvlink_diagnostics.md`](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md)：NVLink 故障时的底层排查
+
+---
 
 ## 参考
 

@@ -230,12 +230,14 @@ torch.cuda.empty_cache()
 
 ---
 
-## 7. 与已有文档的联动
+## 7. 相关文档
 
 - [`03_nvidia_smi_guide.md`](03_nvidia_smi_guide.md)：nvidia-smi 基础命令详解
 - [`06_gpu_health_check.md`](06_gpu_health_check.md)：进程残留检查是 L1 健康检查的一部分
 - [NVLink 诊断与实操](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md)：GPU 7 NVLink 故障 → 建议在分布式训练中排除
 - [GPU P2P 带宽实测](../../02_gpu_programming/04_profiling/08_p2p_bandwidth.md)：NUMA 亲和性直接影响 P2P 带宽
+
+---
 
 ## 参考
 
