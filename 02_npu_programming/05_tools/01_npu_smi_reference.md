@@ -47,10 +47,10 @@ npu-smi info watch                # 滚动刷新模式
 | Health           | 健康状态       | OK 正常；若有异常则显示具体告警码                                                            |
 | Power(W)         | 实时功耗       | 空闲 ~93 W；FP16 算力测试满载 ~231 W；实际训练可达 ~273 W（此前观测到 5 号卡训练时达此功耗） |
 | Temp(C)          | 芯片温度       | 正常范围 30-60°C；持续 >85°C 触发降频                                                        |
-| Hugepages-Usage  | 大页内存       | 显示已用/总量（page）；测试服务器为 0，表示未使用 DDR 大页                                     |
+| Hugepages-Usage  | 大页内存       | 显示已用/总量（page）；测试服务器为 0，表示未使用 DDR 大页                                   |
 | Bus-Id           | PCIe 总线地址  | 格式 `domain:bus:device.function`，可据此定位物理插槽                                        |
 | AICore(%)        | AI Core 利用率 | 0% 表示空闲；若持续为 0 但进程存在，可能进程在等待数据                                       |
-| Memory-Usage(MB) | DDR 内存使用   | 已用/总量；测试服务器 DDR 容量为 0，因此始终为 0/0                                             |
+| Memory-Usage(MB) | DDR 内存使用   | 已用/总量；测试服务器 DDR 容量为 0，因此始终为 0/0                                           |
 | HBM-Usage(MB)    | HBM 使用量     | 已用/总量；空闲时约 3300-3400 MB 为驱动保留（约 5%），65536 MB 为 64 GB 总量                 |
 
 下半部分为进程表，列出每张 NPU 上运行的进程 PID、进程名和 NPU 内存占用。默认模式只显示当前时刻快照。
@@ -158,7 +158,7 @@ npu-smi info -t memory -i 7     # 内存规格
 | HBM Clock Speed     | 1600 MHz | 1.6 GHz，对应 ~1.54 TB/s 实测带宽   |
 | HBM Temperature     | 38°C     | 仅 HBM 颗粒温度，不同于芯片整体温度 |
 | HBM Manufacturer ID | 0x57     | Samsung                             |
-| DDR Capacity        | 0 MB     | 测试服务器 DDR 不可用                 |
+| DDR Capacity        | 0 MB     | 测试服务器 DDR 不可用               |
 
 ### 5.4 HCCS 链路状态 (`-t hccs` / `-t hccs-bw`)
 
@@ -169,7 +169,7 @@ npu-smi info -t hccs-bw -i 7 -c 0 -time 100  # HCCS 带宽实时探测（100 ms�
 
 **`hccs` 输出解读**（8 个 lane 按数组格式排列，`[lane0 lane1 ... lane7]`）：
 
-| 字段                     | 测试服务器值          | 说明                           |
+| 字段                     | 测试服务器值        | 说明                           |
 | ------------------------ | ------------------- | ------------------------------ |
 | hccs health status       | OK                  | 链路健康                       |
 | hccs lane mode           | `[4 4 4 4 4 4 4 4]` | 每个 lane 模式为 4             |

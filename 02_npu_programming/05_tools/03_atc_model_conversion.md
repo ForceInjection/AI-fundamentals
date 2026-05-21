@@ -36,13 +36,13 @@ atc --model=resnet50.onnx \
 
 ## 3. 关键参数
 
-| 参数             | 说明                                            |
-| ---------------- | ----------------------------------------------- |
-| `--framework`    | 0=Caffe, 1=MindSpore, 3=TF, **5=ONNX**          |
+| 参数             | 说明                                             |
+| ---------------- | ------------------------------------------------ |
+| `--framework`    | 0=Caffe, 1=MindSpore, 3=TF, **5=ONNX**           |
 | `--soc_version`  | `Ascend910B3`（训练卡）/ `Ascend310P3`（推理卡） |
-| `--output`       | 输出的 .om 文件名（无后缀）                     |
-| `--input_shape`  | 如 `"input:1,3,224,224"`                        |
-| `--input_format` | NCHW / NHWC / ND                                |
+| `--output`       | 输出的 .om 文件名（无后缀）                      |
+| `--input_shape`  | 如 `"input:1,3,224,224"`                         |
+| `--input_format` | NCHW / NHWC / ND                                 |
 
 ## 4. OM 模型推理示例 (AscendCL)
 
