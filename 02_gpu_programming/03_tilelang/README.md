@@ -8,4 +8,6 @@ TileLang 是一种专为高性能 GPU 内核设计的领域特定语言（DSL）
 
 ## 1. [TileLang 快速入门](01_tilelang_quick_start.md)
 
-了解 TileLang 的基本概念与使用方法，快速开始编写您的第一个高性能算子。
+从环境搭建到第一个矩阵乘法 Kernel：安装（PyPI / 源码 / Nightly）、核心 API 速览（`T.Kernel`、`T.alloc_shared`、`T.alloc_fragment`、`T.gemm`、`T.Pipelined`）、CUDA→TileLang 对照表，以及 JIT 编译流程和调试技巧。最终用 ~30 行代码实现一个接近手写 CUDA 性能的 GEMM 算子。
+
+> **前置条件**：Python 3.8+、CUDA 11.0+、PyTorch。已验证硬件包括 H100、A100、V100、RTX 4090/3090/A6000 及 AMD MI250/MI300X。

@@ -342,3 +342,12 @@ env:
 8. **测试验证**: 在生产环境部署前充分测试
 
 通过 Kubernetes 部署 NCCL 测试，你可以获得更好的资源管理、故障恢复和扩展能力，这对于大规模的分布式训练环境尤其重要。
+
+## YAML 配置清单
+
+| 文件 | 用途 |
+|------|------|
+| `nccl-multinode-sts.yaml` | StatefulSet 多节点并行测试配置，含 GPU 资源请求和 Host Network 配置 |
+| `nccl-service.yaml` | 服务发现配置，管理 Master/Worker 端口和负载均衡 |
+| `nccl-configmap.yaml` | NCCL 环境变量集中管理，包含测试参数和网络优化参数 |
+| `nccl-rbac.yaml` | RBAC 权限配置，控制 ServiceAccount 的集群资源访问权限 |
