@@ -56,6 +56,26 @@ _GPU Architecture and Programming — An Introduction_：
 - 不同 block 数量对 launch 开销的影响。
 - CPU vs GPU 决策边界与 CUDA Graph 替代方案。
 
+## 9. [CUDA Graphs 编程](09_cuda_graphs.md)
+
+- 将多次 kernel launch + memcpy 合并为一次 graph launch。
+- 覆盖 Stream Capture 与 Manual API 两种创建方式。
+- 生命周期：录制 → 实例化 → 启动 → 更新。
+- A100 实测：Instantiation ~33 μs, Repeat Launch ~2.3 μs。
+
+## 10. [Reduction：从朴素实现到 Warp Shuffle](10_reduction.md)
+
+- GPU 并行编程最经典的教学案例，展示从 0.048ms 到 0.022ms 的逐级优化（2.18× 加速）。
+- 8 个 kernel 变体：interleaved → sequential → warp shuffle → template → Cooperative Groups。
+- A100 实测 `--shmoo` 完整性能表。
+- Warp shuffle 原理与 shared memory / register 性能对比。
+
+## 11. [Tensor Core GEMM 性能实测](11_tensor_core_gemm.md)
+
+- 运行官方 `cudaTensorCoreGemm` / `bf16TensorCoreGemm`，A100 实测 FP16 52.5 TFLOPS、BF16 90.9 TFLOPS。
+- 理论峰值对标（156 TFLOPS dense）与矩阵大小对利用率的影响。
+- WMMA API 编程模型 + "算力-带宽-算数密度"三角分析。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
