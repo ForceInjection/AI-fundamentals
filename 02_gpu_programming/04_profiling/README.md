@@ -27,6 +27,7 @@
 - [**GPU 显存带宽测试：片内 vs 片外**](03_hbm_bandwidth_test.md)：HBM D2D 带宽实测 (762-1341 GB/s)，与 PCIe 带宽形成完整对比
 - [**GPU 功耗管理实战**](04_power_management.md)：RTX 5090 功耗限制、时钟控制、Power Smoothing/Power Profiles 兼容性实测
 - [**PCIe 传输效率曲线**](05_pcie_transfer_efficiency.md)：1 KB - 1 GB 区间 PCIe 带宽爬升曲线，揭示效率拐点与最小传输大小建议
+- [**Nsight Compute CLI 实战**](06_nsight_compute_cli.md)：`ncu` 完全指南——从安装、基础用法到 kernel 级指标逐 section 解读
 
 ## 2. 性能分析实践
 
