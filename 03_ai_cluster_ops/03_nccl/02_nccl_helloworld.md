@@ -10,12 +10,12 @@
 
 NCCL 的核心能力：
 
-| 能力 | 说明 |
-|------|------|
-| 拓扑感知 | 自动检测 NVLink、PCIe P2P、InfiniBand 路径，选择最优通信路由 |
+| 能力             | 说明                                                          |
+| ---------------- | ------------------------------------------------------------- |
+| 拓扑感知         | 自动检测 NVLink、PCIe P2P、InfiniBand 路径，选择最优通信路由  |
 | Ring / Tree 算法 | 根据数据量和 GPU 数量自动选择 Ring（大包）或 Tree（小包）算法 |
-| 零拷贝 | 通过 GPUDirect P2P/RDMA 直接在 GPU 显存间搬运，不经 CPU 中转 |
-| 异步执行 | 通信操作在 GPU stream 中异步进行，可与计算重叠 |
+| 零拷贝           | 通过 GPUDirect P2P/RDMA 直接在 GPU 显存间搬运，不经 CPU 中转  |
+| 异步执行         | 通信操作在 GPU stream 中异步进行，可与计算重叠                |
 
 **为什么单卡也要验证 NCCL？** 即使只有一张 GPU，NCCL 的编译和链接环境也需要正确配置（nvcc 能找到 `nccl.h`，链接器能找到 `libnccl.so`）。单卡验证通过后，多卡部署只需关注网络和拓扑，排除了库本身的问题。
 
@@ -113,12 +113,12 @@ nvcc -I/usr/include \
 /tmp/nccl_hello
 ```
 
-**单卡 RTX 5090 预期输出：**
+**单卡预期输出（以 A100 为例）：**
 
-```
-NCCL version: 2.25.1
+```text
+NCCL version: 2.29.3
 CUDA devices: 1
-  [0] NVIDIA GeForce RTX 5090 (12.0, 170 SMs, 31 GB)
+  [0] NVIDIA A100-SXM4-80GB (8.0, 108 SMs, 79 GB)
 NCCL comm init: SUCCESS (single rank)
   Rank: 0 / 1
 NCCL verification complete.
@@ -193,13 +193,13 @@ nvcc -I/usr/include \
 
 单卡场景基本不需要调参，了解即可：
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `NCCL_DEBUG` | 日志级别 | `INFO`, `WARN`, `TRACE` |
-| `NCCL_DEBUG_FILE` | 日志输出文件 | `/tmp/nccl-%h.log` |
-| `NCCL_IB_DISABLE` | 禁用 InfiniBand | `0` / `1` |
-| `NCCL_SOCKET_IFNAME` | 指定网络接口 | `eth0` |
-| `NCCL_P2P_DISABLE` | 禁用 P2P 传输 | `0` / `1` |
+| 变量                 | 说明            | 示例                    |
+| -------------------- | --------------- | ----------------------- |
+| `NCCL_DEBUG`         | 日志级别        | `INFO`, `WARN`, `TRACE` |
+| `NCCL_DEBUG_FILE`    | 日志输出文件    | `/tmp/nccl-%h.log`      |
+| `NCCL_IB_DISABLE`    | 禁用 InfiniBand | `0` / `1`               |
+| `NCCL_SOCKET_IFNAME` | 指定网络接口    | `eth0`                  |
+| `NCCL_P2P_DISABLE`   | 禁用 P2P 传输   | `0` / `1`               |
 
 调试示例：
 
