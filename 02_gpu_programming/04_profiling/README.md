@@ -28,6 +28,8 @@
 - [**GPU 功耗管理实战**](04_power_management.md)：RTX 5090 功耗限制、时钟控制、Power Smoothing/Power Profiles 兼容性实测
 - [**PCIe 传输效率曲线**](05_pcie_transfer_efficiency.md)：1 KB - 1 GB 区间 PCIe 带宽爬升曲线，揭示效率拐点与最小传输大小建议
 - [**Nsight Compute CLI 实战**](06_nsight_compute_cli.md)：`ncu` 完全指南——从安装、基础用法到 kernel 级指标逐 section 解读
+- [**Nsight Systems CLI 快速入门**](07_nsight_systems_cli.md)：`nsys` 系统级时间线分析——CPU-GPU 交互、API 开销、三件套工作流
+- [**GPU P2P 带宽实测**](08_p2p_bandwidth.md)：`simpleP2P` 实测 NVLink P2P 239 GB/s，对比 P2P/PCIe/片内三级带宽，含拓扑对训练策略影响
 
 ## 2. 性能分析实践
 
