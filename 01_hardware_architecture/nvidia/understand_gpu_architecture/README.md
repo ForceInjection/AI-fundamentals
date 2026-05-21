@@ -17,6 +17,7 @@
 
 - [03_tesla_v100.md](03_tesla_v100.md)：以数据中心级 GPU 为例，看 Volta 架构的核心创新——Tensor Core 加速单元和 HBM2 内存系统是怎么回事。
 - [04_rtx_5000.md](04_rtx_5000.md)：以工作站级 GPU 为例，看 Turing 架构在图形和计算融合上的设计思路，包含 RT Core 和光线追踪能力。
+- [07_a100_architecture.md](07_a100_architecture.md)：**新增** — 基于 A100-SXM4-80GB 服务器实测的 Ampere 架构深度解析，涵盖 GA100 SM 结构、第三代 Tensor Core (TF32/Sparsity)、HBM2e 显存、MIG 分区、NVLink 3.0，并附 deviceQuery 实测数据。
 
 ## 3. 性能测试与实践练习
 
