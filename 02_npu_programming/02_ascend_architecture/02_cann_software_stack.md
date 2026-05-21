@@ -89,20 +89,20 @@ OPP (Operator Plugin Package) 已预置在 `/usr/local/Ascend/ascend-toolkit/lat
 
 ## 3. CANN vs CUDA 开发工具对照
 
-| 功能         | CANN 工具                                  | CUDA 工具               |
-| ------------ | ------------------------------------------ | ----------------------- |
-| 设备管理     | `npu-smi`                                  | `nvidia-smi`            |
-| Profiling    | `msprof`                                   | `nsys` / `ncu` (Nsight) |
-| 模型转换     | `atc` (Ascend Tensor Compiler)             | TensorRT `trtexec`      |
-| 模型压缩     | AMCT                                       | TensorRT 量化           |
-| 算子自动调优 | AOE                                        | cuDNN autotune          |
-| 算子开发     | Ascend C / TBE + `msopgen`                 | CUDA C++                |
-| 编译工具链   | BiSheng Compiler (`ccec`)                  | NVCC                    |
-| 调试         | `msdebug`                                  | `cuda-gdb`              |
-| 分布式通信   | HCCL                                       | NCCL                    |
+| 功能         | CANN 工具                                  | CUDA 工具                                         |
+| ------------ | ------------------------------------------ | ------------------------------------------------- |
+| 设备管理     | `npu-smi`                                  | `nvidia-smi`                                      |
+| Profiling    | `msprof`                                   | `nsys` / `ncu` (Nsight)                           |
+| 模型转换     | `atc` (Ascend Tensor Compiler)             | TensorRT `trtexec`                                |
+| 模型压缩     | AMCT                                       | TensorRT 量化                                     |
+| 算子自动调优 | AOE                                        | cuDNN autotune                                    |
+| 算子开发     | Ascend C / TBE + `msopgen`                 | CUDA C++                                          |
+| 编译工具链   | BiSheng Compiler (`ccec`)                  | NVCC                                              |
+| 调试         | `msdebug`                                  | `cuda-gdb`                                        |
+| 分布式通信   | HCCL                                       | NCCL                                              |
 | 图编译       | GE (Graph Engine) — 含融合/内存/布局优化   | CUDA Graphs (仅 kernel 录制回放，GE 功能范围更广) |
-| 集合通信测试 | `hccl_test`                                | `nccl-tests`            |
-| 开发套件路径 | `/usr/local/Ascend/ascend-toolkit/latest/` | `/usr/local/cuda/`      |
+| 集合通信测试 | `hccl_test`                                | `nccl-tests`                                      |
+| 开发套件路径 | `/usr/local/Ascend/ascend-toolkit/latest/` | `/usr/local/cuda/`                                |
 
 **关键环境变量对照**：
 
