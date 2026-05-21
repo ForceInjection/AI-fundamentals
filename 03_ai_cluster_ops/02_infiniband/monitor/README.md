@@ -66,18 +66,18 @@ sudo yum install infiniband-diags perftest bc
 
 ### 3.2 命令行选项
 
-| 选项 | 长选项 | 参数 | 说明 |
-|------|--------|------|------|
-| `-h` | `--help` | - | 显示帮助信息 |
-| `-v` | `--version` | - | 显示版本信息 |
-| `-d` | `--device` | DEVICE | 指定设备名称 (如: mlx5_0) |
-| `-p` | `--port` | PORT | 指定端口号 (默认: 1) |
-| | `--ports` | PORTS | 指定多个端口 (如: 1,2,3 或 1-4) |
-| | `--multi-devices` | CONFIG | 指定多设备多端口配置 (如: mlx5_0:1,2;mlx5_1:1,3) |
-| | `--list-ports` | - | 列出所有可监控的端口 |
-| `-i` | `--interval` | SECONDS | 监控间隔秒数 (默认: 5) |
-| `-t` | `--time` | SECONDS | 监控总时长秒数 (默认: 0，表示无限监控) |
-| `-q` | `--quiet` | - | 静默模式 (仅输出结果) |
+| 选项 | 长选项            | 参数    | 说明                                             |
+| ---- | ----------------- | ------- | ------------------------------------------------ |
+| `-h` | `--help`          | -       | 显示帮助信息                                     |
+| `-v` | `--version`       | -       | 显示版本信息                                     |
+| `-d` | `--device`        | DEVICE  | 指定设备名称 (如: mlx5_0)                        |
+| `-p` | `--port`          | PORT    | 指定端口号 (默认: 1)                             |
+|      | `--ports`         | PORTS   | 指定多个端口 (如: 1,2,3 或 1-4)                  |
+|      | `--multi-devices` | CONFIG  | 指定多设备多端口配置 (如: mlx5_0:1,2;mlx5_1:1,3) |
+|      | `--list-ports`    | -       | 列出所有可监控的端口                             |
+| `-i` | `--interval`      | SECONDS | 监控间隔秒数 (默认: 5)                           |
+| `-t` | `--time`          | SECONDS | 监控总时长秒数 (默认: 0，表示无限监控)           |
+| `-q` | `--quiet`         | -       | 静默模式 (仅输出结果)                            |
 
 ### 3.3 使用示例
 
@@ -166,15 +166,15 @@ sudo yum install infiniband-diags perftest bc
 
 ### 4.2 输出字段说明
 
-| 字段 | 说明 |
-|------|------|
-| 时间 | 采样时间戳 (HH:MM:SS) |
-| 接口 | 设备名:端口号 (如: mlx5_0:1) |
-| rxpck/s | 接收包速率 (包/秒) |
-| txpck/s | 发送包速率 (包/秒) |
-| rxMB/s | 接收数据速率 (MB/秒) |
-| txMB/s | 发送数据速率 (MB/秒) |
-| %ifutil | 链路利用率百分比 |
+| 字段    | 说明                         |
+| ------- | ---------------------------- |
+| 时间    | 采样时间戳 (HH:MM:SS)        |
+| 接口    | 设备名:端口号 (如: mlx5_0:1) |
+| rxpck/s | 接收包速率 (包/秒)           |
+| txpck/s | 发送包速率 (包/秒)           |
+| rxMB/s  | 接收数据速率 (MB/秒)         |
+| txMB/s  | 发送数据速率 (MB/秒)         |
+| %ifutil | 链路利用率百分比             |
 
 ### 4.3 多设备输出示例
 
@@ -399,6 +399,22 @@ DEVICES_CONFIG="mlx5_0:1,2;mlx5_1:1,3;mlx5_2:1"
 LOG_FILE="/var/log/multi_device_ib.log"
 
 ./ib_bandwidth_monitor.sh --multi-devices "$DEVICES_CONFIG" -q -t 3600 >> "$LOG_FILE"
+```
+
+### 6.5 测试套件
+
+| 文件                                  | 用途                                        |
+| ------------------------------------- | ------------------------------------------- |
+| `run_tests.sh`                        | 主测试运行器，一键跑全部测试                |
+| `test_integration.sh`                 | 集成测试                                    |
+| `test_multi_devices_comprehensive.sh` | 多设备场景覆盖测试                          |
+| `test_regression.sh`                  | 回归测试                                    |
+| `test_utils.sh`                       | 工具函数单元测试                            |
+| `mock_commands/`                      | Mock 命令，无需真实 IB 硬件即可验证脚本逻辑 |
+
+```bash
+cd monitor/
+./run_tests.sh
 ```
 
 ---

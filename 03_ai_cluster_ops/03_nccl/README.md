@@ -339,6 +339,7 @@ cd k8s/
 - **[NCCL 单卡验证指南](./02_nccl_helloworld.md)** — 无需多卡/多机的 NCCL 安装验证 (Hello World)
 - **[详细使用教程](./03_nccl_tutorial.md)** — 安装、配置、单/多节点测试、容器化部署
 - **[NCCL 基准测试方法论](./04_nccl_benchmark.md)** — `allreduce_perf` 编译、运行，A100 实测 (2/4/7 GPU)，含 GPU 7 MIG+NVLink 异常案例
+- **[NCCL Debug 输出实战解读](./05_nccl_debug_output.md)** — `NCCL_DEBUG=INFO` 完整输出逐段拆解，正常/异常速查表，排查流程图
 - **[Kubernetes 部署指南](./k8s/README.md)** — Kubernetes 多节点部署详细教程
 
 ## 8. 参考资料
