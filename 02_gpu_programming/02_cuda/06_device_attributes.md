@@ -1,6 +1,6 @@
 # GPU 原子操作与 PCIe 能力查询
 
-> 基于 RTX 5090 (Blackwell, CC 12.0) 实际环境。`cudaDeviceGetAttribute` 可查询 100+ 种设备属性，本文聚焦 PCIe 原子操作、Host Native Atomic 等底层硬件能力的查询方法。
+> 基于 RTX 5090 (Blackwell, CC 12.0) 和 A100-SXM4-80GB (Ampere, CC 8.0) 双平台实测。`cudaDeviceGetAttribute` 可查询 100+ 种设备属性，本文聚焦 PCIe 原子操作、Host Native Atomic 等底层硬件能力的查询方法。
 
 ---
 
@@ -111,17 +111,47 @@ GPU 0: NVIDIA GeForce RTX 5090 (CC 12.0)
   cudaDevAttrSingleToDoublePrecisionPerfRatio = 64
 ```
 
+**A100-SXM4-80GB 实际输出（2026-05 实测）**：
+
+```text
+GPU 0: NVIDIA A100-SXM4-80GB (CC 8.0)
+
+--- PCIe & Atomic ---
+  cudaDevAttrHostNativeAtomicSupported          = 0
+  cudaDevAttrCanUseHostPointerForRegisteredMem  = 1 ✓
+
+--- Managed Memory ---
+  cudaDevAttrConcurrentManagedAccess            = 1 ✓
+  cudaDevAttrPageableMemoryAccess               = 0
+  cudaDevAttrPageableMemoryAccessUsesHostPageTables = 0
+  cudaDevAttrDirectManagedMemAccessFromHost     = 0
+
+--- Launch Capability ---
+  cudaDevAttrCooperativeLaunch                  = 1 ✓
+
+--- SM Resources ---
+  cudaDevAttrMaxRegistersPerMultiprocessor      = 65536
+  cudaDevAttrMaxBlocksPerMultiprocessor         = 32
+  cudaDevAttrMaxThreadsPerMultiProcessor        = 2048
+  cudaDevAttrAsyncEngineCount                   = 3
+
+--- Precision ---
+  cudaDevAttrSingleToDoublePrecisionPerfRatio   = 2
+```
+
 ### 2.3 关键解读
 
-| 属性                                | RTX 5090 | 数据中心 GPU    | 影响                                   |
-| ----------------------------------- | -------- | --------------- | -------------------------------------- |
-| `HostNativeAtomicSupported`         | 0 ❌     | 1 ✅            | 无法用 GPU atomic 直接操作 Host 内存   |
-| `CanUseHostPointerForRegisteredMem` | 1 ✅     | 1 ✅            | 可以使用 registered host memory        |
-| `PageableMemoryAccess`              | 0 ❌     | 1 ✅ (H100+)    | 不支持 pageable memory 的 GPU 直接访问 |
-| `DirectManagedMemAccessFromHost`    | 0 ❌     | 1 ✅ (GH200)    | Host 无法直接访问 managed memory       |
-| `ConcurrentManagedAccess`           | 1 ✅     | 1 ✅            | 支持 Host+GPU 同时访问 managed memory  |
-| `CooperativeMultiDeviceLaunch`      | 1 ✅     | 1 ✅            | 支持 cooperative groups 跨设备         |
-| `SingleToDoublePrecisionPerfRatio`  | 64:1     | 2:1 (A100/H100) | 消费级 GPU 双精度性能严重受限          |
+| 属性                                | RTX 5090 | A100    | 数据中心 GPU    | 影响                                   |
+| ----------------------------------- | -------- | ------- | --------------- | -------------------------------------- |
+| `HostNativeAtomicSupported`         | 0 ❌     | 0 ❌    | 1 ✅            | 无法用 GPU atomic 直接操作 Host 内存   |
+| `CanUseHostPointerForRegisteredMem` | 1 ✅     | 1 ✅    | 1 ✅            | 可以使用 registered host memory        |
+| `PageableMemoryAccess`              | 0 ❌     | 0 ❌    | 1 ✅ (H100+)    | 不支持 pageable memory 的 GPU 直接访问 |
+| `DirectManagedMemAccessFromHost`    | 0 ❌     | 0 ❌    | 1 ✅ (GH200)    | Host 无法直接访问 managed memory       |
+| `ConcurrentManagedAccess`           | 1 ✅     | 1 ✅    | 1 ✅            | 支持 Host+GPU 同时访问 managed memory  |
+| `CooperativeMultiDeviceLaunch`      | 1 ✅     | 1 ✅    | 1 ✅            | 支持 cooperative groups 跨设备         |
+| `SingleToDoublePrecisionPerfRatio`  | 64:1     | **2:1** | 2:1 (A100/H100) | 消费级 GPU 双精度性能严重受限          |
+
+> **注意**：A100 上 `HostNativeAtomicSupported` 和 `PageableMemoryAccess` 均为 0（与某些资料中"数据中心 GPU = 1"的预期不一致）。这说明这两个能力并非由"数据中心 vs 消费级"决定，而是特定型号（H100+）的硬件特性。在代码实践中应始终使用 `cudaDeviceGetAttribute` 做**运行时能力检查**而非查表假设。
 
 ---
 
@@ -157,20 +187,20 @@ Atomic Caps Inbound     : FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64
 
 ### 4.2 执行模型
 
-| 属性                                       | 说明             | RTX 5090 |
-| ------------------------------------------ | ---------------- | -------- |
-| `cudaDevAttrMaxRegistersPerMultiprocessor` | SM 寄存器总数    | 65536    |
-| `cudaDevAttrMaxBlocksPerMultiprocessor`    | SM 最大 block 数 | 24       |
-| `cudaDevAttrMaxThreadsPerMultiProcessor`   | SM 最大线程数    | 1536     |
-| `cudaDevAttrWarpSize` (from prop)          | Warp 大小        | 32       |
+| 属性                                       | 说明             | RTX 5090 | A100     |
+| ------------------------------------------ | ---------------- | -------- | -------- |
+| `cudaDevAttrMaxRegistersPerMultiprocessor` | SM 寄存器总数    | 65536    | 65536    |
+| `cudaDevAttrMaxBlocksPerMultiprocessor`    | SM 最大 block 数 | 24       | **32**   |
+| `cudaDevAttrMaxThreadsPerMultiProcessor`   | SM 最大线程数    | 1536     | **2048** |
+| `cudaDevAttrWarpSize` (from prop)          | Warp 大小        | 32       | 32       |
 
 ### 4.3 流与并发
 
-| 属性                                   | RTX 5090 | 说明                        |
-| -------------------------------------- | -------- | --------------------------- |
-| `cudaDevAttrAsyncEngineCount`          | 2        | 2 个异步 copy engine        |
-| `cudaDevAttrConcurrentKernels` (prop)  | 1        | 支持 concurrent kernel 执行 |
-| `cudaDevAttrMaxSurface1DLayeredLayers` | ...      | 3D surface 层数上限         |
+| 属性                                   | RTX 5090 | A100  | 说明                        |
+| -------------------------------------- | -------- | ----- | --------------------------- |
+| `cudaDevAttrAsyncEngineCount`          | 2        | **3** | 异步 copy engine 数量       |
+| `cudaDevAttrConcurrentKernels` (prop)  | 1        | 1     | 支持 concurrent kernel 执行 |
+| `cudaDevAttrMaxSurface1DLayeredLayers` | ...      | —     | 3D surface 层数上限         |
 
 ---
 

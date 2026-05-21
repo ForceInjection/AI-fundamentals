@@ -1,6 +1,6 @@
 # PCIe 链路状态与主机-设备带宽实测
 
-> 基于 RTX 5090 (PCIe Gen 5 x16) 实际环境。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
+> 基于 RTX 5090 (PCIe Gen 5 x16) 和 A100-SXM4-80GB (PCIe Gen 4 x16) 双平台。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
 
 ---
 
@@ -175,6 +175,22 @@ PCIe Gen 5 x16 理论单向带宽：32.0 GT/s × 16 lanes × 128b/130b 编码 = 
 
 D2H 略快于 H2D (~53.3 vs ~52.5 GB/s)。这是因为 GPU 是 DMA 发起方，D2H 时 GPU 直接 push 数据，而 H2D 时需要 GPU 主动 pull。
 
+### 4.4 A100-SXM4-80GB 对比
+
+A100-SXM4-80GB 使用 **PCIe Gen 4 x16**，与 RTX 5090 的 Gen 5 x16 形成代差：
+
+| 指标           | A100 (Gen 4 x16)        | RTX 5090 (Gen 5 x16)       |
+| -------------- | ----------------------- | -------------------------- |
+| 信号速率       | 16.0 GT/s               | 32.0 GT/s                  |
+| 编码           | 128b/130b               | 128b/130b                  |
+| 理论单向带宽   | **~31.5 GB/s**          | **~63.0 GB/s**             |
+| 实测 H2D 期望  | ~25-28 GB/s             | ~52.5 GB/s                 |
+| 效率           | ~80-89%                 | ~83%                       |
+| `nvidia-smi`   | `pcie.link.gen.max = 4` | `pcie.link.gen.max = 5`    |
+| ASPM 空闲状态  | Gen 1 (2.5 GT/s)        | Gen 1 (2.5 GT/s)           |
+
+> **注意**：A100-SXM4 的 GPU 间互联通过 NVLink（NV12, 600 GB/s），但 Host↔Device 仍走 PCIe Gen 4。数据加载路径中 PCIe 是瓶颈：显存带宽 2039 GB/s vs PCIe ~28 GB/s，差距约 **73 倍**（RTX 5090 约 32 倍，因 GDDR7 带宽更低但 PCIe 更快）。
+
 ---
 
 ## 5. 诊断 PCIe 链路问题
@@ -184,11 +200,11 @@ D2H 略快于 H2D (~53.3 vs ~52.5 GB/s)。这是因为 GPU 是 DMA 发起方，D
 ```bash
 # 方法 1: 最大能力查询
 nvidia-smi --query-gpu=pcie.link.gen.max,pcie.link.width.max --format=csv,noheader
-# 期望: 5, 16
+# 期望: 5, 16 (RTX 5090 Gen 5) / 4, 16 (A100 Gen 4)
 
 # 方法 2: sysfs
 cat /sys/bus/pci/devices/0000:98:00.0/max_link_speed
-# 期望: 32.0 GT/s PCIe (即 Gen 5)
+# 期望: 32.0 GT/s PCIe (Gen 5) / 16.0 GT/s PCIe (Gen 4)
 ```
 
 ### 5.2 常见问题
@@ -197,7 +213,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/max_link_speed
 | ------------------------- | -------------------------------------------- | ---------------------------------------- |
 | max 显示 Gen 3            | `nvidia-smi --query-gpu=pcie.link.gen.max`   | 主板/CPU 不支持更高，或插在低代槽位      |
 | width 显示 x8             | `nvidia-smi --query-gpu=pcie.link.width.max` | 插槽物理宽度不足，或 lane 被其他设备共享 |
-| 带宽远低于预期 (~25 GB/s) | 运行本文测试 + 检查 Gen                      | 运行在 Gen 3 x16 (~16 GB/s 理论)         |
+| 带宽远低于预期 (> Gen 4)  | 运行本文测试 + 检查 Gen                      | 若 ~25 GB/s 可能是 Gen 4 正常值          |
 | 带宽异常低 (< 5 GB/s)     | 检查 Gen+Width + 测小包                      | 可能在 Gen 1 x1 或其他异常状态           |
 
 ### 5.3 PCIe 错误计数器
