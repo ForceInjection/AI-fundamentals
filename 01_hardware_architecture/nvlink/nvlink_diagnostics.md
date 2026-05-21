@@ -200,7 +200,7 @@ nvidia-smi nvlink --errorcounters -i 0
 
 ---
 
-## 7. 与已有文档的联动
+## 7. 相关文档
 
 - [`nvlink_intro.md`](nvlink_intro.md)：NVLink 1.0-6.0 版本演进、NVSwitch、SHARP 理论——本文是其诊断实操配套
 - [`02_pcie_bandwidth_measurement.md`](../../02_gpu_programming/04_profiling/02_pcie_bandwidth_measurement.md)：PCIe 带宽测试，可与 NVLink 带宽形成对比

@@ -23,6 +23,7 @@
 - **设备查询**：[Device Query](01_gpu_ops/01_device_query.md) ——通过 CUDA API 拿到设备属性和硬件规格。
 - **状态监控**：[nvidia-smi 使用指南](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 使用指南](01_gpu_ops/04_nvtop_guide.md)——前者是日常第一入口，后者补齐交互式 TUI 体验。
 - **误区解读**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)——解释为什么高利用率 ≠ 高效计算。
+- **集群监控**：[DCGM 监控实操](01_gpu_ops/05_dcgm_monitoring.md) | [GPU 集群健康检查](01_gpu_ops/06_gpu_health_check.md)——前者是 NVIDIA 官方监控方案，后者是系统化三层检查流程。
 
 ---
 
@@ -46,7 +47,7 @@ NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vL
 
 这一节围绕实战展开：
 
-- **基准测试**：用 NCCL Benchmark 跑出 AllReduce / AllGather 等操作的真实带宽，和理论上限对比，确认链路是否被用满。
+- **基准测试**：[NCCL 基准测试方法论](03_nccl/04_nccl_benchmark.md)——用 `allreduce_perf` 跑出真实带宽，对照拓扑诊断通信瓶颈。
 - **多节点部署**：在裸机与 K8s 两种环境下把多机多卡的通信环境拉通，包含镜像、网络插件、拓扑感知调度等细节。
 - **性能优化**：PXN 模式、网络调优参数（`NCCL_IB_HCA`、`NCCL_SOCKET_IFNAME` 等）以及 GPU↔NIC 亲和性，是调优时最常触及的旋钮。
 

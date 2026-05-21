@@ -208,7 +208,7 @@ nvidia-smi mig -i <GPU_ID> -dgi -gi 0
 
 ---
 
-## 6. 与已有文档的联动
+## 6. 相关文档
 
 - [`07_a100_architecture.md`](understand_gpu_architecture/07_a100_architecture.md)：A100 MIG 能力的硬件基础
 - [`nvlink_diagnostics.md`](../nvlink/nvlink_diagnostics.md)：GPU 7 的 NVLink 故障与 MIG 配置的关系

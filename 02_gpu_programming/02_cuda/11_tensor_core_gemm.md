@@ -182,7 +182,7 @@ nvcuda::wmma::store_matrix_sync(C_tile, acc_frag, ldc, nvcuda::wmma::mem_row_maj
 
 ---
 
-## 6. 与已有文档的联动
+## 6. 相关文档
 
 - [`03_hbm_bandwidth_test.md`](../04_profiling/03_hbm_bandwidth_test.md)：片内带宽 —— Tensor Core 算力与之形成"算力 vs 带宽"对标
 - [`08_p2p_bandwidth.md`](../04_profiling/08_p2p_bandwidth.md)：片间 P2P 带宽 —— GEMM 用于 TP 时依赖 P2P 交换中间结果

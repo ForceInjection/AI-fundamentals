@@ -154,7 +154,7 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 ---
 
-## 7. 与已有文档的联动
+## 7. 相关文档
 
 - [`02_pcie_bandwidth_measurement.md`](02_pcie_bandwidth_measurement.md)：H2D/D2H 的单卡 PCIe 带宽 —— P2P 带宽可与之对比
 - [`03_hbm_bandwidth_test.md`](03_hbm_bandwidth_test.md)：片内 D2D 带宽 —— 与片间 P2P 形成层级对比
