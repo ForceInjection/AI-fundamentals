@@ -14,6 +14,9 @@
 - **[GPU 利用率是一个误导性指标](02_gpu_utilization_myth.md)** —— 解释为什么高利用率 ≠ 高效计算，以及正确的判断方式。
 - **[nvidia-smi 使用指南](03_nvidia_smi_guide.md)** —— 日常查询 GPU 状态时的第一入口，涵盖常用子命令与指标解读。
 - **[nvtop 监控工具](04_nvtop_guide.md)** —— 交互式 TUI，适合在终端里实时观察多卡负载。
+- **[DCGM 监控实操](05_dcgm_monitoring.md)** —— NVIDIA 官方数据中心级 GPU 监控方案，含实时 dmon、NVLink 状态、Prometheus 集成。
+- **[GPU 集群健康检查](06_gpu_health_check.md)** —— 系统化三层检查流程（L1 扫一眼 / L2 结构诊断 / L3 压力验证），含 GPU 7 真实异常案例。
+- **[GPU 进程与资源管理](07_gpu_process_management.md)** —— Compute Mode、CUDA_VISIBLE_DEVICES 隔离、NUMA 亲和性绑定、显存泄漏排查。
 
 ---
 
@@ -22,5 +25,3 @@
 - [GPU 架构文档](../../01_hardware_architecture/README.md) —— 向下看硬件层结构。
 - [NCCL 通信测试](../03_nccl/README.md) —— 多卡工作正常后，再往分布式通信方向延伸。
 - [性能分析工具](../../02_gpu_programming/04_profiling/README.md) —— 想从“有没有在跑”深入到“跑得好不好”的时候，切到这条线。
-
----
