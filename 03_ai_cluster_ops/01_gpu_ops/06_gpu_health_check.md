@@ -90,18 +90,87 @@ gpuId 7:   _ _ _ _ _ _ _ _ _ _ _ _   ← 0 links, all Not Supported
 
 **判断**：gpuId 0-6 的 12 条 link 全部 `U`（Up），速率 25 GB/s → NVLink 3.0 健康。gpuId 7 全部 `_` → 物理层故障。
 
-### 3.3 ECC 错误
+### 3.3 ECC 错误与 Retired Pages
+
+ECC 是数据中心 GPU 的标配——A100 上默认启用，覆盖 HBM 显存和内部 SRAM。
+
+#### ECC 模式确认
 
 ```bash
-nvidia-smi --query-gpu=index,ecc.errors.corrected.volatile.total,ecc.errors.uncorrected.volatile.total --format=csv
+nvidia-smi --query-gpu=index,ecc.mode.current --format=csv
 ```
 
-| 错误类型             | 可接受值 | 需关注     | 需立即处理 |
-| -------------------- | -------- | ---------- | ---------- |
-| Corrected (单比特)   | 0-10/day | > 100/day  | > 1000/day |
-| Uncorrected (双比特) | **0**    | 任何非零值 | > 0        |
+本节点全部 8 GPU 均为 `Enabled`——数据中心 GPU 默认状态。
 
-> ECC 单比特错误会被硬件自动纠正，不影响计算正确性。但快速增长的单比特错误暗示 HBM 模块可能退化。
+#### Volatile vs Aggregate
+
+```bash
+nvidia-smi --query-gpu=index,ecc.errors.corrected.volatile.total,ecc.errors.uncorrected.volatile.total,ecc.errors.corrected.aggregate.total,ecc.errors.uncorrected.aggregate.total --format=csv
+```
+
+当前输出（全部 `0`，仅 GPU 2 有 1 个 aggregate corrected 历史记录）：
+
+| 类型          | 含义                                  | 重置方式                  |
+| ------------- | ------------------------------------- | ------------------------- |
+| **Volatile**  | 自上次驱动加载/GPU 重置以来的错误计数 | 重启驱动或 GPU 重置后清零 |
+| **Aggregate** | GPU 整个生命周期内的累计错误          | 不可清零（硬件记录）      |
+
+> **关键区分**：Volatile = 0 但 Aggregate > 0 → GPU 过去曾遇到错误但当前正常，无需处理。**Volatile 持续增长**才是需要关注的信号——说明自上次重启以来 HBM 仍在产生新的单比特错误。
+
+#### 可接受的错误频率
+
+| 错误类型               | 正常           | 需关注                | 需立即处理 |
+| ---------------------- | -------------- | --------------------- | ---------- |
+| Corrected / Volatile   | 0-10/day       | > 100/day             | > 1000/day |
+| Uncorrected / Volatile | **必须为 0**   | 任何非零值            | > 0        |
+| Corrected / Aggregate  | 任何值（历史） | Volatile 与之同步增长 | —          |
+
+#### SRAM vs DRAM 错误
+
+```bash
+nvidia-smi -i <ID> -q | grep -A8 'ECC Errors'
+```
+
+输出区分两类错误的来源：
+
+```text
+Volatile
+    SRAM Correctable           : 0     ← GPU 内部 SRAM (寄存器文件、L1、共享内存)
+    SRAM Uncorrectable         : 0
+    DRAM Correctable           : 0     ← HBM 显存
+    DRAM Uncorrectable         : 0
+```
+
+- **SRAM 错误**：影响计算单元内部缓存。少量 correctable 可接受，uncorrectable 可能导致静默数据损坏
+- **DRAM 错误**：影响 HBM 显存。单比特自动纠正，双比特不可纠正——如果 DRAM Uncorrectable > 0，立即停用该 GPU
+
+#### Retired Pages 与 Remapped Rows
+
+当 HBM 某个内存页反复出现单比特错误，GPU 固件会将其标记为 "retired"（退役），用备用内存行替换：
+
+```bash
+nvidia-smi -i <ID> -q | grep -A20 'Retired'
+```
+
+```text
+Retired Pages
+    Single Bit ECC            : N/A    ← A100 上此字段不再使用
+    Double Bit ECC            : N/A
+    Pending Page Blacklist    : N/A
+Remapped Rows
+    Correctable Error         : 0      ← 因单比特错误被重映射的行数
+    Uncorrectable Error       : 0      ← 因双比特错误被重映射的行数
+    Pending                   : No     ← 有待处理的重映射？
+    Remapping Failure Occurred: No     ← 重映射失败？（备用行耗尽）
+```
+
+| 字段                         | 含义                        | 危险信号             |
+| ---------------------------- | --------------------------- | -------------------- |
+| `Correctable Error`          | 已被 remap 的单比特错误行数 | > 100 说明 HBM 老化  |
+| `Uncorrectable Error`        | 已被 remap 的双比特错误行数 | **> 0 立即停用**     |
+| `Remapping Failure Occurred` | 备用行耗尽，无法再 remap    | **Yes = GPU 需更换** |
+
+> 本节点 GPU 3 的 Remapped Rows 全部为 0，无重映射记录——HBM 健康。
 
 ### 3.4 MIG 模式一致性
 
