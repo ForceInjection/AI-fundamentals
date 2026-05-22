@@ -4,13 +4,36 @@
 #       不提供 .pth 时自动创建 ResNet-50 并导出
 
 set -e
+
 MODEL_PTH="${1:-}"
 INPUT_SIZE=224
 OUTPUT_NAME="resnet50_910B3"
+PRECISION="${PRECISION_MODE:-force_fp32}"
 
 # ── 加载环境 ──
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /root/npu-learning/venv/bin/activate
+ASCEND_HOME="${ASCEND_HOME:-/usr/local/Ascend}"
+SET_ENV="$ASCEND_HOME/ascend-toolkit/set_env.sh"
+if [ -f "$SET_ENV" ]; then
+    source "$SET_ENV"
+else
+    echo "警告: 未找到 $SET_ENV，请设置 ASCEND_HOME 环境变量" >&2
+fi
+VENV_PATH="${VENV_PATH:-/root/npu-learning/venv/bin/activate}"
+if [ -f "$VENV_PATH" ]; then
+    source "$VENV_PATH"
+else
+    echo "警告: 未找到虚拟环境 $VENV_PATH" >&2
+fi
+
+# ── 依赖预检 ──
+if ! command -v python3 &>/dev/null; then
+    echo "错误: python3 未找到" >&2
+    exit 1
+fi
+python3 -c "import torch, torchvision" 2>/dev/null || {
+    echo "错误: 未安装 PyTorch 或 torchvision，请先激活正确的 Python 环境" >&2
+    exit 1
+}
 
 echo "=== ATC 模型转换 ==="
 
@@ -23,7 +46,11 @@ if [ -n "$MODEL_PTH" ] && [ -f "$MODEL_PTH" ]; then
 import torch
 import torchvision.models as models
 model = models.resnet50(weights=None)
-model.load_state_dict(torch.load('$MODEL_PTH', map_location='cpu', weights_only=True), strict=True)
+try:
+    state_dict = torch.load('$MODEL_PTH', map_location='cpu', weights_only=True)
+except TypeError:
+    state_dict = torch.load('$MODEL_PTH', map_location='cpu')
+model.load_state_dict(state_dict, strict=True)
 model.eval()
 dummy = torch.randn(1, 3, $INPUT_SIZE, $INPUT_SIZE)
 torch.onnx.export(model, dummy, '$ONNX_FILE',
@@ -59,7 +86,7 @@ atc --model="$ONNX_FILE" \
     --soc_version=Ascend910B3 \
     --input_shape="input:1,3,${INPUT_SIZE},${INPUT_SIZE}" \
     --input_format=NCHW \
-    --precision_mode=force_fp32 \
+    --precision_mode="$PRECISION" \
     --log=error
 
 OM_FILE="${OUTPUT_NAME}.om"
