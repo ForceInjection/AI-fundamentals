@@ -1,6 +1,6 @@
 # 华为 NPU 编程入门
 
-系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析**八大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
+系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → FlashAttention**九大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
 
 > **快速导航**
 >
@@ -14,6 +14,7 @@
 > | `06_advanced/`            | 进阶主题                    | Ascend C 自定义算子, GPU→NPU 迁移决策   | §6       |
 > | `07_rag_on_npu/`          | RAG 检索增强生成 on NPU     | Embedding, FAISS, BGE, LLM API          | §7       |
 > | `08_npu_profiling/`       | NPU 性能分析                | Profiler, npu-smi, TFLOPS, Chrome trace | §8       |
+> | `09_flash_attention/`     | FlashAttention 简化版       | Tiling, Online Softmax, O(N²)→O(N)      | §9       |
 
 ---
 
@@ -129,7 +130,15 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 
 ---
 
-## 9. 参考链接
+## 9. FlashAttention 实战
+
+手写 FlashAttention forward pass，理解 online softmax 的数学原理和 tiling 分块策略。标准 attention 的 O(N²) 显存瓶颈是如何通过 `correction = exp(m_old - m_new)` 一行代码解决的。HBM 峰值从 130 MB 降至 1 MB（节省 95%），数值精度 max_diff < 1e-6。
+
+- [FlashAttention 简化版](09_flash_attention/01_flash_attention.md) — online softmax 推导、tiling 伪代码、精度/显存/速度对比、Python 实现不加速的原因分析
+
+---
+
+## 10. 参考链接
 
 - [昇腾社区官网](https://www.hiascend.com)
 - [Ascend PyTorch 适配 (Gitee)](https://gitee.com/ascend/pytorch)
