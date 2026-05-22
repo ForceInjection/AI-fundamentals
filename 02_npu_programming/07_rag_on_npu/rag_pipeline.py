@@ -173,6 +173,15 @@ class EmbeddingEngine:
             sum_embeddings = torch.sum(token_embeddings * mask_expanded, dim=1)
             sum_mask = mask_expanded.sum(dim=1).clamp(min=1e-9)
             mean_embeddings = sum_embeddings / sum_mask
+
+            # 检查全零 mask（空输入或全部截断），返回零向量避免 NaN
+            valid_mask = sum_mask.squeeze(-1) > 1e-8
+            if not valid_mask.any():
+                mean_embeddings = torch.zeros(
+                    mean_embeddings.shape[0], mean_embeddings.shape[-1],
+                    device=self.device
+                )
+
             # L2 归一化
             mean_embeddings = torch.nn.functional.normalize(
                 mean_embeddings, p=2, dim=1
@@ -220,10 +229,13 @@ class VectorStore:
         return results
 
     def save(self, path: str):
-        faiss.write_index(self.index, f"{path}.index")
-        with open(f"{path}.chunks.json", "w", encoding="utf-8") as f:
-            json.dump(self.chunks, f, ensure_ascii=False, indent=2)
-        print(f"索引已保存: {path}.index + {path}.chunks.json ({len(self.chunks)} 条)")
+        try:
+            faiss.write_index(self.index, f"{path}.index")
+            with open(f"{path}.chunks.json", "w", encoding="utf-8") as f:
+                json.dump(self.chunks, f, ensure_ascii=False, indent=2)
+            print(f"索引已保存: {path}.index + {path}.chunks.json ({len(self.chunks)} 条)")
+        except (IOError, OSError) as e:
+            raise RuntimeError(f"保存索引失败（磁盘空间或权限问题）: {e}") from e
 
     @classmethod
     def load(cls, path: str, dim: int) -> "VectorStore":
@@ -264,8 +276,21 @@ class LLMClient:
 
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
+                if resp.status != 200:
+                    error_body = resp.read().decode("utf-8", errors="ignore")
+                    raise RuntimeError(
+                        f"API 返回错误状态码 {resp.status}: {error_body[:500]}"
+                    )
                 body = json.loads(resp.read().decode("utf-8"))
+            if not body.get("choices") or len(body["choices"]) == 0:
+                raise RuntimeError("API 响应缺少 choices 字段")
+            if not body["choices"][0].get("message"):
+                raise RuntimeError("API 响应格式异常：缺少 message 字段")
             return body["choices"][0]["message"]["content"]
+        except (urllib.error.HTTPError, urllib.error.URLError) as e:
+            raise RuntimeError(f"网络请求失败: {e}") from e
+        except (KeyError, IndexError, TypeError) as e:
+            raise RuntimeError(f"API 响应格式错误: {e}") from e
         except Exception as e:
             raise RuntimeError(f"LLM API 调用失败: {e}") from e
 

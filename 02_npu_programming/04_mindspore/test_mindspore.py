@@ -16,3 +16,6 @@ if ascend_ok:
 else:
     print("Ascend not available, running on CPU")
     ms.set_context(device_target="CPU")
+    x = ms.Tensor([1.0, 2.0, 3.0], ms.float32)
+    print(f"Tensor: {x}")
+    print("MindSpore on CPU OK!")
