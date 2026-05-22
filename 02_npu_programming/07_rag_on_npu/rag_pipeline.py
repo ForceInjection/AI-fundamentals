@@ -84,7 +84,8 @@ class TextChunker:
             overlapped = []
             for i, chunk in enumerate(chunks):
                 if i > 0:
-                    prev_tail = chunks[i - 1][-self.chunk_overlap:]
+                    overlap_len = min(self.chunk_overlap, len(chunks[i - 1]))
+                    prev_tail = chunks[i - 1][-overlap_len:]
                     chunk = prev_tail + "\n" + chunk
                 overlapped.append(chunk)
             chunks = overlapped
@@ -174,12 +175,13 @@ class EmbeddingEngine:
             sum_mask = mask_expanded.sum(dim=1).clamp(min=1e-9)
             mean_embeddings = sum_embeddings / sum_mask
 
-            # 检查全零 mask（空输入或全部截断），返回零向量避免 NaN
+            # 全零 mask 的行（空输入或全部截断）置为零向量，避免 NaN
             valid_mask = sum_mask.squeeze(-1) > 1e-8
-            if not valid_mask.any():
-                mean_embeddings = torch.zeros(
-                    mean_embeddings.shape[0], mean_embeddings.shape[-1],
-                    device=self.device
+            if not valid_mask.all():
+                mean_embeddings = torch.where(
+                    valid_mask.unsqueeze(-1),
+                    mean_embeddings,
+                    torch.zeros_like(mean_embeddings)
                 )
 
             # L2 归一化
@@ -230,18 +232,20 @@ class VectorStore:
 
     def save(self, path: str):
         try:
-            faiss.write_index(self.index, f"{path}.index")
-            with open(f"{path}.chunks.json", "w", encoding="utf-8") as f:
+            base = os.path.splitext(path)[0]
+            faiss.write_index(self.index, f"{base}.index")
+            with open(f"{base}.chunks.json", "w", encoding="utf-8") as f:
                 json.dump(self.chunks, f, ensure_ascii=False, indent=2)
-            print(f"索引已保存: {path}.index + {path}.chunks.json ({len(self.chunks)} 条)")
+            print(f"索引已保存: {base}.index + {base}.chunks.json ({len(self.chunks)} 条)")
         except (IOError, OSError) as e:
             raise RuntimeError(f"保存索引失败（磁盘空间或权限问题）: {e}") from e
 
     @classmethod
     def load(cls, path: str, dim: int) -> "VectorStore":
         store = cls(dim)
-        store.index = faiss.read_index(f"{path}.index")
-        with open(f"{path}.chunks.json", "r", encoding="utf-8") as f:
+        base = os.path.splitext(path)[0]
+        store.index = faiss.read_index(f"{base}.index")
+        with open(f"{base}.chunks.json", "r", encoding="utf-8") as f:
             store.chunks = json.load(f)
         print(f"索引已加载: {len(store.chunks)} 条, dim={store.dim}")
         return store
@@ -276,12 +280,12 @@ class LLMClient:
 
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
+                resp_body = resp.read().decode("utf-8", errors="ignore")
                 if resp.status != 200:
-                    error_body = resp.read().decode("utf-8", errors="ignore")
                     raise RuntimeError(
-                        f"API 返回错误状态码 {resp.status}: {error_body[:500]}"
+                        f"API 返回错误状态码 {resp.status}: {resp_body[:500]}"
                     )
-                body = json.loads(resp.read().decode("utf-8"))
+                body = json.loads(resp_body)
             if not body.get("choices") or len(body["choices"]) == 0:
                 raise RuntimeError("API 响应缺少 choices 字段")
             if not body["choices"][0].get("message"):
