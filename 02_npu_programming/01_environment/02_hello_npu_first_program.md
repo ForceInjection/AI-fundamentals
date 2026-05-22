@@ -47,7 +47,7 @@ print(f"设备: {z.device}")  # npu:0
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /root/npu-learning/venv/bin/activate
+source /home/user/npu-learning/venv/bin/activate
 ASCEND_RT_VISIBLE_DEVICES=7 python3 hello_npu.py
 ```
 

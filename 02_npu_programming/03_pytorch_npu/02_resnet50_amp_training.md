@@ -53,7 +53,7 @@ CANN TBE 依赖安装和环境变量加载顺序是 NPU 训练最常见的两个
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /root/npu-learning/venv/bin/activate
+source /home/user/npu-learning/venv/bin/activate
 ASCEND_RT_VISIBLE_DEVICES=7 msprof \
   --output=/tmp/prof_resnet50 \
   --application="python3 train_resnet50.py --epochs 1"

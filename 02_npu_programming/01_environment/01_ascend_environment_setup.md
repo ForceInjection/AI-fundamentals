@@ -10,7 +10,7 @@
 | Python    | 3.10.12                      |
 | PyTorch   | 2.1.0                        |
 | torch_npu | 2.1.0.post13                 |
-| 虚拟环境  | `/root/npu-learning/venv`    |
+| 虚拟环境  | `/home/user/npu-learning/venv`    |
 
 ## 2. 安装步骤
 
@@ -21,7 +21,7 @@
 apt install -y python3.10-venv
 
 # 创建虚拟环境
-python3 -m venv /root/npu-learning/venv
+python3 -m venv /home/user/npu-learning/venv
 ```
 
 ### 2.2 加载 CANN 环境并安装依赖
@@ -30,7 +30,7 @@ python3 -m venv /root/npu-learning/venv
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /root/npu-learning/venv/bin/activate
+source /home/user/npu-learning/venv/bin/activate
 
 # ARM 架构 (aarch64) — 不需要额外 index URL
 pip install torch==2.1.0
@@ -74,7 +74,7 @@ GEInitialize failed
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /root/npu-learning/venv/bin/activate
+source /home/user/npu-learning/venv/bin/activate
 ASCEND_RT_VISIBLE_DEVICES=7 python3 -c "
 import torch
 import torch_npu
