@@ -53,8 +53,10 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scaler=None, device
     total_samples = 0
     batch_times = []
 
-    # warmup
-    model(torch.randn(4, 3, 224, 224).to(device))
+    # warmup: 用 no_grad 避免梯度累积
+    with torch.no_grad():
+        for _ in range(3):
+            model(torch.randn(4, 3, 224, 224).to(device))
 
     for batch_idx, (images, labels) in enumerate(dataloader):
         images = images.to(device)
@@ -80,6 +82,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scaler=None, device
             loss.backward()
             optimizer.step()
 
+        # 为准确计时强制同步，会牺牲部分流水线并行
         torch.npu.synchronize()
         batch_time = time.time() - t0
         batch_times.append(batch_time)
@@ -125,6 +128,7 @@ def main():
     mem_before = torch.npu.memory_allocated() / 1024**2
 
     all_throughputs = []
+    all_max_mem = []
     for epoch in range(args.epochs):
         avg_loss, throughput, batch_times = train_one_epoch(
             model, dataloader, criterion, optimizer, scaler, device
@@ -144,7 +148,7 @@ def main():
     print("=" * 60)
     print(f"  混合精度:     {'AMP (FP16)' if args.amp else 'FP32'}")
     print(f"  平均吞吐:     {avg_throughput:.1f} img/s")
-    print(f"  NPU 内存峰值: {max_mem:.0f} MB")
+    print(f"  NPU 内存变化: {mem_after - mem_before:.0f} MB (峰值 {max_mem:.0f} MB)")
 
     if args.amp:
         print("\n  注: AMP 使用 FP16 训练，理论内存占用约为 FP32 的 50%")

@@ -78,8 +78,9 @@ def matmul_benchmark():
     # NPU 运算
     a_npu = a_cpu.npu()
     b_npu = b_cpu.npu()
-    # Warmup
-    _ = torch.matmul(a_npu, b_npu)
+    # Warmup: 多次执行确保算子编译完成和内存状态稳定
+    for _ in range(5):
+        _ = torch.matmul(a_npu, b_npu)
     torch.npu.synchronize()
 
     t0 = time.time()
@@ -109,7 +110,7 @@ def memory_info():
 def main():
     if not check_environment():
         print("\n环境检查失败，脚本退出。")
-        return
+        sys.exit(1)
     basic_tensor_ops()
     matmul_benchmark()
     memory_info()
