@@ -26,11 +26,10 @@ def get_dummy_dataloader(batch_size=64, num_batches=50, image_size=224):
     class DummyDataset(torch.utils.data.Dataset):
         def __init__(self, size=5000):
             self.size = size
-            self.transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225]),
-            ])
+            self.normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            )
 
         def __len__(self):
             return self.size
@@ -38,6 +37,7 @@ def get_dummy_dataloader(batch_size=64, num_batches=50, image_size=224):
         def __getitem__(self, idx):
             img = torch.randn(3, image_size, image_size)
             img = torch.clamp(img, -3, 3)
+            img = self.normalize(img)
             label = idx % 1000
             return img, label
 
@@ -65,6 +65,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, scaler=None, device
         if scaler is not None:
             # AMP 路径
             optimizer.zero_grad()
+            # torch_npu 的 NPU AMP 接口，等价于 CUDA 的 torch.cuda.amp.autocast()
             with torch.npu.amp.autocast():
                 outputs = model(images)
                 loss = criterion(outputs, labels)

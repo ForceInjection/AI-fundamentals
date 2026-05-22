@@ -109,7 +109,11 @@ def print_npu_metric(label: str, before: dict, after: dict, key: str, unit: str 
 
 # ── ascend-dmi 带宽测试 ──
 
-ASCEND_DMI = "/usr/local/Ascend/toolbox/6.0.0/Ascend-DMI/bin/ascend-dmi"
+ASCEND_DMI = os.environ.get("ASCEND_DMI_PATH", "")
+if not ASCEND_DMI:
+    import glob as _glob
+    candidates = _glob.glob("/usr/local/Ascend/toolbox/*/Ascend-DMI/bin/ascend-dmi")
+    ASCEND_DMI = candidates[0] if candidates else "ascend-dmi"
 
 
 def bandwidth_benchmark(device_id: int = 7):
@@ -150,7 +154,7 @@ def profile_matmul(runner: ProfileRunner, size: int = 8192,
     a_cpu = torch.randn(size, size)
     b_cpu = torch.randn(size, size)
 
-    # CPU baseline (小尺寸或首次)
+    # NPU 测试前的数据准备与 warmup
     a_npu = a_cpu.to(device)
     b_npu = b_cpu.to(device)
     # warmup
@@ -341,7 +345,8 @@ def main():
         profile_resnet50(runner, args.device)
 
     if args.bench in ("monitor", "all"):
-        monitor_during_workload(device_id=7, device=args.device)
+        device_id = int(args.device.split(":")[-1]) if ":" in args.device else 0
+        monitor_during_workload(device_id=device_id, device=args.device)
 
     if args.bench in ("bandwidth", "all"):
         bandwidth_benchmark(device_id=7)

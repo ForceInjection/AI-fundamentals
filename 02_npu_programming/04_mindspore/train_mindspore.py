@@ -129,8 +129,6 @@ def train_one_epoch(net, dataset, optimizer, loss_fn):
         loss, grads = grad_fn(images, labels)
         optimizer(grads)
 
-        ms.hal.synchronize()
-
         batch_time = time.time() - t0
         batch_times.append(batch_time)
 
@@ -139,7 +137,7 @@ def train_one_epoch(net, dataset, optimizer, loss_fn):
 
     avg_loss = total_loss / total_samples
     avg_batch_time = sum(batch_times[1:]) / len(batch_times[1:]) if len(batch_times) > 1 else batch_times[0]
-    throughput = 64 / avg_batch_time
+    throughput = images.shape[0] / avg_batch_time
 
     return avg_loss, throughput
 

@@ -23,7 +23,7 @@ if [ -n "$MODEL_PTH" ] && [ -f "$MODEL_PTH" ]; then
 import torch
 import torchvision.models as models
 model = models.resnet50(weights=None)
-model.load_state_dict(torch.load('$MODEL_PTH', map_location='cpu'))
+model.load_state_dict(torch.load('$MODEL_PTH', map_location='cpu', weights_only=True), strict=True)
 model.eval()
 dummy = torch.randn(1, 3, $INPUT_SIZE, $INPUT_SIZE)
 torch.onnx.export(model, dummy, '$ONNX_FILE',
@@ -49,12 +49,17 @@ echo "  ONNX 模型: $ONNX_FILE ($ONNX_SIZE)"
 
 # ── Step 2: ONNX → OM ──
 echo "[2/2] ATC 编译 ONNX → OM..."
+if ! command -v atc &>/dev/null; then
+    echo "错误: atc 未找到，请先 source set_env.sh"
+    exit 1
+fi
 atc --model="$ONNX_FILE" \
     --framework=5 \
     --output="$OUTPUT_NAME" \
     --soc_version=Ascend910B3 \
     --input_shape="input:1,3,${INPUT_SIZE},${INPUT_SIZE}" \
     --input_format=NCHW \
+    --precision_mode=force_fp32 \
     --log=error
 
 OM_FILE="${OUTPUT_NAME}.om"
