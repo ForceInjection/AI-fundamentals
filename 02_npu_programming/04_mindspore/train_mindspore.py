@@ -10,6 +10,7 @@ MindSpore 实战: 在 Ascend 上训练卷积网络
   ASCEND_RT_VISIBLE_DEVICES=7 python3 train_mindspore.py [--graph]
 """
 
+import os
 import mindspore as ms
 from mindspore import nn, ops, Tensor
 from mindspore.dataset import GeneratorDataset
@@ -150,7 +151,9 @@ def main():
 
     mode_name = "Graph" if args.graph else "PyNative"
     mode = ms.GRAPH_MODE if args.graph else ms.PYNATIVE_MODE
-    ms.set_context(mode=mode, device_target="Ascend", device_id=0)
+    # ASCEND_RT_VISIBLE_DEVICES 已将物理 NPU 重映射为逻辑 device 0
+    device_id = 0
+    ms.set_context(mode=mode, device_target="Ascend", device_id=device_id)
 
     print("=" * 60)
     print(f"  MindSpore ResNet-50 Training (mode={mode_name})")
@@ -163,12 +166,13 @@ def main():
 
     optimizer = nn.SGD(net.trainable_params(), learning_rate=0.01, momentum=0.9)
     loss_fn = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
-    dataset = create_dataset(batch_size=64, num_batches=50)
+    batch_size = 64
+    dataset = create_dataset(batch_size=batch_size, num_batches=50)
 
-    # Warmup
+    # Warmup: 多次前向传播预热图编译和算子缓存
     print("  Warming up...")
-    warmup = Tensor(np.random.randn(4, 3, 224, 224).astype(np.float32))
-    _ = net(warmup)
+    for _ in range(3):
+        _ = net(Tensor(np.random.randn(batch_size, 3, 224, 224).astype(np.float32)))
     print("  Ready.\n")
 
     all_throughputs = []
