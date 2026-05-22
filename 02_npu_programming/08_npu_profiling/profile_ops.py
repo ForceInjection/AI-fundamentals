@@ -75,6 +75,8 @@ def npu_smi_snapshot(device_id: int = 7) -> dict:
         ["npu-smi", "info", "-t", "usages", "-i", str(device_id)],
         capture_output=True, text=True
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"npu-smi 执行失败 (device {device_id}): {result.stderr}")
     metrics = {}
     for line in result.stdout.split("\n"):
         line = line.strip()
@@ -124,10 +126,17 @@ def bandwidth_benchmark(device_id: int = 7):
 
     # HBM d2d (device-to-device) 带宽
     print("\n[1] HBM device-to-device 带宽:")
-    result = subprocess.run(
-        [ASCEND_DMI, "--bw", "-i", str(device_id), "-t", "h2d,d2h,d2d"],
-        capture_output=True, text=True, timeout=120
-    )
+    try:
+        result = subprocess.run(
+            [ASCEND_DMI, "--bw", "-i", str(device_id), "-t", "h2d,d2h,d2d"],
+            capture_output=True, text=True, timeout=120
+        )
+    except FileNotFoundError:
+        print(f"  错误: 未找到 ascend-dmi (ASCEND_DMI={ASCEND_DMI})")
+        return
+    except subprocess.TimeoutExpired:
+        print("  错误: ascend-dmi 带宽测试超时")
+        return
     for line in result.stdout.split("\n"):
         if any(kw in line for kw in ["BW", "bandwidth", "Bandwidth", "GB/s", "MB/s", "throughput"]):
             print(f"  {line.strip()}")
@@ -296,6 +305,10 @@ def monitor_during_workload(device_id: int = 7, device: str = "npu:0"):
 
     after = npu_smi_snapshot(device_id)
 
+    # 释放大矩阵显存
+    del a, b
+    torch.npu.empty_cache()
+
     print_npu_monitor_header()
     print_npu_metric("AI Core 利用率", before, after, "aicore_pct")
     print_npu_metric("AI Vector 利用率", before, after, "aivector_pct")
@@ -349,7 +362,8 @@ def main():
         monitor_during_workload(device_id=device_id, device=args.device)
 
     if args.bench in ("bandwidth", "all"):
-        bandwidth_benchmark(device_id=7)
+        device_id = int(args.device.split(":")[-1]) if ":" in args.device else 0
+        bandwidth_benchmark(device_id=device_id)
 
     print(f"\n所有 trace 文件保存在: {Path(args.output).absolute()}")
     print("用 Chrome 打开 trace JSON: chrome://tracing → Load")
