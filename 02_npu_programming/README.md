@@ -1,6 +1,6 @@
 # 华为 NPU 编程入门
 
-系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → FlashAttention**九大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
+系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → Mini-GPT → FlashAttention**十大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
 
 > **快速导航**
 >
@@ -15,6 +15,7 @@
 > | `07_rag_on_npu/`          | RAG 检索增强生成 on NPU     | Embedding, FAISS, BGE, LLM API          | §7       |
 > | `08_npu_profiling/`       | NPU 性能分析                | Profiler, npu-smi, TFLOPS, Chrome trace | §8       |
 > | `09_flash_attention/`     | FlashAttention 简化版       | Tiling, Online Softmax, O(N²)→O(N)      | §9       |
+> | `10_mini_gpt/`            | Mini-GPT 手写 Transformer   | Self-Attention, Causal Mask, 字符级编码  | §10      |
 
 ---
 
@@ -138,7 +139,15 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 
 ---
 
-## 10. 参考链接
+## 10. Mini-GPT 实战
+
+从零手写 GPT-2 风格 decoder-only Transformer，在单张 NPU 上完成训练和文本生成。覆盖 Self-Attention、Multi-Head、FFN、残差连接、LayerNorm、Position Embedding 六大核心机制的数学推导与代码实现。~11M 参数，2000 iters 训练 43 秒。
+
+- [Mini-GPT 训练详解](10_mini_gpt/01_mini_gpt_training.md) — Transformer 核心机制剖析、模型架构设计、训练过程、文本生成策略、实测 loss 曲线与生成效果
+
+---
+
+## 11. 参考链接
 
 - [昇腾社区官网](https://www.hiascend.com)
 - [Ascend PyTorch 适配 (Gitee)](https://gitee.com/ascend/pytorch)
