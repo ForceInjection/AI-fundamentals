@@ -135,5 +135,4 @@ DeepSeek 凭借 MLA、MoE 与宽端点并行（WideEP）等专有设计，结合
 
 通过精简版开源实现拆解推理引擎核心机制，直击大模型推理的底层抽象与调度逻辑。
 
-- **[nano-vllm 源码解析](nano-vllm/)**：极简版 vLLM 实现。在 1200 行代码中保留 PagedAttention、连续批处理、TP 与 CUDA Graph 等核心机制。
-- **[nano-vllm 实战课程](nano-vllm/docs/llm-inference-visual/README.md)**：从端到端主干流程切入，拆解 Sequence 生命周期、调度器队列、显存管理与注意力算子分支。
+- **[nano-vllm](https://github.com/ForceInjection/nano-vllm)**：极简版 vLLM 实现，约 1400 行代码中保留 PagedAttention、连续批处理、TP 与 CUDA Graph 等核心机制。在线 PPT：[nano-vllm 实战课程](https://forceinjection.github.io/nano-vllm/)。
