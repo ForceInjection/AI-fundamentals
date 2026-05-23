@@ -24,15 +24,6 @@ feat(scope): description
 
 Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `training`, `llm-theory`, `rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `submodule`. Look at `git log --oneline` for recent examples before committing.
 
-## Git submodule
-
-`09_inference_system/nano-vllm` is a git submodule pointing to `https://github.com/ForceInjection/nano-vllm`. After cloning, run:
-
-```bash
-git submodule update --init --recursive
-```
-
-When the submodule reference is updated, commit it as `chore(submodule): <description>`.
 
 ## File conventions
 
