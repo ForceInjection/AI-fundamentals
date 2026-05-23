@@ -19,9 +19,9 @@ RAG pipeline 中最适合 NPU 加速的环节是 **embedding 编码**。将文�
 本实验将 embedding 推理部署在 NPU 上。LLM 生成部分支持两种模式：
 
 - **外部 API**（默认）：通过 OpenAI 兼容接口调用云端模型，适合需要大模型能力的场景
-- **本地推理**（`--local`）：在 NPU 上直接运行 Qwen2.5-0.5B-Instruct，实现全链路本地化，无需网络、无需 API Key
+- **本地推理**（`--local`）：在 NPU 上直接运行 Qwen2.5-7B-Instruct（BF16），实现全链路本地化，无需网络、无需 API Key。也支持通过 `--llm-model` 切换 0.5B 等其他模型
 
-这是一种典型的"算力就近原则"：计算密集的编码放在本地加速器，生成部分可根据需求选择云端大模型或本地小模型。
+这是一种典型的"算力就近原则"：计算密集的编码放在本地加速器，生成部分可根据需求选择云端大模型或本地模型。
 
 ### 1.3 完整流程
 
@@ -198,7 +198,7 @@ ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py ask "什么是 NPU?"
 ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py ask --local "什么是 NPU?"
 ```
 
-加上 `--local` 后，脚本会自动加载 Qwen2.5-0.5B-Instruct 到 NPU 进行推理，无需配置任何 API 环境变量。模型首次运行从 HuggingFace 下载（~1GB），后续加载使用缓存（约 9 秒）。
+加上 `--local` 后，脚本会自动加载 Qwen2.5-7B-Instruct（BF16）到 NPU 进行推理，无需配置任何 API 环境变量。模型首次运行从 HuggingFace 下载（~15GB），后续加载使用缓存。可通过 `--llm-model` 切换模型（如 `--llm-model Qwen/Qwen2.5-0.5B-Instruct` 使用 0.5B）。
 
 一次完整的 RAG 调用包含 4 步：编码查询 → 向量检索 → 拼接 prompt → 调用 LLM。返回结果包含答案、引用来源列表、各阶段耗时。
 
@@ -422,18 +422,26 @@ prompt = (
 
 与外部 API 的对比：
 
-| 特性     | 外部 API            | 本地 LLM（0.5B）        |
-| -------- | ------------------- | ----------------------- |
-| 回答质量 | 高（大模型）        | 一般（0.5B 能力有限）   |
-| 延迟     | 网络延迟 + 推理时间 | 纯推理时间（~18 tok/s） |
-| 隐私     | 数据发送至第三方    | 数据不出服务器          |
-| 依赖     | 需要网络 + API Key  | 仅需 NPU + 模型文件     |
-| 适用场景 | 生产环境、复杂问题  | 开发测试、隐私敏感场景  |
+| 特性     | 外部 API            | 本地 LLM（7B BF16）    | 本地 LLM（0.5B）       |
+| -------- | ------------------- | ---------------------- | ---------------------- |
+| 回答质量 | 高（大模型）        | 良好（7B，谨慎但准确） | 一般（0.5B 能力有限）  |
+| HBM 占用 | —                   | ~15 GB                 | ~1 GB                  |
+| 延迟     | 网络延迟 + 推理时间 | 纯推理时间             | 纯推理时间             |
+| 隐私     | 数据发送至第三方    | 数据不出服务器         | 数据不出服务器         |
+| 依赖     | 需要网络 + API Key  | 仅需 NPU + 模型文件    | 仅需 NPU + 模型文件    |
+| 适用场景 | 生产环境、复杂问题  | 高质量本地 RAG         | 快速验证、资源受限场景 |
 
-实测观察：0.5B 模型对于简单定义类问题能给出基本合理的回答，但对于需要从多段参考资料中提取和归纳具体步骤的问题（如"如何安装 torch_npu"），容易给出模糊或部分正确的回答。检索环节工作正常（相关文档被准确召回），瓶颈在生成环节的模型能力。
+实测对比（BF16 推理）：
 
-> [!WARNING]
-> Qwen2.5-7B-Instruct 在当前 NPU 栈（CANN 8.0.1 + torch_npu 2.1.0 + transformers 4.38.2）上输出异常（生成随机 URL 和特殊字符），0.5B 模型则正常。该问题与模型来源（HuggingFace / ModelScope）无关，推测为 7B 模型的特定架构（GQA 28 heads / 4 KV heads）与旧版 torch_npu 存在兼容性问题。升级 CANN 或使用更新版本的 PyTorch NPU 插件可能解决，待后续验证。
+| 问题                   | 7B                                                                 | 0.5B                                              |
+| ---------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| "什么是 NPU？"         | "参考资料中未提及"（严格遵循指令）                                 | "NPU 是一种专用处理器，专为 AI 任务设计..."       |
+| "如何安装 torch_npu？" | "未提及具体步骤，但可推断需 `pip install torch-npu==2.1.0.post13`" | "需要在代码中导入 torch_npu，检查 is_available()" |
+
+7B 模型更谨慎、更诚实（严格遵守"不要编造"指令），但有时过于保守；0.5B 更愿意给出泛泛的描述，但可能不准确。通过 `--llm-model` 参数可随时切换。
+
+> [!NOTE]
+> Qwen2.5-7B-Instruct 在 FP16 下会产生 NaN（深层激活值导致 Attention 点积溢出），但在 **BF16** 下完全正常。BF16 的 8 位指数（与 FP32 相同）提供了足够的动态范围，且 HBM 占用与 FP16 相同（~15 GB）。详见 [Qwen2.5-7B FP16 NaN 诊断报告](../11_llm_inference/02_fp16_nan_debug.md)。
 
 ---
 
@@ -444,24 +452,22 @@ prompt = (
 ├── README.md
 ├── 01_rag_pipeline_on_npu.md    # 本文
 └── rag_pipeline.py              # RAG 完整 pipeline，包含以下类:
-                                    DocumentLoader   — 文档加载（.md/.txt/.rst）
-                                    TextChunker      — 滑动窗口文本分块
-                                    EmbeddingEngine  — NPU embedding 推理
-                                    VectorStore      — FAISS 索引管理（CRUD + 持久化）
-                                    LLMClient        — OpenAI 兼容 API 调用
-                                    LocalLLMClient   — 本地 NPU LLM 推理（--local）
-                                    RAGPipeline      — 流程编排 + CLI
+                          DocumentLoader   — 文档加载（.md/.txt/.rst）
+                          TextChunker      — 滑动窗口文本分块
+                          EmbeddingEngine  — NPU embedding 推理
+                          VectorStore      — FAISS 索引管理（CRUD + 持久化）
+                          LLMClient        — OpenAI 兼容 API 调用
+                          LocalLLMClient   — 本地 NPU LLM 推理（--local）
+                          RAGPipeline      — 流程编排 + CLI
 ```
 
 ---
 
 ## 10. 后续扩展
 
-本地 LLM 集成已完成（Phase 10），RAG 全链路可在 NPU 上独立运行（embedding + FAISS + 0.5B LLM）。以下为进一步优化方向：
+本地 LLM 集成已完成，RAG 全链路可在 NPU 上独立运行（embedding + FAISS + 7B BF16 LLM）。以下为进一步优化方向：
 
-- **升级到 7B 模型**：Qwen2.5-7B-Instruct 在当前 CANN 8.0.1 + torch_npu 2.1.0 栈上存在兼容性问题（输出乱码），需升级 CANN 或 torch_npu 后重新验证
-- **大模型推理**：7B/14B 模型（需 ~14/28GB HBM），当前 64GB 单卡可运行
-- **量化推理**：INT8/INT4 量化降低 HBM 占用，使大模型运行更从容
+- **量化推理**：INT8/INT4 量化降低 HBM 占用，使 14B+ 模型成为可能
 - **流式输出**：使用 `TextStreamer` 实现逐 token 返回
 - **混合检索**：BM25（关键词匹配）+ 向量（语义匹配）双路召回，通过 RRF 融合排序
 - **对话历史**：多轮问答中维护消息上下文，自动判断是否需要重新检索

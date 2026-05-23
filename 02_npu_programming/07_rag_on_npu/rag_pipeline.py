@@ -302,9 +302,9 @@ class LLMClient:
 # ── Local LLM Client ──
 
 class LocalLLMClient:
-    """本地 NPU LLM 推理客户端，加载 Qwen2.5-0.5B-Instruct"""
+    """本地 NPU LLM 推理客户端，默认加载 Qwen2.5-7B-Instruct（BF16）"""
 
-    DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+    DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
     def __init__(self, model_name: Optional[str] = None, device: str = "npu:0"):
         self.model_name = model_name or self.DEFAULT_MODEL
@@ -324,7 +324,7 @@ class LocalLLMClient:
         )
         self._model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
-            torch_dtype=torch.float16,
+            torch_dtype=torch.bfloat16,
             trust_remote_code=True,
         ).to(self.device).eval()
         params = sum(p.numel() for p in self._model.parameters()) / 1e6
@@ -510,7 +510,7 @@ def main():
     p_q.add_argument("--index-path", default="./rag_index", help="索引路径前缀")
     p_q.add_argument("--top-k", type=int, default=5)
     p_q.add_argument("--device", default="npu:0")
-    p_q.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-0.5B-Instruct）")
+    p_q.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-7B-Instruct, BF16）")
     p_q.add_argument("--llm-model", default=None, help="本地 LLM 模型名（覆盖默认值）")
 
     # ask
@@ -520,7 +520,7 @@ def main():
     p_a.add_argument("--index-path", default="./rag_index", help="索引路径前缀")
     p_a.add_argument("--top-k", type=int, default=5)
     p_a.add_argument("--device", default="npu:0")
-    p_a.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-0.5B-Instruct）")
+    p_a.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-7B-Instruct, BF16）")
     p_a.add_argument("--llm-model", default=None, help="本地 LLM 模型名（覆盖默认值）")
 
     args = parser.parse_args()
