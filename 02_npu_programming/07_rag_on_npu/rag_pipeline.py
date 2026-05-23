@@ -331,6 +331,20 @@ class LocalLLMClient:
         print(f"本地 LLM 加载完成 ({time.time() - t0:.0f}s), 参数: {params:.0f}M")
         return self
 
+    def release(self):
+        """释放 NPU 显存"""
+        import gc
+        import torch
+        if self._model is not None:
+            del self._model
+            self._model = None
+        if self._tokenizer is not None:
+            del self._tokenizer
+            self._tokenizer = None
+        gc.collect()
+        if hasattr(torch, "npu") and torch.npu.is_available():
+            torch.npu.empty_cache()
+
     def chat(self, messages: list[dict], temperature: float = 0.3,
              max_tokens: int = 512) -> str:
         """本地 NPU 推理，返回回答文本
