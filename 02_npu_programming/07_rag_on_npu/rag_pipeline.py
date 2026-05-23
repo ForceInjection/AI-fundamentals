@@ -86,7 +86,7 @@ class TextChunker:
                 if i > 0:
                     overlap_len = min(self.chunk_overlap, len(chunks[i - 1]))
                     prev_tail = chunks[i - 1][-overlap_len:]
-                    chunk = prev_tail + "\n" + chunk
+                    chunk = (prev_tail + "\n" + chunk)[:self.chunk_size]
                 overlapped.append(chunk)
             chunks = overlapped
 
@@ -176,7 +176,7 @@ class EmbeddingEngine:
             mean_embeddings = sum_embeddings / sum_mask
 
             # 全零 mask 的行（空输入或全部截断）置为零向量，避免 NaN
-            valid_mask = sum_mask.squeeze(-1) > 1e-8
+            valid_mask = sum_mask.squeeze(-1) > 1e-9
             if not valid_mask.all():
                 mean_embeddings = torch.where(
                     valid_mask.unsqueeze(-1),
@@ -297,6 +297,76 @@ class LLMClient:
             raise RuntimeError(f"API 响应格式错误: {e}") from e
         except Exception as e:
             raise RuntimeError(f"LLM API 调用失败: {e}") from e
+
+
+# ── Local LLM Client ──
+
+class LocalLLMClient:
+    """本地 NPU LLM 推理客户端，加载 Qwen2.5-0.5B-Instruct"""
+
+    DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+
+    def __init__(self, model_name: Optional[str] = None, device: str = "npu:0"):
+        self.model_name = model_name or self.DEFAULT_MODEL
+        self.device = device
+        self._tokenizer = None
+        self._model = None
+
+    def load(self):
+        """加载模型和 tokenizer 到 NPU"""
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        import torch
+
+        print(f"加载本地 LLM: {self.model_name}")
+        t0 = time.time()
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name, trust_remote_code=True,
+        )
+        self._model = AutoModelForCausalLM.from_pretrained(
+            self.model_name,
+            torch_dtype=torch.float16,
+            trust_remote_code=True,
+        ).to(self.device).eval()
+        params = sum(p.numel() for p in self._model.parameters()) / 1e6
+        print(f"本地 LLM 加载完成 ({time.time() - t0:.0f}s), 参数: {params:.0f}M")
+        return self
+
+    def chat(self, messages: list[dict], temperature: float = 0.3,
+             max_tokens: int = 512) -> str:
+        """本地 NPU 推理，返回回答文本
+
+        使用 ChatML 模板（Qwen2.5 的训练格式），在 user 消息尾部
+        附加简洁回答的指令约束，防止小模型生成冗长或重复的内容。
+        """
+        import torch
+
+        if not messages:
+            raise ValueError("messages 不能为空列表")
+
+        msgs = [dict(m) for m in messages]
+        msgs[-1]["content"] += (
+            "\n\n请基于上面的参考资料，用 2-3 句话简洁回答问题。"
+            "如果资料中没有相关信息，直接说'参考资料中未提及'，不要编造。"
+        )
+        prompt = self._tokenizer.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+        )
+        inputs = self._tokenizer(prompt, return_tensors="pt").to(self.device)
+        input_len = inputs.input_ids.shape[1]
+
+        with torch.no_grad():
+            outputs = self._model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                temperature=temperature,
+                do_sample=(temperature > 0),
+                top_p=0.9,
+                repetition_penalty=1.1,
+                pad_token_id=self._tokenizer.eos_token_id,
+                eos_token_id=self._tokenizer.eos_token_id,
+            )
+        generated_ids = outputs[0][input_len:]
+        return self._tokenizer.decode(generated_ids, skip_special_tokens=True)
 
 
 # ── RAG Pipeline ──
@@ -435,24 +505,30 @@ def main():
     p_s.add_argument("--show-text", action="store_true", help="显示检索到的文本片段")
 
     # query
-    p_q = sub.add_parser("query", help="交互式查询 (需要 LLM API)")
+    p_q = sub.add_parser("query", help="交互式查询 (需要 LLM API 或 --local)")
     p_q.add_argument("--model", default="BAAI/bge-small-zh-v1.5", help="embedding 模型名")
     p_q.add_argument("--index-path", default="./rag_index", help="索引路径前缀")
     p_q.add_argument("--top-k", type=int, default=5)
     p_q.add_argument("--device", default="npu:0")
+    p_q.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-0.5B-Instruct）")
+    p_q.add_argument("--llm-model", default=None, help="本地 LLM 模型名（覆盖默认值）")
 
     # ask
-    p_a = sub.add_parser("ask", help="单次查询 (需要 LLM API)")
+    p_a = sub.add_parser("ask", help="单次查询 (需要 LLM API 或 --local)")
     p_a.add_argument("question", help="问题")
     p_a.add_argument("--model", default="BAAI/bge-small-zh-v1.5", help="embedding 模型名")
     p_a.add_argument("--index-path", default="./rag_index", help="索引路径前缀")
     p_a.add_argument("--top-k", type=int, default=5)
     p_a.add_argument("--device", default="npu:0")
+    p_a.add_argument("--local", action="store_true", help="使用本地 LLM 推理（默认 Qwen2.5-0.5B-Instruct）")
+    p_a.add_argument("--llm-model", default=None, help="本地 LLM 模型名（覆盖默认值）")
 
     args = parser.parse_args()
 
-    # 检查 LLM API 配置 (query/ask 才需要)
-    if args.cmd in ("query", "ask"):
+    use_local = getattr(args, "local", False)
+
+    # 检查 LLM 配置 (query/ask 才需要)
+    if args.cmd in ("query", "ask") and not use_local:
         missing = []
         if not os.environ.get("RAG_LLM_ENDPOINT"):
             missing.append("RAG_LLM_ENDPOINT")
@@ -461,7 +537,17 @@ def main():
         if missing:
             print(f"错误: 缺少环境变量 {', '.join(missing)}")
             print("用法: export RAG_LLM_ENDPOINT='https://...' RAG_LLM_API_KEY='sk-...'")
+            print("或使用 --local 启用本地 LLM 推理")
             sys.exit(1)
+
+    def _create_llm_client():
+        """根据命令行参数创建 LLM 客户端（API 或本地）"""
+        if use_local:
+            llm_kwargs = {"device": args.device}
+            if args.llm_model:
+                llm_kwargs["model_name"] = args.llm_model
+            return LocalLLMClient(**llm_kwargs).load()
+        return LLMClient()
 
     # 加载 embedding 模型
     embedder = EmbeddingEngine(model_name=args.model, device=args.device).load()
@@ -497,13 +583,13 @@ def main():
 
     elif args.cmd == "query":
         store = VectorStore.load(args.index_path, dim=embedder.dim)
-        llm = LLMClient()
+        llm = _create_llm_client()
         pipeline = RAGPipeline(embedder, store, llm, top_k=args.top_k)
         pipeline.interactive()
 
     elif args.cmd == "ask":
         store = VectorStore.load(args.index_path, dim=embedder.dim)
-        llm = LLMClient()
+        llm = _create_llm_client()
         pipeline = RAGPipeline(embedder, store, llm, top_k=args.top_k)
         result = pipeline.query(args.question)
         print(f"\n检索到 {len(result['sources'])} 条相关文档:")

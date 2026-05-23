@@ -16,7 +16,12 @@ RAG 的做法是：在 LLM 回答之前，先从外部知识库中检索相关�
 
 RAG pipeline 中最适合 NPU 加速的环节是 **embedding 编码**。将文档和查询文本转换为语义向量需要运行 BERT 类模型，天然适合 NPU 的矩阵计算能力。对于大规模文档库（数万到数十万篇），编码速度直接决定了索引构建和更新的时效性。
 
-本实验将 embedding 推理部署在 NPU 上，LLM 生成部分由外部 API 提供——这是一种典型的"算力就近原则"：计算密集的编码放在本地加速器，需要超大模型的生成部分放在云端。
+本实验将 embedding 推理部署在 NPU 上。LLM 生成部分支持两种模式：
+
+- **外部 API**（默认）：通过 OpenAI 兼容接口调用云端模型，适合需要大模型能力的场景
+- **本地推理**（`--local`）：在 NPU 上直接运行 Qwen2.5-0.5B-Instruct，实现全链路本地化，无需网络、无需 API Key
+
+这是一种典型的"算力就近原则"：计算密集的编码放在本地加速器，生成部分可根据需求选择云端大模型或本地小模型。
 
 ### 1.3 完整流程
 
@@ -40,20 +45,20 @@ RAG pipeline 中最适合 NPU 加速的环节是 **embedding 编码**。将文�
                                                        │
                        ┌───────────────────────────────┘
                        ↓
-┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌──────────┐
-│ 用户问题  │───→│ NPU      │───→│ 向量检索       │───→│ LLM API  │
-│          │    │ Embedding│    │ Top-K=5      │    │ 生成回答  │
-└──────────┘    └──────────┘    └──────────────┘    └──────────┘
+┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌──────────────┐
+│ 用户问题  │───→│ NPU      │───→│ 向量检索       │───→│ LLM 生成     │
+│          │    │ Embedding│    │ Top-K=5      │    │ API/本地NPU  │
+└──────────┘    └──────────┘    └──────────────┘    └──────────────┘
 ```
 
 **各组件职责：**
 
-| 组件          | 职责                                   | 运行位置           |
-| ------------- | -------------------------------------- | ------------------ |
-| 文本分块      | 将长文档切分为语义完整的片段，控制粒度 | CPU                |
-| NPU Embedding | 将文本片段编码为 512 维语义向量        | NPU (Ascend 910B3) |
-| FAISS 向量库  | 存储向量、提供高效相似度检索           | CPU 内存           |
-| LLM API       | 基于检索到的资料生成最终回答           | 云端               |
+| 组件          | 职责                                   | 运行位置              |
+| ------------- | -------------------------------------- | --------------------- |
+| 文本分块      | 将长文档切分为语义完整的片段，控制粒度 | CPU                   |
+| NPU Embedding | 将文本片段编码为 512 维语义向量        | NPU (Ascend 910B3)    |
+| FAISS 向量库  | 存储向量、提供高效相似度检索           | CPU 内存              |
+| LLM 生成      | 基于检索到的资料生成最终回答           | 云端（API）或本地 NPU |
 
 这里有一个容易忽视的细节：**查询和文档必须使用同一个 embedding 模型编码**，因为向量相似度只有在同一语义空间中才有意义。如果换了模型，必须重建索引。
 
@@ -63,13 +68,13 @@ RAG pipeline 中最适合 NPU 加速的环节是 **embedding 编码**。将文�
 
 RAG pipeline 涉及 embedding 模型、推理框架、向量库和 LLM 四个环节的技术决策。以下选型以"复用现有 NPU 生态、最小化额外依赖"为原则，各组件均可替换为更强大的替代方案。
 
-| 组件           | 选型                          | 理由                               |
-| -------------- | ----------------------------- | ---------------------------------- |
-| Embedding 模型 | `BAAI/bge-small-zh-v1.5`      | 中文优化，24MB 体积，NPU 加载 < 8s |
-| 推理框架       | PyTorch 2.1.0 + torch_npu     | 项目已有生态，直接复用             |
-| 向量库         | FAISS (IndexFlatIP)           | 轻量，CPU 侧检索，毫秒级           |
-| LLM            | OpenAI 兼容 API               | 解耦，用户自由选择模型和供应商     |
-| 环境           | `/root/npu-learning/rag-env/` | 独立 venv，不污染现有学习环境      |
+| 组件           | 选型                           | 理由                                     |
+| -------------- | ------------------------------ | ---------------------------------------- |
+| Embedding 模型 | `BAAI/bge-small-zh-v1.5`       | 中文优化，24MB 体积，NPU 加载 < 8s       |
+| 推理框架       | PyTorch 2.1.0 + torch_npu      | 项目已有生态，直接复用                   |
+| 向量库         | FAISS (IndexFlatIP)            | 轻量，CPU 侧检索，毫秒级                 |
+| LLM            | OpenAI 兼容 API / 本地 Qwen2.5 | 默认使用外部 API，`--local` 切换本地推理 |
+| 环境           | `/root/npu-learning/rag-env/`  | 独立 venv，不污染现有学习环境            |
 
 ### 3.1 模型选型对比
 
@@ -175,7 +180,9 @@ ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py search "如何安装 torch_n
 
 ### 5.3 RAG 问答
 
-使用 `ask` 子命令，需要提前配置 LLM API 环境变量：
+使用 `ask` 子命令。支持两种 LLM 后端：
+
+**方式一：外部 API（默认）**：
 
 ```bash
 export RAG_LLM_ENDPOINT="https://api.example.com/v1/chat/completions"
@@ -185,6 +192,14 @@ export RAG_LLM_MODEL="gpt-4"  # 可选，默认 gpt-3.5-turbo
 ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py ask "什么是 NPU?"
 ```
 
+**方式二：本地 LLM 推理（`--local`）**
+
+```bash
+ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py ask --local "什么是 NPU?"
+```
+
+加上 `--local` 后，脚本会自动加载 Qwen2.5-0.5B-Instruct 到 NPU 进行推理，无需配置任何 API 环境变量。模型首次运行从 HuggingFace 下载（~1GB），后续加载使用缓存（约 9 秒）。
+
 一次完整的 RAG 调用包含 4 步：编码查询 → 向量检索 → 拼接 prompt → 调用 LLM。返回结果包含答案、引用来源列表、各阶段耗时。
 
 ### 5.4 交互式问答
@@ -192,7 +207,11 @@ ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py ask "什么是 NPU?"
 使用 `query` 子命令进入 REPL 交互界面：
 
 ```bash
+# 使用外部 API
 ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py query --top-k 5
+
+# 使用本地 LLM
+ASCEND_RT_VISIBLE_DEVICES=7 python3 rag_pipeline.py query --local --top-k 5
 ```
 
 进入 REPL 交互界面，支持以下命令：
@@ -379,6 +398,43 @@ query = f"为这个句子生成表示以用于检索相关文章：{query}"
 
 不加前缀会导致查询向量与文档向量不在同一语义子空间，相关度分数整体偏低。这是使用 BGE 系列模型时最容易踩的坑。
 
+### 8.6 本地 LLM 推理
+
+`LocalLLMClient` 在 NPU 上运行 Qwen2.5-0.5B-Instruct，接口与 `LLMClient` 完全一致（都实现 `chat(messages, temperature, max_tokens) -> str`），因此 `RAGPipeline` 无需任何修改即可切换后端。
+
+与 Phase 10 独立推理脚本的区别在于 prompt 的构造方式。独立推理使用 Qwen2.5 的 ChatML 模板（`apply_chat_template`），但 RAG 场景下 prompt 中包含大量检索到的文档片段，ChatML 的 `<|im_start|>` / `<|im_end|>` 标记会与 Markdown 内容中的特殊字符产生冲突。因此 `LocalLLMClient.chat()` 使用简化的纯文本 prompt 结构：
+
+```python
+prompt = (
+    f"{system_text}\n\n"
+    f"{user_text}\n\n"
+    f"请基于上面的参考资料回答问题，用 2-3 句话简洁回答。"
+    f"如果资料中没有相关信息，回答'参考资料中未提及'。"
+)
+```
+
+几个设计考量：
+
+- **"用 2-3 句话简洁回答"**：0.5B 模型能力有限，明确约束输出长度可以防止它生成冗长但不连贯的内容
+- **"如果资料中没有相关信息..."**：与 system prompt 中的"不要编造"形成双重约束，降低小模型幻觉
+- **repetition_penalty=1.1**：小模型在 RAG prompt（包含大量重复格式的文档片段）中容易陷入重复循环，轻微的重复惩罚可以有效缓解
+- **使用 ChatML 模板**：通过 `tokenizer.apply_chat_template()` 生成 Qwen2.5 训练时使用的 ChatML 格式，确保模型正确理解消息边界（在早期迭代中曾使用纯文本拼接，但 0.5B 模型在纯文本模式下更容易产生重复，ChatML 格式显著改善了生成质量）
+
+与外部 API 的对比：
+
+| 特性     | 外部 API            | 本地 LLM（0.5B）        |
+| -------- | ------------------- | ----------------------- |
+| 回答质量 | 高（大模型）        | 一般（0.5B 能力有限）   |
+| 延迟     | 网络延迟 + 推理时间 | 纯推理时间（~18 tok/s） |
+| 隐私     | 数据发送至第三方    | 数据不出服务器          |
+| 依赖     | 需要网络 + API Key  | 仅需 NPU + 模型文件     |
+| 适用场景 | 生产环境、复杂问题  | 开发测试、隐私敏感场景  |
+
+实测观察：0.5B 模型对于简单定义类问题能给出基本合理的回答，但对于需要从多段参考资料中提取和归纳具体步骤的问题（如"如何安装 torch_npu"），容易给出模糊或部分正确的回答。检索环节工作正常（相关文档被准确召回），瓶颈在生成环节的模型能力。
+
+> [!WARNING]
+> Qwen2.5-7B-Instruct 在当前 NPU 栈（CANN 8.0.1 + torch_npu 2.1.0 + transformers 4.38.2）上输出异常（生成随机 URL 和特殊字符），0.5B 模型则正常。该问题与模型来源（HuggingFace / ModelScope）无关，推测为 7B 模型的特定架构（GQA 28 heads / 4 KV heads）与旧版 torch_npu 存在兼容性问题。升级 CANN 或使用更新版本的 PyTorch NPU 插件可能解决，待后续验证。
+
 ---
 
 ## 9. 文件清单
@@ -388,23 +444,27 @@ query = f"为这个句子生成表示以用于检索相关文章：{query}"
 ├── README.md
 ├── 01_rag_pipeline_on_npu.md    # 本文
 └── rag_pipeline.py              # RAG 完整 pipeline，包含以下类:
-                                    DocumentLoader  — 文档加载（.md/.txt/.rst）
-                                    TextChunker     — 滑动窗口文本分块
-                                    EmbeddingEngine — NPU embedding 推理
-                                    VectorStore     — FAISS 索引管理（CRUD + 持久化）
-                                    LLMClient       — OpenAI 兼容 API 调用
-                                    RAGPipeline     — 流程编排 + CLI
+                                    DocumentLoader   — 文档加载（.md/.txt/.rst）
+                                    TextChunker      — 滑动窗口文本分块
+                                    EmbeddingEngine  — NPU embedding 推理
+                                    VectorStore      — FAISS 索引管理（CRUD + 持久化）
+                                    LLMClient        — OpenAI 兼容 API 调用
+                                    LocalLLMClient   — 本地 NPU LLM 推理（--local）
+                                    RAGPipeline      — 流程编排 + CLI
 ```
 
 ---
 
 ## 10. 后续扩展
 
-- **混合检索**：BM25（关键词匹配）+ 向量（语义匹配）双路召回，再通过 RRF (Reciprocal Rank Fusion) 融合排序。对于包含专用术语的技术文档，关键词匹配能弥补向量检索对稀有词不敏感的短板
-- **Re-rank**：用 CrossEncoder 对初检的 Top-20 结果逐对打分重排序。CrossEncoder 同时看到查询和文档，判断更精准，但速度慢（不能暴力全库扫描），因此只用在小候选集上
-- **流式输出**：LLM API 的 streaming 模式可以逐 token 返回，用户体验接近 ChatGPT 的打字效果。实现上需要将 `urllib` 替换为支持流式读取的 HTTP 客户端
-- **对话历史**：多轮问答中，后续问题的意图往往依赖上文（"那第二个方案呢？"），需要维护消息上下文并自动判断是否需要重新检索
-- **文档更新感知**：监控文档目录变更，增量更新索引——只重建修改过的文档对应的向量，而非全量重建
+本地 LLM 集成已完成（Phase 10），RAG 全链路可在 NPU 上独立运行（embedding + FAISS + 0.5B LLM）。以下为进一步优化方向：
+
+- **升级到 7B 模型**：Qwen2.5-7B-Instruct 在当前 CANN 8.0.1 + torch_npu 2.1.0 栈上存在兼容性问题（输出乱码），需升级 CANN 或 torch_npu 后重新验证
+- **大模型推理**：7B/14B 模型（需 ~14/28GB HBM），当前 64GB 单卡可运行
+- **量化推理**：INT8/INT4 量化降低 HBM 占用，使大模型运行更从容
+- **流式输出**：使用 `TextStreamer` 实现逐 token 返回
+- **混合检索**：BM25（关键词匹配）+ 向量（语义匹配）双路召回，通过 RRF 融合排序
+- **对话历史**：多轮问答中维护消息上下文，自动判断是否需要重新检索
 
 ---
 
@@ -416,3 +476,4 @@ query = f"为这个句子生成表示以用于检索相关文章：{query}"
 - [FAISS](https://github.com/facebookresearch/faiss)
 - [Ascend CANN 文档](https://www.hiascend.com/document)
 - [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat)
+- [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
