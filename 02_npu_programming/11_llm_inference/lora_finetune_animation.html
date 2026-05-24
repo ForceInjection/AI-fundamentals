@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRA 微调 on Ascend NPU — 原理动画</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0e17; color: #c9d1d9; overflow-x: hidden; }
+  .header { text-align: center; padding: 40px 20px 20px; background: linear-gradient(180deg, #111827 0%, #0a0e17 100%); }
+  .header h1 { font-size: 2.4em; color: #58a6ff; margin-bottom: 8px; }
+  .header p { color: #8b949e; font-size: 1.15em; }
+
+  .section { max-width: 1240px; margin: 0 auto; padding: 30px 20px; }
+  .section h2 { color: #f0f6fc; font-size: 1.5em; margin-bottom: 16px; border-left: 3px solid #58a6ff; padding-left: 12px; }
+
+  canvas { display: block; margin: 0 auto; border-radius: 8px; background: #111827; }
+  .controls { text-align: center; margin: 16px 0; }
+  .btn { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 1em; margin: 0 6px; transition: all .2s; }
+  .btn:hover { background: #30363d; border-color: #58a6ff; }
+  .btn.active { background: #1f6feb; border-color: #58a6ff; }
+
+  .legend { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.95em; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+  .stat-card { background: #111827; border: 1px solid #21262d; border-radius: 8px; padding: 20px 16px; text-align: center; }
+  .stat-value { font-size: 1.8em; color: #58a6ff; font-weight: bold; }
+  .stat-label { font-size: 0.9em; color: #8b949e; margin-top: 4px; }
+
+  .steps { display: flex; justify-content: center; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
+  .step { background: #111827; border: 1px solid #21262d; border-radius: 8px; padding: 14px 22px; font-size: 0.95em; opacity: 0.4; transition: all .4s; text-align: center; min-width: 110px; }
+  .step.active-step { opacity: 1; border-color: #58a6ff; box-shadow: 0 0 12px rgba(88,166,255,0.2); }
+  .step-num { font-size: 1.5em; color: #58a6ff; font-weight: bold; }
+
+  .code-block { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 18px; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.95em; line-height: 1.6; overflow-x: auto; margin-top: 12px; }
+  .code-keyword { color: #ff7b72; }
+  .code-func { color: #d2a8ff; }
+  .code-comment { color: #8b949e; }
+  .code-num { color: #79c0ff; }
+  .code-line { display: block; padding: 2px 8px; margin: 0 -8px; border-radius: 4px; transition: background .4s, border-color .4s; border-left: 3px solid transparent; }
+  .code-line.highlight-system { background: rgba(88,166,255,0.15); border-left-color: #58a6ff; }
+  .code-line.highlight-user { background: rgba(240,136,62,0.15); border-left-color: #f0883e; }
+  .code-line.highlight-assistant { background: rgba(63,185,80,0.15); border-left-color: #3fb950; }
+  .code-line.highlight-mask { background: rgba(210,168,255,0.15); border-left-color: #d2a8ff; }
+  #chatmlCode pre { margin: 0; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LoRA 微调 on Ascend NPU</h1>
+  <p>Qwen2.5-7B · BF16 · r=8 · 梯度检查点 · 动态梯度累积</p>
+</div>
+
+<div class="section">
+  <h2>LoRA 前向传播</h2>
+  <div class="controls">
+    <button class="btn active" onclick="setSpeed(1)">1×</button>
+    <button class="btn" onclick="setSpeed(2)">2×</button>
+    <button class="btn" onclick="setSpeed(4)">4×</button>
+    <button class="btn" onclick="togglePause()">⏯️ 暂停</button>
+    <button class="btn" onclick="resetAnim()">↺ 重播</button>
+  </div>
+  <canvas id="loraCanvas" width="1200" height="560"></canvas>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div> 冻结权重 W₀ (7B)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0883e"></div> A 矩阵 (d×r, 可训练)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div> B 矩阵 (r×d, 可训练)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div> 数据流 x → h</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d2a8ff"></div> 梯度流 (仅流向 A, B)</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>SFT 数据格式 (ChatML)</h2>
+  <div class="steps" id="chatmlSteps">
+    <div class="step active-step"><div class="step-num">1</div>system<br>专家角色设定</div>
+    <div class="step"><div class="step-num">2</div>user<br>用户指令</div>
+    <div class="step"><div class="step-num">3</div>assistant<br>目标输出</div>
+    <div class="step"><div class="step-num">4</div>loss mask<br>仅 assistant 参与 loss</div>
+  </div>
+  <div class="code-block" id="chatmlCode">
+<pre><span class="code-line" data-step="0"><span class="code-comment"># ChatML 模板 → tokenize → 仅对 assistant 回复计算 loss</span></span>
+<span class="code-line" data-step="1"><span class="code-keyword">messages</span> = [</span>
+<span class="code-line" data-step="1">  {<span class="code-num">"role"</span>: <span class="code-num">"system"</span>,  <span class="code-num">"content"</span>: <span class="code-num">"你是一个华为昇腾 NPU 技术专家..."</span>},  <span class="code-comment">← system</span></span>
+<span class="code-line" data-step="2">  {<span class="code-num">"role"</span>: <span class="code-num">"user"</span>,    <span class="code-num">"content"</span>: instruction},                         <span class="code-comment">← user</span></span>
+<span class="code-line" data-step="3">  {<span class="code-num">"role"</span>: <span class="code-num">"assistant"</span>, <span class="code-num">"content"</span>: output}                            <span class="code-comment">← assistant</span></span>
+<span class="code-line" data-step="0">]</span>
+<span class="code-line" data-step="0"><span class="code-func">text</span> = tokenizer.<span class="code-func">apply_chat_template</span>(messages)</span>
+<span class="code-line" data-step="4">labels[:assistant_start] = <span class="code-num">-100</span>  <span class="code-comment"># system + user 部分不参与 loss</span></span></pre>
+  </div>
+</div>
+
+<div class="section">
+  <h2>训练关键指标</h2>
+  <div class="stats">
+    <div class="stat-card"><div class="stat-value">0.07%</div><div class="stat-label">可训练参数占比 (5M / 7.6B)</div></div>
+    <div class="stat-card"><div class="stat-value">16.4 GB</div><div class="stat-label">HBM 峰值 (梯度检查点优化)</div></div>
+    <div class="stat-card"><div class="stat-value">BF16</div><div class="stat-label">训练精度 (指数位=FP32)</div></div>
+    <div class="stat-card"><div class="stat-value">55→12.3</div><div class="stat-label">SFT 250 QA · 5 epoch Loss</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>梯度累积 + 动态归一化</h2>
+  <canvas id="gradCanvas" width="1200" height="320"></canvas>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div> 完整累积步 (×4)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0883e"></div> 最后不完整步 (动态 actual_accum)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div> optimizer.step()</div>
+  </div>
+  <p style="color:#8b949e; font-size:0.95em; text-align:center; margin-top:16px; line-height:1.7;">
+    💡 当 batch 数不能被 <code>grad_accum</code> 整除时（如上例 18 batch ÷ 4），最后 2 个 batch 的梯度仅靠 <code>% grad_accum == 0</code> 会被<strong>静默丢弃</strong>。<code>is_last_step</code> 兜底触发 + <code>actual_accum</code> 动态归一化，保证每个 batch 的梯度贡献完全等价。
+  </p>
+</div>
+
+<script>
+// ── LoRA Forward Pass Animation ──
+const canvas = document.getElementById('loraCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let speed = 1, paused = false, animTime = 0;
+let flowParticles = [];
+let gradParticles = [];
+
+function setSpeed(s) {
+  speed = s;
+  document.querySelectorAll('.controls .btn').forEach((b,i) => b.classList.toggle('active', i===0?s===1:i===1?s===2:i===2?s===4:false));
+}
+function togglePause() { paused = !paused; }
+function resetAnim() { animTime = 0; flowParticles = []; gradParticles = []; }
+
+// Layout (scaled 1.4x for larger canvas)
+const xBox = {x:40, y:230, w:110, h:70};
+const w0Box = {x:230, y:70, w:170, h:85};
+const aBox = {x:230, y:280, w:80, h:85};
+const bBox = {x:360, y:280, w:90, h:85};
+const hBox = {x:560, y:70, w:90, h:85};
+const loraBox = {x:560, y:280, w:90, h:85};
+const outBox = {x:760, y:180, w:120, h:70};
+const lossBox = {x:980, y:180, w:120, h:70};
+
+function drawBox(b, label, color) {
+  ctx.fillStyle = color + '22';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#f0f6fc'; ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, b.x + b.w/2, b.y + b.h/2);
+}
+
+function drawArrow(x1, y1, x2, y2, color, alpha) {
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = alpha;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  // arrowhead
+  const angle = Math.atan2(y2-y1, x2-x1);
+  const len = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len*Math.cos(angle-0.5), y2 - len*Math.sin(angle-0.5));
+  ctx.lineTo(x2 - len*Math.cos(angle+0.5), y2 - len*Math.sin(angle+0.5));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ── 连线定义：箭头与粒子共享同一组路径 ──
+// 每条边: {path: [起点, ...控制点, 终点], color, gradColor}
+function midR(b) { return {x: b.x + b.w, y: b.y + b.h/2}; }
+function midL(b) { return {x: b.x, y: b.y + b.h/2}; }
+
+const edges = [
+  // x → 分叉到 W₀ (上) 和 A (下)
+  { path: [midR(xBox), midL(w0Box)], color: '#58a6ff', gradColor: null },
+  { path: [midR(xBox), midL(aBox)], color: '#f0883e', gradColor: null },
+  // A → B
+  { path: [midR(aBox),  midL(bBox)],     color: '#3fb950', gradColor: '#d2a8ff' },
+  // W₀ → hBox
+  { path: [midR(w0Box), midL(hBox)],     color: '#58a6ff', gradColor: null },
+  // B → loraBox
+  { path: [midR(bBox),  midL(loraBox)],  color: '#3fb950', gradColor: '#d2a8ff' },
+  // hBox → out
+  { path: [midR(hBox),  midL(outBox)],   color: '#58a6ff', gradColor: null },
+  // loraBox → out
+  { path: [midR(loraBox), midL(outBox)], color: '#3fb950', gradColor: '#d2a8ff' },
+  // out → loss
+  { path: [midR(outBox), midL(lossBox)], color: '#f85149', gradColor: '#d2a8ff' },
+];
+
+// 粒子沿路径点
+function lerpP(a, b, t) { return {x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t}; }
+function getEdgePoint(edge, segT) {
+  const pts = edge.path;
+  const totalLen = pts.length - 1;
+  const raw = Math.max(0, Math.min(totalLen, segT * totalLen));
+  const segIdx = Math.min(Math.floor(raw), totalLen - 1);
+  return lerpP(pts[segIdx], pts[segIdx + 1], raw - segIdx);
+}
+
+function spawnFlowParticles(edgeIdx, count) {
+  for (let i = 0; i < count; i++) {
+    flowParticles.push({
+      edgeIdx: edgeIdx,
+      t: Math.random(),
+      speed: 0.003 + Math.random() * 0.005,
+      alpha: 0.8 + Math.random() * 0.2,
+    });
+  }
+}
+
+function spawnGradParticles(edgeIdx) {
+  for (let i = 0; i < 2; i++) {
+    gradParticles.push({
+      edgeIdx: edgeIdx,
+      t: 0,
+      speed: 0.002,
+      alpha: 0.5,
+    });
+  }
+}
+
+function updateParticle(p, speedMul) {
+  p.t += p.speed * speedMul;
+  if (p.t > 1) p.t -= 1;
+  const pt = getEdgePoint(edges[p.edgeIdx], p.t);
+  p.x = pt.x; p.y = pt.y;
+}
+
+function drawFlowParticle(p, color) {
+  ctx.fillStyle = color; ctx.globalAlpha = p.alpha;
+  ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function draw(ctx, t) {
+  ctx.clearRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#f0f6fc'; ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('h = W₀ @ x  +  B @ A @ x', W/2, 28);
+
+  // Draw components
+  drawBox(xBox, '输入 x\n(dim=d)', '#f85149');
+  drawBox(w0Box, '预训练权重 W₀\n(d×d, 冻结)', '#58a6ff');
+  drawBox(aBox, 'A\n(d×r)', '#f0883e');
+  drawBox(bBox, 'B\n(r×d)', '#3fb950');
+  drawBox(hBox, 'W₀·x', '#58a6ff');
+  drawBox(loraBox, 'B·A·x', '#3fb950');
+  drawBox(outBox, 'h = W₀x + BAx', '#f0f6fc');
+  drawBox(lossBox, 'Loss\n(CE)', '#f85149');
+
+  // 用共享 edges 数据绘制连线箭头
+  const gt = (Math.sin(t * 0.03) + 1) / 2;
+  edges.forEach((e, i) => {
+    const pts = e.path;
+    for (let j = 0; j < pts.length - 1; j++) {
+      drawArrow(pts[j].x, pts[j].y, pts[j+1].x, pts[j+1].y, e.color, 0.6);
+    }
+    // 有 gradColor 的边绘制反向梯度箭头
+    if (e.gradColor) {
+      drawArrow(pts[pts.length-1].x, pts[pts.length-1].y + 18, pts[0].x, pts[0].y + 18, e.gradColor, gt * 0.5);
+    }
+  });
+
+  // "FROZEN" label on W0
+  ctx.fillStyle = '#58a6ff'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('🔒 冻结', w0Box.x+w0Box.w/2, w0Box.y-14);
+
+  // "TRAINABLE" labels
+  ctx.fillStyle = '#f0883e'; ctx.font = 'bold 14px monospace';
+  ctx.fillText('可训练', aBox.x+aBox.w/2, aBox.y-14);
+  ctx.fillStyle = '#3fb950';
+  ctx.fillText('可训练', bBox.x+bBox.w/2, bBox.y-14);
+
+  // Update particles
+  if (!paused) {
+    flowParticles.forEach(p => updateParticle(p, speed));
+    gradParticles.forEach(p => updateParticle(p, speed));
+  }
+
+  // 沿各条边依次生成粒子（概率与边长度成正比）
+  const spawnRates = [0.16, 0.10, 0.08, 0.10, 0.08, 0.10, 0.08, 0.08];
+  if (!paused) edges.forEach((e, i) => {
+    if (Math.random() < spawnRates[i] * speed) spawnFlowParticles(i, 1);
+    if (e.gradColor && Math.random() < 0.03 * speed) spawnGradParticles(i);
+  });
+
+  // 绘制粒子（颜色跟随所在 edge）
+  flowParticles.forEach(p => drawFlowParticle(p, edges[p.edgeIdx].color));
+  gradParticles.forEach(p => drawFlowParticle(p, edges[p.edgeIdx].gradColor || '#d2a8ff'));
+
+  // Cleanup old particles
+  flowParticles = flowParticles.slice(-200);
+  gradParticles = gradParticles.slice(-50);
+
+  // Annotations
+  ctx.fillStyle = '#8b949e'; ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('r = 8  (rank)', aBox.x - 15, aBox.y + aBox.h + 24);
+  ctx.fillText('参数量: 2×3584×8 ≈ 57K', aBox.x - 30, aBox.y + aBox.h + 44);
+  ctx.fillText('0.07% 可训练', aBox.x - 5, aBox.y + aBox.h + 64);
+
+  // Right side info
+  ctx.textAlign = 'left';
+  ctx.fillText('ΔW = B·A', 780, 350);
+  ctx.fillText('等效学习率:', 780, 372);
+  ctx.fillText('lr × (α/r) = 2e-4 × 2', 780, 394);
+  ctx.fillText('= 4e-4', 780, 416);
+}
+
+function animate() {
+  animTime++;
+  draw(ctx, animTime);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+// ── Gradient Accumulation Animation ──
+const gradCanvas = document.getElementById('gradCanvas');
+const gctx = gradCanvas.getContext('2d');
+const GW = gradCanvas.width, GH = gradCanvas.height;
+
+let gradTime = 0;
+const accumSteps = 16;  // show 16 raw steps = 4 accum cycles
+const bars = [];
+
+for (let i = 0; i < accumSteps; i++) {
+  bars.push({
+    x: 80 + i * 68,
+    w: 58,
+    h: 30 + Math.random() * 110,
+    isAccumStep: (i+1) % 4 === 0,
+    color: (i+1) % 4 === 0 ? '#58a6ff' : (i >= 12 ? '#f0883e' : '#30363d')
+  });
+}
+
+function drawGrad(t) {
+  gctx.clearRect(0, 0, GW, GH);
+
+  gctx.fillStyle = '#f0f6fc'; gctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif'; gctx.textAlign = 'center';
+  gctx.fillText('梯度累积: grad_accum = 4,  最后 2 步 actual_accum = 2 (动态)', GW/2, 26);
+
+  bars.forEach((b, i) => {
+    const phase = Math.min(1, Math.max(0, (t - i*3) / 10));
+    const h = b.h * phase;
+    const midX = b.x + b.w / 2;
+
+    gctx.fillStyle = i >= 12 && i < 16 ? '#f0883e33' : (b.isAccumStep ? '#58a6ff33' : '#30363d33');
+    gctx.fillRect(b.x, GH - 90 - h, b.w, h);
+
+    gctx.strokeStyle = b.color; gctx.lineWidth = 2;
+    gctx.strokeRect(b.x, GH - 90 - h, b.w, h);
+
+    // Step number
+    gctx.fillStyle = '#8b949e'; gctx.font = '12px monospace';
+    gctx.textAlign = 'center';
+    gctx.fillText(i+1, midX, GH - 76);
+
+    // optimizer.step() marker
+    if (b.isAccumStep || i === 15) {
+      const arrowY = GH - 95 - h;
+      gctx.fillStyle = '#3fb950'; gctx.font = 'bold 18px sans-serif';
+      gctx.fillText('▼ step', midX, arrowY - 4);
+    }
+  });
+
+  // Label for last incomplete steps
+  gctx.fillStyle = '#f0883e'; gctx.font = '11px sans-serif'; gctx.textAlign = 'center';
+  const labelX = bars[12].x + bars[12].w / 2 + 68;
+  gctx.fillText('最后不完整步', labelX, GH - 22);
+  gctx.fillText('actual_accum=2', labelX, GH - 6);
+}
+
+function animGrad() {
+  gradTime = (gradTime + 1) % 60;
+  drawGrad(gradTime);
+  requestAnimationFrame(animGrad);
+}
+requestAnimationFrame(animGrad);
+
+// ── ChatML step animation ──
+const stepColors = ['highlight-system', 'highlight-user', 'highlight-assistant', 'highlight-mask'];
+let chatmlStep = 0;
+function updateChatml() {
+  // 步骤卡片
+  document.querySelectorAll('#chatmlSteps .step').forEach((s, i) => {
+    s.classList.toggle('active-step', i <= chatmlStep);
+  });
+  // 代码行高亮
+  document.querySelectorAll('#chatmlCode .code-line').forEach(line => {
+    const step = parseInt(line.dataset.step);
+    line.className = 'code-line' + (step > 0 && step <= chatmlStep + 1 && step <= 4 ? ' ' + stepColors[step - 1] : '');
+  });
+}
+setInterval(() => {
+  chatmlStep = (chatmlStep + 1) % 4;
+  updateChatml();
+}, 2000);
+updateChatml();  // 初始同步
+</script>
+
+</body>
+</html>
