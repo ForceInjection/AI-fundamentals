@@ -3,27 +3,37 @@ LoRA 微调 Qwen2.5-7B on Ascend NPU
 
 使用 7B BF16 模型 + LoRA 在 Ascend 学习文档上做参数高效微调。
 训练数据为 docs/*.md 的文本块，目标是让模型学习 Ascend 领域的表达风格。
+支持 CLM（--data-dir）和 SFT（--sft）两种模式。
 
 用法:
   ASCEND_RT_VISIBLE_DEVICES=7 python3 lora_finetune.py
 
 可选参数:
   --data-dir ./docs/        训练数据目录
+  --sft ./sft-data.jsonl    SFT 数据文件 (JSONL 格式)
   --epochs 3                训练轮数
   --batch-size 1            批大小（配合梯度累积）
   --grad-accum 4            梯度累积步数
   --lr 2e-4                 学习率
   --lora-r 8                LoRA rank
+  --lora-alpha 16           LoRA alpha
   --save-path ./lora-adapter 适配器保存路径
+  --seed 42                 随机种子
+  --num-workers 0           DataLoader 加载进程数
+  --pin-memory              启用 pin_memory
+  --drop-last               丢弃最后一个不完整 batch
 """
 
 import argparse
+import json
 import os
 import time
 from pathlib import Path
 
 import torch
 import torch_npu
+import random
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from transformers import (
     AutoModelForCausalLM,
@@ -48,11 +58,95 @@ def get_lora_config(r: int = 8, alpha: int = 16, dropout: float = 0.05):
 
 # ── 数据准备 ──
 
+class SFTDataset(Dataset):
+    """指令微调数据集：从 JSONL 加载 (instruction, output) 对，构造 ChatML 格式"""
+
+    def __init__(self, data_path: str, tokenizer, max_length: int = 512):
+        pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+        if pad_id is None:
+            raise ValueError("tokenizer 未设置 pad_token_id 且 eos_token_id 为 None")
+        self.pad_id = pad_id
+        self.samples = []
+        self.label_mask_positions = []  # assistant 起始 token 位置
+
+        SYSTEM_PROMPT = "你是一个华为昇腾 NPU 技术专家，请根据你的知识回答问题。"
+        with open(data_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    item = json.loads(line)
+                except json.JSONDecodeError as e:
+                    print(f"  警告: JSONL 解析失败，跳过该行: {e}")
+                    continue
+                instruction = item.get("instruction", "")
+                output = item.get("output", "")
+                if not instruction or not output:
+                    continue
+
+                # 构造完整 ChatML 并获取 tokenized 结果
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": instruction},
+                    {"role": "assistant", "content": output},
+                ]
+                tokenized = tokenizer.apply_chat_template(
+                    messages, tokenize=True, return_tensors="pt",
+                    padding=False, truncation=False,
+                )
+                token_ids = tokenized[0].tolist()
+
+                # 找到 assistant 回复的起始位置：仅 system + user（不加 assistant）
+                prefix_ids = tokenizer.apply_chat_template(
+                    [{"role": "system", "content": SYSTEM_PROMPT},
+                     {"role": "user", "content": instruction}],
+                    tokenize=True, add_generation_prompt=True, return_tensors="pt",
+                    padding=False, truncation=False,
+                )[0].tolist()
+                assistant_start = len(prefix_ids)
+
+                # 若 assistant 回复被完全截断（assistant_start >= max_length），跳过该样本
+                if assistant_start >= max_length:
+                    print(f"  警告: 样本太长，assistant 回复被完全截断，已跳过")
+                    continue
+
+                # 截断或填充到 max_length
+                if len(token_ids) > max_length:
+                    token_ids = token_ids[:max_length]
+                elif len(token_ids) < max_length:
+                    token_ids = token_ids + [pad_id] * (max_length - len(token_ids))
+
+                self.samples.append(torch.tensor(token_ids, dtype=torch.long))
+                self.label_mask_positions.append(assistant_start)
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        tokens = self.samples[idx]
+        assistant_start = self.label_mask_positions[idx]
+        input_ids = tokens[:-1]
+        labels = tokens[1:].clone()
+        # 仅对 assistant 回复部分计算 loss；被完全截断的样本已在 __init__ 中过滤
+        label_start = max(0, assistant_start - 1)
+        labels[:label_start] = -100
+        labels[labels == self.pad_id] = -100
+        attention_mask = (input_ids != self.pad_id).long()
+        return {
+            "input_ids": input_ids,
+            "labels": labels,
+            "attention_mask": attention_mask,
+        }
+
+
 class TextDataset(Dataset):
     """将文档文本切分为固定长度的训练样本"""
 
     def __init__(self, texts: list[str], tokenizer, max_length: int = 512):
-        pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
+        pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+        if pad_id is None:
+            raise ValueError("tokenizer 未设置 pad_token_id 且 eos_token_id 为 None")
         self.samples = []
         for text in texts:
             if not text.strip():
@@ -88,28 +182,29 @@ class TextDataset(Dataset):
 
 
 def load_training_texts(data_dir: str, tokenizer=None) -> list[str]:
-    """递归加载目录下所有 .md 文件，按段落分块（以 token 长度为参考）"""
+    """递归加载目录下所有 .md 和 .txt 文件，按段落分块（以 token 长度为参考）"""
     texts = []
-    for f in sorted(Path(data_dir).rglob("*.md")):
-        try:
-            content = f.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            content = f.read_text(encoding="utf-8", errors="replace")
-        if not content.strip():
-            continue
-        paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
-        chunk = ""
-        for para in paragraphs:
-            test_chunk = chunk + para + "\n\n"
-            chunk_len = len(tokenizer.encode(test_chunk)) if tokenizer else len(test_chunk)
-            if chunk_len < 1024:
-                chunk = test_chunk
-            else:
-                if chunk.strip():
-                    texts.append(chunk.strip())
-                chunk = para + "\n\n"
-        if chunk.strip():
-            texts.append(chunk.strip())
+    for pattern in ("*.md", "*.txt"):
+        for f in sorted(Path(data_dir).rglob(pattern)):
+            try:
+                content = f.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                content = f.read_text(encoding="utf-8", errors="replace")
+            if not content.strip():
+                continue
+            paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
+            chunk = ""
+            for para in paragraphs:
+                test_chunk = chunk + para + "\n\n"
+                chunk_len = len(tokenizer.encode(test_chunk)) if tokenizer else len(test_chunk)
+                if chunk_len < 1024:
+                    chunk = test_chunk
+                else:
+                    if chunk.strip():
+                        texts.append(chunk.strip())
+                    chunk = para + "\n\n"
+            if chunk.strip():
+                texts.append(chunk.strip())
     return texts
 
 
@@ -125,25 +220,39 @@ def train(args):
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
     # 2. 加载数据
-    print(f"加载训练数据: {args.data_dir}")
-    texts = load_training_texts(args.data_dir, tokenizer)
-    print(f"  文档段落数: {len(texts)}")
-    total_chars = sum(len(t) for t in texts)
-    print(f"  总字符数: {total_chars:,}")
+    if args.sft:
+        print(f"加载 SFT 数据: {args.sft}")
+        print("  使用 SFT 模式 (--data-dir 参数被忽略)")
+        dataset = SFTDataset(args.sft, tokenizer, max_length=args.max_length)
+        print(f"  指令样本数: {len(dataset)}")
+        if len(dataset) == 0:
+            raise ValueError(f"SFT 数据为空: {args.sft}")
+    else:
+        print(f"加载训练数据: {args.data_dir}")
+        texts = load_training_texts(args.data_dir, tokenizer)
+        print(f"  文档段落数: {len(texts)}")
+        total_chars = sum(len(t) for t in texts)
+        print(f"  总字符数: {total_chars:,}")
 
-    dataset = TextDataset(texts, tokenizer, max_length=args.max_length)
-    print(f"  训练样本数: {len(dataset)}")
-    if len(dataset) == 0:
-        raise ValueError(f"未找到有效训练数据，请检查 --data-dir: {args.data_dir}")
+        dataset = TextDataset(texts, tokenizer, max_length=args.max_length)
+        print(f"  训练样本数: {len(dataset)}")
+        if len(dataset) == 0:
+            raise ValueError(f"未找到有效训练数据，请检查 --data-dir: {args.data_dir}")
 
     # 设置随机种子保证可复现性
-    import random
-    import numpy as np
     torch.manual_seed(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
     if torch.npu.is_available():
         torch.npu.manual_seed_all(args.seed)
+
+    def worker_init_fn(worker_id):
+        worker_seed = args.seed + worker_id
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+        torch.manual_seed(worker_seed)
+        if torch.npu.is_available():
+            torch.npu.manual_seed_all(worker_seed)
 
     dataloader = DataLoader(
         dataset,
@@ -152,6 +261,7 @@ def train(args):
         drop_last=args.drop_last,
         num_workers=args.num_workers,
         pin_memory=args.pin_memory,
+        worker_init_fn=worker_init_fn if args.num_workers > 0 else None,
     )
 
     # 3. 加载模型 + LoRA
@@ -300,6 +410,7 @@ def parse_args():
     p.add_argument("--num-workers", type=int, default=0, help="DataLoader 加载进程数")
     p.add_argument("--pin-memory", action="store_true", help="启用 pin_memory")
     p.add_argument("--drop-last", action="store_true", help="丢弃最后一个不完整 batch")
+    p.add_argument("--sft", default=None, help="SFT 数据文件路径 (JSONL 格式)")
     return p.parse_args()
 
 
