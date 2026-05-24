@@ -9,7 +9,7 @@
 
 **Star History**:
 
-## ![Star History Chart](https://api.star-history.com/svg?repos=ForceInjection/AI-fundamentals&type=date&legend=top-left)
+![Star History Chart](https://api.star-history.com/svg?repos=ForceInjection/AI-fundamentals&type=date&legend=top-left)
 
 ---
 
@@ -144,28 +144,29 @@
 - **DOCA 框架**
   - [DOCA 编程入门](./02_dpu_programming/doca/doca_programming_guide.md)：涵盖架构简介、核心组件及典型场景编程实践
 
+### 4.3 华为 NPU 编程
+
+基于昇腾 NPU 硬件特性和 CANN 软件栈的系统级编程路径，涵盖 Da Vinci 架构、PyTorch NPU 适配与迁移、MindSpore 原生框架、Ascend 工具链、自定义算子开发，以及 RAG pipeline、FlashAttention、Mini-GPT 和 LLM 推理（Qwen2.5-7B BF16 + LoRA 微调）等端到端实战。详细内容请访问：[华为 NPU 编程入门](02_npu_programming/README.md)。
+
+- [NPU 开发环境搭建](02_npu_programming/01_environment/README.md) — CANN 驱动、torch_npu 安装与版本对齐
+- [RAG Pipeline on NPU](02_npu_programming/07_rag_on_npu/01_rag_pipeline_on_npu.md) — Embedding + FAISS + LLM 全链路 NPU 化
+- [LLM 推理 on NPU](02_npu_programming/11_llm_inference/01_llm_inference_on_npu.md) — Qwen2.5 本地推理、ChatML、NaN 诊断
+- [LoRA 微调 on NPU](02_npu_programming/11_llm_inference/03_lora_finetune.md) — BF16 + peft + 梯度检查点，HBM 峰值 16.4 GB
+
 ---
 
 ## 5. 大语言模型应用开发与编排
 
-探索以自然语言驱动与 Agent 自主决策为核心的 Software 3.0 开发范式，包含 OpenSpec 规范驱动开发、Spring AI 企业级 Java 接入、LangGraph 有状态多智能体图计算模型，以及 Coze/n8n 无代码工作流编排技术。详细的深度探讨可参考 [大模型编程指南](98_llm_programming/README.md)。
+探索以自然语言驱动与 Agent 自主决策为核心的 Software 3.0 开发范式，包含 Spring AI 企业级 Java 接入、LangGraph 有状态多智能体图计算模型，以及 Coze/n8n 无代码工作流编排技术。详细的深度探讨可参考 [大模型编程指南](98_llm_programming/README.md)。
 
-### 5.1 AI 时代的软件工程：范式转移与重构
-
-软件工程正向以 Agent First 与自主推理为核心的 **Software 3.0** 时代演进。本节梳理驾驭工程 (Harness Engineering) 体系，并演示基于 OpenSpec 的“意图 -> Spec -> AI -> 代码 & 验证”新一代规范驱动开发工作流。
-
-- [Agent First：软件工程的下一个范式转移](98_llm_programming/Agent_First.md) - 梳理编程范式的演变历史，探讨 Agent First 的核心理念与实战指南。
-- [驾驭工程](98_llm_programming/Harness_Engineering.md) - 深度解析如何构建驾驭系统，提升 AI 编程助手的可控性与效能。
-- [OpenSpec 实战指南](https://github.com/ForceInjection/OpenSpec-practise/blob/main/README.md) - Spec 驱动开发 (Spec-Driven Development) 的工程实践，演示了“意图 -> Spec -> AI -> 代码 & 验证”的新一代开发工作流。
-
-### 5.2 Java AI 开发
+### 5.1 Java AI 开发
 
 剖析 Java 生态 AI 开发技术栈，通过 Spring AI 工程框架实现企业级 Java 应用对 LLM 能力的接入，并演示基于 Spring AI 构建高效 LLM 代理的工程实践。
 
 - [Java AI 开发指南](98_llm_programming/java_ai/README.md) - Java 生态系统中的 AI 开发技术总览。
 - [使用 Spring AI 构建高效 LLM 代理](98_llm_programming/java_ai/spring_ai_cn.md) - 基于 Spring AI 框架的企业级 AI 应用开发实践。
 
-### 5.3 LangGraph 开发
+### 5.2 LangGraph 开发
 
 LangGraph 通过图计算模型解决 LLM 应用在循环逻辑与状态持久化上的瓶颈，提供状态机机制以支持多轮推理、自我反思的复杂 Agent 工作流构建（如 AI 客服系统 Notebook 实战）。
 
@@ -173,7 +174,7 @@ LangGraph 通过图计算模型解决 LLM 应用在循环逻辑与状态持久�
 - [LangGraph 简介](98_llm_programming/langgraph/langgraph_intro.md) - LangGraph 的核心概念与入门指南。
 - [AI 客服系统实战](98_llm_programming/langgraph/aics.ipynb) - 基于 LangGraph 构建的 AI 客服系统 Notebook 实战。
 
-### 5.4 AI 工作流与编排
+### 5.3 AI 工作流与编排
 
 无代码/低代码（No-Code/Low-Code）AI 应用落地指南，包含 Coze 私有化部署配置、n8n 多智能体编排实践，以及 Dify、Ragflow 等主流开源编排平台的架构与商业许可对比。
 
@@ -358,6 +359,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [推理优化技术方案](09_inference_system/README.md) - 企业级推理优化全景指南，涵盖集群规模分析、核心优化技术及实施路径
 - [vLLM + LWS ： Kubernetes 上的多机多卡推理方案](04_cloud_native_ai_platform/k8s/04_lws_intro.md) - 大模型推理在 Kubernetes 上的最佳实践
 - [云原生高性能分布式 LLM 推理框架 llm-d 介绍](04_cloud_native_ai_platform/k8s/05_llm_d_intro.md) - 云原生架构下的高性能推理服务栈
+- **[nano-vllm](https://github.com/ForceInjection/nano-vllm) ★** — 从零构建的轻量级 vLLM 实现（~1400 行 Python），在极简代码中保留 PagedAttention、连续批处理、张量并行与 CUDA Graph 等核心机制，推理速度与 vLLM 相当。配套 8 课 **[在线 PPT 实战课程](https://forceinjection.github.io/nano-vllm/)**，逐步拆解 Sequence 生命周期、调度器队列、KV Cache 管理与注意力算子分支
 
 ### 9.3 KV Cache 核心技术
 
@@ -550,7 +552,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 
 - [Claude Skills 开发指南](08_agentic_system/agent_skills/docs/claude_skills_guide.md) - 扩展智能体能力的工具定义规范与最佳实践
   - [构建完整指南 (PDF)](08_agentic_system/agent_skills/docs/the_complete_guide_to_building_skill_for_claude.pdf)
-- [Agent Skill 开发指南](https://github.com/ForceInjection/awesome-skills) - 由原力注入博主维护的优秀认知技能（Agent Skill）合集，包含深度代码阅读、架构分析、文档评审等自动化工作流。
+- [Agent Skill 开发指南](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)）- 由原力注入博主维护的优秀认知技能（Agent Skill）合集，包含深度代码阅读、架构分析、文档评审等自动化工作流。
 - [CUDA Code Skill](https://github.com/ForceInjection/cuda-code-skill) - 面向 AI IDE（Claude Code、Trae 等）的 CUDA 知识增强代码生成与性能分析技能库。
 - [mmx-cli](https://github.com/MiniMax-AI/cli) - MiniMax AI 平台的 CLI 技能，支持文本、图片、视频、语音、音乐生成与 Web 搜索，遵循 agentskills.io 标准。
 
@@ -698,6 +700,20 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 由微软提供的初学者课程，旨在帮助学习者全面了解 AI Agent 的构建与应用。
 
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](10_ai_related_course/AI Agents for Beginners 课程之 AI Agent及使用场景简介.md) - 涵盖 AI Agent 基础概念、开发框架、设计模式与应用场景。
+
+---
+
+## 13. AI Native 全栈实践
+
+以"认知性质决定技术分层"为裁断准则的 AI Native 方法论体系，包含应用架构（Agent / Skill / Tool 三层 + 七项工程治理）和 DevOps（AI 增强而非替代的全流程协同框架），通过真实电力交易场景推导可复用架构。详细内容请访问：[AI Native 全栈实践](11_ai_native_everything/README.md)，配套 DevOps 参考：[ai-native-devops](https://github.com/ForceInjection/ai-native-devops)（[在线版](https://forceinjection.github.io/ai-native-devops/)）。
+
+### 13.1 AI 时代的软件工程
+
+软件工程正向以 Agent First 与自主推理为核心的 **Software 3.0** 时代演进，涵盖驾驭工程 (Harness Engineering) 体系与 Spec 驱动开发工作流。
+
+- [Agent First：软件工程的下一个范式转移](98_llm_programming/Agent_First.md) - 梳理编程范式的演变历史，探讨 Agent First 的核心理念与实战指南。
+- [驾驭工程](98_llm_programming/Harness_Engineering.md) - 深度解析如何构建驾驭系统，提升 AI 编程助手的可控性与效能。
+- [OpenSpec 实战指南](https://github.com/ForceInjection/OpenSpec-practise/blob/main/README.md) - Spec 驱动开发 (Spec-Driven Development) 的工程实践，演示了"意图 → Spec → AI → 代码 & 验证"的新一代开发工作流。
 
 ---
 
