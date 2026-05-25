@@ -711,7 +711,7 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 
 由微软提供的初学者课程，旨在帮助学习者全面了解 AI Agent 的构建与应用。
 
-- [AI Agents for Beginners 课程之 AI Agent及使用场景简介](10_ai_related_course/AI Agents for Beginners 课程之 AI Agent及使用场景简介.md) - 涵盖 AI Agent 基础概念、开发框架、设计模式与应用场景。
+- [AI Agents for Beginners 课程之 AI Agent及使用场景简介](10_ai_related_course/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md) - 涵盖 AI Agent 基础概念、开发框架、设计模式与应用场景。
 
 ---
 
