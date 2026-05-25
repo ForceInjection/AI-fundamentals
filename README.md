@@ -47,7 +47,7 @@
   - [理论基础：IB 网络架构与协议](./03_ai_cluster_ops/02_infiniband/01_ib_network_theory.md)
   - [网络运维：健康检查与性能监控实战](./03_ai_cluster_ops/02_infiniband/README.md)
 - **NCCL 分布式通信测试**
-  - [理论基础：NCCL 教程](./03_ai_cluster_ops/03_nccl/01_nccl_tutorial.md)
+  - [理论基础：NCCL 教程](./03_ai_cluster_ops/03_nccl/01_nccl_theory.md)
   - [实战指南：基准测试与多节点部署](./03_ai_cluster_ops/03_nccl/README.md)
 
 ---
@@ -152,6 +152,7 @@
 - [RAG Pipeline on NPU](02_npu_programming/07_rag_on_npu/01_rag_pipeline_on_npu.md) — Embedding + FAISS + LLM 全链路 NPU 化
 - [LLM 推理 on NPU](02_npu_programming/11_llm_inference/01_llm_inference_on_npu.md) — Qwen2.5 本地推理、ChatML、NaN 诊断
 - [LoRA 微调 on NPU](02_npu_programming/11_llm_inference/03_lora_finetune.md) — BF16 + peft + 梯度检查点，HBM 峰值 16.4 GB
+- 更多主题：[Da Vinci 架构与 CANN 软件栈](02_npu_programming/02_ascend_architecture/README.md)、[PyTorch NPU 适配](02_npu_programming/03_pytorch_npu/README.md)、[MindSpore 框架](02_npu_programming/04_mindspore/README.md)、[Ascend 工具链](02_npu_programming/05_tools/README.md)、[Ascend C 自定义算子](02_npu_programming/06_advanced/README.md)、[NPU 性能分析](02_npu_programming/08_npu_profiling/README.md)、[FlashAttention](02_npu_programming/09_flash_attention/README.md)、[Mini-GPT](02_npu_programming/10_mini_gpt/README.md)
 
 ---
 
@@ -241,6 +242,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [Andrej Karpathy ： Deep Dive into LLMs like ChatGPT （B 站视频）](https://www.bilibili.com/video/BV16cNEeXEer) - 深度学习领域权威专家的 LLM 技术解析。
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181) - 文本分词与编码的核心技术。
 - [解密大语言模型中的 Tokens](06_llm_theory_and_fundamentals/llm_basic_concepts/token/README.md) - Token 机制的深度解析与实践应用。
+  - [LLM Token 机制详解](06_llm_theory_and_fundamentals/llm_basic_concepts/token/llm_token_intro.md) - Token 的基础概念与应用原理。
   - [Tiktokenizer 在线版](https://tiktokenizer.vercel.app/?model=gpt-4o) - 交互式 Token 分析工具。
 - [一文读懂思维链（Chain-of-Thought, CoT）](06_llm_theory_and_fundamentals/llm_basic_concepts/cot/chain_of_thought_cot_intro.md) - 推理能力增强的核心技术。
 - [大模型的幻觉及其应对措施](06_llm_theory_and_fundamentals/llm_basic_concepts/hallucination/llm_hallucination_and_mitigation.md) - 幻觉问题的成因分析与解决方案。
@@ -477,7 +479,17 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [参考资料与延伸阅读](09_inference_system/reference_design/08-参考资料与延伸阅读.md) - 推荐阅读与延伸资料
 - [总结与展望](09_inference_system/reference_design/14-总结与展望.md) - 推理优化技术发展趋势
 
-### 9.6 模型部署与运维实践
+### 9.6 推理成本与容量规划
+
+大模型推理成本的定量分析与容量规划决策，涵盖 API 按量计费与 Coding Plan 包月订阅的定价数据建模，以及基于业务前缀复用率的 KV Cache 各级存储（HBM/DRAM/NVMe）容量推演。
+
+- [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
+- [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
+- [KV Cache 容量规划](09_inference_system/kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) — GLM-5 显存容量推演与 ROI 评估
+- [KV Cache 压缩技术](09_inference_system/kv_cache/01_concepts/compression/kv_cache_compression.md) — INT8/FP8 量化、稀疏化与注意力优化
+- [Claude Prompt Caching 机制分析](09_inference_system/kv_cache/01_concepts/prefix_caching/claude_prompt_caching.md) — 提示词缓存的终端 Agent 源码实现与成本优化
+
+### 9.7 模型部署与运维实践
 
 跨硬件平台的模型服务化落地指南，涵盖 Mac 本地 DeepSeek-R1 运行、Ollama 架构原理，以及 DeepSeek-V3 MoE 在 H20 硬件与 Qwen2-VL 在华为昇腾上的专项部署调优。
 
@@ -486,7 +498,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference_solutions/deepseek_v3_moe_vllm_h20_deployment.md) - H20 硬件上的部署方案与 SLO 验证
 - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference_solutions/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
 
-### 9.7 DeepSeek 专题
+### 9.8 DeepSeek 专题
 
 DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endpoint) 专有并行架构，以及在 Blackwell 等下一代高性能计算平台上的可扩展性评估与部署策略。
 
