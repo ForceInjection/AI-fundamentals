@@ -3,307 +3,178 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>量化与反量化 — 交互式图示</title>
+<title>量化对比 — 交互式分析</title>
 <style>
-  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --accent: #58a6ff; --green: #3fb950; --orange: #d2991d; --red: #f85149; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
-  h1 { font-size: 24px; margin-bottom: 4px; }
-  .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-  .card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
-  canvas { display: block; width: 100%; border-radius: 4px; background: #010409; }
-  .controls { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
-  .controls label { font-size: 13px; color: #8b949e; display: flex; align-items: center; gap: 8px; }
-  .controls select, .controls input[type=range] { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 13px; }
-  .controls input[type=range] { width: 100px; }
-  .controls .val { color: var(--accent); font-size: 12px; min-width: 32px; }
-  .metrics { display: flex; gap: 16px; margin-top: 8px; font-size: 13px; }
-  .metrics span { color: #8b949e; }
-  .metrics strong { color: var(--green); }
-  .metrics .warn { color: var(--orange); }
-  .quant-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; margin-top: 8px; }
-  .quant-cell { aspect-ratio: 1; border-radius: 2px; font-size: 8px; display: flex; align-items: center; justify-content: center; color: #000; }
-  .legend { font-size: 11px; color: #8b949e; margin-top: 8px; }
+:root{--bg:#0d1117;--card:#161b22;--bdr:#30363d;--tx:#c9d1d9;--ac:#58a6ff;--gn:#3fb950;--or:#d2991d;--rd:#f85149;--dim:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);padding:24px;max-width:1100px;margin:0 auto}
+h1{font-size:24px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:14px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px;margin-bottom:20px}
+.card h3{font-size:15px;margin-bottom:12px;color:var(--ac)}
+canvas{display:block;width:100%;border-radius:4px;background:#010409}
+.controls{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.controls label{font-size:13px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.controls select,.controls input[type=range]{background:var(--card);color:var(--tx);border:1px solid var(--bdr);border-radius:4px;padding:4px 8px;font-size:13px}
+.controls input[type=range]{width:100px}
+.controls .val{color:var(--ac);font-size:12px;min-width:28px}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+th,td{padding:8px 12px;border-bottom:1px solid var(--bdr);white-space:nowrap}
+th{color:var(--ac);font-weight:600;text-align:center}
+th:first-child{text-align:left}
+td{text-align:center}
+td:first-child{text-align:left;font-weight:600}
+td:nth-child(2),td:nth-child(3),td:nth-child(5){text-align:center}
+td:nth-child(4),td:nth-child(6),td:nth-child(7),td:nth-child(8){text-align:right}
+.bar-cell{min-width:90px;text-align:left!important}
+.bar-fill{display:inline-block;height:14px;border-radius:3px;vertical-align:middle}
+.legend{font-size:11px;color:var(--dim);margin-top:6px}
 </style>
 </head>
 <body>
 
-<h1>量化与反量化 — 交互式图示</h1>
-<p class="subtitle">拖动滑块调整参数，观察量化如何将连续浮点值映射为离散整数</p>
+<h1>量化精度对比 — 交互式分析</h1>
+<p class="sub">调整 outlier 强度，观察不同量化位数下的精度损失</p>
 
 <div class="controls">
-  <label>量化位数:
-    <select id="bits">
-      <option value="8">INT8 (256级)</option>
-      <option value="4">INT4 (16级)</option>
-      <option value="3">INT3 (8级)</option>
-      <option value="2">INT2 (4级)</option>
-    </select>
-  </label>
-  <label>Outlier 强度:
+  <label>Outlier强度:
     <input type="range" id="outlier" min="0" max="10" value="5" step="1">
     <span class="val" id="outlierVal">5×</span>
   </label>
-  <label>分布类型:
-    <select id="distType">
-      <option value="normal">正态分布（权重）</option>
-      <option value="skewed">偏斜分布（ReLU激活值）</option>
-    </select>
-  </label>
-  <label>量化方式:
-    <select id="quantType">
-      <option value="symmetric">对称量化</option>
-      <option value="asymmetric">非对称量化</option>
-    </select>
-  </label>
 </div>
 
-<div class="grid">
-  <div class="card">
-    <h3>FP16 原始值（连续）</h3>
-    <canvas id="canvasBefore" height="200"></canvas>
-    <div class="legend">● 每个点代表一个权重值 | 横轴=数值 | 纵轴=密度</div>
-  </div>
-  <div class="card">
-    <h3 id="afterTitle">量化后重建值（离散）</h3>
-    <canvas id="canvasAfter" height="200"></canvas>
-    <div class="legend">● 灰色=原始值 | 彩色点=量化级别 | 竖线=量化误差</div>
+<div class="card">
+  <h3>① 原始值分布（直方图）</h3>
+  <canvas id="canvasDist" height="140"></canvas>
+  <div class="legend">60 个正态分布值 + 2 个 outlier | 横轴=数值 | 纵轴=频次</div>
+</div>
+
+<div class="card">
+  <h3>② 量化精度对比</h3>
+  <table id="metricsTable"></table>
+  <div class="legend" style="margin-top:8px">
+    Scale = 量化步长（越小精度越高）| RMSE = 均方根误差（综合精度指标）| 利用率 = 实际使用的量化级别占比
   </div>
 </div>
 
-<div class="grid">
-  <div class="card">
-    <h3>量化级别映射（值 → Scale → INT）</h3>
-    <div id="quantLevels" style="margin-top:8px;"></div>
-    <div class="metrics" id="metricsScale"></div>
-  </div>
-  <div class="card">
-    <h3>误差分析</h3>
-    <canvas id="canvasError" height="160"></canvas>
-    <div class="metrics" id="metricsError"></div>
-  </div>
-</div>
-
-<div class="card" style="margin-top:0;">
-  <h3>内存对比（7B 模型）</h3>
-  <div style="display:flex; gap:12px; margin-top:12px; align-items:flex-end; height:80px;">
-    <div style="width:60px; background:var(--accent); height:100%; border-radius:4px 4px 0 0; display:flex; align-items:flex-end; justify-content:center; font-size:11px; padding-bottom:4px;">FP32<br>28GB</div>
-    <div style="width:40px; background:var(--green); height:50%; border-radius:4px 4px 0 0; display:flex; align-items:flex-end; justify-content:center; font-size:11px; padding-bottom:4px;">FP16<br>14GB</div>
-    <div style="width:30px; background:var(--orange); height:25%; border-radius:4px 4px 0 0; display:flex; align-items:flex-end; justify-content:center; font-size:11px; padding-bottom:4px;">INT8<br>7GB</div>
-    <div style="width:20px; background:var(--red); height:12.5%; border-radius:4px 4px 0 0; display:flex; align-items:flex-end; justify-content:center; font-size:11px; padding-bottom:4px;">INT4<br>3.5G</div>
-  </div>
+<div class="card">
+  <h3>③ 误差分布（每个值的绝对误差，从大到小排序）</h3>
+  <canvas id="canvasError" height="140"></canvas>
 </div>
 
 <script>
-const N = 256, SEED = 42;
+const N=60,SEED=42;
+function rng(s){return function(){s=(s*16807)%2147483647;return(s-1)/2147483646;}}
 
-function seededRandom(s) { return function() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
-
-function generateData(distType, outlierStrength) {
-  const rng = seededRandom(SEED);
-  const data = [];
-  for (let i = 0; i < N; i++) {
-    let v;
-    if (distType === 'normal') {
-      // Box-Muller
-      const u1 = rng(), u2 = rng();
-      v = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * 0.3;
-    } else {
-      v = Math.max(0, (rng() + rng() + rng() - 1.2) * 0.5);
-    }
-    data.push(v);
-  }
-  // Add outliers
-  if (outlierStrength > 0 && distType === 'normal') {
-    data[0] = outlierStrength * 0.5 * (rng() > 0.5 ? 1 : -1);
-    data[1] = outlierStrength * 0.4 * (rng() > 0.5 ? 1 : -1);
-  }
-  return data;
+function genData(outlier){
+  const r=rng(SEED),d=[];
+  for(let i=0;i<N;i++){const u1=r(),u2=r();d.push(Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*0.3)}
+  if(outlier>0){d[0]=outlier*0.5;d[1]=outlier*0.4}
+  return d;
 }
 
-function symmetricQuantize(data, bits) {
-  const qmax = (1 << (bits - 1)) - 1;
-  const maxAbs = Math.max(...data.map(v => Math.abs(v))) || 1e-9;
-  const scale = maxAbs / qmax;
-  const quantized = data.map(v => Math.max(-qmax, Math.min(qmax, Math.round(v / scale))));
-  const dequantized = quantized.map(q => q * scale);
-  return { scale, qmax, quantized, dequantized, levels: qmax * 2 + 1 };
+function symQuant(data,bits){
+  const qmax=(1<<(bits-1))-1;
+  const maxAbs=Math.max(...data.map(v=>Math.abs(v)))||1e-9;
+  const scale=maxAbs/qmax;
+  const q=data.map(v=>Math.max(-qmax,Math.min(qmax,Math.round(v/scale))));
+  const deq=q.map(x=>x*scale);
+  const errs=data.map((v,i)=>Math.abs(v-deq[i]));
+  return{scale,q,deq,errs,n:qmax*2+1};
 }
 
-function asymmetricQuantize(data, bits) {
-  const qmax = (1 << bits) - 1;
-  const xMin = Math.min(...data), xMax = Math.max(...data);
-  const scale = (xMax - xMin) / qmax || 1e-9;
-  const zp = Math.max(0, Math.min(qmax, Math.round(-xMin / scale)));
-  const quantized = data.map(v => Math.max(0, Math.min(qmax, Math.round(v / scale + zp))));
-  const dequantized = quantized.map(q => (q - zp) * scale);
-  return { scale, qmax, zp, quantized, dequantized, levels: qmax + 1 };
+function drawDist(canvas,data){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth*2,H=canvas.height=140*2;
+  ctx.clearRect(0,0,W,H);
+  const min=Math.min(...data),max=Math.max(...data),rng=max-min||1;
+  const bins=40,bw=rng/bins;
+  const cnt=new Array(bins).fill(0);
+  data.forEach(v=>{const i=Math.min(bins-1,Math.max(0,Math.floor((v-min)/bw)));cnt[i]++;});
+  const mx=Math.max(...cnt);
+  const barW=(W-60)/bins;
+  ctx.fillStyle='rgba(88,166,255,0.3)';
+  cnt.forEach((c,i)=>{const h=c/mx*(H-60);ctx.fillRect(42+i*barW,H-30-h,Math.max(1,barW-1),h)});
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(40,20);ctx.lineTo(40,H-30);ctx.lineTo(W-20,H-30);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='16px monospace';
+  ctx.fillText(min.toFixed(2),42,H-8);ctx.fillText(max.toFixed(2),W-70,H-8);
 }
 
-function drawHistogram(canvas, data, color, title) {
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width = canvas.clientWidth * 2;
-  const H = canvas.height = 200 * 2;
-  ctx.clearRect(0, 0, W, H);
+function drawErrBars(canvas,results,globalMaxErr){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth*2,H=canvas.height=140*2;
+  ctx.clearRect(0,0,W,H);
+  const yMax=globalMaxErr*1.1||1e-9;
+  const colors={8:'#3fb950',4:'#d2991d',3:'#f0883e',2:'#f85149'};
+  const bits=[8,4,3,2];
+  const groupW=(W-60)/4,gap=4;
 
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
-  const bins = 50, binW = (range) / bins;
-  const counts = new Array(bins).fill(0);
-  data.forEach(v => { const idx = Math.min(bins - 1, Math.max(0, Math.floor((v - min) / binW))); counts[idx]++; });
-
-  const maxCount = Math.max(...counts);
-  const barW = (W - 60) / bins;
-
-  // Axes
-  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, H - 30); ctx.lineTo(W - 20, H - 30); ctx.stroke();
-
-  ctx.fillStyle = color;
-  counts.forEach((c, i) => {
-    const h = (c / maxCount) * (H - 60);
-    ctx.fillRect(42 + i * barW, H - 30 - h, Math.max(1, barW - 1), h);
+  bits.forEach((b,gi)=>{
+    const errs=[...results[b].errs].sort((a,b)=>b-a);
+    const x0=42+gi*groupW;
+    const bw=Math.max(1,(groupW-gap*2)/errs.length);
+    ctx.fillStyle=colors[b];
+    errs.forEach((e,i)=>{
+      const h=(e/yMax)*(H-60);
+      ctx.fillRect(x0+gap+i*bw,H-30-h,Math.max(0.5,bw-0.5),h||0.3);
+    });
+    ctx.fillStyle='#8b949e';ctx.font='14px monospace';
+    ctx.fillText(`INT${b}`,x0+groupW/2-14,H-10);
   });
 
-  ctx.fillStyle = '#8b949e'; ctx.font = '18px monospace';
-  ctx.fillText(min.toFixed(2), 42, H - 8);
-  ctx.fillText(max.toFixed(2), W - 80, H - 8);
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(40,20);ctx.lineTo(40,H-30);ctx.lineTo(W-20,H-30);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='14px monospace';
+  ctx.fillText('0',38,H-8);
+  ctx.fillText(yMax.toFixed(4),38,22);
 }
 
-function drawAfterHistogram(canvas, original, dequantized, quantized, levels) {
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width = canvas.clientWidth * 2;
-  const H = canvas.height = 200 * 2;
-  ctx.clearRect(0, 0, W, H);
+function renderTable(results,outlier){
+  const bits=[8,4,3,2];
+  const fp16Mem=14;
+  const globalMaxErr=Math.max(...bits.map(b=>Math.max(...results[b].errs)));
 
-  const all = [...original, ...dequantized];
-  const min = Math.min(...all), max = Math.max(...all), range = max - min || 1;
-
-  // Draw original as faint background
-  const bins = 50, binW = range / bins;
-  const counts = new Array(bins).fill(0);
-  original.forEach(v => { const idx = Math.min(bins - 1, Math.max(0, Math.floor((v - min) / binW))); counts[idx]++; });
-  const maxCount = Math.max(...counts);
-  const barW = (W - 60) / bins;
-
-  ctx.fillStyle = 'rgba(88,166,255,0.2)';
-  counts.forEach((c, i) => {
-    const h = (c / maxCount) * (H - 60);
-    ctx.fillRect(42 + i * barW, H - 30 - h, Math.max(1, barW - 1), h);
+  let html=`<tr><th>精度</th><th>级别数</th><th>HBM</th><th>Scale</th><th>利用率</th><th>Max Err</th><th>Mean Err</th><th>RMSE</th><th style="text-align:center">HBM节省</th></tr>`;
+  bits.forEach(b=>{
+    const r=results[b];
+    const rmse=Math.sqrt(r.errs.reduce((s,e)=>s+e*e,0)/N);
+    const mean=r.errs.reduce((s,e)=>s+e,0)/N;
+    const maxE=Math.max(...r.errs);
+    const levels=new Set(r.q).size;
+    const mem=fp16Mem*b/16;
+    const pct=(levels/(1<<b)*100).toFixed(0);
+    const savePct=((1-b/16)*100).toFixed(0);
+    const color={8:'#3fb950',4:'#d2991d',3:'#f0883e',2:'#f85149'}[b];
+    html+=`<tr>
+      <td style="color:${color}">INT${b}</td>
+      <td>${1<<b}</td>
+      <td>${mem.toFixed(1)} GB</td>
+      <td>${r.scale.toFixed(6)}</td>
+      <td>${levels}/${1<<b} (${pct}%)</td>
+      <td>${maxE.toFixed(6)}</td>
+      <td>${mean.toFixed(6)}</td>
+      <td>${rmse.toFixed(6)}</td>
+      <td class="bar-cell"><div class="bar-fill" style="width:${savePct}%;background:${color}"></div><span style="font-size:11px;margin-left:4px">${savePct}%</span></td>
+    </tr>`;
   });
-
-  // Draw quantization levels as vertical lines
-  const uniqueDeq = [...new Set(dequantized)].sort((a, b) => a - b);
-  ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 1.5;
-  uniqueDeq.forEach(v => {
-    const x = 42 + ((v - min) / range) * (W - 60);
-    ctx.beginPath(); ctx.moveTo(x, 20); ctx.lineTo(x, H - 30); ctx.stroke();
-  });
-
-  // Draw error lines for a few samples
-  ctx.strokeStyle = 'rgba(248,81,73,0.4)'; ctx.lineWidth = 0.5;
-  for (let i = 0; i < Math.min(30, original.length); i++) {
-    const x1 = 42 + ((original[i] - min) / range) * (W - 60);
-    const x2 = 42 + ((dequantized[i] - min) / range) * (W - 60);
-    ctx.beginPath(); ctx.moveTo(x1, H - 30 - (i / 30) * (H - 60));
-    ctx.lineTo(x2, H - 30 - (i / 30) * (H - 60)); ctx.stroke();
-  }
-
-  ctx.fillStyle = '#8b949e'; ctx.font = '18px monospace';
-  ctx.fillText(min.toFixed(2), 42, H - 8);
-  ctx.fillText(max.toFixed(2), W - 80, H - 8);
-  document.getElementById('afterTitle').innerHTML = `量化后重建值（${levels} 个离散级别）`;
+  document.getElementById('metricsTable').innerHTML=html;
+  return globalMaxErr;
 }
 
-function drawErrorChart(canvas, original, dequantized) {
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width = canvas.clientWidth * 2;
-  const H = canvas.height = 160 * 2;
-  ctx.clearRect(0, 0, W, H);
+function update(){
+  const outlier=+document.getElementById('outlier').value;
+  document.getElementById('outlierVal').textContent=outlier+'×';
+  const data=genData(outlier);
+  drawDist(document.getElementById('canvasDist'),data);
 
-  const errors = original.map((v, i) => Math.abs(v - dequantized[i]));
-  errors.sort((a, b) => b - a);
-
-  const barW = Math.max(2, (W - 60) / errors.length);
-  const maxErr = errors[0] || 1;
-
-  ctx.fillStyle = '#f85149';
-  errors.forEach((e, i) => {
-    const h = (e / maxErr) * (H - 60);
-    ctx.fillRect(42 + i * barW, H - 30 - h, Math.max(1, barW - 1), h);
-  });
-
-  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(40, 20); ctx.lineTo(40, H - 30); ctx.lineTo(W - 20, H - 30); ctx.stroke();
-  ctx.fillStyle = '#8b949e'; ctx.font = '18px monospace';
-  ctx.fillText('0', 42, H - 8);
-  ctx.fillText(maxErr.toFixed(4), 42, 30);
+  const results={};
+  [8,4,3,2].forEach(b=>{results[b]=symQuant(data,b)});
+  const globalMaxErr=renderTable(results,outlier);
+  drawErrBars(document.getElementById('canvasError'),results,globalMaxErr);
 }
 
-function renderQuantLevels(data, quantized, dequantized, scale, method, bits) {
-  const container = document.getElementById('quantLevels');
-  const uniqueQ = [...new Set(quantized)].sort((a, b) => a - b);
-  const qmin = uniqueQ[0], qmax = uniqueQ[uniqueQ.length - 1];
-
-  // Show the mapping visually
-  let html = '<div style="display:flex; gap:2px; flex-wrap:wrap; margin-bottom:8px;">';
-  uniqueQ.forEach(q => {
-    const dq = dequantized[quantized.indexOf(q)];
-    const intensity = (q - qmin) / (qmax - qmin || 1);
-    const r = Math.round(80 + 120 * intensity);
-    const g = Math.round(100 + 80 * (1 - intensity));
-    html += `<div class="quant-cell" style="background:rgb(${r},${g},120)" title="q=${q}, val=${dq.toFixed(4)}">${q}</div>`;
-  });
-  html += '</div>';
-  container.innerHTML = html;
-
-  const pct = (uniqueQ.length / (2 ** bits) * 100).toFixed(0);
-  document.getElementById('metricsScale').innerHTML = `
-    <span>Scale: <strong>${scale.toFixed(6)}</strong></span>
-    <span>量化级别: <strong>${uniqueQ.length}</strong> / ${2 ** bits} (${pct}% 利用率)</span>
-    <span>最小步长: <strong>${scale.toFixed(6)}</strong></span>
-  `;
-}
-
-function update() {
-  const bits = parseInt(document.getElementById('bits').value);
-  const outlier = parseInt(document.getElementById('outlier').value);
-  const distType = document.getElementById('distType').value;
-  const quantType = document.getElementById('quantType').value;
-
-  document.getElementById('outlierVal').textContent = outlier + '×';
-
-  const data = generateData(distType, outlier);
-  let result, rms, maxErr;
-
-  if (quantType === 'symmetric') {
-    result = symmetricQuantize(data, bits);
-  } else {
-    result = asymmetricQuantize(data, bits);
-  }
-
-  rms = Math.sqrt(data.reduce((s, v, i) => s + (v - result.dequantized[i]) ** 2, 0) / data.length);
-  maxErr = Math.max(...data.map((v, i) => Math.abs(v - result.dequantized[i])));
-
-  drawHistogram(document.getElementById('canvasBefore'), data, '#58a6ff');
-  drawAfterHistogram(document.getElementById('canvasAfter'), data, result.dequantized, result.quantized, result.levels);
-  drawErrorChart(document.getElementById('canvasError'), data, result.dequantized);
-  renderQuantLevels(data, result.quantized, result.dequantized, result.scale, quantType, bits);
-
-  document.getElementById('metricsError').innerHTML = `
-    <span>RMS Error: <strong>${rms.toFixed(6)}</strong></span>
-    <span>Max Error: <strong class="warn">${maxErr.toFixed(6)}</strong></span>
-    <span>= <strong>${(maxErr / result.scale).toFixed(1)}</strong> × scale</span>
-    <span>量化方式: <strong>${quantType === 'symmetric' ? '对称 (zero=0)' : '非对称 (zero point=' + (result.zp || 0) + ')'}</strong></span>
-  `;
-}
-
-document.getElementById('bits').addEventListener('change', update);
-document.getElementById('outlier').addEventListener('input', update);
-document.getElementById('distType').addEventListener('change', update);
-document.getElementById('quantType').addEventListener('change', update);
-
+document.getElementById('outlier').addEventListener('input',update);
 update();
 </script>
 </body>

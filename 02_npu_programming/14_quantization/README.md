@@ -8,7 +8,7 @@
 | --------------------------- | --------------------------------------------------------- |
 | `01_quantization_theory.md` | 量化推理理论（对称/非对称、per-tensor/per-channel、校准） |
 | `quantization_demo.py`      | 纯 Python 量化演示（量化和反量化、误差分析）              |
-| `quantization_viz.html`     | 交互式量化可视化（调整位数/outlier/分布，实时图表）       |
+| `quantization_viz.html`     | 量化精度对比面板（INT8/4/3/2 表格 + 误差分布图）          |
 | `quantization_guide.html`   | 交互式学习指南（完整手算示例，逐步展示量化过程）          |
 
 ## 关键概念
