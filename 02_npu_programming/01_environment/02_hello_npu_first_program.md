@@ -96,7 +96,7 @@ z = torch.matmul(x, y)
 print(f"设备: {z.device}")  # npu:0
 ```
 
-完整脚本见 `01_environment/hello_npu.py`。
+完整脚本见 [hello_npu.py](hello_npu.py)。
 
 在远端服务器上的运行方式：
 
@@ -138,7 +138,7 @@ ASCEND_RT_VISIBLE_DEVICES=7 python3 01_environment/hello_npu.py
 
 ### 6.3 内存模型
 
-NPU 的内存分为 HBM (High Bandwidth Memory) 和 DDR。Ascend 910B3 每卡配备 64GB HBM（从 `npu-smi info` 可见 65536 MB ≈ 64 GB，完整用法见 `01_npu_smi_reference.md`）。本服务器的 910B3 仅使用 HBM，DDR 容量为 0（`npu-smi info -t usages` 中 `DDR Capacity(MB): 0`）。`torch.npu.memory_allocated()` 和 `memory_reserved()` 的行为与 CUDA 对应 API 一致：
+NPU 的内存分为 HBM (High Bandwidth Memory) 和 DDR。Ascend 910B3 每卡配备 64GB HBM（从 `npu-smi info` 可见 65536 MB ≈ 64 GB，完整用法见 [01_npu_smi_reference.md](../05_tools/01_npu_smi_reference.md)）。本服务器的 910B3 仅使用 HBM，DDR 容量为 0（`npu-smi info -t usages` 中 `DDR Capacity(MB): 0`）。`torch.npu.memory_allocated()` 和 `memory_reserved()` 的行为与 CUDA 对应 API 一致：
 
 - `allocated`：正在使用的张量内存
 - `reserved`：PyTorch 缓存分配器保留的内存

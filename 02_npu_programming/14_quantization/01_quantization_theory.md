@@ -423,7 +423,7 @@ GPTQ 本身是算法——可以用 NumPy 实现。bitsandbytes 和 AWQ 是 GPTQ
 
 ## 8. 演示脚本
 
-`quantization_demo.py` 包含：
+[quantization_demo.py](quantization_demo.py) 包含：
 
 - 对称量化和反量化的完整实现
 - 非对称量化和反量化
@@ -432,7 +432,7 @@ GPTQ 本身是算法——可以用 NumPy 实现。bitsandbytes 和 AWQ 是 GPTQ
 
 运行：`python3 quantization_demo.py`
 
-另外，`quantization_viz.html` 提供交互式量化精度对比——调整 outlier 强度，并排对比 INT8/4/3/2 的 Scale、RMSE、利用率、HBM 节省等指标，含误差分布柱状图。
+另外，[quantization_viz.html](quantization_viz.html) 提供交互式量化精度对比——调整 outlier 强度，并排对比 INT8/4/3/2 的 Scale、RMSE、利用率、HBM 节省等指标，含误差分布柱状图。
 
 ## 参考链接
 

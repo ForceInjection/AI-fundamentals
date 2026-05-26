@@ -71,7 +71,7 @@ for images, labels in dataloader:
     scaler.update()
 ```
 
-完整训练脚本见 `03_pytorch_npu/train_resnet50.py`。
+完整训练脚本见 [train_resnet50.py](train_resnet50.py)。
 
 ## 3. 实验结果
 
@@ -150,7 +150,7 @@ NPU 的浮点运算结果与 GPU 存在可忽略的微小差异（与 01-hello-n
 
 ## 6. Profiling
 
-进行 profiling 前，先用 `npu-smi info` 确认目标卡空闲（AICore 0%、HBM 余量充足，详见 `01_npu_smi_reference.md`）。使用 CANN 自带的 `msprof` 进行性能分析：
+进行 profiling 前，先用 `npu-smi info` 确认目标卡空闲（AICore 0%、HBM 余量充足，详见 [01_npu_smi_reference.md](../05_tools/01_npu_smi_reference.md)）。使用 CANN 自带的 `msprof` 进行性能分析：
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh

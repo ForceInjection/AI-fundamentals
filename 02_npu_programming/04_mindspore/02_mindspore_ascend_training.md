@@ -7,7 +7,7 @@
 | MindSpore | 2.6.0                                                                          |
 | CANN      | 8.0.1                                                                          |
 | Python    | 3.10.12                                                                        |
-| 设备      | Ascend 910B3 (NPU 7，空闲确认：`npu-smi info`，详见 `01_npu_smi_reference.md`) |
+| 设备      | Ascend 910B3 (NPU 7，空闲确认：`npu-smi info`，详见 [01_npu_smi_reference.md](../05_tools/01_npu_smi_reference.md)) |
 | 兼容性    | MindSpore ≥2.6 对应 CANN ≥8.0，当前组合无版本冲突警告                          |
 
 ---

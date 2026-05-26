@@ -213,7 +213,7 @@ npu-smi info -t common -i 7
 | 输出格式 | 纯文本                  | 支持 `--fmt json`                |
 | 最佳场景 | 日常巡检、确认卡状态    | 装机验收、性能基准、硬件排障     |
 
-日常流程：`npu-smi` 快速确认所有卡 OK → 发现异常时用 `npu-smi info -t <type> -i <id>` 深入查看 → 需要定量诊断或压测时切到 `ascend-dmi`（详见 `02_ascend_dmi_reference.md`）。
+日常流程：`npu-smi` 快速确认所有卡 OK → 发现异常时用 `npu-smi info -t <type> -i <id>` 深入查看 → 需要定量诊断或压测时切到 `ascend-dmi`（详见 [02_ascend_dmi_reference.md](02_ascend_dmi_reference.md)）。
 
 ## 7. 参考链接
 
