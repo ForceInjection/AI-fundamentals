@@ -1,6 +1,6 @@
 # 华为 NPU 编程入门
 
-系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → Mini-GPT → FlashAttention → LLM 推理 → DDP 多卡训练 → LoRA 微调 → 量化推理**十四大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
+系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → Mini-GPT → FlashAttention → LLM 推理 → DDP 多卡训练 → LoRA 微调 → 模型量化**十四大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
 
 > **快速导航**
 >
@@ -19,7 +19,7 @@
 > | `11_llm_inference/`       | LLM 推理 on NPU             | Qwen2.5 7B BF16, 自回归, ChatML, NaN 诊断 | §11      |
 > | `12_ddp/`                 | DDP 多卡分布式训练          | HCCL, AllReduce, 8 卡梯度同步, 14B 全参   | §12      |
 > | `13_finetune/`            | LoRA 微调                   | PEFT, SFT v.s. CLM, RAG+SFT 协同, 380 QA  | §13      |
-> | `14_quantization/`        | 量化推理 (INT8/INT4)        | 对称/非对称, per-channel, 校准, 精度-效率 | §14      |
+> | `14_quantization/`        | 模型量化 (INT8/INT4)        | 对称/非对称, per-channel, 校准, 精度-效率 | §14      |
 
 ---
 
@@ -36,7 +36,7 @@
 
 - **基础层（§2→§6）**：环境搭建 → 架构理解 → 框架实战（PyTorch NPU / MindSpore）→ 工具链掌握 → 进阶算子开发。目标是"在 NPU 上跑通模型训练"。
 - **实战层（§7→§11）**：RAG 检索增强生成 → NPU 性能分析 → FlashAttention 手写 → Mini-GPT 从零训练 → LLM 推理部署。目标是"把 NPU 用到生产级任务中"。
-- **规模化层（§12→§14）**：DDP 多卡分布式训练 → LoRA 参数高效微调 → INT8/INT4 量化推理。目标是"从单卡走向多卡，从微调走向压缩部署"。
+- **规模化层（§12→§14）**：DDP 多卡分布式训练 → LoRA 参数高效微调 → 模型量化。目标是"从单卡走向多卡，从微调走向压缩部署"。
 
 ---
 
@@ -174,7 +174,7 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 
 ---
 
-## 14. 量化推理 (INT8/INT4)
+## 14. 模型量化
 
 理解模型量化的数学原理：对称/非对称量化、per-tensor/per-channel 粒度、校准数据的作用，以及 FP16/BF16 vs INT8/INT4 的精度-效率权衡。7B 模型 INT4 量化后仅需 ~3.5 GB HBM。当前 CANN 8.0.1 + torch_npu 2.1.0 栈不支持 HF 模型的 INT8/INT4 推理（bitsandbytes/GPTQ/AWQ 均为 CUDA 专用），本章聚焦理论理解和 CPU 演示。
 
