@@ -510,9 +510,7 @@ MindSpore                                   |
 
 ```text
 10_mini_gpt/
-├── README.md
-├── 01_mini_gpt_training.md    # 本文
-└── train_gpt.py               # Mini-GPT 完整实现（~310 行）
+└── train_gpt.py       # Mini-GPT 完整实现（~310 行）
     ├── CharTokenizer           — 字符↔ID 映射 (encode/decode)
     ├── CausalSelfAttention     — 多头 causal self-attention
     │   ├── Q/K/V 合并投影       (一次 Linear 替代三次)

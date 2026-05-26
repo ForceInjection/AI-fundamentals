@@ -12,6 +12,9 @@ __pycache__/
 #Qoder
 .qoder
 
+# Sync script
+sync.sh
+
 # C extensions
 *.so
 

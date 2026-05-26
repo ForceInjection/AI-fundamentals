@@ -2,15 +2,15 @@
 
 ## 1. 环境概览
 
-| 项目      | 版本/型号                    |
-| --------- | ---------------------------- |
-| 服务器    | Ubuntu 22.04.4 LTS (aarch64) |
-| NPU 型号  | Ascend 910B3 × 8             |
-| CANN 版本 | 8.0.1 (runtime 7.6.0.2.220)  |
-| Python    | 3.10.12                      |
-| PyTorch   | 2.1.0                        |
-| torch_npu | 2.1.0.post13                 |
-| 虚拟环境  | `/home/user/npu-learning/venv`    |
+| 项目      | 版本/型号                      |
+| --------- | ------------------------------ |
+| 服务器    | Ubuntu 22.04.4 LTS (aarch64)   |
+| NPU 型号  | Ascend 910B3 × 8               |
+| CANN 版本 | 8.0.1 (runtime 7.6.0.2.220)    |
+| Python    | 3.10.12                        |
+| PyTorch   | 2.1.0                          |
+| torch_npu | 2.1.0.post13                   |
+| 虚拟环境  | `/home/user/npu-learning/venv` |
 
 ## 2. 安装步骤
 
