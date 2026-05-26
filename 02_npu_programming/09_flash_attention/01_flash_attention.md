@@ -212,7 +212,7 @@ Python 实现的 FlashAttention 比标准 Attention 慢（341ms vs 0.1ms @ N=204
 
 ## 5. 代码结构
 
-`flash_attention.py` 约 190 行，分为三组：核心算法（standard attention + flash attention forward）、验证工具（精度/显存/速度对比）、CLI 入口。
+[flash_attention.py](flash_attention.py) 约 190 行，分为三组：核心算法（standard attention + flash attention forward）、验证工具（精度/显存/速度对比）、CLI 入口。
 
 ```text
 09_flash_attention/

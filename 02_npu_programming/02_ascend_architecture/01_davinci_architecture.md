@@ -36,7 +36,7 @@ NPU7  HCCS  HCCS  HCCS  HCCS  HCCS  HCCS  HCCS   X
 
 8 卡之间每两张卡均有 HCCS 专有链路直连，不经过 PCIe 或 NUMA。这是训练集群的理想拓扑。
 
-> 通过 `ascend-dmi --info --detail` 可获得更完整的硬件规格（DIE ID、AI CPU 数量、ECC 状态、PCIe LnkCap 等），详见 `02_ascend_dmi_reference.md` 第 3 节。
+> 通过 `ascend-dmi --info --detail` 可获得更完整的硬件规格（DIE ID、AI CPU 数量、ECC 状态、PCIe LnkCap 等），详见 [02_ascend_dmi_reference.md](../05_tools/02_ascend_dmi_reference.md) 第 3 节。
 
 ---
 

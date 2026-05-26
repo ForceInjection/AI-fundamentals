@@ -44,7 +44,7 @@ Layer 2: 生成评估 (Generation Eval)
 
 ### 2.1 方法
 
-`rag_eval.py` 实现检索评估，依赖 `rag_pipeline` 中的 `EmbeddingEngine` 和 `VectorStore`，核心指标：
+[rag_eval.py](rag_eval.py) 实现检索评估，依赖 `rag_pipeline` 中的 `EmbeddingEngine` 和 `VectorStore`，核心指标：
 
 - **MRR (Mean Reciprocal Rank)**：第一个正确答案的排名的倒数。MRR=1.0 表示总是排在第一位
 - **Recall@k**：top-k 中覆盖了 ground truth 的比例。Recall@5=1.0 表示所有答案都在前 5 个结果中
@@ -89,7 +89,7 @@ Layer 2: 生成评估 (Generation Eval)
 
 #### 2.4 混合检索与重排序实验
 
-对 BM25 混合检索和 CrossEncoder 重排序进行了对比实验（`hybrid_search.py`），结论：
+对 BM25 混合检索和 CrossEncoder 重排序进行了对比实验（[hybrid_search.py](hybrid_search.py)），结论：
 
 | 方案                       | MRR      | vs 纯向量 |
 | -------------------------- | -------- | --------- |
@@ -109,7 +109,7 @@ Layer 2: 生成评估 (Generation Eval)
 
 ### 3.1 方法
 
-`rag_eval_ragas.py` 用同样的问题和检索结果，对比 7B BF16 和 0.5B BF16 的生成输出。评估维度包括准确率、速度、回答长度。
+[rag_eval_ragas.py](rag_eval_ragas.py) 用同样的问题和检索结果，对比 7B BF16 和 0.5B BF16 的生成输出。评估维度包括准确率、速度、回答长度。
 
 **ragas 环境说明**：`rag-env` 中 ragas 与 langchain 存在版本冲突（`langchain-community 0.4.2` 不兼容 `langchain-core 1.4.0`）。解决方案是创建独立的 `eval-env`：
 
