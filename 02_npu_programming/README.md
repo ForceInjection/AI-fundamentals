@@ -17,8 +17,8 @@
 > | `09_flash_attention/`     | FlashAttention 简化版       | Tiling, Online Softmax, O(N²)→O(N)        | §9       |
 > | `10_mini_gpt/`            | Mini-GPT 手写 Transformer   | Self-Attention, Causal Mask, 字符级编码   | §10      |
 > | `11_llm_inference/`       | LLM 推理 on NPU             | Qwen2.5 7B BF16, 自回归, ChatML, NaN 诊断 | §11      |
-| `12_ddp/`                 | DDP 多卡分布式训练          | HCCL, AllReduce, 8 卡梯度同步, 14B 全参    | §12      |
-| `13_finetune/`            | LoRA 微调                   | PEFT, SFT v.s. CLM, RAG+SFT 协同, 380 QA  | §13      |
+> | `12_ddp/`                 | DDP 多卡分布式训练          | HCCL, AllReduce, 8 卡梯度同步, 14B 全参   | §12      |
+> | `13_finetune/`            | LoRA 微调                   | PEFT, SFT v.s. CLM, RAG+SFT 协同, 380 QA  | §13      |
 
 ---
 
@@ -31,13 +31,11 @@
 - **PyTorch NPU 适配**：通过 `torch_npu` 将现有 PyTorch 代码迁移到 Ascend 硬件，API 层面几乎只需将 `cuda` 替换为 `npu`。适合有 GPU/CUDA 经验的开发者快速上手。
 - **MindSpore 原生**：华为自研框架，对 Ascend 有原生支持，提供 PyNative（动态图）和 Graph（静态图）两种执行模式，编程范式与 PyTorch 有明显差异。
 
-完整路径拆为五个递进阶段：
+完整路径拆为三个递进层次：
 
-- **环境**：先把 CANN 工具链和虚拟环境搭起来，理解 `set_env.sh` 和 venv 的加载顺序为什么不能颠倒。
-- **架构**：看达芬奇架构的 Cube/Vector/Scalar 三单元分工和 CANN 软件栈的七层结构，建立与 CUDA 生态的对照。
-- **框架实战**：用 PyTorch NPU 和 MindSpore 分别跑 ResNet-50 训练，对比 FP32/AMP 的吞吐和显存差异。
-- **工具链**：掌握 `npu-smi`（类似 `nvidia-smi`）和 `ascend-dmi`（类似 `deviceQuery` + `bandwidthTest`）的日常用法，以及 ATC 模型转换流程。
-- **进阶**：Ascend C 自定义算子、GPU→NPU 迁移决策树。
+- **基础层（§2→§6）**：环境搭建 → 架构理解 → 框架实战（PyTorch NPU / MindSpore）→ 工具链掌握 → 进阶算子开发。目标是"在 NPU 上跑通模型训练"。
+- **实战层（§7→§11）**：RAG 检索增强生成 → NPU 性能分析 → FlashAttention 手写 → Mini-GPT 从零训练 → LLM 推理部署。目标是"把 NPU 用到生产级任务中"。
+- **规模化层（§12→§13）**：DDP 多卡分布式训练 + LoRA 参数高效微调。目标是"从单卡走向多卡，从推理走向微调"。
 
 ---
 
@@ -161,9 +159,9 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 
 ## 12. DDP 多卡分布式训练
 
-在 Ascend NPU 上使用 HCCL 集合通信库实现多卡分布式训练（DDP），覆盖 HCCL vs NCCL 对照、DDP 工作原理、ResNet-50/LLM 完整训练脚本、初始化常见故障排查、14B 全参训练准备。8 张 910B3 通过 HCCS 全互联，每两张卡直连，通信延迟低。
+在 Ascend NPU 上使用 HCCL 集合通信库实现多卡分布式训练（DDP），覆盖 HCCL vs NCCL 对照、DDP 工作原理、7B LoRA 多卡微调、初始化常见故障排查、14B 全参训练准备。8 张 910B3 通过 HCCS 全互联，每两张卡直连，通信延迟低。
 
-- [DDP 多卡训练详解](12_ddp/01_ddp_training.md) — HCCL 集合通信、DDP 初始化与数据分发、ResNet-50 多卡示例、7B/14B LLM DDP 策略、HCCL 初始化故障排查
+- [DDP 多卡训练详解](12_ddp/01_ddp_training.md) — HCCL 集合通信、DDP 初始化与数据分发、7B LoRA 多卡微调、等效 batch 计算、HCCL 初始化故障排查
 
 ---
 
