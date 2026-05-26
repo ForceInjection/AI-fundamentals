@@ -19,7 +19,7 @@
 > | `11_llm_inference/`       | LLM 推理 on NPU             | Qwen2.5 7B BF16, 自回归, ChatML, NaN 诊断 | §11      |
 > | `12_ddp/`                 | DDP 多卡分布式训练          | HCCL, AllReduce, 8 卡梯度同步, 14B 全参   | §12      |
 > | `13_finetune/`            | LoRA 微调                   | PEFT, SFT v.s. CLM, RAG+SFT 协同, 380 QA  | §13      |
-> | `14_quantization/`        | 量化推理 (INT8/INT4)       | 对称/非对称, per-channel, 校准, 精度-效率  | §14      |
+> | `14_quantization/`        | 量化推理 (INT8/INT4)        | 对称/非对称, per-channel, 校准, 精度-效率 | §14      |
 
 ---
 
@@ -179,7 +179,7 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 理解模型量化的数学原理：对称/非对称量化、per-tensor/per-channel 粒度、校准数据的作用，以及 FP16/BF16 vs INT8/INT4 的精度-效率权衡。7B 模型 INT4 量化后仅需 ~3.5 GB HBM。当前 CANN 8.0.1 + torch_npu 2.1.0 栈不支持 HF 模型的 INT8/INT4 推理（bitsandbytes/GPTQ/AWQ 均为 CUDA 专用），本章聚焦理论理解和 CPU 演示。
 
 - [量化推理详解](14_quantization/01_quantization_theory.md) — 对称/非对称量化、per-tensor/per-channel、校准方法、INT8/INT4 精度分析
-- 交互演示：`quantization_viz.html`（可视化位宽影响）、`quantization_guide.html`（手算示例）
+- 交互演示：[`quantization_viz.html`（可视化位宽影响）](./14_quantization/quantization_viz.html)、[`quantization_guide.html`（手算示例）](./14_quantization/quantization_guide.html)
 
 ---
 
