@@ -194,6 +194,7 @@ ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python3 -m torch.distributed.run \
 - **FSDP (Fully Sharded Data Parallel)**：将模型参数也分片到多卡，支持 70B+ 模型（单卡放不下完整模型时必需）
 - **混合并行**：数据并行 + 模型并行 + Pipeline 并行的组合（如 Megatron-LM 风格）
 - **多机多卡**：`--nnodes=2 --node_rank=0/1` 跨服务器训练
+- **vLLM-Ascend 推理服务化**：已验证当前环境不支持——vLLM-Ascend 要求 CANN ≥9.0.0 + PyTorch ≥2.10.0，而服务器驱动 24.1.0.3 仅配套 CANN 8.0.1。Docker 容器化（共享主机驱动）同样不可行（NPU 初始化失败 drvRet=87）。需升级主机驱动后才能启用。
 
 ## 参考链接
 

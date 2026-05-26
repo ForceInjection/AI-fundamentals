@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化推理 — 交互式学习指南</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--bdr:#30363d;--tx:#c9d1d9;--ac:#58a6ff;--gn:#3fb950;--or:#d2991d;--rd:#f85149;--dim:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);padding:24px;max-width:1100px;margin:0 auto}
+h1{font-size:26px;margin-bottom:4px}
+.sub{color:var(--dim);font-size:14px;margin-bottom:28px}
+h2{font-size:20px;margin:32px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--bdr);color:var(--ac)}
+h3{font-size:16px;margin:20px 0 10px}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:20px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr)}
+th{color:var(--ac);font-weight:600;font-size:13px}
+td{font-size:14px}
+.calc-row{font-family:'SF Mono',monospace;font-size:13px}
+.step{color:var(--ac);font-weight:600}
+.val-good{color:var(--gn)}
+.val-bad{color:var(--rd)}
+.val-dim{color:var(--dim)}
+.val-hi{color:var(--or)}
+.highlight{background:rgba(88,166,255,0.08);border-radius:4px;padding:2px 6px}
+.code{background:#0d1117;border:1px solid var(--bdr);border-radius:6px;padding:16px;margin:12px 0;font-family:'SF Mono',monospace;font-size:13px;line-height:1.6;overflow-x:auto;white-space:pre}
+.note{background:rgba(88,166,255,0.08);border-left:3px solid var(--ac);padding:10px 14px;margin:12px 0;border-radius:0 6px 6px 0;font-size:14px}
+.warn{background:rgba(210,153,29,0.08);border-left:3px solid var(--or)}
+.good{background:rgba(63,185,80,0.08);border-left:3px solid var(--gn)}
+.bar-container{display:flex;gap:2px;align-items:flex-end;height:80px;margin:12px 0}
+.bar{border-radius:3px 3px 0 0;display:flex;align-items:flex-end;justify-content:center;font-size:11px;padding-bottom:4px;color:#fff;font-weight:600}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:4px}
+.tag-g{background:rgba(63,185,80,0.15);color:var(--gn)}
+.tag-r{background:rgba(248,81,73,0.15);color:var(--rd)}
+.tag-o{background:rgba(210,153,29,0.15);color:var(--or)}
+.calc-steps{font-size:13px;line-height:1.8}
+.comparison td:nth-child(2){border-left:2px solid var(--ac)}
+.comparison td:nth-child(4){border-left:2px solid var(--gn)}
+nav{position:sticky;top:0;background:var(--bg);padding:12px 0;border-bottom:1px solid var(--bdr);margin-bottom:24px;display:flex;gap:16px;flex-wrap:wrap;z-index:10}
+nav a{color:var(--dim);text-decoration:none;font-size:13px}
+nav a:hover{color:var(--ac)}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#symmetric">§2 对称量化</a>
+  <a href="#asymmetric">§3 非对称量化</a>
+  <a href="#perchannel">§4 Per-Channel</a>
+  <a href="#int4">§6 INT4</a>
+  <a href="#memory">§7 加速原理</a>
+</nav>
+
+<h1>量化推理 — 交互式学习指南</h1>
+<p class="sub">基于手算示例，逐步理解对称/非对称/Per-Channel/INT4 量化原理</p>
+
+<!-- §2 对称量化 -->
+<h2 id="symmetric">§2 对称量化 (Symmetric INT8)</h2>
+
+<div class="card">
+  <h3>2.1 数学公式</h3>
+  <div class="code">量化:   q = round(x / scale),  clamp(q, -127, 127)
+反量化: x' = q × scale
+其中:   scale = max(|x|) / 127</div>
+  <p style="font-size:14px;color:var(--dim);margin-top:8px">零点固定为 0——0.0 在浮点和量化空间都对应 0</p>
+</div>
+
+<div class="card">
+  <h3>2.2 手算示例：权重 <code>[0.03, -0.05, 0.12, -0.08, 0.01]</code></h3>
+
+  <div class="calc-steps">
+    <p><span class="step">Step 1:</span> max(|x|) = <span class="val-hi">0.12</span></p>
+    <p><span class="step">Step 2:</span> scale = 0.12 / 127 = <span class="val-hi">0.000945</span></p>
+    <p style="margin-top:8px"><span class="step">Step 3: 量化 (÷ scale → round)</span></p>
+  </div>
+
+  <table style="margin-top:8px">
+    <tr><th>原值</th><th>计算</th><th>INT8</th><th>反量化</th><th>误差</th></tr>
+    <tr class="calc-row"><td> 0.03</td><td>round( 31.7)</td><td class="val-good"> 32</td><td> 0.0302</td><td class="val-dim">+0.0002</td></tr>
+    <tr class="calc-row"><td>-0.05</td><td>round(-52.9)</td><td class="val-good">-53</td><td>-0.0501</td><td class="val-dim">-0.0001</td></tr>
+    <tr class="calc-row"><td> 0.12</td><td>round(127.0)</td><td class="val-hi">127</td><td> 0.1200</td><td class="val-good">0</td></tr>
+    <tr class="calc-row"><td>-0.08</td><td>round(-84.7)</td><td class="val-good">-85</td><td>-0.0803</td><td class="val-dim">-0.0003</td></tr>
+    <tr class="calc-row"><td> 0.01</td><td>round( 10.6)</td><td class="val-good"> 11</td><td> 0.0104</td><td class="val-dim">+0.0004</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>2.3 Outlier 的影响</h3>
+  <p style="font-size:14px;margin-bottom:12px">999 个值在 [-0.5, 0.5]，<span class="val-hi">1 个 outlier = 5.0</span></p>
+
+  <div class="grid-2">
+    <div>
+      <h4 style="font-size:14px;color:var(--gn)">无 outlier</h4>
+      <div class="calc-steps">
+        scale = 0.5/127 = <span class="val-good">0.00394</span><br>
+        值 0.01 → q ≈ <span class="val-good">3</span><br>
+        值 0.05 → q ≈ <span class="val-good">13</span><br>
+        值 0.10 → q ≈ <span class="val-good">25</span>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size:14px;color:var(--rd)">有 outlier (5.0)</h4>
+      <div class="calc-steps">
+        scale = 5.0/127 = <span class="val-bad">0.0394</span> (×10)<br>
+        值 0.01 → q = <span class="val-bad">0</span> ← 完全丢失<br>
+        值 0.05 → q = <span class="val-bad">1</span><br>
+        值 0.10 → q = <span class="val-bad">3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn" style="margin-top:12px">
+    <strong>1 个 outlier 放大 scale 10 倍</strong>，256 级精度只用了不到 4 级。<br>
+    解决方案：LLM.int8() 对 outlier 维度单独保留 FP16，其余 INT8。
+  </div>
+</div>
+
+<!-- §3 非对称量化 -->
+<h2 id="asymmetric">§3 非对称量化 (Asymmetric UINT8)</h2>
+
+<div class="card">
+  <h3>3.1 数学公式</h3>
+  <div class="code">量化:   q = round(x / scale) + zero_point,  clamp(q, 0, 255)
+反量化: x' = (q - zero_point) × scale
+其中:   scale = (x_max - x_min) / 255
+        zero_point = round(-x_min / scale)</div>
+  <p style="font-size:14px;color:var(--dim);margin-top:8px">zero_point 将数据范围精准映射到 [0, 255]，无浪费</p>
+</div>
+
+<div class="card">
+  <h3>3.2 手算示例：ReLU 激活值 <code>[0.0, 0.35, 1.20, 0.08, 2.50]</code></h3>
+
+  <div class="calc-steps">
+    <p><span class="step">Step 1:</span> x_min = <span class="val-dim">0.0</span>, x_max = <span class="val-hi">2.50</span></p>
+    <p><span class="step">Step 2:</span> scale = 2.50/255 = <span class="val-hi">0.00980</span>, zero_point = <span class="val-dim">0</span></p>
+  </div>
+
+  <table style="margin-top:8px">
+    <tr><th>原值</th><th>计算</th><th>UINT8</th><th>反量化</th><th>误差</th></tr>
+    <tr class="calc-row"><td>0.00</td><td>round(0.0)+0</td><td class="val-dim">  0</td><td>0.0000</td><td class="val-good">0</td></tr>
+    <tr class="calc-row"><td>0.35</td><td>round(35.7)+0</td><td class="val-good"> 36</td><td>0.3528</td><td class="val-dim">+0.0028</td></tr>
+    <tr class="calc-row"><td>1.20</td><td>round(122.4)+0</td><td class="val-good">122</td><td>1.1960</td><td class="val-dim">-0.004</td></tr>
+    <tr class="calc-row"><td>0.08</td><td>round(8.2)+0</td><td class="val-good">  8</td><td>0.0784</td><td class="val-dim">-0.0016</td></tr>
+    <tr class="calc-row"><td>2.50</td><td>round(255.1)+0</td><td class="val-hi">255</td><td>2.5000</td><td class="val-good">0</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>3.3 同一组数据：对称 vs 非对称</h3>
+
+  <table class="comparison">
+    <tr><th style="width:16%">原值</th><th colspan="2" style="text-align:center">对称量化 (不适合)</th><th colspan="2" style="text-align:center">非对称量化 (适合)</th></tr>
+    <tr><th></th><th style="color:var(--rd)">q → 反量化</th><th>误差</th><th style="color:var(--gn)">q → 反量化</th><th>误差</th></tr>
+    <tr class="calc-row"><td>0.00</td><td>  0→0.0000</td><td class="val-good">0</td><td>  0→0.0000</td><td class="val-good">0</td></tr>
+    <tr class="calc-row"><td>0.35</td><td class="val-bad"> 18→0.3544</td><td class="val-bad">Δ0.0044</td><td class="val-good"> 36→0.3528</td><td class="val-good">Δ0.0028</td></tr>
+    <tr class="calc-row"><td>1.20</td><td> 61→1.2011</td><td class="val-dim">Δ0.0011</td><td>122→1.1960</td><td class="val-dim">Δ0.0040</td></tr>
+    <tr class="calc-row"><td>0.08</td><td class="val-bad">  4→0.0788</td><td>Δ0.0012</td><td class="val-good">  8→0.0784</td><td>Δ0.0016</td></tr>
+    <tr class="calc-row"><td>2.50</td><td>127→2.5000</td><td class="val-good">0</td><td>255→2.5000</td><td class="val-good">0</td></tr>
+  </table>
+
+  <div class="note good" style="margin-top:12px">
+    <strong>对称浪费 50% 范围</strong>（负数区间 [-2.5,0) 用不上），非对称 <strong>scale 减半 → 精度翻倍</strong>
+  </div>
+</div>
+
+<!-- §4 Per-Channel -->
+<h2 id="perchannel">§4 Per-Tensor vs Per-Channel</h2>
+
+<div class="card">
+  <h3>4.1 粒度对比</h3>
+
+  <table>
+    <tr><th>方式</th><th>粒度</th><th>scale 数 (4096²)</th><th>存储开销</th><th>精度</th></tr>
+    <tr><td><span class="tag tag-r">Per-Tensor</span></td><td>整个矩阵 1 个 scale</td><td>1</td><td>4 B</td><td>受 outlier 通道影响</td></tr>
+    <tr><td><span class="tag tag-g">Per-Channel</span></td><td>每行独立 scale</td><td>4096</td><td>16 KB</td><td>各通道自主最优</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>4.2 手算示例：2×3 矩阵</h3>
+  <div class="code">通道 0 (小值): [ 0.05, -0.02,  0.10]
+通道 1 (大值): [ 1.20, -0.80, -2.50]</div>
+
+  <div class="grid-2">
+    <div>
+      <h4 style="color:var(--rd)">Per-Tensor</h4>
+      <div class="calc-steps">
+        scale = 2.50/127 = <span class="val-bad">0.01969</span><br><br>
+        <strong>通道 0:</strong><br>
+        0.05→3 → 0.059 <span class="val-bad">Δ+0.009 (18%!)</span><br>
+        -0.02→-1 → -0.020 Δ0<br>
+        0.10→5 → 0.098 Δ-0.002<br>
+        RMSE = <span class="val-bad">0.0054</span><br><br>
+        <strong>通道 1:</strong><br>
+        1.20→61 → 1.201 Δ+0.001<br>
+        -0.80→-41 → -0.807 Δ-0.007<br>
+        -2.50→-127 → -2.501 Δ-0.001<br>
+        RMSE = <span class="val-dim">0.0038</span>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:var(--gn)">Per-Channel</h4>
+      <div class="calc-steps">
+        <strong>通道 0:</strong> scale₀ = 0.10/127 = <span class="val-good">0.000787</span><br>
+        0.05→64 → 0.0504 <span class="val-good">Δ+0.0004</span><br>
+        -0.02→-25 → -0.0197 Δ+0.0003<br>
+        0.10→127 → 0.1000 <span class="val-good">Δ0</span><br>
+        RMSE = <span class="val-good">0.0003</span><br><br>
+        <strong>通道 1:</strong> scale₁ = 2.50/127 = 0.01969<br>
+        (与 per-tensor 相同)<br>
+        RMSE = <span class="val-dim">0.0038</span><br><br>
+        <span class="val-good">通道 0 精度提升 18×</span><br>
+        额外开销仅 <span class="val-dim">8 bytes</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- §6 INT4 -->
+<h2 id="int4">§6 INT4 量化</h2>
+
+<div class="card">
+  <h3>6.1 INT4 vs INT8</h3>
+  <table>
+    <tr><th></th><th>离散值</th><th>精度</th><th>7B HBM</th></tr>
+    <tr><td>INT8</td><td>256</td><td>≈ 0.4%</td><td>~7 GB</td></tr>
+    <tr><td>INT4</td><td>16</td><td>≈ 6.25%</td><td>~3.5 GB</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>6.2 手算示例：INT4 Per-Tensor vs Group-Wise</h3>
+  <p style="font-size:14px;margin-bottom:12px">8 个权重，INT4 范围 [-7, 7]，16 个离散级别</p>
+
+  <div class="code">前 4 个 (小值): [0.15, -0.08, 0.03, 0.12]
+后 4 个 (大值): [2.10, -1.80, 1.50, -0.95]</div>
+
+  <div class="grid-2" style="margin-top:12px">
+    <div>
+      <h4 style="color:var(--rd)">Per-Tensor INT4</h4>
+      <div class="calc-steps">
+        scale = 2.10/7 = <span class="val-bad">0.30</span><br><br>
+        <strong>前 4 个:</strong><br>
+        0.15→1 → 0.30 <span class="val-bad">(原值 0.15，偏差极大)</span><br>
+        -0.08→0 → <span class="val-bad">0</span><br>
+        0.03→0 → <span class="val-bad">0</span><br>
+        0.12→0 → <span class="val-bad">0</span><br>
+        <span class="val-bad">全部塌缩到 0-1!</span><br>
+        RMSE = <span class="val-bad">0.126</span><br><br>
+        <strong>后 4 个:</strong><br>
+        2.10→7 ✓<br>RMSE = <span class="val-dim">0.039</span>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:var(--gn)">Group-Wise INT4</h4>
+      <div class="calc-steps">
+        <strong>Group 0:</strong> scale₀ = 0.15/7 = <span class="val-good">0.0214</span><br>
+        0.15→7 → 0.150 <span class="val-good">✓</span><br>
+        -0.08→-4 → -0.086 ✓<br>
+        0.03→1 → 0.021 ✓<br>
+        0.12→6 → 0.128 ✓<br>
+        RMSE = <span class="val-good">0.011</span><br><br>
+        <strong>Group 1:</strong> scale₁ = 2.10/7 = 0.30<br>
+        (与 per-tensor 相同)<br>
+        RMSE = <span class="val-dim">0.039</span><br><br>
+        <span class="val-good">精度恢复！</span><br>
+        开销: 2 scale × 4B = <span class="val-dim">8B</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:12px">
+    <strong>Group-wise 用 ~3% 额外存储</strong>，换回 per-channel 级别的精度。INT4 必须搭配 group-wise。
+  </div>
+</div>
+
+<!-- §7 Memory -->
+<h2 id="memory">§7 量化加速原理</h2>
+
+<div class="card">
+  <h3>7.1 显存节省 (7B 模型)</h3>
+  <div class="bar-container">
+    <div class="bar" style="width:120px;height:100%;background:var(--ac)">FP32<br>28GB</div>
+    <div class="bar" style="width:100px;height:50%;background:var(--gn)">FP16<br>14GB</div>
+    <div class="bar" style="width:60px;height:25%;background:var(--or)">INT8<br>7GB</div>
+    <div class="bar" style="width:40px;height:12.5%;background:var(--rd)">INT4<br>3.5GB</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>7.2 HBM 带宽节省</h3>
+  <p style="font-size:14px;margin-bottom:12px">推理时需从 HBM 读取全部权重。910B3 HBM 带宽 1538 GB/s。</p>
+  <table>
+    <tr><th>精度</th><th>权重大小</th><th>读取时间</th><th>加速</th></tr>
+    <tr class="calc-row"><td>FP16</td><td>14 GB</td><td>9.1 ms</td><td>1×</td></tr>
+    <tr class="calc-row"><td>INT8</td><td>7 GB</td><td>4.6 ms</td><td class="val-good">2×</td></tr>
+    <tr class="calc-row"><td>INT4</td><td>3.5 GB</td><td>2.3 ms</td><td class="val-good">4×</td></tr>
+  </table>
+</div>
+
+<div class="card" style="text-align:center;color:var(--dim);font-size:13px">
+  更多交互式实验请打开 <code>quantization_viz.html</code> | Python 演示：<code>python3 quantization_demo.py</code>
+</div>
+
+</body>
+</html>
