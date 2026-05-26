@@ -1,6 +1,6 @@
 # 华为 NPU 编程入门
 
-系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → Mini-GPT → FlashAttention → LLM 推理**十一大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
+系统梳理从昇腾 NPU 硬件特性到上层框架编程的完整知识链路，覆盖**环境搭建 → 架构原理 → 框架实战 → 工具链 → 进阶开发 → RAG 实战 → 性能分析 → Mini-GPT → FlashAttention → LLM 推理 → DDP 多卡训练 → LoRA 微调**十三大主题。无论读者是从 CUDA 生态迁移而来的 GPU 开发者，还是初次接触 Ascend 的新手，均可按 §2→§4 顺序快速上手，再根据实际需求深入工具链运维或自定义算子开发。
 
 > **快速导航**
 >
@@ -17,6 +17,8 @@
 > | `09_flash_attention/`     | FlashAttention 简化版       | Tiling, Online Softmax, O(N²)→O(N)        | §9       |
 > | `10_mini_gpt/`            | Mini-GPT 手写 Transformer   | Self-Attention, Causal Mask, 字符级编码   | §10      |
 > | `11_llm_inference/`       | LLM 推理 on NPU             | Qwen2.5 7B BF16, 自回归, ChatML, NaN 诊断 | §11      |
+| `12_ddp/`                 | DDP 多卡分布式训练          | HCCL, AllReduce, 8 卡梯度同步, 14B 全参    | §12      |
+| `13_finetune/`            | LoRA 微调                   | PEFT, SFT v.s. CLM, RAG+SFT 协同, 380 QA  | §13      |
 
 ---
 
@@ -157,7 +159,23 @@ MindSpore 是华为自研框架，采用函数式梯度 API（`ms.value_and_grad
 
 ---
 
-## 12. 参考链接
+## 12. DDP 多卡分布式训练
+
+在 Ascend NPU 上使用 HCCL 集合通信库实现多卡分布式训练（DDP），覆盖 HCCL vs NCCL 对照、DDP 工作原理、ResNet-50/LLM 完整训练脚本、初始化常见故障排查、14B 全参训练准备。8 张 910B3 通过 HCCS 全互联，每两张卡直连，通信延迟低。
+
+- [DDP 多卡训练详解](12_ddp/01_ddp_training.md) — HCCL 集合通信、DDP 初始化与数据分发、ResNet-50 多卡示例、7B/14B LLM DDP 策略、HCCL 初始化故障排查
+
+---
+
+## 13. LoRA 微调
+
+在 Ascend NPU 上对 Qwen2.5-7B-Instruct 做参数高效微调（LoRA），支持 CLM 和 SFT 两种数据格式。经过 5 种方案的对比实验，确认 SFT（指令微调）远优于 CLM（原始文本续写），380 条 QA 对已接近 LoRA r=8 的有效上限。配合 RAG 使用时，SFT 提供领域表达风格，RAG 提供具体事实知识，两者互补。
+
+- [LoRA 微调详解](13_finetune/01_lora_finetune.md) — LoRA 原理、配置策略、5 种方案对比、380 QA 训练结果、RAG+SFT 协同验证
+
+---
+
+## 14. 参考链接
 
 - [昇腾社区官网](https://www.hiascend.com)
 - [Ascend PyTorch 适配 (Gitee)](https://gitee.com/ascend/pytorch)

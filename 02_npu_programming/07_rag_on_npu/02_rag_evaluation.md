@@ -85,8 +85,23 @@ Layer 2: 生成评估 (Generation Eval)
 **改进方向**：
 
 - **bge-large-zh-v1.5**（dim=1024）：更强的语义理解，对英文缩写更敏感
-- **BM25 混合检索**：关键词匹配可以覆盖缩写和专用名词
 - **查询改写**：将"什么是 RAG"改写为"检索增强生成是什么"，改善召回
+
+#### 2.4 混合检索与重排序实验
+
+对 BM25 混合检索和 CrossEncoder 重排序进行了对比实验（`hybrid_search.py`），结论：
+
+| 方案                       | MRR      | vs 纯向量 |
+| -------------------------- | -------- | --------- |
+| **纯向量 (bge-small)**     | **0.83** | 基线      |
+| BM25 + RRF 混合 (jieba)    | 0.51     | -0.32     |
+| CrossEncoder 重排 (英文)   | 0.49     | -0.34     |
+| CrossEncoder 重排 (多语言) | 0.61     | -0.22     |
+| 启发式重排                 | 0.55     | -0.28     |
+
+**关键发现**：在 115 个 chunk 的小语料上，纯向量检索已经最优。BM25 关键词检索的全部命中与向量检索重叠——它没有引入新的相关 chunk，只打乱了排序。CrossEncoder 重排序受限于 aarch64 平台的模型兼容性（XLM-RoBERTa 架构不可用），且英文/多语言 reranker 不理解中文技术文档的语义细微差别。
+
+混合检索和重排序的价值在大规模文档库（10 万+ 条）中才会体现——初始检索精度下降后，二阶段精排可以显著提升效果。
 
 ---
 
@@ -174,13 +189,13 @@ pip install faiss-cpu 'numpy<2' sentence-transformers==2.7.0 transformers==4.38.
 
 ### 4.2 推荐改进路径
 
-| 优先级 | 改进                              | 预期效果                        |
-| ------ | --------------------------------- | ------------------------------- |
-| **P0** | bge-large-zh-v1.5 (dim=1024)      | 英文缩写查询召回改善，MRR > 0.9 |
-| **P0** | BM25 混合检索                     | 覆盖专用名词和缩写              |
-| P1     | 查询改写（Query Rewriting）       | 改善长尾查询召回                |
-| P1     | 更大的评估数据集（30+ 查询）      | 更稳定、更有统计意义的评估      |
-| P2     | LLM-as-judge (RAGAS Faithfulness) | 自动评估回答质量，替代人工标注  |
+| 优先级 | 改进                              | 预期效果                                |
+| ------ | --------------------------------- | --------------------------------------- |
+| **P0** | bge-large-zh-v1.5 (dim=1024)      | 英文缩写查询召回改善，MRR > 0.9         |
+| ~~P0~~ | ~~BM25 混合检索~~                 | 实验证实在小语料上无效（MRR 0.83→0.51） |
+| P1     | 查询改写（Query Rewriting）       | 改善长尾查询召回                        |
+| P1     | 更大的评估数据集（30+ 查询）      | 更稳定、更有统计意义的评估              |
+| P2     | LLM-as-judge (RAGAS Faithfulness) | 自动评估回答质量，替代人工标注          |
 
 ---
 
@@ -190,12 +205,11 @@ pip install faiss-cpu 'numpy<2' sentence-transformers==2.7.0 transformers==4.38.
 07_rag_on_npu/
 ├── rag_pipeline.py           # RAG 主流程
 ├── rag_eval.py               # 检索评估 (~180 行)
-│   ├── EVAL_QUERIES          — 标注数据集
-│   └── RetrievalEvaluator    — MRR/Recall@k/Precision@k
-└── rag_eval_ragas.py         # 生成评估 (~260 行)
-    ├── EVAL_DATASET          — 含参考答案
-    ├── run_query_with_llm()  — 单次 RAG 查询
-    └── main()                — 顺序加载 7B/0.5B 对比
+├── rag_eval_ragas.py         # 生成评估 (~260 行)
+└── hybrid_search.py          # 混合检索实验 (~300 行)
+    ├── BM25Retriever         — jieba 分词 BM25
+    ├── HybridSearcher        — BM25 + FAISS + RRF
+    └── evaluate()            — 对比评估
 
 rag_eval_results.json          # 远端评估结果
 ```

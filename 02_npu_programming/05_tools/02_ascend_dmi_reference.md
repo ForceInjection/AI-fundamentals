@@ -1,4 +1,4 @@
-# ascend-dmi 使用参考
+# 06 — ascend-dmi 使用参考
 
 `ascend-dmi` v6.0.0 是昇腾设备管理接口工具，集成 `nvidia-smi`（设备状态）、`deviceQuery`（硬件规格枚举）和 `bandwidthTest`（带宽基准）三类功能于一身。它通过底层 DCMI（设备控制管理接口）获取驱动级信息，通过 AscendCL 执行算力和带宽测试。二进制位于 `/usr/local/Ascend/toolbox/6.0.0/Ascend-DMI/bin/ascend-dmi`，运行日志在 `/var/log/ascend-dmi/ascend-dmi.log`。
 
@@ -48,7 +48,7 @@ export LD_LIBRARY_PATH=/usr/local/Ascend/toolbox/6.0.0/Ascend-DMI/lib64:/usr/loc
 | 功耗   | 实时（空闲/满载）                | ~93 W / ~231 W                        | 空闲功耗约 93 W，FP16 满载时上升至 ~231 W                               |
 | 亲和性 | CPU Affinity                     | 各卡不同（如 NPU 0: 144-167）         | NPU 对应的 NUMA node CPU 核心范围，影响数据加载性能                     |
 
-LnkCap vs LnkSta 的差异值得关注：910B3 硬件支持 PCIe Gen5 ×16（32GT/s），但测试服务器当前协商在 Gen4 ×16（16GT/s），说明 PCIe 速率上限由主板和 CPU 决定而非 NPU 本身。如果需要 Gen5 带宽，需要确认服务器主板和 BIOS 是否支持。
+LnkCap vs LnkSta 的差异值得关注：910B3 硬件支持 PCIe Gen5 ×16（32GT/s），但本服务器当前协商在 Gen4 ×16（16GT/s），说明 PCIe 速率上限由主板和 CPU 决定而非 NPU 本身。如果需要 Gen5 带宽，需要确认服务器主板和 BIOS 是否支持。
 
 ## 4. 版本兼容性检查 (`--compatible`)
 
@@ -58,7 +58,7 @@ LnkCap vs LnkSta 的差异值得关注：910B3 硬件支持 PCIe Gen5 ×16（32G
 ascend-dmi --compatible
 ```
 
-测试服务器输出：
+本服务器输出：
 
 | 组件         | 版本        | 状态 | 内部版本              |
 | ------------ | ----------- | ---- | --------------------- |
@@ -84,25 +84,25 @@ ascend-dmi --compatible
 | `d2h` | 设备 HBM → 主机内存 (PCIe) | 同上                            | 同上                                |
 | `p2p` | 设备间直接传输 (HCCS)      | `p2pBandwidthLatencyTest`       | `--ds` 源卡，`--dd` 目标卡          |
 
-### 5.1 实测数据（910B3，NPU 7）
+### 实测数据（910B3，NPU 7）
 
 测试采用阶梯式模式：从小数据量逐步增大到大数据量（2 B → 32 MB / 20.97 GB），每个数据量重复多次（默认 5 次），最终取带宽饱和后的稳定值。
 
-| 测试     | 稳定带宽      | 饱和数据量       | 说明                                                                                      |
-| -------- | ------------- | ---------------- | ----------------------------------------------------------------------------------------- |
-| d2d      | **1538 GB/s** | 20.97 GB（固定） | HBM 内部带宽。这是 AI Core 读写 HBM 的峰值速度，传输时间 ~13.6 ms（20.97 GB / 1538 GB/s） |
-| p2p 单向 | **26.2 GB/s** | ≥ 2 MB           | HCCS 单向（NPU 7→6）。< 64 KB 时带宽随数据量正比增长，≥ 2 MB 后饱和                       |
-| p2p 双向 | **50.8 GB/s** | ≥ 2 MB           | HCCS 全双工（NPU 7↔6）。双向约为单向的 2×，说明 HCCS 链路为全双工                         |
-| h2d      | **24.8 GB/s** | ≥ 16 MB          | PCIe Gen4 ×16 上行（主机→设备）                                                           |
-| d2h      | **27.6 GB/s** | ≥ 16 MB          | PCIe Gen4 ×16 下行（设备→主机），略高于 h2d（DMA 读通常优于写）                           |
+| 测试     | 稳定带宽      | 饱和数据量      | 说明                                                                |
+| -------- | ------------- | --------------- | ------------------------------------------------------------------- |
+| d2d      | **1538 GB/s** | 20.97 GB (固定) | HBM 内部带宽。这是 AI Core 读写 HBM 的峰值速度，延迟 ~13.6 ms       |
+| p2p 单向 | **26.2 GB/s** | ≥ 2 MB          | HCCS 单向（NPU 7→6）。< 64 KB 时带宽随数据量正比增长，≥ 2 MB 后饱和 |
+| p2p 双向 | **50.8 GB/s** | ≥ 2 MB          | HCCS 全双工（NPU 7↔6）。双向约为单向的 2×，说明 HCCS 链路为全双工   |
+| h2d      | **24.8 GB/s** | ≥ 16 MB         | PCIe Gen4 ×16 上行（主机→设备）                                     |
+| d2h      | **27.6 GB/s** | ≥ 16 MB         | PCIe Gen4 ×16 下行（设备→主机），略高于 h2d（DMA 读通常优于写）     |
 
 PCIe 带宽与理论值吻合：16 GT/s × 16 lanes × 128b/130b（编码效率）≈ 25.2 GB/s，实测 24.8-27.6 GB/s 在此范围内。
 
-**HBM 带宽（1538 GB/s）的工程意义**：这是 AI Core 从本地 HBM 取数的峰值速度。以 ResNet-50 FP32 训练为例，单步计算量约 8 GFLOPs，假设 50% 算力利用率时需要的 HBM 带宽远低于 1538 GB/s 上限。但对于 memory-bound 算子（LayerNorm、Softmax、Attention 中的 softmax/QKV 投影），HBM 带宽是训练吞吐的关键瓶颈，决定了这些算子的执行时间下界。
+**HBM 带宽（1538 GB/s）的工程意义**：这是 AI Core 从本地 HBM 取数的峰值速度。以 ResNet-50 FP32 训练为例，单步计算密度约 8 GFLOPS，假设 50% 算力利用率时需要的 HBM 带宽约 70 GB/s——远低于 1538 GB/s 上限。但对于 memory-bound 算子（LayerNorm、Softmax、Attention 中的 softmax/QKV 投影），HBM 带宽是训练吞吐的关键瓶颈，决定了这些算子的执行时间下界。
 
 **HCCS P2P 带宽（26.2 GB/s）的工程意义**：在多卡数据并行训练中，AllReduce 的通信瓶颈取决于卡间带宽 × 拓扑效率（8 卡全互联拓扑效率接近 100%）。以每步 AllReduce 通信量 25 MB（对应 25M 参数的梯度 × FP32）为例，单次通信时间约 25 MB / 26.2 GB/s ≈ 1 ms。对于通信计算比良好的 workload，这个开销是可接受的；对于小模型（< 10M 参数），通信时间占比会显著上升。
 
-### 5.2 命令
+### 命令
 
 ```bash
 ascend-dmi --bw -t d2d -d 7 -q                     # HBM 带宽（固定传输 20.97 GB）
@@ -127,7 +127,7 @@ ascend-dmi -f -d 7 -t int8 -q          # INT8（推理场景基准）
 ascend-dmi -f -d 7 -t fp16 --et 60 -q  # 自定义执行次数（60 × 100,000 = 6M 次）
 ```
 
-### 6.1 实测数据（NPU 7，FP16）
+### 实测数据（NPU 7，FP16）
 
 | 执行次数    | 耗时    | TFLOPS    | 功耗    |
 | ----------- | ------- | --------- | ------- |
@@ -194,7 +194,7 @@ ascend-dmi --sq -t hccs               # 全局 HCCS 信号质量扫描
 
 ## 10. 昇腾工具定位区分
 
-昇腾生态中，`npu-smi`、`ascend-dmi`、`msprof`、`atc` 四者各司其职，覆盖 "运维监控 → 装机诊断 → 性能调优 → 模型部署" 的完整链条。`npu-smi` 的完整用法见 [`01_npu_smi_reference.md`](01_npu_smi_reference.md)。
+昇腾生态中，`npu-smi`、`ascend-dmi`、`msprof`、`atc` 四者各司其职，覆盖 "运维监控 → 装机诊断 → 性能调优 → 模型部署" 的完整链条。`npu-smi` 的完整用法见 `01_npu_smi_reference.md`。
 
 | 工具         | 定位           | 偏重                               | 典型用法                                                              |
 | ------------ | -------------- | ---------------------------------- | --------------------------------------------------------------------- |
