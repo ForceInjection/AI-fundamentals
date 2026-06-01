@@ -77,7 +77,7 @@ DEEPSEEK_MODEL = "deepseek-chat"
 
 # MiniMax
 MINIMAX_API_KEY = "your-minimax-api-key"
-MINIMAX_MODEL = "MiniMax-M2.7"
+MINIMAX_MODEL = "MiniMax-M3"
 
 # 本地模型（Ollama / vLLM / LocalAI 等）
 LOCAL_BASE_URL = "http://localhost:11434/v1"
@@ -195,7 +195,7 @@ python main.py --interactive --persistent   # 聊天历史写入 sessions/checkp
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥   | 无                              |
 | `DEEPSEEK_MODEL`   | DeepSeek 模型名称   | `deepseek-chat`                 |
 | `MINIMAX_API_KEY`  | MiniMax API 密钥    | 无                              |
-| `MINIMAX_MODEL`    | MiniMax 模型名称    | `MiniMax-M2.7`                  |
+| `MINIMAX_MODEL`    | MiniMax 模型名称    | `MiniMax-M3`                    |
 | `LOCAL_BASE_URL`   | 本地模型 API URL    | `http://localhost:11434/v1`     |
 | `LOCAL_MODEL`      | 本地模型名称        | `qwen2.5`                       |
 
@@ -236,10 +236,10 @@ DEEPSEEK_MODEL = "deepseek-chat"
 
 ```python
 MINIMAX_API_KEY = "your-minimax-api-key"
-MINIMAX_MODEL = "MiniMax-M2.7"
+MINIMAX_MODEL = "MiniMax-M3"
 ```
 
-MiniMax 提供 OpenAI 兼容接口，支持 `MiniMax-M2.7`（1M 上下文）/ `MiniMax-M2.7-highspeed`。
+MiniMax 提供 OpenAI 兼容接口，默认使用最新旗舰模型 `MiniMax-M3`（512K 上下文、128K 最大输出，支持图像输入）；也支持上一代 `MiniMax-M2.7`（1M 上下文）/ `MiniMax-M2.7-highspeed`。
 
 ### 6.4 本地模型（Ollama）
 
