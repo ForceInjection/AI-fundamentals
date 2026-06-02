@@ -13,7 +13,7 @@
 | `ConversationSummaryMemory`       | 上面 + `summarize_node` + `RemoveMessage(...)`        | 长对话、成本敏感                  |
 | `ConversationSummaryBufferMemory` | `trim_messages` + `summarize_node`（两者组合）        | 生产默认：窗口控成本 + 摘要保记忆 |
 
-> 会话隔离不再需要自建 `memories: Dict[session_id, Memory]`；把 `session_id` 直接作为 LangGraph 的 `thread_id` 即可。
+> 会话隔离不再需要自建 `memories: Dict[session_id, Memory]`；把已校验的用户身份与 `session_id` 一起作为 LangGraph 的 `thread_id`，避免只凭裸 `session_id` 读写他人的记忆。
 >
 > **LangChain 1.x 安装说明**：从 LangChain **1.0** 起，上表 Legacy 列的类已从主包 `langchain` 迁出，转移至独立的 `langchain-classic` 包。本仓库的 `basic_memory_examples.py` 已将两种布局都兼容：优先导 `langchain_classic.memory`，失败后再回退到 `langchain.memory`。如果 pip 解析出的是 langchain 1.x，需额外安装 `pip install langchain-classic` 才能运行 Legacy 迁移参考 demo；仅运行 LangGraph demo 的话无需。
 
@@ -148,10 +148,10 @@ python main.py --demo basic
 
 已完全迁移到 LangGraph：
 
-- `SessionManager` 不再持有自己的 `memory` 字典；对话正文全部写进 checkpointer，键为 `thread_id = session_id`；
+- `SessionManager` 不再持有自己的 `memory` 字典；对话正文全部写进 checkpointer，键包含已校验的 `user_id`、`session_id` 与会话安全元数据；
 - `build_graph(memory_type)` 按 `buffer / window / summary_buffer` 三种策略编译三张图，公用一个 `MemorySaver`（默认）或 `SqliteSaver`（`--persistent`）；
 - `save_session` 只负责把 **会话元数据 + 性能指标** 写到 `sessions/*.json`，对话正文由 checkpointer 持久化；
-- 业务层 `CustomerServiceBot` 接口兼容旧版，`main.py` 不需要改动。
+- 业务层 `CustomerServiceBot` 调用时显式传入 `user_id`，`main.py` 已同步更新。
 
 ```bash
 python main.py --demo customer

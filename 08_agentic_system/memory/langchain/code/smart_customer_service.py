@@ -7,7 +7,7 @@
 全部迁移到 LangGraph：
     - StateGraph(MessagesState) 定义对话状态
     - MemorySaver / SqliteSaver 作为 checkpointer 实现短期记忆
-    - thread_id = session_id 实现多用户会话隔离
+    - thread_id 包含已校验的 user_id 与 session_id，实现多用户会话隔离
     - trim_messages 实现"窗口"策略
     - summarize_node + RemoveMessage 实现"摘要+窗口"策略
 
@@ -44,6 +44,7 @@ except ImportError:
 
 
 MemoryType = Literal["buffer", "window", "summary_buffer", "auto"]
+SECURITY_CONTEXT_METADATA_KEYS = ("tenant_id", "permissions")
 
 
 # ---------------------------------------------------------------------------
@@ -274,21 +275,75 @@ class SessionManager:
             return "window"
         return "summary_buffer"
 
+    def _get_authorized_session(self, user_id: str, session_id: str) -> SessionInfo:
+        if session_id not in self.sessions:
+            raise ValueError(f"会话不存在: {session_id}")
+        session_info = self.sessions[session_id]
+        if session_info.user_id != user_id:
+            raise PermissionError("当前用户无权访问该会话")
+        return session_info
+
+    def _validate_security_context(
+        self,
+        session_info: SessionInfo,
+        security_context: Optional[Dict[str, Any]],
+    ) -> None:
+        expected = {
+            key: session_info.metadata[key]
+            for key in SECURITY_CONTEXT_METADATA_KEYS
+            if key in session_info.metadata
+        }
+        if not expected:
+            return
+        provided = security_context or {}
+        for key, value in expected.items():
+            if provided.get(key) != value:
+                raise PermissionError("当前安全上下文无权访问该会话")
+
+    def _get_authorized_session_for_context(
+        self,
+        user_id: str,
+        session_id: str,
+        security_context: Optional[Dict[str, Any]] = None,
+    ) -> SessionInfo:
+        session_info = self._get_authorized_session(user_id, session_id)
+        self._validate_security_context(session_info, security_context)
+        return session_info
+
+    def _memory_thread_id(self, session_info: SessionInfo) -> str:
+        payload = {
+            "session_id": session_info.session_id,
+            "user_id": session_info.user_id,
+        }
+        for key in SECURITY_CONTEXT_METADATA_KEYS:
+            if key in session_info.metadata:
+                payload[key] = session_info.metadata[key]
+        return json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+
     # ------------------------------------------------------------------
     # 对话接口
     # ------------------------------------------------------------------
     def chat(
         self,
+        user_id: str,
         session_id: str,
         message: str,
         context: Optional[Dict[str, Any]] = None,
+        security_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        if session_id not in self.sessions:
-            raise ValueError(f"会话不存在: {session_id}")
+        session_info = self._get_authorized_session_for_context(
+            user_id, session_id, security_context
+        )
 
         start = time.time()
-        session_info = self.sessions[session_id]
         graph = self._graphs[session_info.memory_type]
+        thread_id = self._memory_thread_id(session_info)
 
         try:
             input_messages: List[Any] = []
@@ -303,7 +358,7 @@ class SessionManager:
 
             result = graph.invoke(
                 {"messages": input_messages},
-                config={"configurable": {"thread_id": session_id}},
+                config={"configurable": {"thread_id": thread_id}},
             )
             last_ai = next(
                 (m for m in reversed(result["messages"]) if isinstance(m, AIMessage)),
@@ -353,10 +408,18 @@ class SessionManager:
         if len(buf) > 100:
             del buf[:-100]
 
-    def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
-        if session_id not in self.sessions:
+    def get_session_info(
+        self,
+        user_id: str,
+        session_id: str,
+        security_context: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        try:
+            session_info = self._get_authorized_session_for_context(
+                user_id, session_id, security_context
+            )
+        except (PermissionError, ValueError):
             return None
-        session_info = self.sessions[session_id]
         metrics = self.performance_metrics.get(session_id, [])
         avg_rt = sum(m.response_time for m in metrics) / len(metrics) if metrics else 0
         avg_tk = sum(m.token_usage for m in metrics) / len(metrics) if metrics else 0
@@ -383,13 +446,20 @@ class SessionManager:
         ]
         return sorted(items, key=lambda x: x["last_active"], reverse=True)
 
-    def get_conversation_history(self, session_id: str) -> List[Dict[str, str]]:
-        """从 checkpointer 读取会话历史（不依赖 self.sessions 是否存在）。"""
-        memory_type = (
-            self.sessions[session_id].memory_type if session_id in self.sessions else "buffer"
+    def get_conversation_history(
+        self,
+        user_id: str,
+        session_id: str,
+        security_context: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, str]]:
+        """从 checkpointer 读取当前用户拥有的会话历史。"""
+        session_info = self._get_authorized_session_for_context(
+            user_id, session_id, security_context
         )
-        graph = self._graphs[memory_type]
-        state = graph.get_state({"configurable": {"thread_id": session_id}})
+        graph = self._graphs[session_info.memory_type]
+        state = graph.get_state(
+            {"configurable": {"thread_id": self._memory_thread_id(session_info)}}
+        )
         messages = (state.values or {}).get("messages", []) if state else []
         result = []
         for m in messages:
@@ -506,13 +576,30 @@ class CustomerServiceBot:
         )
         return session_id, welcome
 
-    def chat(self, session_id: str, message: str) -> Dict[str, Any]:
+    def chat(
+        self,
+        user_id: str,
+        session_id: str,
+        message: str,
+        security_context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         return self.session_manager.chat(
-            session_id, message, context={"系统角色": self.system_prompt}
+            user_id,
+            session_id,
+            message,
+            context={"系统角色": self.system_prompt},
+            security_context=security_context,
         )
 
-    def get_conversation_summary(self, session_id: str) -> str:
-        info = self.session_manager.get_session_info(session_id)
+    def get_conversation_summary(
+        self,
+        user_id: str,
+        session_id: str,
+        security_context: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        info = self.session_manager.get_session_info(
+            user_id, session_id, security_context
+        )
         if not info:
             return "会话不存在"
         s = info["session_info"]
@@ -572,7 +659,7 @@ def demo_customer_service(persistent: bool = False) -> None:
             user_name = next(u["name"] for u in users if u["user_id"] == user_id)
             sid = sessions[user_id]
             print(f"\n👤 {user_name}: {turns[r]}")
-            result = bot.chat(sid, turns[r])
+            result = bot.chat(user_id, sid, turns[r])
             if "response" in result:
                 print(f"🤖 客服: {result['response']}")
                 print(f"📊 响应时间: {result['response_time']:.2f}秒")
@@ -583,7 +670,10 @@ def demo_customer_service(persistent: bool = False) -> None:
     print("📋 会话摘要")
     print("=" * 50)
     for user in users:
-        print("\n" + bot.get_conversation_summary(sessions[user["user_id"]]))
+        print(
+            "\n"
+            + bot.get_conversation_summary(user["user_id"], sessions[user["user_id"]])
+        )
 
     print("\n💾 保存会话元数据…")
     for sid in sessions.values():
