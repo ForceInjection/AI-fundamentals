@@ -27,7 +27,7 @@ class TestLLMConfigMiniMax(unittest.TestCase):
             cfg = LLMConfig()
             self.assertEqual(cfg.minimax_api_key, "")
             self.assertEqual(cfg.minimax_base_url, "https://api.minimax.io/v1")
-            self.assertEqual(cfg.minimax_model, "MiniMax-M2.7")
+            self.assertEqual(cfg.minimax_model, "MiniMax-M3")
 
     def test_minimax_config_from_env(self):
         """Test that MiniMax config reads from environment variables."""
@@ -227,11 +227,11 @@ class TestLLMFactoryMiniMax(unittest.TestCase):
 
     @patch("llm_factory.ChatOpenAI")
     def test_minimax_default_model(self, mock_chat):
-        """Test that MiniMax defaults to MiniMax-M2.7 model."""
+        """Test that MiniMax defaults to MiniMax-M3 model."""
         mock_chat.return_value = MagicMock()
         LLMFactory.create_minimax_llm(api_key="test-key")
         call_kwargs = mock_chat.call_args[1]
-        self.assertEqual(call_kwargs["model"], "MiniMax-M2.7")
+        self.assertEqual(call_kwargs["model"], "MiniMax-M3")
 
 
 class TestMiniMaxIntegration(unittest.TestCase):

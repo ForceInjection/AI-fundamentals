@@ -185,11 +185,11 @@ class LLMFactory:
         """
         创建MiniMax LLM实例（通过OpenAI兼容接口）
 
-        MiniMax提供OpenAI兼容的API接口，支持MiniMax-M2.7等模型。
+        MiniMax提供OpenAI兼容的API接口，支持MiniMax-M3 / MiniMax-M2.7 等模型。
 
         Args:
             api_key: MiniMax API密钥
-            model: 模型名称（默认MiniMax-M2.7）
+            model: 模型名称（默认MiniMax-M3）
             temperature: 温度参数（MiniMax要求范围 (0.0, 1.0]）
             max_tokens: 最大token数
             timeout: 超时时间
@@ -198,7 +198,7 @@ class LLMFactory:
             ChatOpenAI实例
         """
         api_key = api_key or config.minimax_api_key
-        model = model or config.minimax_model or "MiniMax-M2.7"
+        model = model or config.minimax_model or "MiniMax-M3"
         temperature = temperature if temperature is not None else config.temperature
         max_tokens = max_tokens or config.max_tokens
         timeout = timeout or config.timeout

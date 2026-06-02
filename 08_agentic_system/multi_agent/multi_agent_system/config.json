@@ -216,8 +216,8 @@
     "alternatives": {
       "minimax": {
         "base_url": "https://api.minimax.io/v1",
-        "model": "MiniMax-M2.7",
-        "description": "MiniMax M2.7 - 1M context window, OpenAI-compatible API"
+        "model": "MiniMax-M3",
+        "description": "MiniMax M3 - 512K context window, 128K max output, image input support, OpenAI-compatible API"
       },
       "openai": {
         "base_url": "https://api.openai.com/v1",
