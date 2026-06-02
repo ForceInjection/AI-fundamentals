@@ -216,7 +216,7 @@ with SqliteSaver.from_conn_string("./sessions/checkpoints.sqlite") as checkpoint
 | `ConversationSummaryMemory`       | 上面 + `summarize_node` + `RemoveMessage(...)`        | `demo_langgraph_summary`          |
 | `ConversationSummaryBufferMemory` | `trim_messages` + `summarize_node`（两者组合）        | `demo_langgraph_summary_buffer`   |
 
-会话隔离：把 `session_id` 直接塞进 `config={"configurable": {"thread_id": session_id}}`，不再需要自建 `memories: Dict[session_id, Memory]`。
+会话隔离：把已校验的用户身份与 `session_id` 一起放进 `config={"configurable": {"thread_id": thread_id}}`，不再需要自建 `memories: Dict[session_id, Memory]`。不要只用裸 `session_id` 作为记忆键，否则调用方拿到他人的会话标识后可能复用同一段记忆。
 
 ### 2.4 记忆类型选择指南
 
@@ -321,16 +321,17 @@ class SessionManager:
             "summary_buffer": build_graph("summary_buffer", self.llm, self.checkpointer),
         }
 
-    def chat(self, session_id: str, message: str, context=None):
-        info = self.sessions[session_id]
+    def chat(self, user_id: str, session_id: str, message: str, context=None):
+        info = self._get_authorized_session(user_id, session_id)
         graph = self._graphs[info.memory_type]
+        thread_id = self._memory_thread_id(info)
         input_messages = []
         if context:
             input_messages.append(SystemMessage("\n".join(f"{k}: {v}" for k, v in context.items())))
         input_messages.append(HumanMessage(message))
         result = graph.invoke(
             {"messages": input_messages},
-            config={"configurable": {"thread_id": session_id}},
+            config={"configurable": {"thread_id": thread_id}},
         )
         last_ai = next((m for m in reversed(result["messages"]) if isinstance(m, AIMessage)), None)
         # ……记录 response_time / token_usage / memory_size / last_active / message_count
@@ -339,7 +340,7 @@ class SessionManager:
 
 和老版最大的两点不同：
 
-1. 不再有 `self.memories: Dict[session_id, Memory]`——会话正文由 checkpointer 按 `thread_id` 自动隔离；
+1. 不再有 `self.memories: Dict[session_id, Memory]`——会话正文由 checkpointer 按包含用户身份的 `thread_id` 自动隔离；
 2. `save_session` 只负责把 `SessionInfo + PerformanceMetrics` 写到 `sessions/*.json`；`load_session` 只负责重建这些元数据。对话正文要么已经在 `MemorySaver` 的进程内字典里（重启即丢），要么已经在 `SqliteSaver` 的数据库里（重启后继续用同样的 `thread_id` 就能续上）。
 
 #### 3.2.3 自动选择记忆策略
@@ -363,10 +364,11 @@ def _auto_select_memory_type(self, user_id: str) -> str:
 
 #### 3.3.1 多用户会话隔离
 
-不再需要显式的"用户会话表"：把 `session_id` 作为 `thread_id` 传给 LangGraph 即可，不同用户之间的状态天然隔离；同一用户的不同会话也可以共用一张图，互不干扰。
+不再需要显式的正文记忆表：先校验 `session_id` 属于当前用户，再把用户身份与 `session_id` 共同作为 `thread_id` 传给 LangGraph。不同用户之间的状态天然隔离；同一用户的不同会话也可以共用一张图，互不干扰。
 
 ```python
-cfg = {"configurable": {"thread_id": session_id}}
+thread_id = f"{user_id}:{session_id}"
+cfg = {"configurable": {"thread_id": thread_id}}
 graph.invoke({"messages": [HumanMessage(user_input)]}, config=cfg)
 ```
 
@@ -542,7 +544,7 @@ python main.py --demo customer
 python main.py --demo customer --persistent   # 使用 SqliteSaver
 ```
 
-**功能说明**：模拟智能客服系统，展示多用户会话隔离（`thread_id = session_id`）、不同记忆策略（`buffer` / `window` / `summary_buffer`）下的响应时间与内存占用，并把会话元数据落盘到 `sessions/*.json`。
+**功能说明**：模拟智能客服系统，展示多用户会话隔离（`thread_id` 包含已校验的 `user_id` 与 `session_id`）、不同记忆策略（`buffer` / `window` / `summary_buffer`）下的响应时间与内存占用，并把会话元数据落盘到 `sessions/*.json`。
 
 **演示输出（节选）**：
 
@@ -644,7 +646,7 @@ python main.py --demo all
 
 ### 6.2 最佳实践建议
 
-1. **会话隔离用 `thread_id`**：不要再写 `Dict[session_id, Memory]` 这样的结构，把 `session_id`（或 `f"{user_id}:{session_id}"`) 直接放到 `config` 里；
+1. **会话隔离用 `thread_id`**：不要再写 `Dict[session_id, Memory]` 这样的结构；先校验会话归属，再把 `user_id`、`session_id` 以及必要的租户/权限上下文放到 `config` 的 `thread_id` 里；
 2. **窗口与摘要组合使用**：先 `trim_messages` 控本轮 prompt 长度，再用 `summarize_node + RemoveMessage` 控总体消息数；
 3. **摘要阈值要留 buffer**：`summarize_after` 建议是 `window_size + 2` 以上，避免"刚触发摘要、下轮又触发"导致的抖动；
 4. **生产环境用 `SqliteSaver` 起步**：本地、单机、跨进程都稳定，迁移到 `PostgresSaver` 只是改一行连接串；

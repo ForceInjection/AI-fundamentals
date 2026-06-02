@@ -179,12 +179,12 @@ def run_interactive_chat(persistent: bool = False):
                     print(f"🤖 {welcome}")
                     continue
                 elif user_input.lower() in ['summary', '摘要']:
-                    summary = bot.get_conversation_summary(session_id)
+                    summary = bot.get_conversation_summary(user_id, session_id)
                     print(f"\n{summary}")
                     continue
                 
                 # 处理正常消息
-                result = bot.chat(session_id, user_input)
+                result = bot.chat(user_id, session_id, user_input)
                 
                 if "response" in result:
                     print(f"🤖 助手: {result['response']}")
