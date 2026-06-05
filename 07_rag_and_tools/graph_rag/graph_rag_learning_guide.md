@@ -118,8 +118,8 @@
 ```mermaid
 graph LR
     %% Text2Graph：从非结构化文本构建知识图谱的最小流程
-    A[非结构化文档] --> B[文本切片 (Chunks)]
-    B --> C{LLM (Graph Transformer)}
+    A[非结构化文档] --> B[文本切片 - Chunks]
+    B --> C{LLM - Graph Transformer}
     C --> D[提取节点 & 关系]
     D --> E[(Neo4j 数据库)]
 ```
