@@ -22,7 +22,7 @@ refactor(scope): description
 feat(scope): description
 ```
 
-Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `training`, `llm-theory`, `rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `submodule`. Look at `git log --oneline` for recent examples before committing.
+Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `npu`, `training`, `llm-theory`, `rag`, `graph_rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `ai-native`, `smart_customer_service`, `kvbm`, `submodule`. Look at `git log --oneline` for recent examples before committing.
 
 
 ## File conventions
@@ -31,6 +31,7 @@ Scopes are derived from directory/topic areas. Common scopes seen in the history
 - Within a topic directory, files may use numeric prefixes for ordering (e.g., `01_concepts.md`, `02_practice.md`).
 - Translated content appends a language suffix to the filename (e.g., `file.zh-CN.md`).
 - Image assets live in `img/` at the repo root, or alongside the files that reference them within topic subdirectories.
+- Interactive HTML visualizations (e.g., inference pipeline demos) are placed alongside the markdown documents they complement, in the same topic subdirectory.
 - `README.md` files at directory roots serve as navigation portals and contain link trees to content within that directory.
 
 ## Python demos and notebooks

@@ -63,6 +63,7 @@ LMCache 将 KV Cache 展开为 GPU/CPU/Disk/Remote 的 L1-L4 四层存储体系�
 ### 2.5 SGLang HiCache
 
 - **[HiCache 深入详解](kv_cache/02_systems/hicache/hicache_deep_dive.md)**：将 GPU/CPU/分布式后端统一为 L1-L3 缓存，通过 HiRadixTree 与 `page_first` 内存布局实现跨节点零拷贝。
+- **[SGLang 推理流水线可视化](kv_cache/02_systems/hicache/inference-pipeline.html)**：交互式 Prefill & Decode 流水线演示，逐步骤追踪 HiCache RadixTree 前缀匹配、L2→L1 恢复与 Write-back 全流程。
 
 ---
 
