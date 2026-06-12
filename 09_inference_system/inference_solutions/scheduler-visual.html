@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGLang 调度器可视化 — Request × Batch</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace; background: #0d1117; color: #c9d1d9; padding: 24px; max-width: 960px; margin: 0 auto; }
+h1 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 20px; margin-bottom: 4px; color: #f0f6fc; }
+h2 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; color: #f0f6fc; margin: 30px 0 12px 0; border-bottom: 1px solid #21262d; padding-bottom: 8px; }
+.subtitle { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #c9d1d9; margin-bottom: 28px; }
+.controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; flex-wrap: wrap; }
+button { padding: 6px 14px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #e6edf3; cursor: pointer; font-size: 13px; }
+button:hover { background: #30363d; }
+.step-info { font-size: 13px; color: #c9d1d9; margin-left: 8px; }
+#scene { min-height: 400px; }
+.batch-box { border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; margin: 6px 0; position: relative; }
+.batch-box.prefill { border-color: #5c4a1f; background: rgba(210,153,34,0.06); }
+.batch-box.decode  { border-color: #1f3a5f; background: rgba(88,166,255,0.06); }
+.batch-box.arrival { border-color: #3fb950; border-style: dashed; background: rgba(63,185,80,0.08); }
+.batch-title { font-size: 12px; color: #f0f6fc; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.batch-title .tag { padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+.tag-prefill { background: #d29922; color: #000; }
+.tag-decode  { background: #58a6ff; color: #000; }
+.tag-arrival { background: #3fb950; color: #000; }
+.req-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+.req-name { width: 100px; color: #f0f6fc; flex-shrink: 0; }
+.req-status { color: #e6edf3; font-size: 12px; flex-shrink: 0; white-space: nowrap; }
+.req-bar { flex: 1; height: 6px; border-radius: 3px; background: #21262d; overflow: hidden; }
+.req-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.req-bar-fill.prefill { background: #d29922; }
+.req-bar-fill.decode  { background: #58a6ff; }
+.arrow-row { text-align: center; color: #8b949e; font-size: 12px; padding: 4px 0; margin: 2px 0; }
+.arrow-row .note { color: #c9d1d9; font-style: italic; }
+.alert-row { text-align: center; font-size: 12px; padding: 4px 0; color: #ffa657; }
+.legend { display: flex; gap: 16px; font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin-bottom: 16px; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 2px; }
+.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.concept-card { border: 1px solid #d0d7de; border-radius: 8px; padding: 10px 14px; background: #ffffff; }
+.concept-card h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #1f2328; margin-bottom: 4px; }
+.concept-card .desc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; color: #656d76; margin-top: 4px; line-height: 1.5; }
+.mermaid { display: flex; justify-content: center; padding: 0; }
+.mermaid svg { max-width: 100% !important; }
+</style>
+</head>
+<body>
+<h1>SGLang 调度器 — Request × Batch 可视化</h1>
+<div class="subtitle">模拟 6 个请求在不同时刻到达。Prefill 优先于 Decode。</div>
+
+<div class="controls">
+  <button id="btnPlay" onclick="togglePlay()">▶ 播放</button>
+  <button onclick="prevStep()">◀</button>
+  <button onclick="nextStep()">▶</button>
+  <button onclick="reset()">↺ 重置</button>
+  <span class="step-info">Step <b id="stepNum">1</b> / <span id="totalSteps"></span></span>
+  <button id="btnExpand" onclick="showAll()" style="margin-left:12px">展开全部</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', themeVariables: {
+  primaryColor: '#d29922', primaryTextColor: '#000', lineColor: '#656d76',
+  secondaryColor: '#58a6ff', tertiaryColor: '#3fb950', mainBkg: '#fff',
+  fontSize: '13px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+}});</script>
+
+<div class="legend">
+  <span><span class="dot" style="background:#d29922"></span> Prefill batch (EXTEND)</span>
+  <span><span class="dot" style="background:#58a6ff"></span> Decode batch (每请求 1 token)</span>
+  <span><span class="dot" style="background:#3fb950"></span> 请求到达 (arrival)</span>
+</div>
+
+<div id="scene"></div>
+
+<hr style="border-color:#21262d; margin: 30px 0 20px 0;">
+
+<h2>核心概念图示</h2>
+
+<div class="concept-grid">
+
+<div class="concept-card">
+  <h3>Chunked Prefill 过程</h3>
+  <div class="mermaid">
+stateDiagram-v2
+    [*] --> 到达 : Request 到达
+    到达 --> 匹配 : init_next_round_input()
+    匹配 --> 一次完成 : extend_input_len &le; chunk_size
+    匹配 --> 截断 : extend_input_len &gt; chunk_size, is_chunked += 1
+    截断 --> Prefill_chunk : EXTEND forward
+    Prefill_chunk --> Stash : 写回 radix tree
+    Stash --> 匹配 : is_chunked &gt; 0 (续 chunk)
+    一次完成 --> [*] : 进入 decode
+    Stash --> 一次完成 : is_chunked == 0
+  </div>
+  <div class="desc">长 prompt 超过 chunked_prefill_size 时被截断。每个 chunk 的中间结果 stash 回 radix tree，下一 chunk 可命中为前缀缓存。<br>chunked 状态下请求<b>不输出 token</b>，只有最后一个 chunk 完成后才进入 decode。<br><b>注意</b>：续 chunk 时 <code>add_chunked_req()</code> 会将请求重新放入 waiting_queue，所以即使没有新请求到达，<code>#queue-req</code> 也可能 &gt; 0。</div>
+</div>
+
+<div class="concept-card">
+  <h3>Request 生命周期</h3>
+  <div class="mermaid">
+stateDiagram-v2
+    [*] --> waiting_queue : Tokenizer 发来请求
+    note right of waiting_queue : #queue-req 统计这里
+    waiting_queue --> Prefill_Batch : PrefillAdder 选中 (admit)
+    note right of Prefill_Batch : #running-req 统计这里
+    Prefill_Batch --> waiting_queue : is_chunked &gt; 0 (下一个 chunk)
+    Prefill_Batch --> Decode_Batch : is_chunked == 0 (prefill 完成)
+    note right of Decode_Batch : #running-req 统计这里
+    Decode_Batch --> Decode_Batch : 未完 (每步 1 token)
+    Decode_Batch --> [*] : finished
+    Decode_Batch --> waiting_queue : retract_decode (L1 满了)
+  </div>
+  <div class="desc">一个 Request 依次穿过 waiting_queue → Prefill Batch(可能多个,chunking) → Decode Batch(持续)。<br><b>#queue-req</b> = waiting_queue 中的排队数。<b>#running-req</b> = Prefill/Decode batch 中正在处理的请求数（同名、不同义）。</div>
+</div>
+
+</div>
+
+<script>
+const chunkSize = 8192;
+
+const requests = {
+  A: { arrive: 0, extend: 200,   gen: 8,  color: '#f78166', name: 'Req A' },
+  B: { arrive: 0, extend: 18000, gen: 5,  color: '#d2a8ff', name: 'Req B (长)' },
+  C: { arrive: 0, extend: 300,   gen: 10, color: '#7ee787', name: 'Req C' },
+  D: { arrive: 3, extend: 10000, gen: 4,  color: '#a5d6ff', name: 'Req D (中)' },
+  E: { arrive: 5, extend: 150,   gen: 12, color: '#ffa198', name: 'Req E' },
+  F: { arrive: 8, extend: 25000, gen: 3,  color: '#ffc680', name: 'Req F (长)' },
+};
+
+function buildSchedule() {
+  const batches = [];
+  const allIds = Object.keys(requests);
+  let chunkRemain = {}, genRemain = {}, chunkTotal = {}, chunkDone = {};
+  for (const [id, r] of Object.entries(requests)) {
+    chunkRemain[id] = 0; genRemain[id] = 0;
+    chunkTotal[id] = Math.ceil(r.extend / chunkSize); chunkDone[id] = 0;
+  }
+  const queue = [];
+  let step = 0, anyActive = true;
+
+  while (anyActive && step < 100) {
+    const newArrivals = [];
+    for (const [id, r] of Object.entries(requests)) {
+      if (r.arrive === step) { chunkRemain[id] = chunkTotal[id]; newArrivals.push(id); }
+    }
+    if (newArrivals.length > 0) {
+      for (const id of newArrivals) queue.push(id);
+      batches.push({ type: 'arrival', arrivals: newArrivals, queueLen: queue.length });
+      step++; continue;
+    }
+    const prefillReqs = {}, admitted = [];
+    const remaining = [...queue]; queue.length = 0;
+    for (const id of remaining) {
+      if (chunkRemain[id] > 0) {
+        const thisChunk = chunkTotal[id] - chunkRemain[id] + 1;
+        const ext = Math.min(requests[id].extend - chunkDone[id] * chunkSize, chunkSize);
+        prefillReqs[id] = { chunk: `${thisChunk}/${chunkTotal[id]}`, extend: ext, isLast: chunkRemain[id] === 1 };
+        chunkRemain[id]--; chunkDone[id]++; admitted.push(id);
+      }
+    }
+    if (Object.keys(prefillReqs).length > 0) {
+      for (const id of admitted.filter(id => chunkRemain[id] === 0)) genRemain[id] = requests[id].gen;
+      const cont = admitted.filter(id => chunkRemain[id] > 0);
+      for (let ci = cont.length - 1; ci >= 0; ci--) queue.unshift(cont[ci]);
+      batches.push({ type: 'prefill', reqs: prefillReqs, running: Object.keys(prefillReqs).length, queueLen: queue.length });
+      step++; continue;
+    }
+    const decodeIds = Object.keys(genRemain).filter(id => genRemain[id] > 0);
+    if (decodeIds.length > 0) {
+      const decodeFrame = {};
+      for (const id of decodeIds) {
+        decodeFrame[id] = { remaining: genRemain[id] - 1, total: requests[id].gen };
+        genRemain[id]--;
+        if (genRemain[id] <= 0 && chunkRemain[id] === 0) delete genRemain[id];
+      }
+      batches.push({ type: 'decode', reqs: decodeFrame, running: decodeIds.length, queueLen: queue.length });
+      step++; continue;
+    }
+    anyActive = false;
+  }
+  return batches;
+}
+
+const batches = buildSchedule();
+document.getElementById('totalSteps').textContent = batches.length;
+
+const scene = document.getElementById('scene');
+let currentIdx = 0;
+
+for (let bi = 0; bi < batches.length; bi++) {
+  const b = batches[bi];
+  const div = document.createElement('div');
+  div.className = `batch-box ${b.type}`;
+  div.style.display = (bi === 0) ? 'block' : 'none';
+  div.id = `batch-${bi}`;
+
+  let tagClass, tagLabel;
+  if (b.type === 'prefill') { tagClass = 'tag-prefill'; tagLabel = 'EXTEND'; }
+  else if (b.type === 'decode') { tagClass = 'tag-decode'; tagLabel = 'DECODE'; }
+  else { tagClass = 'tag-arrival'; tagLabel = 'ARRIVAL'; }
+
+  let title = `<div class="batch-title"><span class="tag ${tagClass}">${tagLabel}</span>`;
+  title += b.type !== 'arrival'
+    ? `Step #${bi + 1} ${tagLabel} Batch | #running-req: ${b.running} | #queue-req: ${b.queueLen}`
+    : `Step #${bi + 1} 新请求到达 | #queue-req: ${b.queueLen}`;
+  title += `</div>`;
+
+  let rows = '';
+  if (b.type === 'arrival') {
+    for (const id of b.arrivals) {
+      const r = requests[id];
+      rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status">到达 waiting_queue | extend=${r.extend} tokens</span></div>`;
+    }
+  } else if (b.type === 'prefill') {
+    for (const [id, info] of Object.entries(b.reqs)) {
+      const r = requests[id], pct = Math.min(100, Math.round(info.extend / chunkSize * 100));
+      rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status">Chunk ${info.chunk} | extend ${info.extend} tok</span><div class="req-bar"><div class="req-bar-fill prefill" style="width:${pct}%"></div></div></div>`;
+    }
+  } else if (b.type === 'decode') {
+    for (const [id, info] of Object.entries(b.reqs)) {
+      const r = requests[id], pct = Math.round((info.total - info.remaining) / info.total * 100);
+      rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status">生成 token | 剩余 ${info.remaining}/${info.total}</span><div class="req-bar"><div class="req-bar-fill decode" style="width:${pct}%"></div></div></div>`;
+    }
+  }
+  div.innerHTML = title + rows;
+  scene.appendChild(div);
+
+  if (bi < batches.length - 1) {
+    const nb = batches[bi + 1], nq = nb.queueLen || 0;
+    let trans = '', cls = 'arrow-row';
+    if (b.type === 'arrival') trans = `新请求入队 → queue 增长到 ${nq}`;
+    else if (b.type === 'prefill' && nb.type === 'prefill') trans = 'chunk 未完成 → add_chunked_req() 重新入队 → #queue-req +1';
+    else if (b.type === 'prefill' && (nb.type === 'decode' || nb.type === 'arrival')) trans = 'prefill 完成 → 进入 decode';
+    else if (b.type === 'decode' && nb.type === 'prefill') { trans = `⚠ Prefill 优先！queue=${nq} > 0 → 中断 decode 先做 prefill`; cls = 'alert-row'; }
+    else if (b.type === 'decode' && nb.type === 'arrival') trans = '新请求到达 → queue 增长';
+    else if (b.type === 'arrival' && nb.type === 'prefill') trans = `queue=${nq} > 0 → 触发 prefill`;
+    const ad = document.createElement('div');
+    ad.className = cls;
+    ad.innerHTML = `│<br>│  ${trans}<br>▼`;
+    ad.style.display = (bi === 0) ? 'block' : 'none';
+    ad.id = `arrow-${bi}`;
+    scene.appendChild(ad);
+  }
+}
+
+function showBatch(idx) {
+  if (idx < 0 || idx >= batches.length) return;
+  document.getElementById(`batch-${currentIdx}`).style.display = 'none';
+  const pa = document.getElementById(`arrow-${currentIdx}`);
+  if (pa) pa.style.display = 'none';
+  currentIdx = idx;
+  document.getElementById(`batch-${currentIdx}`).style.display = 'block';
+  const ca = document.getElementById(`arrow-${currentIdx}`);
+  if (ca) ca.style.display = 'block';
+  const cur = batches[currentIdx];
+  document.getElementById('stepNum').textContent = `${currentIdx + 1} (${cur.type === 'prefill' ? 'Prefill' : cur.type === 'decode' ? 'Decode' : 'Arrival'})`;
+  document.getElementById(`batch-${currentIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (expanded) { collapseAll(); expanded = false; document.getElementById('btnExpand').textContent = '展开全部'; }
+}
+
+function collapseAll() {
+  for (let i = 0; i < batches.length; i++) {
+    if (i !== currentIdx) { document.getElementById(`batch-${i}`).style.display = 'none'; const a = document.getElementById(`arrow-${i}`); if (a) a.style.display = 'none'; }
+  }
+}
+
+let expanded = false;
+function showAll() {
+  stopAnim();
+  const btn = document.getElementById('btnExpand');
+  expanded = !expanded;
+  if (expanded) {
+    for (let i = 0; i < batches.length; i++) { document.getElementById(`batch-${i}`).style.display = 'block'; const a = document.getElementById(`arrow-${i}`); if (a) a.style.display = 'block'; }
+    btn.textContent = '收缩全部';
+  } else { collapseAll(); showBatch(currentIdx); }
+}
+
+function reset() { stopAnim(); showBatch(0); }
+function nextStep() { showBatch(currentIdx + 1); }
+function prevStep() { showBatch(currentIdx - 1); }
+
+let animInterval = null;
+function togglePlay() {
+  if (animInterval) { stopAnim(); return; }
+  if (expanded) { collapseAll(); expanded = false; document.getElementById('btnExpand').textContent = '展开全部'; }
+  document.getElementById('btnPlay').textContent = '⏸ 暂停';
+  animInterval = setInterval(() => { if (currentIdx >= batches.length - 1) stopAnim(); else nextStep(); }, 1000);
+}
+function stopAnim() { clearInterval(animInterval); animInterval = null; document.getElementById('btnPlay').textContent = '▶ 播放'; }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextStep(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevStep(); }
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+showBatch(0);
+</script>
+</body>
+</html>
