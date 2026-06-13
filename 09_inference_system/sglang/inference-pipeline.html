@@ -180,53 +180,53 @@ const GH='https://github.com/sgl-project/sglang/blob/main/python/sglang/srt';
 
 // ═══ Call Tree ═══
 const TREE = [
-{m:'event_loop_normal',f:'managers/scheduler.py',l:1421,d:'调度器主循环',p:'both',c:[
-  {m:'process_input_requests',f:'managers/scheduler.py',l:1539,d:'解析 HTTP → 创建 Req',p:'prefill',c:[
+{m:'event_loop_normal',f:'managers/scheduler.py',l:1537,d:'调度器主循环',p:'both',c:[
+  {m:'process_input_requests',f:'managers/scheduler.py',l:1842,d:'解析 HTTP → 创建 Req',p:'prefill',c:[
     {m:'tokenizer.encode',f:'transformers',l:'—',d:'prompt → token IDs',p:'prefill'}
   ]},
-  {m:'get_next_batch_to_run',f:'managers/scheduler.py',l:2415,d:'组装 ScheduleBatch (EXTEND / DECODE)',p:'both',c:[
+  {m:'get_next_batch_to_run',f:'managers/scheduler.py',l:2485,d:'组装 ScheduleBatch (EXTEND / DECODE)',p:'both',c:[
     /* Phase 1: RadixTree 元数据遍历 (纯元数据, 无 I/O) */
-    {m:'HiMambaRadixCache.match_prefix',f:'mem_cache/hi_mamba_radix_cache.py',l:931,d:'🔍 Phase1: RadixTree 元数据遍历 (无 I/O)',p:'prefill',c:[
-      {m:'_match_prefix_helper',f:'mem_cache/hi_mamba_radix_cache.py',l:950,d:'逐 token 遍历树节点',p:'prefill',c:[
+    {m:'HiMambaRadixCache.match_prefix',f:'mem_cache/hi_mamba_radix_cache.py',l:927,d:'🔍 Phase1: RadixTree 元数据遍历 (无 I/O)',p:'prefill',c:[
+      {m:'_match_prefix_helper',f:'mem_cache/hi_mamba_radix_cache.py',l:946,d:'逐 token 遍历树节点',p:'prefill',c:[
         {m:'─ 检查 child.evicted',f:'—',l:'—',d:'L1 是否被驱逐?',p:'prefill'},
         {m:'─ 检查 child.backuped',f:'—',l:'—',d:'L2/L3 是否有备份?',p:'prefill'},
       ]},
     ]},
     /* Phase 2: HiCache 数据恢复 (实际 I/O) */
     {m:'HiMambaRadixCache.inc_lock_ref',f:'mem_cache/hi_mamba_radix_cache.py',l:1168,d:'🔒 Phase2: 锁定命中前缀的 Radix 节点',p:'prefill'},
-    {m:'HiMambaRadixCache.load_back',f:'mem_cache/hi_mamba_radix_cache.py',l:251,d:'⬆ Phase2: L2→L1 DMA 恢复 KV',p:'prefill',c:[
-      {m:'HybridCacheController.write',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:361,d:'CPU→GPU DMA 搬运 (H→D)',p:'prefill'}
+    {m:'HiMambaRadixCache.load_back',f:'mem_cache/hi_mamba_radix_cache.py',l:247,d:'⬆ Phase2: L2→L1 DMA 恢复 KV',p:'prefill',c:[
+      {m:'HybridCacheController.write',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:231,d:'CPU→GPU DMA 搬运 (H→D)',p:'prefill'}
     ]}
   ]},
-  {m:'run_batch',f:'managers/scheduler.py',l:2987,d:'执行 batch 前向',p:'both',c:[
-    {m:'ModelRunner.forward',f:'model_executor/model_runner.py',l:3407,d:'分发到 extend/decode',p:'both',c:[
-      {m:'forward_extend',f:'model_executor/model_runner.py',l:3252,d:'PREFiLL: 并行处理所有 input tokens',p:'prefill',c:[
-        {m:'QKVParallelLinear',f:'models/qwen3_5.py',l:747,d:'tokens → Q, K, V 投影',p:'prefill'},
+  {m:'run_batch',f:'managers/scheduler.py',l:2996,d:'执行 batch 前向',p:'both',c:[
+    {m:'ModelRunner.forward',f:'model_executor/model_runner.py',l:3300,d:'分发到 extend/decode',p:'both',c:[
+      {m:'forward_extend',f:'model_executor/model_runner.py',l:3180,d:'PREFiLL: 并行处理所有 input tokens',p:'prefill',c:[
+        {m:'QKVParallelLinear',f:'layers/linear.py',l:894,d:'tokens → Q, K, V 投影',p:'prefill'},
         {m:'FlashAttentionBackend',f:'layers/attention/flashattention_backend.py',l:'—',d:'12 层: Q×K→softmax→×V',p:'prefill'},
         {m:'GDNAttnBackend',f:'layers/attention/fla/—',l:'—',d:'36 层: Gated DeltaNet 线性注意力',p:'prefill'},
-        {m:'set_kv_buffer',f:'mem_cache/memory_pool.py',l:864,d:'写入 K,V → GPU HBM (L1)',p:'prefill'}
+        {m:'set_kv_buffer',f:'mem_cache/memory_pool.py',l:767,d:'写入 K,V → GPU HBM (L1)',p:'prefill'}
       ]},
-      {m:'forward_decode',f:'model_executor/model_runner.py',l:3202,d:'DECODE: 处理单个 token',p:'decode',c:[
+      {m:'forward_decode',f:'model_executor/model_runner.py',l:3144,d:'DECODE: 处理单个 token',p:'decode',c:[
         {m:'FlashAttentionBackend',f:'layers/attention/flashattention_backend.py',l:'—',d:'单 token Q × 累积 KV',p:'decode'},
         {m:'GDNAttnBackend',f:'layers/attention/fla/—',l:'—',d:'更新 GDN recurrent state',p:'decode'},
-        {m:'set_kv_buffer',f:'mem_cache/memory_pool.py',l:864,d:'追加 1 token KV → L1',p:'decode'}
+        {m:'set_kv_buffer',f:'mem_cache/memory_pool.py',l:767,d:'追加 1 token KV → L1',p:'decode'}
       ]}
     ]}
   ]},
-  {m:'process_batch_result',f:'managers/scheduler.py',l:3214,d:'采样 next token + 判断结束',p:'both',c:[
-    {m:'sample',f:'layers/sampler.py',l:'—',d:'logits → next token',p:'both'},
-    {m:'check_stop',f:'—',l:'—',d:'EOS / max_tokens → 决定是否结束',p:'both'},
-    {m:'unlock_ref',f:'mem_cache/mamba_radix_cache.py',l:'—',d:'[HiCache] 释放前缀锁 (请求完成时)',p:'both'}
+  {m:'process_batch_result',f:'managers/scheduler.py',l:3170,d:'采样 next token + 判断结束',p:'both',c:[
+    {m:'sample',f:'model_executor/model_runner.py',l:3493,d:'logits → next token',p:'both'},
+    {m:'check_finished',f:'managers/schedule_batch.py',l:1213,d:'EOS / max_tokens → 决定是否结束',p:'both'},
+    {m:'dec_lock_ref',f:'mem_cache/hi_mamba_radix_cache.py',l:1196,d:'[HiCache] 释放前缀锁 (请求完成时)',p:'both'}
   ]},
-  {m:'HiMambaRadixCache.insert',f:'mem_cache/mamba_radix_cache.py',l:'—',d:'[HiCache] 新 token 写入 RadixTree 元数据',p:'prefill'},
-  {m:'HiMambaRadixCache.write_backup',f:'mem_cache/hi_mamba_radix_cache.py',l:210,d:'⬇ [HiCache] L1→L2 write_through',p:'prefill',c:[
-    {m:'mamba_backup_transfers',f:'mem_cache/hi_mamba_radix_cache.py',l:1999,d:'构建 GDN state → L2 PoolTransfer',p:'prefill'},
-    {m:'HybridCacheController.write',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:361,d:'GPU→CPU 数据搬运 (D→H)',p:'prefill'}
+  {m:'HiMambaRadixCache.insert',f:'mem_cache/mamba_radix_cache.py',l:497,d:'[HiCache] 新 token 写入 RadixTree 元数据',p:'prefill'},
+  {m:'HiMambaRadixCache.write_backup',f:'mem_cache/hi_mamba_radix_cache.py',l:206,d:'⬇ [HiCache] L1→L2 write_through',p:'prefill',c:[
+    {m:'mamba_backup_transfers',f:'mem_cache/hi_mamba_radix_cache.py',l:1979,d:'构建 GDN state → L2 PoolTransfer',p:'prefill'},
+    {m:'HybridCacheController.write',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:231,d:'GPU→CPU 数据搬运 (D→H)',p:'prefill'}
   ]},
-  {m:'HiMambaRadixCache.write_backup_storage',f:'mem_cache/hi_mamba_radix_cache.py',l:1696,d:'⬇ [HiCache] L2→L3 (后台线程)',p:'prefill',c:[
-    {m:'mamba_archive_transfers',f:'mem_cache/hi_mamba_radix_cache.py',l:2022,d:'构建 GDN state → L3 PoolTransfer',p:'prefill'},
-    {m:'HybridCacheController._page_backup',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:633,d:'调用 batch_set_v2 写 NVMe',p:'prefill',c:[
-      {m:'HiCacheFile.batch_set_v2',f:'mem_cache/hicache_storage.py',l:547,d:'KV + Mamba state → .bin 文件',p:'prefill'}
+  {m:'HiMambaRadixCache.write_backup_storage',f:'mem_cache/hi_mamba_radix_cache.py',l:1686,d:'⬇ [HiCache] L2→L3 (后台线程)',p:'prefill',c:[
+    {m:'mamba_archive_transfers',f:'mem_cache/hi_mamba_radix_cache.py',l:2002,d:'构建 GDN state → L3 PoolTransfer',p:'prefill'},
+    {m:'HybridCacheController._page_backup',f:'mem_cache/hybrid_cache/hybrid_cache_controller.py',l:499,d:'调用 batch_set_v2 写 NVMe',p:'prefill',c:[
+      {m:'HiCacheFile.batch_set_v2',f:'mem_cache/hicache_storage.py',l:191,d:'KV + Mamba state → .bin 文件',p:'prefill'}
     ]}
   ]}
 ]}];
@@ -237,7 +237,7 @@ prefill: [
 { id:'1/7', title:'Tokenization', desc:'prompt → <span class="m">tokenizer.encode()</span> <span class="fm">scheduler.py:1539</span><br>HTTP POST /v1/completions → 创建 Req(prompt, max_tokens)', tokens:[{t:'He',c:'ti'},{t:'llo',c:'ti'},{t:',',c:'ti'},{t:' world',c:'ti'},{t:'!',c:'ti'}], onBox:0, hiLv:-1, hiRadix:-1,
   hl:['process_input_requests','tokenizer.encode'],
   himsg:'', },
-{ id:'2/7', title:'QKV 投影 (Attention 第一步)', desc:'tokens × <span class="m">QKVParallelLinear</span> <span class="fm">qwen3_5.py:747</span><br>每个 token 通过线性投影层产生 Q(Query), K(Key), V(Value)<br>Q → 查询 KV Cache | K,V → 写入缓存供后续使用', groups:[
+{ id:'2/7', title:'QKV 投影 (Attention 第一步)', desc:'tokens × <span class="m">QKVParallelLinear</span> <span class="fm">layers/linear.py:894</span><br>每个 token 通过线性投影层产生 Q(Query), K(Key), V(Value)<br>Q → 查询 KV Cache | K,V → 写入缓存供后续使用', groups:[
   {lbl:'He',qkv:[{t:'Q',c:'q'},{t:'K',c:'k'},{t:'V',c:'v'}]},
   {lbl:'llo',qkv:[{t:'Q',c:'q'},{t:'K',c:'k'},{t:'V',c:'v'}]},
   {lbl:',',qkv:[{t:'Q',c:'q'},{t:'K',c:'k'},{t:'V',c:'v'}]},
@@ -246,17 +246,17 @@ prefill: [
 ], onBox:1, hiLv:-1, hiRadix:-1,
   hl:['QKVParallelLinear'],
   himsg:'', },
-{ id:'3/7', title:'Phase 1: RadixTree 元数据遍历 — 找最长前缀', desc:'<span class="m">match_prefix</span> → <span class="m">_match_prefix_helper</span> <span class="fm">hi_mamba_radix_cache.py:950</span><br>逐 token 检查 RadixTree 节点标志 (纯元数据, 无 I/O):<ul><li>He : L1=<span style="color:#f85149">已驱逐</span>, L2(CPU)=<span style="color:#3fb950">有备份</span> → 可恢复, 继续</li><li>llo: L1=<span style="color:#3fb950">在GPU</span> → 继续</li><li>,&nbsp;&nbsp;: L1=<span style="color:#3fb950">在GPU</span> → 继续</li><li>world: L1=<span style="color:#f85149">已驱逐</span>, L2(CPU)=<span style="color:#f85149">无备份</span> → <b>无法恢复, 前缀终止!</b></li><li>!&nbsp;&nbsp;: 不再查询</li></ul><b>最长前缀=3</b> · L3(NVMe) 写入是异步的, 不参与前缀匹配', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'✗',c:'to'},{t:'—',c:'ti'}], groups:[
+{ id:'3/7', title:'Phase 1: RadixTree 元数据遍历 — 找最长前缀', desc:'<span class="m">match_prefix</span> → <span class="m">_match_prefix_helper</span> <span class="fm">hi_mamba_radix_cache.py:946</span><br>逐 token 检查 RadixTree 节点标志 (纯元数据, 无 I/O):<ul><li>He : L1=<span style="color:#f85149">已驱逐</span>, L2(CPU)=<span style="color:#3fb950">有备份</span> → 可恢复, 继续</li><li>llo: L1=<span style="color:#3fb950">在GPU</span> → 继续</li><li>,&nbsp;&nbsp;: L1=<span style="color:#3fb950">在GPU</span> → 继续</li><li>world: L1=<span style="color:#f85149">已驱逐</span>, L2(CPU)=<span style="color:#f85149">无备份</span> → <b>无法恢复, 前缀终止!</b></li><li>!&nbsp;&nbsp;: 不再查询</li></ul><b>最长前缀=3</b> · L3(NVMe) 写入是异步的, 不参与前缀匹配', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'✗',c:'to'},{t:'—',c:'ti'}], groups:[
   {lbl:'He',qkv:[{t:'L1✗',c:'v'},{t:'L2✓',c:'k'}]},{lbl:'llo',qkv:[{t:'L1✓',c:'k'}]},{lbl:',',qkv:[{t:'L1✓',c:'k'}]},{lbl:'world',qkv:[{t:'L1✗',c:'v'},{t:'L2✗',c:'v'}]},{lbl:'!',qkv:[{t:'⏸',c:'v'}]},
 ], onBox:2, hiLv:-1, hiRadix:3,
   hl:['HiMambaRadixCache.match_prefix','_match_prefix_helper','─ 检查 child.evicted','─ 检查 child.backuped'],
   himsg:'<span style="color:#d2991d">Phase 1: RadixTree 元数据</span> — backuped=数据在L2(CPU), 不涉及L3(NVMe)', },
-{ id:'4/7', title:'Phase 2: HiCache 数据恢复 — L2→L1 load_back', desc:'<span class="m">inc_lock_ref</span> <span class="fm">:1168</span> 锁定前 3 节点 → <span class="m">load_back</span> <span class="fm">:251</span> 恢复数据:<ul><li>He : L2(CPU) 有备份 → <span class="m">HybridCacheController.write</span> L2→L1 DMA</li><li>llo, , : 已在 L1(GPU), 无需恢复</li><li>world, ! : L1/L2 均无 → 需 prefill 新计算</li></ul><em>实际 I/O: CPU→GPU DMA (仅 He 这1个token)</em>', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tq'},{t:'!',c:'tq'}], groups:[
+{ id:'4/7', title:'Phase 2: HiCache 数据恢复 — L2→L1 load_back', desc:'<span class="m">inc_lock_ref</span> <span class="fm">:1168</span> 锁定前 3 节点 → <span class="m">load_back</span> <span class="fm">:247</span> 恢复数据:<ul><li>He : L2(CPU) 有备份 → <span class="m">HybridCacheController.write</span> L2→L1 DMA</li><li>llo, , : 已在 L1(GPU), 无需恢复</li><li>world, ! : L1/L2 均无 → 需 prefill 新计算</li></ul><em>实际 I/O: CPU→GPU DMA (仅 He 这1个token)</em>', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tq'},{t:'!',c:'tq'}], groups:[
   {lbl:'He',qkv:[{t:'L2→L1',c:'k'}]},{lbl:'llo',qkv:[{t:'L1✓',c:'k'}]},{lbl:',',qkv:[{t:'L1✓',c:'k'}]},{lbl:'world',qkv:[{t:'NEW',c:'q'}]},{lbl:'!',qkv:[{t:'NEW',c:'q'}]},
 ], onBox:2, hiLv:-1, hiRadix:-1,
   hl:['HiMambaRadixCache.load_back','HybridCacheController.write','HiMambaRadixCache.inc_lock_ref'],
   himsg:'', },
-{ id:'5/7', title:'Prefill 前向计算 (仅 2 个新 token)', desc:'<span class="m">forward_extend</span> <span class="fm">model_runner.py:3252</span><br>已缓存 token 复用 KV, 仅 2 个新 token 需 attention 计算<br>12 层 FlashAttention + 36 层 GDN → <span class="m">set_kv_buffer</span> 写回 L1', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tq'},{t:'!',c:'tq'}], groups:[
+{ id:'5/7', title:'Prefill 前向计算 (仅 2 个新 token)', desc:'<span class="m">forward_extend</span> <span class="fm">model_runner.py:3180</span><br>已缓存 token 复用 KV, 仅 2 个新 token 需 attention 计算<br>12 层 FlashAttention + 36 层 GDN → <span class="m">set_kv_buffer</span> 写回 L1', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tq'},{t:'!',c:'tq'}], groups:[
   {lbl:'He',qkv:[{t:'KV✓',c:'k'}]},{lbl:'llo',qkv:[{t:'KV✓',c:'k'}]},{lbl:',',qkv:[{t:'KV✓',c:'k'}]},{lbl:'world',qkv:[{t:'ATN',c:'q'}]},{lbl:'!',qkv:[{t:'ATN',c:'q'}]},
 ], onBox:3, hiLv:-1, hiRadix:-1,
   hl:['run_batch','ModelRunner.forward','forward_extend','FlashAttentionBackend','GDNAttnBackend','set_kv_buffer'],
@@ -266,10 +266,10 @@ prefill: [
 ], onBox:4, hiLv:-1, hiRadix:-1,
   hl:['process_batch_result','sample','HiMambaRadixCache.insert','HiMambaRadixCache.write_backup','mamba_backup_transfers','HiMambaRadixCache.write_backup_storage','mamba_archive_transfers','HybridCacheController._page_backup','HiCacheFile.batch_set_v2'],
   himsg:'', },
-{ id:'7/7', title:'请求完成 — unlock_ref', desc:'<span class="m">unlock_ref</span> 释放 RadixTree 前缀锁<br>全部 KV cache 已写入 L1+L2+L3, RadixTree 元数据已更新', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tk'},{t:'!',c:'tk'}], groups:[
+{ id:'7/7', title:'请求完成 — dec_lock_ref', desc:'<span class="m">dec_lock_ref</span> 释放 RadixTree 前缀锁<br>全部 KV cache 已写入 L1+L2+L3, RadixTree 元数据已更新', tokens:[{t:'He',c:'tk'},{t:'llo',c:'tk'},{t:',',c:'tk'},{t:'world',c:'tk'},{t:'!',c:'tk'}], groups:[
   {lbl:'He',qkv:[{t:'🔒',c:'v'}]},{lbl:'llo',qkv:[{t:'🔒',c:'v'}]},{lbl:',',qkv:[{t:'🔒',c:'v'}]},{lbl:'world',qkv:[{t:'🔒',c:'v'}]},{lbl:'!',qkv:[{t:'🔒',c:'v'}]},
 ], onBox:5, hiLv:-1, hiRadix:-1,
-  hl:['unlock_ref'],
+  hl:['dec_lock_ref'],
   himsg:'', },
 ],
 decode: [
@@ -278,25 +278,25 @@ decode: [
 ], onBox:3, hiLv:-1, hiRadix:-1,
   hl:['get_next_batch_to_run'],
   himsg:'', },
-{ id:'2/5', title:'Decode: forward_decode → 单 token Attention', desc:'<span class="m">forward_decode</span> <span class="fm">model_runner.py:3202</span><br>新 token 的 Q 查 L1 KV Cache → 命中<br>单 token FlashAttention + GDN state update<br><span class="m">set_kv_buffer</span> → 1 token 的 KV 追加到 L1', tokens:[{t:'!',c:'to'},{t:'→',c:'ti'},{t:'Q⏺',c:'tq'},{t:'→',c:'ti'},{t:'⭐',c:'to'}], groups:[
+{ id:'2/5', title:'Decode: forward_decode → 单 token Attention', desc:'<span class="m">forward_decode</span> <span class="fm">model_runner.py:3144</span><br>新 token 的 Q 查 L1 KV Cache → 命中<br>单 token FlashAttention + GDN state update<br><span class="m">set_kv_buffer</span> → 1 token 的 KV 追加到 L1', tokens:[{t:'!',c:'to'},{t:'→',c:'ti'},{t:'Q⏺',c:'tq'},{t:'→',c:'ti'},{t:'⭐',c:'to'}], groups:[
   {lbl:'!',qkv:[{t:'Q⏺',c:'q'},{t:'KV+',c:'k'}]},{lbl:'→',qkv:[{t:'ATN',c:'q'}]},{lbl:'⭐',qkv:[{t:'OUT',c:'v'}]},
 ], onBox:3, hiLv:-1, hiRadix:-1,
   hl:['get_next_batch_to_run','run_batch','ModelRunner.forward','forward_decode','FlashAttentionBackend','GDNAttnBackend','set_kv_buffer'],
   himsg:'', },
-{ id:'3/5', title:'Decode: Write-back L1→L2→L3', desc:'每个 decode token 按 write_through 策略写回:<ul><li><span class="m">write_backup</span> <span class="fm">hi_mamba_radix_cache.py:210</span> → L1→L2 (GPU→CPU)</li><li><span class="m">write_backup_storage</span> <span class="fm">:1696</span> → L2→L3 (CPU→NVMe)</li></ul>', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'}], groups:[
+{ id:'3/5', title:'Decode: Write-back L1→L2→L3', desc:'每个 decode token 按 write_through 策略写回:<ul><li><span class="m">write_backup</span> <span class="fm">hi_mamba_radix_cache.py:206</span> → L1→L2 (GPU→CPU)</li><li><span class="m">write_backup_storage</span> <span class="fm">:1686</span> → L2→L3 (CPU→NVMe)</li></ul>', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'}], groups:[
   {lbl:'!',qkv:[{t:'⬇L2',c:'k'},{t:'⬇L3',c:'k'}]},{lbl:'⭐',qkv:[{t:'⬇L2',c:'k'},{t:'⬇L3',c:'k'}]},
 ], onBox:4, hiLv:-1, hiRadix:-1,
   hl:['HiMambaRadixCache.write_backup','mamba_backup_transfers','HybridCacheController.write','HiMambaRadixCache.write_backup_storage','mamba_archive_transfers','HybridCacheController._page_backup','HiCacheFile.batch_set_v2'],
   himsg:'', },
-{ id:'4/5', title:'Decode: EOS / max_tokens 判断', desc:'<span class="m">process_batch_result</span> <span class="fm">scheduler.py:3214</span><ul><li><span class="m">sample</span> 采样 next token</li><li><span class="m">check_stop</span> 判断 EOS / max_tokens</li><li>未达停止条件 → GOTO step 2</li></ul>', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'},{t:'🌍',c:'to'},{t:'EOS?',c:'to'}], groups:[
+{ id:'4/5', title:'Decode: EOS / max_tokens 判断', desc:'<span class="m">process_batch_result</span> <span class="fm">scheduler.py:3170</span><ul><li><span class="m">sample</span> <span class="fm">model_runner.py:3493</span> 采样 next token</li><li><span class="m">check_finished</span> <span class="fm">schedule_batch.py:1213</span> 判断 EOS / max_tokens</li><li>未达停止条件 → GOTO step 2</li></ul>', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'},{t:'🌍',c:'to'},{t:'EOS?',c:'to'}], groups:[
   {lbl:'!',qkv:[{t:'KV✓',c:'k'}]},{lbl:'⭐',qkv:[{t:'KV✓',c:'k'}]},{lbl:'🌍',qkv:[{t:'OUT',c:'v'}]},{lbl:'EOS?',qkv:[{t:'⏸',c:'v'}]},
 ], onBox:3, hiLv:-1, hiRadix:-1,
-  hl:['process_batch_result','sample','check_stop'],
+  hl:['process_batch_result','sample','check_finished'],
   himsg:'', },
-{ id:'5/5', title:'Decode: 请求完成 → 释放锁', desc:'达到 EOS 或 max_tokens → <span class="m">unlock_ref</span> <span class="fm">mamba_radix_cache.py</span><br>释放 RadixTree 前缀锁, 请求结束', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'},{t:'🌍',c:'tk'},{t:'EOS',c:'to'}], groups:[
+{ id:'5/5', title:'Decode: 请求完成 → 释放锁', desc:'达到 EOS 或 max_tokens → <span class="m">dec_lock_ref</span> <span class="fm">hi_mamba_radix_cache.py:1196</span><br>释放 RadixTree 前缀锁, 请求结束', tokens:[{t:'!',c:'tk'},{t:'⭐',c:'tk'},{t:'🌍',c:'tk'},{t:'EOS',c:'to'}], groups:[
   {lbl:'!',qkv:[{t:'KV✓',c:'k'}]},{lbl:'⭐',qkv:[{t:'KV✓',c:'k'}]},{lbl:'🌍',qkv:[{t:'KV✓',c:'k'}]},{lbl:'EOS',qkv:[{t:'🔒',c:'v'}]},
 ], onBox:5, hiLv:-1, hiRadix:-1,
-  hl:['unlock_ref'],
+  hl:['dec_lock_ref'],
   himsg:'', },
 ]};
 

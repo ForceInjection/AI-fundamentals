@@ -68,7 +68,7 @@ button:hover { background: #30363d; }
 <div class="legend">
   <span><span class="dot" style="background:#d29922"></span> Prefill batch (EXTEND)</span>
   <span><span class="dot" style="background:#58a6ff"></span> Decode batch (每请求 1 token)</span>
-  <span><span class="dot" style="background:#3fb950"></span> 请求到达 (arrival)</span>
+  <span style="color:#3fb950">📥 新请求到达（同 batch 内入队，下一轮参与调度）</span>
 </div>
 
 <div id="scene"></div>
@@ -93,7 +93,7 @@ stateDiagram-v2
     一次完成 --> [*] : 进入 decode
     Stash --> 一次完成 : is_chunked == 0
   </div>
-  <div class="desc">长 prompt 超过 chunked_prefill_size 时被截断。每个 chunk 的中间结果 stash 回 radix tree，下一 chunk 可命中为前缀缓存。<br>chunked 状态下请求<b>不输出 token</b>，只有最后一个 chunk 完成后才进入 decode。<br><b>注意</b>：续 chunk 时 <code>add_chunked_req()</code> 会将请求重新放入 waiting_queue，所以即使没有新请求到达，<code>#queue-req</code> 也可能 &gt; 0。</div>
+  <div class="desc">长 prompt 超过 chunked_prefill_size 时被截断。每个 chunk 的中间结果 stash 回 radix tree，下一 chunk 可命中为前缀缓存。<br>chunked 状态下请求<b>不输出 token</b>，只有最后一个 chunk 完成后才进入 decode。<br><b>注意</b>：续 chunk 时，请求作为 <code>self.chunked_req</code> 保留在调度器中（不进入 waiting_queue），通过 <code>add_chunked_req()</code> 直接加入下一轮 prefill batch 的 <code>can_run_list</code>。这确保了 chunk 之间不穿插 decode。</div>
 </div>
 
 <div class="concept-card">
@@ -123,7 +123,7 @@ const requests = {
   A: { arrive: 0, extend: 200,   gen: 8,  color: '#f78166', name: 'Req A' },
   B: { arrive: 0, extend: 18000, gen: 5,  color: '#d2a8ff', name: 'Req B (长)' },
   C: { arrive: 0, extend: 300,   gen: 10, color: '#7ee787', name: 'Req C' },
-  D: { arrive: 3, extend: 10000, gen: 4,  color: '#a5d6ff', name: 'Req D (中)' },
+  D: { arrive: 2, extend: 10000, gen: 4,  color: '#a5d6ff', name: 'Req D (中)' },
   E: { arrive: 5, extend: 150,   gen: 12, color: '#ffa198', name: 'Req E' },
   F: { arrive: 8, extend: 25000, gen: 3,  color: '#ffc680', name: 'Req F (长)' },
 };
@@ -140,15 +140,14 @@ function buildSchedule() {
   let step = 0, anyActive = true;
 
   while (anyActive && step < 100) {
+    // 检查新到达的请求 —— 直接入队，不产生独立 batch
     const newArrivals = [];
     for (const [id, r] of Object.entries(requests)) {
       if (r.arrive === step) { chunkRemain[id] = chunkTotal[id]; newArrivals.push(id); }
     }
-    if (newArrivals.length > 0) {
-      for (const id of newArrivals) queue.push(id);
-      batches.push({ type: 'arrival', arrivals: newArrivals, queueLen: queue.length });
-      step++; continue;
-    }
+    for (const id of newArrivals) queue.push(id);
+
+    // 尝试创建 prefill batch
     const prefillReqs = {}, admitted = [];
     const remaining = [...queue]; queue.length = 0;
     for (const id of remaining) {
@@ -163,9 +162,10 @@ function buildSchedule() {
       for (const id of admitted.filter(id => chunkRemain[id] === 0)) genRemain[id] = requests[id].gen;
       const cont = admitted.filter(id => chunkRemain[id] > 0);
       for (let ci = cont.length - 1; ci >= 0; ci--) queue.unshift(cont[ci]);
-      batches.push({ type: 'prefill', reqs: prefillReqs, running: Object.keys(prefillReqs).length, queueLen: queue.length });
+      batches.push({ type: 'prefill', reqs: prefillReqs, arrivals: newArrivals, running: Object.keys(prefillReqs).length, queueLen: queue.length });
       step++; continue;
     }
+    // 无 prefill → 尝试 decode
     const decodeIds = Object.keys(genRemain).filter(id => genRemain[id] > 0);
     if (decodeIds.length > 0) {
       const decodeFrame = {};
@@ -174,7 +174,7 @@ function buildSchedule() {
         genRemain[id]--;
         if (genRemain[id] <= 0 && chunkRemain[id] === 0) delete genRemain[id];
       }
-      batches.push({ type: 'decode', reqs: decodeFrame, running: decodeIds.length, queueLen: queue.length });
+      batches.push({ type: 'decode', reqs: decodeFrame, arrivals: newArrivals, running: decodeIds.length, queueLen: queue.length });
       step++; continue;
     }
     anyActive = false;
@@ -197,22 +197,26 @@ for (let bi = 0; bi < batches.length; bi++) {
 
   let tagClass, tagLabel;
   if (b.type === 'prefill') { tagClass = 'tag-prefill'; tagLabel = 'EXTEND'; }
-  else if (b.type === 'decode') { tagClass = 'tag-decode'; tagLabel = 'DECODE'; }
-  else { tagClass = 'tag-arrival'; tagLabel = 'ARRIVAL'; }
+  else { tagClass = 'tag-decode'; tagLabel = 'DECODE'; }
+
+  const hasArrival = b.arrivals && b.arrivals.length > 0;
 
   let title = `<div class="batch-title"><span class="tag ${tagClass}">${tagLabel}</span>`;
-  title += b.type !== 'arrival'
-    ? `Step #${bi + 1} ${tagLabel} Batch | #running-req: ${b.running} | #queue-req: ${b.queueLen}`
-    : `Step #${bi + 1} 新请求到达 | #queue-req: ${b.queueLen}`;
+  title += `Step #${bi + 1} ${tagLabel} Batch | #running-req: ${b.running} | #queue-req: ${b.queueLen}`;
+  if (hasArrival) title += ` <span style="color:#3fb950;font-size:11px">📥 ${b.arrivals.map(id=>requests[id].name).join(', ')} 到达</span>`;
   title += `</div>`;
 
   let rows = '';
-  if (b.type === 'arrival') {
+  // 显示新到达的请求
+  if (hasArrival) {
     for (const id of b.arrivals) {
       const r = requests[id];
-      rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status">到达 waiting_queue | extend=${r.extend} tokens</span></div>`;
+      rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status" style="color:#3fb950">📥 到达 waiting_queue | extend=${r.extend} tokens</span></div>`;
     }
-  } else if (b.type === 'prefill') {
+    rows += `<div style="font-size:10px;color:var(--dim);margin:4px 0 2px 0;border-top:1px dashed var(--border);padding-top:4px">▾ 本 batch 执行内容</div>`;
+  }
+  // 显示 batch 内实际执行的请求
+  if (b.type === 'prefill') {
     for (const [id, info] of Object.entries(b.reqs)) {
       const r = requests[id], pct = Math.min(100, Math.round(info.extend / chunkSize * 100));
       rows += `<div class="req-row"><span class="req-name" style="color:${r.color}">${r.name}</span><span class="req-status">Chunk ${info.chunk} | extend ${info.extend} tok</span><div class="req-bar"><div class="req-bar-fill prefill" style="width:${pct}%"></div></div></div>`;
@@ -229,12 +233,10 @@ for (let bi = 0; bi < batches.length; bi++) {
   if (bi < batches.length - 1) {
     const nb = batches[bi + 1], nq = nb.queueLen || 0;
     let trans = '', cls = 'arrow-row';
-    if (b.type === 'arrival') trans = `新请求入队 → queue 增长到 ${nq}`;
-    else if (b.type === 'prefill' && nb.type === 'prefill') trans = 'chunk 未完成 → add_chunked_req() 重新入队 → #queue-req +1';
-    else if (b.type === 'prefill' && (nb.type === 'decode' || nb.type === 'arrival')) trans = 'prefill 完成 → 进入 decode';
+    if (b.type === 'prefill' && nb.type === 'prefill') trans = `chunk 未完成 → chunked_req 保留，下一轮继续 prefill (queue=${nq})`;
+    else if (b.type === 'prefill' && nb.type === 'decode') trans = `prefill 全部完成 → queue=${nq} → 进入 decode`;
     else if (b.type === 'decode' && nb.type === 'prefill') { trans = `⚠ Prefill 优先！queue=${nq} > 0 → 中断 decode 先做 prefill`; cls = 'alert-row'; }
-    else if (b.type === 'decode' && nb.type === 'arrival') trans = '新请求到达 → queue 增长';
-    else if (b.type === 'arrival' && nb.type === 'prefill') trans = `queue=${nq} > 0 → 触发 prefill`;
+    else if (b.type === 'decode' && nb.type === 'decode') trans = `继续 decode (queue=${nq})`;
     const ad = document.createElement('div');
     ad.className = cls;
     ad.innerHTML = `│<br>│  ${trans}<br>▼`;
@@ -254,7 +256,7 @@ function showBatch(idx) {
   const ca = document.getElementById(`arrow-${currentIdx}`);
   if (ca) ca.style.display = 'block';
   const cur = batches[currentIdx];
-  document.getElementById('stepNum').textContent = `${currentIdx + 1} (${cur.type === 'prefill' ? 'Prefill' : cur.type === 'decode' ? 'Decode' : 'Arrival'})`;
+  document.getElementById('stepNum').textContent = `${currentIdx + 1} (${cur.type === 'prefill' ? 'Prefill' : 'Decode'})`;
   document.getElementById(`batch-${currentIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
   if (expanded) { collapseAll(); expanded = false; document.getElementById('btnExpand').textContent = '展开全部'; }
 }

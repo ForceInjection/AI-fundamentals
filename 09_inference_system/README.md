@@ -114,6 +114,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称。本部分涵盖
 - **[SGLang 内容索引](sglang/README.md)**：SGLang 源码分析、案例研究与可视化演示导航。
 - **[HiCache 深入详解](sglang/hicache_deep_dive.md)**：将 GPU/CPU/分布式后端统一为 L1-L3 缓存，通过 HiRadixTree 与 `page_first` 内存布局实现跨节点零拷贝。
 - **[SGLang Scaling Pain 超大规模推理调优](sglang/sglang_scaling_pain_case_study.md)**：利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷。
+- **[SGLang Chunked Prefill 原理与实现](sglang/chunked-prefill.md)**：长 prompt 切分为 chunk 与 decode 交替调度的完整源码级分析。
 - **[SGLang 推理流水线可视化](sglang/inference-pipeline.html)**：交互式 Prefill & Decode 流水线演示，展示从 Tokenization、QKV 投影、HiCache RadixTree 前缀匹配到 L2→L1 恢复与 Write-back 的全流程方法调用栈。
 - **[SGLang 调度器可视化](sglang/scheduler-visual.html)**：模拟多请求到达与 Chunked Prefill 调度过程，演示 Prefill 优先策略、Request 生命周期状态转换及队列变化。
 
