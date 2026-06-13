@@ -293,4 +293,4 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 [2] T. Cai et al., "Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads," _arXiv preprint arXiv:2401.10774_, 2024. [Online]. Available: https://arxiv.org/abs/2401.10774
 [3] Y. Li et al., "EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty," _arXiv preprint arXiv:2401.15077_, 2024. [Online]. Available: https://arxiv.org/abs/2401.15077
 [4] vLLM Team, "Speculative Decoding in vLLM," _vLLM Documentation_. [Online]. Available: https://docs.vllm.ai/en/latest/features/speculative_decoding/
-[5] Z.ai Team, "Scaling Pain：超大规模 Coding Agent 推理实践," _z.ai Blog_, 2025. [Online]. Available: https://z.ai/blog/scaling-pain （翻译版见本仓 [SGLang Scaling Pain 超大规模推理调优案例](../inference_solutions/sglang_scaling_pain_case_study.md)）
+[5] Z.ai Team, "Scaling Pain：超大规模 Coding Agent 推理实践," _z.ai Blog_, 2025. [Online]. Available: https://z.ai/blog/scaling-pain （翻译版见本仓 [SGLang Scaling Pain 超大规模推理调优案例](../sglang/sglang_scaling_pain_case_study.md)）

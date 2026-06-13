@@ -2,6 +2,8 @@
 
 从"模型发布"到"可用服务"，中间还隔着并行策略选择、硬件适配、SLO 验证、量化精度取舍等一系列工程决策。同一个 DeepSeek-V3 模型，在 16 卡 H20 上能跑到 15,800+ tokens/s，在 32 卡 H20 上达成什么 SLO 目标才是合理预期？同一个 Qwen2-VL-7B 视觉多模态模型，从 NVIDIA 生态迁移到华为昇腾 MindIE，需要经过哪些版本匹配与算子适配？本目录不讲泛泛的"部署指南"，而是给出两个**带 SLO 数字、带硬件型号、带实测数据** 的端到端参考方案，以及一个可复用的 SLO 验证脚本。
 
+> 更多 SGLang 相关的大规模推理调优案例，请参见 [SGLang 推理引擎](../sglang/README.md)。
+
 ## 1. NVIDIA H20 集群：DeepSeek-V3 MoE
 
 以 32 卡 H20（4 × 8）部署 DeepSeek-V3（671B MoE，激活 37B），在**不量化、不蒸馏**前提下达成 200 并发 × 32K 上下文 × TTFT P95 < 1.2s 的 SLO 目标。
@@ -15,17 +17,9 @@
 
 - **[Qwen2-VL-7B-Instruct 昇腾部署指南](qwen2_vl_7b_huawei.md)**：Atlas 800I A2（32G / 64G）硬件 + MindIE 1.0.0+ / CANN 8.0.RC1+ / OpenEuler 24.03 LTS 的完整软件栈，覆盖视觉 token 压缩、多分辨率图像输入、超 20 分钟视频理解等多模态推理的国产硬件适配要点
 
-## 3. SGLang 超大规模 Coding Agent 推理调优
+## 3. 方法论抽象
 
-部署只是起点——当 GLM-5 级别的模型每天需要处理数亿次长上下文 Coding Agent 请求时，**系统的隐藏假设会以模型输出质量缺陷的形式暴露**（乱码、复读、生僻字），而这些偶发现象在标准负载下无法稳定复现。本案例揭示了一条独特的工程路径：将投机采样（Speculative Decoding）的接受率与接受长度作为**在线质量探针**，用统计异常反向定位底层 KV Cache 竞态与异步流水线的时序缺陷。
-
-- **[SGLang Scaling Pain 超大规模推理调优案例](sglang_scaling_pain_case_study.md)**（译自 [z.ai blog](https://z.ai/blog/scaling-pain)）：覆盖三类异常现象的识别机制、投机采样指标（`spec_accept_length` / `spec_accept_rate`）在实时质量监控中的作用、PD 分离架构下 KV Cache 竞态（[PR #8352](https://github.com/sgl-project/sglang/pull/8352) / [#24522](https://github.com/sgl-project/sglang/pull/24522)）的修复、HiCache Read-before-ready 时序缺陷（[PR #22811](https://github.com/sgl-project/sglang/pull/22811)）、以及 LayerSplit 分层存储在 120K 上下文下 +132% TPS 的探索性收益
-
-> 核心启示：性能组件（投机采样、KV Cache 压缩）由于对底层状态高度敏感，可反向作为**低成本的质量反馈源**，实现“性能与鲁棒性”的双赢。
-
-## 4. 方法论抽象
-
-三份案例共同展示了一条端到端部署与运维方法论：
+两份案例共同展示了一条端到端部署与运维方法论：
 
 1. **SLO 目标量化**：明确并发数、上下文长度、TTFT/TPOT/吞吐的 P50/P95/P99 分位数
 2. **硬件与并行策略匹配**：依据显存总量（见 [`memory_calc/`](../memory_calc/README.md)）与模型结构选 TP/EP/PP 组合

@@ -416,7 +416,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 #### 9.3.3 SGLang HiCache
 
-- [HiCache 深入详解](09_inference_system/kv_cache/02_systems/hicache/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构解析与源码分析
+- [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构解析与源码分析
 
 ### 9.4 推理优化技术体系
 
@@ -429,8 +429,8 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [vLLM 内置 KV Cache Offloading 模块解析](09_inference_system/vllm/module_analysis/vllm_native_kv_offloading.md) - 原生 KV Cache CPU Offloading 功能原理与实现
 - [vLLM Hybrid KV Cache Manager](09_inference_system/vllm/module_analysis/vllm_hybrid_kv_cache_manager_deep_dive.md) - vLLM 针对混合注意力架构的显存优化机制
 - [vLLM CUDA Graphs 深度解析](09_inference_system/vllm/module_analysis/vllm_cuda_graph_deep_dive.md) - 深入探讨 vLLM 解码阶段 CUDA Graphs 的核心机制与实践
-- [vLLM Router 架构解析](09_inference_system/vllm/related_module/vllm_router.md) - 高性能、轻量级请求转发系统
-- [vLLM Semantic Router](09_inference_system/vllm/related_module/vllm_semantic_router_deep_dive.md) - 基于语义的智能路由策略
+- [vLLM Router 架构解析](09_inference_system/vllm/routing/vllm_router.md) - 高性能、轻量级请求转发系统
+- [vLLM Semantic Router](09_inference_system/vllm/routing/vllm_semantic_router_deep_dive.md) - 基于语义的智能路由策略
 
 **显存与缓存优化**：
 
@@ -441,7 +441,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 **网络与模型工具**：
 
 - [模型优化导航](09_inference_system/model_optimization/README.md) - 模型优化技术概览与导读
-- [NIXL 网络存储介绍](09_inference_system/infrastructure/nixl_introduction.md) - 高性能网络存储架构与应用
+- [NIXL 网络存储介绍](09_inference_system/kv_cache/02_systems/nixl/nixl_introduction.md) - 高性能网络存储架构与应用
 - [NVIDIA 模型优化器](09_inference_system/model_optimization/nvidia_model_optimizer.md) - NVIDIA 模型优化工具链详解
 - [图解投机解码](09_inference_system/model_optimization/illustrated-speculative-decoding.md) - Speculative Decoding 的核心思想、系统实现与工程调优要点
 - [vLLM GB200 优化](09_inference_system/vllm/hardware_optimization/vllm_gb200_optimization.pptx) - vLLM 在 GB200 硬件上的性能优化策略
@@ -495,8 +495,8 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 - [动手跑大模型](99_misc/mac-deepseek-r1.md) - 手把手教你如何跑大模型
 - [Ollama 推理框架详解](99_misc/ollama/README.md) - Ollama 的架构原理与进阶配置
-- [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/inference_solutions/deepseek_v3_moe_vllm_h20_deployment.md) - H20 硬件上的部署方案与 SLO 验证
-- [Qwen2-VL-7B 华为昇腾部署](09_inference_system/inference_solutions/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
+- [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/deployment/deepseek_v3_moe_vllm_h20_deployment.md) - H20 硬件上的部署方案与 SLO 验证
+- [Qwen2-VL-7B 华为昇腾部署](09_inference_system/deployment/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
 
 ### 9.8 DeepSeek 专题
 

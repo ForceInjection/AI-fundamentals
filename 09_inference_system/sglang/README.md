@@ -1,0 +1,10 @@
+# SGLang 推理引擎
+
+SGLang 是新一代 LLM 推理框架，以 RadixAttention 前缀缓存和高效调度器著称。本目录收集 SGLang 相关的源码分析、案例研究与可视化演示。
+
+## 内容索引
+
+- **[HiCache 深入详解](hicache_deep_dive.md)**：将 GPU/CPU/分布式后端统一为 L1-L3 缓存，通过 HiRadixTree 与 `page_first` 内存布局实现跨节点零拷贝。系统梳理演进背景、HiRadixTree 元数据拓扑、三种预取策略与三种写回策略、存储后端热插拔控制面，以及容量/异构 TP/PD 一致性/存储成本四维度的架构权衡。
+- **[SGLang Scaling Pain 超大规模推理调优案例](sglang_scaling_pain_case_study.md)**（译自 [z.ai blog](https://z.ai/blog/scaling-pain)）：利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷，覆盖三类异常现象的识别机制、投机采样指标在实时质量监控中的作用，以及 LayerSplit 分层存储在 120K 上下文下 +132% TPS 的探索性收益。
+- **[SGLang 推理流水线可视化](inference-pipeline.html)**：交互式 Prefill & Decode 流水线演示，展示从 Tokenization、QKV 投影、HiCache RadixTree 前缀匹配、L2→L1 恢复到 Write-back 的完整方法调用栈，覆盖 L1(GPU)/L2(CPU)/L3(NVMe) 三级缓存体系。
+- **[SGLang 调度器可视化](scheduler-visual.html)**：模拟多请求到达与 Chunked Prefill 调度过程，演示 Prefill 优先策略、Chunked Prefill 截断与续传、Request 生命周期状态转换及 waiting_queue / running-req 的调度队列变化。

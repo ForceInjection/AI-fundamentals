@@ -18,12 +18,12 @@
 
 ---
 
-## 2. 关联组件分析 (related_module)
+## 2. 路由与调度分析 (routing)
 
 本小节整理了与 vLLM 配合使用的外部路由与请求调度组件的分析。
 
-- [vLLM Router 概述](./related_module/vllm_router.md)：介绍 vLLM 请求路由器的基础架构与功能。
-- [Semantic Router 深度解析](./related_module/vllm_semantic_router_deep_dive.md)：深入探讨基于语义的路由分发策略，及其在复杂推理场景下如何提高缓存命中率和整体吞吐量。
+- [vLLM Router 概述](./routing/vllm_router.md)：介绍 vLLM 请求路由器的基础架构与功能。
+- [Semantic Router 深度解析](./routing/vllm_semantic_router_deep_dive.md)：深入探讨基于语义的路由分发策略，及其在复杂推理场景下如何提高缓存命中率和整体吞吐量。
 
 ---
 

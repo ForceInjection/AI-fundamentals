@@ -88,7 +88,13 @@ Mooncake 采用以 KV Cache 为中心的分离式推理架构，通过分块管�
 
 HiCache 是 SGLang 自带的分层 KV Cache 架构，将 GPU 显存、宿主机内存与分布式存储后端（如 Mooncake、HF3FS）统一为 L1/L2/L3 三级缓存，突破单节点显存天花板并实现跨实例的前缀共享。
 
-- **[HiCache 深入详解](02_systems/hicache/hicache_deep_dive.md)**：系统梳理 HiCache 的演进背景、HiRadixTree 元数据拓扑、三种预取策略（`best_effort` / `wait_complete` / `timeout`）与三种写回策略（`write_through` / `write_through_selective` / `write_back`）、`page_first` 内存布局与 GPU 辅助 I/O 算子、存储后端热插拔控制面，以及根据容量 / 异构 TP / PD 一致性 / 存储成本 四维度展开的架构权衡与启动参数示例。
+- **[HiCache 深入详解](../sglang/hicache_deep_dive.md)**：系统梳理 HiCache 的演进背景、HiRadixTree 元数据拓扑、三种预取策略（`best_effort` / `wait_complete` / `timeout`）与三种写回策略（`write_through` / `write_through_selective` / `write_back`）、`page_first` 内存布局与 GPU 辅助 I/O 算子、存储后端热插拔控制面，以及根据容量 / 异构 TP / PD 一致性 / 存储成本 四维度展开的架构权衡与启动参数示例。
+
+### 3.6 NIXL 网络传输库
+
+NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等 KV Cache 系统提供统一的 RDMA、GDS 与跨节点数据传输能力。
+
+- **[NIXL 网络存储介绍](02_systems/nixl/nixl_introduction.md)**：高性能网络存储架构、核心抽象与应用场景。
 
 ---
 
