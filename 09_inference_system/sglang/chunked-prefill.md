@@ -18,7 +18,7 @@
 | 八   | 与 HiCache 的协同                                             |
 | 九   | 总结速查表                                                    |
 
-> 可以先看[调度器可视化动画](scheduler-visual.html)对 Chunked Prefill 有一个直观感受，再回来看源码细节。
+> 可以先看[调度器可视化动画](scheduler-visual.html)（[GIF 预览](scheduler-visual.gif)）对 Chunked Prefill 有一个直观感受，再回来看源码细节。
 
 ---
 
