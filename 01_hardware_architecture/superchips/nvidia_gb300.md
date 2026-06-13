@@ -40,11 +40,13 @@ Blackwell 架构 GPU 采用**双芯片 (Dual-Die) 封装设计**，集成 2080 �
 
 GB300 NVL4 将两组 Grace Blackwell Superchip 通过高速互连技术整合在同一主板上，形成一个统一的 NUMA 系统。
 
-### 2.2 CPU-CPU 互连：NVLink-C2C
+### 2.2 CPU-CPU 互连：NVLink-C2C（节点内）
 
 - **连接方式**: 两颗 Grace CPU 之间通过 **NVLink-C2C (Chip-to-Chip)** 技术直接互连，而非传统的 PCIe 或 QPI/UPI 总线。
 - **互连带宽**: 提供高达 **900 GB/s** 的双向聚合带宽（是传统 x86 服务器 CPU 互连带宽的 10 倍以上）[2]。
 - **特性**: 支持完全的**缓存一致性 (Cache Coherency)**，使得两颗 CPU 的内存空间（LPDDR5X）对操作系统和应用程序呈现为统一的、低延迟的内存池。
+
+> **注意**：此处描述的是 **NVL4 节点内** 的 CPU-CPU 互连。在 GB300 NVL72 机架级架构中，跨计算节点的 CPU 互连使用 **Clinks**（约 150 GB/s），而非 NVLink-C2C。参见 [DGX SPOD GB300 Reference Architecture](https://docs.nvidia.com/pdf/dgx-spod-gb300-ra.pdf)。
 
 ### 2.3 完整拓扑图
 
@@ -72,8 +74,8 @@ graph LR
     CPU1 <== "NVLink-C2C (450GB/s Bi-dir)" ==> GPU2
     CPU1 <== "NVLink-C2C (450GB/s Bi-dir)" ==> GPU3
 
-    %% CPU-CPU Link (NVLink-C2C)
-    CPU0 <== "NVLink-C2C (900GB/s Bi-dir Coherent)" ==> CPU1
+    %% CPU-CPU Link (NVLink-C2C, 节点内)
+    CPU0 <== "NVLink-C2C (900GB/s Bi-dir Coherent) 节点内" ==> CPU1
 
     %% Styling
     classDef green fill:#006400,stroke:#222,stroke-width:2px,color:#ffffff;
