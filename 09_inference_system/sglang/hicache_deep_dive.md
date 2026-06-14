@@ -4,29 +4,31 @@
 
 ## 目录
 
-- [1. 演进背景：大语言模型推理的缓存挑战](#1-演进背景大语言模型推理的缓存挑战)
-- [2. 核心痛点：单点容量与全局调度的矛盾](#2-核心痛点单点容量与全局调度的矛盾)
-  - [2.1 跨节点 KV Cache 共享的缺失](#21-跨节点-kv-cache-共享的缺失)
-  - [2.2 I/O 带宽与计算资源的争抢](#22-io-带宽与计算资源的争抢)
-- [3. 架构解析：HiCache 的多级缓存与全局调度机制](#3-架构解析hicache-的多级缓存与全局调度机制)
-  - [3.1 HiRadixTree：前缀树驱动的元数据拓扑](#31-hiradixtree前缀树驱动的元数据拓扑)
-  - [3.2 数据预取与多层级读取链路](#32-数据预取与多层级读取链路)
-  - [3.3 数据写回与全局共享策略](#33-数据写回与全局共享策略)
-  - [3.4 跨数据路径的性能底座：零拷贝与内存布局重构](#34-跨数据路径的性能底座零拷贝与内存布局重构)
-  - [3.5 控制面：存储后端的运行时热插拔](#35-控制面存储后端的运行时热插拔)
-- [4. 权衡与取舍：架构设计背后的工程考量](#4-权衡与取舍架构设计背后的工程考量)
-  - [4.1 缓存规模与命中收益的非线性增长](#41-缓存规模与命中收益的非线性增长)
-  - [4.2 异构张量并行的复用局限](#42-异构张量并行的复用局限)
-  - [4.3 PD 分离架构下的数据一致性挑战](#43-pd-分离架构下的数据一致性挑战)
-  - [4.4 存储成本与命中率的量化权衡](#44-存储成本与命中率的量化权衡)
-- [5. 配置示例](#5-配置示例)
-  - [5.1 最简配置：仅启用主机内存](#51-最简配置仅启用主机内存)
-  - [5.2 多实例共享：Mooncake + page_first_direct](#52-多实例共享mooncake--page_first_direct)
-  - [5.3 集群式部署：HF3FS + 异构 TP](#53-集群式部署hf3fs--异构-tp)
-  - [5.4 PD 分离部署下的 HiCache](#54-pd-分离部署下的-hicache)
-  - [5.5 运行时动态挂载 / 卸载 L3 后端](#55-运行时动态挂载--卸载-l3-后端)
-  - [5.6 参数速查表](#56-参数速查表)
-- [6. 总结](#6-总结)
+- [HiCache 深入详解](#hicache-深入详解)
+  - [目录](#目录)
+  - [1. 演进背景：大语言模型推理的缓存挑战](#1-演进背景大语言模型推理的缓存挑战)
+  - [2. 核心痛点：单点容量与全局调度的矛盾](#2-核心痛点单点容量与全局调度的矛盾)
+    - [2.1 跨节点 KV Cache 共享的缺失](#21-跨节点-kv-cache-共享的缺失)
+    - [2.2 I/O 带宽与计算资源的争抢](#22-io-带宽与计算资源的争抢)
+  - [3. 架构解析：HiCache 的多级缓存与全局调度机制](#3-架构解析hicache-的多级缓存与全局调度机制)
+    - [3.1 HiRadixTree：前缀树驱动的元数据拓扑](#31-hiradixtree前缀树驱动的元数据拓扑)
+    - [3.2 数据预取与多层级读取链路](#32-数据预取与多层级读取链路)
+    - [3.3 数据写回与全局共享策略](#33-数据写回与全局共享策略)
+    - [3.4 跨数据路径的性能底座：零拷贝与内存布局重构](#34-跨数据路径的性能底座零拷贝与内存布局重构)
+    - [3.5 控制面：存储后端的运行时热插拔](#35-控制面存储后端的运行时热插拔)
+  - [4. 权衡与取舍：架构设计背后的工程考量](#4-权衡与取舍架构设计背后的工程考量)
+    - [4.1 缓存规模与命中收益的非线性增长](#41-缓存规模与命中收益的非线性增长)
+    - [4.2 异构张量并行的复用局限](#42-异构张量并行的复用局限)
+    - [4.3 PD 分离架构下的数据一致性挑战](#43-pd-分离架构下的数据一致性挑战)
+    - [4.4 存储成本与命中率的量化权衡](#44-存储成本与命中率的量化权衡)
+  - [5. 配置示例](#5-配置示例)
+    - [5.1 最简配置：仅启用主机内存](#51-最简配置仅启用主机内存)
+    - [5.2 多实例共享：Mooncake + page\_first\_direct](#52-多实例共享mooncake--page_first_direct)
+    - [5.3 集群式部署：HF3FS + 异构 TP](#53-集群式部署hf3fs--异构-tp)
+    - [5.4 PD 分离部署下的 HiCache](#54-pd-分离部署下的-hicache)
+    - [5.5 运行时动态挂载 / 卸载 L3 后端](#55-运行时动态挂载--卸载-l3-后端)
+    - [5.6 参数速查表](#56-参数速查表)
+  - [6. 总结](#6-总结)
 
 ---
 
@@ -161,11 +163,11 @@ prefetch_from_storage(req_id)
 
 **三种预取终止策略**（`--hicache-storage-prefetch-policy`）：
 
-| 策略 | `check_prefetch_progress` 行为 | 适用场景 |
-|------|-------------------------------|---------|
-| `best_effort` | **立即返回 True**，不等待任何数据加载 | TTFT 最敏感，宁可重算不等磁盘 |
-| `timeout`（默认） | I/O 完成**或**超时后返回 True，部分数据也放行 | 兼顾延迟与命中率 |
-| `wait_complete` | 必须**全部页面加载完成**才返回 True | 追求极致缓存命中率 |
+| 策略              | `check_prefetch_progress` 行为                | 适用场景                      |
+| ----------------- | --------------------------------------------- | ----------------------------- |
+| `best_effort`（默认） | **立即返回 True**，不等待任何数据加载         | TTFT 最敏感，宁可重算不等磁盘 |
+| `timeout`             | I/O 完成**或**超时后返回 True，部分数据也放行 | 兼顾延迟与命中率              |
+| `wait_complete`       | 必须**全部页面加载完成**才返回 True           | 追求极致缓存命中率            |
 
 > [!NOTE]
 > 无论哪种策略，scheduler **均不会阻塞等待**。`check_prefetch_progress` 是纯轮询调用——返回 `False` 时请求被 `continue` 跳过（本轮不进入 PrefillAdder），返回 `True` 时请求继续后续流程。实际 I/O 在独立线程中同步执行，与 scheduler 事件循环并行。
@@ -339,17 +341,17 @@ curl -X POST http://${HOST}:${PORT}/set_hicache_storage_backend \
 
 ### 5.6 参数速查表
 
-| 参数                                     | 默认值          | 说明                                                                         |
-| ---------------------------------------- | --------------- | ---------------------------------------------------------------------------- |
-| `--enable-hierarchical-cache`            | `False`         | 启用 HiCache 的总开关                                                        |
-| `--hicache-ratio`                        | `2.0`           | L2 主机内存相对 L1 KV Cache 的倍数                                           |
-| `--hicache-size`                         | `0`             | 按绝对容量（GB / rank）覆盖 `hicache-ratio`                                  |
-| `--hicache-write-policy`                 | `write_through_selective` | `write_through` / `write_through_selective` / `write_back`            |
-| `--hicache-mem-layout`                   | `layer_first`   | `layer_first` / `page_first` / `page_first_direct`                           |
-| `--hicache-io-backend`                   | `kernel`        | `kernel` / `direct`（需与布局配套）                                          |
-| `--hicache-storage-backend`              | `None`          | `file` / `mooncake` / `hf3fs` / `nixl` / `aibrix` / `eic` / `dynamic`        |
-| `--hicache-storage-prefetch-policy`      | `best_effort`   | `best_effort` / `wait_complete` / `timeout`                                  |
-| `--hicache-storage-backend-extra-config` | `None`          | JSON / YAML / TOML，用于 `tp_lcm_size`、`prefetch_timeout_base` 等细粒度控制 |
+| 参数                                     | 默认值                    | 说明                                                                         |
+| ---------------------------------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| `--enable-hierarchical-cache`            | `False`                   | 启用 HiCache 的总开关                                                        |
+| `--hicache-ratio`                        | `2.0`                     | L2 主机内存相对 L1 KV Cache 的倍数                                           |
+| `--hicache-size`                         | `0`                       | 按绝对容量（GB / rank）覆盖 `hicache-ratio`                                  |
+| `--hicache-write-policy`                 | `write_through_selective` | `write_through` / `write_through_selective` / `write_back`                   |
+| `--hicache-mem-layout`                   | `layer_first`             | `layer_first` / `page_first` / `page_first_direct`                           |
+| `--hicache-io-backend`                   | `kernel`                  | `kernel` / `direct`（需与布局配套）                                          |
+| `--hicache-storage-backend`              | `None`                    | `file` / `mooncake` / `hf3fs` / `nixl` / `aibrix` / `eic` / `dynamic`        |
+| `--hicache-storage-prefetch-policy`      | `best_effort`             | `best_effort` / `wait_complete` / `timeout`                                  |
+| `--hicache-storage-backend-extra-config` | `None`                    | JSON / YAML / TOML，用于 `tp_lcm_size`、`prefetch_timeout_base` 等细粒度控制 |
 
 > [!TIP]
 > 完整的参数说明见 [server_arguments.md](https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md)，针对 MoE 模型的进阶调优详见 [hicache_moe_kv_offloading_zh.md](https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/hicache_moe_kv_offloading_zh.md)。
