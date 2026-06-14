@@ -129,17 +129,46 @@ graph LR
 
 `HiRadixTree` 将前缀树的逻辑节点精准映射到物理连续的 `KV Cache` 内存分块上。针对 L1（`GPU`）、L2（`CPU`）和 L3（分布式网络存储）这三级架构，该树结构能够纳管并精确定位每一段前缀数据当前所处的存储层级与生命周期状态。在处理新到达的推理请求时，系统仅需在本地遍历 `HiRadixTree` 元数据即可完成前缀匹配。整个匹配过程纯粹在元数据层面进行，不涉及任何实际的张量数据拷贝或显存分配操作，从而将调度层的匹配延迟压缩至微秒级别。
 
+前缀匹配的输出 `MatchResult` 直接决定了每个 token 的恢复路径：
+
+```text
+match_prefix(req.fill_ids) → MatchResult
+  ├─ device_indices    → L1 命中，已在 GPU HBM，零恢复开销
+  ├─ host_hit_length   → L2 命中，需 DMA 从 CPU→GPU（异步加载）
+  ├─ storage           → L3 命中，需 prefetch NVMe→CPU→GPU（后台线程）
+  └─ 剩余 token         → 全 miss，必须 GPU Prefill 重算
+```
+
+**驱逐与锁定机制**：树节点维护引用计数（`lock_ref`）。当请求被调度到 Prefill batch 时，`_req_inc_lock_ref` 对匹配到的节点加锁（`lock_ref++`），被锁定的页**不可驱逐**。请求完成后 `dec_lock_ref` 释放锁（`lock_ref--`），该页重新变为可驱逐（evictable）。调度器在判断是否有足够空间 admit 新请求时，只计入 `lock_ref == 0` 的页：`rem_total_tokens = available_size + evictable_size - offset`。被锁定页越多，`evictable_size` 越小，新请求越难准入——这在高并发长序列场景下会形成恶性循环。
+
 **代码参考**：多级前缀树的元数据管理与树节点匹配逻辑主要实现在 [hiradix_cache.py](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/mem_cache/hiradix_cache.py) 中，该文件的 `HiRadixCache` 类接管了传统的单级 `RadixCache`。
 
 ### 3.2 数据预取与多层级读取链路
 
 当本地 `HiRadixTree` 匹配发现请求所需的历史数据存在于远端 L3 存储时，系统将主动向 L3 发起高度并行的预取（`Prefetch`）网络请求。针对不同业务对首字延迟与缓存命中率的敏感度差异，系统在控制器层面提供了极其细粒度的预取生命周期控制策略。
 
-一旦 L3 命中的 `KV Cache` 连续长度超过预设阈值（`prefetch_threshold`，默认 256 个 Token），系统即刻在后台触发预取操作。`HiCache` 在核心调度器中提供了三种预取策略：
+一旦 L3 命中的 `KV Cache` 连续长度超过预设阈值（`prefetch_threshold`，默认 256 个 Token），系统即刻将请求放入后台 I/O 线程池触发预取操作。
 
-- **`best_effort`**：一旦本地 `GPU` 满足当前计算的最小依赖条件即终止网络预取，适合对首字延迟（`TTFT`）要求苛刻的实时对话场景。
-- **`wait_complete`**：强制挂起计算流并等待全量历史数据拉取完成，追求极致的缓存命中率，常用于长文本离线分析。
-- **`timeout`**：结合基础超时 `prefetch_timeout_base` 与按拉取长度线性增长的 `prefetch_timeout_per_ki_token`，动态计算超时上限，兼顾延迟与命中率。
+**预取的三阶段流水线**：
+
+```text
+prefetch_from_storage(req_id)
+  → [alloc] 分配 host buffer + 锁树节点（同步，scheduler 线程）
+  → prefetch_queue → prefetch_thread (hit query + TP all_reduce)
+  → prefetch_buffer → I/O 线程 (NVMe→CPU 同步读)
+  → [tree insert] 将加载数据插入 host radix tree（scheduler 线程，check_prefetch_progress 内）
+```
+
+**三种预取终止策略**（`--hicache-storage-prefetch-policy`）：
+
+| 策略 | `check_prefetch_progress` 行为 | 适用场景 |
+|------|-------------------------------|---------|
+| `best_effort` | **立即返回 True**，不等待任何数据加载 | TTFT 最敏感，宁可重算不等磁盘 |
+| `timeout`（默认） | I/O 完成**或**超时后返回 True，部分数据也放行 | 兼顾延迟与命中率 |
+| `wait_complete` | 必须**全部页面加载完成**才返回 True | 追求极致缓存命中率 |
+
+> [!NOTE]
+> 无论哪种策略，scheduler **均不会阻塞等待**。`check_prefetch_progress` 是纯轮询调用——返回 `False` 时请求被 `continue` 跳过（本轮不进入 PrefillAdder），返回 `True` 时请求继续后续流程。实际 I/O 在独立线程中同步执行，与 scheduler 事件循环并行。
 
 在张量并行（`TP`）架构下，系统还会通过 `all_reduce(op=min)` 算子确保所有参与分布式计算的 `GPU` 在预取状态与命中长度上达成严格的分布式共识。
 
@@ -151,7 +180,7 @@ graph LR
 
 为了适应不同硬件环境的网络带宽与存储容量限制，系统内置了三种自适应写回策略：
 
-- **`write_through`**：数据生成后即时同步至下一级存储，在带宽充裕的网络下能带来最高的全局缓存收益，为当前默认策略。
+- **`write_through`**：数据生成后即时同步至下一级存储，在带宽充裕的网络下能带来最高的全局缓存收益。
 - **`write_through_selective`**：基于访问频率追踪，仅对高频热点数据进行跨级备份，大幅削减 I/O 抖动。
 - **`write_back`**：仅在数据被上层 L1 显存池触发容量驱逐（`Evict`）时才被动下沉。
 
@@ -315,7 +344,7 @@ curl -X POST http://${HOST}:${PORT}/set_hicache_storage_backend \
 | `--enable-hierarchical-cache`            | `False`         | 启用 HiCache 的总开关                                                        |
 | `--hicache-ratio`                        | `2.0`           | L2 主机内存相对 L1 KV Cache 的倍数                                           |
 | `--hicache-size`                         | `0`             | 按绝对容量（GB / rank）覆盖 `hicache-ratio`                                  |
-| `--hicache-write-policy`                 | `write_through` | `write_through` / `write_through_selective` / `write_back`                   |
+| `--hicache-write-policy`                 | `write_through_selective` | `write_through` / `write_through_selective` / `write_back`            |
 | `--hicache-mem-layout`                   | `layer_first`   | `layer_first` / `page_first` / `page_first_direct`                           |
 | `--hicache-io-backend`                   | `kernel`        | `kernel` / `direct`（需与布局配套）                                          |
 | `--hicache-storage-backend`              | `None`          | `file` / `mooncake` / `hf3fs` / `nixl` / `aibrix` / `eic` / `dynamic`        |
