@@ -40,15 +40,19 @@ Blackwell 架构 GPU 采用**双芯片 (Dual-Die) 封装设计**，集成 2080 �
 
 GB300 NVL4 将两组 Grace Blackwell Superchip 通过高速互连技术整合在同一主板上，形成一个统一的 NUMA 系统。
 
-### 2.2 CPU-CPU 互连：NVLink-C2C（节点内）
+### 2.2 CPU-GPU 互连：NVLink-C2C
 
-- **连接方式**: 两颗 Grace CPU 之间通过 **NVLink-C2C (Chip-to-Chip)** 技术直接互连，而非传统的 PCIe 或 QPI/UPI 总线。
-- **互连带宽**: 提供高达 **900 GB/s** 的双向聚合带宽（是传统 x86 服务器 CPU 互连带宽的 10 倍以上）[2]。
-- **特性**: 支持完全的**缓存一致性 (Cache Coherency)**，使得两颗 CPU 的内存空间（LPDDR5X）对操作系统和应用程序呈现为统一的、低延迟的内存池。
+- **连接方式**: 每颗 Grace CPU 通过两条独立的 **NVLink-C2C (Chip-to-Chip)** 链路分别连接两颗 Blackwell GPU。
+- **互连带宽**: 单条链路提供 **450 GB/s** 的双向带宽。一个 Superchip 内（1 CPU + 2 GPU）的 CPU↔GPU 总带宽为 **900 GB/s**。
+- **特性**: NVLink-C2C 提供了 CPU 与 GPU 之间的超低延迟、高带宽通道，支持统一内存访问。
 
-> **注意**：此处描述的是 **NVL4 节点内** 的 CPU-CPU 互连。在 GB300 NVL72 机架级架构中，跨计算节点的 CPU 互连使用 **Clinks**（约 150 GB/s），而非 NVLink-C2C。参见 [DGX SPOD GB300 Reference Architecture](https://docs.nvidia.com/pdf/dgx-spod-gb300-ra.pdf)。
+### 2.3 CPU-CPU 互连：Clinks
 
-### 2.3 完整拓扑图
+- **连接方式**: 两颗 Grace CPU 之间通过 **Clinks**（而非 NVLink-C2C）互连 [*DGX SPOD GB300 RA, Figure 5*](https://docs.nvidia.com/pdf/dgx-spod-gb300-ra.pdf)。
+- **互连带宽**: 约 **150 GB/s**。
+- **特性**: 支持跨 CPU 的缓存一致性 (Cache Coherency)，使两颗 CPU 的 LPDDR5X 内存空间呈现为统一的 NUMA 内存池。
+
+### 2.4 完整拓扑图
 
 基于 NVL4 架构的 4 GPU 系统连接拓扑如下：
 
@@ -74,22 +78,21 @@ graph LR
     CPU1 <== "NVLink-C2C (450GB/s Bi-dir)" ==> GPU2
     CPU1 <== "NVLink-C2C (450GB/s Bi-dir)" ==> GPU3
 
-    %% CPU-CPU Link (NVLink-C2C, 节点内)
-    CPU0 <== "NVLink-C2C (900GB/s Bi-dir Coherent) 节点内" ==> CPU1
+    %% CPU-CPU Link (Clinks)
+    CPU0 <== "Clinks (~150GB/s Coherent)" ==> CPU1
 
     %% Styling
     classDef green fill:#006400,stroke:#222,stroke-width:2px,color:#ffffff;
     class CPU0,CPU1 green;
 ```
 
-- **CPU-CPU 互连**: 两颗 Grace CPU (绿色节点) 之间通过 NVLink-C2C 直接连接，提供 **900 GB/s** 的双向带宽，确保了跨 CPU 的缓存一致性 [6,7]。
-- **CPU-GPU 互连**: 每个 Grace CPU 通过两条独立的 NVLink-C2C 链路分别连接两颗 Blackwell GPU。单条链路提供 **450 GB/s** 的双向带宽（单向理论值为 225 GB/s）[4,9]。
+- **CPU-CPU 互连**: 两颗 Grace CPU (绿色节点) 之间通过 **Clinks** 连接（~150 GB/s），支持跨 CPU 的缓存一致性。
+- **CPU-GPU 互连**: 每个 Grace CPU 通过两条独立的 **NVLink-C2C** 链路分别连接两颗 Blackwell GPU。单条链路提供 **450 GB/s** 的双向带宽（单向理论值为 225 GB/s），一个 Superchip 内 CPU↔GPU 总带宽为 900 GB/s [4,9]。
 - **系统总带宽分析**:
-  - **CPU <-> GPU 实测带宽**: 4 \* 210 GB/s (单向)，接近 225 GB/s 的理论极限，表明链路利用率极高。
-  - **CPU <-> CPU 理论带宽**: 900 GB/s (双向)，为跨 NUMA 节点的内存访问提供了充足的带宽储备。
-    这种全链路高速互连架构确保了在进行跨 NUMA 节点的内存访问（例如 CPU 0 访问 GPU 3 的数据）时，依然能保持极高的吞吐量，不会成为性能瓶颈。
+  - **CPU <-> GPU 实测带宽**: 4 × 210 GB/s (单向)，接近 225 GB/s 的理论极限，表明链路利用率极高。
+  - **CPU <-> CPU 带宽**: ~150 GB/s (Clinks)，为跨 NUMA 节点的内存访问提供通道。
 
-### 2.4 CPU 内部架构：Scalable Coherency Fabric (SCF)
+### 2.5 CPU 内部架构：Scalable Coherency Fabric (SCF)
 
 除了外部的 C2C 互连，Grace CPU 内部采用了 **NVIDIA Scalable Coherency Fabric (SCF)** 网状架构 [6]。
 
