@@ -414,9 +414,16 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 - [Tair KVCache 架构与设计深度分析](09_inference_system/kv_cache/02_systems/tair_kvcache/tair-kvcache-architecture-design.md) - 阿里云企业级 KVCache 管理系统架构详解，包含与 LMCache 的全面对比分析、中心化管理模式及大规模部署最佳实践
 
-#### 9.3.3 SGLang HiCache
+#### 9.3.3 SGLang 推理引擎
 
-- [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构解析与源码分析
+SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 分层 KV 缓存、Chunked Prefill 调度机制、超大规模推理调优实践与交互式可视化演示。
+
+- [SGLang 内容索引](09_inference_system/sglang/README.md) - 源码分析、案例研究与可视化演示导航
+- [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构（L1/L2/L3）与 HiRadixTree 源码分析
+- [Chunked Prefill 原理与代码实现](09_inference_system/sglang/chunked-prefill.md) - 长 prompt 切分、PrefillAdder 截断决策、调度循环与 HiCache 协同的完整源码级分析
+- [SGLang Scaling Pain 超大规模推理调优案例](09_inference_system/sglang/sglang_scaling_pain_case_study.md) - 利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷
+- [SGLang 推理流水线可视化](09_inference_system/sglang/inference-pipeline.html) - 交互式 Prefill & Decode 流水线演示，追踪 HiCache 三级缓存全流程
+- [SGLang 调度器可视化](09_inference_system/sglang/scheduler-visual.html)（[GIF 预览](09_inference_system/sglang/scheduler-visual.gif)） - 模拟 6 请求 × 22 步的 Chunked Prefill 调度过程
 
 ### 9.4 推理优化技术体系
 
