@@ -48,7 +48,7 @@ GB300 NVL4 将两组 Grace Blackwell Superchip 通过高速互连技术整合在
 
 ### 2.3 CPU-CPU 互连：Clinks
 
-- **连接方式**: 两颗 Grace CPU 之间通过 **Clinks**（而非 NVLink-C2C）互连 [*DGX SPOD GB300 RA, Figure 5*](https://docs.nvidia.com/pdf/dgx-spod-gb300-ra.pdf)。
+- **连接方式**: 两颗 Grace CPU 之间通过 **Clinks**（而非 NVLink-C2C）互连 [_DGX SPOD GB300 RA, Figure 5_](https://docs.nvidia.com/pdf/dgx-spod-gb300-ra.pdf)。
 - **互连带宽**: 约 **150 GB/s**。
 - **特性**: 支持跨 CPU 的缓存一致性 (Cache Coherency)，使两颗 CPU 的 LPDDR5X 内存空间呈现为统一的 NUMA 内存池。
 
