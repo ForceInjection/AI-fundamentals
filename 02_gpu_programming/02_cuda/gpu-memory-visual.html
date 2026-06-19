@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU 内存管理 — 可交互概念图</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f1117; color: #c9d1d9; overflow: hidden; height: 100vh; }
+#app { display: flex; height: 100vh; }
+#canvas { flex: 1; position: relative; overflow: hidden; cursor: grab; background: radial-gradient(ellipse at center, #161b22 0%, #0f1117 100%); }
+#canvas:active { cursor: grabbing; }
+#panel { width: 300px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+#panel h2 { font-size: 15px; color: #f0f6fc; }
+#panel .subtitle { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
+.layer-btn { width: 100%; padding: 9px 12px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; text-align: left; cursor: pointer; font-size: 12.5px; transition: all .15s; display: flex; justify-content: space-between; align-items: center; }
+.layer-btn:hover { background: #30363d; border-color: #58a6ff; }
+.layer-btn.active { background: #1f2a3a; border-color: #58a6ff; color: #58a6ff; }
+.layer-btn .tag { font-size: 10px; background: #30363d; padding: 1px 7px; border-radius: 10px; color: #8b949e; }
+.layer-btn.active .tag { background: #1a2a3a; color: #58a6ff; }
+.desc-box { padding: 14px; background: #21262d; border-radius: 6px; font-size: 12px; line-height: 1.7; color: #b1bac4; border-left: 3px solid #58a6ff; min-height: 60px; flex-shrink: 0; }
+.desc-box strong { color: #e6edf3; }
+.legend { margin-top: auto; font-size: 11px; color: #8b949e; line-height: 1.8; }
+.legend span { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.tooltip { position: absolute; background: #1c2128; border: 1px solid #30363d; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; line-height: 1.6; pointer-events: none; opacity: 0; transition: opacity 0.12s; max-width: 240px; z-index: 10; white-space: pre-line; }
+svg { width: 100%; height: 100%; }
+svg text { user-select: none; }
+.path-line { fill: none; stroke-width: 2.5; opacity: 0.5; stroke-linecap: round; }
+@keyframes flowRight { to { stroke-dashoffset: -24; } }
+@keyframes flowLeft { to { stroke-dashoffset: 24; } }
+@keyframes flowDown { to { stroke-dashoffset: -24; } }
+.flow-r { stroke-dasharray: 10 6; animation: flowRight .6s linear infinite; }
+.flow-l { stroke-dasharray: 10 6; animation: flowLeft .6s linear infinite; }
+.flow-d { stroke-dasharray: 10 6; animation: flowDown .6s linear infinite; }
+@keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+.pulse { animation: pulse 2.5s ease-in-out infinite; }
+.fade-in { animation: fadeIn .35s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.label { font-size: 11px; fill: #8b949e; }
+.detail { font-size: 10px; fill: #8b949e; }
+.highlight { font-size: 10px; fill: #58a6ff; }
+.warn { font-size: 10px; fill: #f85149; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="canvas">
+    <svg id="svg" viewBox="0 0 960 600"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div id="panel">
+    <h2>GPU 内存管理</h2>
+    <p class="subtitle">1 CPU + 1 GPU · 6 个概念图层</p>
+
+    <button class="layer-btn active" data-layer="topology">
+      物理拓扑 <span class="tag">基础</span>
+    </button>
+    <button class="layer-btn" data-layer="hierarchy">
+      内存层级 <span class="tag">§7</span>
+    </button>
+    <button class="layer-btn" data-layer="dma">
+      DMA 传输路径 <span class="tag">§2·§5</span>
+    </button>
+    <button class="layer-btn" data-layer="mmu">
+      页表 / MMU <span class="tag">§1·§6</span>
+    </button>
+    <button class="layer-btn" data-layer="fragmentation">
+      碎片化 <span class="tag">§1.1</span>
+    </button>
+    <button class="layer-btn" data-layer="sharing">
+      跨进程共享 <span class="tag">§4</span>
+    </button>
+
+    <div id="desc" class="desc-box">
+      <strong>物理拓扑</strong><br>
+      1 个 CPU Socket (NUMA) 通过 PCIe Gen4 连接 1 块 H100 GPU 和 NVMe SSD。这是所有概念图层的物理基础。<br>
+      <span style="color:#8b949e">hover 节点查看详情 · 切换右侧图层探索概念</span>
+    </div>
+
+    <div class="legend">
+      <span style="background:#58a6ff"></span> CPU / 系统内存<br>
+      <span style="background:#3fb950"></span> GPU / 显存<br>
+      <span style="background:#d29922"></span> NVMe / 磁盘<br>
+      <span style="background:#f85149"></span> 延迟 / 瓶颈 / OOM
+    </div>
+  </div>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a) => { const e = document.createElementNS(NS, t); if (a) for (let k in a) e.setAttribute(k, a[k]); return e; };
+const txt = (x, y, s, cls) => { const t = el("text", { x, y, class: cls || "label" }); t.textContent = s; return t; };
+const svg = document.getElementById("svg");
+const tooltip = document.getElementById("tooltip");
+const descBox = document.getElementById("desc");
+
+// ── Layer groups ──
+const layers = ["topology","hierarchy","dma","mmu","fragmentation","sharing"];
+const groups = {};
+layers.forEach(l => { groups[l] = el("g", { id: "g-"+l }); svg.appendChild(groups[l]); });
+
+// ═══════════════════════════════════════════
+// COORDINATES
+// ═══════════════════════════════════════════
+const CPU = { x: 40, y: 55, w: 310, h: 280, cx: 195 };
+const PCIE = { x: 380, y: 150, w: 24, h: 200, cx: 392 };
+const GPU = { x: 440, y: 55, w: 310, h: 280, cx: 595 };
+const NVME = { x: 360, y: 420, w: 64, h: 22, cx: 392 };
+
+// ═══════════════════════════════════════════
+// TOPOLOGY (always visible base)
+// ═══════════════════════════════════════════
+const gTopo = groups.topology;
+
+// ── CPU Socket ──
+const cpuR = el("rect", { x: CPU.x, y: CPU.y, width: CPU.w, height: CPU.h, rx: 8, fill: "#121a24", stroke: "#58a6ff", "stroke-width": 1.5 });
+cpuR.setAttribute("data-node", "cpu");
+gTopo.appendChild(cpuR);
+gTopo.appendChild(txt(CPU.x + 14, CPU.y + 22, "CPU Socket", "label"));
+gTopo.appendChild(txt(CPU.x + 14, CPU.y + 40, "NUMA Node 0", "detail"));
+// Cores — simplified grid
+for (let r = 0; r < 3; r++) {
+  for (let c = 0; c < 8; c++) {
+    gTopo.appendChild(el("rect", { x: CPU.x + 16 + c*18, y: CPU.y + 54 + r*16, width: 13, height: 11, rx: 2, fill: "#58a6ff", opacity: .12 }));
+  }
+}
+gTopo.appendChild(txt(CPU.x + 16, CPU.y + 116, "24 Cores", "detail"));
+// RAM sticks (right side)
+for (let i = 0; i < 6; i++) {
+  gTopo.appendChild(el("rect", { x: CPU.x + CPU.w - 34 - i*10, y: CPU.y + 18, width: 6, height: CPU.h - 36, rx: 2, fill: "#58a6ff", opacity: .08 + i*.03 }));
+}
+gTopo.appendChild(txt(CPU.x + CPU.w - 110, CPU.y + CPU.h - 10, "DDR5 512GB", "detail"));
+
+// ── GPU ──
+const gpuR = el("rect", { x: GPU.x, y: GPU.y, width: GPU.w, height: GPU.h, rx: 8, fill: "#0d1a10", stroke: "#3fb950", "stroke-width": 1.5 });
+gpuR.setAttribute("data-node", "gpu");
+gTopo.appendChild(gpuR);
+gTopo.appendChild(txt(GPU.x + 14, GPU.y + 22, "GPU — H100 80GB HBM3", "label"));
+// SM grid
+for (let r = 0; r < 4; r++) {
+  for (let c = 0; c < 12; c++) {
+    gTopo.appendChild(el("rect", { x: GPU.x + 14 + c*16, y: GPU.y + 42 + r*14, width: 11, height: 9, rx: 2, fill: "#3fb950", opacity: .15 }));
+  }
+}
+gTopo.appendChild(txt(GPU.x + 16, GPU.y + 110, "132 Streaming Multiprocessors", "detail"));
+// L2 cache band
+gTopo.appendChild(el("rect", { x: GPU.x + 14, y: GPU.y + 124, width: GPU.w - 28, height: 16, rx: 3, fill: "#3fb950", opacity: .12, stroke: "#3fb950", "stroke-width": .5 }));
+gTopo.appendChild(txt(GPU.x + GPU.w/2 - 40, GPU.y + 136, "L2 Cache 50MB", "highlight"));
+// HBM area
+gTopo.appendChild(el("rect", { x: GPU.x + 14, y: GPU.y + 150, width: GPU.w - 28, height: 80, rx: 4, fill: "#0a1a0d", stroke: "#3fb950", "stroke-width": 1 }));
+gTopo.appendChild(txt(GPU.x + GPU.w/2 - 40, GPU.y + 168, "HBM3 80GB", "highlight"));
+// NVLink indicator
+gTopo.appendChild(txt(GPU.x + GPU.w - 80, GPU.y + GPU.h - 34, "NVLink 4.0 ×18", "highlight"));
+for (let i = 0; i < 4; i++) {
+  gTopo.appendChild(el("rect", { x: GPU.x + GPU.w - 70 + i*10, y: GPU.y + GPU.h - 22, width: 6, height: 8, rx: 1, fill: "#a371f7", opacity: .5 }));
+}
+
+// ── PCIe bus ──
+gTopo.appendChild(el("rect", { x: PCIE.x, y: PCIE.y, width: PCIE.w, height: PCIE.h, rx: 4, fill: "#1a2218", stroke: "#3fb950", "stroke-width": 1 }));
+gTopo.appendChild(txt(PCIE.x + 2, PCIE.y - 8, "PCIe Gen4", "label"));
+gTopo.appendChild(txt(PCIE.x + 2, PCIE.y + PCIE.h/2 - 8, "x16", "highlight"));
+gTopo.appendChild(txt(PCIE.x + 2, PCIE.y + PCIE.h/2 + 6, "~32", "highlight"));
+gTopo.appendChild(txt(PCIE.x + 2, PCIE.y + PCIE.h/2 + 18, "GB/s", "highlight"));
+
+// ── NVMe ──
+const nvmeR = el("rect", { x: NVME.x, y: NVME.y, width: NVME.w, height: NVME.h, rx: 3, fill: "#1f1508", stroke: "#d29922", "stroke-width": 1 });
+nvmeR.setAttribute("data-node", "nvme");
+gTopo.appendChild(nvmeR);
+gTopo.appendChild(txt(NVME.x + 10, NVME.y + 15, "NVMe SSD", "detail"));
+
+// ── Connection lines ──
+// CPU → PCIe
+gTopo.appendChild(el("line", { x1: CPU.x + CPU.w, y1: CPU.y + CPU.h/2, x2: PCIE.x, y2: PCIE.y + PCIE.h/3, class: "path-line", stroke: "#58a6ff" }));
+gTopo.appendChild(el("line", { x1: CPU.x + CPU.w, y1: CPU.y + CPU.h/2 + 40, x2: PCIE.x, y2: PCIE.y + 2*PCIE.h/3, class: "path-line", stroke: "#58a6ff" }));
+// GPU → PCIe
+gTopo.appendChild(el("line", { x1: GPU.x, y1: GPU.y + GPU.h/2, x2: PCIE.x + PCIE.w, y2: PCIE.y + PCIE.h/3, class: "path-line", stroke: "#3fb950" }));
+gTopo.appendChild(el("line", { x1: GPU.x, y1: GPU.y + GPU.h/2 + 40, x2: PCIE.x + PCIE.w, y2: PCIE.y + 2*PCIE.h/3, class: "path-line", stroke: "#3fb950" }));
+// NVMe → PCIe
+gTopo.appendChild(el("line", { x1: NVME.x + NVME.w/2, y1: NVME.y, x2: PCIE.x + PCIE.w/2, y2: PCIE.y + PCIE.h, class: "path-line", stroke: "#d29922" }));
+
+// ═══════════════════════════════════════════
+// HIERARCHY LAYER (§7)
+// ═══════════════════════════════════════════
+const gHier = groups.hierarchy;
+const memColors = ["#ff7b72","#f0883e","#d29922","#3fb950","#58a6ff"];
+
+function drawHierBar(g, cx, y, w, label, colorIdx) {
+  const x = cx - w/2;
+  g.appendChild(el("rect", { x, y, width: w, height: 18, rx: 3, fill: memColors[colorIdx], opacity: .18, stroke: memColors[colorIdx], "stroke-width": .5 }));
+  g.appendChild(txt(x + 6, y + 12.5, label, "detail"));
+}
+
+// CPU hierarchy
+drawHierBar(gHier, CPU.cx, 260, 90,  "L1 32KB · ~1ns", 0);
+drawHierBar(gHier, CPU.cx, 282, 150, "L2 256KB · ~4ns", 1);
+drawHierBar(gHier, CPU.cx, 304, 210, "L3 32MB · ~12ns", 2);
+drawHierBar(gHier, CPU.cx, 326, 270, "RAM DDR5 512GB · ~100ns", 3);
+
+// GPU hierarchy
+drawHierBar(gHier, GPU.cx, 244, 90,  "Register 256KB/SM · ~0ns", 0);
+drawHierBar(gHier, GPU.cx, 266, 130, "Shared Mem 228KB/SM · ~5ns", 1);
+drawHierBar(gHier, GPU.cx, 288, 170, "L1 256KB/SM · ~28ns", 2);
+drawHierBar(gHier, GPU.cx, 310, 220, "L2 50MB · ~200ns", 3);
+drawHierBar(gHier, GPU.cx, 332, 280, "HBM 80GB · ~400ns", 4);
+
+// Labels
+gHier.appendChild(txt(CPU.cx + 20, 252, "← 更快 / 更小", "highlight"));
+gHier.appendChild(txt(CPU.cx + 20, 340, "更慢 / 更大 →", "warn"));
+gHier.appendChild(txt(GPU.cx - 30, 236, "← 更快 / 更小", "highlight"));
+gHier.appendChild(txt(GPU.cx - 30, 346, "更慢 / 更大 →", "warn"));
+
+// CPU↔GPU analogy bracket
+gHier.appendChild(txt(400, 280, "类比", "highlight"));
+gHier.appendChild(el("line", { x1: CPU.x + CPU.w, y1: 290, x2: GPU.x, y2: 290, class: "path-line", stroke: "#58a6ff", "stroke-dasharray": "4 4", opacity: .3 }));
+
+// ═══════════════════════════════════════════
+// DMA LAYER (§2, §5)
+// ═══════════════════════════════════════════
+const gDma = groups.dma;
+
+// Pinned DMA: CPU RAM → GPU (direct)
+const pinnedY = CPU.y + CPU.h/2 - 30;
+gDma.appendChild(el("path", { d: `M ${CPU.x+CPU.w} ${pinnedY} L ${PCIE.x} ${pinnedY} L ${PCIE.x+PCIE.w} ${pinnedY} L ${GPU.x} ${pinnedY}`, class: "path-line flow-r", stroke: "#3fb950", "stroke-width": 3 }));
+gDma.appendChild(el("circle", { cx: CPU.x+CPU.w, cy: pinnedY, r: 4, fill: "#3fb950" }));
+gDma.appendChild(el("circle", { cx: GPU.x, cy: pinnedY, r: 4, fill: "#3fb950" }));
+gDma.appendChild(txt(PCIE.x + PCIE.w/2 - 30, pinnedY - 8, "Pinned DMA ~26 GB/s", "highlight"));
+
+// Pageable DMA: CPU RAM → bounce copy → GPU
+const pgY1 = CPU.y + CPU.h/2 + 20;
+const pgY2 = pgY1 + 40;
+gDma.appendChild(el("path", { d: `M ${CPU.x+CPU.w} ${pgY1} L ${PCIE.x-20} ${pgY1} L ${PCIE.x-20} ${pgY2} L ${CPU.x+CPU.w} ${pgY2}`, class: "path-line flow-l", stroke: "#f85149", "stroke-width": 2.5 }));
+gDma.appendChild(el("path", { d: `M ${PCIE.x-20} ${pgY2-10} L ${PCIE.x} ${pgY2-10} L ${PCIE.x+PCIE.w} ${pgY2-10} L ${GPU.x} ${pgY1+10}`, class: "path-line flow-r", stroke: "#f85149", "stroke-width": 2.5 }));
+gDma.appendChild(txt(PCIE.x - 80, pgY2 - 14, "CPU 拷贝", "warn"));
+gDma.appendChild(txt(PCIE.x + PCIE.w/2 - 30, pgY2 - 24, "Pageable ~22 GB/s", "warn"));
+gDma.appendChild(txt(CPU.x + 60, pgY1 + 4, "内核遍历页表", "detail"));
+
+// GDS: NVMe → GPU (bypass CPU)
+const gdsY = NVME.y + NVME.h/2;
+gDma.appendChild(el("path", { d: `M ${NVME.x+NVME.w} ${gdsY} L ${PCIE.x+PCIE.w} ${gdsY} L ${PCIE.x+PCIE.w} ${GPU.y+GPU.h-40} L ${GPU.x} ${GPU.y+GPU.h-40}`, class: "path-line flow-r pulse", stroke: "#d29922", "stroke-width": 3 }));
+gDma.appendChild(el("circle", { cx: NVME.x+NVME.w, cy: gdsY, r: 4, fill: "#d29922" }));
+gDma.appendChild(el("circle", { cx: GPU.x, cy: GPU.y+GPU.h-40, r: 4, fill: "#d29922" }));
+gDma.appendChild(txt(PCIE.x + PCIE.w/2 - 30, gdsY - 8, "GDS ~3–7 GB/s", "highlight"));
+gDma.appendChild(txt(PCIE.x + PCIE.w/2 - 50, gdsY + 14, "CPU 完全旁路 — 类似 sendfile()", "detail"));
+
+// Legend box
+gDma.appendChild(txt(40, 520, "Pinned: GPU DMA 引擎直接读物理页，带宽跟随 PCIe 代际扩展", "highlight"));
+gDma.appendChild(txt(40, 536, "Pageable: DMA时间 + CPU开销。CPU开销与PCIe代际无关", "warn"));
+gDma.appendChild(txt(40, 552, "GDS: NVMe→GPU 直通，CPU/系统内存完全不参与", "detail"));
+
+// ═══════════════════════════════════════════
+// MMU LAYER (§1, §6)
+// ═══════════════════════════════════════════
+const gMmu = groups.mmu;
+
+function drawMMU(g, x, y, w, label, color) {
+  g.appendChild(el("rect", { x, y, width: w, height: 50, rx: 5, fill: "#111820", stroke: color, "stroke-width": 1.5 }));
+  g.appendChild(txt(x + 8, y + 18, label, "highlight"));
+  g.appendChild(txt(x + 8, y + 33, "虚拟→物理", "detail"));
+  g.appendChild(txt(x + 8, y + 45, "页表查询", "detail"));
+}
+
+// CPU MMU
+drawMMU(gMmu, CPU.x + 180, CPU.y + 130, 100, "MMU", "#58a6ff");
+// GPU MMU
+drawMMU(gMmu, GPU.x + 20, GPU.y + 100, 100, "GPU MMU", "#3fb950");
+
+// TLB annotation
+gMmu.appendChild(txt(CPU.x + 20, CPU.y + 160, "TLB: 页表缓存 (CPU L1)", "detail"));
+gMmu.appendChild(txt(CPU.x + 20, CPU.y + 176, "TLB miss → 查页表 (RAM)", "warn"));
+gMmu.appendChild(txt(GPU.x + GPU.w - 145, GPU.y + 110, "TLB miss → 查页表 (HBM)", "warn"));
+gMmu.appendChild(txt(GPU.x + GPU.w - 145, GPU.y + 126, "大页可减少 TLB miss", "highlight"));
+
+// Page table / TLB comparison (from §6)
+gMmu.appendChild(txt(PCIE.x + PCIE.w/2 - 60, 390, "传输 1GB 数据:", "highlight"));
+gMmu.appendChild(txt(PCIE.x + PCIE.w/2 - 60, 408, "4KB 页 → 遍历 26 万条目", "detail"));
+gMmu.appendChild(txt(PCIE.x + PCIE.w/2 - 60, 426, "2MB 大页 → 仅 512 条目", "highlight"));
+gMmu.appendChild(txt(PCIE.x + PCIE.w/2 - 60, 444, "SG list 短 512 倍", "detail"));
+
+// ═══════════════════════════════════════════
+// FRAGMENTATION LAYER (§1.1)
+// ═══════════════════════════════════════════
+const gFrag = groups.fragmentation;
+const fragX = GPU.x + 18, fragY = GPU.y + 154, fragW = GPU.w - 36, fragH = 72;
+
+gFrag.appendChild(el("rect", { x: fragX, y: fragY, width: fragW, height: fragH, rx: 4, fill: "#0d1117", stroke: "#30363d", "stroke-width": 1 }));
+
+// Block layout (matches §1.1): used 20GB, hole 10GB, used 50GB
+// Total 80GB → map to fragW=274px: 1GB ≈ 3.425px
+const gb2px = (gb) => gb * fragW / 80;
+const b1w = gb2px(20), bHole = gb2px(10), b2w = gb2px(50);
+
+gFrag.appendChild(el("rect", { x: fragX+2, y: fragY+2, width: b1w, height: fragH-4, rx: 2, fill: "#3a1a2a", stroke: "#f85149", "stroke-width": .5 }));
+gFrag.appendChild(txt(fragX + 6, fragY + 34, "已用 20GB", "warn"));
+
+const holeX = fragX + 2 + b1w;
+gFrag.appendChild(el("rect", { x: holeX, y: fragY+2, width: bHole, height: fragH-4, rx: 2, fill: "#2a1a3a", stroke: "#a371f7", "stroke-width": .5, opacity: .6 }));
+gFrag.appendChild(txt(holeX + 2, fragY + 34, "10GB 空闲", "detail"));
+
+const b2x = holeX + bHole;
+gFrag.appendChild(el("rect", { x: b2x, y: fragY+2, width: b2w, height: fragH-4, rx: 2, fill: "#3a1a2a", stroke: "#f85149", "stroke-width": .5 }));
+gFrag.appendChild(txt(b2x + 6, fragY + 34, "已用 50GB", "warn"));
+
+// OOM annotation
+gFrag.appendChild(txt(fragX, fragY + fragH + 16, "cudaMalloc(20GB) → OOM!", "warn"));
+gFrag.appendChild(txt(fragX, fragY + fragH + 32, "nvidia-smi 显示 free=10GB，但无连续 20GB 区域", "detail"));
+gFrag.appendChild(txt(fragX, fragY + fragH + 48, "GPU 无自动碎片整理 → 只能重启进程", "detail"));
+
+// CPU comparison
+gFrag.appendChild(txt(CPU.x + 14, CPU.y + 150, "对比 CPU:", "highlight"));
+gFrag.appendChild(txt(CPU.x + 14, CPU.y + 166, "buddy allocator +", "detail"));
+gFrag.appendChild(txt(CPU.x + 14, CPU.y + 180, "vm.compaction", "detail"));
+gFrag.appendChild(txt(CPU.x + 14, CPU.y + 194, "+ THP 可缓解碎片化", "detail"));
+gFrag.appendChild(txt(CPU.x + 14, CPU.y + 210, "GPU 没有等价机制", "warn"));
+
+// ═══════════════════════════════════════════
+// SHARING LAYER (§4)
+// ═══════════════════════════════════════════
+const gShare = groups.sharing;
+
+// Two instance boxes
+const iAw = 110, iBh = 36;
+const iAx = GPU.x - 30, iAy = GPU.y + GPU.h + 30;
+const iBx = GPU.x + GPU.w - 80, iBy = iAy;
+
+gShare.appendChild(el("rect", { x: iAx, y: iAy, width: iAw, height: iBh, rx: 5, fill: "#121a24", stroke: "#58a6ff", "stroke-width": 1.5 }));
+gShare.appendChild(txt(iAx + 14, iAy + 16, "实例 A", "label"));
+gShare.appendChild(txt(iAx + 14, iAy + 30, "GPU 0 · Port 8080", "detail"));
+
+gShare.appendChild(el("rect", { x: iBx, y: iBy, width: iAw, height: iBh, rx: 5, fill: "#121a24", stroke: "#3fb950", "stroke-width": 1.5 }));
+gShare.appendChild(txt(iBx + 14, iBy + 16, "实例 B", "label"));
+gShare.appendChild(txt(iBx + 14, iBy + 30, "GPU 1 · Port 8081", "detail"));
+
+// Shared disk
+const diskY = iAy + iBh + 24;
+const diskX = GPU.x + GPU.w/2 - 60;
+gShare.appendChild(el("rect", { x: diskX, y: diskY, width: 120, height: 22, rx: 4, fill: "#1f1508", stroke: "#d29922", "stroke-width": 1.5 }));
+gShare.appendChild(txt(diskX + 18, diskY + 15, "共享 L3 磁盘", "highlight"));
+
+// Arrows from instances to disk
+gShare.appendChild(el("path", { d: `M ${iAx+iAw/2} ${iAy+iBh} L ${iAx+iAw/2} ${diskY+2}`, class: "path-line flow-d", stroke: "#58a6ff", "stroke-width": 2 }));
+gShare.appendChild(el("path", { d: `M ${iBx+iAw/2} ${iBy+iBh} L ${iBx+iAw/2} ${diskY+2}`, class: "path-line flow-d", stroke: "#3fb950", "stroke-width": 2 }));
+
+// Annotations
+gShare.appendChild(txt(GPU.x + GPU.w/2 - 100, diskY + 45, "实例 A 写入的 KV cache 可被实例 B 读取", "detail"));
+gShare.appendChild(txt(GPU.x + GPU.w/2 - 100, diskY + 62, "原子写入 + 元数据侧车(.meta) + flock 保护", "detail"));
+gShare.appendChild(txt(GPU.x + GPU.w/2 - 100, diskY + 79, "Unified Memory 看似简单但有缺页代价 | IPC 零延迟但缺故障隔离", "detail"));
+
+// ═══════════════════════════════════════════
+// INITIAL STATE
+// ═══════════════════════════════════════════
+Object.keys(groups).forEach(k => { if (k !== "topology") groups[k].setAttribute("opacity", "0"); });
+
+// ═══════════════════════════════════════════
+// LAYER TOGGLE
+// ═══════════════════════════════════════════
+const descs = {
+  topology: "<strong>物理拓扑</strong><br>1 CPU Socket (NUMA) + 1 H100 GPU + 1 NVMe SSD，通过 PCIe Gen4 x16 (~32 GB/s) 互联。所有概念图层的物理画布。",
+  hierarchy: "<strong>内存层级 (§7)</strong><br>从最快的 Register (~0ns) 到最慢的 NVMe (~100μs)。<span style=color:#3fb950>GPU 没有 swap</span>：HBM 满即 OOM。Shared Memory 需程序员显式管理——CPU 的 L1/L2/L3 对你是透明的，GPU 的不是。CPU 的金字塔结构是 GPU 内存层级的最佳类比。",
+  dma: "<strong>DMA 传输路径 (§2 + §5)</strong><br><span style=color:#3fb950>绿线 Pinned DMA</span>：~26 GB/s (Gen4) / ~55 GB/s (Gen5)，纯 PCIe 带宽。<br><span style=color:#f85149>红线 Pageable</span>：DMA时间 + CPU页锁定开销。CPU开销取决于架构，与PCIe代际无关。<br><span style=color:#d29922>金线 GDS</span>：NVMe→GPU 直通，CPU 完全旁路。<br><strong>关键</strong>：pageable 带宽 = DMA + CPU开销。PCIe越快，CPU开销占比越大，pinned价值越大（Gen4: 1.2× → Gen5: 2.5×）。",
+  mmu: "<strong>页表与 MMU (§1 + §6)</strong><br>CPU 和 GPU 各有独立的 MMU 和页表，DMA 引擎直接使用物理地址。<br>传输 1GB 数据：4KB 页需遍历 26 万条目；2MB 大页仅需 512 条目，SG list 短 512 倍。<br><strong>大页 = 更少页表条目 = 更少 TLB miss = 更快地址翻译。</strong>",
+  fragmentation: "<strong>碎片化 (§1.1)</strong><br>虚拟地址空间碎片化：已用 20GB + 10GB 空闲孔洞 + 已用 50GB。<br>nvidia-smi 报告 free=10GB，但 cudaMalloc(20GB) 仍 OOM——空闲 10GB 被夹在两个已用块中间，无连续 20GB 区域。<br><strong>CPU 有 buddy allocator + compaction → GPU 没有。</strong>",
+  sharing: "<strong>跨进程共享 (§4)</strong><br>两个 vLLM 实例通过共享 L3 磁盘交换 KV cache。<br>三种共享方式：Unified Memory (自动但有缺页代价)、IPC (零延迟但缺隔离)、磁盘文件 (独立安全)。<br>本文实现：原子写入 + .meta 侧车 + flock。"
+};
+
+document.querySelectorAll(".layer-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".layer-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const layer = btn.dataset.layer;
+
+    Object.keys(groups).forEach(k => {
+      const show = k === layer || k === "topology";
+      groups[k].setAttribute("opacity", show ? "1" : "0");
+      if (show && k === layer) groups[k].classList.add("fade-in");
+    });
+
+    // Dim topology when another layer is active
+    if (layer !== "topology") {
+      groups.topology.setAttribute("opacity", "0.25");
+    }
+
+    descBox.innerHTML = descs[layer] || "";
+  });
+});
+
+// ═══════════════════════════════════════════
+// TOOLTIP + PAN
+// ═══════════════════════════════════════════
+let panX = 0, panY = 0, dragging = false, lastX, lastY;
+const canvasDiv = document.getElementById("canvas");
+
+canvasDiv.addEventListener("mousedown", e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+document.addEventListener("mousemove", e => {
+  if (dragging) {
+    panX += e.clientX - lastX;
+    panY += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    svg.style.transform = `translate(${panX}px,${panY}px)`;
+  }
+  const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+  if (elUnder && elUnder.dataset.node) {
+    const n = elUnder.dataset.node;
+    const tips = {
+      cpu:    "CPU Socket\nNUMA Node 0 · 24 Cores\nDDR5 512GB · ~100ns 延迟\nPCIe Gen4 x16 → GPU",
+      gpu:    "NVIDIA H100 80GB HBM3\n132 SM · L2 50MB\nNVLink 4.0 ×18 (900 GB/s 双向)\nPCIe Gen4 x16 → CPU",
+      nvme:   "NVMe SSD\nPCIe Gen4 x4 · ~7 GB/s\nGDS 可直通 GPU\n类似 Linux sendfile()"
+    };
+    tooltip.style.opacity = "1";
+    tooltip.style.left = (e.clientX + 16) + "px";
+    tooltip.style.top = (e.clientY - 16) + "px";
+    tooltip.textContent = tips[n] || "";
+  } else {
+    tooltip.style.opacity = "0";
+  }
+});
+document.addEventListener("mouseup", () => { dragging = false; });
+
+console.log("GPU Memory Visual v2 — 1 CPU + 1 GPU, 6 layers. READY.");
+</script>
+</body>
+</html>

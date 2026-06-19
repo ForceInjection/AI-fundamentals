@@ -54,7 +54,7 @@ GPU 编程发展到今天，主流上其实有两种思路，对应两种看待�
 
 - **核心概念**：[CUDA 核心原理](02_cuda/02_cuda_cores.md) | [流处理机制](02_cuda/03_cuda_streams.md)
 - **概念解析**：[GPU 编程导论](02_cuda/01_gpu_programming_introduction.md) | [SIMT 到 Tile-Based 编程范式的演进](02_cuda/04_simt_vs_tile_based.md)
-- **进阶专题**：NUMA API、设备属性查询、Stream 并发、Launch 开销、CUDA Graphs、Reduction、Tensor Core GEMM 等共 7 篇，详见 [CUDA 目录](02_cuda/README.md)。
+- **进阶专题**：NUMA API、设备属性查询、Stream 并发、Launch 开销、CUDA Graphs、Reduction、Tensor Core GEMM、GPU 内存管理等共 8 篇，详见 [CUDA 目录](02_cuda/README.md)。
 
 ### 3.2 [Tile-Based 编程与 TileLang](03_tilelang/README.md)
 

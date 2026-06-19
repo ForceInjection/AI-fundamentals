@@ -76,6 +76,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 理论峰值对标（156 TFLOPS dense）与矩阵大小对利用率的影响。
 - WMMA API 编程模型 + "算力-带宽-算数密度"三角分析。
 
+## 12. [GPU 内存管理——从推理工程师的日常问题出发](12_gpu_memory_management.md)
+
+- 以 Linux 概念为类比，系统讲解 GPU 显存管理的核心机制：虚拟内存与碎片化、DMA 传输（pinned vs pageable）、NVLink/PCIe 拓扑、跨进程共享（CUDA IPC）、GPUDirect Storage、大页与 TLB、内存层级。
+- 配套可交互概念图：[gpu-memory-visual.html](gpu-memory-visual.html)（6 个图层：物理拓扑 / 内存层级 / DMA 路径 / MMU 页表 / 碎片化 / 跨进程共享）。
+- 包含 CPU ↔ GPU 命令对照附录和性能诊断决策树。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
