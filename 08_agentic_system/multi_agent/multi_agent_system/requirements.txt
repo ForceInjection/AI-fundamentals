@@ -1,5 +1,5 @@
 # 核心框架
-langchain==1.2.10
+langchain==1.3.9
 langgraph==1.0.10
 langsmith==0.8.0
 
