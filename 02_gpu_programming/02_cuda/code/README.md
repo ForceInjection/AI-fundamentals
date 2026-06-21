@@ -35,6 +35,7 @@ done
 | `13_bank_conflict_bench.cu`       | 13_shared_memory_bank_conflict.md | Bank Conflict 三项测试：Stride 带宽退化、Transpose Padding 加速、Reduction 寻址方式 | `nvcc -arch=sm_80 -O3 -o bank_conflict_bench 13_bank_conflict_bench.cu`            | `./bank_conflict_bench`                                                                           |
 | `14_warp_level_bench.cu`          | 14_warp_level_programming.md      | Warp 原语四项测试：Shuffle/SMEM Reduce、Prefix Sum Scan、Ballot Filter、Match Dedup | `nvcc -arch=sm_80 -O3 -o warp_bench 14_warp_level_bench.cu`                        | `./warp_bench`                                                                                    |
 | `15_multi_gpu_bench.cu`           | 15_multi_gpu_programming.md       | 多 GPU 四项测试：Peer Access、P2P 带宽、跨 GPU 同步、NCCL AllReduce                 | `nvcc -arch=sm_80 -O3 -DWITH_NCCL -o multi_gpu_bench 15_multi_gpu_bench.cu -lnccl` | `./multi_gpu_bench`                                                                               |
+| `16_async_copy_bench.cu`          | 16_async_copy_pipeline.md         | Async Copy 对比：1-stage sync vs 2-stage double buffer tile 处理                    | `nvcc -arch=sm_80 -O3 -o async_copy_bench 16_async_copy_bench.cu`                   | `./async_copy_bench`                                                                              |
 
 ## 使用 Nsight Compute 分析
 

@@ -101,6 +101,13 @@ _GPU Architecture and Programming — An Introduction_：
 - 涵盖 NCCL 集合通信基础（`ncclAllReduce` 等）、拓扑感知（NVSwitch domain、`nvidia-smi topo -m`）。
 - A100 实测验证：Peer Access、P2P 带宽 20.7× 加速比、跨 GPU 同步、NCCL AllReduce。
 
+## 16. [异步拷贝与现代 Pipeline——从 cp.async 到 memcpy_async](16_async_copy_pipeline.md)
+
+- 系统讲解异步数据搬运技术：传统同步 Load 的瓶颈、`cp.async` PTX 指令（SM80+）、Pipeline 原语（`cuda::pipeline`）、`cuda::memcpy_async` C++ API。
+- 涵盖 double buffering / triple buffering 的 Shared Memory 布局与 buffer 管理。
+- 实战：BF16 GEMM 的 `cp.async` loop、FlashAttention 的 tile pipeline、通用 tile-based kernel 的 pipeline 模板。
+- A100 验证：1-stage sync vs 2-stage double buffer 对比（同步 `ld` 实现，加速比有限——证明异步 DMA 是 pipeline 收益的核心）。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
