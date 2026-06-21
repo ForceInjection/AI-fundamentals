@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU 间数据传输方法 — 交互式可视化</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;padding:24px;max-width:1020px;margin:0 auto}
+h1{font-size:20px;color:#f0f6fc;margin-bottom:4px}
+.sub{font-size:12px;color:#8b949e;margin-bottom:20px}
+.tabs{display:flex;margin-bottom:16px}
+.tab{padding:8px 20px;border:1px solid #30363d;background:#161b22;color:#8b949e;cursor:pointer;font-size:13px;font-family:inherit}
+.tab:first-child{border-radius:6px 0 0 6px}
+.tab:last-child{border-radius:0 6px 6px 0}
+.tab.active{background:#1f6feb;color:#fff;border-color:#1f6feb}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px}
+svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+<h1>GPU 间数据传输方法 — 交互式可视化</h1>
+<div class="sub">配套文章: 09_gpu_transfer_methods.md &nbsp;|&nbsp; A100-SXM4-80GB, NVLink NV12, CUDA 12.8 实测</div>
+<div class="tabs">
+  <button class="tab active" id="t0" onclick="S(0)">图 1: 物理拓扑</button>
+  <button class="tab" id="t1" onclick="S(1)">图 2: 测试结果</button>
+</div>
+<div class="panel"><svg id="s" viewBox="0 0 1000 540"></svg></div>
+<script>
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('s');let cur=0;
+function E(t,a){const e=document.createElementNS(NS,t);for(let k in a)e.setAttribute(k,a[k]);return e}
+function T(x,y,t,c){const e=E('text',{x:x+'',y:y+'',class:c||''});e.textContent=t;return e}
+function R(x,y,w,h,c,s,sw,rx){const a={x:x+'',y:y+'',width:w+'',height:h+'',fill:c||'none',rx:(rx||6)+''};if(s){a.stroke=s;a['stroke-width']=(sw||1)+''}return E('rect',a)}
+function L(x1,y1,x2,y2,s,sw,d){const a={x1:x1+'',y1:y1+'',x2:x2+'',y2:y2+'',stroke:s,'stroke-width':(sw||2)+''};if(d)a['stroke-dasharray']=d;return E('line',a)}
+function P(pts,f){return E('polygon',{points:pts,fill:f})}
+function S(n){cur=n;for(let i=0;i<2;i++)document.getElementById('t'+i).classList.toggle('active',i===n);draw()}
+
+function draw(){
+  svg.innerHTML='';
+  const style=E('style',{});
+  style.textContent='.tt{fill:#f0f6fc;font-size:15px;font-family:inherit;text-anchor:middle}.ts{fill:#8b949e;font-size:11px;font-family:inherit;text-anchor:middle}.tl{fill:#c9d1d9;font-size:12px;font-family:inherit}.tm{fill:#8b949e;font-size:10px;font-family:inherit}.tb{fill:#f0f6fc;font-size:11px;font-weight:bold;font-family:inherit}.tv{fill:#f0f6fc;font-size:14px;font-weight:bold;font-family:inherit}.tr{text-anchor:end}.tc{text-anchor:middle}.gt{fill:#58a6ff;font-size:14px;font-weight:bold;font-family:inherit;text-anchor:middle}.gd{fill:#c9d1d9;font-size:11px;font-family:inherit;text-anchor:middle}';
+  svg.appendChild(style);
+  svg.appendChild(R(0,0,1000,540,'#0d1117',null,0,0));
+  if(cur===0) L1(); else L2();
+}
+
+// ====== LAYER 1 ======
+function L1(){
+  const g=E('g',{});
+  g.appendChild(T(500,26,'三条物理路径','tt'));
+  g.appendChild(T(500,525,'实线 = NVLink    虚线 = PCIe    红色虚线 = CPU 中转','tm'));
+
+  // GPU 0
+  g.appendChild(R(30,70,160,400,'#161b22','#58a6ff',2,8));
+  g.appendChild(T(110,255,'GPU 0','gt'));
+  g.appendChild(T(110,277,'A100-SXM4','gd'));
+  g.appendChild(T(110,293,'HBM2e 80GB','gd'));
+  // GPU 1
+  g.appendChild(R(810,70,160,400,'#161b22','#58a6ff',2,8));
+  g.appendChild(T(890,255,'GPU 1','gt'));
+  g.appendChild(T(890,277,'A100-SXM4','gd'));
+  g.appendChild(T(890,293,'HBM2e 80GB','gd'));
+
+  // Path A: NVLink (green, solid)
+  g.appendChild(L(190,160,810,160,'#238636',3));
+  g.appendChild(P('805,160 815,156 815,164','#238636'));
+  g.appendChild(T(210,144,'路径A  NVLink 3.0 · 12 links 直连','tl'));
+  g.appendChild(T(210,178,'实测 ~249 GB/s 每方向等效速率 · 效率 83% (vs 规格 300 GB/s)','tm'));
+
+  // Path B: PCIe P2P (yellow, dashed)
+  g.appendChild(L(190,300,480,300,'#d29922',2.5,'8,5'));
+  g.appendChild(R(480,280,90,40,'#161b22','#d29922',1,4));
+  g.appendChild(T(525,305,'PCIe Switch','tc tl'));
+  g.appendChild(L(570,300,810,300,'#d29922',2.5,'8,5'));
+  g.appendChild(T(210,284,'路径B  PCIe P2P · 经 PCIe Switch','tl'));
+  g.appendChild(T(210,318,'需 PIX 拓扑 · 实测 ~28 GB/s 单向 (Gen4 x16)','tm'));
+
+  // Path C: CPU Relay (red, dashed)
+  g.appendChild(L(190,440,480,440,'#da3633',2.5,'8,5'));
+  g.appendChild(R(480,420,100,40,'#161b22','#8b949e',1,4));
+  g.appendChild(T(530,445,'CPU + DRAM','tc tl'));
+  g.appendChild(L(580,440,810,440,'#da3633',2.5,'8,5'));
+  g.appendChild(P('805,440 815,436 815,444','#da3633'));
+  g.appendChild(T(210,424,'路径C  CPU 中转 · 经 CPU + DRAM','tl'));
+  g.appendChild(T(210,458,'兜底方案 · 实测 ~12 GB/s · D2H + H2D 两次 PCIe 穿越','tm'));
+
+  svg.appendChild(g);
+}
+
+// ====== LAYER 2 ======
+function L2(){
+  const g=E('g',{});
+  g.appendChild(T(500,26,'往返测试: A→B 再 B→A (串行交替, 非全双工)','tt'));
+  g.appendChild(T(500,46,'128 MB/方向 × 2 方向, 10 次迭代, 报告值为每方向等效速率','ts'));
+
+  const D=[{n:'P2P 直连',t:10.04,bw:249,c:'#238636',r:'Tier1'},{n:'CPU relay',t:212.57,bw:11.76,c:'#d29922',r:'Tier2'},{n:'Zero-Copy',t:431.28,bw:2.90,c:'#db6d28',r:'Tier3'},{n:'Unified Memory',t:595.77,bw:2.10,c:'#da3633',r:'Tier3'}];
+  const barX=175,barMaxW=700,barH=46,gap=28,startY=80,maxT=595.77;
+
+  g.appendChild(L(barX,startY-12,barX+barMaxW,startY-12,'#8b949e',1));
+  g.appendChild(T(barX+barMaxW+8,startY-8,'时间 →','tm'));
+
+  D.forEach((d,i)=>{
+    const y=startY+i*(barH+gap),w=Math.max(80,(d.t/maxT)*barMaxW),hw=w/2;
+    g.appendChild(T(barX-10,y+barH/2+5,d.n+'  '+d.r,'tr tl'));
+    // A→B half (70% opacity), B→A half (full)
+    g.appendChild(R(barX,y,hw,barH,d.c,null,0,4));
+    g.appendChild(R(barX+hw,y,hw,barH,d.c,null,0,4));
+    g.appendChild(L(barX+hw,y,barX+hw,y+barH,'#fff',1,'4,3'));
+    // Labels
+    const fit=w>70;
+    g.appendChild(T(fit?barX+10:barX+w+8,fit?y+26:y+18,'A→B','tb'));
+    g.appendChild(T(fit?barX+hw+10:barX+w+8,fit?y+26:y+36,'B→A','tb'));
+    // Time + BW
+    const tx=barX+w+60;
+    g.appendChild(T(tx,y+20,d.t.toFixed(1)+' ms','tl'));
+    g.appendChild(T(tx,y+36,d.bw.toFixed(1)+' GB/s','tv'));
+  });
+  g.appendChild(T(500,525,'半透明 = A→B    实色 = B→A    每方向等效速率 = 往返总数据量 / 往返总时间','tl'));
+  svg.appendChild(g);
+}
+
+draw();
+</script>
+</body>
+</html>
