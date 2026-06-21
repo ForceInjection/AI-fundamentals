@@ -1,6 +1,8 @@
 # Reduction：从朴素实现到 Warp Shuffle
 
 > 基于 A100-SXM4-80GB (CC 8.0) + CUDA 13.1 实测。Reduction 是 GPU 并行编程中最经典的教学案例——它简单到能看懂，复杂到能展示几乎所有 GPU 优化技巧。本文沿 NVIDIA 官方 cuda-samples 的 8 个 kernel 变体，展示从 0.048 ms 到 0.022 ms 的逐级优化过程。
+>
+> **验证代码**：本文所有实测数据来自配套 Benchmark：[10_reduction_bench.cu](code/10_reduction_bench.cu)（包含 K0-K6 共 7 个 kernel 变体）。
 
 ---
 

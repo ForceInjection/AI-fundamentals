@@ -1,6 +1,8 @@
 # CUDA Streams 并发实战
 
 > 基于 RTX 5090 (2 个 async copy engine) 和 A100-SXM4-80GB (3 个 async copy engine) 双平台实测。本文演示 CUDA Streams 如何实现 H2D + Kernel + D2H 重叠执行，并测量实际加速比。
+>
+> **验证代码**：本文所有实测数据来自配套 Benchmark：[07_streams_concurrency_bench.cu](code/07_streams_concurrency_bench.cu)。
 
 ---
 
@@ -191,6 +193,17 @@ Speedup:          -0.044 ms (negative!)
 **为什么重叠反而更慢？** Kernel 只有 0.004 ms——太轻量了。4 个 stream 的管理开销超过了重叠收益。这揭示了一个关键瓶颈：**只有当 kernel 计算时间与传输时间相近时，重叠才有收益**。本例中 kernel 比传输快 500 倍，GPU compute engine 在 99.8% 时间里空等数据。
 
 > **关键推论**：A100 有 3 个 copy engine 仍出现负加速比，说明 engine 数量不是瓶颈——kernel/传输比才是。始终用 Nsight Systems 确认重叠是否实际发生。
+
+### 4.4 统一 Benchmark 实测 — 与 RTX 5090 同样代码的 A100 对比
+
+使用配套 Benchmark（与第 3 节 RTX 5090 完全相同的测试逻辑：4 streams × 256 MB, K=1024 kernel 循环）在 A100 上的结果：
+
+| 平台                                 | 串行耗时  | 并发耗时 | 加速比    |
+| ------------------------------------ | --------- | -------- | --------- |
+| RTX 5090 (Gen5 ×16, 2 copy engines)  | 63.81 ms  | 27.01 ms | **2.36x** |
+| A100-SXM4 (Gen4 ×16, 3 copy engines) | 120.20 ms | 68.85 ms | **1.75x** |
+
+A100 的绝对耗时更大（PCIe Gen4 带宽 ~32 GB/s vs RTX 5090 Gen5 ~63 GB/s），但仍有 1.75x 的显著重叠。3 个 copy engine 的优势被较低的 PCIe 带宽抵消了一部分——多 engine 的优势在 **kernel/传输比较大** 时才充分体现。
 
 ---
 

@@ -1,12 +1,14 @@
 # CUDA Graphs 编程
 
 > 基于 A100-SXM4-80GB + CUDA 13.1 实测。CUDA Graph 将多次 kernel launch 和 memcpy 合并为一次 graph launch，消除每个单独操作的 CPU 提交开销。本文覆盖从原理、两种创建方式到 A100 实测性能的完整流程。
+>
+> **验证代码**：本文所有实测数据来自配套 Demo：[09_cuda_graphs_demo.cu](code/09_cuda_graphs_demo.cu)。
 
 ---
 
 ## 1. CUDA Graph 解决什么问题
 
-[`08_kernel_launch_latency.md`](08_kernel_launch_latency.md) 的实测结论：每个 CUDA kernel launch 有 ~2.6 μs 的固定开销。当你的程序需要 launch 数千次小 kernel 时，launch 开销本身可能超过计算时间：
+[`08_kernel_launch_latency.md`](08_kernel_launch_latency.md) 的实测结论：每个 CUDA kernel launch 有 ~2.6 μs（RTX 5090）/ ~2.3 μs（A100）的固定开销。当你的程序需要 launch 数千次小 kernel 时，launch 开销本身可能超过计算时间：
 
 ```text
 1000 次空 kernel launch:  1000 × 2.6 μs = 2.6 ms   ← 纯开销
@@ -266,7 +268,21 @@ A100 实测输出（CSV 首行解析）：
 
 ---
 
-## 8. 相关文档
+## 8. 端到端实测 — 配套 Demo
+
+使用配套 Demo（2 个 kernel 的 graph，10000 次迭代）在 A100 上的简化对比：
+
+| 模式                | 耗时/iter | 说明                                    |
+| ------------------- | --------- | --------------------------------------- |
+| 传统 stream launch  | 6.8 μs    | 每次 2 个 kernel，各需一次 CPU→GPU 往返 |
+| Graph instantiation | 202 μs    | **一次性**                              |
+| Graph re-launch     | 0.02 μs   | 复用已实例化 graph，10000 次仅需 0.2 ms |
+
+端到端加速比：**~355x**。实际场景中差距小一些——传统 launch 的 6.8 μs 包含 kernel 执行（两个 64K-element 轻量 kernel），而 graph re-launch 的 0.02 μs 是纯提交开销。但核心结论成立：**graph 将提交开销压缩到接近于零**。
+
+> **易错点**：capture 和 launch 必须使用**不同的 stream**。在 capture stream 上执行 `cudaGraphLaunch` 会返回 "device not ready" 错误。
+
+## 9. 相关文档
 
 - [`08_kernel_launch_latency.md`](08_kernel_launch_latency.md)：2.6 μs 的 launch 开销是本文的起点
 - [`07_cuda_streams_concurrency.md`](07_cuda_streams_concurrency.md)：graph 与 stream 可以组合——在多个 stream 上 launch 同一 graph instance
