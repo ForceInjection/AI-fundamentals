@@ -47,7 +47,7 @@ GPU 间数据传输有三条物理路径，CUDA 提供了五种编程方法覆�
 
 ## 3. 测试程序
 
-完整测试程序见 [`gpu_xfer.cu`](gpu_xfer.cu)，一次编译即可测完 5 种方法。核心框架：
+完整测试程序见 [09_gpu_transfer_methods.cu](code/09_gpu_transfer_methods.cu)，一次编译即可测完 5 种方法。核心框架：
 
 ```c
 #include <cuda_runtime.h>
@@ -63,8 +63,8 @@ void m2_d2d()  { cudaMemcpy(d_b, d_a, N, cudaMemcpyDeviceToDevice); ... }
 编译运行（选择 NVLink 互连的 GPU 对）：
 
 ```bash
-nvcc -arch=sm_80 -o gpu_xfer gpu_xfer.cu
-CUDA_VISIBLE_DEVICES=3,4 ./gpu_xfer
+nvcc -arch=sm_80 -O3 -o gpu_transfer_methods code/09_gpu_transfer_methods.cu
+CUDA_VISIBLE_DEVICES=0,1 ./gpu_transfer_methods
 ```
 
 ---

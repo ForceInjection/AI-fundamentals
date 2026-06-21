@@ -1,14 +1,33 @@
+/**
+ * GPU 间数据传输方法实测 Benchmark
+ *
+ * 配套文章: 09_gpu_transfer_methods.md
+ *
+ * 对比 5 种 GPU→GPU 数据传输方法的带宽 (128 MB):
+ *   1. cudaMemcpyPeer (NVLink P2P)
+ *   2. cudaMemcpy D2D (P2P enabled)
+ *   3. CPU relay (G→CPU→G)
+ *   4. Zero-Copy mapped host memory
+ *   5. Unified Memory with explicit prefetch
+ *
+ * 编译: nvcc -arch=sm_80 -O3 -o gpu_transfer_methods 09_gpu_transfer_methods.cu
+ * 运行: ./gpu_transfer_methods
+ *
+ * 要求: ≥2 GPUs (P2P 方法仅在支持 Peer Access 时可用)
+ */
+
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define CS(c) do { cudaError_t r = c; if(r != cudaSuccess) { \
     printf("CUDA Err at %d: %s\n", __LINE__, cudaGetErrorString(r)); exit(1); } } while(0)
-#define N (128 * 1024 * 1024)
+#define N (128 * 1024 * 1024)  // 128 MB per transfer
 #define IT 10
 
 float *d_a, *d_b;
-double run(const char* name, void (*fn)()) {
+
+double run(const char *name, void (*fn)()) {
     for (int i = 0; i < 3; i++) fn();
     cudaEvent_t start, stop; float ms;
     cudaEventCreate(&start); cudaEventCreate(&stop);
@@ -19,17 +38,17 @@ double run(const char* name, void (*fn)()) {
     cudaEventElapsedTime(&ms, start, stop);
     cudaEventDestroy(start); cudaEventDestroy(stop);
     double bw = (double)N * IT / (ms / 1000.0) / (1024*1024*1024);
-    printf("  %-30s  %8.2f ms  %8.2f GB/s\n", name, ms, bw);
+    printf("  %-35s  %8.2f ms  %8.2f GB/s\n", name, ms, bw);
     return bw;
 }
 
-/* ---- Method 1: cudaMemcpyPeer ---- */
+/* ---- Method 1: cudaMemcpyPeer (NVLink) ---- */
 void m1_peer() {
     cudaMemcpyPeer(d_b, 1, d_a, 0, N);
     cudaMemcpyPeer(d_a, 0, d_b, 1, N);
 }
 
-/* ---- Method 2: cudaMemcpy D2D (after cudaDeviceEnablePeerAccess) ---- */
+/* ---- Method 2: cudaMemcpy D2D (P2P enabled) ---- */
 void m2_d2d() {
     cudaMemcpy(d_b, d_a, N, cudaMemcpyDeviceToDevice);
     cudaMemcpy(d_a, d_b, N, cudaMemcpyDeviceToDevice);
@@ -82,12 +101,12 @@ int main() {
     }
     CS(cudaDeviceCanAccessPeer(&canPeer, 0, 1));
     printf("P2P available: %s\n\n", canPeer ? "YES" : "NO");
-    printf("%-30s  %8s  %8s\n", "Method", "Time", "Bandwidth");
-    printf("%-30s  %8s  %8s\n", "------", "----", "--------");
+    printf("%-35s  %8s  %8s\n", "Method", "Time", "Bandwidth");
+    printf("%-35s  %8s  %8s\n", "------", "----", "--------");
 
     double bw2 = 0, bw3 = 0, bw4 = 0, bw5 = 0;
 
-    /* Methods 1 & 2: requires P2P. Must cudaSetDevice before enablePeerAccess! */
+    /* Methods 1 & 2: P2P required */
     if (canPeer) {
         CS(cudaSetDevice(0)); CS(cudaMalloc(&d_a, N));
         CS(cudaSetDevice(1)); CS(cudaMalloc(&d_b, N));
@@ -95,14 +114,14 @@ int main() {
         CS(cudaSetDevice(1)); CS(cudaDeviceEnablePeerAccess(0, 0));
 
         CS(cudaSetDevice(0));
-        run("1. cudaMemcpyPeer (NVLink)", m1_peer);
-        bw2 = run("2. cudaMemcpy D2D (P2P on)",  m2_d2d);
+        run("1. cudaMemcpyPeer (NVLink/P2P)", m1_peer);
+        bw2 = run("2. cudaMemcpy D2D (P2P enabled)",  m2_d2d);
 
         CS(cudaSetDevice(0)); CS(cudaFree(d_a));
         CS(cudaSetDevice(1)); CS(cudaFree(d_b));
     }
 
-    /* Method 3: CPU relay */
+    /* Method 3: CPU relay (always works) */
     CS(cudaSetDevice(0)); CS(cudaMalloc(&dr_a, N));
     CS(cudaSetDevice(1)); CS(cudaMalloc(&dr_b, N));
     CS(cudaMallocHost(&h_relay, N));
@@ -116,7 +135,7 @@ int main() {
     CS(cudaHostAlloc(&h_zc, N, cudaHostAllocPortable | cudaHostAllocMapped));
     CS(cudaHostGetDevicePointer(&d_zc, h_zc, 0));
     CS(cudaSetDevice(1)); CS(cudaMalloc(&d_zc_gpu1, N));
-    bw4 = run("4. Zero-Copy (mapped host)", m4_zc);
+    bw4 = run("4. Zero-Copy (mapped host memory)", m4_zc);
     CS(cudaSetDevice(0)); CS(cudaFreeHost(h_zc));
     CS(cudaSetDevice(1)); CS(cudaFree(d_zc_gpu1));
 
@@ -127,11 +146,11 @@ int main() {
     CS(cudaSetDevice(0)); CS(cudaFree(d_um));
     CS(cudaSetDevice(1)); CS(cudaFree(d_um2));
 
-    printf("\n=== Summary (128 MB) ===\n");
+    printf("\n=== Summary (128 MB per transfer) ===\n");
     if (canPeer) {
-        printf("  P2P / CPU-relay:    %.0fx\n", bw2 / bw3);
-        printf("  P2P / Zero-Copy:    %.0fx\n", bw2 / bw4);
-        printf("  P2P / Unified Mem:  %.0fx\n", bw2 / bw5);
+        printf("  P2P vs CPU relay:     %.0fx\n", bw2 / bw3);
+        printf("  P2P vs Zero-Copy:     %.0fx\n", bw2 / bw4);
+        printf("  P2P vs Unified Mem:   %.0fx\n", bw2 / bw5);
     }
     return 0;
 }
