@@ -3,22 +3,20 @@
  *
  * 配套文章: 09_gpu_transfer_methods.md
  *
- * 测试场景:
- *   方法 1-3: 往返（A→B 再 B→A，串行交替，非全双工同时收发）
- *   方法 4-5: 单向（行为不对称，仅测一个方向）
- * 报告值:   每方向等效速率
+ * 测试场景: 往返（A→B 再 B→A，串行交替，非全双工），每方向 128 MB。
+ * 报告值:   每方向等效速率（往返总数据量 / 往返总时间）。
+ *           方法 4-5 为单向测试，仅测一个方向。
  *
- * 对比 5 种 GPU→GPU 数据传输方法 (128 MB):
- *   1. cudaMemcpyPeer (NVLink P2P)      — 往返
- *   2. cudaMemcpy D2D (P2P enabled)     — 往返
- *   3. CPU relay (G→CPU→G)              — 往返
- *   4. Zero-Copy mapped host memory     — 单向
- *   5. Unified Memory (prefetch)        — 单向
+ * 对比 4 种 GPU→GPU 数据传输方法:
+ *   P2P 直连 (cudaMemcpyPeer / cudaMemcpy D2D) — 往返 (同一路径, 两种等效 API)
+ *   CPU relay (G→CPU→G)                        — 往返
+ *   Zero-Copy (mapped host memory)              — 单向
+ *   Unified Memory (prefetch)                   — 单向
  *
  * 编译: nvcc -arch=sm_80 -O3 -o gpu_transfer_methods 09_gpu_transfer_methods.cu
  * 运行: CUDA_VISIBLE_DEVICES=0,1 ./gpu_transfer_methods
  *
- * 要求: ≥2 GPUs (P2P 方法仅在支持 Peer Access 时可用)
+ * 要求: ≥2 GPUs (P2P 仅在 Peer Access 可用时运行)
  */
 
 #include <cuda_runtime.h>
@@ -153,8 +151,8 @@ int main() {
     CS(cudaSetDevice(1)); CS(cudaFree(d_um2));
 
     printf("\n=== Summary ===\n");
-    printf("  方法 1-3: 往返 (每方向等效速率)\n");
-    printf("  方法 4-5: 单向\n");
+    printf("  P2P + CPU relay: 往返 (每方向等效速率)\n");
+    printf("  Zero-Copy + UM:   单向\n");
     printf("  规格: NVLink 3.0 单向理论 = 300 GB/s\n");
     if (canPeer) {
         printf("  P2P vs CPU relay:     %.0fx\n", bw2 / bw3);
