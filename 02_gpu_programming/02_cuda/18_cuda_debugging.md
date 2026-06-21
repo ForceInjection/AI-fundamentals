@@ -7,6 +7,8 @@ CUDA 的调试工具链不像 CPU 侧那么成熟——没有 `printf` 那么方
 本文覆盖三个工具和一个模式：`cuda-gdb`（断点调试）、`compute-sanitizer`（自动检测越界/race/未初始化）、`cudaError_t`（错误处理模式），以及常见 Bug 的排查流程。
 
 > **前置要求**：你已写过 CUDA kernel，知道 Shared Memory、Warp、`__syncthreads` 的基本概念。
+>
+> **验证代码**：本文所有命令已在 A100 (CUDA 12.8) 上验证。配套验证程序：[18_debug_demo.cu](code/18_debug_demo.cu)——故意引入 5 种常见 Bug（SMEM 越界、Race、未初始化、NaN、Null Pointer），可用于练习 `compute-sanitizer` 的各种模式。
 
 ---
 
@@ -124,31 +126,38 @@ compute-sanitizer --tool memcheck ./my_program
 
 ### 2.2 越界检测（默认）
 
-最常用的模式——检测任何对 Global Memory / Shared Memory / Local Memory 的越界访问：
+最常用的模式。A100 (CUDA 12.8) 实测：默认模式**能检测 Global Memory 非法地址（如 Null Pointer deref），但对 Shared Memory 越界和 Global Memory 轻微越界的检测能力有限**。
 
 ```bash
 nvcc -lineinfo -o my_program my_kernel.cu  # release + line info
 compute-sanitizer ./my_program
 ```
 
-输出示例：
+A100 实测输出（Null Pointer deref）：
 
 ```text
-========= Invalid __global__ write of size 4 bytes
-=========     at 0x2b0 in my_kernel(float*, int)
-=========     by thread (31,0,0) in block (15,0,0)
-=========     Address 0x7f2a4c000400 is out of bounds
+========= COMPUTE-SANITIZER
+========= Trace/breakpoint trap
+=========     at null_ptr()+0x20 in 18_debug_demo.cu:52
+=========     by thread (0,0,0) in block (0,0,0)
 =========     Saved host backtrace up to driver entry point at kernel launch time
-=========     Location: my_kernel.cu:42
+=========         Host Frame: main [0x8ee6] in debug_demo
+=========
+========= Program hit cudaErrorLaunchFailure (error 719) due to
+=========     "unspecified launch failure" on CUDA API call to
+=========     cudaDeviceSynchronize.
 ```
 
-**越界访问是 CUDA 中最常见的 Bug**——`sharedMem[tid * 2]` 在 `tid=31` 时访问 `sdata[62]`，但你只分配了 32 个元素。这不会 segfault——GPU 没有 MMU 保护 Shared Memory——而是悄悄读写非法地址，导致随机错误结果。
+> **重要发现**：A100 实测中，`compute-sanitizer` 默认模式**不会**报告 Shared Memory 的轻微越界（如 `sdata[62]` 在只分配 32 个元素的数组上）。这是因为 GPU 的 Shared Memory 没有 MMU 保护——越界写入会悄悄覆盖相邻内存（可能是其他 Shared Memory 变量或未使用区域），不触发硬件异常。因此**不能仅靠 compute-sanitizer 来保证 Shared Memory 越界安全**——代码审查和静态分析（检查所有 `threadIdx.x * stride + offset` 的上限）仍然必要。
+
+Global Memory 越界同理——写到一个合法但非预期的地址（如 `d[tid + N]` 越过分配边界但仍在 GPU 可寻址范围内）可能不被报告。
 
 排查 SOP：
 
-1. `compute-sanitizer` 跑一次（默认模式）
-2. 如果有越界——逐行检查所有 `threadIdx.x` 相关的索引计算，确认 `tid * stride + offset < ARRAY_SIZE`
+1. `compute-sanitizer` 跑一次（默认模式）——能抓到非法地址和 severe OOB
+2. 但不能 100% 依赖它——逐行检查所有 `threadIdx.x` 相关的索引计算，确认 `tid * stride + offset < ARRAY_SIZE`
 3. 特别注意 `tid + s` 模式中的 `s` 最大值（Reduction kernel 中的常见 bug）
+4. 怀疑 SMEM 越界时——在 cuda-gdb 中用 `info cuda sharedmem` 检查实际数据
 
 ### 2.3 Race Condition 检测
 
@@ -162,13 +171,17 @@ compute-sanitizer --tool racecheck ./my_program
 - 至少一个是写操作
 - 两者之间没有 `__syncthreads()` 之类的同步
 
-输出示例：
+A100 实测输出（`race_condition` kernel，256 线程缺 `__syncthreads`）：
 
 ```text
-========= Race reported between Write access at my_kernel.cu:38
-=========             and Read access at my_kernel.cu:42
-=========     in block (3,0,0)
-=========     Shared Memory address: 0x100
+========= COMPUTE-SANITIZER
+========= Error: Race reported between Write access at
+=========     race_condition(float *)+0xb0 in 18_debug_demo.cu:28
+=========     and Read access at
+=========     race_condition(float *)+0xc0 in 18_debug_demo.cu:30
+=========     [1024 hazards]
+=========
+========= RACECHECK SUMMARY: 1 hazard displayed (1 error, 0 warnings)
 ```
 
 **典型 race 场景**：
