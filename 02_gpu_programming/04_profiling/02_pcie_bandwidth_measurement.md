@@ -1,6 +1,8 @@
 # PCIe 链路状态与主机-设备带宽实测
 
-> 基于 RTX 5090 (PCIe Gen 5 x16) 和 A100-SXM4-80GB (PCIe Gen 4 x16) 双平台。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
+> 基于 A100-SXM4-80GB (PCIe Gen 4 x16) 实测。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
+>
+> **验证代码**：[02_pcie_bandwidth_bench.cu](code/02_pcie_bandwidth_bench.cu)——零依赖，直接编译运行即可测量 H2D/D2H 带宽。
 
 ---
 

@@ -1,6 +1,8 @@
 # GPU 显存带宽测试：片内 vs 片外
 
-> 基于 RTX 5090 (GDDR7, 512-bit, 1792 GB/s 理论带宽) 和 A100-SXM4-80GB (HBM2e, 5120-bit, 2039 GB/s 理论带宽) 双平台实测。本文测量 device-to-device 内部带宽并与 PCIe 传输形成完整对比。
+> 基于 A100-SXM4-80GB (HBM2e) 实测。本文测量 device-to-device 内部带宽并与 PCIe 传输形成完整对比。
+>
+> **验证代码**：[03_hbm_bandwidth_bench.cu](code/03_hbm_bandwidth_bench.cu)——自动计算理论峰值并与 1 MB → 1 GB 实测 D2D 带宽对比。
 
 ---
 

@@ -1,6 +1,8 @@
 # PCIe 传输效率曲线：从小包到大块
 
-> 基于 RTX 5090 (PCIe Gen 5 x16) 实测。展示 1 KB → 1 GB 区间 PCIe H2D/D2H 的带宽爬升曲线，揭示"多大才够"的效率拐点。
+> 基于 A100-SXM4-80GB (PCIe Gen 4 x16) 实测。展示 1 KB → 1 MB 区间 PCIe H2D/D2H 的带宽爬升曲线，揭示"多大才够"的效率拐点。
+>
+> **验证代码**：[05_pcie_transfer_efficiency.cu](code/05_pcie_transfer_efficiency.cu)——小包到大块的带宽+延迟一次测完。
 
 ---
 
