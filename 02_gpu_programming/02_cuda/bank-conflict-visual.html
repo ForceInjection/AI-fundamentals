@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Conflict 交互式可视化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "SF Mono", "Menlo", monospace; background: #0d1117; color: #c9d1d9; padding: 24px; max-width: 960px; margin: 0 auto; }
+h1 { font-size: 20px; margin-bottom: 4px; color: #f0f6fc; }
+.sub { font-size: 12px; color: #8b949e; margin-bottom: 20px; }
+.section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.section h2 { font-size: 14px; color: #58a6ff; margin-bottom: 12px; }
+.controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.controls label { font-size: 12px; color: #8b949e; }
+.controls input[type=range] { width: 200px; accent-color: #58a6ff; }
+.controls .val { display: inline-block; width: 48px; text-align: right; font-weight: bold; color: #f0f6fc; }
+.info-row { display: flex; gap: 24px; margin-bottom: 12px; font-size: 13px; }
+.info-item { }
+.info-item .label { color: #8b949e; }
+.info-item .value { font-weight: bold; }
+canvas { display: block; border-radius: 4px; border: 1px solid #30363d; margin-bottom: 12px; max-width: 100%; }
+.legend { display: flex; gap: 16px; font-size: 11px; margin-top: 8px; }
+.legend span { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: -2px; }
+.legend .none { background: #238636; }
+.legend .w2 { background: #d29922; }
+.legend .w4 { background: #db6d28; }
+.legend .w8 { background: #da3633; }
+.legend .w32 { background: #a40e26; }
+.conflict-badge { font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+.conflict-badge.none { background: #238636; color: #fff; }
+.conflict-badge.low { background: #d29922; color: #000; }
+.conflict-badge.med { background: #db6d28; color: #fff; }
+.conflict-badge.high { background: #a40e26; color: #fff; }
+.bw-bar { height: 20px; border-radius: 4px; margin: 8px 0; transition: width 0.15s; }
+.bw-bar.none { background: #238636; }
+.bw-bar.low { background: #d29922; }
+.bw-bar.med { background: #db6d28; }
+.bw-bar.high { background: #a40e26; }
+.footnote { font-size: 11px; color: #8b949e; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Bank Conflict 交互式可视化</h1>
+<div class="sub">配套文章: Shared Memory 与 Bank Conflict &nbsp;|&nbsp; 拖动滑块实时看 32 线程的 Bank 冲突模式</div>
+
+<!-- ====== Layer 1: Bank structure + stride ====== -->
+<div class="section">
+  <h2>图 1: Stride 访问的 Bank Conflict</h2>
+  <div class="controls">
+    <label>Stride: <span id="stride-val" class="val">1</span></label>
+    <input type="range" id="stride-slider" min="1" max="64" value="1" step="1">
+    <label>gcd(stride, 32) = <span id="gcd-val" class="val">1</span></label>
+  </div>
+
+  <div class="info-row">
+    <div class="info-item"><span class="label">冲突级别: </span><span id="conflict-badge" class="conflict-badge none">无冲突 (1-way)</span></div>
+    <div class="info-item"><span class="label">使用 Bank 数: </span><span class="value" id="banks-used">32</span>/32</div>
+    <div class="info-item"><span class="label">有效带宽: </span><span class="value" id="bw-pct">100%</span></div>
+  </div>
+
+  <canvas id="c-stride" width="900" height="520"></canvas>
+  <div class="legend">
+    <span class="none"></span> 无冲突 (1 thread/bank)
+    <span class="w2"></span> 2-way
+    <span class="w4"></span> 4-way
+    <span class="w8"></span> 8-way
+    <span class="w32"></span> 16-32 way
+  </div>
+
+  <div style="margin-top:12px;">
+    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;">有效带宽占比:</div>
+    <div class="bw-bar none" id="bw-bar" style="width:100%"></div>
+    <div style="font-size:10px;color:#8b949e;margin-top:2px;">0% — 理论峰值 (19 TB/s)</div>
+  </div>
+</div>
+
+<!-- ====== Layer 2: Transpose padding ====== -->
+<div class="section">
+  <h2>图 2: Transpose — Padding 消除 Bank Conflict</h2>
+  <div class="controls">
+    <label>
+      <input type="radio" name="pad" value="0" checked onchange="drawTranspose()"> tile[32][32] (无 padding, 32-way store conflict)
+    </label>
+    <label style="margin-left:12px;">
+      <input type="radio" name="pad" value="1" onchange="drawTranspose()"> tile[32][33] (+1 padding, 无 conflict)
+    </label>
+  </div>
+  <canvas id="c-transpose" width="900" height="480"></canvas>
+  <div class="footnote">左: 列写入 tile[x][y] 时 32 个线程的 Bank ID (红=冲突)。右: +1 padding 后每列线程分散到不同 Bank。</div>
+</div>
+
+<script>
+// ====== GCD helper ======
+function gcd(a,b){ while(b){let t=b;b=a%b;a=t;} return a; }
+
+// ====== Layer 1: Stride bank conflict ======
+function drawStride() {
+    const stride = parseInt(document.getElementById('stride-slider').value);
+    document.getElementById('stride-val').textContent = stride;
+    const d = gcd(stride, 32);
+    document.getElementById('gcd-val').textContent = d;
+
+    const canvas = document.getElementById('c-stride');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+
+    const marginL = 60, marginT = 30, marginR = 20, marginB = 60;
+    const gridW = W - marginL - marginR, gridH = H - marginT - marginB;
+    const cellW = gridW / 32, cellH = gridH / 32;
+
+    // Bank labels (0-31)
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace';
+    for (let b = 0; b < 32; b++) {
+        ctx.fillText(b, marginL + b * cellW + cellW/2 - 6, marginT - 6);
+    }
+
+    // Thread labels (0-31) on left
+    for (let t = 0; t < 32; t++) {
+        ctx.fillText(t, marginL - 28, marginT + t * cellH + cellH/2 + 4);
+    }
+
+    // Thread → Bank mapping
+    const bankHits = new Array(32).fill(0);
+    const threadBanks = new Array(32);
+    for (let t = 0; t < 32; t++) {
+        const addr = t * stride;
+        const bank = addr % 32;
+        threadBanks[t] = bank;
+        bankHits[bank]++;
+    }
+    const maxHits = Math.max(...bankHits);
+
+    // Color scale
+    function getColor(hits) {
+        if (hits <= 1) return '#238636';
+        if (hits <= 2) return '#d29922';
+        if (hits <= 4) return '#db6d28';
+        return '#a40e26';
+    }
+
+    // Draw cells
+    for (let t = 0; t < 32; t++) {
+        const b = threadBanks[t];
+        const x = marginL + b * cellW;
+        const y = marginT + t * cellH;
+        ctx.fillStyle = getColor(bankHits[b]);
+        ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
+
+        // Show bank ID in cell
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px monospace';
+        ctx.fillText(b, x + 3, y + cellH - 4);
+    }
+
+    // Info
+    const banksUsed = bankHits.filter(h => h > 0).length;
+    document.getElementById('banks-used').textContent = banksUsed;
+    const bwPct = Math.round(100 / maxHits);
+    document.getElementById('bw-pct').textContent = bwPct + '%';
+
+    // Badge
+    const badge = document.getElementById('conflict-badge');
+    const bar = document.getElementById('bw-bar');
+    badge.className = 'conflict-badge';
+    bar.className = 'bw-bar';
+    if (maxHits <= 1) {
+        badge.textContent = '无冲突 (1-way)'; badge.classList.add('none');
+        bar.classList.add('none');
+    } else if (maxHits <= 2) {
+        badge.textContent = '2-way conflict'; badge.classList.add('low');
+        bar.classList.add('low');
+    } else if (maxHits <= 4) {
+        badge.textContent = maxHits + '-way conflict'; badge.classList.add('med');
+        bar.classList.add('med');
+    } else {
+        badge.textContent = maxHits + '-way conflict'; badge.classList.add('high');
+        bar.classList.add('high');
+    }
+    bar.style.width = bwPct + '%';
+
+    // X-axis label
+    ctx.fillStyle = '#8b949e'; ctx.font = '11px monospace';
+    ctx.fillText('← Bank ID (0-31) →', marginL + gridW/2 - 60, H - 10);
+    ctx.save(); ctx.translate(8, marginT + gridH/2 + 30); ctx.rotate(-Math.PI/2);
+    ctx.fillText('Thread ID (0-31)', 0, 0); ctx.restore();
+}
+
+// ====== Layer 2: Transpose padding ======
+function drawTranspose() {
+    const pad = parseInt(document.querySelector('input[name="pad"]:checked').value);
+    const canvas = document.getElementById('c-transpose');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+
+    const cols = 32 + pad;
+    const tileW = cols * 4; // each float = 4B
+    const marginL = 20, marginT = 30;
+
+    // Left side: tile layout
+    ctx.fillStyle = '#8b949e'; ctx.font = '11px monospace';
+    ctx.fillText('Shared Memory tile 布局: tile[' + cols + '][' + (pad?'32':'32') + ']', marginL, 20);
+
+    const cx = marginL, cy = marginT + 5, cw = 12, ch = 12;
+    for (let row = 0; row < 32; row++) {
+        for (let col = 0; col < cols; col++) {
+            const addr = row * cols + col; // float offset
+            const bank = addr % 32;
+            const hits = (() => {
+                let h = 0;
+                for (let r = 0; r < 32; r++) {
+                    if ((r * cols + col) % 32 === bank) h++;
+                }
+                return h;
+            })();
+            let color = '#238636';
+            if (hits > 1) color = hits <= 2 ? '#d29922' : hits <= 4 ? '#db6d28' : '#a40e26';
+            if (col === cols - 1 && pad > 0) color = '#30363d'; // padding column
+
+            ctx.fillStyle = color;
+            ctx.fillRect(cx + col * cw, cy + row * ch, cw - 1, ch - 1);
+        }
+    }
+
+    // Right side: bank conflict analysis for column write
+    const rx = cx + cols * cw + 40;
+    ctx.fillStyle = '#8b949e'; ctx.font = '11px monospace';
+    ctx.fillText('列写入 tile[x][y] 时 32 线程的 Bank:', rx, 20);
+    ctx.fillText('(同列同色 → Bank Conflict!)', rx, H - 10);
+
+    const boxSize = 24, gap = 3;
+    for (let row = 0; row < 32; row++) {
+        for (let col = 0; col < (pad ? 32 : 32); col++) {
+            if (col > 31) break;
+            const addr = row * cols + col;
+            const bank = addr % 32;
+            // For column write: thread x writes tile[x][y]
+            // Same col → row varies → check if bank repeats
+            let hits = 0;
+            for (let r = 0; r < 32; r++) {
+                if ((r * cols + col) % 32 === bank) hits++;
+            }
+            let color = hits <= 1 ? '#238636' : hits <= 2 ? '#d29922' : hits <= 4 ? '#db6d28' : '#a40e26';
+            ctx.fillStyle = color;
+            const x = rx + col * (boxSize + gap);
+            const y = cy + row * (boxSize + gap);
+            ctx.fillRect(x, y, boxSize, boxSize);
+            ctx.fillStyle = '#fff'; ctx.font = '8px monospace';
+            ctx.fillText(bank, x + 4, y + 16);
+        }
+    }
+
+    // Summary inline
+    const summary = pad ?
+        '✓ +1 padding → 每列线程的 Bank 不同 → 无 conflict' :
+        '✗ 无 padding → 同列 32 线程撞同一 Bank → 32-way conflict';
+    ctx.fillStyle = pad ? '#238636' : '#da3633'; ctx.font = '12px monospace';
+    ctx.fillText(summary, rx, cy + 32 * (boxSize + gap) + 20);
+}
+
+// ====== Init ======
+document.getElementById('stride-slider').addEventListener('input', drawStride);
+document.querySelectorAll('input[name="pad"]').forEach(r => r.addEventListener('change', drawTranspose));
+
+// Handle window resize for canvas DPI
+function resizeCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const parent = canvas.parentElement;
+    if (parent.clientWidth < canvas.width) {
+        const scale = (parent.clientWidth - 32) / canvas.width;
+        canvas.style.width = (canvas.width * scale) + 'px';
+        canvas.style.height = (canvas.height * scale) + 'px';
+    }
+}
+resizeCanvas('c-stride');
+resizeCanvas('c-transpose');
+
+drawStride();
+drawTranspose();
+</script>
+</body>
+</html>

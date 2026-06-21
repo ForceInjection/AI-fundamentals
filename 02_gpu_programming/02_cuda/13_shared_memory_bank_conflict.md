@@ -12,6 +12,8 @@ Bank Conflict 是 CUDA 编程中最隐蔽的性能杀手。编译器不会警告
 
 > **前置要求**：你已经了解 CUDA 的 Thread/Warp/Block 执行模型（见 [GPU 编程导论](01_gpu_programming_introduction.md)）以及 `cudaMalloc` 分配的是 Global Memory（见 [GPU 内存管理](12_gpu_memory_management.md) 第 7 节"内存层级"）。本文假定你写过最简单的 `__shared__` kernel。
 >
+> **可交互概念图**：本文配有可交互的 Bank Conflict 概念图，覆盖 2 个图层（Stride 冲突模式、Transpose Padding 对比），建议在阅读对应章节时打开对照查看：[bank-conflict-visual.html](bank-conflict-visual.html)。
+>
 > **验证代码**：本文所有实测数据来自配套 Benchmark：[13_bank_conflict_bench.cu](code/13_bank_conflict_bench.cu)。三项测试（Stride 带宽、Transpose Padding、Reduction 寻址）可直接在 A100 上编译运行复现。
 
 ---
