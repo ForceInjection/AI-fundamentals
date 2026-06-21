@@ -95,6 +95,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 涵盖 Cooperative Groups `tiled_partition` 现代抽象与 A100 硬件 `__reduce_add_sync` 加速指令。
 - A100 实测验证：Warp Reduce、Prefix Sum Scan、Ballot Filter、Match Dedup。
 
+## 15. [Multi-GPU CUDA 编程——从 P2P 到 NCCL 的多卡协作](15_multi_gpu_programming.md)
+
+- 系统讲解多 GPU 编程体系：多 device 管理（`cudaSetDevice`）、Peer Access（`cudaDeviceEnablePeerAccess`）、P2P Memcpy（NVLink 269 GB/s vs CPU 中转 13 GB/s）、跨 GPU Stream/Event 同步。
+- 涵盖 NCCL 集合通信基础（`ncclAllReduce` 等）、拓扑感知（NVSwitch domain、`nvidia-smi topo -m`）。
+- A100 实测验证：Peer Access、P2P 带宽 20.7× 加速比、跨 GPU 同步、NCCL AllReduce。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
