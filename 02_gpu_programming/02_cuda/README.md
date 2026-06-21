@@ -89,6 +89,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 跨架构迁移注意事项（V100 4B Bank → A100/H100 的 FP16 双通道 Bank 判定差异）。
 - 附带 Bank Conflict 诊断 SOP 和 Python 验证脚本。
 
+## 14. [Warp-level Programming——从 Shuffle 到 Cooperative Groups](14_warp_level_programming.md)
+
+- 系统讲解 Warp 原语体系：Shuffle（`__shfl_sync`/`__shfl_down_sync`/`__shfl_up_sync`/`__shfl_xor_sync`）、Vote（`__ballot_sync`/`__all_sync`/`__any_sync`）、Match（`__match_any_sync`/`__match_all_sync`）、`__activemask`。
+- 涵盖 Cooperative Groups `tiled_partition` 现代抽象与 A100 硬件 `__reduce_add_sync` 加速指令。
+- A100 实测验证：Warp Reduce、Prefix Sum Scan、Ballot Filter、Match Dedup。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)

@@ -33,6 +33,7 @@ done
 | `10_reduction_bench.cu`           | 10_reduction.md                   | Reduction 7 个 kernel 变体（K0 Interleaved → K6 CG+Grid）                           | `nvcc -arch=sm_80 -O3 -o reduction_bench 10_reduction_bench.cu`         | `./reduction_bench [--n 1048576]`                                                                 |
 | `11_tensor_core_gemm_bench.cu`    | 11_tensor_core_gemm.md            | WMMA API FP16 GEMM + TFLOPS 测量                                                    | `nvcc -arch=sm_80 -O3 -o gemm_bench 11_tensor_core_gemm_bench.cu`       | `./gemm_bench`                                                                                    |
 | `13_bank_conflict_bench.cu`       | 13_shared_memory_bank_conflict.md | Bank Conflict 三项测试：Stride 带宽退化、Transpose Padding 加速、Reduction 寻址方式 | `nvcc -arch=sm_80 -O3 -o bank_conflict_bench 13_bank_conflict_bench.cu` | `./bank_conflict_bench`                                                                           |
+| `14_warp_level_bench.cu`          | 14_warp_level_programming.md      | Warp 原语四项测试：Shuffle/SMEM Reduce、Prefix Sum Scan、Ballot Filter、Match Dedup | `nvcc -arch=sm_80 -O3 -o warp_bench 14_warp_level_bench.cu`             | `./warp_bench`                                                                                    |
 
 ## 使用 Nsight Compute 分析
 
