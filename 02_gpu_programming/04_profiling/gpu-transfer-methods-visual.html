@@ -90,32 +90,39 @@ function L1(){
 // ====== LAYER 2 ======
 function L2(){
   const g=E('g',{});
-  g.appendChild(T(500,26,'往返测试: A→B 再 B→A (串行交替, 非全双工)','tt'));
-  g.appendChild(T(500,46,'128 MB/方向 × 2 方向, 10 次迭代, 报告值为每方向等效速率','ts'));
+  g.appendChild(T(500,26,'测试结果: 往返 (P2P/CPU relay) + 单向 (Zero-Copy/UM)','tt'));
+  g.appendChild(T(500,46,'128 MB/方向, 10 次迭代, 报告值为每方向等效速率','ts'));
 
-  const D=[{n:'P2P 直连',t:10.04,bw:249,c:'#238636',r:'Tier1'},{n:'CPU relay',t:212.57,bw:11.76,c:'#d29922',r:'Tier2'},{n:'Zero-Copy',t:431.28,bw:2.90,c:'#db6d28',r:'Tier3'},{n:'Unified Memory',t:595.77,bw:2.10,c:'#da3633',r:'Tier3'}];
+  const D=[{n:'P2P 直连',t:10.04,bw:249,c:'#238636',r:'Tier1',rt:1},{n:'CPU relay',t:212.57,bw:11.76,c:'#d29922',r:'Tier2',rt:1},{n:'Zero-Copy',t:431.28,bw:2.90,c:'#db6d28',r:'Tier3',rt:0},{n:'Unified Memory',t:595.77,bw:2.10,c:'#da3633',r:'Tier3',rt:0}];
   const barX=175,barMaxW=700,barH=46,gap=28,startY=80,maxT=595.77;
 
   g.appendChild(L(barX,startY-12,barX+barMaxW,startY-12,'#8b949e',1));
   g.appendChild(T(barX+barMaxW+8,startY-8,'时间 →','tm'));
 
   D.forEach((d,i)=>{
-    const y=startY+i*(barH+gap),w=Math.max(80,(d.t/maxT)*barMaxW),hw=w/2;
+    const y=startY+i*(barH+gap),w=Math.max(80,(d.t/maxT)*barMaxW);
     g.appendChild(T(barX-10,y+barH/2+5,d.n+'  '+d.r,'tr tl'));
-    // A→B half (70% opacity), B→A half (full)
-    g.appendChild(R(barX,y,hw,barH,d.c,null,0,4));
-    g.appendChild(R(barX+hw,y,hw,barH,d.c,null,0,4));
-    g.appendChild(L(barX+hw,y,barX+hw,y+barH,'#fff',1,'4,3'));
-    // Labels
-    const fit=w>70;
-    g.appendChild(T(fit?barX+10:barX+w+8,fit?y+26:y+18,'A→B','tb'));
-    g.appendChild(T(fit?barX+hw+10:barX+w+8,fit?y+26:y+36,'B→A','tb'));
-    // Time + BW
+
+    if(d.rt){
+      // Round-trip: A→B (half-width, 70% opacity) + B→A (half-width, full)
+      const hw=w/2;
+      g.appendChild(R(barX,y,hw,barH,d.c,null,0,4));
+      g.appendChild(R(barX+hw,y,hw,barH,d.c,null,0,4));
+      g.appendChild(L(barX+hw,y,barX+hw,y+barH,'#fff',1,'4,3'));
+      const fit=w>70;
+      g.appendChild(T(fit?barX+10:barX+w+8,fit?y+26:y+18,'A→B','tb'));
+      g.appendChild(T(fit?barX+hw+10:barX+w+8,fit?y+26:y+36,'B→A','tb'));
+    } else {
+      // One-way: single bar (full opacity), no split
+      g.appendChild(R(barX,y,w,barH,d.c,null,0,4));
+      g.appendChild(T(w>70?barX+10:barX+w+8,y+26,'单向','tb'));
+    }
+
     const tx=barX+w+60;
     g.appendChild(T(tx,y+20,d.t.toFixed(1)+' ms','tl'));
     g.appendChild(T(tx,y+36,d.bw.toFixed(1)+' GB/s','tv'));
   });
-  g.appendChild(T(500,525,'半透明 = A→B    实色 = B→A    每方向等效速率 = 往返总数据量 / 往返总时间','tl'));
+  g.appendChild(T(500,525,'半透明/分栏 = 往返 (A→B→A)    实色 = 单向    报告值均为每方向等效速率','tl'));
   svg.appendChild(g);
 }
 
