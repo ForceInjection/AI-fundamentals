@@ -1,6 +1,8 @@
 # CUDA NUMA API 编程实践
 
 > 基于 Intel Xeon Platinum 8470Q (双路 NUMA) + RTX 5090 实际环境。本文聚焦 CUDA 中与 NUMA 相关的 API：pinned memory 分配策略、`cudaMemAdvise`、`cudaMemPrefetchAsync`，以及如何通过 CPU 亲和性绑定优化 H2D/D2H 带宽。
+>
+> **验证代码**：本文所有实测数据来自配套 Demo：[05_cuda_numa_demo.cu](code/05_cuda_numa_demo.cu)。用 `numactl --cpunodebind=0` vs `--cpunodebind=1` 分别运行，对比带宽差异即可验证 NUMA 效果。
 
 ---
 

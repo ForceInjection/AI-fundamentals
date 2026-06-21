@@ -1,6 +1,8 @@
 # GPU 原子操作与 PCIe 能力查询
 
 > 基于 RTX 5090 (Blackwell, CC 12.0) 和 A100-SXM4-80GB (Ampere, CC 8.0) 双平台实测。`cudaDeviceGetAttribute` 可查询 100+ 种设备属性，本文聚焦 PCIe 原子操作、Host Native Atomic 等底层硬件能力的查询方法。
+>
+> **验证代码**：本文所有实测数据来自配套工具：[06_device_attributes.cu](code/06_device_attributes.cu)。在任意 GPU 上编译运行即可查看完整的硬件能力清单。
 
 ---
 
