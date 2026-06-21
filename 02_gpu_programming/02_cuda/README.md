@@ -114,6 +114,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 案例：朴素 GEMM 从 Level 0 → Level 6 的完整调优过程（规划加速比 ~80×）。
 - 包含优化边界分析（边际收益递减、"够好了"的判断标准）。
 
+## 18. [CUDA 调试实战——从 cuda-gdb 到 compute-sanitizer](18_cuda_debugging.md)
+
+- 系统讲解 CUDA 调试工具链：`cuda-gdb`（断点、寄存器/Shared Memory 检查、NaN 定位）、`compute-sanitizer`（越界/race/未初始化检测、内存泄漏）。
+- `cudaError_t` 错误处理模式（同步 vs 异步 error、生产环境宏）。
+- 常见 Bug 排查 SOP：NaN、Hang、间歇性错误、内存泄漏。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
