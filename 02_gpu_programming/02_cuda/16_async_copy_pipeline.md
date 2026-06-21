@@ -50,6 +50,7 @@ SM 的计算单元在 Load 阶段**完全空闲**。Global Memory 延迟约 400n
 ### 1.2 本质：生产者-消费者问题
 
 Shared Memory 的使用模式是一个经典的生产者-消费者问题：
+
 - **生产者**：Load 操作——把数据从 HBM 搬到 Shared Memory
 - **消费者**：Compute 操作——从 Shared Memory 读取、计算
 
@@ -65,12 +66,12 @@ CPU 类比：软件流水线（Software Pipelining）——编译器的 loop opt
 
 `cp.async`（SM80+ / A100+）是 PTX 级别的异步拷贝指令。它与传统 `ld.shared` 的核心区别：
 
-| 特性 | `ld.shared` (传统) | `cp.async` (SM80+) |
-|------|-------------------|-------------------|
-| 执行方式 | 线程自己 load，等数据到达 | DMA 引擎搬运，线程不等 |
-| 数据路径 | 线程寄存器 → Shared Mem | Global Mem → Shared Mem（不经过寄存器！） |
-| 完成通知 | 隐式（线程到达时数据已就绪） | 显式（通过 `cp.async.wait_group` 或 pipeline barrier） |
-| 对线程的影响 | 阻塞（stall）当前指令直到数据到达 | 非阻塞——线程继续执行后续指令 |
+| 特性         | `ld.shared` (传统)                | `cp.async` (SM80+)                                     |
+| ------------ | --------------------------------- | ------------------------------------------------------ |
+| 执行方式     | 线程自己 load，等数据到达         | DMA 引擎搬运，线程不等                                 |
+| 数据路径     | 线程寄存器 → Shared Mem           | Global Mem → Shared Mem（不经过寄存器！）              |
+| 完成通知     | 隐式（线程到达时数据已就绪）      | 显式（通过 `cp.async.wait_group` 或 pipeline barrier） |
+| 对线程的影响 | 阻塞（stall）当前指令直到数据到达 | 非阻塞——线程继续执行后续指令                           |
 
 **关键洞察**：`cp.async` 走了 GPU 内部的 DMA 路径——数据从 HBM 直接进入 Shared Memory，**不占用线程的寄存器**。这意味着发起拷贝后，线程可以立即执行不依赖 Shared Memory 的其他指令（比如寄存器上的计算、或者 `cp.async` 另外一批数据）。
 
@@ -88,11 +89,11 @@ asm volatile(
 
 三种缓存策略变体（影响数据在 L1/L2 cache 中的留存方式）：
 
-| 变体 | 全称 | L2 行为 | 适用场景 |
-|------|------|---------|---------|
-| `cp.async.ca` | Cache-All | 数据保留在 L2 | 数据会被其他线程/block 复用 |
-| `cp.async.cg` | Cache-Global | 数据 evict L2 | 数据仅用一次，避免污染 L2 |
-| `cp.async` | 默认 | 同 `ca` | 默认保留在缓存层级 |
+| 变体          | 全称         | L2 行为       | 适用场景                    |
+| ------------- | ------------ | ------------- | --------------------------- |
+| `cp.async.ca` | Cache-All    | 数据保留在 L2 | 数据会被其他线程/block 复用 |
+| `cp.async.cg` | Cache-Global | 数据 evict L2 | 数据仅用一次，避免污染 L2   |
+| `cp.async`    | 默认         | 同 `ca`       | 默认保留在缓存层级          |
 
 大多数 tile-based kernel 用 **`cp.async.ca`**——因为 tile 数据大概率在 L2 里被后续的 block 重复使用（L2 是跨 SM 共享的）。
 
@@ -133,13 +134,13 @@ auto pipe = cuda::make_pipeline(cta, &pipe_state);
 
 Pipeline 对象管理一个固定容量的"飞行中"请求队列。核心操作：
 
-| 操作 | 角色 | 语义 |
-|------|------|------|
-| `pipe.producer_acquire()` | Producer | 获取下一个可用的 buffer slot（如果需要保证 buffer 空闲，内部可能等待） |
-| `cuda::memcpy_async(..., pipe)` | Producer | 发起异步拷贝，关联到一个 pipeline stage |
-| `pipe.producer_commit()` | Producer | 提交当前 stage 的拷贝（标记"这批数据已经发出"） |
-| `pipe.consumer_wait()` | Consumer | 等待下一个 stage 的数据到达 Shared Memory |
-| `pipe.consumer_release()` | Consumer | 释放已消费的 stage（让 producer_acquire 可以复用 buffer） |
+| 操作                            | 角色     | 语义                                                                   |
+| ------------------------------- | -------- | ---------------------------------------------------------------------- |
+| `pipe.producer_acquire()`       | Producer | 获取下一个可用的 buffer slot（如果需要保证 buffer 空闲，内部可能等待） |
+| `cuda::memcpy_async(..., pipe)` | Producer | 发起异步拷贝，关联到一个 pipeline stage                                |
+| `pipe.producer_commit()`        | Producer | 提交当前 stage 的拷贝（标记"这批数据已经发出"）                        |
+| `pipe.consumer_wait()`          | Consumer | 等待下一个 stage 的数据到达 Shared Memory                              |
+| `pipe.consumer_release()`       | Consumer | 释放已消费的 stage（让 producer_acquire 可以复用 buffer）              |
 
 ### 3.2 Producer-Consumer 时序
 
@@ -187,6 +188,7 @@ cuda::memcpy_async(group, smem_dst, gmem_src, sizeof(float) * n, pipe);
 ```
 
 参数：
+
 - `group`：`cooperative_groups::thread_block`——本 block 内的所有线程
 - `smem_dst`：目标 Shared Memory 地址
 - `gmem_src`：源 Global Memory 地址
@@ -284,6 +286,7 @@ Pipeline (2-stage):
 ### 5.1 为什么需要两个 Buffer
 
 如果只有一个 Shared Memory buffer：
+
 - Producer 写数据时，Consumer 不能读（数据不完整）
 - Consumer 读数据时，Producer 不能写（会破坏正在使用中的数据）
 
@@ -351,6 +354,7 @@ for (int k = 0; k < K; k += TILE_K) {
 ### 6.2 FlashAttention 的 Tile Pipeline
 
 FlashAttention 将 QKV 切分为 tile，沿 seq 维度迭代。每个迭代：
+
 1. Load Q tile（同步或异步）
 2. Load K/V tile（异步——下一批在算当前批时搬）
 3. Compute Attention Score on current K/V tile
@@ -361,6 +365,7 @@ Q tile 在整个外循环中不变——只需要一次同步 load。K/V tile �
 ### 6.3 通用模板：何时套用 Pipeline
 
 任何满足以下条件的 kernel 都适合 pipeline：
+
 1. **Tile-based**：数据可以切分为独立的 tile
 2. **循环中有 Load 和 Compute 两个分离的阶段**
 3. **Shared Memory 够用**（至少能装下 double buffer）
@@ -372,13 +377,13 @@ Q tile 在整个外循环中不变——只需要一次同步 load。K/V tile �
 
 ### 7.1 `memcpy_async` vs 手写 `cp.async` PTX
 
-| | `cuda::memcpy_async` | `cp.async` PTX inline asm |
-|--|---------------------|--------------------------|
-| 可读性 | 高（标准 C++） | 低 |
-| 可移植性 | 自动回退 SM70 | 仅 SM80+ |
-| 编译器优化 | 编译器可见、可优化 | 编译器屏障 |
-| 控制粒度 | 粗 | 细（cache 策略、size 精确控制） |
-| 生产推荐 | 首选 | 只在需要 `cg` cache mode 等精细控制时 |
+|            | `cuda::memcpy_async` | `cp.async` PTX inline asm             |
+| ---------- | -------------------- | ------------------------------------- |
+| 可读性     | 高（标准 C++）       | 低                                    |
+| 可移植性   | 自动回退 SM70        | 仅 SM80+                              |
+| 编译器优化 | 编译器可见、可优化   | 编译器屏障                            |
+| 控制粒度   | 粗                   | 细（cache 策略、size 精确控制）       |
+| 生产推荐   | 首选                 | 只在需要 `cg` cache mode 等精细控制时 |
 
 **建议**：用 `cuda::memcpy_async` 写第一版——可读、可移植、正确。当 ncu 显示 Global→Shared Memory 带宽仍有显著空隙时，再考虑手写 PTX。
 
@@ -402,6 +407,7 @@ Pipeline depth:
 ### 7.3 Shared Memory 预算
 
 Double buffering 使 SMEM 用量 **~2×**。对于 A100（164KB/SM）：
+
 - 64×64 FP32 GEMM double buffer: 64×64×4B×4 = **64KB** — 宽松
 - 128×128 FP32 GEMM double buffer: 128×128×4B×4 = **256KB** — 放不下！
 
@@ -428,18 +434,18 @@ Double buffering 使 SMEM 用量 **~2×**。对于 A100（164KB/SM）：
 
 ### 8.2 速查
 
-| 你想做什么 | 用哪个 | 最低 CC |
-|-----------|--------|---------|
-| 最简单的异步拷贝 | `cuda::memcpy_async` + `cuda::barrier` | 7.0（SM70+回退同步） |
-| 完整的 pipeline + double buffer | `cuda::memcpy_async` + `cuda::pipeline` | 7.0（回退同步）|
-| 精细控制 cache 策略（`cg`） | `cp.async.cg` PTX inline asm | 8.0 |
-| 最快的手工 pipeline | `cp.async` + `commit_group`/`wait_group` | 8.0 |
+| 你想做什么                      | 用哪个                                   | 最低 CC              |
+| ------------------------------- | ---------------------------------------- | -------------------- |
+| 最简单的异步拷贝                | `cuda::memcpy_async` + `cuda::barrier`   | 7.0（SM70+回退同步） |
+| 完整的 pipeline + double buffer | `cuda::memcpy_async` + `cuda::pipeline`  | 7.0（回退同步）      |
+| 精细控制 cache 策略（`cg`）     | `cp.async.cg` PTX inline asm             | 8.0                  |
+| 最快的手工 pipeline             | `cp.async` + `commit_group`/`wait_group` | 8.0                  |
 
 ### 8.3 与其他文章的衔接
 
-| 本文涉及的 | 详见 |
-|-----------|------|
-| Shared Memory 使用模式与 Bank Conflict | [#13 Shared Memory 与 Bank Conflict](13_shared_memory_bank_conflict.md) |
-| Tensor Core GEMM 与 bf16 async copy | [#11 Tensor Core GEMM](11_tensor_core_gemm.md) |
-| Global Memory 延迟与 HBM 带宽 | [#12 GPU 内存管理](12_gpu_memory_management.md) |
-| Cooperative Groups（`cuda::memcpy_async` 的 group 参数） | [#14 Warp-level Programming](14_warp_level_programming.md) |
+| 本文涉及的                                               | 详见                                                                    |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Shared Memory 使用模式与 Bank Conflict                   | [#13 Shared Memory 与 Bank Conflict](13_shared_memory_bank_conflict.md) |
+| Tensor Core GEMM 与 bf16 async copy                      | [#11 Tensor Core GEMM](11_tensor_core_gemm.md)                          |
+| Global Memory 延迟与 HBM 带宽                            | [#12 GPU 内存管理](12_gpu_memory_management.md)                         |
+| Cooperative Groups（`cuda::memcpy_async` 的 group 参数） | [#14 Warp-level Programming](14_warp_level_programming.md)              |

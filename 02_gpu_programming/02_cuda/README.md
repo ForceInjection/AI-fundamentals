@@ -108,6 +108,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 实战：BF16 GEMM 的 `cp.async` loop、FlashAttention 的 tile pipeline、通用 tile-based kernel 的 pipeline 模板。
 - A100 验证：1-stage sync vs 2-stage double buffer 对比（同步 `ld` 实现，加速比有限——证明异步 DMA 是 pipeline 收益的核心）。
 
+## 17. [CUDA 性能调优方法论——从 Roofline Model 到 ncu 诊断](17_roofline_optimization.md)
+
+- 系列收官文章，建立分级诊断框架：Roofline Model（天花板分析）→ ncu 三指标（瓶颈定位）→ 6 级逐级优化 Checklist。
+- 案例：朴素 GEMM 从 Level 0 → Level 6 的完整调优过程（规划加速比 ~80×）。
+- 包含优化边界分析（边际收益递减、"够好了"的判断标准）。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
