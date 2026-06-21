@@ -8,7 +8,7 @@ AI Fundamentals is a Chinese-language knowledge repository covering the full AI 
 
 - **License**: Apache 2.0
 - **Content** is organized in semantically numbered top-level directories (`01_hardware_architecture/` through `11_ai_native_everything/`, plus `98_llm_programming/` and `99_misc/`). Each directory corresponds to a major topic area with its own `README.md` portal.
-- **`02_dpu_programming/` and `02_gpu_programming/`** share the `02_` prefix — both are sub-modules under "底层计算与异构编程."
+- **`02_dpu_programming/`、`02_gpu_programming/` 和 `02_npu_programming/`** share the `02_` prefix — all three are sub-modules under "底层计算与异构编程."
 - **`AGENTS.md`** exists alongside this file and covers module-level architecture details for GitHub Copilot. This file focuses on project-level conventions that apply to all work in the repo.
 
 ## Commit conventions
@@ -51,3 +51,47 @@ These are primarily educational references, not a cohesive application. There is
 - Local links between documents use **relative paths**.
 - External links must remain accessible; validate with the `md-link-checker` Skill when modifying link-heavy files.
 - When restructuring documents or moving files, update all cross-references.
+
+## Writing conventions
+
+- **All content is in Chinese** (Simplified). Code comments, commit descriptions, and directory README portals are also in Chinese.
+- Major section headings in long-form articles often use **Chinese numerals** (一、二、三…) rather than Arabic numbers. Follow the existing heading style of the document you are editing.
+- Article series that follow a numbered sequence (e.g., `09_inference_system/reference_design/`) use zero-padded numeric prefixes with Chinese descriptive filenames: `01-背景与目标.md`, `02-集群规模分类与特征分析.md`. Maintain this convention when adding new entries to an existing series.
+- Interactive HTML visualizations (e.g., inference pipeline demos) placed alongside the markdown documents they complement should include a `.gif` preview in the same directory when possible.
+
+## Companion media files
+
+Markdown documents are frequently accompanied by:
+
+- **`.pptx` slide decks** — PowerPoint presentations that mirror or expand on the markdown content. Placed in the same directory as the `.md` file. When creating new technical deep-dives, consider whether a companion slide deck would be helpful.
+- **`.pdf` references** — Reference papers, whitepapers, or exported slide decks, typically in a `references/` subdirectory.
+- **`.gif` previews** — Animated previews of interactive HTML visualizations, placed alongside the `.html` file.
+- **`.ipynb` notebooks** — Jupyter notebooks with executable code demonstrations.
+
+## Project-specific skills
+
+This repo has a rich set of Skills available for content authoring and review. Use them when the task matches:
+
+| Skill | When to use |
+|---|---|
+| `doc-reviewer` | Review markdown docs — supports outline, content, asset, and format review types |
+| `md-link-checker` | Validate local and external links in markdown files |
+| `md-translator` | Translate markdown files to another language (adds language suffix to filename) |
+| `md-summarizer` | Generate structured Chinese summaries of markdown documents |
+| `tech-outline-planner` | Plan and structure new technical articles using context-first + process-narrative approach |
+| `update-submitter` | Analyze git changes and generate Conventional Commit messages |
+| `reference-organizer` | Format and organize reference links into structured citations |
+
+## Multi-IDE support
+
+The repo supports multiple AI-assisted IDEs beyond Claude Code:
+
+- **`.trae/`** — Trae IDE configuration (gitignored, created per-user)
+- **`.qoder/`** — Qoder IDE configuration with `agents/` and `skills/` subdirectories (gitignored, created per-user)
+- **`.claude/`** — Claude Code settings (gitignored, `settings.local.json` contains per-user permissions)
+
+These directories are all in `.gitignore` — they are local development environments, not repo content.
+
+## CI/CD
+
+This repo has **no GitHub Actions workflows or CI pipelines**. There is no build step, no linting, and no automated testing. Content quality is maintained through manual review (using the `doc-reviewer` skill).

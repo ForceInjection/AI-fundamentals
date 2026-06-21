@@ -82,6 +82,13 @@ _GPU Architecture and Programming — An Introduction_：
 - 配套可交互概念图：[gpu-memory-visual.html](gpu-memory-visual.html)（6 个图层：物理拓扑 / 内存层级 / DMA 路径 / MMU 页表 / 碎片化 / 跨进程共享）。
 - 包含 CPU ↔ GPU 命令对照附录和性能诊断决策树。
 
+## 13. [Shared Memory 与 Bank Conflict](13_shared_memory_bank_conflict.md)
+
+- 从 Bank 的硬件拓扑出发，系统讲解 Bank Conflict 的产生机制（stride 访问、列优先写入），以及三种消除方法：Padding（空间换时间）、Swizzle（地址 XOR 变换）、Reorder（算法层面重构）。
+- 包含三个实战场景拆解：GEMM 的 tile 宽度为什么必须是 32 的倍数、FlashAttention 中的 XOR Swizzle 应用、Reduction 的 Sequential Addressing 为何天然无冲突。
+- 跨架构迁移注意事项（V100 4B Bank → A100/H100 的 FP16 双通道 Bank 判定差异）。
+- 附带 Bank Conflict 诊断 SOP 和 Python 验证脚本。
+
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
