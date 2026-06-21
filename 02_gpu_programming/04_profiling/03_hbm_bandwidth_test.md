@@ -2,7 +2,7 @@
 
 > 基于 A100-SXM4-80GB (HBM2e) 实测。本文测量 device-to-device 内部带宽并与 PCIe 传输形成完整对比。
 >
-> **验证代码**：[03_hbm_bandwidth_bench.cu](code/03_hbm_bandwidth_bench.cu)——自动计算理论峰值并与 1 MB → 1 GB 实测 D2D 带宽对比。
+> **验证代码**：[03_hbm_bandwidth_bench.cu](code/03_hbm_bandwidth_bench.cu)——两种测试：cudaMemcpy D2D（Copy Engine ~40% 峰值）vs Kernel Read+Write（SM 驱动 ~71% 峰值）。揭示"为什么 cudaMemcpy 跑不满 HBM 带宽"。
 
 ---
 
@@ -193,6 +193,8 @@ transpose diagonal          , Throughput = 1135.33 GB/s
 - A100 的 D2D 带宽优势主要在大矩阵 (> 40 MB) 场景——更宽的位宽意味着更平稳的 DRAM page miss 处理
 
 > **nvbandwidth 验证**：在 A100 上安装 nvbandwidth 可获得更权威的基准数据（device_local_copy）。本文 transpose 结果受限于 4 MB 矩阵和 L2 cache 效应，不代表全范围 D2D 带宽。
+>
+> **Copy Engine vs SM**：`cudaMemcpy` D2D 走的是 GPU 的 Copy Engine（DMA），不是 SM 计算单元。Copy Engine 的带宽上限远低于 HBM 全带宽——A100 上 Copy Engine 只能到 ~40% 峰值（~818 GB/s），而 SM 驱动的 kernel 读写可到 ~71%（~1453 GB/s）。配套 benchmark 中同时对比了两种方法。
 
 ---
 
