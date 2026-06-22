@@ -1,8 +1,6 @@
 # CUDA 编程 (CUDA Programming)
 
-这个目录给出了理解 CUDA 所需的一个完整的入门回路：从 GPU 的分层执行模型出发，看硬件是怎么组织线程的；再回到 CUDA 核心这个计算单元本身，看单条指令如何被并行执行；然后引入 Streams，理解 GPU 上的异步并发；最后从 SIMT 过渡到 Tile-Based，看当代 GPU 编程范式是如何被 Tensor Core 推着向前演进的。
-
-下面的四篇文档基本就按这个顺序展开。
+这个目录覆盖了从零开始系统学习 CUDA 编程的完整路径：执行模型 → 核心架构 → 异步流 → 编程范式 → 内存管理 → 性能调优 → 调试。18 篇文章外加 12 个可运行 benchmark，全部在 A100 上实测验证。
 
 ## 1. [GPU 编程导论](01_gpu_programming_introduction.md)
 
@@ -97,7 +95,7 @@ _GPU Architecture and Programming — An Introduction_：
 
 ## 15. [Multi-GPU CUDA 编程——从 P2P 到 NCCL 的多卡协作](15_multi_gpu_programming.md)
 
-- 系统讲解多 GPU 编程体系：多 device 管理（`cudaSetDevice`）、Peer Access（`cudaDeviceEnablePeerAccess`）、P2P Memcpy（NVLink 269 GB/s vs CPU 中转 13 GB/s）、跨 GPU Stream/Event 同步。
+- 系统讲解多 GPU 编程体系：多 device 管理（`cudaSetDevice`）、Peer Access（`cudaDeviceEnablePeerAccess`）、P2P Memcpy（NVLink 249 GB/s vs CPU 中转 12 GB/s）、跨 GPU Stream/Event 同步。
 - 涵盖 NCCL 集合通信基础（`ncclAllReduce` 等）、拓扑感知（NVSwitch domain、`nvidia-smi topo -m`）。
 - A100 实测验证：Peer Access、P2P 带宽 20.7× 加速比、跨 GPU 同步、NCCL AllReduce。
 

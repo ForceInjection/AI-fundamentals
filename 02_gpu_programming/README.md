@@ -75,6 +75,8 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 - **nvbandwidth 实测带宽**：验证 HBM 和 PCIe 实测带宽是否接近理论上限，以排除硬件或拓扑层面的瓶颈。
 
 - [nvbandwidth 最佳实践](04_profiling/01_nvbandwidth_best_practices.md) - 深入了解和测量 GPU 的显存带宽与 PCIe 传输带宽。
+- [GPU 间数据传输方法实测](04_profiling/09_gpu_transfer_methods.md) - 4 种 GPU→GPU 传输方法 A100 实测，从 P2P (249 GB/s) 到 UM (2.1 GB/s)，差距 119×。含交互式可视化。
+- [Profiling 示例代码](04_profiling/code/README.md) - PCIe/HBM/传输效率的可运行 benchmark 集合。
 
 ---
 
