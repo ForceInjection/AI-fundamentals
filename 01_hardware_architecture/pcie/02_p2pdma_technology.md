@@ -458,38 +458,15 @@ lspci -vvv | grep ACSCtl | grep "+" || echo "  (none — all ACS disabled)"
 
 **禁用 ACS 的方法**：
 
-在裸机环境中，可以通过内核启动参数禁用 ACS 重定向功能（需 Linux Kernel 5.1+）。具体步骤如下：
+在裸机环境中，推荐使用两种方式禁用 ACS：
 
-1. **定位需要禁用 ACS 的 Root Port BDF**：
+**方法一：setpci 运行时禁用（推荐，无需重启）**
 
-   ```bash
-   # 查找所有启用了 ACS 的 PCI Bridge
-   $ lspci -vvv | grep -B 20 "ACSCtl:.*ReqRedir+" | grep "^[0-9a-f]\+:"
-   # 输出示例：
-   # 00:01.0 PCI bridge: Intel Corporation ...
-   # 00:02.0 PCI bridge: Intel Corporation ...
-   ```
+使用上文的一键脚本（`disable_acs.sh`），通过 `setpci -s $dev ECAP_ACS+06.w=0000` 运行时关闭 ACS。优势：即时生效，无需重启，适合调试和临时性能验证。
 
-2. **通过内核参数禁用 ACS**：
+**方法二：内核启动参数（需重启，需确认平台支持）**
 
-   在 GRUB 配置（`/etc/default/grub` 中的 `GRUB_CMDLINE_LINUX`）中添加以下参数（以 BDF `00:01.0` 和 `00:02.0` 为例）：
-
-   ```bash
-   # /etc/default/grub
-   GRUB_CMDLINE_LINUX="... pci=disable_acs_redir=00:01.0,00:02.0"
-   ```
-
-3. **更新 GRUB 并重启**：
-
-   ```bash
-   sudo update-grub  # Debian/Ubuntu
-   sudo grub2-mkconfig -o /boot/grub2/grub.cfg  # RHEL/CentOS
-   sudo reboot
-   ```
-
-4. **验证 ACS 已禁用**：
-
-   重启后再次检查 `ACSCtl` 输出，确认 `ReqRedir` 和 `CmpltRedir` 已变为 `-`。
+部分 Linux 发行版（尤其是 HPC 定制内核）提供了 `pci=disable_acs_redir` 参数。**注意：该参数并非上游 Linux mainline 标准特性**，仅在某些定制内核补丁中可用。使用前请通过 `cat /proc/cmdline` 确认当前内核是否支持。如果当前环境不支持此参数，请使用方法一（setpci）。
 
 ### 8.3 确认 IOMMU 模式
 
