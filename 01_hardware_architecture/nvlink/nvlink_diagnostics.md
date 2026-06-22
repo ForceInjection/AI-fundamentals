@@ -204,6 +204,8 @@ nvidia-smi nvlink --errorcounters -i 0
 
 - [`nvlink_intro.md`](nvlink_intro.md)：NVLink 1.0-6.0 版本演进、NVSwitch、SHARP 理论——本文是其诊断实操配套
 - [`02_pcie_bandwidth_measurement.md`](../../02_gpu_programming/04_profiling/02_pcie_bandwidth_measurement.md)：PCIe 带宽测试，可与 NVLink 带宽形成对比
+- [`09_gpu_transfer_methods.md`](../../02_gpu_programming/04_profiling/09_gpu_transfer_methods.md)：4 种 GPU 间传输方法 A100 实测，P2P 249 GB/s (83% 效率) 可验证 NVLink 是否正常
+- [`09_gpu_transfer_methods.cu`](../../02_gpu_programming/04_profiling/code/09_gpu_transfer_methods.cu)：可编译运行的 P2P 带宽 benchmark
 - [`06_device_attributes.md`](../../02_gpu_programming/02_cuda/06_device_attributes.md)：`cudaDeviceGetAttribute` 查 P2P 原子操作能力
 
 ---
