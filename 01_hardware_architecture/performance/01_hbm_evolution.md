@@ -73,10 +73,10 @@ A100 的 NVLink 3.0 设计逻辑与 HBM2e 一脉相承：**减少每条链路的
 | 位宽              | **5120-bit**         | 512-bit          | A100 宽 10 倍                       |
 | 频率              | 1593 MHz             | **14001 MHz**    | RTX 5090 高 8.8 倍                  |
 | 理论带宽          | **2039 GB/s**        | 1792 GB/s        | A100 高 14%                         |
-| 实测 D2D (4MB)    | **~1188 GB/s** (58%) | ~1341 GB/s (75%) | RTX 5090 L2 (96MB) 更大，4MB 全命中 |
-| 实测 D2D (大矩阵) | 预计 ~1500+          | ~762 GB/s        | A100 宽位宽优势在大矩阵体现         |
+| 实测 Copy Engine (1GB)  | ~818 GB/s (40%) | —          | cudaMemcpy D2D 走 DMA Copy Engine |
+| 实测 Kernel R+W (1GB)   | **~1453 GB/s** (71%) | —      | SM 驱动 read+write，接近 HBM 全带宽 |
 
-> 数据来源：[`03_hbm_bandwidth_test.md`](../../02_gpu_programming/04_profiling/03_hbm_bandwidth_test.md) + transpose 官方 sample 实测。
+> 数据来源：[`03_hbm_bandwidth_bench.cu`](../../02_gpu_programming/04_profiling/code/03_hbm_bandwidth_bench.cu) — 配套 benchmark，同时对比 Copy Engine vs Kernel 两种测法。Copy Engine（cudaMemcpy）只能到 ~40% 峰值，要用 SM 驱动的 kernel 才能测得真正的 HBM 带宽。
 
 ---
 
@@ -136,7 +136,8 @@ HBM 的性能来自于独特的物理结构：
 
 ## 参考
 
-- [HBM 显存带宽测试](../../02_gpu_programming/04_profiling/03_hbm_bandwidth_test.md) — A100 vs RTX 5090 实测对比
+- [HBM 显存带宽测试](../../02_gpu_programming/04_profiling/03_hbm_bandwidth_test.md) — A100 实测对比（含 Copy Engine vs Kernel 两种方法）
+- [HBM 带宽 Benchmark](../../02_gpu_programming/04_profiling/code/03_hbm_bandwidth_bench.cu) — 可编译运行的配套代码
 - [NVIDIA A100 架构详解](../nvidia/understand_gpu_architecture/07_a100_architecture.md) — HBM2e 在 A100 上的完整规格
 - [PCIe & NVLink 带宽速查表](05_pcie_nvlink_speed_reference.md) — 带宽全景对比
 - [AI 基础设施延迟金字塔](ai_latency_pyramid.md) — 各级延迟基准

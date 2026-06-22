@@ -211,3 +211,5 @@ cudaSetDevice(device_id);
 - [NVLink 技术入门](../nvlink/nvlink_intro.md)
 - [nvidia-smi 快速入门](../../03_ai_cluster_ops/01_gpu_ops/03_nvidia_smi_guide.md)
 - [CUDA Device Attribute 官方文档](https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html)
+- [PCIe 带宽实测](../../02_gpu_programming/04_profiling/02_pcie_bandwidth_measurement.md) — H2D/D2H 基准程序
+- [PCIe 带宽 Benchmark](../../02_gpu_programming/04_profiling/code/02_pcie_bandwidth_bench.cu) — 可编译运行的配套代码

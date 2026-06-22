@@ -141,3 +141,5 @@ NVMe 典型读取 = PCIe x4 理论单向 × ~0.85–0.90 (NVMe 协议开销)
 8. 本仓库 `gpudirect/02_gpudirect_p2p.md` — GPU 拓扑与 P2P 性能
 9. 本仓库 `gpudirect/01_gpudirect_technology.md` — GDS 数据路径与性能对比
 10. NVIDIA Blackwell Ultra Datasheet — B300 GPU 规格 (https://resources.nvidia.com/en-us-blackwell-architecture/blackwell-ultra-datasheet)
+11. [PCIe 带宽实测](../../02_gpu_programming/04_profiling/02_pcie_bandwidth_measurement.md) — 零依赖 H2D/D2H 基准程序
+12. [GPU 间数据传输方法实测](../../02_gpu_programming/04_profiling/09_gpu_transfer_methods.md) — 4 种方法 A100 实测对比
