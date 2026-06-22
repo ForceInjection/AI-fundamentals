@@ -315,3 +315,6 @@ GPUDirect P2P 不仅仅是一项数据传输技术，更是现代高性能计算
   虽然是一篇关于设置设备最佳实践的博客，但其中深入探讨了 UVA 和 P2P 上下文的重要性。
 - **NVIDIA GPUDirect Overview**: [GPUDirect Technology](https://developer.nvidia.com/gpudirect)  
   GPUDirect 技术家族的总览页面。
+- [GPU 间数据传输方法实测](../../02_gpu_programming/04_profiling/09_gpu_transfer_methods.md)：P2P 249 GB/s vs CPU 中转 12 GB/s A100 实测对比
+- [GPU 间数据传输 Benchmark](../../02_gpu_programming/04_profiling/code/09_gpu_transfer_methods.cu)：可编译运行的 P2P 带宽验证代码
+- [Multi-GPU CUDA 编程](../../02_gpu_programming/02_cuda/15_multi_gpu_programming.md)：P2P/NCCL/拓扑感知的完整编程指南

@@ -171,3 +171,4 @@ chmod +x test_gds.sh
 - [GPUDirect RDMA 技术详解](01_gpudirect_technology.md)
 - [GPUDirect P2P 技术详解](02_gpudirect_p2p.md)
 - [PCIe P2PDMA 技术介绍](../pcie/02_p2pdma_technology.md)
+- [GPU 内存管理 — GDS 原理与排查](../../02_gpu_programming/02_cuda/12_gpu_memory_management.md)（§5: GPUDirect Storage 的 DMA 链条与 cuFile err=5030 排查）
