@@ -433,6 +433,29 @@ Capabilities: [xxx] Access Control Services
 - **关键点**：关注 `ACSCtl` 中的 `ReqRedir` / `CmpltRedir` 是否为 `+`。若启用重定向，P2P 请求/完成可能被强制上行到 Root Port，导致性能显著降低或 P2P 不可用。[1]
 - 作为快速排障线索，NVIDIA NCCL 文档给出了“若 `grep ACSCtl` 输出中出现 `SrcValid+`，则 ACS 可能启用”的经验判断；更稳妥的做法仍是查看完整 `lspci -vvv` 输出并结合拓扑判断哪些 bridge 的 ACSCtl 位被打开。[4]
 
+**一键禁用 ACS 脚本**：
+
+将以下脚本保存为 `disable_acs.sh`，`chmod +x` 后以 root 运行，遍历所有支持 ACS 的设备并将其关闭：
+
+```bash
+#!/bin/bash
+# disable_acs.sh —— 遍历所有 PCI 设备，关闭 ACS (Access Control Services)
+# 用途: 裸机环境下消除 P2P 通信的 ACS 转发限制，恢复直达 PCIe Switch 的低延迟路径
+# 注意: 生产环境请在维护窗口执行，关闭 ACS 后验证 P2P 带宽是否恢复
+
+echo ">>> Scanning all PCI devices for ACS capability..."
+
+for dev in $(lspci -D | awk '{print $1}'); do
+    if lspci -s "$dev" -vvv 2>/dev/null | grep -q "ACSCap"; then
+        echo "  Disabling ACS on $dev ..."
+        setpci -s "$dev" ECAP_ACS+06.w=0000 2>/dev/null
+    fi
+done
+
+echo ">>> Done. Checking remaining ACS-enabled devices..."
+lspci -vvv | grep ACSCtl | grep "+" || echo "  (none — all ACS disabled)"
+```
+
 **禁用 ACS 的方法**：
 
 在裸机环境中，可以通过内核启动参数禁用 ACS 重定向功能（需 Linux Kernel 5.1+）。具体步骤如下：

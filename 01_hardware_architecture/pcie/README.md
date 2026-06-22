@@ -22,3 +22,5 @@ PCIe 是异构计算系统中最基础的互连标准——CPU↔GPU、GPU↔NIC
 
 - [NVLink 技术入门](../nvlink/nvlink_intro.md) — GPU 私有高速互连（PCIe 的高性能替代）
 - [GPUDirect P2P 技术详解](../gpudirect/02_gpudirect_p2p.md) — PCIe 之上的 P2P 通信
+- [PCIe 带宽实测](../../02_gpu_programming/04_profiling/02_pcie_bandwidth_measurement.md) — H2D/D2H 零依赖基准程序
+- [GPU 间数据传输方法实测](../../02_gpu_programming/04_profiling/09_gpu_transfer_methods.md) — P2P/CPU relay A100 实测对比
