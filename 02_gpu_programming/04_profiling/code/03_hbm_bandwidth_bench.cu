@@ -30,19 +30,8 @@
 
 // ---- Kernel-based bandwidth test (STREAM-style) ----
 
-// 简单的 copy kernel: out[i] = in[i] (读 + 写)
-__global__ void copy_kernel(const float * __restrict__ in, float * __restrict__ out, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n) out[idx] = in[idx];
-}
-
-// Read-only kernel: sum += in[i] (只读)
-__global__ void read_kernel(const float * __restrict__ in, float * __restrict__ out, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n) out[0] += in[idx];  // out[0] 是 atomic reduce target, 这里简化
-}
-
-// Read + Write kernel (STREAM copy): 读 in[i], 写 out[i]
+// Read + Write kernel (STREAM copy): 每个线程读 in[i], 写 out[i]
+// 测量 SM→HBM 的实际带宽 (read + write = 2× data movement)
 __global__ void read_write_kernel(const float * __restrict__ in, float * __restrict__ out, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
@@ -97,6 +86,10 @@ int main() {
     float *d_src, *d_dst;
     CHECK(cudaMalloc(&d_src, sizes[ns - 1]));
     CHECK(cudaMalloc(&d_dst, sizes[ns - 1]));
+
+    // warmup
+    cudaMemcpyAsync(d_dst, d_src, 1024*1024, cudaMemcpyDeviceToDevice, 0);
+    cudaDeviceSynchronize();
 
     printf("%-12s | %-15s | %-15s\n", "Size", "D2D (GB/s)", "% of peak");
     printf("-------------|------------------|------------------\n");

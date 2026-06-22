@@ -11,7 +11,7 @@
  *   P2P 直连 (cudaMemcpyPeer / cudaMemcpy D2D) — 往返 (同一路径, 两种等效 API)
  *   CPU relay (G→CPU→G)                        — 往返
  *   Zero-Copy (mapped host memory)              — 单向
- *   Unified Memory (prefetch)                   — 单向
+ *   Unified Memory (prefetch + D2D copy)        — 单向
  *
  * 编译: nvcc -arch=sm_80 -O3 -o gpu_transfer_methods 09_gpu_transfer_methods.cu
  * 运行: CUDA_VISIBLE_DEVICES=0,1 ./gpu_transfer_methods
@@ -26,7 +26,8 @@
 #define CS(c) do { cudaError_t r = c; if(r != cudaSuccess) { \
     printf("CUDA Err at %d: %s\n", __LINE__, cudaGetErrorString(r)); exit(1); } } while(0)
 #define N (128 * 1024 * 1024)  // 128 MB per direction
-#define IT 10
+
+static int iters = 50;  // default iterations, override via argv[1]
 
 float *d_a, *d_b;
 
@@ -36,12 +37,12 @@ double run(const char *name, void (*fn)(), int dirs) {
     cudaEvent_t start, stop; float ms;
     cudaEventCreate(&start); cudaEventCreate(&stop);
     CS(cudaEventRecord(start, 0));
-    for (int i = 0; i < IT; i++) fn();
+    for (int i = 0; i < iters; i++) fn();
     CS(cudaEventRecord(stop, 0));
     CS(cudaEventSynchronize(stop));
     cudaEventElapsedTime(&ms, start, stop);
     cudaEventDestroy(start); cudaEventDestroy(stop);
-    double bw = (double)dirs * (double)N * IT / (ms / 1000.0) / (1024*1024*1024);
+    double bw = (double)dirs * (double)N * iters / (ms / 1000.0) / (1024*1024*1024);
     printf("  %-35s  %8.2f ms  %8.2f GB/s\n", name, ms, bw);
     return bw;
 }
@@ -79,7 +80,7 @@ void m4_zc() {
     CS(cudaDeviceSynchronize());
 }
 
-/* ---- Method 5: Unified Memory — 单向 (GPU0 UM→GPU1) ---- */
+/* ---- Method 5: Unified Memory — prefetch + D2D copy (单向, GPU0→GPU1) ---- */
 float *d_um, *d_um2;
 void m5_um() {
     cudaSetDevice(0);
@@ -94,7 +95,9 @@ void m5_um() {
     CS(cudaDeviceSynchronize());
 }
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc > 1) iters = atoi(argv[1]);
+
     int devCount, canPeer;
     cudaGetDeviceCount(&devCount);
     if (devCount < 2) { printf("Need >=2 GPUs\n"); return 1; }

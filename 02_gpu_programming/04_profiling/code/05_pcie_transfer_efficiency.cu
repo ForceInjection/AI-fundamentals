@@ -23,15 +23,19 @@
 
 int main() {
     const size_t sizes[] = {
-        1024,             // 1 KB
-        4 * 1024,         // 4 KB
-        16 * 1024,        // 16 KB
-        64 * 1024,        // 64 KB
-        256 * 1024,       // 256 KB
-        512 * 1024,       // 512 KB
-        1024 * 1024       // 1 MB
+        1024,                    // 1 KB
+        4 * 1024,                // 4 KB
+        16 * 1024,               // 16 KB
+        64 * 1024,               // 64 KB
+        256 * 1024,              // 256 KB
+        512 * 1024,              // 512 KB
+        1024 * 1024,             // 1 MB
+        4 * 1024 * 1024,         // 4 MB
+        16 * 1024 * 1024,        // 16 MB
+        64 * 1024 * 1024,        // 64 MB
+        256 * 1024 * 1024,       // 256 MB
     };
-    const int n = 7;
+    const int n = sizeof(sizes) / sizeof(sizes[0]);
 
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, 0);
@@ -40,8 +44,12 @@ int main() {
     float *h, *d;
     cudaEvent_t s, e;
     float t;
-    CHECK(cudaMallocHost(&h, 2 * 1024 * 1024));
-    CHECK(cudaMalloc(&d, 2 * 1024 * 1024));
+    size_t max_sz = sizes[n - 1];
+    CHECK(cudaMallocHost(&h, max_sz));
+    CHECK(cudaMalloc(&d, max_sz));
+
+    // warmup: avoid CUDA init overhead on first measurement
+    CHECK(cudaMemcpy(d, h, 1024*1024, cudaMemcpyHostToDevice));
 
     printf("%-10s | %-12s | %-12s | %-12s\n",
            "Size", "H2D (GB/s)", "D2H (GB/s)", "Lat (us)");
@@ -51,7 +59,8 @@ int main() {
         size_t sz = sizes[i];
         int reps = sz < 65536 ? 100000 :
                    sz < 262144 ? 10000 :
-                   sz < 1048576 ? 5000 : 2000;
+                   sz < 1048576 ? 5000 :
+                   sz < 16777216 ? 2000 : 100;
 
         cudaEventCreate(&s);
         cudaEventCreate(&e);

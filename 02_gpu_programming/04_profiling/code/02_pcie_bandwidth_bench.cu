@@ -12,7 +12,6 @@
 
 #include <cuda_runtime.h>
 #include <stdio.h>
-#include <sys/time.h>
 
 #define CHECK(cmd) do {                                    \
     cudaError_t e = cmd;                                   \
@@ -21,12 +20,6 @@
         exit(1);                                           \
     }                                                      \
 } while(0)
-
-double get_time_ms() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
-}
 
 int main() {
     const size_t sizes[] = {
@@ -47,6 +40,10 @@ int main() {
     float *h_buf, *d_buf;
     CHECK(cudaMallocHost(&h_buf, sizes[num_sizes - 1]));
     CHECK(cudaMalloc(&d_buf, sizes[num_sizes - 1]));
+
+    // warmup: avoid CUDA context init overhead affecting first measurement
+    CHECK(cudaMemcpyAsync(d_buf, h_buf, 1024*1024, cudaMemcpyHostToDevice, 0));
+    cudaDeviceSynchronize();
 
     printf("%-12s | %-15s | %-15s\n", "Size", "H2D (GB/s)", "D2H (GB/s)");
     printf("-------------|------------------|------------------\n");
