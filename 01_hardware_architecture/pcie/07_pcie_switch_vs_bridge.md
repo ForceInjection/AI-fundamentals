@@ -8,19 +8,20 @@
 
 PCIe 体系中，Bridge 和 Switch 是最容易混淆的两个组件。两者 class code 相同 (0x060400)，但在硬件架构中的作用截然不同。
 
-**PCIe Bridge** 是 PCI/PCI-X 时代的遗留概念。它提供一条 1:1 的透明转发通道——上游总线的一个设备映射到下游总线的一个设备，不增加任何拓扑复杂度。Bridge 内部没有独立的 PCI bus，不参与 bus number 分配。大多数桌面和工作站系统中，GPU 前面就是一个简单的 Bridge。
+**PCIe Bridge** 是 PCI/PCI-X 时代的遗留概念。它提供一条 1:1 的透明转发通道——上游总线的一个端口映射到下游总线的一个设备。Bridge 在 PCI 配置空间中表现为 Type 1 Header，分配 1 个 secondary bus number（无 subordinate 扩展）。大多数桌面和工作站系统中，GPU 前面就是一个简单的 Bridge。
 
-**PCIe Switch** 是现代高速 I/O 的核心组件。它像一个"PCIe 交换机"——1 个上游端口连接 Root Complex，N 个下游端口各连接一个设备（GPU、NVMe 等）。Switch 内部有多条虚拟 PCI bus，每个下行端口分配独立的 bus number，允许各端口并行转发互不阻塞。Switch 还支持 ACS (Access Control Services) 来控制 P2P 流量的访问隔离。
+**PCIe Switch** 是现代高速 I/O 的核心组件。它像一个"PCIe 交换机"——1 个上游端口连接 Root Complex，N 个下游端口各连接一个设备（GPU、NVMe 等）。Switch 内部有多条 PCI bus：上游端口 1 个 + 下游端口各 1 个，每个下行端口分配独立的 secondary bus number，允许各端口并行转发互不阻塞。Switch 还支持 ACS (Access Control Services) 来控制 P2P 流量的访问隔离。
 
-|             | PCIe Bridge       | PCIe Switch                                                   |
-| ----------- | ----------------- | ------------------------------------------------------------- |
-| 端口数      | 2 (1 up + 1 down) | N+1 (1 up + N down)                                           |
-| 功能        | 透明转发          | 支持多播、ACS (Access Control Services)、VC (Virtual Channel) |
-| 延迟        | ~零               | 每个端口 ~100-200ns                                           |
-| 对 P2P 影响 | 通常支持          | 取决于 ACS 配置                                               |
-| sysfs 表现  | 下游 1 个 device  | 下游 ≥2 个 device                                             |
+|             | PCIe Bridge                        | PCIe Switch                                                           |
+| ----------- | ---------------------------------- | --------------------------------------------------------------------- |
+| 端口数      | 2 (1 up + 1 down)                  | N+1 (1 up + N down)                                                   |
+| Bus 数量    | 分配 1 个 secondary bus            | 分配 N+1 个 bus (上游 1 + 下游各 1)                                   |
+| 功能        | 透明转发                           | 支持多播、ACS (Access Control Services)、VC (Virtual Channel)         |
+| 延迟        | ~零                                | 每个端口 ~100-200ns                                                   |
+| 对 P2P 影响 | 通常支持                           | 取决于 ACS 配置                                                       |
+| sysfs 表现  | 下游 1 个 device                   | 下游 ≥2 个 device                                                     |
 
-Switch 内部有虚拟 PCI bus——每个下行端口分配独立的 bus number。Bridge 不分配新 bus。
+Switch 每个下行端口分配独立的 secondary bus number。Bridge 也分配 bus number，但只有一个。
 
 ---
 
