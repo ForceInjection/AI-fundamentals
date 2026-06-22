@@ -565,3 +565,5 @@ $ gdsio -f /mnt/nvme/testfile -d 0 -w 0 -s 10G -i 1M -x 0 -I 1 -t 4
 - [2] NVIDIA GPUDirect Storage Overview Guide（GDS 架构、收益表述、`nvidia-fs.ko`、`gdscheck`/`gdsio`、以及“在部分 NVMe 场景使用上游 PCI P2PDMA”说明）: [docs.nvidia.com](https://docs.nvidia.com/gpudirect-storage/overview-guide/index.html)
 - [3] Red Hat Enterprise Linux 9.2 Release Notes：`pcie_bus_perf`/`pcie_bus_peer2peer` 等参数描述（含 MRRS/MPS 说明）: [docs.redhat.com](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/9.2_release_notes/kernel_parameters_changes)
 - [4] NVIDIA NCCL Troubleshooting：ACS/VT-d/IOMMU 对 GPU Direct 的影响及排查建议: [docs.nvidia.com](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/troubleshooting.html)
+- [GPU 间数据传输方法实测](../../02_gpu_programming/04_profiling/09_gpu_transfer_methods.md)：P2P 249 GB/s vs CPU 中转 12 GB/s A100 实测对比
+- [GPU 间数据传输 Benchmark](../../02_gpu_programming/04_profiling/code/09_gpu_transfer_methods.cu)：可编译运行的 P2P 带宽验证代码
