@@ -170,6 +170,8 @@ ACS 是 PCIe 的安全特性，用于控制设备间的访问，防止恶意设�
 
 从排障角度，NVIDIA NCCL 文档建议通过 `lspci -vvv | grep ACSCtl` 检查 PCI bridge 上是否启用了 ACS，并在可行的裸机环境中禁用 ACS 以获得更好的 GPU Direct 通信性能。[4]
 
+> **重要前提**：禁用 ACS 只能消除软件/配置层面的 P2P 障碍。它**不能**让硬件本身不支持 P2P 的设备变得支持。如果两个设备位于不同的 Root Complex（跨 CPU Socket）或 PCIe 拓扑物理上不可达，禁用 ACS 不会改变任何事。在尝试禁用 ACS 之前，务必先用 `nvidia-smi topo -m` 确认 GPU 间连接类型为 PIX/PXB/NVLink（而非 SYS/NODE），再用 `lspci -tv` 确认 NVMe 和 GPU 在同一 PCIe 域内。硬件拓扑不支持时，CPU relay 仍然是唯一可用的兜底方案。
+
 ### 5.3 IOMMU 配置与设备隔离
 
 IOMMU（I/O Memory Management Unit）是影响 P2P 的另一个关键因素。它负责将设备发起 DMA 时使用的 IOVA（I/O Virtual Address）翻译为系统可路由的 DMA 地址，并提供隔离与保护。IOMMU 的存在并不改变 PCIe Switch 的转发逻辑，但它会影响“设备能否对某个地址发起合法 DMA 访问”以及 DMA 映射能否建立。对于 GPU Direct / P2P 类场景，错误的 IOMMU/VT-d 配置可能导致点对点流量被重定向或显著降速，甚至引发异常。[4]
@@ -440,8 +442,10 @@ Capabilities: [xxx] Access Control Services
 ```bash
 #!/bin/bash
 # disable_acs.sh —— 遍历所有 PCI 设备，关闭 ACS (Access Control Services)
-# 用途: 裸机环境下消除 P2P 通信的 ACS 转发限制，恢复直达 PCIe Switch 的低延迟路径
-# 注意: 生产环境请在维护窗口执行，关闭 ACS 后验证 P2P 带宽是否恢复
+# 用途: 裸机环境下消除 ACS 转发限制，让 P2P 流量可在 Switch 内部直达（而非上行到 Root Port）
+# 前提: 硬件拓扑本身必须支持 P2P（同一 PCIe Switch/Root Port 下）。如果设备位于
+#       不同 Root Complex（跨 CPU Socket），本脚本无效——那不是 ACS 的问题，是硬件限制。
+# 注意: 生产环境请在维护窗口执行，关闭后运行 P2P benchmark 验证带宽是否恢复
 
 echo ">>> Scanning all PCI devices for ACS capability..."
 
@@ -460,11 +464,11 @@ lspci -vvv | grep ACSCtl | grep "+" || echo "  (none — all ACS disabled)"
 
 在裸机环境中，推荐使用两种方式禁用 ACS：
 
-**方法一：setpci 运行时禁用（推荐，无需重启）**
+**方法一：setpci 运行时禁用（推荐，无需重启）：**
 
 使用上文的一键脚本（`disable_acs.sh`），通过 `setpci -s $dev ECAP_ACS+06.w=0000` 运行时关闭 ACS。优势：即时生效，无需重启，适合调试和临时性能验证。
 
-**方法二：内核启动参数（需重启，需确认平台支持）**
+**方法二：内核启动参数（需重启，需确认平台支持）：**
 
 部分 Linux 发行版（尤其是 HPC 定制内核）提供了 `pci=disable_acs_redir` 参数。**注意：该参数并非上游 Linux mainline 标准特性**，仅在某些定制内核补丁中可用。使用前请通过 `cat /proc/cmdline` 确认当前内核是否支持。如果当前环境不支持此参数，请使用方法一（setpci）。
 
