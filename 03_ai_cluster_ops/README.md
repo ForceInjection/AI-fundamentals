@@ -16,15 +16,16 @@
 
 ## 2. [GPU 基础运维](01_gpu_ops/README.md)
 
-集群里每一张卡的健康情况都得看得见。这一节围绕最常用的几类工具展开：查设备属性、看实时状态、理解那些容易被误读的指标。
+集群里每一张卡的健康情况都得看得见。这一节按场景组织：查设备能力 → 判断利用率 → 日常监控 → 健康检查 → 进程管理 → 驱动故障。
 
-一个常被忽视的点是：**`nvidia-smi` 里的 GPU-Util 并不等于 SM 真的在忙**——它只说明某段时间有 Kernel 在执行，并不代表算力被用满了。判断一张卡到底有没有被压榨干净，还得结合 SM occupancy、HBM 带宽、功耗等多个维度一起看。
+一个常被忽视的点是：**`nvidia-smi` 里的 GPU-Util 并不等于 SM 真的在忙**——它只说明某段时间有 Kernel 在执行，并不代表算力被用满了。三行命令的正确判断方式见 [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md)。
 
-- **设备查询**：[Device Query](01_gpu_ops/01_device_query.md) ——通过 CUDA API 拿到设备属性和硬件规格。
-- **状态监控**：[nvidia-smi 使用指南](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 使用指南](01_gpu_ops/04_nvtop_guide.md)——前者是日常第一入口，后者补齐交互式 TUI 体验。
-- **误区解读**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)——解释为什么高利用率 ≠ 高效计算。
-- **集群监控**：[DCGM 监控实操](01_gpu_ops/05_dcgm_monitoring.md) | [GPU 集群健康检查](01_gpu_ops/06_gpu_health_check.md)——前者是 NVIDIA 官方监控方案，后者是系统化三层检查流程。
-- **进程管理**：[GPU 进程与资源管理](01_gpu_ops/07_gpu_process_management.md)——Compute Mode、CUDA_VISIBLE_DEVICES 隔离、NUMA 亲和性绑定、显存泄漏排查。
+- **设备能力**：[GPU 设备属性查询](01_gpu_ops/01_device_query.md) | [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md) ——前者查 Kernel 设计参数，后者三行命令判断 GPU 真忙假忙。
+- **利用率**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)（原文翻译）——为什么 GPU-Util ≠ 算力利用率。
+- **日常监控**：[nvidia-smi 场景速查](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 监控工具](01_gpu_ops/04_nvtop_guide.md) ——前者按场景组织命令，后者提供交互式 TUI。
+- **长期趋势**：[DCGM 监控实操](01_gpu_ops/05_dcgm_monitoring.md) ——NVIDIA 官方方案，含 SM Active、DRAM Active、Prometheus 集成。
+- **故障排查**：[GPU 集群健康检查](01_gpu_ops/06_gpu_health_check.md) | [GPU 驱动故障速查](01_gpu_ops/08_gpu_driver_troubleshooting.md) ——前者 L1/L2/L3 三层检查，后者 nvidia-smi 不可用时的排查路径。
+- **资源管理**：[GPU 进程与资源管理](01_gpu_ops/07_gpu_process_management.md)——Compute Mode、MPS、CUDA_VISIBLE_DEVICES、NUMA 亲和性。
 
 ---
 
@@ -49,9 +50,9 @@ NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vL
 这一节围绕实战展开：
 
 - **理论入门**：[NCCL 技术理论](03_nccl/01_nccl_theory.md) | [NCCL 单卡验证](03_nccl/02_nccl_helloworld.md)——先理解原理，再动手跑通。
-- **基准测试**：[NCCL 基准测试方法论](03_nccl/04_nccl_benchmark.md)——用 `allreduce_perf` 跑出真实带宽，对照拓扑诊断通信瓶颈。
+- **使用教程**：[NCCL 测试验证工具说明](03_nccl/03_nccl_tutorial.md)——单节点 → 容器化 → 多节点完整流程。
+- **基准测试**：[NCCL 基准测试方法论](03_nccl/04_nccl_benchmark.md)——`allreduce_perf` 编译运行，A100 实测数据。
 - **调试工具**：[NCCL Debug 输出解读](03_nccl/05_nccl_debug_output.md)——`NCCL_DEBUG=INFO` 完整输出的逐行拆解与异常速查。
-- **多节点部署**：在裸机与 K8s 两种环境下把多机多卡的通信环境拉通，包含镜像、网络插件、拓扑感知调度等细节。
-- **性能优化**：PXN 模式、网络调优参数（`NCCL_IB_HCA`、`NCCL_SOCKET_IFNAME` 等）以及 GPU↔NIC 亲和性，是调优时最常触及的旋钮。
+- **通信路径压测**：[NCCL 通信路径逐层压测](03_nccl/06_nccl_path_benchmark.md)——H100 实测：NVLink (316 GB/s) → P2P Disable (24 GB/s)，跨 NUMA 无衰减验证。
 
-当你看到训练吞吐“突然掉了一截”却找不到代码原因时，十有八九要去 NCCL 这一层找答案。
+当你看到训练吞吐”突然掉了一截”却找不到代码原因时，十有八九要去 NCCL 这一层找答案。
