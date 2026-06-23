@@ -56,3 +56,14 @@ NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vL
 - **通信路径压测**：[NCCL 通信路径逐层压测](03_nccl/06_nccl_path_benchmark.md)——H100 实测：NVLink (316 GB/s) → P2P Disable (24 GB/s)，跨 NUMA 无衰减验证。
 
 当你看到训练吞吐”突然掉了一截”却找不到代码原因时，十有八九要去 NCCL 这一层找答案。
+
+---
+
+## 5. [GPU 调度——从”够不够”到”快不快”](04_gpu_scheduling/README.md)
+
+当 GPU 数量从 8 张扩展到 800 张，K8s 默认调度器把 GPU 当成标量资源 (`nvidia.com/gpu: 1`) 的模型就不够用了。训练作业的 TP 组需要同 NVSwitch 域的 GPU、All-or-Nothing 的 Gang Scheduling、以及 MIG/MPS/Time-slicing 对推理负载的共享表达。
+
+- **问题分析**：[GPU 调度为什么比 CPU 调度难](04_gpu_scheduling/01_gpu_scheduling_problem.md)——碎片化、拓扑、Gang Scheduling 三个盲区。
+- **Gang Scheduling**：[All-or-Nothing 调度](04_gpu_scheduling/02_gang_scheduling_for_training.md)——Volcano Coscheduling vs K8s SchedulingGates。
+- **拓扑感知**：[NVLink / NUMA / 跨节点](04_gpu_scheduling/03_topology_aware_scheduling.md)——三层拓扑感知 + NVIDIA Topology-Aware Scheduler。
+- **GPU 共享**：[MIG、MPS、Time-slicing](04_gpu_scheduling/04_gpu_sharing_scheduling.md)——三种共享方式在 K8s 中的资源表达。
