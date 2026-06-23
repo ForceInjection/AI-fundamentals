@@ -14,19 +14,42 @@ K8s 默认调度器做的是「装箱」——把每个 Pod 放到一个满足�
 
 为什么？因为 GPU 0/2/4/6 被占满了，剩余的是 GPU 1/3/5/7——这 4 张 GPU 虽然空闲，但在物理拓扑中分散在不同 PCIe switch 下、不同的 NVSwitch 域中、不同的 NUMA node 上。用它们做 TP=4 训练，NCCL 通信会在 PCIe 和 NUMA 之间来回跳跃，带宽从 ~450 GB/s 暴跌到 ~28 GB/s。
 
-```text
-节点 A (8 GPU)                 节点 B (8 GPU)
-┌─┬─┬─┬─┬─┬─┬─┬─┐          ┌─┬─┬─┬─┬─┬─┬─┬─┐
-│■│ │■│ │■│ │■│ │ ← 4 个   │ │ │ │ │ │ │ │ │ ← 完全空闲
-└─┴─┴─┴─┴─┴─┴─┴─┘          └─┴─┴─┴─┴─┴─┴─┴─┘
- 0 1 2 3 4 5 6 7            0 1 2 3 4 5 6 7
+**真实案例：一台 8×H100 的 NVSwitch 全互联拓扑**（`nvidia-smi topo -m` 实测）：
 
-新 Pod: 需要 4 GPU, TP=4
-K8s 看到: 节点 A 还有 4 GPU 空闲 → 调度到 A
-实际结果: GPU 1,3,5,7 不连续 → NVLink 分段 → 训练慢 10 倍
+```text
+        GPU0    GPU1    GPU2    GPU3    GPU4    GPU5    GPU6    GPU7
+GPU0     X      NV18    NV18    NV18    NV18    NV18    NV18    NV18
+GPU1    NV18     X      NV18    NV18    NV18    NV18    NV18    NV18
+...（所有 8 张 GPU 两两之间均为 NV18，同一个 NVSwitch 域）
 ```
 
-默认调度器看到的：`Allocatable: nvidia.com/gpu: 4, Requested: nvidia.com/gpu: 4 → OK`。但训练需要的是 4 张**在同一个 NVSwitch 域内**的 GPU，这个条件 `nvidia.com/gpu` 表达不了。
+所有 GPU 共享一个 NVSwitch 域，任意 pair 都有完整的 450 GB/s 单向带宽。现在假设 4 个单 GPU 推理 Pod 分别占用了 GPU 0、2、4、6：
+
+```text
+节点 A (8×H100, NVSwitch 全互联)
+┌─┬─┬─┬─┬─┬─┬─┬─┐
+│■│ │■│ │■│ │■│ │  ← 4 个推理 Pod 各占一张 GPU
+└─┴─┴─┴─┴─┴─┴─┴─┘
+ 0 1 2 3 4 5 6 7
+
+剩余空闲: GPU 1,3,5,7 (4 张)
+NVLink 实测带宽: 任意 pair ~316 GB/s (all_reduce bus_bw)
+```
+
+此时提交一个 TP=4 的训练作业，请求 4 张 GPU。K8s 默认调度器看到 `Allocatable: 4, Requested: 4 → OK`，调度成功。NVLink 实测也正常——**因为这台 H100 的 8 张 GPU 全部在同一个 NVSwitch 域内**，GPU 1/3/5/7 之间同样是 NVLink 全速互联，训练不受影响。
+
+但如果把同样的场景放到一台 **A100 8 GPU（两个 NVSwitch 域，每 4 张 GPU 一组）** 上：
+
+```text
+节点 B (8×A100, 2 个 NVSwitch 域)
+NVSwitch 域 1 (GPU 0-3):  两两 NVLink ~600 GB/s 双向
+NVSwitch 域 2 (GPU 4-7):  两两 NVLink ~600 GB/s 双向
+跨域 (GPU 0↔4):          PCIe P2P ~32 GB/s  ← 只有 NVLink 的 1/10-1/5
+```
+
+此时 GPU 0/2/4/6 被占用后，剩余的 GPU 1/3/5/7 分布在两个 NVSwitch 域中。TP=4 作业被调度到 GPU 1,3（域 1）和 GPU 5,7（域 2），跨域通信走 PCIe——训练吞吐从 90% 利用率跌到 30%。
+
+默认调度器在两个场景下看到的**完全一样**：`Allocatable: 4, Requested: 4 → OK`。但实际结果天差地别——前者正常训练，后者慢 3 倍。`nvidia.com/gpu` 表达不了 NVSwitch 域的拓扑边界。
 
 解决方案方向：拓扑感知调度 + 碎片整理（重调度/deschedule 低优先级单 GPU 作业）。
 
