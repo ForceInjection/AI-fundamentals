@@ -1,0 +1,63 @@
+<svg viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 10px; fill: #8b949e; }
+    .axis { stroke: #30363d; stroke-width: 1; }
+    .grid { stroke: #21262d; stroke-width: .5; stroke-dasharray: 3 4; }
+    .nvlink { fill: #58a6ff; stroke: #58a6ff; stroke-width: 2; fill-opacity: 0; }
+    .nvlink-dot { fill: #58a6ff; stroke: none; }
+    .p2poff { fill: #f85149; stroke: #f85149; stroke-width: 2; fill-opacity: 0; stroke-dasharray: 4 3; }
+    .p2poff-dot { fill: #f85149; stroke: none; }
+    .legend text { font-size: 10px; fill: #c9d1d9; }
+  </style>
+
+  <!-- Axes -->
+  <line class="axis" x1="50" y1="260" x2="490" y2="260"/>
+  <line class="axis" x1="50" y1="20" x2="50" y2="260"/>
+
+  <!-- Y-axis labels &amp; grid -->
+  <text x="42" y="264" text-anchor="end">0</text>
+  <line class="grid" x1="50" y1="260" x2="490" y2="260"/>
+  <text x="42" y="204" text-anchor="end">80</text>
+  <line class="grid" x1="50" y1="200" x2="490" y2="200"/>
+  <text x="42" y="144" text-anchor="end">160</text>
+  <line class="grid" x1="50" y1="140" x2="490" y2="140"/>
+  <text x="42" y="84" text-anchor="end">240</text>
+  <line class="grid" x1="50" y1="80" x2="490" y2="80"/>
+  <text x="42" y="44" text-anchor="end">320</text>
+  <line class="grid" x1="50" y1="40" x2="490" y2="40"/>
+  <text x="42" y="24" text-anchor="end">GB/s</text>
+
+  <!-- NVLink dots -->
+  <circle class="nvlink-dot" cx="60" cy="244" r="3.5"/>
+  <circle class="nvlink-dot" cx="140" cy="142" r="3.5"/>
+  <circle class="nvlink-dot" cx="240" cy="77" r="3.5"/>
+  <circle class="nvlink-dot" cx="360" cy="57" r="3.5"/>
+  <circle class="nvlink-dot" cx="460" cy="43" r="3.5"/>
+
+  <!-- NVLink line -->
+  <polyline class="nvlink" points="60,244 140,142 240,77 360,57 460,43"/>
+
+  <!-- P2P Disabled dots -->
+  <circle class="p2poff-dot" cx="60" cy="244" r="3.5"/>
+  <circle class="p2poff-dot" cx="140" cy="244" r="3.5"/>
+  <circle class="p2poff-dot" cx="240" cy="244" r="3.5"/>
+  <circle class="p2poff-dot" cx="360" cy="244" r="3.5"/>
+  <circle class="p2poff-dot" cx="460" cy="244" r="3.5"/>
+
+  <!-- P2P Disabled line -->
+  <polyline class="p2poff" points="60,244 140,244 240,244 360,244 460,244"/>
+
+  <!-- X-axis labels -->
+  <text x="60" y="278" text-anchor="middle">1 MB</text>
+  <text x="140" y="278" text-anchor="middle">8 MB</text>
+  <text x="240" y="278" text-anchor="middle">64 MB</text>
+  <text x="360" y="278" text-anchor="middle">256 MB</text>
+  <text x="460" y="278" text-anchor="middle">512 MB</text>
+  <text x="270" y="296" text-anchor="middle" font-size="9">张量大小（横轴非线性）</text>
+
+  <!-- Legend -->
+  <rect x="280" y="205" width="12" height="12" rx="2" fill="#58a6ff"/>
+  <text x="298" y="215" class="legend">NVLink (3 对 GPU, ~316 GB/s @ 512MB)</text>
+  <rect x="280" y="222" width="12" height="12" rx="2" fill="#f85149"/>
+  <text x="298" y="232" class="legend">P2P Disabled (~24 GB/s)</text>
+</svg>

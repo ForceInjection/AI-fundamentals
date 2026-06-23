@@ -189,34 +189,10 @@ nvcc -I/usr/include \
 
 ---
 
-## 5. 常用 NCCL 环境变量
+## 5. 下一步
 
-单卡场景基本不需要调参，了解即可：
+单卡验证通过后，进阶路径：
 
-| 变量                 | 说明            | 示例                    |
-| -------------------- | --------------- | ----------------------- |
-| `NCCL_DEBUG`         | 日志级别        | `INFO`, `WARN`, `TRACE` |
-| `NCCL_DEBUG_FILE`    | 日志输出文件    | `/tmp/nccl-%h.log`      |
-| `NCCL_IB_DISABLE`    | 禁用 InfiniBand | `0` / `1`               |
-| `NCCL_SOCKET_IFNAME` | 指定网络接口    | `eth0`                  |
-| `NCCL_P2P_DISABLE`   | 禁用 P2P 传输   | `0` / `1`               |
-
-调试示例：
-
-```bash
-NCCL_DEBUG=INFO /tmp/nccl_hello
-```
-
----
-
-## 6. 与 nccl-tests 的关系
-
-`nccl-tests` 是 NVIDIA 官方的端到端性能测试套件，需要多 GPU 才能发挥价值。如果后续升级到多卡环境：
-
-```bash
-git clone https://github.com/NVIDIA/nccl-tests.git
-cd nccl-tests && make MPI=0 CUDA_HOME=/usr/local/cuda
-./build/all_reduce_perf -b 8 -e 128M -f 2 -g 2  # 2 GPU 测试
-```
-
-本文档的 hello world 程序提供的是最基础的安装验证，确保 NCCL 库在编译和运行时路径均正确。
+- **多卡基准测试** → [NCCL 基准测试方法论](04_nccl_benchmark.md)
+- **通信路径压测** → [NCCL 通信路径逐层压测](06_nccl_path_benchmark.md)
+- **Debug 排障** → [NCCL Debug 输出实战解读](05_nccl_debug_output.md)

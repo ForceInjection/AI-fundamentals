@@ -160,25 +160,7 @@ fi
 
 ---
 
-## 6. 关键 NCCL 环境变量
-
-| 变量                  | 作用             | 建议值 (A100)                         |
-| --------------------- | ---------------- | ------------------------------------- |
-| `NCCL_DEBUG`          | 日志级别         | `INFO` (排查时), `WARN` (日常)        |
-| `NCCL_P2P_LEVEL`      | P2P 使用策略     | `NVL` (优先 NVLink)                   |
-| `NCCL_IB_DISABLE`     | 禁用 InfiniBand  | `1` (纯单机 NVLink 测试)              |
-| `NCCL_SOCKET_IFNAME`  | 网卡接口         | 多节点时必须指定                      |
-| `NCCL_TOPO_DUMP_FILE` | 导出拓扑图 (XML) | 拓扑诊断用                            |
-| `NCCL_ALGO`           | 强制指定算法     | `Tree` / `Ring`（通常让 NCCL 自动选） |
-
-```bash
-# 典型调试组合
-NCCL_DEBUG=INFO NCCL_P2P_LEVEL=NVL ./build/allreduce_perf -b 1G -e 2G -g 4
-```
-
----
-
-## 7. 相关文档
+## 6. 参考
 
 - [`01_nccl_theory.md`](01_nccl_theory.md)：NCCL 算法理论（AllReduce/RDMA/性能建模）
 - [`02_nccl_helloworld.md`](02_nccl_helloworld.md)：单卡 NCCL 验证

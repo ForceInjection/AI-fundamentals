@@ -71,9 +71,47 @@ log_header() {
 # 统一配置管理器 - 消除重复代码和提升维护性
 # =============================================================================
 
+# Bash 版本检查
+if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
+    echo "错误: 需要 Bash 4.0+ (当前: $BASH_VERSION)。macOS 用户请用 brew install bash 升级。" >&2
+    exit 1
+fi
+
 # NCCL 配置管理器 - 统一管理所有配置项
 declare -A NCCL_CONFIG_CACHE
 declare -A SYSTEM_INFO_CACHE
+
+# 统一的 NVLink 检测（所有调用方复用）
+# 返回 0 = NVLink 活跃可用，1 = 不可用。同时设置 DETECTED_NVLINK_{AVAILABLE,COUNT,BANDWIDTH}
+detect_nvlink() {
+    DETECTED_NVLINK_AVAILABLE=false
+    DETECTED_NVLINK_COUNT=0
+    DETECTED_NVLINK_BANDWIDTH=""
+
+    command -v nvidia-smi >/dev/null 2>&1 || return 1
+    local gpu_count=$(nvidia-smi -L 2>/dev/null | wc -l)
+    [ "$gpu_count" -gt 1 ] || return 1
+
+    # 方法1：活跃 NVLink（动态状态）
+    if nvidia-smi nvlink --status &>/dev/null; then
+        local count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null || echo "0")
+        count=$(echo "$count" | tr -d ' \n\r\t')
+        if [[ "$count" =~ ^[0-9]+$ ]] && [ "$count" -gt 0 ]; then
+            DETECTED_NVLINK_AVAILABLE=true
+            DETECTED_NVLINK_COUNT=$count
+            DETECTED_NVLINK_BANDWIDTH=$(nvidia-smi nvlink --status | grep "GB/s" | head -1 | grep -oE "[0-9]+\.[0-9]+ GB/s" | head -1)
+            return 0
+        fi
+    fi
+
+    # 方法2：静态拓扑（备选）
+    local topo_output=$(nvidia-smi topo -m 2>/dev/null || echo "")
+    if [ -n "$topo_output" ] && echo "$topo_output" | grep -qE "NV[0-9]+"; then
+        DETECTED_NVLINK_AVAILABLE=true
+        return 0  # 硬件存在但可能未激活
+    fi
+    return 1
+}
 
 # 缓存系统信息，避免重复调用
 cache_system_info() {
@@ -84,25 +122,13 @@ cache_system_info() {
             SYSTEM_INFO_CACHE[gpu_count]=0
         fi
     fi
-    
+
     if [ -z "${SYSTEM_INFO_CACHE[nvlink_available]:-}" ]; then
-        SYSTEM_INFO_CACHE[nvlink_available]=false
-        SYSTEM_INFO_CACHE[nvlink_count]=0
-        
-        if [ "${SYSTEM_INFO_CACHE[gpu_count]}" -gt 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
-            # 统一使用 nvidia-smi nvlink --status 命令，与主检测逻辑保持一致
-            if nvidia-smi nvlink --status &>/dev/null; then
-                # 检测显示带宽的NVLink（如 "26.562 GB/s"）
-                local nvlink_count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null || echo "0")
-                nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
-                if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
-                    SYSTEM_INFO_CACHE[nvlink_available]=true
-                    SYSTEM_INFO_CACHE[nvlink_count]=$nvlink_count
-                fi
-            fi
-        fi
+        detect_nvlink
+        SYSTEM_INFO_CACHE[nvlink_available]=$DETECTED_NVLINK_AVAILABLE
+        SYSTEM_INFO_CACHE[nvlink_count]=$DETECTED_NVLINK_COUNT
     fi
-    
+
     if [ -z "${SYSTEM_INFO_CACHE[ib_available]:-}" ]; then
         SYSTEM_INFO_CACHE[ib_available]=false
         if command -v ibv_devinfo >/dev/null 2>&1; then
@@ -914,44 +940,17 @@ setup_auto_network() {
     
     # ========== 第一优先级：检测 NVLink (仅单节点) ==========
     if [ "$MULTI_NODE_MODE" = false ]; then
-        local nvlink_available=false
-        local nvlink_active=false
-        if command -v nvidia-smi >/dev/null 2>&1; then
-            local gpu_count=$(nvidia-smi -L | wc -l)
-            if [ "$gpu_count" -gt 1 ]; then
-                # 方法1：检测活跃的NVLink连接（动态状态）- 这是最可靠的方法
-                if nvidia-smi nvlink --status &>/dev/null; then
-                    # 检测显示带宽的NVLink（如 "26.562 GB/s"）
-                    local nvlink_count=$(nvidia-smi nvlink --status | grep -c "GB/s" 2>/dev/null)
-    nvlink_count=${nvlink_count:-0}
-                    # 清理可能的空格和换行符
-                    nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
-                    # 确保是数字
-                    if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
-                        nvlink_available=true
-                        nvlink_active=true
-                        # 获取平均带宽信息
-                        local avg_bandwidth=$(nvidia-smi nvlink --status | grep "GB/s" | head -1 | grep -oE "[0-9]+\.[0-9]+ GB/s" | head -1)
-                        log_success "检测到 $nvlink_count 个活跃的 NVLink 连接 (带宽: $avg_bandwidth)"
-                        log_success "自动选择 NVLink 网络 (最高优先级)"
-                        configure_nvlink_settings "$OPTIMIZATION_LEVEL"
-                        return 0
-                    fi
-                fi
-                
-                # 方法2：检测GPU拓扑中的NVLink硬件（静态拓扑）- 仅作为备选检测
-                local topo_output=$(nvidia-smi topo -m 2>/dev/null || echo "")
-                if [ -n "$topo_output" ] && echo "$topo_output" | grep -qE "NV[0-9]+"; then
-                    nvlink_available=true
-                    local nvlink_connections=$(echo "$topo_output" | grep -oE "NV[0-9]+" | sort -u | tr '\n' ' ')
-                    log_info "检测到 NVLink 硬件拓扑: $nvlink_connections"
-                    log_warning "NVLink 硬件可用但当前未激活，可能被其他进程占用或需要GPU负载触发"
-                    log_info "继续检测 PCIe P2P 作为备选方案..."
-                    # 不直接返回，继续检测 PCIe P2P
-                fi
-            fi
+        if detect_nvlink; then
+            log_success "检测到 ${DETECTED_NVLINK_COUNT} 个活跃的 NVLink 连接 (带宽: ${DETECTED_NVLINK_BANDWIDTH})"
+            log_success "自动选择 NVLink 网络 (最高优先级)"
+            configure_nvlink_settings "$OPTIMIZATION_LEVEL"
+            return 0
+        elif [ "$DETECTED_NVLINK_AVAILABLE" = true ]; then
+            log_warning "NVLink 硬件可用但当前未激活"
+            log_info "继续检测 PCIe P2P 作为备选方案..."
+        else
+            log_info "NVLink 检测: 不可用"
         fi
-        log_info "NVLink 检测: 硬件$([ "$nvlink_available" = true ] && echo "可用" || echo "不可用"), 激活状态$([ "$nvlink_active" = true ] && echo "活跃" || echo "未激活")"
     else
         log_info "多节点模式: 跳过 NVLink 检测"
     fi
@@ -1186,82 +1185,25 @@ setup_nvlink_network() {
     fi
     
     # ========== 硬件检查 ==========
-    local nvlink_available=false
-    local nvlink_active=false
-    local gpu_count=0
-    local nvlink_error=""
-    
-    # 检查 nvidia-smi 是否可用
     if ! command -v nvidia-smi >/dev/null 2>&1; then
-        nvlink_error="nvidia-smi 命令不可用，请安装 NVIDIA 驱动"
-        log_error "硬件检查失败: $nvlink_error"
-        log_error "无法强制使用 NVLink 网络"
-        log_info "解决方案:"
-        log_info "  1. 安装 NVIDIA 驱动"
-        log_info "  2. 或使用其他网络后端: --network auto 或 --network ethernet"
+        log_error "硬件检查失败: nvidia-smi 不可用"
         exit 1
     fi
-    
-    # 检查 GPU 数量
-    if ! gpu_count=$(nvidia-smi -L | wc -l 2>/dev/null); then
-        nvlink_error="无法获取 GPU 信息"
-        log_error "硬件检查失败: $nvlink_error"
-        log_error "无法强制使用 NVLink 网络"
-        log_info "解决方案:"
-        log_info "  1. 安装 NVIDIA 驱动"
-        log_info "  2. 或使用其他网络后端: --network auto 或 --network pcie"
-        exit 1
-    fi
-    
+
+    local gpu_count=$(nvidia-smi -L 2>/dev/null | wc -l)
     if [ "$gpu_count" -lt 2 ]; then
-        nvlink_error="检测到 $gpu_count 个 GPU，NVLink 需要至少 2 个 GPU"
-        log_error "硬件检查失败: $nvlink_error"
-        log_error "无法强制使用 NVLink 网络"
-        log_info "解决方案:"
-        log_info "  1. 使用多 GPU 系统"
-        log_info "  2. 或使用单 GPU 兼容的网络后端: --network ethernet"
+        log_error "硬件检查失败: 仅 $gpu_count 个 GPU，NVLink 需要 ≥2"
         exit 1
     fi
-    
     log_success "检测到 $gpu_count 个 GPU"
-    
-    # 检查 NVLink 硬件可用性
-    if nvidia-smi nvlink --status &>/dev/null; then
-        # 检测活跃的 NVLink 连接
-        local nvlink_count=$(nvidia-smi nvlink --status 2>/dev/null | grep -c "GB/s" 2>/dev/null)
-        nvlink_count=${nvlink_count:-0}
-        nvlink_count=$(echo "$nvlink_count" | tr -d ' \n\r\t')
-        
-        if [[ "$nvlink_count" =~ ^[0-9]+$ ]] && [ "$nvlink_count" -gt 0 ]; then
-            nvlink_available=true
-            nvlink_active=true
-            local avg_bandwidth=$(nvidia-smi nvlink --status 2>/dev/null | grep "GB/s" | head -1 | grep -oE "[0-9]+\.[0-9]+ GB/s" | head -1)
-            log_success "检测到 $nvlink_count 个活跃的 NVLink 连接 (带宽: $avg_bandwidth)"
-        else
-            # 检查 NVLink 硬件拓扑
-            local topo_output=$(nvidia-smi topo -m 2>/dev/null || echo "")
-            if [ -n "$topo_output" ] && echo "$topo_output" | grep -qE "NV[0-9]+"; then
-                nvlink_available=true
-                nvlink_error="NVLink 硬件可用但当前未激活，可能被其他进程占用或需要GPU负载触发"
-                log_warning "$nvlink_error"
-                nvlink_error="未检测到 NVLink 硬件拓扑"
-            fi
-        fi
-    else
-        nvlink_error="nvidia-smi nvlink 命令执行失败，可能不支持 NVLink"
-    fi
-    
-    # 如果 NVLink 不可用，直接退出
-    if [ "$nvlink_available" = false ] || [ "$nvlink_active" = false ]; then
-        log_error "硬件检查失败: $nvlink_error"
-        log_error "无法强制使用 NVLink 网络"
-        log_info "解决方案:"
-        log_info "  1. 安装 NVIDIA 驱动"
-        log_info "  2. 检查 NVLink 硬件连接"
-        log_info "  3. 或使用其他网络后端: --network auto 或 --network pcie"
+
+    if ! detect_nvlink; then
+        log_error "硬件检查失败: 未检测到活跃的 NVLink 连接"
+        log_info "解决方案: 检查 NVLink 硬件 / 使用 --network auto 或 --network pcie"
         exit 1
     fi
-    
+    log_success "检测到 ${DETECTED_NVLINK_COUNT} 个活跃的 NVLink 连接 (带宽: ${DETECTED_NVLINK_BANDWIDTH})"
+
     configure_nvlink_settings "$OPTIMIZATION_LEVEL"
 }
 
@@ -2470,7 +2412,7 @@ generate_summary() {
     
     if [ "$error_count" -eq 0 ]; then
         log_success "✅ NCCL 测试成功完成"
-        log_info "InfiniBand 网络可以正常用于 NCCL 通信"
+        log_info "网络后端: $NETWORK_BACKEND"
     else
         log_error "❌ NCCL 测试发现问题"
         log_info "请检查错误日志并解决相关问题"
@@ -2529,7 +2471,8 @@ main() {
     fi
     
     # 4. 生成报告和总结
-    generate_report >/dev/null
+    local report_path=$(generate_report)
+    log_info "测试报告: $report_path"
     generate_summary
     
     if $step_failed; then

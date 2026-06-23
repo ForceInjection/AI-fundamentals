@@ -339,21 +339,24 @@ main() {
     log_header "NCCL通信路径验证"
     if [ "$NO_TEST" = true ]; then
         log_info "跳过NCCL实际测试（--no-test 参数）"
-    elif [ -f "./nccl_benchmark.sh" ]; then
+    else
+        local bench_script="$(dirname "$0")/nccl_benchmark.sh"
+        if [ -f "$bench_script" ]; then
         log_info "运行NCCL调试测试（60秒）..."
         log_info "测试包含：初始化(10s) + 预热(15s) + 稳定性测试(35s)"
         export NCCL_DEBUG=INFO
-        if timeout 90s ./nccl_benchmark.sh --network auto -s 100M -t 60 2>&1 | \
+        if timeout 90s "$bench_script" --network auto -s 100M -t 60 2>&1 | \
            grep -E "(Channel|via|Ring|Tree|Using|bandwidth|latency)" | head -15; then
             log_success "NCCL 路径测试完成"
         else
             log_warning "NCCL 路径测试可能未完全成功"
         fi
         unset NCCL_DEBUG
-    else
-        log_warning "未找到nccl_benchmark.sh脚本，跳过实际路径测试"
+        else
+            log_warning "未找到nccl_benchmark.sh脚本，跳过实际路径测试"
+        fi
     fi
-    
+
     # 8. 按NCCL优先级进行通信路径分析和建议
     log_header "NCCL通信路径优先级分析"
     log_info "NCCL自动选择优先级：NVLink > PCIe P2P > 共享内存 > 网络传输"
@@ -446,4 +449,4 @@ main() {
 parse_arguments "$@"
 
 # 执行主函数
-main
+main "$@"

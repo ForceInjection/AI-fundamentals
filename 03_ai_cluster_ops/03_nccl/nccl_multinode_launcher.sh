@@ -368,17 +368,17 @@ check_environment() {
     log_header "环境检查"
     
     # 检查 nccl_benchmark.sh 脚本
-    if [ ! -f "./nccl_benchmark.sh" ]; then
-        log_error "找不到 nccl_benchmark.sh 脚本"
-        log_info "请确保在正确的目录下运行此脚本"
+    BENCH_SCRIPT="$(dirname "$0")/nccl_benchmark.sh"
+    if [ ! -f "$BENCH_SCRIPT" ]; then
+        log_error "找不到 nccl_benchmark.sh 脚本: $BENCH_SCRIPT"
         exit 1
     fi
     log_success "找到 nccl_benchmark.sh 脚本"
-    
+
     # 检查脚本权限
-    if [ ! -x "./nccl_benchmark.sh" ]; then
+    if [ ! -x "$BENCH_SCRIPT" ]; then
         log_warning "nccl_benchmark.sh 脚本没有执行权限，正在添加..."
-        chmod +x "./nccl_benchmark.sh"
+        chmod +x "$BENCH_SCRIPT"
         log_success "已添加执行权限"
     fi
     
@@ -477,7 +477,7 @@ start_test() {
     # 启动测试
     log_info ""
     log_info "启动测试命令:"
-    local test_cmd="./nccl_benchmark.sh -m --master-addr $MASTER_ADDR --master-port $MASTER_PORT --network $NETWORK --optimization-level $OPTIMIZATION_LEVEL -s $TEST_SIZE -t $TEST_DURATION"
+    local test_cmd="$BENCH_SCRIPT -m --master-addr $MASTER_ADDR --master-port $MASTER_PORT --network $NETWORK --optimization-level $OPTIMIZATION_LEVEL -s $TEST_SIZE -t $TEST_DURATION"
     log_info "$test_cmd"
     
     log_info ""

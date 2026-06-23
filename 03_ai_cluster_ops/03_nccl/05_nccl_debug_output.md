@@ -121,7 +121,7 @@ gpu-node:2674380:2674380 [0] NCCL INFO comm 0x7ff13c005d40 rank 0 nranks 3 cudaD
   1048576   262144  float  sum  -1  52.27  20.06  30.09  0  56.34  18.61  31.90  0
 ```
 
-最后一行是 AllReduce 性能数据——`bus_bw = 30.09 GB/s`（out-of-place）和 `31.90 GB/s`（in-place）。3 GPU × 1 MB 数据时 bus_bw 较低是正常的（launch latency 主导），参见 [§5.5.3 带宽效率曲线](03_nccl_tutorial.md#553-带宽效率曲线)。
+最后一行是 AllReduce 性能数据——`bus_bw = 30.09 GB/s`（out-of-place）和 `31.90 GB/s`（in-place）。3 GPU × 1 MB 数据时 bus_bw 较低是正常的（launch latency 主导），对照期望带宽参考 [NCCL 基准测试方法论](04_nccl_benchmark.md)。
 
 ---
 
@@ -185,7 +185,7 @@ NCCL_DEBUG=INFO 输出拿到后：
 
 ## 5. 相关文档
 
-- [`03_nccl_tutorial.md`](03_nccl_tutorial.md)：§5.1 环境变量、§5.5 性能分析——二者是本文输出解读的下游
+- [`03_nccl_tutorial.md`](03_nccl_tutorial.md)：环境变量配置和故障排除流程
 - [`04_nccl_benchmark.md`](04_nccl_benchmark.md)：本文输出的 `bus_bw` 值需要与基准数据对比
 - [`06_gpu_health_check.md`](../01_gpu_ops/06_gpu_health_check.md)：本文 §3 的正常/异常对照是健康检查 L2 的核心
 - [`nvlink_diagnostics.md`](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md)：NVLink 故障时的底层排查
