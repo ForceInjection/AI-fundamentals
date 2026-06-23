@@ -115,11 +115,11 @@ Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，�
 
 以下数据来自同一台 8×H100 NVSwitch 服务器（详见 [NCCL 通信路径逐层压测](../03_nccl/06_nccl_path_benchmark.md)）：
 
-| 通信路径 | 512MB all_reduce bus_bw | 调度含义 |
-|---------|------------------------|---------|
-| NVLink GPU0↔GPU1（同 NVSwitch 域） | **315.8 GB/s** | 最优——TP 组内 GPU 的期望值 |
-| NVLink GPU0↔GPU4（跨 NUMA，同 NVSwitch） | **316.3 GB/s** | 同 NVSwitch 域内，NUMA 无影响 |
-| P2P 禁用 GPU0↔GPU1（走 PCIe fallback） | **23.8 GB/s** | 比 NVLink 慢 13 倍——训练不可接受 |
+| 通信路径                                 | 512MB all_reduce bus_bw | 调度含义                         |
+| ---------------------------------------- | ----------------------- | -------------------------------- |
+| NVLink GPU0↔GPU1（同 NVSwitch 域）       | **315.8 GB/s**          | 最优——TP 组内 GPU 的期望值       |
+| NVLink GPU0↔GPU4（跨 NUMA，同 NVSwitch） | **316.3 GB/s**          | 同 NVSwitch 域内，NUMA 无影响    |
+| P2P 禁用 GPU0↔GPU1（走 PCIe fallback）   | **23.8 GB/s**           | 比 NVLink 慢 13 倍——训练不可接受 |
 
 关键发现：同 NVSwitch 域内跨 NUMA 不影响带宽（316.3 ≈ 315.8 GB/s），调度器不需要担心 NUMA 对 GPU-GPU 通信的影响。真正要避免的是跨 NVSwitch 域（PCIe P2P）或禁用 P2P（CPU fallback）的路径——它们比 NVLink 慢一个数量级。
 
