@@ -1,18 +1,19 @@
-# nvidia-smi 快速入门
+# nvidia-smi 场景速查
 
-`nvidia-smi` 是 NVIDIA 驱动提供的命令行工具，能够帮助用户监控和管理 GPU 的状态与行为。本文整理了一些常用的 `nvidia-smi` 命令，帮助大家快速上手和高效使用。
+`nvidia-smi` 有 100+ 个选项，但真正遇到问题时你只需要 5-6 个。本文按运维场景组织——从「看一眼」到「改配置」到「脚本化」，每个场景给出最精简的命令和输出解读。完整选项参考 `nvidia-smi -h`。
 
-## 1. 显示 GPU 基本信息
+---
 
-使用最常见的 `nvidia-smi` 命令可以展示所有 GPU 的概览信息，包括每块 GPU 的利用率、显存使用情况、风扇速度和温度等。
+## 一、快速扫一眼——「有什么 GPU？状态怎么样？」
 
 ```bash
-nvidia-smi
+nvidia-smi                          # 概要
+nvidia-smi -L                       # 仅型号 + UUID
 ```
 
-输出内容示例如下：
+`nvidia-smi` 默认输出的每一列：
 
-```bash
+```text
 +---------------------------------------------------------------------------------------+
 | NVIDIA-SMI 535.183.01             Driver Version: 535.183.01   CUDA Version: 12.2     |
 |-----------------------------------------+----------------------+----------------------+
@@ -24,534 +25,270 @@ nvidia-smi
 | N/A   40C    P8              10W /  70W |      2MiB / 15360MiB |      0%      Default |
 |                                         |                      |                  N/A |
 +-----------------------------------------+----------------------+----------------------+
-
-+---------------------------------------------------------------------------------------+
-| Processes:                                                                            |
-|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
-|        ID   ID                                                             Usage      |
-|=======================================================================================|
-|  No running processes found                                                           |
-+---------------------------------------------------------------------------------------+
 ```
 
-## 2. 显示 GPU 型号信息
+| 列                     | 含义                             | 关注点                                      |
+| ---------------------- | -------------------------------- | ------------------------------------------- |
+| `Fan`                  | 风扇转速百分比，`N/A` = 被动散热 | —                                           |
+| `Temp`                 | GPU 核心温度 (°C)                | T4 < 75°C，H100 < 70°C（满载时）            |
+| `Perf`                 | P0-P12 性能状态，P0 = 最高频率   | 如果一直是 P8，GPU 没有计算负载             |
+| `Pwr:Usage/Cap`        | 当前功耗 / 功耗上限 (W)          | Usage 远小于 Cap = 没跑满                   |
+| `Memory-Usage`         | 已用 / 总显存                    | OOM 前兆：`Used` 接近 `Total`               |
+| `GPU-Util`             | GPU 利用率                       | **≠ SM 利用率**，详见下文「常见误区」       |
+| `Compute M.`           | 计算模式                         | `Default` = 多进程共享，`E. Process` = 独占 |
+| `MIG M.`               | MIG 模式                         | A100/H100 支持 GPU 切分，`N/A` = 不支持     |
+| `Volatile Uncorr. ECC` | 本次运行中未纠正的 ECC 错误      | > 0 立即关注                                |
+| `Persistence-M`        | 持久化模式                       | `On` 可避免 GPU 空闲时驱动卸载              |
 
-如果我们要获取显卡型号信息，可以使用 `-L` 参数：
+**常见误区**：`GPU-Util` 只表示采样周期内有 Kernel 在跑——1 个 SM 在跑显示 100%，全部 SM 都在跑也显示 100%。判断 GPU 是否真的被用满，用 §三 的 `dmon` 或 `--query-gpu` 看 SM 利用率。详见 [GPU 利用率是一个误导性指标](02_gpu_utilization_myth.md)。
+
+---
+
+## 二、谁在用什么？——「哪个进程占了多少显存？」
 
 ```bash
-nvidia-smi -L
-GPU 0: Tesla T4 (UUID: GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx)
+nvidia-smi pmon -i 0                # 进程级实时
+nvidia-smi --query-compute-apps=pid,used_memory --format=csv  # 脚本化
+nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader
 ```
 
-## 3. 显示 GPU 详细信息
-
-如果我们需要获取更详细的信息，可以使用 `-q` 参数。这会展示每个 GPU 的所有硬件细节，包括温度、电源使用情况、性能状态等。
-
-```bash
-nvidia-smi -q
-```
-
-部分输出内容示例：
+`pmon` 输出：
 
 ```text
-==============NVSMI LOG==============
-
-Timestamp                                 : Thu Sep 26 19:11:30 2024
-Driver Version                            : 535.183.01
-CUDA Version                              : 12.2
-
-Attached GPUs                             : 1
-GPU 00000000:81:00.0
-    Product Name                          : Tesla T4
-    Product Brand                         : NVIDIA
-    Product Architecture                  : Turing
-    Display Mode                          : Enabled
-    Display Active                        : Disabled
-    Persistence Mode                      : Enabled
-    ...
+# gpu   pid  type   sm   mem   enc   dec   command
+    0  2635     C    0     0     0     0   python
+    0  4210     C   45    12     0     0   python3
 ```
 
-## 4. 查看特定 GPU
+列含义：
 
-当系统中有多块 GPU 时，我们可以使用 `-i` 参数指定查看某块 GPU 的信息。例如，查看 ID 为 0 的 GPU：
+| 列        | 含义                                 |
+| --------- | ------------------------------------ |
+| `type`    | `C` = 计算，`G` = 图形               |
+| `sm`      | 该进程的 SM 利用率（不是全局利用率） |
+| `mem`     | 该进程的显存带宽利用率               |
+| `enc/dec` | 编码/解码引擎利用率                  |
+
+**脚本化示例**（查找显存占用 TOP 3）：
 
 ```bash
-nvidia-smi -i 0
+nvidia-smi --query-compute-apps=pid,process_name,used_memory \
+  --format=csv,noheader | sort -t',' -k3 -rn | head -3
 ```
 
-输出仅限于指定的 GPU 设备。
+---
 
-## 5. 监控整体 GPU 使用情况
+## 三、跑满了没？——「GPU 在干活还是闲着？」
 
-我们可以通过如下命令查看当前 GPU 资源整体使用情况。
+### 3.1 实时滚动
 
 ```bash
-nvidia-smi dmon -i 0 -d 2
-#-i 0: 指定 GPU 的索引号，这里是索引为 0 的 GPU。
-#-d 2: 设置采样间隔（采样频率），单位为秒，这里是每 2 秒采样一次。
-# gpu    pwr  gtemp  mtemp     sm    mem    enc    dec    jpg    ofa   mclk   pclk
-# Idx      W      C      C      %      %      %      %      %      %    MHz    MHz
-    0     15     41      -      0      0      0      0      0      0    405    300
-    0     15     41      -      0      0      0      0      0      0    405    300
-    0     15     40      -      0      0      0      0      0      0    405    300
-    ...
-
-#GPU 的索引号是 0。
-#功耗是 15 瓦。
-#GPU 温度是 41 摄氏度。
-#显存温度没有显示（用 - 表示）。
-#Streaming Multiprocessor 的利用率是 0%。
-#显存利用率是 0%。
-#视频编码引擎利用率是 0%。
-#视频解码引擎利用率是 0%。
-#JPEG 引擎利用率是 0%。
-#Optical Flow Accelerator 的利用率是 0%。
-#显存时钟频率是 405 MHz。
-#GPU 核心时钟频率是 300 MHz。
+nvidia-smi dmon -s mucp -d 2        # SM% + GPU-Util% + 时钟 + 功耗，每 2 秒
 ```
 
-## 6. 查看与 GPU 交互的进程
+`-s` 选项控制显示哪些列：
 
-可以通过以下命令查看当前使用 GPU 资源的进程。默认情况下，它只会显示与 GPU 计算资源交互的进程。
+| -s 选项 | 列含义                                  |
+| ------- | --------------------------------------- |
+| `m`     | SM%、显存%、编码%、解码%                |
+| `u`     | GPU-Util                                |
+| `c`     | SM 时钟 + 显存时钟 (MHz)                |
+| `p`     | PCIe RX/TX (MB/s) + NVLink RX/TX (MB/s) |
+| `v`     | 额外的 NVLink 错误计数                  |
+| `t`     | PCIe 吞吐 (KB/s)                        |
+
+常用组合：`-s mucp`（利用率 + 时钟 + 带宽 + 功耗）= 一行看尽 GPU 负载全景。
+
+### 3.2 脚本化单次查询
 
 ```bash
-nvidia-smi pmon -i 0
+# SM 利用率 + 显存利用率
+nvidia-smi --query-gpu=utilization.gpu,utilization.memory --format=csv,noheader
+
+# 功耗
+nvidia-smi --query-gpu=power.draw,power.limit --format=csv,noheader
+
+# 时钟
+nvidia-smi --query-gpu=clocks.current.sm,clocks.current.memory --format=csv,noheader
 ```
 
-输出示例：
+### 3.3 解读
 
-```text
-# gpu        pid  type    sm   mem   enc   dec   command
-# Idx         #   C/G     %     %     %     %   name
-    0      2635     C     0     0     0     0   python
-    ...
+| 现象                              | 含义           | 方向                                     |
+| --------------------------------- | -------------- | ---------------------------------------- |
+| SM 利用率 < 20%，显存利用率 > 80% | Memory-bound   | 检查是否未用 pinned memory 或 batch 太小 |
+| SM 利用率 > 80%，显存利用率 < 30% | Compute-bound  | 好的信号；想更快就换更强的 GPU           |
+| SM 利用率低，`Perf` 始终是 P8     | GPU 无计算负载 | 进程可能卡在 CPU 端                      |
 
-#gpu (Idx): GPU 的索引号。
-#pid (#): 进程的进程 ID（PID）。
-#type (C/G): 进程类型，C 代表计算进程，G 代表图形进程。
-#sm (%): Streaming Multiprocessor 的利用率百分比。
-#mem (%): 显存带宽利用率百分比。
-#enc (%): 视频编码引擎利用率百分比。
-#dec (%): 视频解码引擎利用率百分比。
-#command (name): 进程的命令名称。
-```
+---
 
-## 7. 实时刷新 GPU 信息
+## 四、健康吗？——「温度/功耗/ECC/拓扑有没有异常？」
 
-我们可以使用 `-l` 参数让 `nvidia-smi` 命令每隔固定时间刷新一次 GPU 状态。如下命令每 5 秒刷新一次：
+### 4.1 温度和功耗
 
 ```bash
-nvidia-smi -l 5
+nvidia-smi -q -d TEMPERATURE,POWER
 ```
 
-这是一个很好的工具，用于实时监控 GPU 资源的使用。
+关键字段：`GPU Current Temp`、`GPU Slowdown Temp`（撞此温度后 GPU 自动降频）、`Power Limit`、`Power Draw`。
 
-## 8. 限制 GPU 的功耗
+正常范围：H100 满载 ~65-72°C、T4 ~70-78°C。功耗应显著低于 `Power Limit`——如果 `Power Draw` 一直等于 `Power Limit`，GPU 在功耗墙上被限制，换更强的散热或降低功耗配置。
 
-为了在使用 GPU 时更好地控制功耗，可以设置一个功耗限制。如下命令将 GPU 的最大功耗限制在 70 瓦以内：
+### 4.2 ECC 错误
 
 ```bash
-nvidia-smi -i 0 -pl 70
+nvidia-smi -q -d ECC
 ```
 
-请注意，功耗限制只能在指定的范围内设置，不同的 GPU 设备支持不同的功耗范围。
+- **Volatile ECC > 0**：本次驱动加载以来已纠正的错误——如果是 DRAM 错误且持续增长，GPU 可能有硬件问题
+- **Aggregate ECC 缓慢增长**：出厂以来的累计值，单 GPU 累计 < 100 属正常老化
+- **Uncorrectable ECC > 0**：严重——数据完整性风险。尝试 `nvidia-smi -i <ID> --gpu-reset`，如仍在增长则更换 GPU
 
-## 9. 清除已发生的错误记录
+区分 SRAM 和 DRAM 错误：SRAM 错误通常来自宇宙射线（单粒子翻转），单次出现无影响；DRAM 错误频繁出现则表明显存颗粒老化。
 
-如果 GPU 上曾发生过错误（如 XID 错误），可以使用以下命令清除这些错误记录：
+### 4.3 NVLink 和拓扑
 
 ```bash
-nvidia-smi --clear-gpu-errors
+nvidia-smi topo -m                       # 连接矩阵
+nvidia-smi nvlink --status               # 每条 link 的状态 + 带宽
+nvidia-smi nvlink --capabilities         # NVLink 版本和能力
+nvidia-smi nvlink --error-counters       # 错误计数
 ```
 
-这是在调试和监控过程中保持 GPU 状态清晰的一个好方法。
+拓扑标识解读：
 
-## 10. 查看驱动版本
+| 标识   | 含义                                | 性能            |
+| ------ | ----------------------------------- | --------------- |
+| `NV12` | 12 条 NVLink 直连                   | ~600 GB/s 双向  |
+| `PIX`  | 同一 PCIe switch，P2P 可用          | ~32 GB/s (Gen4) |
+| `NODE` | 同一 NUMA node，经 PCIe Host Bridge | ~28 GB/s        |
+| `SYS`  | 跨 NUMA，经 QPI/UPI                 | 最慢            |
 
-可以通过查询功能，查看每块 GPU 的驱动版本。命令输出的格式为 CSV 格式，便于后续处理：
+详见 [GPU 集群健康检查](06_gpu_health_check.md) L2 流程和 [NCCL 通信路径逐层压测](../03_nccl/06_nccl_path_benchmark.md) 的实测数据。
+
+### 4.4 PCIe 链路
 
 ```bash
-nvidia-smi --query-gpu=driver_version --format=csv
+nvidia-smi -q -d PCIE
 ```
 
-输出内容示例：
+确保 `Current Link Width` = `Max Link Width`（通常都是 x16）。如果 Gen4 卡运行在 Gen3 或 x16 掉到 x8：检查主板 BIOS 设置、PCIe 扩展器、Riser 卡。
 
-```text
-driver_version
-460.39
-```
+---
 
-## 11. 查看显存使用情况
-
-此命令可以显示每块 GPU 的显存总量、已用显存和可用显存：
+## 五、出错了？——「XID 错误和 GPU 重置」
 
 ```bash
-nvidia-smi --query-gpu=memory.total,memory.used,memory.free --format=csv
+nvidia-smi -q -d HEALTH                 # GPU 健康状态
+dmesg | grep -i "NVRM\|Xid"             # 内核日志中的 XID 错误
+nvidia-smi --clear-gpu-errors           # 清除可恢复的错误计数
+nvidia-smi -i 0 --gpu-reset             # 重置 GPU（需管理员权限）
 ```
 
-输出示例：
+常见 XID 错误速查：
 
-```text
-memory.total [MiB], memory.used [MiB], memory.free [MiB]
-15109 MiB, 0 MiB, 15109 MiB
-```
+| XID | 含义              | 处理                             |
+| --- | ----------------- | -------------------------------- |
+| 31  | GPU 内存页面退役  | 关注是否持续增加                 |
+| 43  | GPU 已脱离总线    | 检查电源、散热、PCIe 连接        |
+| 45  | 显存 ECC 不可纠正 | 更换 GPU                         |
+| 48  | 双位 ECC 错误     | 立即 `--gpu-reset`，如复现则更换 |
+| 79  | GPU 陷入空闲状态  | 通常 reset 可恢复                |
+| 119 | GPU 内部错误      | 记录日志，高频复现则更换         |
 
-## 12. 设置 GPU 计算模式
+---
 
-可以为 GPU 设置不同的计算模式，以控制进程对 GPU 资源的访问权限。常用的计算模式包括：
-
-- `0`：默认模式，所有进程均可使用 GPU；
-- `1`：仅计算进程模式，只有计算任务可以使用 GPU；
-- `2`：禁止模式，新的进程无法访问 GPU。
-
-例如，将 GPU 0 设置为仅计算进程模式：
+## 六、我要改点什么？——「功耗 / 计算模式 / 时钟 / 持久化」
 
 ```bash
-nvidia-smi -i 0 -c 1
+# ── 功耗 ──
+nvidia-smi -i 0 -pl 300              # 限制 GPU 0 最大 300W
+nvidia-smi -i 0 -q -d POWER          # 确认生效
+
+# ── 计算模式 ──
+nvidia-smi -i 0 -c 0                 # 0=Default（共享）
+#                                    2=Prohibited（禁止新进程——测试用）
+#                                    3=EXCLUSIVE_PROCESS（单进程独占）
+
+# ── 时钟（基准测试需要稳定 clock 时）──
+nvidia-smi -lgc 1500,2100            # 锁定 GPU 时钟在 1500-2100 MHz
+nvidia-smi -lmc 5001,5001            # 锁定显存时钟
+nvidia-smi -rgc && nvidia-smi -rmc   # 恢复默认
+
+# ── 持久化模式 ──
+nvidia-smi -pm 1                     # 启用（推荐生产环境）
+nvidia-smi -q -i 0 | grep Persistence # 确认
 ```
 
-## 13. GPU 性能监控 (gpm)
+**持久化模式**值得单独说明：关闭时，GPU 在最后一个进程退出后会被驱动卸载（`nvidia-smi` 仍然能看到但延迟显著升高）。启用后驱动常驻，避免空闲 GPU 的冷启动延迟（通常 1-2 秒）。生产环境建议 `nvidia-persistenced` 服务。
 
-`gpm` (GPU Performance Monitoring) 是 v595 新增的子命令，用于控制和查询 GPU 性能监控单元。
+---
+
+## 七、多实例 GPU（MIG）
+
+A100/H100 支持将一张物理 GPU 切分为多个独立的 GPU 实例，每个实例有专属的显存、SM 和带宽。
 
 ```bash
-# 查看帮助
-nvidia-smi gpm -h
-
-# 查询 GPM 指标
-nvidia-smi gpm -q
-
-# 采样指定指标
-nvidia-smi gpm -i 0 -d 2
+nvidia-smi mig -lgip                  # 列出可用的 GPU 实例配置
+nvidia-smi mig -cgi 19,19,19,19 -C    # 创建 4 个 20GB 实例（A100-80GB）
+nvidia-smi mig -dci                   # 销毁所有实例
+nvidia-smi mig -dci -gi 0             # 销毁指定 GPU 实例
 ```
 
-该功能适用于需要对 GPU 内部性能计数器进行细粒度监控的场景。
+> MIG 模式需要重启 GPU（`-i <ID> -r`）才能切换，且与 P2P 互斥——切分为 MIG 后 GPU 间不再支持 P2P 通信。
 
-## 14. 功耗管理 (power-smoothing / power-profiles)
+---
 
-### 14.1 功耗平滑
+## 八、实时监控
 
 ```bash
-# 查看功耗平滑状态
-nvidia-smi power-smoothing -q
-
-# 启用功耗平滑（需管理员权限）
-nvidia-smi power-smoothing -e 1
+nvidia-smi -l 5                       # 每 5 秒刷新概要
+nvidia-smi dmon -s mucp -d 2          # 每 2 秒滚动
+watch -n 1 nvidia-smi --query-gpu=utilization.gpu,utilization.memory,temperature.gpu,power.draw --format=csv,noheader
 ```
 
-### 14.2 功耗配置
+容器环境（Docker/K8s）中，`nvidia-smi` 默认只显示容器可见的 GPU（通过 `NVIDIA_VISIBLE_DEVICES` 控制）。如果容器内看不到预期的 GPU，检查 `NVIDIA_VISIBLE_DEVICES` 或容器的 `--gpus` 参数。
+
+---
+
+## 九、`--query-gpu` 脚本化速查
+
+脚本化场景下，`--query-gpu` + `--format=csv,noheader,nounits` 是最佳组合——输出干净、可管道、不依赖 `-q` 的冗长格式。
 
 ```bash
-# 查询可用功耗配置
-nvidia-smi power-profiles -q
-
-# 列出支持的配置
-nvidia-smi power-profiles -l
+# 通用格式
+nvidia-smi --query-gpu=<属性1>,<属性2> --format=csv,noheader,nounits
 ```
 
-功耗配置允许根据不同工作负载（训练/推理）预设功耗策略。
+| 场景     | `--query-gpu=` 属性                                                         |
+| -------- | --------------------------------------------------------------------------- |
+| 显存     | `memory.total,memory.used,memory.free`                                      |
+| 利用率   | `utilization.gpu,utilization.memory`                                        |
+| 温度     | `temperature.gpu,temperature.memory`                                        |
+| 功耗     | `power.draw,power.limit`                                                    |
+| 时钟     | `clocks.current.sm,clocks.current.memory`                                   |
+| PCIe     | `pcie.link.gen.current,pcie.link.width.current`                             |
+| 风扇     | `fan.speed`                                                                 |
+| ECC      | `ecc.errors.corrected.volatile.total,ecc.errors.uncorrected.volatile.total` |
+| 计算模式 | `compute_mode`                                                              |
+| MIG      | `mig.mode.current`                                                          |
+| 进程     | 用 `--query-compute-apps` 替代                                              |
 
-## 15. PCI 信息查询 (pci)
+**一行监控脚本示例**（打印所有 GPU 的 ID + SM 利用率 + 显存占用 + 温度）：
 
 ```bash
-# 查询 PCI 详细信息
-nvidia-smi pci -q
-
-# 查看 PCI 帮助
-nvidia-smi pci -h
+nvidia-smi --query-gpu=index,utilization.gpu,memory.used,temperature.gpu \
+  --format=csv,noheader,nounits | \
+  awk -F', ' '{printf "GPU %s: %s%% SM | %s MiB | %s°C\n", $1, $2, $3, $4}'
 ```
 
-比 `nvidia-smi -q -d PCIE` 提供更详细的 PCI 子系统和错误计数器信息。
-
-## 16. 时钟控制 (clocks / base-clocks)
-
-```bash
-# 查询当前时钟
-nvidia-smi clocks -q
-
-# 查询基准时钟
-nvidia-smi base-clocks -q
-
-# 锁定 GPU 时钟范围 (MHz)
-nvidia-smi -lgc 1500,2500
-
-# 锁定显存时钟 (MHz)
-nvidia-smi -lmc 12000,14001
-
-# 重置时钟为默认值
-nvidia-smi -rgc  # GPU 时钟
-nvidia-smi -rmc  # 显存时钟
-```
-
-## 参考
-
-```bash
-nvidia-smi -h
-
-NVIDIA System Management Interface -- v595.58.03
-
-NVSMI provides monitoring information for Tesla and select Quadro devices.
-The data is presented in either a plain text or an XML format, via stdout or a file.
-NVSMI also provides several management operations for changing the device state.
-
-Note that the functionality of NVSMI is exposed through the NVML C-based
-library. See the NVIDIA developer website for more information about NVML.
-Python wrappers to NVML are also available.  The output of NVSMI is
-not guaranteed to be backwards compatible; NVML and the bindings are backwards
-compatible.
-
-http://developer.nvidia.com/nvidia-management-library-nvml/
-http://pypi.python.org/pypi/nvidia-ml-py/
-Supported products:
-- Full Support
-    - All Tesla products, starting with the Kepler architecture
-    - All Quadro products, starting with the Kepler architecture
-    - All GRID products, starting with the Kepler architecture
-    - GeForce Titan products, starting with the Kepler architecture
-- Limited Support
-    - All Geforce products, starting with the Kepler architecture
-nvidia-smi [OPTION1 [ARG1]] [OPTION2 [ARG2]] ...
-
-    -h,   --help                Print usage information and exit.
-
-          --version             Print version information and exit.
-
-  LIST OPTIONS:
-
-    -L,   --list-gpus           Display a list of GPUs connected to the system.
-
-    -B,   --list-excluded-gpus  Display a list of excluded GPUs in the system.
-
-  SUMMARY OPTIONS:
-
-    <no arguments>              Show a summary of GPUs connected to the system.
-
-    [plus any of]
-
-    -i,   --id=                 Target a specific GPU.
-    -f,   --filename=           Log to a specified file, rather than to stdout.
-    -l,   --loop=               Probe until Ctrl+C at specified second interval.
-
-  QUERY OPTIONS:
-
-    -q,   --query               Display GPU or Unit info.
-
-    [plus any of]
-
-    -u,   --unit                Show unit, rather than GPU, attributes.
-    -i,   --id=                 Target a specific GPU or Unit.
-    -f,   --filename=           Log to a specified file, rather than to stdout.
-    -x,   --xml-format          Produce XML output.
-          --dtd                 When showing xml output, embed DTD.
-    -d,   --display=            Display only selected information: MEMORY,
-                                    UTILIZATION, ECC, TEMPERATURE, POWER, CLOCK,
-                                    COMPUTE, PIDS, PERFORMANCE, SUPPORTED_CLOCKS,
-                                    PAGE_RETIREMENT, ACCOUNTING, ENCODER_STATS,
-                                    SUPPORTED_GPU_TARGET_TEMP, VOLTAGE
-                                    FBC_STATS, ROW_REMAPPER, RESET_STATUS
-                                Flags can be combined with comma e.g. ECC,POWER.
-                                Sampling data with max/min/avg is also returned
-                                for POWER, UTILIZATION and CLOCK display types.
-                                Doesn't work with -u or -x flags.
-    -l,   --loop=               Probe until Ctrl+C at specified second interval.
-
-    -lms, --loop-ms=            Probe until Ctrl+C at specified millisecond interval.
-
-  SELECTIVE QUERY OPTIONS:
-
-    Allows the caller to pass an explicit list of properties to query.
-
-    [one of]
-
-    --query-gpu                 Information about GPU.
-                                Call --help-query-gpu for more info.
-    --query-supported-clocks    List of supported clocks.
-                                Call --help-query-supported-clocks for more info.
-    --query-compute-apps        List of currently active compute processes.
-                                Call --help-query-compute-apps for more info.
-    --query-accounted-apps      List of accounted compute processes.
-                                Call --help-query-accounted-apps for more info.
-                                This query is not supported on vGPU host.
-    --query-retired-pages       List of device memory pages that have been retired.
-                                Call --help-query-retired-pages for more info.
-    --query-remapped-rows       Information about remapped rows.
-                                Call --help-query-remapped-rows for more info.
-
-    [mandatory]
-
-    --format=                   Comma separated list of format options:
-                                  csv - comma separated values (MANDATORY)
-                                  noheader - skip the first line with column headers
-                                  nounits - don't print units for numerical
-                                             values
-
-    [plus any of]
-
-    -i,   --id=                 Target a specific GPU or Unit.
-    -f,   --filename=           Log to a specified file, rather than to stdout.
-    -l,   --loop=               Probe until Ctrl+C at specified second interval.
-    -lms, --loop-ms=            Probe until Ctrl+C at specified millisecond interval.
-
-  DEVICE MODIFICATION OPTIONS:
-
-    [any one of]
-
-    -pm,  --persistence-mode=   Set persistence mode: 0/DISABLED, 1/ENABLED
-    -e,   --ecc-config=         Toggle ECC support: 0/DISABLED, 1/ENABLED
-    -p,   --reset-ecc-errors=   Reset ECC error counts: 0/VOLATILE, 1/AGGREGATE
-    -c,   --compute-mode=       Set MODE for compute applications:
-                                0/DEFAULT, 1/EXCLUSIVE_THREAD (DEPRECATED),
-                                2/PROHIBITED, 3/EXCLUSIVE_PROCESS
-          --gom=                Set GPU Operation Mode:
-                                    0/ALL_ON, 1/COMPUTE, 2/LOW_DP
-    -r    --gpu-reset           Trigger reset of the GPU.
-                                Can be used to reset the GPU HW state in situations
-                                that would otherwise require a machine reboot.
-                                Typically useful if a double bit ECC error has
-                                occurred.
-                                Reset operations are not guarenteed to work in
-                                all cases and should be used with caution.
-    -vm   --virt-mode=          Switch GPU Virtualization Mode:
-                                Sets GPU virtualization mode to 3/VGPU or 4/VSGA
-                                Virtualization mode of a GPU can only be set when
-                                it is running on a hypervisor.
-    -lgc  --lock-gpu-clocks=    Specifies <minGpuClock,maxGpuClock> clocks as a
-                                    pair (e.g. 1500,1500) that defines the range
-                                    of desired locked GPU clock speed in MHz.
-                                    Setting this will supercede application clocks
-                                    and take effect regardless if an app is running.
-                                    Input can also be a singular desired clock value
-                                    (e.g. <GpuClockValue>). Optionally, --mode can be
-                                    specified to indicate a special mode.
-    -m    --mode=               Specifies the mode for --locked-gpu-clocks.
-                                    Valid modes: 0, 1
-    -rgc  --reset-gpu-clocks
-                                Resets the Gpu clocks to the default values.
-    -lmc  --lock-memory-clocks=  Specifies <minMemClock,maxMemClock> clocks as a
-                                    pair (e.g. 5100,5100) that defines the range
-                                    of desired locked Memory clock speed in MHz.
-                                    Input can also be a singular desired clock value
-                                    (e.g. <MemClockValue>).
-    -rmc  --reset-memory-clocks
-                                Resets the Memory clocks to the default values.
-    -lmcd --lock-memory-clocks-deferred=
-                                    Specifies memClock clock to lock. This limit is
-                                    applied the next time GPU is initialized.
-                                    This is guaranteed by unloading and reloading the kernel module.
-                                    Requires root.
-    -rmcd --reset-memory-clocks-deferred
-                                Resets the deferred Memory clocks applied.
-    -ac   --applications-clocks= Specifies <memory,graphics> clocks as a
-                                    pair (e.g. 2000,800) that defines GPU's
-                                    speed in MHz while running applications on a GPU.
-    -rac  --reset-applications-clocks
-                                Resets the applications clocks to the default values.
-    -pl   --power-limit=        Specifies maximum power management limit in watts.
-                                Takes an optional argument --scope.
-    -sc   --scope=              Specifies the device type for --scope: 0/GPU, 1/TOTAL_MODULE (Grace Hopper Only)
-    -cc   --cuda-clocks=        Overrides or restores default CUDA clocks.
-                                In override mode, GPU clocks higher frequencies when running CUDA applications.
-                                Only on supported devices starting from the Volta series.
-                                Requires administrator privileges.
-                                0/RESTORE_DEFAULT, 1/OVERRIDE
-    -am   --accounting-mode=    Enable or disable Accounting Mode: 0/DISABLED, 1/ENABLED
-    -caa  --clear-accounted-apps
-                                Clears all the accounted PIDs in the buffer.
-          --auto-boost-default= Set the default auto boost policy to 0/DISABLED
-                                or 1/ENABLED, enforcing the change only after the
-                                last boost client has exited.
-          --auto-boost-permission=
-                                Allow non-admin/root control over auto boost mode:
-                                0/UNRESTRICTED, 1/RESTRICTED
-    -mig  --multi-instance-gpu= Enable or disable Multi Instance GPU: 0/DISABLED, 1/ENABLED
-                                Requires root.
-    -gtt  --gpu-target-temp=    Set GPU Target Temperature for a GPU in degree celsius.
-                                Requires administrator privileges
-
-   [plus optional]
-
-    -i,   --id=                 Target a specific GPU.
-    -eow, --error-on-warning    Return a non-zero error for warnings.
-
-  UNIT MODIFICATION OPTIONS:
-
-    -t,   --toggle-led=         Set Unit LED state: 0/GREEN, 1/AMBER
-
-   [plus optional]
-
-    -i,   --id=                 Target a specific Unit.
-
-  SHOW DTD OPTIONS:
-
-          --dtd                 Print device DTD and exit.
-
-     [plus optional]
-
-    -f,   --filename=           Log to a specified file, rather than to stdout.
-    -u,   --unit                Show unit, rather than device, DTD.
-
-    --debug=                    Log encrypted debug information to a specified file.
-
- Device Monitoring:
-    dmon                        Displays device stats in scrolling format.
-                                "nvidia-smi dmon -h" for more information.
-
-    daemon                      Runs in background and monitor devices as a daemon process.
-                                This is an experimental feature. Not supported on Windows baremetal
-                                "nvidia-smi daemon -h" for more information.
-
-    replay                      Used to replay/extract the persistent stats generated by daemon.
-                                This is an experimental feature.
-                                "nvidia-smi replay -h" for more information.
-
- Process Monitoring:
-    pmon                        Displays process stats in scrolling format.
-                                "nvidia-smi pmon -h" for more information.
-
- TOPOLOGY:
-    topo                        Displays device/system topology. "nvidia-smi topo -h" for more information.
-
- DRAIN STATES:
-    drain                       Displays/modifies GPU drain states for power idling. "nvidia-smi drain -h" for more information.
-
- NVLINK:
-    nvlink                      Displays device nvlink information. "nvidia-smi nvlink -h" for more information.
-
- C2C:
-    c2c                         Displays device C2C information. "nvidia-smi c2c -h" for more information.
-
- CLOCKS:
-    clocks                      Control and query clock information. "nvidia-smi clocks -h" for more information.
-
- ENCODER SESSIONS:
-    encodersessions             Displays device encoder sessions information. "nvidia-smi encodersessions -h" for more information.
-
- FBC SESSIONS:
-    fbcsessions                 Displays device FBC sessions information. "nvidia-smi fbcsessions -h" for more information.
-
- GRID vGPU:
-    vgpu                        Displays vGPU information. "nvidia-smi vgpu -h" for more information.
-
- MIG:
-    mig                         Provides controls for MIG management. "nvidia-smi mig -h" for more information.
-
- COMPUTE POLICY:
-    compute-policy              Control and query compute policies. "nvidia-smi compute-policy -h" for more information.
-
- BOOST SLIDER:
-    boost-slider                Control and query boost sliders. "nvidia-smi boost-slider -h" for more information.
-
- POWER HINT:
-    power-hint                  Estimates GPU power usage. "nvidia-smi power-hint -h" for more information.
-
- BASE CLOCKS:
-    base-clocks                 Query GPU base clocks. "nvidia-smi base-clocks -h" for more information.
-
- CONFIDENTIAL COMPUTE:
-    conf-compute                Control and query confidential compute. "nvidia-smi conf-compute -h" for more information.
-
- GPU PERFORMANCE MONITORING:
-    gpm                         Control and query GPU performance monitoring unit. "nvidia-smi gpm -h" for more information.
-
-Please see the nvidia-smi(1) manual page for more detailed information.
-```
+---
+
+## 十、相关资源
+
+- [GPU 利用率是一个误导性指标](02_gpu_utilization_myth.md) — 读完再回头看 `GPU-Util` 这列
+- [GPU 集群健康检查](06_gpu_health_check.md) — L1/L2/L3 三层检查流程，含 GPU 7 真实异常案例
+- [NVLink 诊断与实操](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md) — `nvlink --status` 输出的深度解读
+- [DCGM 监控实操](05_dcgm_monitoring.md) — 长期趋势和 Prometheus 集成
+- [GPU 进程与资源管理](07_gpu_process_management.md) — Compute Mode、CUDA_VISIBLE_DEVICES、NUMA 亲和性
+- [NVIDIA nvidia-smi 文档](https://docs.nvidia.com/deploy/driver-nvidia-smi/index.html)

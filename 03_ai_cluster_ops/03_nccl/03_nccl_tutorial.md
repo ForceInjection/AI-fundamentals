@@ -141,12 +141,12 @@ CUDA_VISIBLE_DEVICES=0,4 torchrun --nproc_per_node=2 nccl_python_template.py
 ./test/run_all_tests.sh --suite config  # 单个套件
 ```
 
-| 套件 | 测试内容 |
-|------|---------|
-| `syntax` | 脚本语法、参数验证、帮助信息 |
-| `config` | 20 项：`set_nccl_config` / `setup_network_config` / `cache_system_info` |
-| `optimization` | 三种优化级别（conservative / balanced / aggressive） |
-| `pxn` | PXN 模式参数和配置 |
+| 套件           | 测试内容                                                                |
+| -------------- | ----------------------------------------------------------------------- |
+| `syntax`       | 脚本语法、参数验证、帮助信息                                            |
+| `config`       | 20 项：`set_nccl_config` / `setup_network_config` / `cache_system_info` |
+| `optimization` | 三种优化级别（conservative / balanced / aggressive）                    |
+| `pxn`          | PXN 模式参数和配置                                                      |
 
 > **注意**：这是脚本单元测试，不验证 NCCL 通信性能。真实带宽测试见 [通信路径逐层压测](06_nccl_path_benchmark.md)。
 

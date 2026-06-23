@@ -39,9 +39,39 @@ nvidia-smi -i 3 -c 0    # 0=Default
 
 ---
 
-## 2. 查看 GPU 上的进程
+## 2. MPS：多进程共享 GPU 计算资源
 
-### 2.1 nvidia-smi 进程列表
+MPS（Multi-Process Service）是另一种 GPU 共享机制，与 Compute Mode 互补：
+
+| 方式                               | 显存               | 计算资源                         | 适用场景                   |
+| ---------------------------------- | ------------------ | -------------------------------- | -------------------------- |
+| **Default + CUDA_VISIBLE_DEVICES** | 共享（可超额）     | 时间片轮转                       | 开发环境                   |
+| **MPS**                            | 共享               | 真正并行（CUDA kernel 并发执行） | 多个小推理服务共享一张 GPU |
+| **MIG**                            | 硬切分（独立显存） | 硬切分（独立 SM）                | 严格隔离的生产推理         |
+| **EXCLUSIVE_PROCESS**              | 独占               | 独占                             | 训练、benchmark            |
+
+MPS 的核心价值：让多个进程的 CUDA kernel 在 GPU 上**真正并行执行**，而不是 Default 模式下的时间片切换。Volta (SM 7.0) 及以上架构支持。
+
+```bash
+# 启动 MPS 服务（需 root）
+nvidia-cuda-mps-control -d
+
+# 验证
+ps aux | grep mps
+
+# 停止
+echo quit | nvidia-cuda-mps-control
+```
+
+启动后，所有 CUDA 进程自动通过 MPS 调度，无需修改代码。**限制**：MPS 与 MIG 互斥——启用了 MIG 的 GPU 不能同时使用 MPS；MPS 不提供显存隔离，一个进程 OOM 仍会影响同 GPU 上的其他进程。
+
+> 典型部署：一张 A100 上同时跑 4 个轻量推理服务 → 开启 MPS，用 `CUDA_VISIBLE_DEVICES` 或 MIG 做隔离，MPS 让计算资源得到充分利用。
+
+---
+
+## 3. 查看 GPU 上的进程
+
+### 3.1 nvidia-smi 进程列表
 
 ```bash
 nvidia-smi --query-compute-apps=pid,process_name,used_memory,gpu_name --format=csv
@@ -63,7 +93,7 @@ pid, process_name, used_gpu_memory [MiB], gpu_name
 - ada_be 占用 GPU 6 的 4.7 GB — 开发环境
 - GPU 3/4/5 空闲（仅 4-130 MiB 驱动占用）
 
-### 2.2 fuser：排查残留进程
+### 3.2 fuser：排查残留进程
 
 `nvidia-smi` 列出的都是有进程名的活跃进程。但有时进程已退出、显存却未释放：
 
@@ -79,16 +109,17 @@ fuser -v /dev/nvidia*
 # 1. 确认进程已退出
 ps aux | grep <PID>
 
-# 2. 如果进程已退出但 nvidia-smi 仍显示
-#    等待 CUDA context 自动回收（通常 < 30s）
-#    或重启 nvidia-persistenced: systemctl restart nvidia-persistenced
+# 2. 等待 CUDA context 自动回收（通常 < 30s）——大多数情况这样就够了
+
+# 3. 如果等待后仍未释放，重置持久化模式强制清理
+nvidia-smi -pm 0 && nvidia-smi -pm 1
 ```
 
-> **常见场景**：Python 脚本 `Ctrl+C` 中断后，PyTorch 的 CUDA context 可能延迟数秒才释放。在此期间 `nvidia-smi` 仍显示显存占用。
+> **常见场景**：Python 脚本 `Ctrl+C` 中断后，PyTorch 的 CUDA context 可能延迟数秒才释放。`nvidia-persistenced` 保持驱动常驻，重置持久化模式会触发 context 回收——比杀守护进程更轻量。
 
 ---
 
-## 3. CUDA_VISIBLE_DEVICES：进程级 GPU 选择
+## 4. CUDA_VISIBLE_DEVICES：进程级 GPU 选择
 
 这是最常用的 GPU 隔离方式——设置环境变量，让进程只能"看到"指定的 GPU：
 
@@ -125,7 +156,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python train.py
 
 ---
 
-## 4. GPU-NUMA 亲和性绑定
+## 5. GPU-NUMA 亲和性绑定
 
 A100 通过 PCIe 连接到特定的 NUMA node。如果 GPU 和 CPU 线程不在同一 NUMA node，H2D/D2H 传输需要跨 socket 经 QPI/UPI，延迟显著增加。
 
@@ -172,7 +203,7 @@ numactl --hardware
 
 ---
 
-## 5. 显存管理
+## 6. 显存管理
 
 ### 5.1 检查显存使用
 
@@ -196,29 +227,30 @@ GPU 3/4/5 的显存状态：
 ```python
 import torch
 
-# 限制 PyTorch 使用的显存比例
+# 限制 PyTorch 可用的最大显存比例（多进程共享 GPU 时有用）
 torch.cuda.set_per_process_memory_fraction(0.5)  # 只用 50%
 
-# 或在环境变量中限制
+# 控制显存分配器的碎片化行为
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 ```
 
+> `set_per_process_memory_fraction` 在多进程共享同一 GPU 时最有用——限制每个进程不会抢光全部显存。单进程独占 GPU 时不需要设。
+
 ### 5.3 清理显存
 
 ```python
-# Python 侧：手动清空 cache
+# 释放 PyTorch 缓存的显存（不释放仍被引用的 tensor）
 torch.cuda.empty_cache()
-
-# PyTorch DDP 中释放未被引用的梯度
-import gc
-gc.collect()
-torch.cuda.empty_cache()
+gc.collect()                    # 先回收 Python 侧的无效引用
+torch.cuda.empty_cache()        # 再释放 CUDA 侧缓存
 ```
+
+> `empty_cache()` 只释放 PyTorch 分配器缓存的空闲块，不会释放正在使用的 tensor。训练中 OOM 的根因通常是 batch size 太大或模型太大——先降 batch，再考虑 gradient checkpointing。排查流程见 [§7 常见问题](#7-常见问题与排查)。
 
 ---
 
-## 6. 常见问题与排查
+## 7. 常见问题与排查
 
 | 问题                   | 现象                                      | 排查                                             | 解决                                                     |
 | ---------------------- | ----------------------------------------- | ------------------------------------------------ | -------------------------------------------------------- |
@@ -230,7 +262,7 @@ torch.cuda.empty_cache()
 
 ---
 
-## 7. 相关文档
+## 8. 相关文档
 
 - [`03_nvidia_smi_guide.md`](03_nvidia_smi_guide.md)：nvidia-smi 基础命令详解
 - [`06_gpu_health_check.md`](06_gpu_health_check.md)：进程残留检查是 L1 健康检查的一部分

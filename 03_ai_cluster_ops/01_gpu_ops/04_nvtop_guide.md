@@ -1,137 +1,59 @@
 # nvtop 快速入门
 
-## 1. 什么是 nvtop
+SSH 进一台 8 卡服务器，你想 3 秒内看清三件事：哪些 GPU 闲着、谁在占显存、温度功耗是否正常。`nvidia-smi` 能做到但输出冗长，`dcgmi dmon` 精确但不直观。`nvtop` 是 `htop` 的 GPU 版本——一个交互式 TUI，登录后敲三个字母就能得到所有答案。
 
-nvtop 是一款类似于 `htop` 的命令行工具，可用于监控 NVIDIA、AMD、Intel 等多种 GPU。它提供了一个直观的界面，可以实时查看和管理 GPU 状态和进程信息。nvtop 支持多 GPU 监控，并且能够显示详细的指标，例如内存使用情况、GPU 利用率、温度等。
+本文以 A100-SXM4-80GB 8 GPU 环境为例。项目地址：[Syllo/nvtop](https://github.com/Syllo/nvtop)。
 
-本文以 A100-SXM4-80GB 多 GPU 环境为例进行说明。
-
-项目地址：[Github 地址](https://github.com/Syllo/nvtop)。
-
-## 2. 如何安装 nvtop
-
-### 2.1 在不同操作系统上的安装方法
-
-具体参考项目 [README](https://github.com/Syllo/nvtop/blob/master/README.markdown)。
-
-- **Ubuntu 19.04 / Debian Buster (stable)**:
-
-  ```bash
-  sudo apt install nvtop
-  ```
-
-- **旧版本系统（如 Ubuntu 16.04）**: 首先安装依赖库，然后编译源码安装：
-
-  ```bash
-   git clone https://github.com/Syllo/nvtop.git
-   mkdir -p nvtop/build && cd nvtop/build
-   cmake .. -DNVIDIA_SUPPORT=ON -DAMDGPU_SUPPORT=ON -DINTEL_SUPPORT=ON
-   make
-
-   # Install globally on the system
-   sudo make install
-
-   # Alternatively, install without privileges at a location of your choosing
-   # make DESTDIR="/your/install/path" install
-  ```
-
-- **Arch Linux**:
-
-  ```bash
-  sudo pacman -Syu nvtop
-  ```
-
-- **Gentoo Linux**:
-
-  ```bash
-  sudo layman -a guru
-  sudo emerge -av nvtop
-  ```
-
-- **Fedora 39 及更高版本**:
-
-  ```bash
-  sudo dnf install nvtop
-  ```
-
-- **CentOS Stream、Rocky Linux 和 AlmaLinux**:
-
-  ```bash
-  sudo dnf install -y epel-release
-  sudo dnf install nvtop
-  ```
-
-- **其他 Linux 发行版**: 可以通过 Snap 安装：
-
-  ```bash
-  snap search nvtop
-  sudo snap install nvtop
-  ```
-
-### 2.2 容器化安装
-
-对于需要在容器中使用 nvtop 的情况，可以使用以下命令：
+## 1. 安装
 
 ```bash
-git clone https://github.com/Syllo/nvtop.git
-cd nvtop
-sudo docker build --tag nvtop .
-sudo docker run -it --rm --runtime=nvidia --gpus=all --pid=host nvtop
+# Ubuntu / Debian
+sudo apt install nvtop
+
+# Fedora / RHEL
+sudo dnf install nvtop
+
+# Arch
+sudo pacman -Syu nvtop
 ```
 
-## 3. 常用使用方式
+其他发行版及容器化安装见 [项目 README](https://github.com/Syllo/nvtop/blob/master/README.markdown)。
 
-安装完成后，运行 `nvtop` 即可启动监控界面。
-
-### 3.1 nvtop
+## 2. 基本使用
 
 ```bash
-nvtop
+nvtop                    # 启动，显示全部 GPU
+nvtop -s 0:1:2           # 只看 GPU 0,1,2
+nvtop -i 6:7             # 排除 GPU 6,7
+nvtop -d 5               # 刷新间隔 0.5 秒（默认 1 = 0.1 秒）
 ```
 
 ![nvtop](assets/nvtop.png)
 
-常用的 `nvtop` 命令行选项如下：
+常用 CLI 选项：
 
-- `-d --delay`: 设置刷新间隔，1 表示 0.1 秒。
-- `-v --version`: 打印版本信息并退出。
-- `-s --gpu-select`: 监控指定 GPU，多个 GPU ID 以冒号分隔。
-- `-i --gpu-ignore`: 忽略指定 GPU，多个 GPU ID 以冒号分隔。
-- `-p --no-plot`: 禁用条形图显示。
-- `-C --no-color`: 禁用颜色显示。
-- `-N --no-cache`: 始终从系统中查询用户名和命令行信息。
-- `-f --freedom-unit`: 使用华氏度显示温度。
-- `-E --encode-hide`: 设置编码/解码信息自动隐藏的时间（默认 30 秒，负值表示始终显示）。
-- `-h --help`: 显示帮助信息并退出。
+| 选项                | 作用                       |
+| ------------------- | -------------------------- |
+| `-s / --gpu-select` | 只监控指定 GPU（冒号分隔） |
+| `-i / --gpu-ignore` | 排除指定 GPU               |
+| `-d / --delay`      | 刷新间隔（1 = 0.1 秒）     |
+| `-p / --no-plot`    | 隐藏条形图                 |
+| `-C / --no-color`   | 无颜色模式                 |
 
-`nvtop` 界面快捷键：
+常用快捷键：
 
-| **快捷键**      | **描述**                                                   |
-| --------------- | ---------------------------------------------------------- |
-| **上箭头**      | 选择（高亮）上一个进程。                                   |
-| **下箭头**      | 选择（高亮）下一个进程。                                   |
-| **左/右箭头**   | 在进程行中左右滚动。                                       |
-| **+**           | 按升序排序。                                               |
-| **-**           | 按降序排序。                                               |
-| **F2**          | 进入设置界面，修改界面选项。                               |
-| **F12**         | 将当前界面选项保存到持久存储中。                           |
-| **F9**          | "终止"进程：选择要发送给高亮进程的信号。                   |
-| **F6**          | 排序：选择用于排序的字段。当前排序字段在标题栏内高亮显示。 |
-| **F10, q, Esc** | 退出 nvtop 命令。                                          |
+| 键              | 功能                          |
+| --------------- | ----------------------------- |
+| `F6`            | 排序（按显存 / 利用率 / PID） |
+| `F9`            | Kill 高亮进程                 |
+| `F2`            | 设置界面                      |
+| `F10 / q / Esc` | 退出                          |
 
-### 3.2 设置
-
-按下 `F2` 可以打开设置页面：
-
-![Settings](assets/nvtop-settings.png)
-
-可以通过上下左右键来选择并调整配置项。按 F12 保存在设置窗口中设置的首选项。下次运行 nvtop 时将加载这些首选项。
-
-## 4. A100 多 GPU 环境实操
+## 3. A100 多 GPU 环境实操
 
 以下基于 8 × A100-SXM4-80GB 服务器实测。
 
-### 4.1 界面布局解读
+### 3.1 界面布局解读
 
 运行 `nvtop` 后，终端被分为上下两个区域：
 
@@ -147,7 +69,7 @@ nvtop
 
 **下半区 — 进程列表**：每行一个 GPU 进程，显示 PID、用户名、显存占用、GPU 利用率。按 `F6` 可按显存或利用率排序。
 
-### 4.2 只监控特定 GPU
+### 3.2 只监控特定 GPU
 
 ```bash
 # 只看空闲的 GPU 3,4,5
@@ -159,7 +81,7 @@ nvtop -i 0:1:2:6:7
 
 这在共享集群中尤其有用——只看"自己的"GPU，排除他人的生产负载。
 
-### 4.3 真实多 GPU 场景识别
+### 3.3 真实多 GPU 场景识别
 
 基于本环境的 8 GPU，运行 `nvtop` 时可观察到的典型模式：
 
@@ -182,7 +104,7 @@ GPU 7: 利用率 N/A, 显存 0 MiB, 功耗 48W     ← MIG Enabled, 无实例
 - GPU 7 利用率 N/A → MIG Enabled 但无 GI/CI，等同于不可用
 - GPU 0,1 利用率 0% 但显存占用 10 GB → 推理服务空闲等待请求
 
-### 4.4 与 nvidia-smi / DCGM 的关系
+### 3.4 与 nvidia-smi / DCGM 的关系
 
 | 工具         | 场景                 | 优势                               | 劣势                            |
 | ------------ | -------------------- | ---------------------------------- | ------------------------------- |

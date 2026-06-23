@@ -18,6 +18,13 @@
 
 ## 2. L1: 快速扫一眼
 
+**一行体检**（登录后第一件事）：
+
+```bash
+nvidia-smi --query-gpu=index,temperature.gpu,power.draw,memory.used,utilization.gpu \
+  --format=csv,noheader
+```
+
 ### 2.1 温度与功耗
 
 ```bash
@@ -221,9 +228,14 @@ CUDA_VISIBLE_DEVICES=3,7 ./simpleP2P   # 应失败（SYS 不支持 P2P）
 ### 4.3 NCCL AllReduce 带宽
 
 ```bash
+# 编译 nccl-tests（一次性）
+git clone https://github.com/NVIDIA/nccl-tests.git && cd nccl-tests && make MPI=0
+
 # 在所有 NVLink 正常的 GPU 上运行（排除 GPU 7）
-allreduce_perf -b 1G -e 8G -g 7   # 7 张 GPU (GPU 0-6)
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 ./build/allreduce_perf -b 1G -e 8G -g 7
 ```
+
+期望值参考：[NCCL 通信路径逐层压测](../03_nccl/06_nccl_path_benchmark.md) — H100 NVLink ~316 GB/s, P2P Disable ~24 GB/s。
 
 ---
 
@@ -234,7 +246,6 @@ allreduce_perf -b 1G -e 8G -g 7   # 7 张 GPU (GPU 0-6)
 ```bash
 #!/bin/bash
 # gpu_health_check.sh — GPU 集群 L1+L2 健康检查
-set -e
 
 echo "=== [L1] 温度与功耗 ==="
 nvidia-smi --query-gpu=index,temperature.gpu,power.draw --format=csv,noheader | \
