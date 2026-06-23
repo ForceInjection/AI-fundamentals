@@ -264,7 +264,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 - [大模型可视化指南](https://www.maartengrootendorst.com/) - 大模型内部机制的可视化分析。
 - [混合专家模型 (MoE) 可视化指南](06_llm_theory_and_fundamentals/llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md) - 深入解析 MoE 架构原理。
-- [量化技术可视化指南](06_llm_theory_and_fundamentals/llm_basic_concepts/quantization/01_visual_guide_to_quantization.md) - 模型压缩与加速的核心技术。
+- [量化技术可视化指南](06_llm_theory_and_fundamentals/llm_basic_concepts/quantization/visual_guide_to_quantization.md) - 模型压缩与加速的核心技术。
 - [基于 LLM 的意图检测](06_llm_theory_and_fundamentals/llm_basic_concepts/intent_detection/intent_detection_using_llm.zh-CN.md) - 意图识别系统设计与实现。
   - 参见：[ChatBox 意图识别与语义理解](06_llm_theory_and_fundamentals/llm_basic_concepts/intent_detection/chatbox_intent_recognition_and_semantic_understanding.md) - ChatBox 中意图识别的实际案例分析。
 

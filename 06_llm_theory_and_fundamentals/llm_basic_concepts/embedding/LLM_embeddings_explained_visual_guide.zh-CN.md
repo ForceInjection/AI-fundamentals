@@ -24,7 +24,7 @@
 
 您可能在大语言模型语境中接触过嵌入概念，但该技术实际拥有更悠久的历史。以下是各类嵌入技术的演进脉络：
 
-![不同词嵌入技术概述](./images/fig1.jpg)
+![不同词嵌入技术概述](./img/fig1.jpg)
 
 **图1**：不同词嵌入技术概述。
 
@@ -129,7 +129,7 @@ print(f"Embedding shape: {embeddings.shape}")
 
 由此生成`10`维嵌入表示（每个文档对应一维）。为直观理解`TF-IDF`嵌入特性，我们使用主成分分析（`PCA`）将`10`维空间映射至`2`维空间进行可视化呈现。
 
-![TF-IDF](./images/fig2.jpg)
+![TF-IDF](./img/fig2.jpg)
 
 **图2**：`TF-IDF`示例展示经过降维处理后词嵌入在二维空间中的可视化分布
 
@@ -144,7 +144,7 @@ print(f"Embedding shape: {embeddings.shape}")
 
 最初由文献[3]提出的词向量模型(`word2vec`)，是比`TF-IDF`更现代的技术。顾名思义，该网络旨在将词语转化为嵌入向量。其通过定义辅助目标函数来优化网络参数，例如在`CBOW`（连续词袋）模型中，网络训练目标是基于上下文词汇预测缺失词。核心思想是通过上下文词汇推断目标词的嵌入表示。`word2vec`架构简洁：**一个用于提取嵌入的隐藏层，以及一个预测词汇表中所有词语概率的输出层**。表面上看，网络被训练用于根据上下文预测正确缺失词，但实质上这是为了训练隐藏层并获取最优词嵌入。网络训练完成后，输出层可被弃用，因为获取高质量嵌入才是模型的真正目标。
 
-![词向量模型架构示意图](./images/fig3.jpg)
+![词向量模型架构示意图](./img/fig3.jpg)
 
 **图3**：词向量模型架构示意图：展示输入层、隐藏层（嵌入表示）和输出层
 
@@ -162,7 +162,7 @@ print(f"Embedding shape: {embeddings.shape}")
 
 **隐藏层**是存储嵌入表示的核心结构。其**矩阵维度**为**词表大小** × **嵌入维度**，当我们输入某个词的**独热向量**（即仅有一个元素为`1`其余全`0`的向量）时，该向量中1对应的位置会触发该词的嵌入表示传递至后续层级。您可以在参考文献[4]中看到一个简洁巧妙的词向量模型实现示例。
 
-![word2vec](./images/fig4.jpg)
+![word2vec](./img/fig4.jpg)
 
 **图4**：`word2vec` 嵌入可视化
 
@@ -205,7 +205,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 
 您可以通过`TensorFlow Embedding Projector`实际可视化并操作词向量模型的嵌入表示。
 
-![TensorFlow](./images/fig5.jpg)
+![TensorFlow](./img/fig5.jpg)
 
 **图5**：`TensorFlow`嵌入投影器在`3D`/`2D`空间中对词向量模型嵌入的交互式探索。
 
@@ -232,7 +232,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 
 需特别注意另一个特殊标记**[CLS]**。该标记专为分类任务设计。当模型逐层处理输入时，**[CLS]**会聚合所有输入词元的语义信息，最终形成可用于分类任务的综合特征表示。
 
-![BERT](./images/fig6.jpg)
+![BERT](./img/fig6.jpg)
 
 **图6**：`BERT`架构示意图（图片来源：[7]）
 
@@ -251,7 +251,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 1. **静态嵌入表示**。首层生成的静态嵌入将词元嵌入（表示词元的向量）与位置嵌入（编码词元在序列中位置的向量）相结合。
 2. **动态上下文表示**。当输入词元经过自注意力机制和前馈网络层时，其嵌入表示会被更新为上下文相关的形式。这些动态表示能根据上下文环境捕捉词元的语义。例如，单词'`bank`'在'`river bank`'和'`bank robbery`'中的词元嵌入是相同的，但经过网络各层的转换处理后，模型会根据'`bank`'出现的具体上下文环境生成不同的表示。
 
-![大语言模型嵌入架构](./images/fig7.jpg)
+![大语言模型嵌入架构](./img/fig7.jpg)
 
 **图7**：嵌入技术在大语言模型架构中的定位概述
 
@@ -263,7 +263,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 
 大语言模型中的嵌入层本质上是一个查找表。给定索引列表（词元`ID`）后，该层将返回对应的嵌入表示。《**从零构建大语言模型**》[8]对此概念进行了全面阐释。
 
-![嵌入层作为查找表的可视化示意图](./images/fig8.jpg)
+![嵌入层作为查找表的可视化示意图](./img/fig8.jpg)
 
 **图8**：嵌入层作为查找表的可视化示意图（图片来源：[8]）
 
@@ -274,7 +274,7 @@ model.most_similar(positive=['woman', 'doctor'], negative=['man'])
 1. 将 3 个训练样本的索引转换为独热编码
 2. 将独热编码输入与权重矩阵相乘
 
-![嵌入查找过程的可视化示意图](./images/fig9.jpg)
+![嵌入查找过程的可视化示意图](./img/fig9.jpg)
 
 **图9**：嵌入查找过程的可视化示意图（图片来源：[8]）
 
@@ -511,7 +511,7 @@ for token, neighbors in tokens_and_neighbors.items():
 
 例如，针对句子"**_AI agents will be the most hot topic of artificial intelligence in 2025._**"进行词元化处理，将词元转换为嵌入表示，并找出每个词元最相似的`20`个嵌入表示，即可得到如下嵌入图谱：
 
-![句子"_AI agents will be the most hot topic of artificial intelligence in 2025._"的嵌入图谱可视化](./images/fig10.jpg)
+![句子"_AI agents will be the most hot topic of artificial intelligence in 2025._"的嵌入图谱可视化](./img/fig10.jpg)
 
 **图10**：句子"_AI agents will be the most hot topic of artificial intelligence in 2025._"的嵌入图谱可视化（_原图可以交互访问_）
 
@@ -519,7 +519,7 @@ for token, neighbors in tokens_and_neighbors.items():
 
 在之前的图示示例中，我们忽略了'词元变体'现象。一个词元或单词可能包含多种变体形式，每种变体都有独立的嵌入表示。例如，词元'`list`'可能存在多个变体形式，如'`_list`'、'`List`'等，这些变体通常都拥有与原始词元高度相似的嵌入向量。下图展示了词元'`list`'及其邻近词元的分布关系，包括其各种变体形式。
 
-![单词'list'及其最邻近词元（包含变体形式）的向量空间分布示意图](./images/fig11.jpg)
+![单词'list'及其最邻近词元（包含变体形式）的向量空间分布示意图](./img/fig11.jpg)
 
 **图11**：单词'list'及其最邻近词元（包含变体形式）的向量空间分布示意图（_原图可以交互访问_）
 

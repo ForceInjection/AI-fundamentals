@@ -19,16 +19,31 @@
 
 ## 3. 模型架构与优化
 
-- **[混合专家 (MoE)](moe/mixture_of_experts_moe_visual_guide.zh-CN.md)** — 稀疏激活、专家路由与负载均衡，如何让模型参数量增长而不线性增加推理成本。
-- **[模型量化 (Quantization)](quantization/01_visual_guide_to_quantization.md)** — FP16 / INT8 / INT4 / GPTQ / AWQ 等量化路径的图解解析，以及精度—性能的折中决策。
+### 3.1 核心架构
 
-## 4. 文件格式与应用层技术
+- **[Transformer 架构详解](transformer/transformer_architecture.md)** — 从自注意力、多头注意力、FFN 到完整 Decoder Block 的逐组件拆解，包含 Q/K/V 数学原理与 SwiGLU / RMSNorm 等现代变体。
+- **[位置编码](positional_encoding/positional_encoding.md)** — 从 Sinusoidal 到 RoPE 的演进路径，深入 RoPE 的旋转数学原理与 NTK/YaRN 外推技术。
+- **[LLM 架构演进史](architecture_evolution/llm_architecture_evolution.md)** — 从 GPT-1 到 DeepSeek-V3 的 7 个关键拐点，Decoder-only 如何成为标准配方，以及 MoE 与推理 Scaling 的新趋势。
+
+### 3.2 参数效率与推理优化
+
+- **[混合专家 (MoE)](moe/mixture_of_experts_moe_visual_guide.zh-CN.md)** — 稀疏激活、专家路由与负载均衡，如何让模型参数量增长而不线性增加推理成本。
+- **[Scaling Laws](scaling_laws/scaling_laws.md)** — Kaplan → Chinchilla → MoE 三代缩放定律的演进，以及「数据墙」与推理时间 Scaling 的前沿探索。
+- **[模型量化 (Quantization)](quantization/visual_guide_to_quantization.md)** — FP16 / INT8 / INT4 / GPTQ / AWQ 等量化路径的图解解析，以及精度—性能的折中决策。
+
+## 4. 模型文件格式
 
 - **[大模型文件格式](file_formats/llm_file_formats_complete_guide.md)** — GGUF / GGML / Safetensors 的存储结构、元数据布局与互转注意事项。
-- **[基于 LLM 的意图检测](intent_detection/intent_detection_using_llm.zh-CN.md)** — 构建可靠意图识别系统的设计路径与常见工程陷阱。
-  - 参见：[ChatBox 意图识别与语义理解](intent_detection/chatbox_intent_recognition_and_semantic_understanding.md)。
 
-## 5. 相关资源
+## 5. 应用层技术
+
+- **[意图检测](intent_detection/README.md)** — 基于 LLM 的意图识别管线设计，覆盖通用方法论与 ChatBox 场景实战。
+
+## 6. 评估
+
+- **[LLM 评估体系](evaluation/llm_evaluation.md)** — 主流 Benchmark (MMLU/GSM8K/HumanEval/MT-Bench)、评估方法分类（选择题/开放生成/LLM-as-Judge）与数据污染/Prompt 敏感性等关键陷阱。
+
+## 7. 相关资源
 
 - [推理系统与优化](../../09_inference_system/README.md)
 - [模型训练与微调](../../05_model_training_and_fine_tuning/README.md)

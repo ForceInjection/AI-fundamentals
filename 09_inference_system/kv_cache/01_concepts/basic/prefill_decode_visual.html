@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prefill / Decode 分步推演</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; align-items: center; justify-content: center; }
+#app { width: 920px; height: 620px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Header */
+#header { padding: 16px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+#header h1 { font-size: 15px; color: #f0f6fc; }
+#header .step-indicator { font-size: 12px; color: #8b949e; }
+
+/* Main area */
+#main { flex: 1; display: flex; position: relative; }
+
+/* Canvas */
+#canvas { flex: 1; position: relative; }
+#canvas svg { width: 100%; height: 100%; }
+
+/* Side panel */
+#side { width: 240px; padding: 16px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid #21262d; overflow-y: auto; }
+#side .step-title { font-size: 13px; color: #f0f6fc; font-weight: 600; }
+#side .step-desc { font-size: 11.5px; color: #8b949e; line-height: 1.7; }
+#side .step-desc em { color: #58a6ff; font-style: normal; }
+#side .highlight-red { color: #f85149; }
+
+/* Stats */
+#stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+.stat { padding: 8px 10px; background: #0d1117; border-radius: 6px; border: 1px solid #21262d; text-align: center; }
+.stat .val { font-size: 15px; font-weight: 700; color: #58a6ff; font-variant-numeric: tabular-nums; }
+.stat.val-red .val { color: #f85149; }
+.stat .lbl { font-size: 10px; color: #8b949e; margin-top: 2px; }
+
+/* Navigation */
+#nav { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 24px 16px; border-top: 1px solid #21262d; }
+#nav button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+#nav button:hover { background: #30363d; border-color: #58a6ff; }
+#nav button:disabled { opacity: .3; cursor: default; }
+#nav .dots { display: flex; gap: 6px; }
+#nav .dot { width: 8px; height: 8px; border-radius: 50%; background: #30363d; transition: all .2s; cursor: pointer; }
+#nav .dot.active { background: #58a6ff; width: 24px; border-radius: 4px; }
+#nav .dot.done { background: #3fb950; }
+
+/* Legend */
+#legend { display: flex; gap: 16px; font-size: 10px; color: #8b949e; margin-top: auto; padding-top: 8px; border-top: 1px solid #21262d; flex-wrap: wrap; }
+#legend span { display: inline-flex; align-items: center; gap: 4px; }
+#legend .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* Animations */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-step { animation: fadeInUp .35s ease-out; }
+@keyframes pulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
+.pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes flow { to { stroke-dashoffset: -24; } }
+.flow-r { stroke-dasharray: 8 6; animation: flow .6s linear infinite; }
+.flow-l { stroke-dasharray: 8 6; animation: flow .6s linear infinite reverse; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <h1>Prefill / Decode — 分步推演</h1>
+    <span class="step-indicator" id="stepLabel">Step 1 / 5</span>
+  </div>
+  <div id="main">
+    <div id="canvas"><svg id="svg" viewBox="0 0 680 520"></svg></div>
+    <div id="side">
+      <div class="step-title" id="stepTitle"></div>
+      <div class="step-desc" id="stepDesc"></div>
+      <div id="stats"></div>
+      <div id="legend">
+        <span><span class="swatch" style="background:#58a6ff"></span>计算 (compute-bound)</span>
+        <span><span class="swatch" style="background:#3fb950"></span>KV Cache</span>
+        <span><span class="swatch" style="background:#f85149"></span>瓶颈 (memory-bound)</span>
+        <span><span class="swatch" style="background:#8b949e"></span>规则书(权重)</span>
+      </div>
+    </div>
+  </div>
+  <div id="nav">
+    <button id="prevBtn" onclick="goStep(-1)">◀</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn" onclick="goStep(1)">▶</button>
+  </div>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const E = (t, a) => { const e = document.createElementNS(NS, t); if (a) for (let k in a) e.setAttribute(k, a[k]); return e; };
+const T = (x, y, s, c) => { const t = E("text", { x, y, class: c || "" }); t.textContent = s; return t; };
+const svg = document.getElementById("svg");
+const mainGroup = E("g"); svg.appendChild(mainGroup);
+
+// ── Colors ──
+const C = {
+  blue:   "#58a6ff",
+  green:  "#3fb950",
+  red:    "#f85149",
+  orange: "#d29922",
+  gray:   "#8b949e",
+  purple: "#a371f7",
+  bg:     "#0d1117",
+  card:   "#161b22",
+  border: "#30363d",
+  white:  "#f0f6fc",
+};
+
+// ── Helpers ──
+function box(g, x, y, w, h, label, color, opts={}) {
+  const c = color || C.blue;
+  g.appendChild(E("rect", { x, y, width: w, height: h, rx: 6, fill: opts.fill || C.bg, stroke: c, "stroke-width": opts.stroke || 1.2, opacity: opts.opacity ?? 1 }));
+  if (label) g.appendChild(T(x + 10, y + Math.min(h, 28) / 2 + 5, label, ""));
+  return { x, y, w, h };
+}
+
+function arrow(g, x1, y1, x2, y2, color, cls) {
+  const line = E("line", { x1, y1, x2, y2, stroke: color || C.blue, "stroke-width": 2, "stroke-linecap": "round", class: cls || "", opacity: .7 });
+  g.appendChild(line);
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const L = 7;
+  g.appendChild(E("polygon", { points: `${x2},${y2} ${x2-L*Math.cos(a-.6)},${y2-L*Math.sin(a-.6)} ${x2-L*Math.cos(a+.6)},${y2-L*Math.sin(a+.6)}`, fill: color || C.blue, opacity: .7 }));
+}
+
+function mat(g, x, y, w, h, dims, color, opacity) {
+  g.appendChild(E("rect", { x, y, width: w, height: h, rx: 3, fill: color || C.blue, opacity: opacity || .12, stroke: color || C.blue, "stroke-width": .6 }));
+  g.appendChild(T(x + w / 2, y + h / 2 + 4, dims, ""));
+}
+
+function bigText(g, x, y, s, color, anchor) {
+  const t = T(x, y, s, "");
+  t.setAttribute("font-size", "16"); t.setAttribute("font-weight", "700"); t.setAttribute("fill", color || C.white);
+  if (anchor) t.setAttribute("text-anchor", anchor);
+  g.appendChild(t);
+}
+function smallText(g, x, y, s, color, sz, anchor) {
+  const t = T(x, y, s, "");
+  t.setAttribute("font-size", sz || "12"); t.setAttribute("fill", color || C.gray);
+  if (anchor) t.setAttribute("text-anchor", anchor);
+  g.appendChild(t);
+}
+
+// ═══════════════════════════════════════════
+// STEP DEFINITIONS
+// ═══════════════════════════════════════════
+
+let currentStep = 0;
+const totalSteps = 5;
+
+const steps = [
+  {
+    title: "① 一个 token 的注意力计算",
+    desc: `每个 token 经过三个投影矩阵 (W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub>)，生成 Q、K、V。<br><br>
+           Q·K<sup>T</sup> 计算该 token 与所有 token 的 <em>相关性得分</em>，softmax 归一化为权重后，对 V 加权求和得到输出。<br><br>
+           <span style="color:#8b949e">这是 Prefill 和 Decode 共用的基本单元。两阶段的差异只在于 <em>输入形状不同</em>。</span>`,
+    stats: [{ v: "1", l: "输入 token 数" }, { v: "d×d", l: "投影矩阵尺寸" }, { v: "Q·Kᵀ·V", l: "核心计算" }, { v: "1→d", l: "输出维度" }],
+    draw(g) {
+      const xb = box(g, 30, 50, 120, 40, "", C.blue);
+      smallText(g, 90, 76, "x  (1, d)", C.blue, "12", "middle");
+      smallText(g, 90, 38, "输入：1 个 token", C.gray, "10", "middle");
+
+      const wb = box(g, 30, 140, 120, 60, "", C.gray);
+      smallText(g, 90, 165, "W_Q  W_K  W_V", C.gray, "11", "middle");
+      smallText(g, 90, 190, "(d, d)  ×3", C.gray, "9", "middle");
+
+      arrow(g, xb.x + xb.w, xb.y + xb.h/2, 220, 80, C.blue, "flow-r");
+      arrow(g, wb.x + wb.w, wb.y + 20, 220, 100, C.gray, "flow-r");
+      arrow(g, wb.x + wb.w, wb.y + 40, 220, 120, C.gray, "flow-r");
+
+      box(g, 220, 55, 150, 90, "", C.blue);
+      smallText(g, 295, 80, "Q  (1, d)", C.blue, "12", "middle");
+      smallText(g, 295, 102, "K  (1, d)", C.green, "12", "middle");
+      smallText(g, 295, 124, "V  (1, d)", C.orange, "12", "middle");
+      smallText(g, 295, 142, "矩阵×矩阵 (GEMM)", C.gray, "9", "middle");
+
+      arrow(g, 370, 90, 440, 90, C.blue, "flow-r");
+      box(g, 440, 55, 200, 90, "", C.white);
+      smallText(g, 540, 78, "Q · Kᵀ / √d", C.white, "12", "middle");
+      smallText(g, 540, 98, "→ softmax → × V", C.white, "12", "middle");
+      smallText(g, 540, 120, "→ 输出  (1, d)", C.white, "12", "middle");
+      smallText(g, 540, 142, "注意力计算", C.gray, "9", "middle");
+
+      smallText(g, 30, 240, "这就是 Prefill 和 Decode 共用的一次 attention 计算。", C.gray, "11");
+      smallText(g, 30, 258, "两个阶段的区别，只在于上面的矩阵里 seq_len 那一维是 4 还是 1。", C.gray, "11");
+    }
+  },
+  {
+    title: "② Prefill：并行处理全部 prompt token",
+    desc: `Prompt 全部 4 个 token 一次性推进模型。<br><br>
+           Q/K/V 投影变成 <em>矩阵×矩阵 (GEMM)</em>，GPU 算力打满。<br><br>
+           所有 token 的 K 和 V 一次性算完，<em style="color:#3fb950">存入 KV Cache（绿色）</em>。<br><br>
+           瓶颈：<em>算力 (compute-bound)</em>。`,
+    stats: [{ v: "4", l: "输入 token 数" }, { v: "402M", l: "QKV 投影 FLOPs" }, { v: "GEMM", l: "运算类型" }, { v: "~4.2", l: "算术强度" }],
+    draw(g) {
+      const xb = box(g, 30, 40, 120, 50, "", C.blue);
+      smallText(g, 90, 72, "X  (4, d)", C.blue, "14", "middle");
+      smallText(g, 90, 28, "4 个 prompt token", C.gray, "10", "middle");
+
+      arrow(g, 150, 65, 220, 65, C.blue, "flow-r");
+
+      const qb = box(g, 220, 30, 220, 70, "", C.blue, { stroke: 2 });
+      smallText(g, 330, 56, "Q/K/V 投影  ·  GEMM", C.blue, "14", "middle");
+      smallText(g, 330, 78, "Q: (4,d)  K: (4,d)  V: (4,d)", C.white, "11", "middle");
+      smallText(g, 330, 96, "402M FLOPs  ·  算力利用率 70%+", C.gray, "9", "middle");
+
+      arrow(g, 440, 65, 500, 65, C.blue, "flow-r");
+
+      box(g, 500, 30, 150, 70, "", C.white);
+      smallText(g, 575, 56, "Q·Kᵀ → (4,4)", C.white, "12", "middle");
+      smallText(g, 575, 76, "softmax → ×V", C.white, "12", "middle");
+      smallText(g, 575, 96, "→ 输出 (4,d)", C.gray, "9", "middle");
+
+      arrow(g, 330, 100, 330, 155, C.green, "flow-r pulse");
+      const kc = box(g, 180, 155, 300, 50, "", C.green, { stroke: 1.8 });
+      smallText(g, 330, 175, "← 存入 KV Cache ←", C.green, "14", "middle");
+      smallText(g, 330, 198, "K_cache: (4, d)  ·  V_cache: (4, d)", C.green, "10", "middle");
+
+      smallText(g, 30, 240, "瓶颈：算力。一次性处理 4 个 token，管理员火力全开。", C.gray, "11");
+      smallText(g, 500, 140, "→ 经 32 层 FFN + 残差 → LM Head → 第一个 token", C.gray, "10", "middle");
+    }
+  },
+  {
+    title: "③ Decode Step 1：只算 1 个新 token",
+    desc: `输入从 <em>(4, d)</em> 缩小为 <em>(1, d)</em>。<br><br>
+           规则书 (W<sub>Q</sub>/W<sub>K</sub>/W<sub>V</sub>) 重量不变——搬出来只查 1 个词条。<br><br>
+           新 token 的 K/V 追加入绿框，但 <em style="color:#f85149">读 KV Cache 的开销开始显现</em>。<br><br>
+           瓶颈开始从算力转向 <em style="color:#f85149">显存带宽</em>。`,
+    stats: [{ v: "1", l: "输入 token 数" }, { v: "33.5M", l: "QKV 投影 FLOPs" }, { v: "GEMV", l: "运算类型" }, { v: "~1.05", l: "算术强度" }],
+    draw(g) {
+      const xb = box(g, 30, 40, 120, 50, "", C.orange);
+      smallText(g, 90, 72, "x  (1, d)", C.orange, "14", "middle");
+      smallText(g, 90, 28, "只有 1 个 token！", C.red, "10", "middle");
+
+      arrow(g, 150, 65, 220, 55, C.orange, "flow-r");
+      smallText(g, 180, 95, "W_Q: (d,d)  32MB", C.gray, "9");
+      smallText(g, 180, 110, "W_K: (d,d)  32MB", C.gray, "9");
+      smallText(g, 180, 125, "W_V: (d,d)  32MB", C.gray, "9");
+
+      const qb = box(g, 240, 30, 180, 70, "", C.orange, { stroke: 2 });
+      smallText(g, 330, 56, "Q/K/V 投影  ·  GEMV", C.orange, "12", "middle");
+      smallText(g, 330, 78, "Q: (1,d)  K: (1,d)  V: (1,d)", C.white, "10", "middle");
+      smallText(g, 330, 96, "33.5M FLOPs  ·  算力利用率 ~5%", C.red, "9", "middle");
+
+      arrow(g, 420, 65, 480, 65, C.orange, "flow-r");
+
+      const at = box(g, 480, 30, 170, 70, "", C.white);
+      smallText(g, 565, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
+      smallText(g, 565, 78, "→ (1, 5) 得分向量", C.white, "11", "middle");
+      smallText(g, 565, 96, "× V_cache → 输出", C.gray, "9", "middle");
+
+      const kc = box(g, 180, 155, 470, 60, "", C.green, { stroke: 1.8 });
+      smallText(g, 415, 178, "KV Cache  ·  seq_len = 5", C.green, "14", "middle");
+      smallText(g, 415, 200, "读 K_cache: (5,d)  ·  写新 K/V: +16KB  ·  读 > 写，差距随 seq 扩大", C.green, "10", "middle");
+
+      arrow(g, 520, 155, 565, 100, C.red, "flow-l pulse");
+      arrow(g, 330, 100, 330, 155, C.green, "flow-r");
+
+      smallText(g, 30, 248, "瓶颈开始转移：算同样的 33.5M FLOPs，却要搬全套规则书 (14GB) + 翻 5 张卡片。", C.red, "10");
+      smallText(g, 30, 268, "算术强度从 4.2 暴跌到 1.05 FLOPs/B —— GPU 开始等数据，不再满负荷计算。", C.red, "10");
+    }
+  },
+  {
+    title: "④ N 步之后：KV Cache 膨胀失控",
+    desc: `生成到第 4096 个 token 时：<br><br>
+           K_cache: <em>(4096, d)</em>，每步翻 32MB+ 卡片。<br>
+           规则书 14GB + KV Cache 32MB 双重碾压 HBM 带宽。<br><br>
+           <em style="color:#f85149">计算只花 ~33.5M FLOPs，搬运占了 99% 时间。</em><br><br>
+           这就是 GQA、量化、PagedAttention、Offloading、PD 分离的根源。`,
+    stats: [{ v: "4096", l: "当前 seq_len" }, { v: "~33.5M", l: "注意力 FLOPs" }, { v: "GEMV", l: "运算类型" }, { v: "< 0.1", l: "算术强度" }],
+    draw(g) {
+      const xb = box(g, 30, 40, 120, 50, "", C.red);
+      smallText(g, 90, 72, "x  (1, d)", C.red, "14", "middle");
+      smallText(g, 90, 28, "还是 1 个 token", C.red, "10", "middle");
+
+      arrow(g, 150, 65, 200, 65, C.red, "flow-r");
+
+      const qb = box(g, 200, 30, 180, 70, "", C.red, { stroke: 2 });
+      smallText(g, 290, 56, "Q/K/V 投影  ·  GEMV", C.red, "12", "middle");
+      smallText(g, 290, 78, "33.5M FLOPs（固定）", C.white, "10", "middle");
+      smallText(g, 290, 96, "但规则书仍是 14GB", C.red, "9", "middle");
+
+      arrow(g, 380, 65, 440, 65, C.red, "flow-r");
+
+      const at = box(g, 440, 30, 210, 70, "", C.white);
+      smallText(g, 545, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
+      smallText(g, 545, 78, "→ (1, 4096) 得分向量", C.white, "11", "middle");
+      smallText(g, 545, 96, "~33.5M FLOPs  ← 换 14GB 搬运", C.red, "9", "middle");
+
+      const kc = box(g, 30, 140, 620, 90, "", C.red, { stroke: 2.5 });
+      g.appendChild(E("rect", { x: 30, y: 140, width: 620, height: 90, rx: 6, fill: C.red, opacity: .04 }));
+      bigText(g, 340, 168, "⛔  KV Cache  —  seq_len = 4096", C.red, "middle");
+      smallText(g, 340, 192, "K_cache: (4096, d) = 32MB  ·  规则书: 14GB  ·  每步搬运 14GB+32MB", C.red, "12", "middle");
+      smallText(g, 340, 216, "GPU 90% 时间在等 HBM 搬运数据。计算只占 ~33.5M FLOPs，搬运霸占了全部延迟。", C.red, "11", "middle");
+
+      arrow(g, 500, 140, 545, 100, C.red, "flow-l pulse");
+      arrow(g, 290, 100, 290, 140, C.green, "flow-r");
+      smallText(g, 220, 248, "追加 16KB（微不足道）", C.gray, "9");
+
+      smallText(g, 30, 270, "解决方向：GQA → 减少卡片数  ·  量化 → 压缩每张卡  ·  PagedAttention → 消除碎片", C.gray, "10");
+      smallText(g, 30, 290, "Offloading → 冷卡存地下室  ·  PD 分离 → 编目和查目拆到不同的 GPU", C.gray, "10");
+    }
+  },
+  {
+    title: "⑤ 对比总结：同一个模型，两种瓶颈",
+    desc: `<em>Prefill</em> 和 <em>Decode</em> 在同一个模型上运行，但计算特征截然相反。<br><br>
+           理解这个非对称性，就理解了 <em>所有 KV Cache 优化方向的根因</em>。<br><br>
+           优化的本质：如何在 memory-bound 的 Decode 阶段，减少每步从 HBM 搬运的数据量。`,
+    stats: [{ v: "compute", l: "Prefill 瓶颈" }, { v: "memory", l: "Decode 瓶颈" }, { v: "4.2→0.1", l: "算术强度坍缩" }, { v: "99%", l: "Decode 空转比例" }],
+    draw(g) {
+      // Left: Prefill
+      box(g, 20, 50, 260, 190, "", C.blue, { stroke: 1.5 });
+      bigText(g, 150, 78, "Prefill", C.blue, "middle");
+      smallText(g, 150, 110, "输入：全部 prompt token", C.white, "12", "middle");
+      smallText(g, 150, 138, "运算：矩阵×矩阵 (GEMM)", C.white, "12", "middle");
+      smallText(g, 150, 166, "瓶颈：算力 (compute-bound)", C.blue, "12", "middle");
+      smallText(g, 150, 194, "GPU 利用率：70%+", C.blue, "12", "middle");
+      smallText(g, 150, 222, "KV Cache：写入", C.green, "12", "middle");
+
+      // Center label — clear from both boxes
+      smallText(g, 350, 145, "同一个模型", C.gray, "14", "middle");
+
+      // Right: Decode
+      box(g, 400, 50, 260, 190, "", C.red, { stroke: 1.5 });
+      bigText(g, 530, 78, "Decode", C.red, "middle");
+      smallText(g, 530, 110, "输入：1 个 token", C.white, "12", "middle");
+      smallText(g, 530, 138, "运算：矩阵×向量 (GEMV)", C.white, "12", "middle");
+      smallText(g, 530, 166, "瓶颈：显存带宽 (memory-bound)", C.red, "12", "middle");
+      smallText(g, 530, 194, "GPU 利用率：~5%", C.red, "12", "middle");
+      smallText(g, 530, 222, "KV Cache：读取 + 追加", C.red, "12", "middle");
+
+      // Bottom: derived optimizations
+      smallText(g, 30, 290, "从 memory-bound 推导出的所有优化方向 →", C.gray, "11");
+      const opts = [
+        ["GQA / MQA", "共享卡片，减少读取量", C.green],
+        ["KV 量化", "压缩每张卡片尺寸", C.green],
+        ["PagedAttention", "标准化归档，消除碎片", C.green],
+        ["Offloading", "冷卡存地下室 (CPU/NVMe)", C.green],
+        ["PD 分离", "编目组 + 查询组分拆", C.green],
+      ];
+      const oxx = [30, 155, 280, 405, 530];
+      oxx.forEach((ox, i) => {
+        if (i >= opts.length) return;
+        const [name, desc, col] = opts[i];
+        box(g, ox, 310, 120, 55, "", col, { stroke: 1 });
+        smallText(g, ox + 60, 332, name, col, "11", "middle");
+        smallText(g, ox + 60, 354, desc, C.gray, "9", "middle");
+      });
+    }
+  }
+];
+
+// ═══════════════════════════════════════════
+// RENDER & NAVIGATION
+// ═══════════════════════════════════════════
+
+function render(stepIdx) {
+  currentStep = stepIdx;
+  const s = steps[stepIdx];
+
+  // Clear
+  while (mainGroup.firstChild) mainGroup.removeChild(mainGroup.firstChild);
+  const offsetG = E("g", { transform: "translate(0, 45)" });
+  const g = E("g", { class: "fade-step" });
+  offsetG.appendChild(g);
+  mainGroup.appendChild(offsetG);
+
+  // Draw
+  s.draw(g);
+
+  // Update side panel
+  document.getElementById("stepLabel").textContent = `Step ${stepIdx + 1} / ${totalSteps}`;
+  document.getElementById("stepTitle").textContent = s.title;
+  document.getElementById("stepDesc").innerHTML = s.desc;
+
+  // Update stats
+  const statsDiv = document.getElementById("stats");
+  statsDiv.innerHTML = s.stats.map(st =>
+    `<div class="stat"><div class="val">${st.v}</div><div class="lbl">${st.l}</div></div>`
+  ).join("");
+
+  // Update dots
+  document.querySelectorAll(".dot").forEach((d, i) => {
+    d.classList.remove("active", "done");
+    if (i === stepIdx) d.classList.add("active");
+    else if (i < stepIdx) d.classList.add("done");
+  });
+
+  // Update buttons
+  document.getElementById("prevBtn").disabled = stepIdx === 0;
+  document.getElementById("nextBtn").disabled = stepIdx === totalSteps - 1;
+
+  // Legend
+  document.getElementById("legend").style.display = "flex";
+}
+
+function goStep(delta) {
+  const next = currentStep + delta;
+  if (next >= 0 && next < totalSteps) render(next);
+}
+
+// Init dots
+const dotsDiv = document.getElementById("dots");
+for (let i = 0; i < totalSteps; i++) {
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dot.onclick = () => render(i);
+  dotsDiv.appendChild(dot);
+}
+
+// Keyboard nav
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") goStep(1);
+  if (e.key === "ArrowLeft") goStep(-1);
+});
+
+// Init
+render(0);
+console.log("Prefill/Decode Step Visual — 5 steps, keyboard nav. READY.");
+</script>
+</body>
+</html>
