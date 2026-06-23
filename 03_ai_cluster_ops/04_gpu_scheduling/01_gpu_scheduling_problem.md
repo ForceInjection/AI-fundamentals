@@ -17,9 +17,9 @@ K8s 默认调度器做的是「装箱」——把每个 Pod 放到一个满足�
 ```text
 节点 A (8 GPU)                 节点 B (8 GPU)
 ┌─┬─┬─┬─┬─┬─┬─┬─┐          ┌─┬─┬─┬─┬─┬─┬─┬─┐
-│■│ │■│ │■│ │■│ │ ← 4 个    │ │ │ │ │ │ │ │ │ ← 完全空闲
-└─┴─┴─┴─┴─┴─┴─┴─┘           └─┴─┴─┴─┴─┴─┴─┴─┘
- 0 1 2 3 4 5 6 7                0 1 2 3 4 5 6 7
+│■│ │■│ │■│ │■│ │ ← 4 个   │ │ │ │ │ │ │ │ │ ← 完全空闲
+└─┴─┴─┴─┴─┴─┴─┴─┘          └─┴─┴─┴─┴─┴─┴─┴─┘
+ 0 1 2 3 4 5 6 7            0 1 2 3 4 5 6 7
 
 新 Pod: 需要 4 GPU, TP=4
 K8s 看到: 节点 A 还有 4 GPU 空闲 → 调度到 A
@@ -53,6 +53,7 @@ NVIDIA 的 GPU Operator 提供了 [Topology-Aware Scheduling](https://docs.nvidi
 训练任务是 All-or-Nothing 的——PyTorch DDP 初始化 NCCL communicator 时需要 **全部 rank 同时在线**。如果 8 GPU 的训练任务只有 6 个 Pod 被调度、另外 2 个还在 Pending，已有的 6 个 Pod 会阻塞在 `init_process_group` 上——**占着 GPU 但不计算**，直到超时。
 
 这种部分调度的后果是多重浪费：
+
 - 已调度的 Pod 占着 GPU 空转
 - 未调度的 Pod 在队列中卡住
 - 其他等待 GPU 的作业因为「GPU 看似被占满」而得不到调度
@@ -63,12 +64,12 @@ K8s 默认调度器是逐个 Pod 独立决策的，无法理解「只有全部 P
 
 ## 四、三个盲区的解决路径
 
-| 盲区 | 现象 | 解决方向 | 详见 |
-|------|------|---------|------|
-| GPU 碎片化 | 多 GPU 训练无法找到连续 GPU 组 | 拓扑感知调度 + 碎片整理 | [§03](03_topology_aware_scheduling.md) |
-| 拓扑不感知 | 调度到跨 NUMA/跨 socket 的 GPU，通信慢 | NVLink/NUMA 感知的 Filter + Score | [§03](03_topology_aware_scheduling.md) |
-| 无 Gang Scheduling | 训练任务部分 Pod 占 GPU 空转 | Coscheduling / SchedulingGates | [§02](02_gang_scheduling_for_training.md) |
-| GPU 共享的粒度 | MIG/MPS/Timeslicing 如何暴露为 K8s 资源 | Device Plugin 的不同策略 | [§04](04_gpu_sharing_scheduling.md) |
+| 盲区               | 现象                                    | 解决方向                          | 详见                                      |
+| ------------------ | --------------------------------------- | --------------------------------- | ----------------------------------------- |
+| GPU 碎片化         | 多 GPU 训练无法找到连续 GPU 组          | 拓扑感知调度 + 碎片整理           | [§03](03_topology_aware_scheduling.md)    |
+| 拓扑不感知         | 调度到跨 NUMA/跨 socket 的 GPU，通信慢  | NVLink/NUMA 感知的 Filter + Score | [§03](03_topology_aware_scheduling.md)    |
+| 无 Gang Scheduling | 训练任务部分 Pod 占 GPU 空转            | Coscheduling / SchedulingGates    | [§02](02_gang_scheduling_for_training.md) |
+| GPU 共享的粒度     | MIG/MPS/Timeslicing 如何暴露为 K8s 资源 | Device Plugin 的不同策略          | [§04](04_gpu_sharing_scheduling.md)       |
 
 ---
 

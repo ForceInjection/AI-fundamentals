@@ -48,23 +48,23 @@ kind: PodGroup
 metadata:
   name: training-job-tp8
 spec:
-  minMember: 8              # 至少 8 个 Pod 全部就绪才启动
-  minResources:             # 每个 Pod 需要的资源
+  minMember: 8 # 至少 8 个 Pod 全部就绪才启动
+  minResources: # 每个 Pod 需要的资源
     nvidia.com/gpu: "1"
-  queue: ai-training        # 所属队列
+  queue: ai-training # 所属队列
 ---
 # 每个训练 Pod 中指定所属的 PodGroup
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    scheduling.volcano.sh/podgroup: training-job-tp8  # 关联到 PodGroup
+    scheduling.volcano.sh/podgroup: training-job-tp8 # 关联到 PodGroup
 spec:
-  schedulerName: volcano    # 使用 Volcano 调度器
+  schedulerName: volcano # 使用 Volcano 调度器
   containers:
-  - resources:
-      limits:
-        nvidia.com/gpu: 1
+    - resources:
+        limits:
+          nvidia.com/gpu: 1
 ```
 
 与默认调度器的关键区别：Volcano 在看到 8 个 Pod 时不会逐个提交——它先检查集群中是否存在能同时容纳 8 个 Pod 的节点/节点组。如果存在，一次性全调；如果不存在，PodGroup 进入 `Inqueue` 状态等待。
@@ -90,12 +90,12 @@ kind: Pod
 metadata:
   name: training-worker-0
 spec:
-  schedulingGates:           # K8s 1.26+
-  - name: gang-scheduling    # 有 gate 时调度器不处理此 Pod
+  schedulingGates: # K8s 1.26+
+    - name: gang-scheduling # 有 gate 时调度器不处理此 Pod
   containers:
-  - resources:
-      limits:
-        nvidia.com/gpu: 1
+    - resources:
+        limits:
+          nvidia.com/gpu: 1
 ```
 
 SchedulingGates 的优势是不需要替换调度器，但劣势也很明显：移除 gate 后调度器仍然是逐个 Pod 决策，可能出现「部分 Pod 调度成功、部分仍 Pending」——只是把「先到先得」变成了「同时开始」。要彻底解决部分调度问题，仍需要在调度器层做 All-or-Nothing 决策，即 Volcano 的 Coscheduling 模型。
@@ -104,12 +104,12 @@ SchedulingGates 的优势是不需要替换调度器，但劣势也很明显：�
 
 ## 四、选型建议
 
-| 场景 | 推荐方案 | 原因 |
-|------|---------|------|
-| 纯训练集群，作业以多 GPU 分布式训练为主 | Volcano Coscheduling | 保证 All-or-Nothing，配合 queue 实现优先级和公平调度 |
-| 混合负载集群，训练 + 推理共存 | K8s SchedulingGates + 轻量控制器 | 不改调度器，渐进式引入 Gang Scheduling |
-| 已有 K8s 集群，不想引入额外调度器 | SchedulingGates | 最小改动，但效果不如 Volcano 彻底 |
-| 多租户 + 多队列 + 优先级 | Volcano | Queue + Fair-share 开箱即用 |
+| 场景                                    | 推荐方案                         | 原因                                                 |
+| --------------------------------------- | -------------------------------- | ---------------------------------------------------- |
+| 纯训练集群，作业以多 GPU 分布式训练为主 | Volcano Coscheduling             | 保证 All-or-Nothing，配合 queue 实现优先级和公平调度 |
+| 混合负载集群，训练 + 推理共存           | K8s SchedulingGates + 轻量控制器 | 不改调度器，渐进式引入 Gang Scheduling               |
+| 已有 K8s 集群，不想引入额外调度器       | SchedulingGates                  | 最小改动，但效果不如 Volcano 彻底                    |
+| 多租户 + 多队列 + 优先级                | Volcano                          | Queue + Fair-share 开箱即用                          |
 
 ---
 

@@ -8,7 +8,7 @@
 
 ## 一、GPU 亲和性——NVLink 域内 vs 跨 NVSwitch
 
-同一个节点上 8 张 A100/H100 通过 NVSwitch 全互联。任意两张 GPU 都能达到 NVLink 最高带宽（H100: ~450 GB/s 单向，A100: ~600 GB/s 双向）。但如果 4 张 GPU 分别来自两个 NVSwitch 域（A100 有 2 个 NVSwitch，每 4 张 GPU 一组），跨域通信需要经过 PCIe 中转：
+同一个节点上 8 张 A100/H100 通过 NVSwitch 全互联。任意两张 GPU 都能达到 NVLink 最高带宽（H100: ~450 GB/s 理论单向带宽，NCCL all_reduce 实测 bus_bw ~316 GB/s；A100: ~600 GB/s 双向）。但如果 4 张 GPU 分别来自两个 NVSwitch 域（A100 有 2 个 NVSwitch，每 4 张 GPU 一组），跨域通信需要经过 PCIe 中转：
 
 ```text
 NVSwitch 域 1 (GPU 0-3):         NVSwitch 域 2 (GPU 4-7):
@@ -37,11 +37,11 @@ metadata:
 spec:
   schedulerName: nvidia-topology-aware-scheduler
   containers:
-  - resources:
-      limits:
-        nvidia.com/gpu: 4
+    - resources:
+        limits:
+          nvidia.com/gpu: 4
   annotations:
-    nvidia.com/gpu.topology.prefer: "nvswitch"  # 偏好同 NVSwitch 域
+    nvidia.com/gpu.topology.prefer: "nvswitch" # 偏好同 NVSwitch 域
     # nvidia.com/gpu.topology.require: "nvswitch" # 强制同 NVSwitch 域
 ```
 
@@ -77,7 +77,7 @@ K8s 1.27+ 的 Topology Manager 配合 CPU Manager + Memory Manager 可以做 NUM
 ```yaml
 # Kubelet Topology Manager 策略
 # /var/lib/kubelet/config.yaml
-topologyManagerPolicy: single-numa-node  # 所有资源在同一 NUMA node
+topologyManagerPolicy: single-numa-node # 所有资源在同一 NUMA node
 # 可选: best-effort, restricted, single-numa-node
 ```
 
@@ -85,11 +85,11 @@ topologyManagerPolicy: single-numa-node  # 所有资源在同一 NUMA node
 
 ### 2.2 建议
 
-| 场景 | NUMA 策略 |
-|------|----------|
-| 单 GPU 推理、H2D 只发生一次 | 不需要 NUMA 对齐 |
+| 场景                                | NUMA 策略                        |
+| ----------------------------------- | -------------------------------- |
+| 单 GPU 推理、H2D 只发生一次         | 不需要 NUMA 对齐                 |
 | 多 GPU 训练，DataLoader 放在 CPU 端 | `best-effort` — 尽量对齐但不强制 |
-| HPC 训练、GPU-direct RDMA 频繁传输 | `single-numa-node` — 强制执行 |
+| HPC 训练、GPU-direct RDMA 频繁传输  | `single-numa-node` — 强制执行    |
 
 ---
 
@@ -113,11 +113,11 @@ Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，�
 
 ## 四、三层拓扑感知总结
 
-| 层级 | 调度器需要知道什么 | 约束强度 | 典型场景 |
-|------|------------------|---------|---------|
-| GPU 亲和性 | 哪些 GPU 在同一个 NVSwitch 域内 | 强（TP 组必须同域） | TP=4/8 训练 |
-| NUMA 亲和性 | 哪些 CPU core 和 GPU 在同一个 NUMA node | 中（Score 偏好，不强制） | DataLoader 性能敏感的训练 |
-| 跨节点亲和性 | TP 组不跨节点 | 强（TP 组必须同节点） | 任何 TP > 1 的训练 |
+| 层级         | 调度器需要知道什么                      | 约束强度                 | 典型场景                  |
+| ------------ | --------------------------------------- | ------------------------ | ------------------------- |
+| GPU 亲和性   | 哪些 GPU 在同一个 NVSwitch 域内         | 强（TP 组必须同域）      | TP=4/8 训练               |
+| NUMA 亲和性  | 哪些 CPU core 和 GPU 在同一个 NUMA node | 中（Score 偏好，不强制） | DataLoader 性能敏感的训练 |
+| 跨节点亲和性 | TP 组不跨节点                           | 强（TP 组必须同节点）    | 任何 TP > 1 的训练        |
 
 ---
 

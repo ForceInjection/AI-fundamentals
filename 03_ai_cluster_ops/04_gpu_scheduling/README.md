@@ -6,12 +6,12 @@ K8s 默认调度器把 GPU 当成标量资源（`nvidia.com/gpu: 1`），对于�
 
 ## 文档
 
-| # | 文档 | 内容 |
-|---|------|------|
-| 01 | [GPU 调度问题总览](01_gpu_scheduling_problem.md) | 碎片化、拓扑不感知、Gang Scheduling 三个盲区的分析 |
-| 02 | [Gang Scheduling](02_gang_scheduling_for_training.md) | Volcano Coscheduling vs K8s SchedulingGates，All-or-Nothing 调度 |
-| 03 | [拓扑感知调度](03_topology_aware_scheduling.md) | NVLink/NUMA/跨节点三层拓扑感知 + NVIDIA Topology-Aware Scheduler |
-| 04 | [GPU 共享调度](04_gpu_sharing_scheduling.md) | MIG（硬切分）、MPS（计算共享）、Time-slicing（时分）在 K8s 中的表达 |
+| #   | 文档                                                  | 内容                                                                |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------- |
+| 01  | [GPU 调度问题总览](01_gpu_scheduling_problem.md)      | 碎片化、拓扑不感知、Gang Scheduling 三个盲区的分析                  |
+| 02  | [Gang Scheduling](02_gang_scheduling_for_training.md) | Volcano Coscheduling vs K8s SchedulingGates，All-or-Nothing 调度    |
+| 03  | [拓扑感知调度](03_topology_aware_scheduling.md)       | NVLink/NUMA/跨节点三层拓扑感知 + NVIDIA Topology-Aware Scheduler    |
+| 04  | [GPU 共享调度](04_gpu_sharing_scheduling.md)          | MIG（硬切分）、MPS（计算共享）、Time-slicing（时分）在 K8s 中的表达 |
 
 ## 相关资源
 
