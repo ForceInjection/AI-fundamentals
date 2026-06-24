@@ -32,7 +32,7 @@ Transformer 的每层自注意力机制需要将每个 token 投影为 Key 向�
 该公式揭示了 KV Cache 显存占用的严峻挑战：动态增长的缓存数据由多个维度共同驱动——更深的网络、更宽的隐层、更长的上下文序列、更大的并发请求数（Batch Size）。推高其中任何一个维度，KV Cache 的显存需求都会呈线性膨胀，成为制约系统吞吐量的核心瓶颈。此外，PagedAttention 论文指出，在未优化的传统连续内存分配方式下，有效利用率仅 20%–38%，内存碎片化与预分配浪费显著，进一步加剧了显存压力。
 
 > **Prefill 与 Decode 的非对称瓶颈**  
-> 在分析 KV Cache 压缩的实际收益之前，需要区分推理的两个阶段：Prefill（预填充）阶段一次性处理全部输入 token，其计算量为 $O(S^2)$，属于 **compute-bound**；而 Decode（自回归生成）阶段每步仅处理一个新 token，计算量为 $O(S)$，但需反复从显存读取完整的 KV Cache，因此属于 **memory-bound**。这意味着，KV Cache 的压缩对 Decode 阶段的吞吐与延迟改善最为直接——压缩后的 KV Cache 减少了每步生成的访存量，直接缓解了内存带宽瓶颈。理解这一差异，是评估各类压缩方法实际工程收益的前提。
+> 在分析 KV Cache 压缩的实际收益之前，需要区分推理的两个阶段：Prefill（预填充）阶段一次性处理全部输入 token，其计算量为 $O(S^2)$，属于 **compute-bound**；而 Decode（自回归生成）阶段每步仅处理一个新 token，计算量为 $O(S)$，但需反复从显存读取完整的 KV Cache，因此属于 **memory-bound**。这意味着，KV Cache 的压缩对 Decode 阶段的吞吐与延迟改善最为直接——压缩后的 KV Cache 减少了每步生成的访存量，直接缓解了内存带宽瓶颈。关于两阶段计算过程的完整推导（矩阵形状、FLOPs、算术强度），详见 [Prefill 与 Decode 深度拆解](../basic/prefill_decode_qkv_calculation.md)。
 
 ### 1.2 三元约束
 
@@ -235,6 +235,8 @@ KV Cache 的逻辑内存布局（Layout）通常是 `[L, H, T, D]`（层数、�
 - **Token Pruning (如 SnapKV)** 因其动态稀疏性会破坏 PagedAttention 的 Block 内存连续性假设，导致高昂的内存碎片与重组开销，相关的 Sparse KV Cache 提案已被官方标记为 `closed as not planned`。
 
 以下提供了一个**基于 vLLM 开源生态 Roadmap 现状**的压缩方案选型决策树。**注意：本决策树默认无损的 PagedAttention + Prefix Caching 已作为现代推理框架的底层标配。** 在此基座之上，如果依然面临显存瓶颈，可参考如下路径引入额外的压缩技术：
+
+> 以下为 Mermaid 流程图，在 GitHub、VS Code（with Markdown Preview Mermaid Support）、Typora 等工具中可直接渲染。
 
 ```mermaid
 graph TD

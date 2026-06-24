@@ -7,7 +7,7 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; align-items: center; justify-content: center; }
-#app { width: 920px; height: 620px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+#app { width: 1000px; height: 680px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
 
 /* Header */
 #header { padding: 16px 24px 0; display: flex; justify-content: space-between; align-items: center; }
@@ -200,25 +200,25 @@ const steps = [
 
       arrow(g, 150, 65, 220, 65, C.blue, "flow-r");
 
-      const qb = box(g, 220, 30, 220, 70, "", C.blue, { stroke: 2 });
-      smallText(g, 330, 56, "Q/K/V 投影  ·  GEMM", C.blue, "14", "middle");
-      smallText(g, 330, 78, "Q: (4,d)  K: (4,d)  V: (4,d)", C.white, "11", "middle");
-      smallText(g, 330, 96, "402M FLOPs  ·  算力利用率 70%+", C.gray, "9", "middle");
+      const qb = box(g, 220, 25, 240, 85, "", C.blue, { stroke: 2 });
+      smallText(g, 340, 56, "Q/K/V 投影  ·  GEMM", C.blue, "14", "middle");
+      smallText(g, 340, 82, "Q: (4,d)  K: (4,d)  V: (4,d)", C.white, "11", "middle");
+      smallText(g, 340, 102, "402M FLOPs  ·  算力利用率 70%+", C.gray, "9", "middle");
 
-      arrow(g, 440, 65, 500, 65, C.blue, "flow-r");
+      arrow(g, 460, 68, 500, 68, C.blue, "flow-r");
 
-      box(g, 500, 30, 150, 70, "", C.white);
-      smallText(g, 575, 56, "Q·Kᵀ → (4,4)", C.white, "12", "middle");
-      smallText(g, 575, 76, "softmax → ×V", C.white, "12", "middle");
-      smallText(g, 575, 96, "→ 输出 (4,d)", C.gray, "9", "middle");
+      box(g, 500, 25, 170, 85, "", C.white);
+      smallText(g, 585, 56, "Q·Kᵀ → (4,4)", C.white, "12", "middle");
+      smallText(g, 585, 80, "softmax → ×V", C.white, "12", "middle");
+      smallText(g, 585, 102, "→ 输出 (4,d)", C.gray, "9", "middle");
 
-      arrow(g, 330, 100, 330, 155, C.green, "flow-r pulse");
+      arrow(g, 340, 110, 340, 155, C.green, "flow-r pulse");
       const kc = box(g, 180, 155, 300, 50, "", C.green, { stroke: 1.8 });
       smallText(g, 330, 175, "← 存入 KV Cache ←", C.green, "14", "middle");
       smallText(g, 330, 198, "K_cache: (4, d)  ·  V_cache: (4, d)", C.green, "10", "middle");
 
       smallText(g, 30, 240, "瓶颈：算力。一次性处理 4 个 token，管理员火力全开。", C.gray, "11");
-      smallText(g, 500, 140, "→ 经 32 层 FFN + 残差 → LM Head → 第一个 token", C.gray, "10", "middle");
+      smallText(g, 520, 135, "→ 经 32 层 FFN + 残差 → LM Head → 第一个 token", C.gray, "10", "middle");
     }
   },
   {
@@ -233,29 +233,29 @@ const steps = [
       smallText(g, 90, 72, "x  (1, d)", C.orange, "14", "middle");
       smallText(g, 90, 28, "只有 1 个 token！", C.red, "10", "middle");
 
-      arrow(g, 150, 65, 220, 55, C.orange, "flow-r");
-      smallText(g, 180, 95, "W_Q: (d,d)  32MB", C.gray, "9");
-      smallText(g, 180, 110, "W_K: (d,d)  32MB", C.gray, "9");
-      smallText(g, 180, 125, "W_V: (d,d)  32MB", C.gray, "9");
+      arrow(g, 150, 65, 240, 65, C.orange, "flow-r");
+      smallText(g, 180, 115, "W_Q: (d,d)  32MB", C.gray, "9");
+      smallText(g, 180, 130, "W_K: (d,d)  32MB", C.gray, "9");
+      smallText(g, 180, 145, "W_V: (d,d)  32MB", C.gray, "9");
 
-      const qb = box(g, 240, 30, 180, 70, "", C.orange, { stroke: 2 });
-      smallText(g, 330, 56, "Q/K/V 投影  ·  GEMV", C.orange, "12", "middle");
-      smallText(g, 330, 78, "Q: (1,d)  K: (1,d)  V: (1,d)", C.white, "10", "middle");
-      smallText(g, 330, 96, "33.5M FLOPs  ·  算力利用率 ~5%", C.red, "9", "middle");
+      const qb = box(g, 240, 25, 200, 85, "", C.orange, { stroke: 2 });
+      smallText(g, 340, 56, "Q/K/V 投影  ·  GEMV", C.orange, "12", "middle");
+      smallText(g, 340, 82, "Q: (1,d)  K: (1,d)  V: (1,d)", C.white, "10", "middle");
+      smallText(g, 340, 102, "33.5M FLOPs  ·  算力利用率 ~5%", C.red, "9", "middle");
 
-      arrow(g, 420, 65, 480, 65, C.orange, "flow-r");
+      arrow(g, 440, 68, 490, 68, C.orange, "flow-r");
 
-      const at = box(g, 480, 30, 170, 70, "", C.white);
-      smallText(g, 565, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
-      smallText(g, 565, 78, "→ (1, 5) 得分向量", C.white, "11", "middle");
-      smallText(g, 565, 96, "× V_cache → 输出", C.gray, "9", "middle");
+      const at = box(g, 490, 25, 185, 85, "", C.white);
+      smallText(g, 582, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
+      smallText(g, 582, 80, "→ (1, 5) 得分向量", C.white, "11", "middle");
+      smallText(g, 582, 102, "× V_cache → 输出", C.gray, "9", "middle");
 
       const kc = box(g, 180, 155, 470, 60, "", C.green, { stroke: 1.8 });
       smallText(g, 415, 178, "KV Cache  ·  seq_len = 5", C.green, "14", "middle");
       smallText(g, 415, 200, "读 K_cache: (5,d)  ·  写新 K/V: +16KB  ·  读 > 写，差距随 seq 扩大", C.green, "10", "middle");
 
-      arrow(g, 520, 155, 565, 100, C.red, "flow-l pulse");
-      arrow(g, 330, 100, 330, 155, C.green, "flow-r");
+      arrow(g, 530, 155, 582, 110, C.red, "flow-l pulse");
+      arrow(g, 340, 110, 340, 155, C.green, "flow-r");
 
       smallText(g, 30, 248, "瓶颈开始转移：算同样的 33.5M FLOPs，却要搬全套规则书 (14GB) + 翻 5 张卡片。", C.red, "10");
       smallText(g, 30, 268, "算术强度从 4.2 暴跌到 1.05 FLOPs/B —— GPU 开始等数据，不再满负荷计算。", C.red, "10");
@@ -274,19 +274,19 @@ const steps = [
       smallText(g, 90, 72, "x  (1, d)", C.red, "14", "middle");
       smallText(g, 90, 28, "还是 1 个 token", C.red, "10", "middle");
 
-      arrow(g, 150, 65, 200, 65, C.red, "flow-r");
+      arrow(g, 150, 68, 210, 68, C.red, "flow-r");
 
-      const qb = box(g, 200, 30, 180, 70, "", C.red, { stroke: 2 });
-      smallText(g, 290, 56, "Q/K/V 投影  ·  GEMV", C.red, "12", "middle");
-      smallText(g, 290, 78, "33.5M FLOPs（固定）", C.white, "10", "middle");
-      smallText(g, 290, 96, "但规则书仍是 14GB", C.red, "9", "middle");
+      const qb = box(g, 210, 25, 200, 85, "", C.red, { stroke: 2 });
+      smallText(g, 310, 56, "Q/K/V 投影  ·  GEMV", C.red, "12", "middle");
+      smallText(g, 310, 82, "33.5M FLOPs（固定）", C.white, "10", "middle");
+      smallText(g, 310, 102, "但规则书仍是 14GB", C.red, "9", "middle");
 
-      arrow(g, 380, 65, 440, 65, C.red, "flow-r");
+      arrow(g, 410, 68, 440, 68, C.red, "flow-r");
 
-      const at = box(g, 440, 30, 210, 70, "", C.white);
-      smallText(g, 545, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
-      smallText(g, 545, 78, "→ (1, 4096) 得分向量", C.white, "11", "middle");
-      smallText(g, 545, 96, "~33.5M FLOPs  ← 换 14GB 搬运", C.red, "9", "middle");
+      const at = box(g, 440, 25, 230, 85, "", C.white);
+      smallText(g, 555, 56, "Q_new · K_cacheᵀ", C.white, "12", "middle");
+      smallText(g, 555, 80, "→ (1, 4096) 得分向量", C.white, "11", "middle");
+      smallText(g, 555, 102, "~33.5M FLOPs  ← 换 14GB 搬运", C.red, "9", "middle");
 
       const kc = box(g, 30, 140, 620, 90, "", C.red, { stroke: 2.5 });
       g.appendChild(E("rect", { x: 30, y: 140, width: 620, height: 90, rx: 6, fill: C.red, opacity: .04 }));
@@ -294,8 +294,8 @@ const steps = [
       smallText(g, 340, 192, "K_cache: (4096, d) = 32MB  ·  规则书: 14GB  ·  每步搬运 14GB+32MB", C.red, "12", "middle");
       smallText(g, 340, 216, "GPU 90% 时间在等 HBM 搬运数据。计算只占 ~33.5M FLOPs，搬运霸占了全部延迟。", C.red, "11", "middle");
 
-      arrow(g, 500, 140, 545, 100, C.red, "flow-l pulse");
-      arrow(g, 290, 100, 290, 140, C.green, "flow-r");
+      arrow(g, 510, 140, 555, 110, C.red, "flow-l pulse");
+      arrow(g, 310, 110, 310, 140, C.green, "flow-r");
       smallText(g, 220, 248, "追加 16KB（微不足道）", C.gray, "9");
 
       smallText(g, 30, 270, "解决方向：GQA → 减少卡片数  ·  量化 → 压缩每张卡  ·  PagedAttention → 消除碎片", C.gray, "10");

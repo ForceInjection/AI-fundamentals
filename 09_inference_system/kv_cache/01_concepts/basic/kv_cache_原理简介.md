@@ -22,9 +22,13 @@
 
 为了解决自回归生成中的重复计算问题，KV Cache 技术通过“空间换时间”的策略，将已计算过的中间结果存储起来，从而避免了大量冗余的矩阵运算，直接降低了单步推理的计算复杂度。
 
+> **深入计算过程**：本文聚焦 KV Cache 的工作机制和显存分析。如果想从矩阵形状和计算量层面理解 Prefill 为什么是 compute-bound、Decode 为什么是 memory-bound、以及这些差异如何推导出所有 KV Cache 优化方向，见姊妹篇 [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md)。
+
 ### 2.1 什么是 KV Cache？
 
 KV Cache 本质上是一种缓存机制，用于存储 Transformer 模型中 Attention 层的 Key 和 Value 矩阵。在推理过程中，模型只需要计算**当前新生成 Token** 的 Query (Q)、Key (K) 和 Value (V)，然后将新的 K 和 V 追加到缓存中。最后，利用当前的 Q 与**完整的缓存**（历史 K/V + 当前 K/V）进行注意力计算。
+
+> **为什么只缓存 K/V，不缓存 Q？** Q 是「一次性查询」——每个 token 的 Q 只在使用它的那一刻有意义，后续 token 不会再访问。K/V 是被反复检索的「答案库」。详见 [为什么只缓存 K 和 V，不缓存 Q？](why_only_kv.md)。
 
 **有无 KV Cache 的对比：**
 ![KV Cache 对比](img/fig-5.png)
@@ -148,9 +152,9 @@ $$
 
 ---
 
-## 5. 进阶：如何降低 KV Cache 开销
+## 5. 进阶：降低 KV Cache 开销——从注意力机制入手
 
-为了缓解标准多头注意力（MHA）下 KV Cache 带来的巨大显存压力，模型架构层面演进出了多种优化方案。通过在多个 Query 之间共享 Key 和 Value，可以在几乎不损失模型表现的前提下，成倍降低缓存大小。
+KV Cache 的显存占用与注意力头数成正比。标准 MHA 下每个 Q head 都有独立的 K/V head，KV Cache 需要存储全部 K/V。如果在注意力层面让多个 Q head 共享一组 K/V——在不改变模型总参数量的前提下减少需要缓存的 K/V 数量——KV Cache 就会成倍缩小。这就是 MQA 和 GQA 的核心思路：**它们首先是注意力机制的架构设计，KV Cache 减小是其对推理最直接的收益。**
 
 ![降低 KV Cache 开销](img/fig-9.png)
 
@@ -198,6 +202,7 @@ GQA 是 MQA 和标准 MHA (Multi-Head Attention) 的折中方案。它将 Query 
 
 ### 6.2 推荐阅读与资源
 
+- **姊妹篇**: [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md)（[交互可视化](prefill_decode_visual.html) · [校验脚本](prefill_decode_validate.py)） — 从矩阵形状和计算量层面推导 KV Cache 的数学必然性，以及 compute-bound vs memory-bound 的根因分析。
 - **文章**: [KV Caching Explained (Hugging Face)](https://huggingface.co/blog/not-lain/kv-caching) - 本文的主要参考来源。
 - **可视化**: [KV Caching in LLMs, explained visually](https://www.dailydoseofds.com/p/kv-caching-in-llms-explained-visually/) - 包含生动的动画演示。
 - **论文**: [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245) - GQA 的原始论文。
