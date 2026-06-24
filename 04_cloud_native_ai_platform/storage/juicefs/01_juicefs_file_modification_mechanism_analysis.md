@@ -12,6 +12,8 @@ JuiceFS 采用了独特的三层存储架构来实现高效的文件存储和管
 
 ### 2.1 数据流向概览
 
+> 以下为 Mermaid 流程图，在 GitHub、VS Code (with Markdown Preview Mermaid Support)、Typora 等工具中可直接渲染。部分阅读器可能显示为代码块。
+
 ```mermaid
 flowchart TD
     A[应用程序写入] --> B[JuiceFS 客户端]

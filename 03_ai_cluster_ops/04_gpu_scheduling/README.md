@@ -15,6 +15,10 @@ K8s 默认调度器把 GPU 当成标量资源（`nvidia.com/gpu: 1`），对于�
 
 ## 相关资源
 
+**概念层（本文）→ 实现层（进阶）**：
+
+- [云原生 AI 平台 — GPU 管理与虚拟化](../../04_cloud_native_ai_platform/gpu_manager/README.md) — 从概念到落地：NVIDIA Container Toolkit、Device Plugin、HAMi、Kueue 实战部署
+- [云原生 AI 平台 — K8s GPU 管理](../../04_cloud_native_ai_platform/k8s/README.md) — K8s 原生 AI 工作负载的容器运行时、调度器与推理框架
 - [Kubernetes 调度器扩展案例：GPU 资源调度](https://github.com/ForceInjection/kubernetes-hands-on-course/tree/master/Advanced-Topics/调度/k8s-scheduler-gpu-case.md) — Device Plugin + 自定义调度器的完整实现
 - [NVIDIA GPU Operator 文档](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/)
 - [Volcano 官方文档](https://volcano.sh/docs/)

@@ -11,9 +11,11 @@ LLM 时代让这个问题变得更尖锐：模型可能一次要吃掉一整个�
 1. **基础设施层 (Infrastructure)**：物理算力、网络和存储的底座。GPU/NPU/TPU 提供异构算力，InfiniBand/RoCE 支撑高速互联，分布式存储负责数据吞吐。
 2. **容器编排层 (Orchestration)**：把异构硬件抽象成统一的资源池。核心是 Kubernetes，配合 Device Plugin 完成设备上报，Operators（如 MPIOperator、PyTorchJob）接管任务的全生命周期。
 3. **资源调度与管理层 (Scheduling & Management)**：针对 AI 负载的“大并行 + 贵显存”特点做优化。Volcano / Kueue 处理批作业调度和 Gang Scheduling；HAMi / vGPU 做 GPU 细粒度切分与显存隔离。
-4. **AI 平台服务层 (Platform Services)**：最靠近开发者的一层，包括 Notebook 开发环境、分布式训练框架适配、模型推理服务，以及 Kubeflow / Argo 这类 MLOps 流水线。
+4. **AI 平台服务层 (Platform Services)**：最靠近开发者的一层，包括 Notebook 开发环境、分布式训练框架适配、模型推理服务，以及 Kubeflow / Argo 这类 MLOps 流水线。（当前目录尚未覆盖，规划中。）
 
 四层合起来，才能让一切能跑、跑得稳、跑得快。
+
+> **概念先行，实现跟进**：本目录聚焦云原生侧的工程实现。如果对 GPU 调度背后的概念层——为什么需要 Gang Scheduling、NVLink 拓扑对调度意味着什么、MIG/MPS/Time-slicing 的区别——感兴趣，先看 [GPU 调度问题总览](../03_ai_cluster_ops/04_gpu_scheduling/01_gpu_scheduling_problem.md)。
 
 ---
 
@@ -39,10 +41,10 @@ GPU 是整个平台上最昂贵的资源，“如何让它不闲着、不浪费�
 
 **基础系列文档**：
 
-- [第一部分：基础理论篇](gpu_manager/第一部分：基础理论篇.md)：构建技术认知框架，解析传统模式局限性与核心技术体系。
-- [第二部分：虚拟化技术篇](gpu_manager/第二部分：虚拟化技术篇.md)：深入剖析硬件级、内核态与用户态虚拟化的核心实现机制。
-- [第三部分：资源管理与优化篇](gpu_manager/第三部分：资源管理与优化篇.md)：探讨 GPU 切分、CUDA 流及 MPS 等高效资源调度策略。
-- [第四部分：实践应用篇](gpu_manager/第四部分：实践应用篇.md)：涵盖环境部署、监控运维及云平台集成的生产落地指南。
+- [第一部分：基础理论篇](gpu_manager/01_basic_theory.md)：构建技术认知框架，解析传统模式局限性与核心技术体系。
+- [第二部分：虚拟化技术篇](gpu_manager/02_virtualization.md)：深入剖析硬件级、内核态与用户态虚拟化的核心实现机制。
+- [第三部分：资源管理与优化篇](gpu_manager/03_resource_management.md)：探讨 GPU 切分、CUDA 流及 MPS 等高效资源调度策略。
+- [第四部分：实践应用篇](gpu_manager/04_practice.md)：涵盖环境部署、监控运维及云平台集成的生产落地指南。
 
 **HAMi 专题**：
 
