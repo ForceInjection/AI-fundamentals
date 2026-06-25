@@ -56,7 +56,7 @@ GPU 0: [W_Q 第0-7头]   GPU 1: [W_Q 第8-15头]  GPU 2: [W_Q 第16-23头] GPU 3
        每张 GPU 的权重分片是唯一的——不存在重复。
 ```
 
-**方案**：Megatron-style TP 是业界标准——列切（column-parallel）的矩阵各自算完本地结果后，AllReduce 拼接；行切（row-parallel）的不需要通信，因为输入已经来自上一层的 AllReduce 结果。vLLM 的 `--tensor-parallel-size 4` 和 SGLang 的 `--tp-size 4` 都遵循此实现。
+**方案**：Megatron-style TP 是业界标准——每层 Attention 和 FFN 被拆成一对 column-parallel + row-parallel 矩阵。列切（column-parallel）的矩阵各 GPU 输入相同（X 被复制到所有 rank），各自算完产生分片输出，不需要通信；紧接着的行切（row-parallel）矩阵接收上一层分片后的输入，各自算完本地结果后 **AllReduce 求和合并**，产生完整输出传给下一层。vLLM 的 `--tensor-parallel-size 4` 和 SGLang 的 `--tp-size 4` 都遵循此实现。
 
 KV Cache 也随权重一起按 head 切分：每个 TP rank 只存自己负责的那部分 head 的 K 和 V。总量不变，但分散后单卡显存压力降为 1/N。
 
