@@ -28,7 +28,7 @@
 
 KV Cache 本质上是一种缓存机制，用于存储 Transformer 模型中 Attention 层的 Key 和 Value 矩阵。在推理过程中，模型只需要计算**当前新生成 Token** 的 Query (Q)、Key (K) 和 Value (V)，然后将新的 K 和 V 追加到缓存中。最后，利用当前的 Q 与**完整的缓存**（历史 K/V + 当前 K/V）进行注意力计算。
 
-> **为什么只缓存 K/V，不缓存 Q？** Q 是「一次性查询」——每个 token 的 Q 只在使用它的那一刻有意义，后续 token 不会再访问。K/V 是被反复检索的「答案库」。详见 [为什么只缓存 K 和 V，不缓存 Q？](why_only_kv.md)。
+> **为什么只缓存 K/V，不缓存 Q？** Q 是「一次性查询」——每个 token 的 Q 只在使用它的那一刻有意义，后续 token 不会再访问。K/V 是被反复检索的「答案库」。详见 [KV Cache 为什么叫 KV Cache？——Q 去哪了](why_only_kv.md)。
 
 **有无 KV Cache 的对比：**
 ![KV Cache 对比](img/fig-5.png)

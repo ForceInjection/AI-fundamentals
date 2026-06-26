@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>并行策略可视化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; align-items: center; justify-content: center; }
+#app { width: 960px; height: 620px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+#header { padding: 12px 20px 0; flex-shrink: 0; }
+#header h1 { font-size: 15px; color: #f0f6fc; margin: 0 0 2px; }
+#main { flex: 1; display: flex; min-height: 0; }
+#svgPane { flex: 1; }
+#svgPane svg { width: 100%; height: 100%; }
+#nav { display: flex; gap: 6px; padding: 8px 20px; border-top: 1px solid #21262d; flex-shrink: 0; }
+.tab { padding: 6px 14px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; cursor: pointer; font-size: 12px; transition: all .15s; }
+.tab:hover { background: #30363d; border-color: #58a6ff; }
+.tab.active { background: #1f2a3a; border-color: #58a6ff; color: #58a6ff; }
+.desc { padding: 8px 20px 12px; font-size: 12px; color: #8b949e; line-height: 1.6; border-top: 1px solid #21262d; flex-shrink: 0; }
+.desc strong { color: #f0f6fc; }
+.desc b { color: #3fb950; }
+.desc i { color: #f85149; font-style: normal; }
+.fade-in { animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <h1>并行策略可视化 — 权重 · KV Cache · 数据各自切了什么</h1>
+    <p id="descShort"></p>
+  </div>
+  <div id="main"><div id="svgPane"><svg id="svg" viewBox="0 0 740 460"></svg></div></div>
+  <div id="nav">
+    <button class="tab active" data-s="dp">DP · 数据并行</button>
+    <button class="tab" data-s="tp">TP · 张量并行</button>
+    <button class="tab" data-s="pp">PP · 流水线并行</button>
+    <button class="tab" data-s="ep">EP · 专家并行</button>
+    <button class="tab" data-s="sp">SP · 序列并行</button>
+  </div>
+  <div class="desc" id="desc"></div>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const ce = (t, a) => { const e = document.createElementNS(NS, t); if (a) for (let k in a) e.setAttribute(k, a[k]); return e; };
+const svg = document.getElementById("svg");
+const g = ce("g"); svg.appendChild(g);
+
+const C = { blue: "#58a6ff", green: "#3fb950", orange: "#d29922", red: "#f85149",
+  gray: "#8b949e", white: "#f0f6fc", bg: "#0d1117", border: "#30363d" };
+
+function r(x, y, w, h, color, opacity, rx) {
+  g.appendChild(ce("rect", { x, y, width: w, height: h, rx: rx || 4, fill: color, opacity: opacity || 1 }));
+}
+function t(x, y, s, color, sz, anchor) {
+  const e = ce("text", { x, y, "font-size": sz || "13", fill: color || C.white });
+  if (anchor) e.setAttribute("text-anchor", anchor);
+  e.textContent = s; g.appendChild(e);
+}
+function arrow(x1, y1, x2, y2, color) {
+  g.appendChild(ce("line", { x1, y1, x2, y2, stroke: color || C.gray, "stroke-width": 2, "stroke-dasharray": "6 4", opacity: .7 }));
+}
+function label(x, y, s, color) { t(x, y, s, color || C.gray, "11"); }
+
+const strats = {
+  dp: {
+    desc: "<strong>DP</strong>：batch 切成 N 份，每张 GPU 有 <b>完整模型</b>。KV Cache <i>各自独立</i>，实例间不共享。推理中 DP = 多实例独立服务，无需 GPU 间通信。",
+    draw() {
+      for (let i = 0; i < 4; i++) {
+        const x = 30 + i * 175;
+        r(x, 60, 155, 200, C.bg, 1, 8); r(x, 60, 155, 200, C.blue, .08, 8);
+        r(x, 60, 155, 200, C.border, 1, 8);
+        t(x + 78, 42, `GPU ${i}`, C.white, "13", "middle");
+        // full weight blocks
+        r(x + 12, 70, 131, 28, C.blue, .18, 4); t(x + 78, 89, "权重 100%", C.blue, "11", "middle");
+        r(x + 12, 106, 131, 28, C.green, .18, 4); t(x + 78, 125, "KV 独立副本", C.green, "11", "middle");
+        r(x + 12, 142, 131, 28, C.orange, .18, 4);
+        t(x + 78, 161, `数据 batch ${i+1}`, C.orange, "11", "middle");
+        // batch indicator
+        r(x + 12, 185, 131, 55, C.orange, .06, 4); t(x + 78, 218, `请求分片 ${i+1}/4`, C.gray, "10", "middle");
+      }
+      // "no comm" annotation
+      t(370, 290, "GPU 间无通信 · 各自独立服务", C.gray, "11", "middle");
+    }
+  },
+  tp: {
+    desc: "<strong>TP</strong>：权重矩阵按列切成 N 份，<i>每 GPU 只有 1/N 权重</i>。KV Cache 按 head 分片。每层计算后 AllReduce——通信量极高，仅节点内可行。",
+    draw() {
+      // Weight matrix split into 4
+      r(30, 50, 680, 70, C.blue, .06, 6);
+      t(370, 40, "一层 Attention 的权重矩阵 (例如 W_Q: 4096×4096)", C.gray, "11", "middle");
+      for (let i = 0; i < 4; i++) {
+        r(30 + i * 170, 50, 170, 70, C.blue, .15 + i * .04, 3);
+        t(30 + i * 170 + 85, 92, `${i+1}/4`, C.blue, "13", "middle");
+      }
+      // 4 GPUs
+      for (let i = 0; i < 4; i++) {
+        const x = 30 + i * 175;
+        r(x, 155, 155, 150, C.bg, 1, 7); r(x, 155, 155, 150, C.border, 1, 7);
+        t(x + 78, 180, `GPU ${i}`, C.white, "13", "middle");
+        r(x + 14, 195, 127, 35, C.blue, .20, 4); t(x + 78, 218, "1/4 权重", C.blue, "12", "middle");
+        r(x + 14, 238, 127, 35, C.green, .20, 4); t(x + 78, 261, "KV head 分片", C.green, "12", "middle");
+        r(x + 14, 281, 127, 15, C.orange, .08, 4); t(x + 78, 292, "AllReduce 合并", C.orange, "10", "middle");
+      }
+      // AllReduce arrows between
+      arrow(185, 230, 205, 230, C.red); arrow(360, 230, 380, 230, C.red); arrow(535, 230, 555, 230, C.red);
+      t(370, 340, "每层计算后 AllReduce 合并 · 延迟 ~5μs (NVLink)", C.red, "12", "middle");
+      t(370, 365, "KV offload: 4 份 per-rank shard (MHA)  或  rank 0 统一写 (MLA)", C.gray, "11", "middle");
+    }
+  },
+  pp: {
+    desc: "<strong>PP</strong>：层切成 N 段，每 GPU 负责 N 层。通信只在层边界传激活值，量少但存在流水线气泡。推理中延迟随 stage 数线性增长。",
+    draw() {
+      const COLORS = [C.blue, "#a371f7", C.orange, C.green];
+      for (let i = 0; i < 4; i++) {
+        const x = 18 + i * 180;
+        r(x, 50, 165, 280, C.bg, 1, 8); r(x, 50, 165, 280, COLORS[i], .08, 8); r(x, 50, 165, 280, C.border, 1, 8);
+        t(x + 82, 76, `GPU ${i}`, C.white, "13", "middle");
+        // Layer blocks (weights)
+        for (let j = 0; j < 5; j++) {
+          r(x + 15, 92 + j * 35, 135, 26, COLORS[i], .2, 4);
+        }
+        t(x + 82, 280, `权重: Layer ${i*8}-${i*8+7}`, COLORS[i], "11", "middle");
+        // KV Cache per GPU
+        r(x + 15, 290, 135, 22, C.green, .15, 4);
+        t(x + 82, 305, `KV: Layer ${i*8}-${i*8+7}`, C.green, "10", "middle");
+      }
+      // Pipeline arrows
+      arrow(183, 190, 198, 190, C.gray); arrow(363, 190, 378, 190, C.gray); arrow(543, 190, 558, 190, C.gray);
+      // Bubble visualization: busy (solid) vs idle (hollow) per time step
+      const bx = 45, by = 350, bw = 30, bh = 16, gap = 3, rowH = 20;
+      const busy = (gpu, step, col) => r(bx + step*(bw+gap), by + gpu*rowH, bw, bh, col, .45, 3);
+      const idle = (gpu, step) => r(bx + step*(bw+gap), by + gpu*rowH, bw, bh, C.gray, .10, 3);
+      // GPU 0: always busy first, then idle
+      busy(0,0,COLORS[0]); busy(0,1,COLORS[0]); busy(0,2,COLORS[0]); idle(0,3); idle(0,4); idle(0,5);
+      // GPU 1: idle first, then busy
+      idle(1,0); busy(1,1,COLORS[1]); busy(1,2,COLORS[1]); busy(1,3,COLORS[1]); idle(1,4); idle(1,5);
+      // GPU 2: more idle at start, then busy
+      idle(2,0); idle(2,1); busy(2,2,COLORS[2]); busy(2,3,COLORS[2]); busy(2,4,COLORS[2]); idle(2,5);
+      // GPU 3: most idle at start, then busy at end
+      idle(3,0); idle(3,1); idle(3,2); busy(3,3,COLORS[3]); busy(3,4,COLORS[3]); busy(3,5,COLORS[3]);
+      // Labels
+      t(bx-10, by-8, "时间 →", C.gray, "9");
+      for (let g = 0; g < 4; g++) t(10, by + g*rowH + bh/2 + 4, `GPU${g}`, C.gray, "9");
+      t(45, 442, "流水线气泡：前面 GPU 已空闲，后面仍在处理上一个 token", C.gray, "10");
+    }
+  },
+  ep: {
+    desc: "<strong>EP</strong>：MoE 专属。专家分散到不同 GPU，每个 token 只路由到 Top-K 专家。每个 token 的 attention 计算和 KV Cache 留在被路由到的 GPU 上，无需跨 GPU 搬 KV。通信量天然低。",
+    draw() {
+      for (let i = 0; i < 4; i++) {
+        const x = 30 + i * 180;
+        r(x, 70, 160, 260, C.bg, 1, 8); r(x, 70, 160, 260, C.border, 1, 8);
+        t(x + 80, 98, `GPU ${i}`, C.white, "14", "middle");
+        t(x + 80, 122, `Expert ${i*64} – ${i*64+63}`, C.gray, "11", "middle");
+        // Expert blocks
+        for (let j = 0; j < 6; j++) {
+          r(x + 15, 140 + j * 26, 130, 18, C.orange, .10 + j * .02, 3);
+          t(x + 80, 153 + j * 26, `E${i*64 + j*10} ... E${i*64 + j*10+9}`, C.orange, "9", "middle");
+        }
+        // KV stored on same GPU as expert
+        r(x + 15, 305, 130, 20, C.green, .15, 4);
+        t(x + 80, 319, "KV 留在本 GPU", C.green, "11", "middle");
+      }
+      t(370, 355, "每个 token 路由到 Top-K 专家 · DeepSeek-V3: 256 experts, Top-8", C.orange, "12", "middle");
+    }
+  },
+  sp: {
+    desc: "<strong>SP</strong>：seq_len 切成 N 段，每 GPU 存一段的 KV。权重完整。Ring Attention 环状传递 K/V 完成跨 GPU 注意力。用于超长上下文。",
+    draw() {
+      // Sequence bar at top
+      r(30, 40, 680, 34, C.bg, 1, 6);
+      const segColors = [C.blue, C.green, C.orange, "#a371f7"];
+      for (let i = 0; i < 4; i++) {
+        r(30 + i * 170, 40, 170, 34, segColors[i], .25, 3);
+        t(30 + i * 170 + 85, 62, `tok ${i*1024} – ${(i+1)*1024}`, C.white, "11", "middle");
+      }
+      t(370, 30, "seq_len = 4096, 切成 4 段", C.gray, "11", "middle");
+      // 4 GPUs
+      for (let i = 0; i < 4; i++) {
+        const x = 30 + i * 175;
+        r(x, 105, 155, 210, C.bg, 1, 7); r(x, 105, 155, 210, C.border, 1, 7);
+        t(x + 78, 132, `GPU ${i}`, C.white, "13", "middle");
+        r(x + 14, 148, 127, 28, C.blue, .20, 4); t(x + 78, 167, "完整权重", C.blue, "12", "middle");
+        r(x + 14, 184, 127, 28, segColors[i], .25, 4); t(x + 78, 203, `KV 段 ${i+1}/4`, segColors[i], "12", "middle");
+        r(x + 14, 220, 127, 28, C.orange, .15, 4); t(x + 78, 239, `tok ${i*1024}-${(i+1)*1024}`, C.orange, "11", "middle");
+        r(x + 14, 256, 127, 40, C.green, .08, 4);
+        t(x + 78, 282, "Ring 传递 K,V", C.green, "11", "middle");
+      }
+      // Ring arrows above cards: GPU0→GPU1→GPU2→GPU3→GPU0
+      const ax = (i) => 30 + i * 175 + 78; // center of each card
+      for (let i = 0; i < 3; i++) {
+        g.appendChild(ce("line", { x1: ax(i)+35, y1: 98, x2: ax(i+1)-35, y2: 98, stroke: C.green, "stroke-width": 2.5, opacity: .6, "stroke-dasharray": "6 4" }));
+      }
+      // wrap-around from GPU3 back to GPU0
+      g.appendChild(ce("line", { x1: ax(3)+30, y1: 86, x2: ax(0)-20, y2: 86, stroke: C.green, "stroke-width": 2.5, opacity: .4, "stroke-dasharray": "6 4" }));
+      t(370, 82, "K,V 环状传递  ←  Ring Attention", C.green, "12", "middle");
+      t(370, 345, "每张 GPU 只算自己那一段的注意力，K,V 按环传递拼接完整结果", C.gray, "11", "middle");
+    }
+  }
+};
+
+let cur = "dp";
+function render(s) {
+  cur = s;
+  while (g.firstChild) g.removeChild(g.firstChild);
+  strats[s].draw();
+  document.getElementById("desc").innerHTML = strats[s].desc;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.s === s));
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => render(b.dataset.s)));
+render("dp");
+</script>
+</body>
+</html>
