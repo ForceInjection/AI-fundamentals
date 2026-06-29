@@ -13,14 +13,28 @@
 | 切的维度    | batch                  | hidden     | layers   | experts  | seq_len  |
 | 每张 GPU 有 | 完整模型               | 1/N 权重   | 1/N 层   | 1/N 专家 | 完整模型 |
 | KV Cache    | 独立                   | 分片       | 独立     | 独立     | 分片     |
-| 通信量      | 无（推理）/ 高（训练） | 极高       | 中       | 低       | 中       |
+| 通信量      | 无¹ / 高²   | 极高       | 中       | 低       | 中       |
 | 典型场景    | 训练                   | 大模型推理 | 超大模型 | MoE 推理 | 长上下文 |
 
+> ¹ 多实例推理 DP：每个实例是独立进程，无通信。<br>
+> ² 训练 DP / vLLM 引擎内 DP：rank 间有梯度同步或元数据通信。<br>
 > **可交互版本**：[并行策略可视化](parallelism_visual.html)——点击每种策略查看权重、KV Cache 和数据在各 GPU 上的切分方式。
 
 ---
 
 ## 二、数据并行（DP）
+
+DP 在不同语境下含义不同，先说清楚这三种场景，再聚焦本文的核心——多实例推理 DP。
+
+| 语境 | 模型副本 | GPU 间通信 | 调度方式 | 典型用法 |
+|------|---------|-----------|---------|---------|
+| **训练 DP** | 完全相同 | 每步 AllReduce 梯度 | 框架（DDP/FSDP） | 所有分布式训练 |
+| **多实例推理 DP** | 完全相同 | **无** | 外部负载均衡器 | LLaMA/Qwen 单卡部署 |
+| **vLLM 引擎内 DP** | 可不同（MoE 下各 rank 专家不同） | 元数据同步 | vLLM scheduler 显式分配 | `--data-parallel-size N`，多与 EP 联用 |
+
+本文聚焦**多实例推理 DP**——这是推理部署中最常见的 DP 形式。vLLM 引擎内 DP（`--data-parallel-size`）将在下文中单独说明。
+
+### 多实例推理 DP
 
 **场景**：你有 4 张 H100，要跑 4 个 LLaMA-70B 的推理实例，每个实例独立服务不同的用户请求。所有 4 个实例用同一份模型权重，不需要互相通信——这是最简单的并行方式，也是推理部署的默认策略。
 
@@ -35,9 +49,25 @@ GPU 0: [模型副本 0] ← 请求 1,2      GPU 1: [模型副本 1] ← 请求 3
 训练时: GPU 间 AllReduce 梯度。推理时: 无需 GPU 间通信。
 ```
 
-**方案**：DP 是唯一不需要 GPU 间通信的并行策略——每个实例是完全独立的，挂了一个不影响其他。vLLM 和 SGLang 中 DP 是隐式的：每启动一个服务进程就是一次 DP，多实例由外部的负载均衡器或 Ray Serve 管理，推理框架本身不做跨实例调度。
+**方案**：推理框架的 DP 有两种形式。vLLM 提供引擎内原生 DP（`--data-parallel-size N`）：多个 DP rank 共享同一个 scheduler，请求被显式分配到不同 rank，rank 间通过 `_synchronize_dp_ranks()` 同步 batch 元数据（ubatch 大小、cudagraph 模式）。多节点时通过 `--data-parallel-backend ray` 用 Ray placement group 编排。SGLang 目前没有引擎内 DP，DP 通过启动多个独立服务进程实现（隐式 DP）。
 
 **权衡**：KV Cache 不共享是 DP 最大的代价。跨实例的 Cache 复用需要额外的基础设施——LMCache 用磁盘做共享存储，Mooncake 用 RDMA 传输，HiCache 用 Mooncake 后端。这些方案的复杂度远高于单实例部署。
+
+### vLLM 引擎内 DP（`--data-parallel-size`）
+
+vLLM 还提供了另一种 DP 形态：引擎内原生 DP。它与多实例推理 DP 的关键区别在于，多个 DP rank 共享同一个 scheduler 进程，请求被显式分配到不同 rank：
+
+```text
+vLLM --data-parallel-size 4 (单节点 8 GPU):
+  4 个 DP rank，每个 rank 可以结合 TP/EP
+
+  例如 DeepSeek V4 Pro 部署:
+  --data-parallel-size 8 --enable-expert-parallel
+  → 8 个 DP rank，每个 rank 持不同 expert 分片
+  → 非"每 rank 完整模型"，而是"每 rank 不同 expert + 路由协同"
+```
+
+引擎内 DP 的 DP rank 间**存在元数据通信**——`_synchronize_dp_ranks()` 同步 ubatch 大小、cudagraph 模式等。这与多实例推理 DP 的"零通信"不同。当前引擎内 DP 主要用于 MoE 模型与 EP 联用的场景，Dense 模型（LLaMA/Qwen）的单卡部署仍以多实例推理 DP 为主。
 
 ---
 
@@ -149,7 +179,7 @@ SP 在 vLLM 和 SGLang 中没有独立的 `--sp-size` 参数，通常以特定 a
 
 **PP 是 TP 不够时的扩展**：当模型大到单节点塞不下（如 405B+ LLaMA-3 在 8×H100 上也装不下），用 PP 将层切开跨节点部署。PP 的通信量比跨节点 TP 低一个数量级。
 
-**DP 是吞吐放大器**：在 TP/PP 把模型装下之后，用多组实例（DP）并行服务更多请求。DP 不需要 GPU 间通信，是最廉价的横向扩展。
+**DP 是吞吐放大器**：在 TP/PP 把模型装下之后，用多组实例（多实例推理 DP）并行服务更多请求。多实例推理 DP 不需要 GPU 间通信，是最廉价的横向扩展。注意与 vLLM 引擎内 DP（`--data-parallel-size`）的区别——后者 rank 间存在元数据通信，主要用于 MoE+EP 场景。
 
 **EP 是 MoE 的专属维度**：与 TP/PP 正交——专家分散不影响 attention 层的计算，两者可以独立配置。
 

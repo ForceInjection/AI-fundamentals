@@ -8,6 +8,7 @@
 
 - **[KV Cache 原理简介](01_concepts/basic/kv_cache_原理简介.md)** ([配套 PPT](01_concepts/basic/kv_cache_原理简介.pptx))：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/basic/why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
+- **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA 四种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
 - **[为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](01_concepts/basic/prefill_decode_qkv_calculation.md)**（[交互可视化](01_concepts/basic/prefill_decode_visual.html) · [校验脚本](01_concepts/basic/prefill_decode_validate.py)）：从一个具体例子出发，逐步标注 Prefill 和 Decode 每一步的矩阵形状与计算量变化，从 compute-bound vs memory-bound 的根本差异出发，推导出 GQA、量化、PagedAttention、Offloading、PD 分离等优化方向的必然性。
 
 ## 2. 核心优化技术
