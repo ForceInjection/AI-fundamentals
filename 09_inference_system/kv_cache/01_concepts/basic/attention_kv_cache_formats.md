@@ -25,6 +25,8 @@ LLaMA-2 70B 如果使用 MHA（实际使用 GQA，此处仅做假设）：
   KV Cache = 2 × 80 × 64 × 128 × 4096 × 2 bytes ≈ 10 GB
 ```
 
+> 注：此处按 seq_len=4096 估算，仅为展示公式。长上下文场景（如 1M）下 MHA 的 KV Cache 会膨胀到 TB 级，详见 §六横向对比。
+
 MHA 的 KV Cache 最大，因为每个 Q head 都需要自己独立的 K 和 V。没有任何共享。
 
 ---
@@ -96,14 +98,17 @@ DeepSeek-V3（MLA）：
 传统 MHA 单 token 单层的 KV Cache（假设无压缩）：
   K: 128 heads × 128 dim = 16384 个元素 = 32 KB
   V: 128 heads × 128 dim = 16384 个元素 = 32 KB
+  合计：64 KB / token / layer
 
-MLA 实际存储（仅存 compressed KV）：
-  KV latent: (512,) = 512 个 float16 = 1 KB   ← 仅为传统 MHA 的 1/32
+MLA 实际存储（两部分）：
+  KV latent (K/V 共享压缩向量): (512,) = 512 fp16   = 1 KB
+  Decoupled K (RoPE 位置编码): (128, 64) = 8192 fp16 = 16 KB  ← RoPE 不能压缩，单独存
+  合计：~17 KB / token / layer   ← 约为传统 MHA 的 1/4
 ```
 
-MLA 的压缩效果来自两个机制：(1) K 和 V 共享一个下投影矩阵，将高维 head 空间压缩到低维 latent 空间；(2) 位置编码（RoPE）只作用于 K 的一个子集，进一步减少了需要存储的信息量。
+MLA 的压缩效果来自两个机制：(1) K 和 V 共享一个下投影矩阵 `W^{DKV}`，将高维 head 空间压缩到低维 latent 空间；(2) 位置编码（RoPE）因为旋转操作无法直接压缩，所以从 latent 中解耦出来单独存储——这也是为什么存储中会多出 16 KB 的 decoupled K。实际使用中 attention 计算时，latent 通过上投影矩阵 `W^{UK}` 和 `W^{UV}` 实时还原出完整的 K 和 V。
 
-**在 vLLM 中**：MLA 通过独立的 attention backend 支持。vLLM 的 `DeepseekV2Attention` 后端自动处理 KV latent 的存储和实时解压，用户只需正常启动服务。关键差异：MLA 下 KV Cache 的物理格式不是 `(heads, head_dim)` 而是 `(kv_lora_rank,)`，vLLM 的 block table 需要适配这种特殊布局——这就是 `KVCacheGroupSpec` 存在的意义（参见 `kv_cache_groups.py`）。
+**在 vLLM 中**：MLA 通过独立的 attention backend 支持。vLLM 的 `DeepseekV2Attention` 后端自动处理 KV latent 和 decoupled K 的存储和实时解压，用户只需正常启动服务。关键差异：MLA 下 KV Cache 的物理格式不再是单一的 `(heads, head_dim)`，而是两种形态共存——`(kv_lora_rank,)` 的共享 latent 和 `(num_heads, qk_rope_head_dim)` 的 RoPE K。vLLM 的 block table 通过 `KVCacheGroupSpec` 为每种形态创建独立的 block 池（参见 `kv_cache_groups.py`）。
 
 ---
 
@@ -119,12 +124,12 @@ DeepSeek V4 在 MLA 的基础上引入了一个更激进的思路：**不仅压�
 原始 token 序列（1M context）:
   t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 ...
 
-c4a 压缩后（每 8 个 token → 1 个压缩 token，步长 4）:
-  [t0-t7] [t4-t11] [t8-t15] ...
-  每个压缩 token 存一份 KV → KV 数量 ≈ 原始的 1/4
+c4a 压缩后（每 8 个 token → 1 个压缩 token，步长 4，有重叠）:
+  [t0-t7]  [t4-t11]  [t8-t15]  [t12-t19] ...
+  每个压缩 token 存一份 KV → KV 数量 ≈ 原始的 1/2（步长 4 导致 2× 冗余）
 
-c128a 压缩后（每 128 个 token → 1 个压缩 token）:
-  [t0-t127] [t128-t255] ...
+c128a 压缩后（每 128 个 token → 1 个压缩 token，无重叠）:
+  [t0-t127]  [t128-t255]  [t256-t383] ...
   每个压缩 token 存一份 KV → KV 数量 ≈ 原始的 1/128
 ```
 
@@ -132,28 +137,28 @@ c128a 压缩后（每 128 个 token → 1 个压缩 token）:
 
 ### 5.2 HCA：混合使用多种压缩策略
 
-V4 的不同层使用不同的压缩策略——靠近输入和输出的层保留局部信息（sliding window, 不压缩），中间层使用激进的 c128a 压缩。这就是 HCA（Hybrid Compressed Attention）：
+V4 的不同层使用不同的压缩策略——部分层使用温和的 c4a 保留更多细节，大部分层使用激进的 c128a 最大化压缩。所有层都附带 128-token sliding window 保留局部信息。这就是 HCA（Hybrid Compressed Attention）：
 
 ```text
-层 0 (sliding window)：        不压缩，窗口大小 128
-层 1-10 (c4a)：                8:1 压缩，加 sliding window
-层 11-50 (c128a)：             128:1 压缩，加 sliding window
-层 51-61 (c4a + sliding)：     混合：压缩 token + 滑动窗口
+V4 共 61 层，每层均带 128-token sliding window：
+  30 层 c4a：   8:1 token 压缩（有效 4:1，步长 4 重叠）
+  31 层 c128a： 128:1 token 压缩（无重叠）
 ```
 
 ### 5.3 DeepSeek V4 的 KV Cache 形态
 
 由于不同层使用不同压缩策略，V4 的 KV Cache 不再是一个统一的 `(layers, heads, seq, dim)` 张量，而是多种形态的混合：
 
-| 层类型                 | 存储内容                   | 单 token 等效 KV | 1M context KV Cache (bf16)                      |
-| ---------------------- | -------------------------- | ---------------- | ----------------------------------------------- |
-| MLA 压缩               | KV latent (512 dim)        | ~1 KB            | —                                               |
-| c4a 压缩               | 压缩 KV (每 8 token → 1)   | ~0.25 KB         | —                                               |
-| c128a 压缩             | 压缩 KV (每 128 token → 1) | ~0.008 KB        | —                                               |
-| Sliding window         | 未压缩 KV (仅 128 token)   | 固定 128 token   | —                                               |
-| **全模型合计（bf16）** |                            |                  | **~9.62 GB**（vs V3.2 的 ~83.9 GB，缩减 88.5%） |
+| 层类型      | 存储内容                 | 单 token 等效 KV | 说明             |
+| ----------- | ------------------------ | :--------------: | ---------------- |
+| MLA 压缩    | KV latent + decoupled K  |      ~17 KB      | 完整 MLA 存储    |
+| c4a 压缩    | 压缩 KV (4:1 有效压缩比) |     ~4.25 KB     | 8:1 × 步长4 重叠 |
+| c128a 压缩  | 压缩 KV (128:1)          |     ~0.13 KB     | 128 token 合并   |
+| Sliding win | 未压缩 KV (仅 128 token) |  固定 128 token  | 局部窗口保留     |
 
-> 实际部署中 indexer cache 使用 FP4，attention cache 使用 FP8，KV Cache 可进一步减半至 ~5 GB。
+> 全模型合计（bf16）：**~9.62 GiB**（vs MLA-only 的 ~989 GB 或量化后 ~83.9 GiB[^1]，缩减 8.7×）。实际部署中 indexer cache 使用 FP4，attention cache 使用 FP8，KV Cache 可进一步减半至 ~5 GB。
+>
+> [^1]: MLA @ 1M context：fp16 未量化 ≈ 17 KB × 61 × 1M ≈ **989 GB**。实际 V3.2 部署使用 FP8 量化后约 576 bytes/token/layer，对应 1M context 约 **83.9 GiB**（数据来源：[vLLM 博客](https://vllm.ai/blog/2026-04-24-deepseek-v4)）。
 
 ### 5.4 vLLM 对 V4 的支持
 
@@ -171,15 +176,19 @@ vLLM 通过 `KVCacheGroupSpec` 为每种压缩类型创建独立的 KV block 池
 
 ## 六、五种注意力类型的横向对比
 
-| 注意力类型  | 压缩维度                  | 单 token 等效 KV | 1M context KV Cache | 代表模型          |
-| ----------- | ------------------------- | ---------------- | ------------------- | ----------------- |
-| MHA         | 无                        | 32 KB            | ~320 GB             | 原始 Transformer  |
-| GQA         | KV head 共享              | 4 KB             | ~40 GB              | LLaMA-2/3, Qwen-2 |
-| MQA         | 极值 KV head 共享         | 0.5 KB           | ~5 GB               | PaLM, Falcon      |
-| MLA         | head 维压缩 (latent)      | 1 KB             | ~10 GB              | DeepSeek V2/V3    |
-| **CSA/HCA** | **head + token 双维压缩** | **~0.01 KB**     | **~9.6 GB (bf16)**  | **DeepSeek V4**   |
+| 注意力类型  | 压缩维度                  | 单 token 等效 KV | vs MHA 缩减 | 代表模型          |
+| ----------- | ------------------------- | :--------------: | :---------: | ----------------- |
+| MHA         | 无                        |      32 KB       |     1×      | 原始 Transformer  |
+| GQA         | KV head 共享              |       4 KB       |     8×      | LLaMA-2/3, Qwen-2 |
+| MQA         | 极值 KV head 共享         |      0.5 KB      |     64×     | PaLM, Falcon      |
+| MLA         | head 维压缩 (latent)      |      ~17 KB      |     ~2×     | DeepSeek V2/V3    |
+| **CSA/HCA** | **head + token 双维压缩** | **~0.17 KB**[^2] |  **~190×**  | **DeepSeek V4**   |
 
-> 全模型 KV Cache 估算均基于 80 层 + FP16/BF16。DeepSeek V4 实际结构与 80 层 Dense 模型不同（MoE + 不同压缩层），表中数据来自 vLLM 官方博客的 1M context 实测。V4 实际部署时 FP8/FP4 可将 KV Cache 进一步压至 ~5 GB。
+> 单 token 等效 KV 基于 80 层 Dense 模型、FP16/BF16、`head_dim=128` 的假设。MLA 的 ~17 KB 包含了 KV latent (1 KB) + decoupled RoPE K (16 KB)。CSA/HCA 的 ~0.17 KB 来自 vLLM 官方博客的 1M context 实测（9.62 GiB ÷ 61 layers ÷ 1M tokens ≈ 169 bytes/token/layer，bf16），是 30 层 c4a + 31 层 c128a 的加权平均值。实际模型结构不同（层数、MoE、混合压缩层），具体数值以模型 card 为准。
+>
+> 1M context 下 KV Cache 的量级：以 GQA（8 KV heads）为例，1M × 4 KB × 80 ≈ **305 GB**。MLA 因 decoupled RoPE K 部分不压缩，1M × 17 KB × 61 ≈ **989 GB**（vs 纯 KV latent 的 1M × 1 KB × 61 ≈ 58 GB），但在 V3 MoE 结构中层数更少、实际部署中使用 FP8 量化可大幅缩减（V3.2 实际约 576 bytes/token/layer ≈ 83.9 GiB @ 1M）。V4 的 CSA/HCA 通过 token 维压缩 + K=V 共享将 1M 场景压至 **~9.62 GiB（bf16）**，FP8/FP4 混合精度可进一步减半至 ~5 GB。
+
+[^2]: CSA/HCA 的 ~0.17 KB 计算：vLLM 博客实测 V4 @ 1M context bf16 = 9.62 GiB，除以 61 层和 1M tokens 得到 169 bytes/token/layer。注意这是 30 层 c4a（有效 4:1 压缩）+ 31 层 c128a（128:1 压缩）的加权平均；其中 c128a 层等效仅 ~0.5 bytes/token（~0.0005 KB），c4a 层等效 ~18 bytes/token（~0.018 KB）。详见 [vLLM 博客](https://vllm.ai/blog/2026-04-24-deepseek-v4) 和 `kv_cache_calc.py`。
 
 ---
 
@@ -196,12 +205,18 @@ GQA (LLaMA-2 70B):
   → KV block: 2 × 8 × 128 × 16 × 2 bytes = 64 KB
 
 MLA (DeepSeek-V3):
-  KVCacheGroupSpec: kv_lora_rank=512, block_size=16
-  → KV block: 1 × 512 × 16 × 2 bytes = 16 KB
+  layer_names: 61 层 MLA 全部归入同一个 KVCacheGroupSpec
+  kv_cache_spec: MLAAttentionSpec(kv_lora_rank=512, head_size=576, block_size=16)
+  → 单个 spec 内部管理两种物理存储：KV latent + decoupled RoPE K
+  → page_size_bytes = block_size × 656 bytes (FP8 部署, flashmla 自定义布局)
+  → 通用 fp16 回退: 2 × block_size × num_kv_heads × head_size × dtype_size
 
 CSA/HCA (DeepSeek V4):
-  KVCacheGroupSpec: 多个 group，c4a/c128a/sliding window 各自独立 pool，block_size=256
-  → c4a block / c128a block / sliding window block 三种物理大小共存
+  layer_names: 30 层 c4a → ChunkedLocalAttentionSpec(attention_chunk_size=...)
+              31 层 c128a → ChunkedLocalAttentionSpec(attention_chunk_size=...)
+              所有 61 层 → SlidingWindowSpec(sliding_window=128)
+  → c4a / c128a / sliding window 三种 spec，各自独立 block 池和内存分配器
+  → block_size=256，大 block 对压缩 token 批量 I/O 更友好
 ```
 
 同一个 `KVCacheGroupSpec` 接口，不同的物理存储布局——这是 vLLM 能同时支持 MHA、GQA、MLA、Sliding Window、CSA/HCA 的关键抽象。V4 的实现细节详见 [vLLM 中的 DeepSeek V4](../../vllm/module_analysis/vllm_deepseek_v4.md) 和 [MLA 到 CSA/HCA 进化](../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。
@@ -215,3 +230,4 @@ CSA/HCA (DeepSeek V4):
 - [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
 - [大模型 KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — GQA/MQA 之外的压缩手段
 - [vLLM kv_cache_groups.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/utils.py) — `KVCacheGroupSpec` 的源码实现
+- [kv_cache_calc.py](kv_cache_calc.py) — 本文所有 KV Cache 数值的可复现计算脚本
