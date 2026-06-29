@@ -2,7 +2,7 @@
 
 KV Cache 存的是每一层每个 token 的 Key 和 Value。但 "Key" 和 "Value" 到底有几个？这取决于注意力类型——MHA 下 64 个 Q head 就有 64 组 K/V，GQA 下 64 个 Q head 可能只共享 8 组 K/V，MLA 下 K/V 干脆被压缩成了 latent vector。KV Cache 的物理大小直接由注意力架构决定。
 
-本文以 LLaMA-2 70B 和 DeepSeek-V3 为实例，给出每种注意力类型下 KV Cache 的精确形状和显存占用，以及 vLLM 当前的支持状态。
+本文以 LLaMA-2 70B (GQA)、DeepSeek-V3 (MLA)、DeepSeek-V4 (CSA/HCA) 为主要实例，给出每种注意力类型下 KV Cache 的精确形状和显存占用，以及 vLLM 当前的支持状态。MHA 和 MQA 以假设配置展示公式，实际模型参见 §六。
 
 ---
 
