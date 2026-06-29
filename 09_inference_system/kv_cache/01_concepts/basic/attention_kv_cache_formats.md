@@ -225,6 +225,7 @@ CSA/HCA (DeepSeek V4):
 
 ## 八、相关资源
 
+- [A Visual Guide to Attention Variants in Modern LLMs](https://magazine.sebastianraschka.com/p/visual-attention-variants) — Sebastian Raschka, MHA→GQA→MLA 架构图和 KV Cache 对比（推荐与本文互补：有图 + 有精确计算）
 - [KV Cache 原理简介](kv_cache_原理简介.md) — KV Cache 的工作机制和显存公式
 - [KV Cache 为什么叫 KV Cache？——Q 去哪了](why_only_kv.md) — 为什么 Q 不参与缓存
 - [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
