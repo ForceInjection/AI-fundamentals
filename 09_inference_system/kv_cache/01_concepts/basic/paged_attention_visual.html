@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PagedAttention 可视化 — 传统预分配 vs 分页管理</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; background: #F8FAFC; color: #1F2937; padding: 24px; display: flex; flex-direction: column; align-items: center; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6B7280; margin-bottom: 12px; text-align: center; max-width: 800px; }
+  .param-strip { font-size: 13px; font-weight: 600; color: #374151; text-align: center; padding: 8px 16px; background: #F0F5FF; border-radius: 8px; border: 1px solid #BFDBFE; display: inline-block; }
+  .param-label { font-size: 11px; font-weight: 400; color: #6B7280; margin-right: 6px; }
+  .main { display: flex; gap: 24px; margin-bottom: 20px; align-items: flex-start; }
+
+  .panel { background: #FFF; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 20px; width: 400px; height: 530px; display: flex; flex-direction: column; overflow: hidden; }
+  .panel h2 { font-size: 15px; margin-bottom: 10px; text-align: center; flex-shrink: 0; }
+  .panel .label-bad { color: #DC2626; }
+  .panel .label-good { color: #059669; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; margin-bottom: 8px; flex-shrink: 0; min-height: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+  .section-label { font-size: 10px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; margin: 6px 0 3px; flex-shrink: 0; }
+
+  .vram { position: relative; border: 1.5px solid #D1D5DB; border-radius: 6px; background: #F9FAFB; overflow: hidden; flex-shrink: 0; }
+  .vram.trad { height: 240px; margin-bottom: 4px; }
+  .vram.paged { height: 170px; margin-bottom: 4px; }
+  .vram-grid { display: grid; gap: 1px; position: absolute; inset: 0; }
+  .block { border-radius: 2px; transition: background 0.3s; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 600; color: #FFF; }
+  .block.free { background: #F1F5F9; color: transparent; }
+  .block.used-a { background: #3B82F6; }
+  .block.used-b { background: #8B5CF6; }
+  .block.used-c { background: #F59E0B; color: #1F2937; }
+  .block.used-d { background: #EC4899; }
+  .block.wasted { background: #FEE2E2; color: #DC2626; }
+  .block.released { background: #F1F5F9; border: 1px dashed #D1D5DB; }
+  .block.oom { background: #FEF2F2; border: 2px solid #DC2626; }
+  .block.focus-glow { box-shadow: 0 0 0 2px #FCD34D; z-index: 1; position: relative; }
+  .block.partial { position: relative; }
+  .block.partial::after { content: attr(data-fill); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 700; color: #1F2937; background: rgba(255,255,255,0.5); }
+
+  .logical-strip { display: flex; gap: 2px; margin-bottom: 6px; flex-shrink: 0; min-height: 28px; align-items: center; }
+  .logical-block { width: 28px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #FFF; }
+  .logical-block.empty { background: #F1F5F9; border: 1px dashed #D1D5DB; color: transparent; }
+
+  .bt-mapping { display: flex; gap: 2px; margin-bottom: 6px; flex-shrink: 0; min-height: 22px; align-items: center; }
+  .bt-cell { width: 28px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 600; background: #EDE9FE; color: #7C3AED; font-family: 'Courier New',monospace; }
+  .bt-cell.empty { background: transparent; color: transparent; }
+
+  .why-contiguous { font-size: 10px; color: #DC2626; text-align: center; padding: 4px 8px; background: #FEF2F2; border-radius: 4px; margin-bottom: 6px; flex-shrink: 0; }
+  .stats { display: flex; justify-content: space-around; font-size: 12px; padding: 6px; background: #F9FAFB; border-radius: 6px; flex-shrink: 0; margin-bottom: 4px; }
+  .stats .val { font-weight: 700; font-size: 15px; }
+  .stats .lbl { color: #6B7280; font-size: 10px; }
+
+  .step-info { text-align: center; font-size: 12px; color: #374151; flex-shrink: 0; height: 52px; display: flex; align-items: center; justify-content: center; flex-direction: column; margin-top: 2px; }
+  .step-info .desc { font-weight: 600; }
+  .step-info .hint { font-size: 10px; color: #9CA3AF; margin-top: 1px; }
+
+  .config-bar { font-size: 11px; color: #6B7280; text-align: center; margin: 0 0 8px; padding: 6px 12px; background: #F9FAFB; border-radius: 6px; border: 1px solid #E5E7EB; flex-shrink: 0; }
+  .controls { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 4px; }
+  .controls button { padding: 8px 20px; border-radius: 8px; border: 1.5px solid #D1D5DB; background: #FFF; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .controls button:hover { background: #F3F4F6; border-color: #9CA3AF; }
+  .controls button:active { background: #E5E7EB; }
+  .controls button:disabled { opacity: 0.4; cursor: default; }
+  .controls .step-num { font-size: 14px; font-weight: 600; color: #374151; min-width: 60px; text-align: center; }
+
+  .os-note { margin-top: 10px; padding: 8px 14px; background: #FEF3C7; border-radius: 8px; font-size: 11px; color: #92400E; text-align: center; max-width: 824px; }
+  .os-note code { background: #FDE68A; padding: 1px 4px; border-radius: 3px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<h1>PagedAttention 可视化 — 传统预分配 vs 分页管理</h1>
+<div class="subtitle">左：传统预分配 — 连续内存，容量先耗尽 → 请求阻塞。右：PagedAttention — Block 分页，按需分配 → 同等硬件多服务 2× 请求。</div>
+
+<div style="text-align:center;margin-bottom:6px;"><div class="param-strip"><span class="param-label">请求参数</span> A = 40 tokens (3 blocks) │ B = 72 tokens (5 blocks) │ C = 20 tokens (2 blocks) │ D = 56 tokens (4 blocks)</div></div>
+
+<div class="main">
+  <!-- LEFT: Traditional -->
+  <div class="panel">
+    <h2><span class="label-bad">传统预分配</span></h2>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:#3B82F6"></span>请求A</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#8B5CF6"></span>请求B</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#F59E0B"></span>请求C</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#EC4899"></span>请求D</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#FEE2E2;border:1px solid #FECACA"></span>浪费</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#F1F5F9;border:1px dashed #D1D5DB"></span>已释放</span>
+    </div>
+    <div class="section-label">GPU 显存 — 物理布局 (连续分配)</div>
+    <div class="vram trad" id="vram-traditional"></div>
+    <div class="why-contiguous">为什么不能分散分配？— 无 Block Table 做地址翻译，attention kernel 要求 K/V 在<b>连续内存</b>中</div>
+    <div class="stats">
+      <div style="text-align:center"><span class="val" id="trad-util">—</span><br><span class="lbl">利用率</span></div>
+      <div style="text-align:center"><span class="val" id="trad-conc">—</span><br><span class="lbl">活跃请求</span></div>
+      <div style="text-align:center"><span class="val" id="trad-waste">—</span><br><span class="lbl">浪费</span></div>
+      <div style="text-align:center"><span class="val" id="trad-released">—</span><br><span class="lbl">已释放</span></div>
+    </div>
+    <div class="step-info"><span class="desc" id="trad-desc"></span><span class="hint" id="trad-hint"></span></div>
+  </div>
+
+  <!-- RIGHT: PagedAttention -->
+  <div class="panel">
+    <h2><span class="label-good">PagedAttention</span></h2>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:#3B82F6"></span>请求A</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#8B5CF6"></span>请求B</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#F59E0B"></span>请求C</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#EC4899"></span>请求D</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#F1F5F9;border:1px solid #E5E7EB"></span>空闲Block</span>
+    </div>
+    <div class="section-label">逻辑视图 — 选中请求看到的"连续地址空间" (类比虚拟地址)</div>
+    <div class="logical-strip" id="logical-view"></div>
+    <div class="section-label">Block Table 翻译 — 逻辑 block → 物理 block (类比页表)</div>
+    <div class="bt-mapping" id="bt-mapping"></div>
+    <div class="section-label">物理视图 — GPU 显存实际布局 (仅最后一个 block 可能有 internal fragmentation)</div>
+    <div class="vram paged" id="vram-paged"></div>
+    <div class="stats">
+      <div style="text-align:center"><span class="val" id="paged-util">—</span><br><span class="lbl">Block 利用率</span></div>
+      <div style="text-align:center"><span class="val" id="paged-conc">—</span><br><span class="lbl">活跃请求</span></div>
+      <div style="text-align:center"><span class="val" id="paged-blocks">—</span><br><span class="lbl">空闲 Block</span></div>
+    </div>
+    <div class="step-info"><span class="desc" id="paged-desc"></span><span class="hint" id="paged-hint"></span></div>
+  </div>
+</div>
+
+<div class="config-bar">block_size = 16 (vLLM 默认) &nbsp;|&nbsp; max_model_len = 128 tokens → 每个请求预分配 8 blocks</div>
+
+<div class="controls">
+  <button id="btn-prev" onclick="changeStep(-1)">← 上一步</button>
+  <span class="step-num" id="step-label">1 / 7</span>
+  <button id="btn-next" onclick="changeStep(1)">下一步 →</button>
+  <span style="font-size:11px;color:#9CA3AF;margin-left:8px;">键盘 ← → 翻页</span>
+</div>
+<div class="os-note" id="os-hint"></div>
+
+<script>
+// ── Config: small VRAM so capacity exhausts visibly ──
+const TOTAL_BLOCKS = 24;          // simulate ~40 GB VRAM → 24 blocks
+const BLOCK_SIZE = 16;           // tokens per block (vLLM 默认值)
+const MAX_PREALLOC = 128;        // max tokens = 8 blocks (same for all)
+const PREALLOC_BLKS = 8;         // ceil(128/16)
+const ACTUAL_LENS = { A: 40, B: 72, C: 20, D: 56 }; // actual tokens
+function tokensToBlocks(t) { return Math.ceil(t / BLOCK_SIZE); }
+
+// ── Verified scenario ──
+// Step 1: A(3 used+5 waste=8, 8/24). Free=16. Paged: A→[0,1,2] (3/24).
+// Step 2: B(5 used+3 waste=8, 16/24). Free=8.  Paged: B→[3,4,5,6,7] (8/24).
+// Step 3: C(2 used+6 waste=8, 24/24). Free=0.  Paged: C→[8,9] (10/24).
+//   24 = 3×8. Traditional is FULL. C just squeezed in.
+//   Scenario design: with 24 blocks × 8 prealloc, max 3 concurrent.
+//   Step 4: D blocked because A+B+C = 24/24 full. PagedAttention: only 10/24.
+
+const SCENARIO = [
+  { // 0: A arrives
+    label: 't₁ — 请求 A 到达 (prompt 40 tokens → 3 blocks)',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: true },
+    ],
+    focusReq: 'A',
+    pagedAlloc: { A: [0,1,2] },
+    tradDesc: '传统: 预分配 8 blocks, 实际用 3 → 浪费 5',
+    tradHint: 'max_model_len=128 tokens → 必须一次预留 8 blocks (block_size=16), 哪怕 A 只需 40 tokens',
+    pagedDesc: 'PagedAttention: 只需 3 blocks → 按需分配, 零浪费',
+    pagedHint: 'Block Table 解耦逻辑/物理 → 用多少拿多少, 无需预判长度',
+  },
+  { // 1: B arrives
+    label: 't₂ — 请求 B 到达 (prompt 72 tokens → 5 blocks)',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), prealloc: PREALLOC_BLKS, color:'used-b', alive: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), color:'used-b', alive: true },
+    ],
+    focusReq: 'B',
+    pagedAlloc: { A: [0,1,2], B: [3,4,5,6,7] },
+    tradDesc: '传统: A(8) + B(8) = 16/24 → 浪费 5+3=8 blocks',
+    tradHint: 'B 紧随 A 之后连续存放',
+    pagedDesc: 'PagedAttention: A(3) + B(5) = 8/28 → 零浪费',
+    pagedHint: 'B 紧接 A 的 block 之后分配',
+  },
+  { // 2: C arrives — traditional nearly full
+    label: 't₃ — 请求 C 到达 (prompt 20 tokens → 2 blocks)',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), prealloc: PREALLOC_BLKS, color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), prealloc: PREALLOC_BLKS, color:'used-c', alive: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), color:'used-c', alive: true },
+    ],
+    focusReq: 'C',
+    pagedAlloc: { A: [0,1,2], B: [3,4,5,6,7], C: [8,9] },
+    tradDesc: '传统: 24/24 (满!) ← 浪费 5+3+6=14 blocks, 实际只用 10',
+    tradHint: '3 个请求预分配 3×8=24 blocks, 100% 占满; 但实际利用率仅 10/24=42%',
+    pagedDesc: 'PagedAttention: 10/28 ← 仍有 18 blocks 空闲!',
+    pagedHint: '3+5+2=10 blocks (仅用 36%)',
+  },
+  { // 3: D arrives — traditional BLOCKED, PagedAttention serves
+    label: 't₄ — 请求 D 到达 (prompt 56 tokens → 4 blocks)',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), prealloc: PREALLOC_BLKS, color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), prealloc: PREALLOC_BLKS, color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), prealloc: PREALLOC_BLKS, color:'used-d', alive: true, blocked: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: true },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), color:'used-d', alive: true },
+    ],
+    focusReq: 'D',
+    pagedAlloc: { A: [0,1,2], B: [3,4,5,6,7], C: [8,9], D: [10,11,12,13] },
+    tradDesc: '⛔ 传统: D 需 8 blocks, 剩余 0 → 阻塞! 排队等待…',
+    tradHint: '3 个请求已占满 24 blocks; D 实际只需 4, 但预分配强制预留 8',
+    pagedDesc: '✅ PagedAttention: D 只需 4 blocks, 直接从空闲池分配!',
+    pagedHint: '按需分配 → 有 14 blocks 空闲, 4 个足够 → 立刻服务',
+  },
+  { // 4: A completes — traditional can now serve D
+    label: 't₅ — 请求 A 完成 → 释放空间',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: false },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), prealloc: PREALLOC_BLKS, color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), prealloc: PREALLOC_BLKS, color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), prealloc: PREALLOC_BLKS, color:'used-d', alive: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: false },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), color:'used-b', alive: true },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), color:'used-d', alive: true },
+    ],
+    focusReq: 'A',
+    pagedAlloc: { B: [3,4,5,6,7], C: [8,9], D: [10,11,12,13] },
+    tradDesc: 'A 的 8 blocks 释放 → D 终于可以分配了 (排队延迟 = 1 个请求周期)',
+    tradHint: 'A 的 8 blocks 已释放 (虚线) — D 即将填入此处',
+    pagedDesc: 'A 的 3 blocks 归还空闲池 → pool 扩至 17 blocks',
+    pagedHint: '细粒度回收, 立即可复用 — D 早已在服务中',
+  },
+  { // 5: B completes — final state with summary
+    label: 't₆ — 请求 B 完成 · 最终对比',
+    tradData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), prealloc: PREALLOC_BLKS, color:'used-a', alive: false },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), prealloc: PREALLOC_BLKS, color:'used-b', alive: false },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), prealloc: PREALLOC_BLKS, color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), prealloc: PREALLOC_BLKS, color:'used-d', alive: true },
+    ],
+    pagedData: [
+      { id:'A', used: tokensToBlocks(ACTUAL_LENS.A), color:'used-a', alive: false },
+      { id:'B', used: tokensToBlocks(ACTUAL_LENS.B), color:'used-b', alive: false },
+      { id:'C', used: tokensToBlocks(ACTUAL_LENS.C), color:'used-c', alive: true },
+      { id:'D', used: tokensToBlocks(ACTUAL_LENS.D), color:'used-d', alive: true },
+    ],
+    focusReq: 'B',
+    pagedAlloc: { C: [8,9], D: [10,11,12,13] },
+    tradDesc: '传统: 峰值 3 并发, D 因容量满而排队; 浪费(红) 10, 已释放(虚线) 8',
+    tradHint: 'C+D 实际只需 6 blocks, 但因预分配占据 16; 容量瓶颈 → 并发上限 = 3',
+    pagedDesc: 'PagedAttention: 峰值 4 并发, D 从未排队; 仅用 14/24 blocks',
+    pagedHint: '最终 C+D 活跃, 佔 6 blocks; 空闲 10 blocks → 还能再服务 2 个请求',
+  },
+];
+
+let currentStep = 0;
+
+// ── Determine tradition layout for each step ──
+// Allocation order: requests arrive in order, placed contiguously
+// When one releases, its space is freed (can be reused immediately)
+// New requests fill the first freed chunk that fits, or go at the end
+function getTradLayout(stepIdx) {
+  const s = SCENARIO[stepIdx];
+  const result = new Array(TOTAL_BLOCKS).fill('free');
+
+  // Track which physical ranges each request occupies
+  // Build by simulating arrival sequence across steps 0..stepIdx
+  let allocations = []; // [{id, start, len, alive}]
+
+  for (let si = 0; si <= stepIdx; si++) {
+    const sd = SCENARIO[si];
+    // Process completions first (requests that become !alive in this step)
+    for (const req of sd.tradData) {
+      if (!req.alive) {
+        const existing = allocations.find(a => a.id === req.id && a.alive);
+        if (existing) existing.alive = false;
+      }
+    }
+    // Process new arrivals (requests that first appear in this step)
+    for (const req of sd.tradData) {
+      if (req.blocked) continue; // blocked requests don't get allocated
+      const existing = allocations.find(a => a.id === req.id);
+      if (existing) continue; // already allocated
+
+      const need = req.prealloc;
+      // Find first-fit: check freed space first, then end
+      let bestStart = -1;
+      const occupied = new Array(TOTAL_BLOCKS).fill(false);
+      for (const a of allocations) {
+        if (a.alive) {
+          for (let j = a.start; j < a.start + a.len; j++) occupied[j] = true;
+        }
+        // Dead allocations = freed space, don't occupy blocks
+      }
+      // Check contiguous free runs
+      let runStart = -1, runLen = 0;
+      for (let j = 0; j < TOTAL_BLOCKS; j++) {
+        if (!occupied[j]) {
+          if (runStart < 0) runStart = j;
+          runLen++;
+          if (runLen >= need) { bestStart = runStart; break; }
+        } else {
+          runStart = -1; runLen = 0;
+        }
+      }
+      if (bestStart >= 0) {
+        allocations.push({ id: req.id, start: bestStart, len: need, alive: true });
+      }
+    }
+  }
+
+  // Compensate allocations: pack alive ones to the left for cleaner visualization
+  // Sort allocations by start position
+  allocations.sort((a, b) => a.start - b.start);
+
+  // Fill result array; track partial fill info
+  const partialBlocks = {}; // blockIndex → { owner, fillLabel }
+  for (const a of allocations) {
+    const used = SCENARIO[stepIdx].tradData.find(r => r.id === a.id);
+    const usedBlocks = used ? used.used : a.len;
+    for (let j = a.start; j < a.start + a.len; j++) {
+      if (a.alive) {
+        if (j < a.start + usedBlocks) {
+          result[j] = 'used-' + a.id;
+          // Mark last used block as partial if not completely full
+          if (j === a.start + usedBlocks - 1 && used) {
+            const actualTokens = ACTUAL_LENS[a.id];
+            const totalCap = usedBlocks * BLOCK_SIZE;
+            const lastBlockUsed = actualTokens - (usedBlocks - 1) * BLOCK_SIZE;
+            const fillRatio = lastBlockUsed / BLOCK_SIZE;
+            if (fillRatio < 1) {
+              result[j] = 'used-' + a.id + '-partial';
+              partialBlocks[j] = {
+                owner: a.id,
+                fillPct: Math.round(fillRatio * 100),
+                fillLabel: lastBlockUsed + '/' + BLOCK_SIZE,
+              };
+            }
+          }
+        } else {
+          result[j] = 'wasted';
+        }
+      } else {
+        result[j] = 'released';
+      }
+    }
+  }
+  return { layout: result, partialBlocks };
+}
+
+function drawTraditional(stepIdx) {
+  const s = SCENARIO[stepIdx];
+  const { layout, partialBlocks } = getTradLayout(stepIdx);
+  const vram = document.getElementById('vram-traditional');
+
+  const cols = 6;
+  vram.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'vram-grid';
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  const colorClass = { 'used-A': 'used-a', 'used-B': 'used-b', 'used-C': 'used-c', 'used-D': 'used-d' };
+  const hexMapFull = { A: '#3B82F6', B: '#8B5CF6', C: '#F59E0B', D: '#EC4899' };
+
+  layout.forEach((type, i) => {
+    const el = document.createElement('div');
+    if (type === 'free') {
+      el.className = 'block free';
+    } else if (type === 'wasted') {
+      el.className = 'block wasted';
+    } else if (type === 'released') {
+      el.className = 'block released';
+    } else if (type.endsWith('-partial')) {
+      const owner = type.replace('-partial', '').replace('used-', '');
+      const pi = partialBlocks[i];
+      el.className = 'block ' + (colorClass['used-' + owner] || 'used-a') + ' partial';
+      el.style.background = `linear-gradient(to right bottom, ${hexMapFull[owner]} ${pi.fillPct - 2}%, #E5E7EB ${pi.fillPct + 2}%)`;
+      el.setAttribute('data-fill', pi.fillLabel);
+    } else {
+      el.className = 'block ' + (colorClass[type] || 'used-a');
+      el.textContent = type.replace('used-', '');
+    }
+    grid.appendChild(el);
+  });
+  vram.appendChild(grid);
+
+  // Stats
+  const used = layout.filter(b => b !== 'free' && b !== 'released' && b !== 'wasted' && !b.endsWith('-partial')).length
+             + layout.filter(b => b.endsWith('-partial')).length;
+  const wasted = layout.filter(b => b === 'wasted').length;
+  const released = layout.filter(b => b === 'released').length;
+  const usedTypes = new Set();
+  layout.forEach(b => {
+    if (b !== 'free' && b !== 'released' && b !== 'wasted') {
+      usedTypes.add(b.replace('-partial', '').replace('used-', ''));
+    }
+  });
+  const activeSpace = used + wasted;
+  const util = activeSpace > 0 ? Math.round(used / activeSpace * 100) : 0;
+
+  document.getElementById('trad-util').textContent = util + '%';
+  document.getElementById('trad-conc').textContent = usedTypes.size;
+  document.getElementById('trad-waste').textContent = wasted;
+  document.getElementById('trad-released').textContent = released;
+
+  document.getElementById('trad-desc').textContent = s.tradDesc;
+  document.getElementById('trad-hint').textContent = s.tradHint;
+}
+
+// ── Draw PagedAttention ──
+function drawPaged(stepIdx) {
+  const s = SCENARIO[stepIdx];
+  const focusReq = s.focusReq;
+  const bt = s.pagedAlloc[focusReq] || [];
+  const hexMap = { A: '#3B82F6', B: '#8B5CF6', C: '#F59E0B', D: '#EC4899' };
+  const focusAlive = s.pagedData.find(r => r.id === focusReq)?.alive ?? false;
+  const maxLogical = 7;
+
+  // ── Logical view ──
+  const logicalDiv = document.getElementById('logical-view');
+  logicalDiv.innerHTML = '';
+  const logicalLabel = document.createElement('span');
+  logicalLabel.style.cssText = 'font-size:10px;color:#6B7280;margin-right:4px;white-space:nowrap;';
+  logicalLabel.textContent = `请求 ${focusReq}:`;
+  logicalDiv.appendChild(logicalLabel);
+
+  if (!focusAlive && bt.length === 0) {
+    const need = tokensToBlocks(ACTUAL_LENS[focusReq]);
+    for (let i = 0; i < Math.min(need, maxLogical); i++) {
+      const el = document.createElement('div');
+      el.className = 'logical-block';
+      el.style.cssText = 'background:#F1F5F9;border:1px dashed #D1D5DB;color:#9CA3AF;';
+      el.textContent = focusReq + i;
+      logicalDiv.appendChild(el);
+    }
+    const released = document.createElement('span');
+    released.style.cssText = 'font-size:9px;color:#9CA3AF;margin-left:4px;';
+    released.textContent = '→ 已释放';
+    logicalDiv.appendChild(released);
+  } else {
+    for (let i = 0; i < maxLogical; i++) {
+      const el = document.createElement('div');
+      el.className = 'logical-block';
+      if (i < bt.length) {
+        el.style.background = hexMap[focusReq];
+        el.textContent = focusReq + i;
+      } else {
+        el.classList.add('empty');
+      }
+      logicalDiv.appendChild(el);
+    }
+  }
+
+  // ── Block Table mapping row ──
+  const btDiv = document.getElementById('bt-mapping');
+  btDiv.innerHTML = '';
+  const btLabel = document.createElement('span');
+  btLabel.style.cssText = 'font-size:9px;color:#9CA3AF;margin-right:4px;white-space:nowrap;';
+  btLabel.textContent = 'block_table:';
+  btDiv.appendChild(btLabel);
+
+  if (!focusAlive && bt.length === 0) {
+    const emptyLabel = document.createElement('span');
+    emptyLabel.style.cssText = 'font-size:9px;color:#9CA3AF;';
+    emptyLabel.textContent = '(已清空 — block 归还空闲池)';
+    btDiv.appendChild(emptyLabel);
+  } else {
+    for (let i = 0; i < maxLogical; i++) {
+      const el = document.createElement('div');
+      el.className = 'bt-cell';
+      if (i < bt.length) {
+        el.textContent = '#' + bt[i];
+      } else {
+        el.classList.add('empty');
+      }
+      btDiv.appendChild(el);
+    }
+  }
+
+  // ── Physical VRAM grid ──
+  // Build physical layout, tracking last-block partial fills
+  const physAlloc = new Array(TOTAL_BLOCKS).fill(null);
+  const partialInfo = {}; // blockIndex → { owner, fillPct, fillLabel }
+
+  for (const [reqId, blocks] of Object.entries(s.pagedAlloc)) {
+    const reqData = s.pagedData.find(r => r.id === reqId);
+    if (!reqData || !reqData.alive) continue;
+    const actualTokens = ACTUAL_LENS[reqId];
+    const totalCap = blocks.length * BLOCK_SIZE;
+    const lastBlockUsed = actualTokens - (blocks.length - 1) * BLOCK_SIZE;
+    const fillRatio = lastBlockUsed / BLOCK_SIZE; // 0..1
+
+    for (let idx = 0; idx < blocks.length; idx++) {
+      const b = blocks[idx];
+      physAlloc[b] = reqId;
+      if (idx === blocks.length - 1 && fillRatio < 1) {
+        partialInfo[b] = {
+          owner: reqId,
+          fillPct: Math.round(fillRatio * 100),
+          fillLabel: lastBlockUsed + '/' + BLOCK_SIZE,
+        };
+      }
+    }
+  }
+
+  const vram = document.getElementById('vram-paged');
+  const cols = 6;
+  vram.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'vram-grid';
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  const colorClass = { A: 'used-a', B: 'used-b', C: 'used-c', D: 'used-d' };
+  const hexMapFull = { A: '#3B82F6', B: '#8B5CF6', C: '#F59E0B', D: '#EC4899' };
+  const focusBlocks = new Set(bt);
+
+  physAlloc.forEach((owner, i) => {
+    const el = document.createElement('div');
+    if (owner === null) {
+      el.className = 'block free';
+    } else if (partialInfo[i]) {
+      const pi = partialInfo[i];
+      el.className = 'block ' + (colorClass[owner] || 'used-a') + ' partial';
+      el.style.background = `linear-gradient(to right bottom, ${hexMapFull[owner]} ${pi.fillPct - 2}%, #E5E7EB ${pi.fillPct + 2}%)`;
+      el.setAttribute('data-fill', pi.fillLabel);
+    } else {
+      el.className = 'block ' + (colorClass[owner] || 'used-a');
+      el.textContent = owner;
+    }
+    if (owner === focusReq && focusBlocks.has(i)) el.classList.add('focus-glow');
+    grid.appendChild(el);
+  });
+  vram.appendChild(grid);
+
+  // Stats
+  const used = physAlloc.filter(b => b !== null).length;
+  const free = TOTAL_BLOCKS - used;
+  const aliveReqs = new Set(physAlloc.filter(b => b));
+  document.getElementById('paged-util').textContent = Math.round(used / TOTAL_BLOCKS * 100) + '%';
+  document.getElementById('paged-conc').textContent = aliveReqs.size;
+  document.getElementById('paged-blocks').textContent = free;
+
+  document.getElementById('paged-desc').textContent = s.pagedDesc;
+  document.getElementById('paged-hint').textContent = s.pagedHint;
+}
+
+const OS_HINTS = [
+  '🤔 OS 虚拟内存分页: 进程看到连续地址, <code>页表</code> 翻译到散落的物理页框。PagedAttention 的 <code>Block Table</code> 做完全一样的事 — 只不过在 GPU kernel 里用软件实现。',
+  '🤔 一个程序 100 MB 不需要连续物理内存。同样, 一个请求的 KV Cache 不需要连续显存 — 只要 block table 能把逻辑 block 映射到散落的物理 block。',
+  '🤔 页表项 PTE 存储虚拟页→物理页框的映射。Block Table 的每个条目存储 logical_block_id → physical_block_id。结构完全对应。',
+  '🤔 传统预分配: 物理地址 = 逻辑地址 → 必须连续。PagedAttention: Block Table 解耦 → 物理可分散。这就是 GPU 软件 MMU 的价值。',
+  '🤔 GPU 没有硬件 MMU。但 Attention kernel 自己查 block table — <b>用软件实现 GPU 版 MMU</b>, 翻译 logical_block_id → physical_block_addr。',
+  '🤔 OS 分页带来的不只是碎片消除 — 写时复制、共享内存、按需调页都是在其上生长的。PagedAttention 也一样: Prefix Caching、Offloading 都是 block 抽象的产物。',
+];
+
+function render() {
+  drawTraditional(currentStep);
+  drawPaged(currentStep);
+  document.getElementById('step-label').textContent = `${currentStep + 1} / ${SCENARIO.length}`;
+  document.getElementById('btn-prev').disabled = currentStep === 0;
+  document.getElementById('btn-next').disabled = currentStep === SCENARIO.length - 1;
+  document.getElementById('os-hint').innerHTML = OS_HINTS[currentStep % OS_HINTS.length];
+}
+
+function changeStep(delta) {
+  const next = currentStep + delta;
+  if (next < 0 || next >= SCENARIO.length) return;
+  currentStep = next;
+  render();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') changeStep(1);
+  if (e.key === 'ArrowLeft') changeStep(-1);
+});
+
+render();
+</script>
+</body>
+</html>
