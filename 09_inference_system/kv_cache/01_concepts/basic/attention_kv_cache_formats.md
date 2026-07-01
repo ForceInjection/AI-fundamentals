@@ -29,6 +29,8 @@ LLaMA-2 70B 如果使用 MHA（实际使用 GQA，此处仅做假设）：
 
 MHA 的 KV Cache 最大，因为每个 Q head 都需要自己独立的 K 和 V。没有任何共享。
 
+![MHA KV Cache 存储形态](img/format-mha.svg)
+
 ---
 
 ## 二、GQA（分组查询注意力）：多个 Q head 共享一组 K/V
@@ -60,6 +62,8 @@ GQA 是 `num_kv_heads` 和 `num_q_heads` 的比例决定了 KV Cache 的缩减�
 
 **在 vLLM 中**：GQA 是默认支持最广泛的注意力类型——LLaMA-2、LLaMA-3、Qwen-2、Mistral 等主流模型全部使用 GQA。启动时 vLLM 自动从模型 config 读取 `num_key_value_heads`，无需用户干预。
 
+![GQA KV Cache 存储形态](img/format-gqa.svg)
+
 ---
 
 ## 三、MQA（多查询注意力）：所有 Q head 共享唯一一组 K/V
@@ -79,6 +83,8 @@ GQA 的极端版本：只保留 1 组 K 和 V，所有 Q head 全部共享。
 ```
 
 MQA 的 KV Cache 极小，但代价是注意力质量下降——只有一组 K/V 意味着所有 Q head 从同一个视角观察输入，表达能力受限。PaLM 和 Falcon 使用了 MQA，但 GQA 出现后 MQA 基本被取代。
+
+![MQA KV Cache 存储形态](img/format-mqa.svg)
 
 ---
 
@@ -109,6 +115,8 @@ MLA 实际存储（两部分）：
 MLA 的压缩效果来自两个机制：(1) K 和 V 共享一个下投影矩阵 `W^{DKV}`，将高维 head 空间压缩到低维 latent 空间；(2) 位置编码（RoPE）因为旋转操作无法直接压缩，所以从 latent 中解耦出来单独存储——这也是为什么存储中会多出 16 KB 的 decoupled K。实际使用中 attention 计算时，latent 通过上投影矩阵 `W^{UK}` 和 `W^{UV}` 实时还原出完整的 K 和 V。
 
 **在 vLLM 中**：MLA 通过独立的 attention backend 支持。vLLM 的 `DeepseekV2Attention` 后端自动处理 KV latent 和 decoupled K 的存储和实时解压，用户只需正常启动服务。关键差异：MLA 下 KV Cache 的物理格式不再是单一的 `(heads, head_dim)`，而是两种形态共存——`(kv_lora_rank,)` 的共享 latent 和 `(num_heads, qk_rope_head_dim)` 的 RoPE K。vLLM 的 block table 通过 `KVCacheGroupSpec` 为每种形态创建独立的 block 池（参见 `kv_cache_groups.py`）。
+
+![MLA KV Cache 压缩管线](img/format-mla.svg)
 
 ---
 
@@ -172,9 +180,13 @@ vLLM 通过 `KVCacheGroupSpec` 为每种压缩类型创建独立的 KV block 池
 --attention_config.use_fp4_indexer_cache=True  # indexer cache 使用 FP4
 ```
 
+![CSA/HCA token 维压缩](img/format-csa-hca.svg)
+
 ---
 
 ## 六、五种注意力类型的横向对比
+
+> 以上各节的 SVG 可视化图（§一~§五末尾）展示了每种注意力类型下 KV Cache 的物理存储形态和计算过程。下图汇总精确数值。
 
 | 注意力类型  | 压缩维度                  | 单 token 等效 KV | vs MHA 缩减 | 代表模型          |
 | ----------- | ------------------------- | :--------------: | :---------: | ----------------- |
@@ -228,7 +240,7 @@ CSA/HCA (DeepSeek V4):
 - [A Visual Guide to Attention Variants in Modern LLMs](https://magazine.sebastianraschka.com/p/visual-attention-variants) — Sebastian Raschka, MHA→GQA→MLA 架构图和 KV Cache 对比（推荐与本文互补：有图 + 有精确计算）
 - [KV Cache 原理简介](kv_cache_原理简介.md) — KV Cache 的工作机制和显存公式
 - [KV Cache 为什么叫 KV Cache？——Q 去哪了](why_only_kv.md) — 为什么 Q 不参与缓存
-- [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
+- [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
 - [大模型 KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — GQA/MQA 之外的压缩手段
 - [vLLM kv_cache_groups.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/utils.py) — `KVCacheGroupSpec` 的源码实现
 - [kv_cache_calc.py](kv_cache_calc.py) — 本文所有 KV Cache 数值的可复现计算脚本

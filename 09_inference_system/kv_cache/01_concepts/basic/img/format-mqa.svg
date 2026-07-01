@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 510" width="800" height="510">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <filter id="badge-shadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="768" height="486" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="400" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">MQA（多查询注意力）</text>
+  <text x="400" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">32 Q heads → 1 KV head · 多对一共享 · num_kv_heads = 1（GQA 的极端情况）</text>
+
+  <!-- ==== Head visualization ==== -->
+
+  <!-- Q group block (all Q heads in one wide container) -->
+  <rect x="120" y="100" width="480" height="66" rx="10" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="360" y="114" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">32 个 Q head — 全部共享同一组 KV</text>
+
+  <!-- Q indicator squares inside group -->
+  <g dominant-baseline="central">
+    <rect x="160" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="174" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="188" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="202" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="216" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <text x="232" y="130" font-size="13" fill="#9CA3AF">···</text>
+    <rect x="250" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="264" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="278" y="124" width="10" height="10" rx="2" fill="#3B82F6"/>
+
+    <!-- Second row of Q indicators -->
+    <rect x="230" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="244" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="258" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="272" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="286" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <text x="302" y="144" font-size="13" fill="#9CA3AF">···</text>
+    <rect x="320" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="334" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <rect x="348" y="138" width="10" height="10" rx="2" fill="#3B82F6"/>
+
+    <!-- Third row: just ellipsis and Q₃₁ -->
+    <text x="310" y="156" font-size="12" fill="#9CA3AF">···</text>
+    <rect x="340" y="152" width="10" height="10" rx="2" fill="#3B82F6"/>
+    <text x="358" y="158" font-size="10" fill="#6B7280">Q₃₁</text>
+  </g>
+
+  <!-- Arrows converging to center -->
+  <line x1="240" y1="166" x2="240" y2="178" stroke="#9CA3AF" stroke-width="1"/>
+  <line x1="360" y1="166" x2="360" y2="178" stroke="#9CA3AF" stroke-width="1"/>
+  <line x1="480" y1="166" x2="480" y2="178" stroke="#9CA3AF" stroke-width="1"/>
+  <!-- Converging lines -->
+  <line x1="240" y1="178" x2="356" y2="186" stroke="#9CA3AF" stroke-width="1"/>
+  <line x1="480" y1="178" x2="364" y2="186" stroke="#9CA3AF" stroke-width="1"/>
+  <!-- Center arrow -->
+  <line x1="360" y1="178" x2="360" y2="186" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="356,190 360,196 364,190" fill="#9CA3AF"/>
+
+  <!-- Single KV head box (centered) -->
+  <rect x="305" y="196" width="110" height="24" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="305" y="196" width="55" height="24" rx="5" fill="#F97316"/>
+  <rect x="358" y="196" width="2" height="24" fill="#FFFFFF"/>
+  <rect x="360" y="196" width="55" height="24" rx="5" fill="#22C55E"/>
+  <rect x="358" y="196" width="2" height="24" fill="#F97316"/>
+  <text x="332" y="208" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">K₀</text>
+  <text x="387" y="208" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">V₀</text>
+
+  <!-- ==== Row labels (left) ==== -->
+  <text x="24" y="122" dominant-baseline="central" font-size="12" font-weight="600" fill="#3B82F6">Q<tspan font-weight="400" font-size="10" fill="#9CA3AF">（不缓存）</tspan></text>
+  <text x="24" y="208" dominant-baseline="central" font-size="12" font-weight="600" fill="#F97316">K / V<tspan font-weight="400" font-size="10" fill="#9CA3AF">（缓存）</tspan></text>
+
+  <!-- ==== Right-side bracket: many-to-1 ==== -->
+  <path d="M 726,106
+           Q 734,106 736,114
+           L 736,164
+           L 742,170
+           L 736,176
+           L 736,202
+           Q 736,212 726,212"
+        fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="718" y="158" text-anchor="end" dominant-baseline="central" font-size="12" font-weight="600" fill="#6B7280">×1 组</text>
+  <text x="718" y="174" text-anchor="end" dominant-baseline="central" font-size="10" fill="#9CA3AF">32 head : 1 KV</text>
+
+  <!-- ==== Divider ==== -->
+  <line x1="60" y1="244" x2="740" y2="244" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ==== Storage calculation ==== -->
+  <text x="60" y="268" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">每个 token 每层 KV Cache 存储（fp16 / bf16，2 bytes / element）</text>
+
+  <!-- Storage detail bg -->
+  <rect x="60" y="282" width="680" height="78" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- K: line -->
+  <text x="80" y="308" dominant-baseline="central" font-size="14" font-weight="600" fill="#F97316" class="mono">K:</text>
+  <text x="105" y="308" dominant-baseline="central" font-size="14" fill="#374151">
+    <tspan class="mono">1 head</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">128 dim</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">2 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="600">256 B</tspan>
+  </text>
+
+  <!-- V: line -->
+  <text x="80" y="336" dominant-baseline="central" font-size="14" font-weight="600" fill="#22C55E" class="mono">V:</text>
+  <text x="105" y="336" dominant-baseline="central" font-size="14" fill="#374151">
+    <tspan class="mono">1 head</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">128 dim</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">2 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="600">256 B</tspan>
+  </text>
+
+  <!-- ==== Total row ==== -->
+  <rect x="60" y="376" width="430" height="34" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="393" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan fill="#F97316" font-weight="600">K</tspan>
+    <tspan> + </tspan>
+    <tspan fill="#22C55E" font-weight="600">V</tspan>
+    <tspan> = 256 B + 256 B = </tspan>
+    <tspan class="mono" font-weight="700">512 B = 0.5 KB / token / layer</tspan>
+  </text>
+
+  <!-- Total badge (right) -->
+  <rect x="510" y="376" width="230" height="34" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5" filter="url(#badge-shadow)"/>
+  <text x="625" y="393" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">合计：0.5 KB / token / layer</text>
+
+  <!-- vs comparison badges -->
+  <rect x="510" y="420" width="230" height="22" rx="6" fill="#FEF3C7"/>
+  <text x="625" y="431" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#D97706">仅为 MHA 的 1/64</text>
+
+  <rect x="60" y="420" width="200" height="22" rx="6" fill="#FEE2E2"/>
+  <text x="160" y="431" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#DC2626">代价：注意力质量下降</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="400" y="470" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">
+    注：假设配置。仅 1 组 KV 意味着所有 Q head 从同一视角观察输入，表达能力受限。PaLM、Falcon 使用过 MQA，现已基本被 GQA 取代。
+  </text>
+</svg>

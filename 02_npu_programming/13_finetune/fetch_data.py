@@ -88,8 +88,8 @@ def fetch_ascend_tech_articles(output_dir: str):
                     html = resp.read().decode("utf-8", errors="replace")
 
                 # 简单提取纯文本：去除 script/style 标签和 HTML 标记
-                html = re.sub(r"<script[^>]*>.*?</script>", " ", html, flags=re.DOTALL)
-                html = re.sub(r"<style[^>]*>.*?</style>", " ", html, flags=re.DOTALL)
+                html = re.sub(r"<\s*script[^>]*>.*?</\s*script[^>]*>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+                html = re.sub(r"<\s*style[^>]*>.*?</\s*style[^>]*>", " ", html, flags=re.DOTALL | re.IGNORECASE)
                 text = re.sub(r"<[^>]+>", " ", html)
                 text = re.sub(r"\s+", " ", text).strip()
 

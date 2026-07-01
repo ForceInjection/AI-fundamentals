@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" width="880" height="580">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <filter id="badge-shadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="848" height="556" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="440" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">MLA（多头潜在注意力）</text>
+  <text x="440" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">压缩 head 维度：不存完整 K/V，只存一个压缩后的 latent vector · DeepSeek-V2/V3</text>
+
+  <!-- ==== Pipeline visualization ==== -->
+
+  <!-- Stage 1: Original K/V (NOT stored) -->
+  <!-- K box -->
+  <rect x="180" y="104" width="180" height="40" rx="6" fill="#FFF7ED" stroke="#F97316" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="270" y="118" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#F97316">原始 K：128 heads × 128 dim</text>
+  <text x="270" y="134" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">= 16,384 fp16 = 32 KB</text>
+  <!-- V box -->
+  <rect x="440" y="104" width="180" height="40" rx="6" fill="#F0FDF4" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="530" y="118" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#22C55E">原始 V：128 heads × 128 dim</text>
+  <text x="530" y="134" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">= 16,384 fp16 = 32 KB</text>
+
+  <!-- ✗ marks -->
+  <text x="370" y="118" dominant-baseline="central" font-size="18" fill="#DC2626" font-weight="700">✗</text>
+  <text x="630" y="118" dominant-baseline="central" font-size="18" fill="#DC2626" font-weight="700">✗</text>
+  <text x="400" y="161" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#DC2626">不占用 KV Cache（不存储原始 K/V）</text>
+
+  <!-- Arrow: both converge to one -->
+  <line x1="270" y1="144" x2="270" y2="174" stroke="#9CA3AF" stroke-width="1.2"/>
+  <line x1="530" y1="144" x2="530" y2="174" stroke="#9CA3AF" stroke-width="1.2"/>
+  <line x1="270" y1="174" x2="396" y2="182" stroke="#9CA3AF" stroke-width="1.2"/>
+  <line x1="530" y1="174" x2="404" y2="182" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="396,186 400,192 404,186" fill="#9CA3AF"/>
+
+  <!-- Down-projection label -->
+  <text x="650" y="174" text-anchor="start" dominant-baseline="central" font-size="11" fill="#6B7280">
+    <tspan font-family="'Courier New','SF Mono','Menlo',monospace" font-weight="600" fill="#7C3AED">W^{DKV}</tspan>
+    <tspan> 下投影：128×128 → 512</tspan>
+  </text>
+
+  <!-- Stage 2: KV latent (STORED, purple) -->
+  <rect x="285" y="196" width="230" height="48" rx="8" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="400" y="214" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#7C3AED">KV latent = (512,)</text>
+  <text x="400" y="232" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#6B7280">= 512 fp16 = 1 KB</text>
+
+  <!-- ✓ mark -->
+  <text x="525" y="223" font-size="16" fill="#22C55E" font-weight="700">✓ 存储</text>
+
+  <!-- Arrow after latent: splits to two -->
+  <line x1="400" y1="244" x2="400" y2="268" stroke="#9CA3AF" stroke-width="1.2"/>
+  <line x1="400" y1="268" x2="270" y2="278" stroke="#9CA3AF" stroke-width="1.2"/>
+  <line x1="400" y1="268" x2="530" y2="278" stroke="#9CA3AF" stroke-width="1.2"/>
+
+  <!-- Up-projection label -->
+  <text x="650" y="261" text-anchor="start" dominant-baseline="central" font-size="11" fill="#6B7280">
+    <tspan font-family="'Courier New','SF Mono','Menlo',monospace" font-weight="600" fill="#7C3AED">W^{UK}</tspan>
+    <tspan>, </tspan>
+    <tspan font-family="'Courier New','SF Mono','Menlo',monospace" font-weight="600" fill="#7C3AED">W^{UV}</tspan>
+    <tspan> 上投影还原</tspan>
+  </text>
+  <text x="650" y="275" text-anchor="start" dominant-baseline="central" font-size="10" fill="#9CA3AF">注意力计算时实时执行，不额外占用 KV Cache</text>
+
+  <!-- Stage 3: Restored K/V (dashed, real-time) -->
+  <rect x="180" y="284" width="180" height="36" rx="6" fill="#FFF7ED" stroke="#F97316" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="270" y="302" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#F97316">还原 K（实时计算）</text>
+
+  <rect x="440" y="284" width="180" height="36" rx="6" fill="#F0FDF4" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="530" y="302" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#22C55E">还原 V（实时计算）</text>
+
+  <!-- Decoupled RoPE K (separate storage, orange) -->
+  <line x1="520" y1="205" x2="740" y2="205" stroke="#F97316" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="630" y="199" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#F97316" font-weight="600">RoPE 解耦</text>
+  <rect x="740" y="192" width="60" height="36" rx="6" fill="#FFF7ED" stroke="#F97316" stroke-width="1.5"/>
+  <text x="770" y="210" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#F97316">RoPE</text>
+
+  <!-- Main RoPE K storage box (right side) -->
+  <rect x="650" y="284" width="190" height="72" rx="8" fill="#FFF7ED" stroke="#F97316" stroke-width="1.5"/>
+  <text x="745" y="304" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#F97316">Decoupled RoPE K</text>
+  <text x="745" y="322" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#374151">
+    <tspan class="mono">128 heads × 64 dim</tspan>
+  </text>
+  <text x="745" y="340" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#6B7280">= 8,192 fp16 = 16 KB</text>
+  <text x="843" y="320" font-size="14" fill="#22C55E" font-weight="700">✓</text>
+
+  <!-- Why RoPE separate annotation -->
+  <text x="745" y="370" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">RoPE 旋转变换不可压缩，必须单独存储</text>
+
+  <!-- ==== Divider ==== -->
+  <line x1="60" y1="400" x2="820" y2="400" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ==== Storage calculation ==== -->
+  <text x="60" y="422" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">每个 token 每层 KV Cache 存储（MLA，fp16 / bf16）</text>
+
+  <rect x="60" y="436" width="760" height="60" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+
+  <text x="80" y="457" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan font-weight="600" fill="#7C3AED">KV latent</tspan>
+    <tspan>：512 dim × 2 B = </tspan>
+    <tspan class="mono" font-weight="700">1,024 B = 1 KB</tspan>
+    <tspan>  ┐</tspan>
+  </text>
+  <text x="80" y="480" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan font-weight="600" fill="#F97316">Decoupled RoPE K</tspan>
+    <tspan>：128 heads × 64 dim × 2 B = </tspan>
+    <tspan class="mono" font-weight="700">16,384 B = 16 KB</tspan>
+    <tspan>  ┘</tspan>
+  </text>
+
+  <!-- ==== Total row ==== -->
+  <rect x="60" y="508" width="430" height="34" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="525" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan fill="#7C3AED" font-weight="600">latent</tspan>
+    <tspan> + </tspan>
+    <tspan fill="#F97316" font-weight="600">RoPE K</tspan>
+    <tspan> = 1 KB + 16 KB = </tspan>
+    <tspan class="mono" font-weight="700">~17 KB / token / layer</tspan>
+  </text>
+
+  <rect x="590" y="508" width="230" height="34" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5" filter="url(#badge-shadow)"/>
+  <text x="705" y="525" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">合计：~17 KB / token / layer</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="440" y="555" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">
+    注：DeepSeek-V3 实际配置。K 和 V 共享一个下投影矩阵 W^{DKV}，但 RoPE 因旋转操作不可压缩，需解耦单独存储。
+  </text>
+</svg>

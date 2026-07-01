@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 510" width="800" height="510">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <filter id="badge-shadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="768" height="486" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="400" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">GQA（分组查询注意力）</text>
+  <text x="400" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">64 Q heads → 8 KV heads · 8:1 分组共享 · num_kv_heads = 8（LLaMA-2 70B 实际配置）</text>
+
+  <!-- ==== Head visualization: group blocks ==== -->
+
+  <!-- Group column centers: 200, 400, 560(…), 660 -->
+  <!-- Q group block: w=160, h=36, rx=8 -->
+  <!-- KV head block: w=110, h=24, rx=5 -->
+
+  <!-- ==== Group 0 ==== -->
+  <!-- Q group bg -->
+  <rect x="120" y="100" width="160" height="40" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <!-- Q indicator boxes inside group -->
+  <rect x="132" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="146" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="160" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="176" y="119" dominant-baseline="central" font-size="12" fill="#9CA3AF">···</text>
+  <rect x="194" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="214" y="119" dominant-baseline="central" font-size="10" fill="#6B7280">Q₇</text>
+  <text x="200" y="132" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">8 Q heads</text>
+
+  <!-- Arrow -->
+  <line x1="200" y1="140" x2="200" y2="168" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="196,166 200,172 204,166" fill="#9CA3AF"/>
+
+  <!-- KV head box (split K/V) -->
+  <rect x="145" y="172" width="110" height="24" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="145" y="172" width="55" height="24" rx="5" fill="#F97316"/>
+  <rect x="198" y="172" width="2" height="24" fill="#FFFFFF"/>
+  <rect x="200" y="172" width="55" height="24" rx="5" fill="#22C55E"/>
+  <!-- Fix right corners of K half -->
+  <rect x="198" y="172" width="2" height="24" fill="#F97316"/>
+  <text x="172" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">K₀</text>
+  <text x="227" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">V₀</text>
+
+  <!-- ==== Group 1 ==== -->
+  <rect x="320" y="100" width="160" height="40" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <rect x="332" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="346" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="360" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="376" y="119" dominant-baseline="central" font-size="12" fill="#9CA3AF">···</text>
+  <rect x="394" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="414" y="119" dominant-baseline="central" font-size="10" fill="#6B7280">Q₁₅</text>
+  <text x="400" y="132" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">8 Q heads</text>
+
+  <line x1="400" y1="140" x2="400" y2="168" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="396,166 400,172 404,166" fill="#9CA3AF"/>
+
+  <rect x="345" y="172" width="110" height="24" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="345" y="172" width="55" height="24" rx="5" fill="#F97316"/>
+  <rect x="398" y="172" width="2" height="24" fill="#FFFFFF"/>
+  <rect x="400" y="172" width="55" height="24" rx="5" fill="#22C55E"/>
+  <rect x="398" y="172" width="2" height="24" fill="#F97316"/>
+  <text x="372" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">K₁</text>
+  <text x="427" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">V₁</text>
+
+  <!-- ==== Ellipsis between groups ==== -->
+  <text x="520" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#9CA3AF">···</text>
+  <text x="520" y="138" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">5 组</text>
+
+  <!-- ==== Group 7 (last) ==== -->
+  <rect x="550" y="100" width="160" height="40" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <rect x="562" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="576" y="119" dominant-baseline="central" font-size="12" fill="#9CA3AF">···</text>
+  <rect x="600" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="614" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <rect x="628" y="113" width="10" height="10" rx="2" fill="#3B82F6"/>
+  <text x="648" y="119" dominant-baseline="central" font-size="10" fill="#6B7280">Q₆₃</text>
+  <text x="630" y="132" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">8 Q heads</text>
+
+  <line x1="630" y1="140" x2="630" y2="168" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="626,166 630,172 634,166" fill="#9CA3AF"/>
+
+  <rect x="575" y="172" width="110" height="24" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="575" y="172" width="55" height="24" rx="5" fill="#F97316"/>
+  <rect x="628" y="172" width="2" height="24" fill="#FFFFFF"/>
+  <rect x="630" y="172" width="55" height="24" rx="5" fill="#22C55E"/>
+  <rect x="628" y="172" width="2" height="24" fill="#F97316"/>
+  <text x="602" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">K₇</text>
+  <text x="657" y="184" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#FFFFFF">V₇</text>
+
+  <!-- ==== Row labels (left) ==== -->
+  <text x="24" y="120" dominant-baseline="central" font-size="12" font-weight="600" fill="#3B82F6">Q<tspan font-weight="400" font-size="10" fill="#9CA3AF">（不缓存）</tspan></text>
+  <text x="24" y="184" dominant-baseline="central" font-size="12" font-weight="600" fill="#F97316">K / V<tspan font-weight="400" font-size="10" fill="#9CA3AF">（缓存）</tspan></text>
+
+  <!-- ==== Right-side bracket: 8:1 grouping ==== -->
+  <path d="M 726,106
+           Q 734,106 736,114
+           L 736,164
+           L 742,170
+           L 736,176
+           L 736,180
+           Q 736,190 726,190"
+        fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bracket labels (left of brace, no overlap with Group 7) -->
+  <text x="718" y="146" text-anchor="end" dominant-baseline="central" font-size="12" font-weight="600" fill="#6B7280">×8 组</text>
+  <text x="718" y="162" text-anchor="end" dominant-baseline="central" font-size="10" fill="#9CA3AF">8 head : 1 KV</text>
+
+  <!-- ==== Divider ==== -->
+  <line x1="60" y1="220" x2="740" y2="220" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ==== Storage calculation ==== -->
+  <text x="60" y="244" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">每个 token 每层 KV Cache 存储（fp16 / bf16，2 bytes / element）</text>
+
+  <!-- Storage detail bg -->
+  <rect x="60" y="258" width="680" height="78" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- K: line -->
+  <text x="80" y="284" dominant-baseline="central" font-size="14" font-weight="600" fill="#F97316" class="mono">K:</text>
+  <text x="105" y="284" dominant-baseline="central" font-size="14" fill="#374151">
+    <tspan class="mono">8 heads</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">128 dim</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">2 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="600">2,048 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="700" fill="#F97316">2 KB</tspan>
+  </text>
+
+  <!-- V: line -->
+  <text x="80" y="312" dominant-baseline="central" font-size="14" font-weight="600" fill="#22C55E" class="mono">V:</text>
+  <text x="105" y="312" dominant-baseline="central" font-size="14" fill="#374151">
+    <tspan class="mono">8 heads</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">128 dim</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> × </tspan>
+    <tspan class="mono">2 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="600">2,048 B</tspan>
+    <tspan fill="#9CA3AF" font-size="13"> = </tspan>
+    <tspan class="mono" font-weight="700" fill="#22C55E">2 KB</tspan>
+  </text>
+
+  <!-- ==== Total row ==== -->
+  <!-- Formula summary (left) -->
+  <rect x="60" y="352" width="430" height="34" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="369" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan fill="#F97316" font-weight="600">K</tspan>
+    <tspan> + </tspan>
+    <tspan fill="#22C55E" font-weight="600">V</tspan>
+    <tspan> = 2 KB + 2 KB = </tspan>
+    <tspan class="mono" font-weight="700">4 KB / token / layer</tspan>
+  </text>
+
+  <!-- Total badge (right) -->
+  <rect x="510" y="352" width="230" height="34" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5" filter="url(#badge-shadow)"/>
+  <text x="625" y="369" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">合计：4 KB / token / layer</text>
+
+  <!-- vs MHA comparison label -->
+  <rect x="510" y="396" width="230" height="22" rx="6" fill="#FEF3C7"/>
+  <text x="625" y="407" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#D97706">仅为 MHA 的 1/8</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="400" y="462" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">
+    注：LLaMA-2 70B 实际配置。num_kv_heads = 8，num_q_heads / num_kv_heads = 8:1。数值可由 kv_cache_calc.py 复现。
+  </text>
+</svg>

@@ -22,7 +22,7 @@
 
 为了解决自回归生成中的重复计算问题，KV Cache 技术通过“空间换时间”的策略，将已计算过的中间结果存储起来，从而避免了大量冗余的矩阵运算，直接降低了单步推理的计算复杂度。
 
-> **深入计算过程**：本文聚焦 KV Cache 的工作机制和显存分析。如果想从矩阵形状和计算量层面理解 Prefill 为什么是 compute-bound、Decode 为什么是 memory-bound、以及这些差异如何推导出所有 KV Cache 优化方向，见姊妹篇 [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md)。
+> **深入计算过程**：本文聚焦 KV Cache 的工作机制和显存分析。如果想从矩阵形状和计算量层面理解 Prefill 为什么是 compute-bound、Decode 为什么是 memory-bound、以及这些差异如何推导出所有 KV Cache 优化方向，见姊妹篇 [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md)。
 
 ### 2.1 什么是 KV Cache？
 
@@ -86,7 +86,9 @@ class KVCache:
 
 ## 3. 显存占用分析
 
-虽然 KV Cache 极大地提升了推理速度，但这种“空间换时间”的做法也带来了显著的显存开销。随着并发请求数（Batch Size）和上下文序列长度的增加，动态增长的缓存数据会占用大量 GPU 显存，成为制约系统吞吐量的核心瓶颈。
+虽然 KV Cache 极大地提升了推理速度，但这种”空间换时间”的做法也带来了显著的显存开销。随着并发请求数（Batch Size）和上下文序列长度的增加，动态增长的缓存数据会占用大量 GPU 显存，成为制约系统吞吐量的核心瓶颈。
+
+> **如何高效管理 KV Cache？** 上述分析解决了”KV Cache 占多少显存”的问题，但另一个同样关键的问题是”怎么存、怎么回收”。传统预分配方案的内存利用率仅 20-40%——大部分显存被碎片浪费。PagedAttention 通过将 KV Cache 切分为固定大小的 block，按需分配、动态映射，将碎片率降到 4% 以下，同等显存可服务 2-4 倍并发。详见 [PagedAttention 原理介绍](paged_attention.md)。
 
 详细请参考[LLM 模型推理显存占用深度的分析](../../../memory_calc/memory_analysis.md)。
 
@@ -121,11 +123,60 @@ $$
 - $N_{kv}$：KV Head 的数量（GQA/MQA 中的分组数）。
 - $N_{attn}$：Query Head 的数量（总注意力头数）。当使用 MHA 时 $N_{kv} = N_{attn}$，系数为 1。
 
-### 3.3 实例分析
+### 3.3 Batch Size 对 KV Cache 的影响
 
-以 **Qwen3-0.6B** 为例，其单 Token 的 KV Cache 占用极小，但在大模型（如 Llama-2-70B）中，KV Cache 可能高达数十 GB，成为制约并发数的主要瓶颈。
+上面 $B$ 这个参数经常被初学者忽略——"我先算好 per-token 的 KV Cache，乘以序列长度，就得到显存占用了"。这个算法在 batch=1 时是对的，但在真实推理服务中，**多个请求是并发处理的**，每个请求都需要自己独立的 KV Cache。
 
-![KV Cache 显存占用趋势](img/fig-8.png)
+**逐级展开公式：**
+
+$$
+\begin{aligned}
+\text{per\_token} &= 2 \times b_{kv} \times L \times \frac{H \times N_{kv}}{N_{attn}} \\[4pt]
+\text{per\_sequence} &= \text{per\_token} \times S \quad \text{(序列长度)} \\[4pt]
+\text{total} &= \text{per\_sequence} \times B \quad \text{(并发请求数)}
+\end{aligned}
+$$
+
+以 **Qwen2.5-7B**（L=28, H_kv=4, head_dim=128, FP16）为例：
+
+$$
+\text{per\_token} = 2 \times 2 \times 28 \times 4 \times 128 \div (1024) \approx 56\ \text{KB}
+$$
+
+| batch | seq_len | total_tokens | KV Cache  | 与模型权重 (14 GB) 对比 |
+| :---: | :-----: | :----------: | :-------: | :---------------------: |
+|   1   |  2,048  |    2,048     |  0.11 GB  |          < 1%           |
+|   1   |  8,192  |    8,192     |  0.45 GB  |           3%            |
+|   1   | 32,768  |    32,768    |  1.8 GB   |           13%           |
+|   8   |  2,048  |    16,384    |  0.9 GB   |           6%            |
+|   8   |  8,192  |    65,536    |  3.6 GB   |           26%           |
+|   8   | 32,768  |   262,144    |  14.3 GB  |     **≈ 模型权重**      |
+|  32   |  2,048  |    65,536    |  3.6 GB   |           26%           |
+|  32   |  8,192  |   262,144    |  14.3 GB  |     **≈ 模型权重**      |
+|  32   | 32,768  |  1,048,576   | **57 GB** |     **4× 模型权重**     |
+
+**batch=32, seq_len=32768 时，KV Cache（57 GB）是模型权重（14 GB）的 4 倍。** 这意味着即使 GPU 能装下模型，也可能因为并发请求的 KV Cache 撑爆显存。
+
+再看 **Qwen2.5-72B**（L=80, H_kv=8, head_dim=128, FP16，模型权重 ~144 GB）：
+
+$$
+\text{per\_token} = 2 \times 2 \times 80 \times 8 \times 128 \div (1024) = 320\ \text{KB}
+$$
+
+| batch | seq_len |                 KV Cache                 |
+| :---: | :-----: | :--------------------------------------: |
+|   1   | 32,768  |                  10 GB                   |
+|   4   | 32,768  |                  40 GB                   |
+|   8   | 32,768  | **80 GB** ← 一张 H100 仅 KV Cache 就满了 |
+|  16   | 32,768  |    **160 GB** ← KV Cache 超过模型权重    |
+
+**核心结论：**
+
+1. **Batch Size 不是"免费"的**：b=1 时 KV Cache 占比很小，但 b=32 时长上下文场景 KV Cache 远超模型权重，成为显存的真正瓶颈。
+2. **长上下文 + 大 batch = KV Cache 爆炸**：两者是乘法关系（$S \times B$），任何一项增大都会等比例放大显存压力。
+3. **优化方向由此展开**：减少 per-token（量化、GQA/MLA）、减少并发 Cache（Offloading）、减少重复 Cache（Prefix Caching）——所有 KV Cache 优化策略都是为了在有限的 GPU 显存中容纳更多的 $S \times B$。
+
+> **动手验证**：本文所有数值可由 [`kv_cache_calc.py`](kv_cache_calc.py) 复现。修改 `--seq-len` 和 `--batch` 参数，观察不同配置下的显存占用变化。
 
 ---
 
@@ -202,7 +253,7 @@ GQA 是 MQA 和标准 MHA (Multi-Head Attention) 的折中方案。它将 Query 
 
 ### 6.2 推荐阅读与资源
 
-- **姊妹篇**: [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](prefill_decode_qkv_calculation.md)（[交互可视化](prefill_decode_visual.html) · [校验脚本](prefill_decode_validate.py)） — 从矩阵形状和计算量层面推导 KV Cache 的数学必然性，以及 compute-bound vs memory-bound 的根因分析。
+- **姊妹篇**: [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md)（[交互可视化](../../prefill_decode/prefill_decode_visual.html) · [校验脚本](../../prefill_decode/prefill_decode_validate.py)） — 从矩阵形状和计算量层面推导 KV Cache 的数学必然性，以及 compute-bound vs memory-bound 的根因分析。
 - **文章**: [KV Caching Explained (Hugging Face)](https://huggingface.co/blog/not-lain/kv-caching) - 本文的主要参考来源。
 - **可视化**: [KV Caching in LLMs, explained visually](https://www.dailydoseofds.com/p/kv-caching-in-llms-explained-visually/) - 包含生动的动画演示。
 - **论文**: [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245) - GQA 的原始论文。

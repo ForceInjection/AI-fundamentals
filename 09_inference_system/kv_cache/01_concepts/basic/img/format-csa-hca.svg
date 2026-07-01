@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 608" width="800" height="608">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <filter id="badge-shadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="768" height="584" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="400" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">CSA / HCA（压缩稀疏注意力 / 混合压缩注意力）</text>
+  <text x="400" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">压缩 token 维度：把连续多个 token 的 KV 合并为一个 · DeepSeek-V4</text>
+
+  <!-- ==== Top panel: c4a (overlapping windows) ==== -->
+  <rect x="60" y="94" width="680" height="80" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="114" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">c4a（30 层）：每 8 token → 1 个压缩 token，步长 4（有效 4:1）</text>
+
+  <!-- Token row 1: original -->
+  <g dominant-baseline="central" text-anchor="middle">
+    <rect x="80" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="98" y="139" font-size="10" fill="#6B7280">t₀</text>
+    <rect x="120" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="138" y="139" font-size="10" fill="#6B7280">t₁</text>
+    <rect x="160" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="178" y="139" font-size="10" fill="#6B7280">t₂</text>
+    <text x="202" y="139" font-size="11" fill="#9CA3AF">···</text>
+    <rect x="220" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="238" y="139" font-size="10" fill="#6B7280">t₇</text>
+
+    <rect x="280" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="298" y="139" font-size="10" fill="#6B7280">t₄</text>
+    <rect x="320" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="338" y="139" font-size="10" fill="#6B7280">t₅</text>
+    <text x="362" y="139" font-size="11" fill="#9CA3AF">···</text>
+    <rect x="380" y="128" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="398" y="139" font-size="10" fill="#6B7280">t₁₁</text>
+
+    <text x="440" y="139" font-size="13" fill="#9CA3AF">···</text>
+  </g>
+
+  <!-- Group brackets for c4a -->
+  <path d="M 74,125 L 74,162 L 262,162 L 262,125" fill="none" stroke="#6B7280" stroke-width="1" stroke-dasharray="3,2"/>
+  <path d="M 274,125 L 274,162 L 422,162 L 422,125" fill="none" stroke="#6B7280" stroke-width="1" stroke-dasharray="3,2"/>
+
+  <!-- Arrows: token groups → compressed -->
+  <line x1="168" y1="152" x2="168" y2="165" stroke="#6B7280" stroke-width="1"/>
+  <polygon points="164,165 168,170 172,165" fill="#6B7280"/>
+  <text x="178" y="158" text-anchor="start" dominant-baseline="central" font-size="9" fill="#6B7280">8 token → 1</text>
+
+  <line x1="348" y1="152" x2="348" y2="165" stroke="#6B7280" stroke-width="1"/>
+  <polygon points="344,165 348,170 352,165" fill="#6B7280"/>
+
+  <!-- Compressed tokens (c4a) -->
+  <rect x="144" y="170" width="48" height="20" rx="4" fill="#D1D5DB"/><text x="168" y="181" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">c₀</text>
+  <rect x="324" y="170" width="48" height="20" rx="4" fill="#D1D5DB"/><text x="348" y="181" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">c₁</text>
+
+  <!-- ==== Middle panel: c128a (non-overlapping) ==== -->
+  <rect x="60" y="198" width="680" height="80" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="218" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">c128a（31 层）：每 128 token → 1 个压缩 token（无重叠，128:1）</text>
+
+  <!-- Token row -->
+  <g dominant-baseline="central" text-anchor="middle">
+    <rect x="80" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="98" y="243" font-size="10" fill="#6B7280">t₀</text>
+    <rect x="120" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="138" y="243" font-size="10" fill="#6B7280">t₁</text>
+    <text x="172" y="243" font-size="11" fill="#9CA3AF">···</text>
+    <rect x="200" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="218" y="243" font-size="10" fill="#6B7280">t₁₂₆</text>
+    <rect x="240" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="258" y="243" font-size="10" fill="#6B7280">t₁₂₇</text>
+
+    <rect x="310" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="328" y="243" font-size="10" fill="#6B7280">t₁₂₈</text>
+    <text x="362" y="243" font-size="11" fill="#9CA3AF">···</text>
+    <rect x="390" y="232" width="36" height="20" rx="4" fill="#E5E7EB"/><text x="408" y="243" font-size="10" fill="#6B7280">t₂₅₅</text>
+
+    <text x="450" y="243" font-size="13" fill="#9CA3AF">···</text>
+  </g>
+
+  <path d="M 74,229 L 74,276 L 282,276 L 282,229" fill="none" stroke="#6B7280" stroke-width="1" stroke-dasharray="3,2"/>
+  <path d="M 304,229 L 304,276 L 432,276 L 432,229" fill="none" stroke="#6B7280" stroke-width="1" stroke-dasharray="3,2"/>
+
+  <line x1="178" y1="256" x2="178" y2="269" stroke="#6B7280" stroke-width="1"/>
+  <polygon points="174,269 178,274 182,269" fill="#6B7280"/>
+  <text x="188" y="267" text-anchor="start" dominant-baseline="central" font-size="9" fill="#6B7280">128 token → 1</text>
+
+  <line x1="368" y1="256" x2="368" y2="269" stroke="#6B7280" stroke-width="1"/>
+  <polygon points="364,269 368,274 372,269" fill="#6B7280"/>
+
+  <rect x="154" y="274" width="48" height="20" rx="4" fill="#9CA3AF"/><text x="178" y="285" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#FFFFFF">c₀</text>
+  <rect x="344" y="274" width="48" height="20" rx="4" fill="#9CA3AF"/><text x="368" y="285" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#FFFFFF">c₁</text>
+
+  <!-- ==== Sliding window box ==== -->
+  <rect x="60" y="296" width="680" height="44" rx="8" fill="#F0FDF4" stroke="#22C55E" stroke-width="1"/>
+  <text x="80" y="314" dominant-baseline="central" font-size="12" font-weight="600" fill="#374151">所有 61 层均附带 128-token Sliding Window（局部窗口，不压缩）</text>
+  <text x="80" y="330" dominant-baseline="central" font-size="11" fill="#6B7280">每层最近的 128 个 token 保持未压缩状态，确保局部细节不丢失</text>
+
+  <!-- ==== Model summary ==== -->
+  <rect x="60" y="354" width="322" height="52" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="80" y="374" dominant-baseline="central" font-size="12" font-weight="700" fill="#1D4ED8">V4 61 层混合策略</text>
+  <text x="80" y="394" dominant-baseline="central" font-size="11" fill="#374151">30 层 c4a (4:1) + 31 层 c128a (128:1) + 全部 128 SWA</text>
+
+  <rect x="418" y="354" width="322" height="52" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="438" y="374" dominant-baseline="central" font-size="12" font-weight="700" fill="#D97706">1M context 全模型 KV Cache</text>
+  <text x="438" y="394" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan class="mono" font-weight="700" fill="#D97706">~9.62 GiB</tspan>
+    <tspan>（bf16） / </tspan>
+    <tspan class="mono" font-weight="700" fill="#D97706">~5 GB</tspan>
+    <tspan>（FP8+FP4）</tspan>
+  </text>
+
+  <!-- ==== Divider ==== -->
+  <line x1="60" y1="422" x2="740" y2="422" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ==== Storage comparison ==== -->
+  <text x="60" y="444" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">单 token 等效 KV 对比（1M context，bf16）</text>
+
+  <rect x="60" y="458" width="680" height="62" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+
+  <text x="80" y="478" dominant-baseline="central" font-size="12" fill="#374151">
+    <tspan font-weight="600" fill="#9CA3AF">c4a 等效：</tspan>
+    <tspan class="mono" font-weight="700">~18 B / token</tspan>
+    <tspan> (0.018 KB)</tspan>
+    <tspan>        </tspan>
+    <tspan font-weight="600" fill="#9CA3AF">c128a 等效：</tspan>
+    <tspan class="mono" font-weight="700">~0.5 B / token</tspan>
+    <tspan> (0.0005 KB)</tspan>
+  </text>
+  <text x="80" y="498" dominant-baseline="central" font-size="12" fill="#374151">
+    <tspan font-weight="600" fill="#9CA3AF">加权平均：</tspan>
+    <tspan class="mono" font-weight="700">~169 B / token ≈ 0.17 KB</tspan>
+    <tspan>（30 层 c4a + 31 层 c128a）</tspan>
+  </text>
+
+  <!-- ==== Total row ==== -->
+  <rect x="60" y="536" width="430" height="34" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="80" y="553" dominant-baseline="central" font-size="13" fill="#374151">
+    <tspan>vs MLA 的 ~17 KB → </tspan>
+    <tspan class="mono" font-weight="700" fill="#D97706">缩减 ~100×</tspan>
+    <tspan>（加权平均 ~0.17 KB vs ~17 KB）</tspan>
+  </text>
+
+  <rect x="510" y="536" width="230" height="34" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5" filter="url(#badge-shadow)"/>
+  <text x="625" y="553" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">合计：~0.17 KB / token / layer</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="400" y="583" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">
+    注：DeepSeek-V4 实测数据（vLLM 博客）。c4a 步长 4 导致 2× 冗余，有效压缩比为 4:1。数值可由 kv_cache_calc.py 复现。
+  </text>
+</svg>
