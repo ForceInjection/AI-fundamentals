@@ -132,9 +132,9 @@
   <!-- ==== Total row ==== -->
   <rect x="60" y="536" width="430" height="34" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
   <text x="80" y="553" dominant-baseline="central" font-size="13" fill="#374151">
-    <tspan>vs MLA 的 ~17 KB → </tspan>
-    <tspan class="mono" font-weight="700" fill="#D97706">缩减 ~100×</tspan>
-    <tspan>（加权平均 ~0.17 KB vs ~17 KB）</tspan>
+    <tspan>vs MLA 的 ~1.1 KB → </tspan>
+    <tspan class="mono" font-weight="700" fill="#D97706">再缩减 ~6.5×</tspan>
+    <tspan>（加权平均 ~0.17 KB vs ~1.1 KB）</tspan>
   </text>
 
   <rect x="510" y="536" width="230" height="34" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5" filter="url(#badge-shadow)"/>

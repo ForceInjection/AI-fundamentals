@@ -87,15 +87,16 @@ def mha_gqa_kv(cfg: Config):
 
 
 def mla_kv(cfg: Config):
-    """MLA: KV latent (compressed) + decoupled RoPE K."""
+    """MLA: KV latent (compressed) + decoupled RoPE K (shared across heads)."""
     latent_size = cfg.kv_lora_rank * cfg.dtype_bytes
-    rope_k_size = cfg.num_q_heads * cfg.qk_rope_head_dim * cfg.dtype_bytes
+    # RoPE key is shared across all heads — a single vector of qk_rope_head_dim
+    rope_k_size = cfg.qk_rope_head_dim * cfg.dtype_bytes
     total = latent_size + rope_k_size
     return {
         "kv_latent_per_token": latent_size,
         "rope_k_per_token": rope_k_size,
         "total_per_token_layer": total,
-        "description": f"KV latent({cfg.kv_lora_rank}) + RoPE K({cfg.num_q_heads},{cfg.qk_rope_head_dim})",
+        "description": f"KV latent({cfg.kv_lora_rank}) + RoPE K({cfg.qk_rope_head_dim}) (shared)",
     }
 
 
@@ -203,7 +204,7 @@ def main():
     mla_pt = mla_base["total_per_token_layer"]
     print(f"  MLA fp16 baseline: {mla_pt/1024:.2f} KB/token/layer")
     print(f"  MLA fp16 full @ 1M: {mla_pt * CONFIGS['deepseek-v3'].num_layers * args.extended / (1024**3):.1f} GB")
-    print(f"  V3.2 deployed (FP8, blog): 576 B/token/layer → ~83.9 GiB @ 1M")
+    print(f"  V3.2 deployed (FP8, blog): 576 B/token/layer → ~32.7 GiB @ 1M")
 
     # ── Section VI comparison table ──
     print()
