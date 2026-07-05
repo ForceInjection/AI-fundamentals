@@ -32,6 +32,7 @@
 - **[vLLM Chunked Prefill 如何改变 KV Cache 管理](01_concepts/advanced/vllm_chunked_prefill_kv_cache.md)**：拆解将长 prompt 切成小块逐步 Prefill 后，KV Cache 分配从"一次性申请全部 block"变为"逐步申请逐批增长"，以及与 Prefix Caching 的交互约束（仅第一个 chunk 查找、block 对齐要求）。
 - **[PD 分离架构下的 KV Cache 传输](01_concepts/advanced/pd_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/压缩/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 在 KV 跨节点传输上的设计选择与取舍。
 - **[KV Cache 层级流水线并行](01_concepts/advanced/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
+- **[投机解码如何与 KV Cache 交互](01_concepts/advanced/spec_decode_kv_cache.md)**：拆解投机解码引入的三个 KV Cache 操作——`num_output_placeholders` 为未生成 token 预留槽位、`num_computed_tokens` 回退实现猜错撤销、draft/target KV 形状对齐——以及投机 token 的 KV 无法被 Prefix Caching 复用的根本原因。
 
 ### 2.3 压缩与量化机制
 
