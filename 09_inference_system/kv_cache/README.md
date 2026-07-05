@@ -14,7 +14,7 @@
 
 ## 2. 核心优化技术
 
-跨方案共性的技术议题主要聚焦于复用命中率与传输开销的权衡，涵盖基于 Hash/Radix Tree 的前缀复用、Offloading 策略的吞吐带宽取舍，以及掩盖 PD 分离传输延迟的层级流水并行。
+跨方案共性的技术议题主要聚焦于复用命中率、淘汰策略与传输开销的权衡，涵盖基于 Hash/Radix Tree 的前缀复用、基于注意力结构的精确淘汰、Offloading 策略的吞吐带宽取舍，以及掩盖 PD 分离传输延迟的层级流水并行。
 
 ### 2.1 Prefix Caching
 
@@ -36,6 +36,12 @@
 针对超长上下文带来的显存压力，探索如何通过量化、剪枝等技术压缩 KV Cache 的物理体积。
 
 - **[KV Cache 压缩技术详解：原理、架构与趋势](01_concepts/compression/kv_cache_compression.md)** ([配套 PPT](01_concepts/compression/kv_cache_compression.pptx))：系统解析了通过量化（如 INT8/FP8/INT4）、稀疏化（如 StreamingLLM、H2O）以及注意力机制优化等手段，大幅降低大语言模型长上下文场景下的显存占用与传输带宽需求。
+
+### 2.4 淘汰策略
+
+压缩减小每个 token 的体量，淘汰则直接减少存储的 token 数量——当压缩做到极致后，淘汰是唯一可以继续缩容的手段。从 Attention Sinks 的发现出发，回答"滑动窗口为什么不够"和"哪些 token 的 KV 值得保留"。
+
+- **[Attention Sinks 与 KV Cache 淘汰策略：滑动窗口为什么不够？](01_concepts/eviction/attention_sinks_and_eviction.md)**：从 Attention Sinks 的基础发现出发，推导为什么"按位置淘汰"行不通，系统梳理 StreamingLLM（Sink + Window）、H2O（累积注意力 → Heavy Hitter）、SnapKV（观察窗口投票）三条 Informed Eviction 路线，以及 vLLM Preemption 在系统层的配合机制。
 
 ---
 
