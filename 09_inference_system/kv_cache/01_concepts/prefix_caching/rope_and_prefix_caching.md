@@ -60,7 +60,7 @@ $$
 \begin{pmatrix} q_{m,2i} \\ q_{m,2i+1} \end{pmatrix} = \begin{pmatrix} \cos(m\theta_i) & -\sin(m\theta_i) \\ \sin(m\theta_i) & \cos(m\theta_i) \end{pmatrix} \begin{pmatrix} x_{m,2i} \\ x_{m,2i+1} \end{pmatrix}
 $$
 
-其中 $\theta_i = 10000^{-2i/d}$。直观理解：每个维度对以不同的频率旋转——低频维度转得快（精细区分相邻位置），高频维度转得慢（粗粒度区分远近）。
+其中 $\theta_i = 10000^{-2i/d}$。直观理解：低索引维度（$i$ 小）的 $\theta_i$ 大，旋转频率高，对相邻位置的位置差敏感，精细区分局部顺序；高索引维度（$i$ 大）的 $\theta_i$ 小，旋转频率低，变化缓慢，更适合捕捉长距离的相对位置关系。[^3]
 
 这种设计有一个优雅的性质：两个位置的 Q 和 K 做内积时，旋转角相减，结果只依赖位置差 $(m-n)$：
 
@@ -143,13 +143,15 @@ Prefix Caching 的核心挑战不是"怎么存储"——block table 和 hash 匹
 
 AI Agent 的复杂性放大了这个问题——动态前缀、多轮拼接、文件预处理，让同一段文本频繁出现在不同的绝对位置。RoPE 的相对位置内嵌特性是 attention 质量的基石，但绝对位置编码的副作用是缓存复用的障碍。
 
-三种绕过方案代表了三种权衡：
+三种绕过方案在命中率、计算开销和实现复杂度之间各取了不同的平衡点：
 
-> 方案 A — 放弃跨位置复用，换取实现简单
-> 方案 B — 剥离后重算，用计算换命中率
-> 方案 C — 数学校正，在最低开销下实现跨位置复用
+- **方案 A（位置限制匹配）**：放弃了跨位置复用的可能性，换取了极简的实现——不需要修改 attention kernel，不需要额外存储。适合请求结构高度一致、System Prompt 永远在最前面的场景。但在 Agent 的多轮拼接、文件预处理等动态场景下，命中率天花板很低。vLLM APC 和 SGLang 默认走这条路。
 
-理解这个限制，才能真正理解 Prefix Caching 的命中率上限从何而来——以及 vLLM、SGLang、LMCache 在 Agent 场景下做出不同工程选择的原因。
+- **方案 B（nope 哈希 + 重算 RoPE）**：用每次命中时的一次额外 RoPE 旋转，换来了接近 100% 的命中率——因为缓存查找不再依赖绝对位置。额外计算量远小于完整 Prefill 重算，但需要框架同时维护内容和位置两份数据，并在 attention kernel 中支持"先读缓存、后补 RoPE"的路径。MLA 架构天然解耦了这两份数据，为方案 B 铺设了架构基础。
+
+- **方案 C（Rotary Correction）**：在方案 B 的基础上更进一步——不缓存两份数据，也不重做完整 RoPE，只对已缓存的完整 K 施加一个 $(m'-m)$ 的旋转差矩阵。计算量最低，命中率最高，但实现门槛也最高：attention kernel 必须支持"复用 + 校正"混合路径，且低精度场景下旋转校正可能引入量化误差。LMCache CacheBlend 是目前少数在工业级实现中走通这条路、并投入生产的方案。
+
+理解这些权衡，才能真正理解 Prefix Caching 的命中率上限从何而来——以及 vLLM、SGLang、LMCache 在 Agent 场景下做出不同工程选择的原因。
 
 ---
 
@@ -166,3 +168,5 @@ AI Agent 的复杂性放大了这个问题——动态前缀、多轮拼接、�
 [^1]: vLLM `kv_cache_utils.py` 中 `hash_block_tokens(prev_block_hash_value, content_token_ids, extra_keys)` → 返回 `hash((parent_hash, block_tokens, extra_keys))`。每个 block 的 hash 依赖父 block 的 hash，链长隐式编码绝对位置。
 
 [^2]: SGLang `RadixCache.match_prefix` 在 [`radix_cache.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/mem_cache/radix_cache.py) 中纯粹基于 token ID 序列做 Radix Tree 匹配，不包含 RoPE 位置校正逻辑。SGLang 默认和 vLLM APC 一样要求前缀从序列起始对齐。
+
+[^3]: 参见 HuggingFace Llama [`modeling_llama.py`](https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py) 中 `inv_freq = 1.0 / (base ** (arange(0, dim, 2) / dim))`——低索引维度 `inv_freq` 近 1（高频），高索引近 1/base（低频）。
