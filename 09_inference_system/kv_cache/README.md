@@ -39,6 +39,7 @@
 针对超长上下文带来的显存压力，探索如何通过量化、剪枝等技术压缩 KV Cache 的物理体积。
 
 - **[KV Cache 压缩技术详解：原理、架构与趋势](01_concepts/compression/kv_cache_compression.md)** ([配套 PPT](01_concepts/compression/kv_cache_compression.pptx))：系统解析了通过量化（如 INT8/FP8/INT4）、稀疏化（如 StreamingLLM、H2O）以及注意力机制优化等手段，大幅降低大语言模型长上下文场景下的显存占用与传输带宽需求。
+- **[KV Cache 量化深度解析](01_concepts/compression/kv_cache_quantization.md)**：拆解三种量化粒度——Per-Tensor、Per-Token-Head（FP8/INT8）、NVFP4——的精度差异、工程实现与 vLLM 配置，以及量化对 Prefix Caching 和误差传播的影响。
 
 ### 2.4 淘汰策略
 
