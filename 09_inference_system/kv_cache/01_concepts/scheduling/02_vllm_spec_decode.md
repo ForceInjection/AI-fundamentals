@@ -4,7 +4,7 @@
 
 本文以 vLLM V1 源码为基准，拆解这三个操作在 block 级 KV 管理中的实现细节及其工程代价。
 
-> **前置阅读**：[投机解码图解](../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型；[PagedAttention 原理介绍](../basic/paged_attention.md) — block table 与按需分配。
+> **前置阅读**：[投机解码图解](../../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型；[PagedAttention 原理介绍](../basic/paged_attention.md) — block table 与按需分配。
 
 ---
 
@@ -198,9 +198,9 @@ Eagle-style self-speculation 下，draft head 是 target model 的一个轻量�
 
 ## 相关阅读
 
-- [投机解码图解](../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型
+- [投机解码图解](../../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型
 - [PagedAttention 原理介绍](../basic/paged_attention.md) — Block table、按需分配、碎片率
-- [vLLM Chunked Prefill 与 KV Cache](vllm_chunked_prefill_kv_cache.md) — `num_computed_tokens` 在 Chunked Prefill 中的作用
+- [vLLM Chunked Prefill 与 KV Cache](01_vllm_chunked_prefill.md) — `num_computed_tokens` 在 Chunked Prefill 中的作用
 - [Attention Sinks 与 KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) — KV Cache 满了怎么淘汰
 
 [^1]: vLLM V1 异步调度器源码 [`vllm/v1/core/sched/async_scheduler.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/async_scheduler.py) — `num_output_placeholders` 在每次调度投机 step 时增加 `num_sampled_tokens_per_step + cur_num_spec_tokens`，在 reject 时减去 `num_rejected`。

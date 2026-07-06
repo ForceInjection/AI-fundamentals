@@ -269,7 +269,7 @@ Sliding Window 不加入生产比较——它是其他所有策略的"反面教�
 - [PagedAttention 原理介绍](../basic/paged_attention.md) — Block 级内存管理：block table、按需分配、碎片率
 - [KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — 四维冗余模型 + 压缩全景
 - [RoPE 与 Prefix Caching](../prefix_caching/rope_and_prefix_caching.md) — 位置编码如何影响缓存复用
-- [vLLM KV Offloading Connector 与 LMCacheConnector 深度对比](../advanced/kv_offloading_analysis.md) — Preemption 的 offloading 视角
+- [vLLM KV Offloading Connector 与 LMCacheConnector 深度对比](../offloading/01_kv_offloading.md) — Preemption 的 offloading 视角
 
 [^1]: Xiao et al., "Efficient Streaming Language Models with Attention Sinks," ICLR 2024. [arXiv:2309.17453](https://arxiv.org/abs/2309.17453) — 提出 Attention Sinks 现象和 StreamingLLM 框架。实验跨度：Llama-2、MPT、Falcon、Pythia，最高测试 4M+ token。
 

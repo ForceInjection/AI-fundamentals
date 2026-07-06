@@ -32,7 +32,7 @@ Transformer 的每层自注意力机制需要将每个 token 投影为 Key 向�
 该公式揭示了 KV Cache 显存占用的严峻挑战：动态增长的缓存数据由多个维度共同驱动——更深的网络、更宽的隐层、更长的上下文序列、更大的并发请求数（Batch Size）。推高其中任何一个维度，KV Cache 的显存需求都会呈线性膨胀，成为制约系统吞吐量的核心瓶颈。此外，PagedAttention 论文指出，在未优化的传统连续内存分配方式下，有效利用率仅 20%–38%，内存碎片化与预分配浪费显著，进一步加剧了显存压力。
 
 > **Prefill 与 Decode 的非对称瓶颈**  
-> 在分析 KV Cache 压缩的实际收益之前，需要区分推理的两个阶段：Prefill（预填充）阶段一次性处理全部输入 token，其计算量为 $O(S^2)$，属于 **compute-bound**；而 Decode（自回归生成）阶段每步仅处理一个新 token，计算量为 $O(S)$，但需反复从显存读取完整的 KV Cache，因此属于 **memory-bound**。这意味着，KV Cache 的压缩对 Decode 阶段的吞吐与延迟改善最为直接——压缩后的 KV Cache 减少了每步生成的访存量，直接缓解了内存带宽瓶颈。关于两阶段计算过程的完整推导（矩阵形状、FLOPs、算术强度），详见 [Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md)。
+> 在分析 KV Cache 压缩的实际收益之前，需要区分推理的两个阶段：Prefill（预填充）阶段一次性处理全部输入 token，其计算量为 $O(S^2)$，属于 **compute-bound**；而 Decode（自回归生成）阶段每步仅处理一个新 token，计算量为 $O(S)$，但需反复从显存读取完整的 KV Cache，因此属于 **memory-bound**。这意味着，KV Cache 的压缩对 Decode 阶段的吞吐与延迟改善最为直接——压缩后的 KV Cache 减少了每步生成的访存量，直接缓解了内存带宽瓶颈。关于两阶段计算过程的完整推导（矩阵形状、FLOPs、算术强度），详见 [Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md)。
 
 ### 1.2 三元约束
 

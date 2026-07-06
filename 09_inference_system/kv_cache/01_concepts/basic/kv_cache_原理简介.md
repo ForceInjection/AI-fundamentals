@@ -22,7 +22,7 @@
 
 为了解决自回归生成中的重复计算问题，KV Cache 技术通过“空间换时间”的策略，将已计算过的中间结果存储起来，从而避免了大量冗余的矩阵运算，直接降低了单步推理的计算复杂度。
 
-> **深入计算过程**：本文聚焦 KV Cache 的工作机制和显存分析。如果想从矩阵形状和计算量层面理解 Prefill 为什么是 compute-bound、Decode 为什么是 memory-bound、以及这些差异如何推导出所有 KV Cache 优化方向，见姊妹篇 [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md)。
+> **深入计算过程**：本文聚焦 KV Cache 的工作机制和显存分析。如果想从矩阵形状和计算量层面理解 Prefill 为什么是 compute-bound、Decode 为什么是 memory-bound、以及这些差异如何推导出所有 KV Cache 优化方向，见姊妹篇 [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md)。
 
 ### 2.1 什么是 KV Cache？
 
@@ -253,7 +253,7 @@ GQA 是 MQA 和标准 MHA (Multi-Head Attention) 的折中方案。它将 Query 
 
 ### 6.2 推荐阅读与资源
 
-- **姊妹篇**: [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md)（[交互可视化](../../prefill_decode/prefill_decode_visual.html) · [校验脚本](../../prefill_decode/prefill_decode_validate.py)） — 从矩阵形状和计算量层面推导 KV Cache 的数学必然性，以及 compute-bound vs memory-bound 的根因分析。
+- **姊妹篇**: [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md)（[交互可视化](../../../prefill_decode/prefill_decode_visual.html) · [校验脚本](../../../prefill_decode/prefill_decode_validate.py)） — 从矩阵形状和计算量层面推导 KV Cache 的数学必然性，以及 compute-bound vs memory-bound 的根因分析。
 - **文章**: [KV Caching Explained (Hugging Face)](https://huggingface.co/blog/not-lain/kv-caching) - 本文的主要参考来源。
 - **可视化**: [KV Caching in LLMs, explained visually](https://www.dailydoseofds.com/p/kv-caching-in-llms-explained-visually/) - 包含生动的动画演示。
 - **论文**: [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245) - GQA 的原始论文。

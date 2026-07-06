@@ -4,9 +4,9 @@ PD 分离（Prefill-Decode Disaggregation）把 Prefill 放到高算力 GPU 上�
 
 本文从传输时序、发起方、传输内容三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 三种方案在 Push/Pull、Eager/Pipelined、完整/增量上的不同选择及其代价。
 
-> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_原理简介.md) — Prefill 与 Decode 的计算特性差异；[Chunked Prefill 如何改变 KV Cache 管理](vllm_chunked_prefill_kv_cache.md) — PD 分离的前置概念。
+> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_原理简介.md) — Prefill 与 Decode 的计算特性差异；[Chunked Prefill 如何改变 KV Cache 管理](../scheduling/01_vllm_chunked_prefill.md) — PD 分离的前置概念。
 >
-> **配合阅读**：本文是概念层面的方案对比。各系统的完整源码分析见 [LMCache PD Backend](../../02_systems/lmcache/pd_backend.md)、[Mooncake 架构](../../02_systems/mooncake/mooncake_architecture.md)、[层级流水线并行](layerwise_pipeline.md)。
+> **配合阅读**：本文是概念层面的方案对比。各系统的完整源码分析见 [LMCache PD Backend](../../02_systems/lmcache/pd_backend.md)、[Mooncake 架构](../../02_systems/mooncake/mooncake_architecture.md)、[层级流水线并行](../offloading/02_layerwise_pipeline.md)。
 
 ---
 
@@ -96,7 +96,7 @@ KVConnectorBase_V1:
 - **时序**：支持 Pipelined（`wait_for_layer_load` 在每层计算前同步）和 Eager（全部 load 完再开始 forward）。vLLM 本身不做传输——它给 connector 一个在每层计算前后插入 I/O 操作的"挂钩点"。
 - **传输内容**：增量传输。`get_num_new_matched_tokens` 计算出远程已缓存的 token 数，调度器只为增量部分分配 block。
 
-> **与 Chunked Prefill 的交互**：vLLM V1 的 PD 分离基于 Chunked Prefill 和 Prefix Caching 语义实现——PD 分离被视为"远程 prefix cache"。这意味着 Chunked Prefill 中的 block 增量分配、只在第一个 chunk 查找 prefix cache 等约束，同样适用于 PD 分离场景下的 KV 传输：Decode 节点首次调度时通过 `get_num_new_matched_tokens` 查询远程缓存命中数，后续 chunk 不再重复查询。详见 [vLLM Chunked Prefill 与 KV Cache](vllm_chunked_prefill_kv_cache.md)。
+> **与 Chunked Prefill 的交互**：vLLM V1 的 PD 分离基于 Chunked Prefill 和 Prefix Caching 语义实现——PD 分离被视为"远程 prefix cache"。这意味着 Chunked Prefill 中的 block 增量分配、只在第一个 chunk 查找 prefix cache 等约束，同样适用于 PD 分离场景下的 KV 传输：Decode 节点首次调度时通过 `get_num_new_matched_tokens` 查询远程缓存命中数，后续 chunk 不再重复查询。详见 [vLLM Chunked Prefill 与 KV Cache](../scheduling/01_vllm_chunked_prefill.md)。
 
 ### 3.2 LMCache PD Backend
 
@@ -141,8 +141,8 @@ Mooncake 与其他方案的关键区别是**KV 传输不是独立决策，而是
 
 ## 相关阅读
 
-- [KV Cache 层级流水线并行](layerwise_pipeline.md) — 计算与 KV I/O 重叠的详细机制
-- [vLLM Chunked Prefill 与 KV Cache](vllm_chunked_prefill_kv_cache.md) — PD 分离的调度基础
+- [KV Cache 层级流水线并行](../offloading/02_layerwise_pipeline.md) — 计算与 KV I/O 重叠的详细机制
+- [vLLM Chunked Prefill 与 KV Cache](../scheduling/01_vllm_chunked_prefill.md) — PD 分离的调度基础
 - [LMCache PD Backend 源码分析](../../02_systems/lmcache/pd_backend.md) — Sender/Receiver 角色与 AllocRequest 协议
 - [Mooncake 架构概览](../../02_systems/mooncake/mooncake_architecture.md) — CPP 分块管道并行与 Conductor 全局调度
 - [NIXL 网络传输库](../../02_systems/nixl/nixl_introduction.md) — RDMA、GDS 与跨节点传输抽象层

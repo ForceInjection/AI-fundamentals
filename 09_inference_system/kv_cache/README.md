@@ -1,20 +1,22 @@
 # KV Cache 技术体系
 
-**KV Cache（键值缓存）** 是现代 LLM 推理系统的核心基础设施——它通过缓存 Attention 的 Key/Value 矩阵把自回归生成的单步计算复杂度从 $O(N^2)$ 降至 $O(N)$，直接决定 TTFT、吞吐与长上下文可行性。围绕这一数据结构，业界已从单机显存缓存演进出涵盖 Prefix Caching、分层存储、跨实例共享、预填充-解码分离的完整技术栈。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=8——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 25 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+
+> **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划。每篇文章独立可读，前后交叉引用。
 
 ## 1. 基础原理
 
-自回归生成天然存在重复计算——每生成一个 Token 都需对全部历史 Token 重算 Attention。缓存 Key/Value 矩阵后，Prefill 阶段批量构造、Decode 阶段增量追加，整体计算量从 $O(N^3)$ 压缩到 $O(N^2)$，而显存占用则与 `layer × head × d_head × seq_len × dtype` 线性相关，构成后续所有优化的权衡起点。
+在深入优化之前，首先要回答三个基础问题：KV Cache 存了什么、为什么只存 K 和 V 不存 Q、不同注意力架构下存储的形态有何不同。
 
 - **[KV Cache 原理简介](01_concepts/basic/kv_cache_原理简介.md)** ([配套 PPT](01_concepts/basic/kv_cache_原理简介.pptx))：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 - **[PagedAttention 原理介绍](01_concepts/basic/paged_attention.md)** — OS 分页思想 → GPU 显存管理：block table、按需分配、碎片率从 60-80% 降至 <4%。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/basic/why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
-- **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA 四种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
+- **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA / CSA-HCA 五种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
 - **[为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../prefill_decode/prefill_decode_qkv_calculation.md)**（[交互可视化](../prefill_decode/prefill_decode_visual.html) · [校验脚本](../prefill_decode/prefill_decode_validate.py)）：从一个具体例子出发，逐步标注 Prefill 和 Decode 每一步的矩阵形状与计算量变化，从 compute-bound vs memory-bound 的根本差异出发，推导出 GQA、量化、PagedAttention、Offloading、PD 分离等优化方向的必然性。
 
 ## 2. 核心优化技术
 
-跨方案共性的技术议题主要聚焦于复用命中率、淘汰策略与传输开销的权衡，涵盖基于 Hash/Radix Tree 的前缀复用、基于注意力结构的精确淘汰、Offloading 策略的吞吐带宽取舍，以及掩盖 PD 分离传输延迟的层级流水并行。
+知道了 KV Cache 存什么、怎么存之后，下一个问题必然是：**怎么让它存得更少、复用得更多、传输得更快？** 这是推理引擎中最活跃的优化方向——四条主线各自独立、在实践中叠加使用。
 
 ### 2.1 Prefix Caching
 
@@ -24,17 +26,28 @@
 - **[Prefix Caching 原理与实现](01_concepts/prefix_caching/prefix_caching.md)** ([配套 PPT](01_concepts/prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 - **[Claude 提示词缓存机制与源码实现深度分析](01_concepts/prefix_caching/claude_prompt_caching.md)**：分析 Claude 如何在终端 Agent 环境下落地 Prompt Caching 机制，通过复用请求的上下文前缀降低大规模任务的处理延迟。
 
-### 2.2 卸载与传输架构
+### 2.2 调度、传输与执行优化
 
-探讨独立于具体系统的架构级优化，重点解决容量限制、调度时序与网络 I/O 瓶颈。
+探讨独立于具体系统的架构级优化——调度策略如何改变 KV Cache 的分配时序、跨节点传输如何隐藏延迟、执行模型如何容纳动态 block table。
 
-- **[vLLM KV Offloading Connector 与 LMCacheConnector：架构设计与性能深度对比](01_concepts/advanced/kv_offloading_analysis.md)**：探讨了将 KV Cache 卸载到 CPU 或磁盘的策略与性能权衡。
-- **[vLLM Chunked Prefill 如何改变 KV Cache 管理](01_concepts/advanced/vllm_chunked_prefill_kv_cache.md)**：拆解将长 prompt 切成小块逐步 Prefill 后，KV Cache 分配从"一次性申请全部 block"变为"逐步申请逐批增长"，以及与 Prefix Caching 的交互约束（仅第一个 chunk 查找、block 对齐要求）。
-- **[PD 分离架构下的 KV Cache 传输](01_concepts/advanced/pd_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/压缩/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 在 KV 跨节点传输上的设计选择与取舍。
-- **[KV Cache 层级流水线并行](01_concepts/advanced/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
-- **[投机解码如何与 KV Cache 交互](01_concepts/advanced/spec_decode_kv_cache.md)**：拆解投机解码引入的三个 KV Cache 操作——`num_output_placeholders` 为未生成 token 预留槽位、`num_computed_tokens` 回退实现猜错撤销、draft/target KV 形状对齐——以及投机 token 的 KV 无法被 Prefix Caching 复用的根本原因。
-- **[KV Cache Prefetching：三层预取如何隐藏 KV 访问延迟](01_concepts/advanced/kv_cache_prefetching.md)**：从 Kernel 层（L2 prefetch, `cp.async.bulk.prefetch.L2`）、系统层（PD 异步预取, `load_kv_async`）、存储层（HiCache `best_effort`/`timeout`）三个层次拆解如何将"等 KV 数据"与"做计算"重叠，以及各层的硬件依赖与适用条件。
-- **[CUDA Graph 与 KV Cache](01_concepts/advanced/cuda_graph_kv_cache.md)**：拆解 Full / Piecewise / FULL_AND_PIECEWISE 三种 CUDA Graph 模式如何容纳动态 block table——block table 作为 graph input、slot_mapping 动态计算、padding 与 capture_size 选择、re-capture 触发条件。
+#### 2.2.1 调度
+
+- **[vLLM Chunked Prefill 如何改变 KV Cache 管理](01_concepts/scheduling/01_vllm_chunked_prefill.md)**：拆解将长 prompt 切成小块逐步 Prefill 后，KV Cache 分配从"一次性申请全部 block"变为"逐步申请逐批增长"，以及与 Prefix Caching 的交互约束。
+- **[投机解码如何与 KV Cache 交互](01_concepts/scheduling/02_vllm_spec_decode.md)**：拆解投机解码引入的三个 KV Cache 操作——Placeholder 预留槽位、`num_computed_tokens` 回退实现猜错撤销、draft/target KV 形状对齐。
+
+#### 2.2.2 PD 分离传输
+
+- **[PD 分离架构下的 KV Cache 传输](01_concepts/pd_transfer/01_disaggregated_prefill_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 的设计选择。
+
+#### 2.2.3 卸载与预取
+
+- **[KV Offloading 架构对比](01_concepts/offloading/01_kv_offloading.md)**：探讨 vLLM 原生 KV Offloading 与 LMCacheConnector 将 KV Cache 卸载到 CPU/磁盘的策略与性能权衡。
+- **[KV Cache 层级流水线并行](01_concepts/offloading/02_layerwise_pipeline.md)**：按层流水线传输技术在 Prefill-Decode 分离架构中的应用，计算与 KV I/O 重叠的机制。
+- **[KV Cache Prefetching：三层预取](01_concepts/offloading/03_kv_cache_prefetching.md)**：Kernel 层（L2 prefetch）、系统层（PD 异步预取）、存储层（HiCache）三层如何隐藏 KV 访问延迟。
+
+#### 2.2.4 执行模型
+
+- **[CUDA Graph 与 KV Cache](01_concepts/execution/01_vllm_cuda_graph.md)**：Full / Piecewise / FULL_AND_PIECEWISE 三种模式如何容纳动态 block table——可变输入缓冲区、多尺寸预录制、re-capture 触发条件。
 
 ### 2.3 压缩与量化机制
 
@@ -53,7 +66,7 @@
 
 ## 3. 进阶架构与管理系统
 
-百万级上下文与分离式推理把 KV Cache 推出了单卡显存——业界沿着「分层存储（GPU/CPU/SSD/远程）+ 跨实例共享 + 元数据一致性」三条主线构建了五套代表性方案，设计取舍主要体现在中心化程度、传输协议（RDMA / NIXL / GDS）与面向的推理拓扑上。
+§2 的优化都在单个推理实例内进行。但当上下文推到百万级、集群规模到数十节点时，**KV Cache 的管理从"进程内"变成了"分布式系统"问题**——跨节点传输、一致性协议、全局调度。以下是业界五个代表性方案，从中心化到去中心化，各有不同的取舍。
 
 ### 3.1 LMCache
 
@@ -116,19 +129,50 @@ NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等
 
 ## 4. 容量规划与 ROI 分析
 
-KV Cache 本质是一次「用存储成本换计算成本」的投资——合理的分层容量（显存/CPU 内存/NVMe）与命中率假设决定整体 ROI，相关推演以 GLM-5 与 Agent 业务负载为基准。
+掌握了"怎么做"之后，最后一个问题是"值不值得做"。KV Cache 本质是一次「用存储成本换计算成本」的投资——合理的分层容量与命中率假设决定整体 ROI。以下推演以 GLM-5 与 Agent 业务负载为基准。
 
 - **[KV Cache 引入收益评估](01_concepts/capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
 - **[GLM-5 模型 KV Cache 容量规划报告](01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
 
 ---
 
-## 5. 参考资料
+## 5. 核心参考文献
 
-### 5.1 学术论文
+> 以下为各篇文章中反复引用的核心论文，按主题分类。每篇文章自身的完整引用见文内脚注。
 
-- [1] Junhao Hu et al., "EPIC: Efficient Position-Independent Caching for Serving Large Language Models," arXiv preprint arXiv:2410.15332, 2024.
+### 5.1 基础架构与注意力机制
 
-### 5.2 第三方资料
+- **FlashAttention**: Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness," NeurIPS 2022.
+- **FlashAttention-3**: Shah et al., "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision," 2024.
+- **PagedAttention**: Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention," SOSP 2023.
+- **GQA**: Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints," EMNLP 2023.
+- **MLA**: DeepSeek-AI, "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model," 2024.
+- **RoPE**: Su et al., "RoFormer: Enhanced Transformer with Rotary Position Embedding," 2021.
 
-- [1] marsggbo. easy-kvcache[EB/OL]. https://github.com/marsggbo/easy-kvcache.
+### 5.2 KV Cache 淘汰与压缩
+
+- **StreamingLLM & Attention Sinks**: Xiao et al., "Efficient Streaming Language Models with Attention Sinks," ICLR 2024.
+- **H₂O**: Zhang et al., "H₂O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models," NeurIPS 2023.
+- **SnapKV**: Li et al., "SnapKV: LLM Knows What You are Looking for Before Generation," NeurIPS 2024.
+- **KIVI**: Liu et al., "KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache," 2024.
+
+### 5.3 系统架构与传输
+
+- **vLLM**: Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention," SOSP 2023.
+- **SGLang**: Zheng et al., "SGLang: Efficient Execution of Structured Language Model Programs," NeurIPS 2024.
+- **Mooncake**: Qin et al., "Mooncake: A KVCache-Centric Disaggregated Architecture for LLM Serving," 2024.
+- **LMCache**: LMCache Project. <https://github.com/LMCache/LMCache>
+- **CacheBlend**: Yao et al., "CacheBlend: Fast Large Language Model Serving for RAG with Cached Knowledge Fusion," EuroSys 2025.
+- **NIXL**: NVIDIA Inc. <https://github.com/ai-dynamo/nixl>
+
+### 5.4 Prefetch 与执行优化
+
+- **KV Cache Prefetching**: Zhao et al., "Asynchronous KV Cache Prefetching for LLM Inference," arXiv:2504.06319, 2025.
+- **Speculative Decoding**: Leviathan et al., "Fast Inference from Transformers via Speculative Decoding," ICML 2023.
+- **Eagle**: Li et al., "Eagle: Speculative Decoding Requires Rethinking Feature Uncertainty," 2024.
+
+### 5.5 第三方资源
+
+- marsggbo. easy-kvcache. <https://github.com/marsggbo/easy-kvcache>
+- vLLM Project. <https://github.com/vllm-project/vllm>
+- SGLang Project. <https://github.com/sgl-project/sglang>

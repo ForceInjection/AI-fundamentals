@@ -6,7 +6,7 @@ Prefetching 的思路是：**不等数据到了再算，而是在需要之前就
 
 本文从这三个层次拆解 KV Cache Prefetching 的机制、实现与取舍。三个层次目前在业界没有单一框架统一实现——Kernel 层来自学术论文（框架无关的 CUDA 技术），系统层以 vLLM KV Connector V1 为代表，存储层以 SGLang HiCache 为代表。本文将它们放在同一个 prefetch 框架下对比，各节会标注对应的实现来源。
 
-> **前置阅读**：[PD 分离架构下的 KV Cache 传输](pd_kv_transfer.md) — 跨节点的 KV 传输构成了第二层 prefetch 的基础；[KV Cache 层级流水线并行](layerwise_pipeline.md) — 计算与 I/O 重叠是 prefetch 的核心思想。
+> **前置阅读**：[PD 分离架构下的 KV Cache 传输](../pd_transfer/01_disaggregated_prefill_kv_transfer.md) — 跨节点的 KV 传输构成了第二层 prefetch 的基础；[KV Cache 层级流水线并行](02_layerwise_pipeline.md) — 计算与 I/O 重叠是 prefetch 的核心思想。
 
 ---
 
@@ -195,10 +195,10 @@ Kernel 层 L2 prefetch 最适合 **MHA 或低 GQA ratio** 的模型在 **Hopper 
 
 ## 相关阅读
 
-- [PD 分离架构下的 KV Cache 传输](pd_kv_transfer.md) — 跨节点 KV 传输的 Push/Pull 与 Pipelined 策略
-- [KV Cache 层级流水线并行](layerwise_pipeline.md) — 计算与 KV I/O 重叠的详细机制
+- [PD 分离架构下的 KV Cache 传输](../pd_transfer/01_disaggregated_prefill_kv_transfer.md) — 跨节点 KV 传输的 Push/Pull 与 Pipelined 策略
+- [KV Cache 层级流水线并行](02_layerwise_pipeline.md) — 计算与 KV I/O 重叠的详细机制
 - [SGLang HiCache 深入详解](../../../sglang/hicache_deep_dive.md) — 三级存储架构与三种预取策略的完整分析
-- [投机解码如何与 KV Cache 交互](spec_decode_kv_cache.md) — Prefetch 与 Spec Decoding 的 `lookahead_tokens` 交互
+- [投机解码如何与 KV Cache 交互](../scheduling/02_vllm_spec_decode.md) — Prefetch 与 Spec Decoding 的 `lookahead_tokens` 交互
 
 [^1]: Zhao et al., "Asynchronous KV Cache Prefetching for LLM Inference," arXiv:2504.06319v2, 2025. — 提出基于 `cp.async.bulk.prefetch.L2` 的 L2 cache 异步预取方案。在 LLaMA-2 7B 上 attention kernel 加速 2.15×，端到端吞吐提升 1.97×，L2 hit rate 从 ~0% 提升至 43–83%。GQA ratio ≥ 4:1 时收益递减。FA3 对比见 Shah et al., "FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision," 2024。FlashAttention 基础见 Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness," 2022。
 
