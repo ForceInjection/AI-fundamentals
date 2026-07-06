@@ -33,6 +33,7 @@
 - **[PD 分离架构下的 KV Cache 传输](01_concepts/advanced/pd_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/压缩/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 在 KV 跨节点传输上的设计选择与取舍。
 - **[KV Cache 层级流水线并行](01_concepts/advanced/layerwise_pipeline.md)**：分析了按层流水线传输技术在 Prefill-Decode 分离架构中的应用。
 - **[投机解码如何与 KV Cache 交互](01_concepts/advanced/spec_decode_kv_cache.md)**：拆解投机解码引入的三个 KV Cache 操作——`num_output_placeholders` 为未生成 token 预留槽位、`num_computed_tokens` 回退实现猜错撤销、draft/target KV 形状对齐——以及投机 token 的 KV 无法被 Prefix Caching 复用的根本原因。
+- **[KV Cache Prefetching：三层预取如何隐藏 KV 访问延迟](01_concepts/advanced/kv_cache_prefetching.md)**：从 Kernel 层（L2 prefetch, `cp.async.bulk.prefetch.L2`）、系统层（PD 异步预取, `load_kv_async`）、存储层（HiCache `best_effort`/`timeout`）三个层次拆解如何将"等 KV 数据"与"做计算"重叠，以及各层的硬件依赖与适用条件。
 
 ### 2.3 压缩与量化机制
 
