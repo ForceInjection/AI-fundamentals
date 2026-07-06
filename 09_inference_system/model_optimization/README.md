@@ -27,6 +27,6 @@
 | 降低端到端延迟       | 投机解码 + FP8 量化         | + CUDA Graphs、TensorRT-LLM    |
 | 压缩模型部署体积     | 蒸馏 + INT4 量化            | + 结构化剪枝                   |
 
-> 相关阅读：KV Cache 层面的优化参见 [KV Cache 压缩技术](../kv_cache/01_concepts/compression/kv_cache_compression.md)；CUDA Graph 层面的解码优化参见 [vLLM CUDA Graphs 深度解析](../vllm/module_analysis/vllm_cuda_graph_deep_dive.md)。
+> 相关阅读：KV Cache 层面的优化参见 [KV Cache 压缩技术](../kv_cache/01_concepts/compression/kv_cache_compression.md)；CUDA Graph 层面的解码优化参见 [vLLM CUDA Graphs 深度解析](../vllm/module_analysis/cuda_graph_deep_dive.md)。
 >
 > 联动导航：结合 [`../memory_calc/`](../memory_calc/README.md) 做压缩后的显存重算，用 [`../cost_analysis/`](../cost_analysis/README.md) 验证量化 / 投机带来的单位 token 成本变化，在 [`../reference_design/`](../reference_design/README.md) 下进行整体架构权衡。

@@ -1,6 +1,6 @@
 # vLLM Chunked Prefill 如何改变 KV Cache 管理
 
-> 本文以 vLLM V1 调度器源码为基准。SGLang 的 Chunked Prefill 在调度策略（Prefill 优先、chunk 连续执行）和 Prefix Caching 交互（stash 机制支持跨 chunk 命中）上做出了不同选择，详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked-prefill.md)。
+> 本文以 vLLM V1 调度器源码为基准。SGLang 的 Chunked Prefill 在调度策略（Prefill 优先、chunk 连续执行）和 Prefix Caching 交互（stash 机制支持跨 chunk 命中）上做出了不同选择，详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked_prefill.md)。
 
 Preill 是一次性把整个 prompt 的 KV 全算完，还是切成小块逐步算？这看起来只是计算调度的问题，但 vLLM 的 Chunked Prefill 实际上深刻改变了 KV Cache 的分配时序、与 Prefix Caching 的交互方式，以及 Preemption 的触发窗口。
 
@@ -107,7 +107,7 @@ else:
 
 这不是设计缺陷，而是一个工程权衡。跨 chunk 做 prefix cache 查找的障碍不仅在于代码复杂度——还包括更实质的工程问题：缓存命中后需要判断命中的 block 是否与当前请求已分配的物理页冲突、部分命中时需要重组 block table 映射、以及处理"缓存的 block 已被其他请求淘汰"的竞态。当前版本选择了一条状态机更可控的路径：只在 `num_computed_tokens == 0` 时做一次缓存匹配，后续 chunk 沿着已建立的 block table 继续追加。
 
-> **对比 SGLang**：SGLang 采取了不同的设计——通过 `stash_chunked_request()` 将每个 chunk 的部分 KV 写回 Radix Tree，后续 chunk 调用 `init_next_round_input()` 重建 `fill_ids` 后重新匹配前缀，使得跨 chunk 的 HiCache 命中成为可能。两种设计体现了同一个权衡的不同选择：vLLM 选择了调度逻辑的简单性，SGLang 选择了缓存利用率的完整性。详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked-prefill.md)。
+> **对比 SGLang**：SGLang 采取了不同的设计——通过 `stash_chunked_request()` 将每个 chunk 的部分 KV 写回 Radix Tree，后续 chunk 调用 `init_next_round_input()` 重建 `fill_ids` 后重新匹配前缀，使得跨 chunk 的 HiCache 命中成为可能。两种设计体现了同一个权衡的不同选择：vLLM 选择了调度逻辑的简单性，SGLang 选择了缓存利用率的完整性。详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked_prefill.md)。
 
 ### 2.3 Block 对齐：chunk 大小必须是 block_size 的整数倍
 
@@ -216,7 +216,7 @@ Chunked Prefill 的 Preemption 窗：
 - [Prefix Caching 原理分析](../prefix_caching/prefix_caching.md) — Hash chaining 与 block 级复用机制
 - [Attention Sinks 与 KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) — KV Cache 满了怎么淘汰
 - [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md) — compute-bound vs memory-bound 的数学推导
-- [SGLang Chunked Prefill — 原理与代码实现](../../../sglang/chunked-prefill.md) — SGLang 的不同设计选择：Prefill 优先、chunk 连续执行、stash 机制支持跨 chunk 前缀缓存命中
+- [SGLang Chunked Prefill — 原理与代码实现](../../../sglang/chunked_prefill.md) — SGLang 的不同设计选择：Prefill 优先、chunk 连续执行、stash 机制支持跨 chunk 前缀缓存命中
 
 [^1]: vLLM V1 调度器源码 [`vllm/v1/core/sched/scheduler.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/scheduler.py) — `if request.num_computed_tokens == 0:` 守卫条件。后续 chunk 跳过前缀缓存查找，直接从上一次中断处继续。
 

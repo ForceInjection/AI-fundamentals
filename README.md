@@ -469,7 +469,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 **架构设计与评估体系**：
 
 - [推理服务架构设计](09_inference_system/reference_design/06-推理服务架构设计.md) - 企业级推理服务架构设计方案
-- [面向推理执行图的异构调度系统架构设计](09_inference_system/reference_design/面向推理执行图的异构调度系统架构设计.md) - 跨设备、跨阶段、跨模型的精细化调度方案
+- [面向推理执行图的异构调度系统架构设计](09_inference_system/reference_design/15-异构调度系统架构设计.md) - 跨设备、跨阶段、跨模型的精细化调度方案
 - [性能评估指标体系](09_inference_system/reference_design/05-性能评估指标体系.md) - 推理性能评估指标与方法
 
 **专业领域优化**：

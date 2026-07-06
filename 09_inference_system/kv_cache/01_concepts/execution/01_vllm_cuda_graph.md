@@ -151,7 +151,7 @@ Full CUDA Graph 的 padding 不仅浪费计算，还占用 KV Cache 空间——
 - [PagedAttention 原理介绍](../basic/paged_attention.md) — Block table 的虚拟→物理映射机制
 - [投机解码如何与 KV Cache 交互](../scheduling/02_vllm_spec_decode.md) — `num_spec_tokens` 改变 query_len 导致 re-capture
 - [KV Cache Prefetching](../offloading/03_kv_cache_prefetching.md) — `requires_piecewise_for_cudagraph` 与异步 KV 加载的交互
-- [vLLM CUDA Graph 深度解析](../../../vllm/module_analysis/vllm_cuda_graph_deep_dive.md) — 从模型执行视角的完整 CUDA Graph 分析
+- [vLLM CUDA Graph 深度解析](../../../vllm/module_analysis/cuda_graph_deep_dive.md) — 从模型执行视角的完整 CUDA Graph 分析
 
 [^1]: vLLM 编译配置 [`vllm/config/compilation.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/compilation.py) — `CUDAGraphMode` 枚举定义 `NONE`/`PIECEWISE`/`FULL`/`FULL_DECODE_ONLY`/`FULL_AND_PIECEWISE` 五种模式；`cudagraph_capture_sizes` 默认 `[1, 2, 4] + list(range(8, 256, 8))`；`FULL_AND_PIECEWISE` 为 V1 默认。
 

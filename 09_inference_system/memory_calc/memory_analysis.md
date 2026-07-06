@@ -567,6 +567,6 @@ $$
 4. NVIDIA, "CUDA C++ Programming Guide", URL: <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html>
 5. vLLM Recipes, "GLM‑5 Usage (FP8 部署指南)", URL: <https://github.com/vllm-project/recipes/blob/main/GLM/GLM5.md>
 6. vLLM Blog, "vLLM: Easy, Fast, and Cheap LLM Serving with PagedAttention", URL: <https://vllm.ai/blog/vllm>
-7. vLLM, "DeepSeek V4 — Efficient Long-Context Attention in vLLM", 项目内参考文档: [vllm_deepseek_v4.md](../vllm/module_analysis/vllm_deepseek_v4.md)
+7. vLLM, "DeepSeek V4 — Efficient Long-Context Attention in vLLM", 项目内参考文档: [deepseek_v4.md](../vllm/module_analysis/deepseek_v4.md)
 8. DeepSeek-AI, "DeepSeek-V4-Pro", URL: <https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro>
 9. 本仓库, "DeepSeek V4 显存估算脚本", 项目内参考文件: [calculate_deepseek_v4_memory.py](calculate_deepseek_v4_memory.py)

@@ -16,7 +16,7 @@
 - **[`calculate_deepseek_v4_memory.py`](calculate_deepseek_v4_memory.py)**：**DeepSeek V4 专用估算器**——处理 K=V 共享（无 2×）+ 反向 RoPE、异构层（30 层 c4a + 31 层 c128a）、Indexer Cache、MoE（384 routed + 1 shared，top-6）、FP8 / FP4 混合精度等特殊结构
 - **[`deepseek_v4_pro_config.json`](deepseek_v4_pro_config.json)**：DeepSeek V4 Pro 的配置样例，与脚本的 `--config` 参数对接
 
-> **为什么需要 V4 专用脚本**：通用 MHA/GQA/MLA 公式在 DeepSeek V4 上会**严重低估** KV Cache 占用，因为 c4a/c128a 层压缩比不同、Indexer Cache 仅在 c4a 层存在，且 FP8 KV + FP4 Indexer 的混合精度使简单乘 2（FP16）不再成立。详见 [`vllm/module_analysis/vllm_deepseek_v4.md`](../vllm/module_analysis/vllm_deepseek_v4.md)。
+> **为什么需要 V4 专用脚本**：通用 MHA/GQA/MLA 公式在 DeepSeek V4 上会**严重低估** KV Cache 占用，因为 c4a/c128a 层压缩比不同、Indexer Cache 仅在 c4a 层存在，且 FP8 KV + FP4 Indexer 的混合精度使简单乘 2（FP16）不再成立。详见 [`vllm/module_analysis/deepseek_v4.md`](../vllm/module_analysis/deepseek_v4.md)。
 
 ## 3. 使用流程
 
