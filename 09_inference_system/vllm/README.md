@@ -15,6 +15,7 @@
   - [注意力机制演进讲稿](./module_analysis/attention_mha_mla_nsa.pptx)：配套幻灯片，可用于内部培训或方案评审。
 - [DeepSeek V4 长上下文注意力支持解析](./module_analysis/deepseek_v4.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
 - [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](./module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)：系统梳理 DeepSeek V2/V3/V4 三代注意力机制（MLA → NSA/DSA → CSA+HCA）的技术演进脉络与架构权衡。
+- [PagedAttention 退役的技术原因](./module_analysis/pagedattention_retirement.md)：基于 v0.23.1rc0 与 v0.25.0 两版源码对比，从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸无法利用新硬件等五个角度，分析 PagedAttention 被 FlashMLA/FA3 取代的技术必然性。
 
 ---
 
