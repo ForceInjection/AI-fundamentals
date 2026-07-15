@@ -16,6 +16,7 @@
 - [DeepSeek V4 长上下文注意力支持解析](./module_analysis/deepseek_v4.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
 - [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](./module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)：系统梳理 DeepSeek V2/V3/V4 三代注意力机制（MLA → NSA/DSA → CSA+HCA）的技术演进脉络与架构权衡。
 - [PagedAttention 退役的技术原因](./module_analysis/pagedattention_retirement.md)：基于 v0.23.1rc0 与 v0.25.0 两版源码对比，从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸无法利用新硬件等五个角度，分析 PagedAttention 被 FlashMLA/FA3 取代的技术必然性。
+- [MLA 的 TP 切分：为什么 8 张 GPU 存了同一份 KV cache](./module_analysis/mla_tp_kv_redundancy.md)：MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%，但 `ReplicatedLinear` 使全部 576 维在 8 个 TP rank 上完全复制——TP 对 MLA 的 KV cache 显存节省为 0%，冗余率 87.5%。从 vLLM v0.20.0 和 LMCache v0.5.1 的源码出发，分析这个结构性摩擦的根源，并结合 SGLang 源码验证这不是单一框架的设计选择。
 
 ---
 
