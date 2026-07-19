@@ -61,6 +61,7 @@
 压缩减小每个 token 的体量，淘汰则直接减少存储的 token 数量——当压缩做到极致后，淘汰是唯一可以继续缩容的手段。从 Attention Sinks 的发现出发，回答"滑动窗口为什么不够"和"哪些 token 的 KV 值得保留"。
 
 - **[Attention Sinks 与 KV Cache 淘汰策略：滑动窗口为什么不够？](01_concepts/eviction/attention_sinks_and_eviction.md)**：从 Attention Sinks 的基础发现出发，推导为什么"按位置淘汰"行不通，系统梳理 StreamingLLM（Sink + Window）、H2O（累积注意力 → Heavy Hitter）、SnapKV（观察窗口投票）三条 Informed Eviction 路线，以及 vLLM Preemption 在系统层的配合机制。
+- **[Key-Key Semantic Affinity：用 Key 向量替代注意力分数的 KV Cache 重要性评估](01_concepts/eviction/key_key_semantic_affinity.md)**：系统介绍 SamKV (AAAI 2026) 提出的 Key-Key 语义亲和度方法——不再依赖 QK^T 注意力分数，而是用 Key 向量自身的语义距离评估 block 重要性。从循环悖论出发，分析 H2O/SnapKV 的全局累积偏差，详解高维正交性原理与浓度不等式保证，并给出层次化选择、Per-Step 集成和稳定性过滤三项工程落地路径。
 
 ---
 
@@ -154,6 +155,7 @@ NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等
 - **StreamingLLM & Attention Sinks**: Xiao et al., "Efficient Streaming Language Models with Attention Sinks," ICLR 2024.
 - **H₂O**: Zhang et al., "H₂O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models," NeurIPS 2023.
 - **SnapKV**: Li et al., "SnapKV: LLM Knows What You are Looking for Before Generation," NeurIPS 2024.
+- **SamKV**: Cao et al., "Sparse Attention across Multiple-context KV Cache," AAAI 2026. arXiv:2508.11661.
 - **KIVI**: Liu et al., "KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache," 2024.
 
 ### 5.3 系统架构与传输
