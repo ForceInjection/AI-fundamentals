@@ -104,11 +104,20 @@ EP 的每次通信量比 TP 大（229 KB vs 25 KB），但 EP 只在 MoE 层通�
 
 ### 3.1 EP 不能独立存在
 
-TP 可以独立配置（TP=8、DP=1，单节点跑一个模型副本）。PP 可以独立配置。
+TP 可以独立配置（TP=8，单节点跑一个模型副本）。PP 可以独立配置。
 
-EP 不行。**EP 必须在 DP 的框架下运行。**原因非常直观：EP 只切了专家的存储和计算。如果没有 DP 提供数据并行的维度，EP 的每个 rank 只能看到一个请求的一个 token——某个请求的 token 路由到了 GPU 2 和 4 的专家，GPU 1 和 3 在空闲。模型没法形成可服务的推理流水线。
+EP 不行。**EP 需要并发请求驱动多个 rank 同时工作。**原因非常直观：EP 只切了专家的存储和计算，每个 rank 只持有 1/N 的专家——某个请求的 token 路由到了 GPU 2 和 4 的专家，GPU 1 和 3 上如果没有其他请求的 token 在处理，它们就空闲。只有多路请求并发时，各 GPU 上的专家才都有活干，模型才能形成可服务的推理流水线。
 
-DP 提供「多个请求同时跑」的能力，这是 EP 正常工作的前提。
+这个"并发请求喂饱所有 rank"的能力，在 vLLM 中由 `--data-parallel-size` 提供。但需要区分两种 DP 概念：
+
+|          | 传统多实例 DP                    | vLLM 引擎内 DP（`--data-parallel-size`）            |
+| -------- | -------------------------------- | --------------------------------------------------- |
+| 概念     | 每个实例有完整模型副本，独立服务 | EP 组内划分的并行维度，rank 间共享专家切分          |
+| 通信     | 无需通信                         | 有元数据通信（调度、负载均衡）                      |
+| 适用模型 | Dense 和 MoE 均可                | **仅 MoE**（`parallel.py:859` 阻止 Dense 模型使用） |
+| 实现方式 | 启动多个 vLLM 实例 + 外部 LB     | `--data-parallel-size N --enable-expert-parallel`   |
+
+本文后续讨论的"DP"均指 vLLM 引擎内 DP——它在 EP 语境下与 `--data-parallel-size` 含义一致。传统多实例 DP 不在 EP 讨论范围内。
 
 ### 3.2 EP 组的大小推导
 
@@ -117,11 +126,14 @@ vLLM 中 EP 组的大小由源码 `parallel_state.py` 的初始化逻辑决定�
 ```text
 vLLM EP 组的 rank 编排（parallel_state.py:1894-1901）
 
-EP 组大小 = DP_SIZE × TP_SIZE × CP_SIZE（CP 为 Prefill Context Parallel，默认 1）
+WORLD_SIZE = PP_SIZE × TP_SIZE × DP_SIZE × CP_SIZE
+  （WORLD_SIZE 为本次推理作业的总 GPU 数，
+   PP 为流水线并行、TP 为张量并行、DP 为数据并行、CP 为 Prefill Context Parallel）
+
+EP 组大小 = DP_SIZE × TP_SIZE × CP_SIZE
 
 简化情况（CP=1, PP=1）：
-  EP 组大小 = DP_SIZE × TP_SIZE
-  WORLD_SIZE = DP_SIZE × TP_SIZE
+  EP 组大小 = DP_SIZE × TP_SIZE = WORLD_SIZE
   → 所有 rank 在同一个 EP 组内，专家切分跨全部 WORLD_SIZE
 ```
 
@@ -317,6 +329,8 @@ EP 不是万能药。它的适用边界非常清晰：
 | 单卡能装下所有专家        | ❌ 通常不需要 | EP 不会带来吞吐收益        |
 
 一个反直觉的结论：EP 的价值不在于「让推理更快」，而在于「让 MoE 模型能在多卡上跑」。如果只有 1 张 A100 但 Qwen2.5-72B（Dense 模型）装不下——用 TP（或量化）。如果有 8 张 H100 跑 DeepSeek-V3（MoE 模型）——首选 EP。两者的应用场景完全不同。
+
+> **Dense 模型需要多副本怎么办？** vLLM 的 `--data-parallel-size` 仅用于 MoE + EP 场景（§3.1 中已区分两种 DP）。Dense 模型（LLaMA/Qwen）的多副本部署推荐多实例 DP：启动多个独立的 vLLM 实例，由外部负载均衡器分发请求。各实例之间无通信，不使用 `--data-parallel-*` 参数。
 
 ### 7.2 EP vs TP 在 MoE 场景下的决策框架
 
