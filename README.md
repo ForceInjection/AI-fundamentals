@@ -239,6 +239,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 拆解 LLM 底层运作机制，包括 Tiktokenizer 分词编码、大模型文件格式存储规范、Chain-of-Thought (CoT) 逻辑推理增强技术，以及模型幻觉 (Hallucination) 的成因分析与工程化应对策略。
 
 - [基础理论与概念导航](06_llm_theory_and_fundamentals/llm_basic_concepts/README.md) - LLM 核心概念的完整学习路径。
+- [Transformer 架构详解](06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) — 从 RNN 串行瓶颈到自注意力机制，拆解 Attention、FFN、位置编码、LayerNorm 等核心组件，目标是读完能看懂 `modeling_llama.py`。
 - [Andrej Karpathy ： Deep Dive into LLMs like ChatGPT （B 站视频）](https://www.bilibili.com/video/BV16cNEeXEer) - 深度学习领域权威专家的 LLM 技术解析。
 - [大模型基础组件 - Tokenizer](https://zhuanlan.zhihu.com/p/651430181) - 文本分词与编码的核心技术。
 - [解密大语言模型中的 Tokens](06_llm_theory_and_fundamentals/llm_basic_concepts/token/README.md) - Token 机制的深度解析与实践应用。

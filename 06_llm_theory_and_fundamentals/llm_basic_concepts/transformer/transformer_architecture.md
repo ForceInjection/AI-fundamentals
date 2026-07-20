@@ -4,7 +4,7 @@
 
 同年，Vaswani 等人的《Attention Is All You Need》用**自注意力（Self-Attention）**一次性解决了这两个问题：每个 token 直接关注序列中所有其他 token，没有先后顺序，只有相关度权重。这个简单的想法催生了 Transformer 架构，进而演化为今天所有大语言模型（GPT、LLaMA、Qwen、DeepSeek、Claude）的共同基础。
 
-但切换到全并行架构并非没有代价。去掉串行顺序意味着位置信息丢失——你要让模型区分「我打你」和「你打我」，靠权重表是不够的。同时，全注意力在长序列上的计算量是 O(n²)，当上下文从 2K 扩展到 128K 时，这个代价变得不可忽视。
+但切换到全并行架构并非没有代价。去掉串行顺序意味着位置信息丢失——要让模型区分「我打你」和「你打我」，靠权重表是不够的。同时，全注意力在长序列上的计算量是 O(n²)，当上下文从 2K 扩展到 128K 时，这个代价变得不可忽视。
 
 本文从零拆解 Transformer 的核心组件。阅读目标是：**读完能看懂一份 `modeling_llama.py` 级别的源码**，并理解每个组件解决了什么问题、又带来了什么新问题。
 
@@ -12,7 +12,7 @@
 
 ## 一、问题：RNN 的串行瓶颈
 
-RNN/LSTM 处理序列的方式是逐步迭代——隐藏状态 h*t 由 h*{t-1} 和当前输入 x_t 共同决定。
+RNN/LSTM 处理序列的方式是逐步迭代——隐藏状态 $h_t$ 由 $h_{t-1}$ 和当前输入 $x_t$ 共同决定。
 
 ```text
 RNN:  token1 → token2 → token3 → ... → tokenN  （串行，O(n) 步）
@@ -45,25 +45,25 @@ K (Key)    = x · W_K    —— "我能提供什么？"
 V (Value)  = x · W_V    —— "如果被选中，我给出什么信息？"
 ```
 
-每个 token 的 Embedding 向量通过三个不同的线性变换，分别投影为查询向量 Q、键向量 K、值向量 V。W_Q、W_K、W_V 是可学习的权重矩阵，维度为 d_model × d_k（通常 d_k = d_model / num_heads）。
+每个 token 的 Embedding 向量通过三个不同的线性变换，分别投影为查询向量 Q、键向量 K、值向量 V。$W_Q$、$W_K$、$W_V$ 是可学习的权重矩阵，维度为 $d_{\text{model}} \times d_k$（通常 $d_k = d_{\text{model}} / \text{num\_heads}$）。
 
 这个三元组设计来自信息检索：Query 代表用户的搜索意图，Key 代表文档的索引标签，Value 代表文档的实际内容。把每个 token 既当作「提问者」又当作「被检索的文档」，就得到了自注意力。
 
 ### 2.2 注意力分数：四步计算
 
-```text
-Attention(Q, K, V) = softmax(Q · K^T / √d_k) · V
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q \cdot K^\top}{\sqrt{d_k}}\right) \cdot V
+$$
 
 步骤拆解：
-1. Q · K^T  →  得分矩阵 S（token i 对 token j 的原始相关度）
-2. S / √d_k  →  缩放，防止大点积值导致 softmax 梯度消失
-3. softmax   →  归一化为概率分布（每个 token 对所有 token 的注意力权重之和 = 1）
-4. × V       →  加权求和，得到每个 token 的「上下文感知」表示
-```
+1. $Q \cdot K^\top$ → 得分矩阵 S（token i 对 token j 的原始相关度）
+2. $S / \sqrt{d_k}$ → 缩放，防止大点积值导致 softmax 梯度消失
+3. $\text{softmax}$ → 归一化为概率分布（每个 token 对所有 token 的注意力权重之和 = 1）
+4. $\times V$ → 加权求和，得到每个 token 的「上下文感知」表示
 
 ### 2.3 为什么要除以 √d_k？
 
-自注意力有一个容易被忽视的数学细节。当 d_k 较大时，Q·K 的点积结果的方差会增大（约等于 d_k）。大的输入值让 softmax 进入饱和区——输出几乎变成 one-hot 向量，梯度趋近于零。除以 √d_k 将方差压回 1，让梯度在训练中保持健康。
+自注意力有一个容易被忽视的数学细节。当 $d_k$ 较大时，$Q \cdot K$ 的点积结果的方差会增大（约等于 $d_k$）。大的输入值让 softmax 进入饱和区——输出几乎变成 one-hot 向量，梯度趋近于零。除以 $\sqrt{d_k}$ 将方差压回 1，让梯度在训练中保持健康。
 
 ```python
 # PyTorch 实现骨架
@@ -86,11 +86,12 @@ def self_attention(Q, K, V, mask=None):
 
 多头注意力（Multi-Head Attention）的解法是**并行运行多个独立的注意力头**，每个头有自己的 W_Q、W_K、W_V，在各自的低维子空间中计算：
 
-```text
-MultiHead(Q, K, V) = Concat(head_1, ..., head_h) · W_O
-
-head_i = Attention(Q · W_Qi, K · W_Ki, V · W_Vi)
-```
+$$
+\begin{aligned}
+\text{MultiHead}(Q, K, V) &= \text{Concat}(\text{head}_1, \ldots, \text{head}_h) \cdot W_O \\
+\text{head}_i &= \text{Attention}(Q \cdot W_{Qi}, K \cdot W_{Ki}, V \cdot W_{Vi})
+\end{aligned}
+$$
 
 - 每个 head 的维度为 d_k = d_model / h（如 512 / 8 = 64）
 - 所有 head 的输出拼接后经 W_O 投影回 d_model
@@ -104,9 +105,9 @@ head_i = Attention(Q · W_Qi, K · W_Ki, V · W_Vi)
 
 自注意力让 token 之间交换信息，但交换完后，每个 token 的表示还需要一次独立的非线性变换。这个任务由前馈网络（FFN）承担：
 
-```text
-FFN(x) = W_2 · σ(W_1 · x + b_1) + b_2
-```
+$$
+\text{FFN}(x) = W_2 \cdot \sigma(W_1 \cdot x) \qquad\text{（现代 LLM 通常去掉偏置项 ）}
+$$
 
 - 先将 d_model 维投影到 d_ff 维（通常 d_ff = 4 × d_model），再投影回 d_model
 - FFN 是 Transformer block 中参数量最大的部分，约占 2/3
@@ -116,10 +117,12 @@ FFN(x) = W_2 · σ(W_1 · x + b_1) + b_2
 
 从 ReLU 到 GELU 再到 SwiGLU 的演进，反映了 LLM 架构中的一个核心发现：**让网络自己学会「哪些信息该通过、哪些该抑制」，比用一个固定的激活函数更有效。**
 
-```text
-SwiGLU(x) = (x · W_gate ⊙ SiLU(x · W_1)) · W_2
-其中 SiLU(x) = x · σ(x)
-```
+$$
+\begin{aligned}
+\text{SwiGLU}(x) &= (x \cdot W_{\text{gate}} \odot \text{SiLU}(x \cdot W_1)) \cdot W_2 \\
+\text{SiLU}(x) &= x \cdot \sigma(x)
+\end{aligned}
+$$
 
 SwiGLU 引入了一个可学习的「门」——`x · W_gate`。这个门与经 SiLU 激活的主通路做逐元素乘法，让网络在每个 token、每个维度上独立决定信息通过量。代价是参数量增加约 33%（多了一个 W_gate 矩阵），但训练稳定性和收敛速度的提升足以抵消这个开销。
 
@@ -142,7 +145,7 @@ SwiGLU 引入了一个可学习的「门」——`x · W_gate`。这个门与经
 
 **加到输入端**：将位置编码 p_i 直接加到 token embedding x_i 上——input_i = x_i + p_i。原始 Transformer 使用固定的正弦/余弦函数生成 p_i，GPT-2/3 则用可学习的 Embedding 表。
 
-**旋入注意力计算**：不修改 token 表示本身，而是根据位置对 Q 和 K 施加旋转变换。RoPE（旋转位置编码）是这一策略的代表——它将位置信息编码为 Q·K 点积中的相对位置项，天然支持比训练时更长的上下文。
+**融入注意力计算**：不修改 token 表示本身，而是根据位置对 Q 和 K 施加旋转变换。RoPE（旋转位置编码）是这一策略的代表——它将位置信息编码为 Q·K 点积中的相对位置项，天然支持比训练时更长的上下文。
 
 > 详见本目录的 [位置编码：从 Sinusoidal 到 RoPE](../positional_encoding/positional_encoding.md) 对 RoPE 数学原理与 NTK/YaRN 外推技术的完整推导。
 
@@ -156,11 +159,11 @@ SwiGLU 引入了一个可学习的「门」——`x · W_gate`。这个门与经
 
 深度网络训练中，每层参数的更新会改变该层输出的分布。这种漂移逐层累积，使得底层接收到的梯度信号变得极其不稳定。层归一化（LayerNorm）是解决这一问题的标准手段：
 
-```text
-LayerNorm(x) = γ · (x - μ) / √(σ² + ε) + β
-```
+$$
+\text{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \varepsilon}} + \beta
+$$
 
-其中 γ 和 β 是可学习的参数，ε 防止除零。
+其中 $\gamma$ 和 $\beta$ 是可学习的参数，$\varepsilon$ 防止除零。
 
 ### 6.2 归一化位置的演化：Post-LN → Pre-LN → RMSNorm
 
@@ -172,17 +175,17 @@ LayerNorm(x) = γ · (x - μ) / √(σ² + ε) + β
 
 RMSNorm 去掉了均值居中（μ），仅保留均方根缩放。实验证明去掉居中操作对精度影响微乎其微，但省去了一次归约计算——在大规模训练中，这个微观优化累积为可观的加速：
 
-```text
-RMSNorm(x) = γ · x / √(mean(x²) + ε)
-```
+$$
+\text{RMSNorm}(x) = \gamma \cdot \frac{x}{\sqrt{\text{mean}(x^2) + \varepsilon}}
+$$
 
 ### 6.3 残差连接：让梯度绕过子层
 
-有了归一化还不够。堆叠 32 层以上的网络时，梯度在反向传播中经过每一层都会衰减。残差连接提供了一个「快捷通道」：
+有了归一化还不够。堆叠 32 层以上的网络时，梯度在反向传播中经过每一层都会衰减。残差连接提供了一个「快捷通道」——将子层的输入直接加到输出上，让梯度可以绕过子层的反向传播直达输入：
 
-```text
-output = LayerNorm(x + Sublayer(x))
-```
+$$
+\text{output} = x + \text{Sublayer}(\text{LayerNorm}(x)) \qquad\text{（Pre-LN：先归一化再进子层，现代 LLM 的标准做法）}
+$$
 
 梯度可以直接通过「+」操作跳过 Sublayer 的反向传播——这相当于给每一层都提供了一条直达输入的梯度高速公路。没有残差连接，32 层以上的 Transformer 几乎无法训练。
 
@@ -209,7 +212,7 @@ output = LayerNorm(x + Sublayer(x))
   │    6. 残差相加 (+)
   │       │
   │       ▼
-  输出 → 送入下一个 Block（重复 32-80 层）
+  输出 → 送入下一个 Block（重复 24-80 层，视模型规模而定）
 ```
 
 **因果掩码**是 Decoder 独有的约束：生成第 t 个 token 时，模型只能看到位置 1 到 t-1，不能「偷看」未来。通过一个上三角为 -∞ 的矩阵实现：

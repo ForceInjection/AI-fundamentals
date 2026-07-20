@@ -24,6 +24,8 @@ DeepSeek-V3 有 671B 参数、256 个路由专家。一个 H100 只有 80 GB HBM
 
 **EP 的思路不是「切分所有 GPU 都要用的东西」，而是「让 token 自己选择要去哪张 GPU」。**
 
+> **延伸阅读**：如果对 Transformer 层内 Attention vs FFN 的分工不熟悉，建议先读 [Transformer 架构详解](../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md)——本文大量依赖"Attention 参数少、Expert 参数多"这个结构事实。
+
 ---
 
 ## 二、EP 的核心机制：分布、路由、通信
