@@ -32,7 +32,18 @@ Scopes are derived from directory/topic areas. Common scopes seen in the history
 - Translated content appends a language suffix to the filename (e.g., `file.zh-CN.md`).
 - Image assets live in `img/` at the repo root, or alongside the files that reference them within topic subdirectories.
 - Interactive HTML visualizations (e.g., inference pipeline demos) are placed alongside the markdown documents they complement, in the same topic subdirectory.
-- `README.md` files at directory roots serve as navigation portals and contain link trees to content within that directory.
+- `README.md` files at directory roots serve as navigation portals and contain link trees to content within that directory. **When adding a new article, you must update the corresponding directory's `README.md` portal** to include a link to the new file — this is the primary navigation mechanism for readers.
+
+## Content creation workflow
+
+When creating a new technical article, follow this sequence:
+
+1. **Plan** — use `tech-outline-planner` to design the article structure with the C-I-S-T (Context → Issue → Solution → Trade-off) framework.
+2. **Write** — create the `.md` file in the appropriate topic directory with a numeric prefix and Chinese descriptive filename.
+3. **Link** — add the new article to the parent directory's `README.md` link tree.
+4. **Review** — use `doc-reviewer` (outline + content + format) to catch structural, accuracy, and formatting issues.
+5. **Validate** — use `md-link-checker` to ensure all local and external links are accessible.
+6. **Commit** — use `update-submitter` to generate a Conventional Commit message and submit.
 
 ## Python demos and notebooks
 

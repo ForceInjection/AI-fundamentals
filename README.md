@@ -74,10 +74,10 @@
 
 **基础系列文档**：
 
-- [第一部分：基础理论篇](./04_cloud_native_ai_platform/gpu_manager/第一部分：基础理论篇.md)：构建技术认知框架，解析传统模式局限性与核心技术体系
-- [第二部分：虚拟化技术篇](./04_cloud_native_ai_platform/gpu_manager/第二部分：虚拟化技术篇.md)：深入剖析硬件级、内核态与用户态虚拟化的核心实现机制
-- [第三部分：资源管理与优化篇](./04_cloud_native_ai_platform/gpu_manager/第三部分：资源管理与优化篇.md)：探讨 GPU 切分、CUDA 流及 MPS 等高效资源调度与优化策略
-- [第四部分：实践应用篇](./04_cloud_native_ai_platform/gpu_manager/第四部分：实践应用篇.md)：涵盖环境部署、监控运维及云平台集成的生产落地指南
+- [第一部分：基础理论篇](./04_cloud_native_ai_platform/gpu_manager/01_basic_theory.md)：构建技术认知框架，解析传统模式局限性与核心技术体系
+- [第二部分：虚拟化技术篇](./04_cloud_native_ai_platform/gpu_manager/02_virtualization.md)：深入剖析硬件级、内核态与用户态虚拟化的核心实现机制
+- [第三部分：资源管理与优化篇](./04_cloud_native_ai_platform/gpu_manager/03_resource_management.md)：探讨 GPU 切分、CUDA 流及 MPS 等高效资源调度与优化策略
+- [第四部分：实践应用篇](./04_cloud_native_ai_platform/gpu_manager/04_practice.md)：涵盖环境部署、监控运维及云平台集成的生产落地指南
 
 **HAMi 专题**：
 
@@ -151,7 +151,7 @@
 - [NPU 开发环境搭建](02_npu_programming/01_environment/README.md) — CANN 驱动、torch_npu 安装与版本对齐
 - [RAG Pipeline on NPU](02_npu_programming/07_rag_on_npu/01_rag_pipeline_on_npu.md) — Embedding + FAISS + LLM 全链路 NPU 化
 - [LLM 推理 on NPU](02_npu_programming/11_llm_inference/01_llm_inference_on_npu.md) — Qwen2.5 本地推理、ChatML、NaN 诊断
-- [LoRA 微调 on NPU](02_npu_programming/11_llm_inference/03_lora_finetune.md) — BF16 + peft + 梯度检查点，HBM 峰值 16.4 GB
+- [LoRA 微调 on NPU](02_npu_programming/13_finetune/01_lora_finetune.md) — BF16 + peft + 梯度检查点，HBM 峰值 16.4 GB
 - 更多主题：[Da Vinci 架构与 CANN 软件栈](02_npu_programming/02_ascend_architecture/README.md)、[PyTorch NPU 适配](02_npu_programming/03_pytorch_npu/README.md)、[MindSpore 框架](02_npu_programming/04_mindspore/README.md)、[Ascend 工具链](02_npu_programming/05_tools/README.md)、[Ascend C 自定义算子](02_npu_programming/06_advanced/README.md)、[NPU 性能分析](02_npu_programming/08_npu_profiling/README.md)、[FlashAttention](02_npu_programming/09_flash_attention/README.md)、[Mini-GPT](02_npu_programming/10_mini_gpt/README.md)
 
 ---
@@ -380,7 +380,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 - [LMCache 源码分析指南](09_inference_system/kv_cache/02_systems/lmcache/README.md) - 完整学习路径与文档索引
 - [LMCache 架构概览](09_inference_system/kv_cache/02_systems/lmcache/lmcache_overview.md) - 四层存储架构 (L1-L4)、核心组件交互与典型工作流
-- [vLLM KV Offloading 与 LMCache 深度对比](09_inference_system/kv_cache/01_concepts/advanced/kv_offloading_analysis.md) - 架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡
+- [vLLM KV Offloading 与 LMCache 深度对比](09_inference_system/kv_cache/01_concepts/offloading/01_kv_offloading.md) - 架构设计、存储层级及跨实例共享能力上的核心差异与性能权衡
 
 **核心运行时组件**：
 
@@ -420,8 +420,8 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 - [SGLang 内容索引](09_inference_system/sglang/README.md) - 源码分析、案例研究与可视化演示导航
 - [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构（L1/L2/L3）与 HiRadixTree 源码分析
-- [Chunked Prefill 原理与代码实现](09_inference_system/sglang/chunked-prefill.md) - 长 prompt 切分、PrefillAdder 截断决策、调度循环与 HiCache 协同的完整源码级分析
-- [SGLang Scaling Pain 超大规模推理调优案例](09_inference_system/sglang/sglang_scaling_pain_case_study.md) - 利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷
+- [Chunked Prefill 原理与代码实现](09_inference_system/sglang/chunked_prefill.md) - 长 prompt 切分、PrefillAdder 截断决策、调度循环与 HiCache 协同的完整源码级分析
+- [SGLang Scaling Pain 超大规模推理调优案例](09_inference_system/sglang/sglang_scaling_case_study.md) - 利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷
 - [SGLang 推理流水线可视化](09_inference_system/sglang/inference-pipeline.html) - 交互式 Prefill & Decode 流水线演示，追踪 HiCache 三级缓存全流程
 - [SGLang 调度器可视化](09_inference_system/sglang/scheduler-visual.html)（[GIF 预览](09_inference_system/sglang/scheduler-visual.gif)） - 模拟 6 请求 × 22 步的 Chunked Prefill 调度过程
 
@@ -432,18 +432,21 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 **vLLM 核心机制分析**：
 
 - [vLLM 推理系统优化与分析](09_inference_system/vllm/README.md) - vLLM 底层机制和系统架构的深度解构
-- [vLLM 注意力机制演进与支持全景](09_inference_system/vllm/module_analysis/vllm_attention_mha_mla_nsa.md) ([配套 PPT](09_inference_system/vllm/module_analysis/vllm_attention_mha_mla_nsa.pptx)) - 从 MHA 到 MLA 与 NSA 的架构解析及 vLLM 支持现状
-- [vLLM 内置 KV Cache Offloading 模块解析](09_inference_system/vllm/module_analysis/vllm_native_kv_offloading.md) - 原生 KV Cache CPU Offloading 功能原理与实现
-- [vLLM Hybrid KV Cache Manager](09_inference_system/vllm/module_analysis/vllm_hybrid_kv_cache_manager_deep_dive.md) - vLLM 针对混合注意力架构的显存优化机制
-- [vLLM CUDA Graphs 深度解析](09_inference_system/vllm/module_analysis/vllm_cuda_graph_deep_dive.md) - 深入探讨 vLLM 解码阶段 CUDA Graphs 的核心机制与实践
-- [vLLM Router 架构解析](09_inference_system/vllm/routing/vllm_router.md) - 高性能、轻量级请求转发系统
-- [vLLM Semantic Router](09_inference_system/vllm/routing/vllm_semantic_router_deep_dive.md) - 基于语义的智能路由策略
+- [vLLM 注意力机制演进与支持全景](09_inference_system/vllm/module_analysis/attention_mha_mla_nsa.md) ([配套 PPT](09_inference_system/vllm/module_analysis/attention_mha_mla_nsa.pptx)) - 从 MHA 到 MLA 与 NSA 的架构解析及 vLLM 支持现状
+- [vLLM 内置 KV Cache Offloading 模块解析](09_inference_system/vllm/module_analysis/native_kv_offloading.md) - 原生 KV Cache CPU Offloading 功能原理与实现
+- [vLLM Hybrid KV Cache Manager](09_inference_system/vllm/module_analysis/hybrid_kv_cache_manager_deep_dive.md) - vLLM 针对混合注意力架构的显存优化机制
+- [vLLM CUDA Graphs 深度解析](09_inference_system/vllm/module_analysis/cuda_graph_deep_dive.md) - 深入探讨 vLLM 解码阶段 CUDA Graphs 的核心机制与实践
+- [vLLM Router 架构解析](09_inference_system/vllm/routing/router.md) - 高性能、轻量级请求转发系统
+- [vLLM Semantic Router](09_inference_system/vllm/routing/semantic_router_deep_dive.md) - 基于语义的智能路由策略
+- [DeepSeek V4 长上下文注意力支持解析](09_inference_system/vllm/module_analysis/deepseek_v4.md) - 深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化
+- [PagedAttention 退役的技术原因](09_inference_system/vllm/module_analysis/pagedattention_retirement.md) - 从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸等角度分析 PagedAttention 被取代的技术必然性
+- [MLA 的 TP 切分：KV Cache 冗余分析](09_inference_system/vllm/module_analysis/mla_tp_kv_redundancy.md) - MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%，但 TP 对其显存节省为 0%，冗余率达 87.5%
 
 **显存与缓存优化**：
 
 - [LLM 显存占用分析与计算](09_inference_system/memory_calc/memory_analysis.md) - 模型参数、KV Cache 与中间激活值的显存估算方法
 - [KV Block Manager 分析](09_inference_system/kv_cache/02_systems/kvbm/KVBM_Analysis.md) - KV Cache 内存管理机制深度解析
-- [分层流水线技术](09_inference_system/kv_cache/01_concepts/advanced/layerwise_pipeline.md) - Layer-wise Pipeline 技术原理与性能优化
+- [分层流水线技术](09_inference_system/kv_cache/01_concepts/offloading/02_layerwise_pipeline.md) - Layer-wise Pipeline 技术原理与性能优化
 
 **网络与模型工具**：
 
@@ -451,7 +454,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 - [NIXL 网络存储介绍](09_inference_system/kv_cache/02_systems/nixl/nixl_introduction.md) - 高性能网络存储架构与应用
 - [NVIDIA 模型优化器](09_inference_system/model_optimization/nvidia_model_optimizer.md) - NVIDIA 模型优化工具链详解
 - [图解投机解码](09_inference_system/model_optimization/illustrated-speculative-decoding.md) - Speculative Decoding 的核心思想、系统实现与工程调优要点
-- [vLLM GB200 优化](09_inference_system/vllm/hardware_optimization/vllm_gb200_optimization.pptx) - vLLM 在 GB200 硬件上的性能优化策略
+- [vLLM GB200 优化](09_inference_system/vllm/hardware_optimization/gb200_optimization.pptx) - vLLM 在 GB200 硬件上的性能优化策略
 
 ### 9.5 推理优化参考设计
 
@@ -509,7 +512,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endpoint) 专有并行架构，以及在 Blackwell 等下一代高性能计算平台上的可扩展性评估与部署策略。
 
-- [vLLM WideEP 架构](09_inference_system/vllm/hardware_optimization/vllm_deepseek_blackwell_wide_ep.md) - vLLM 宽端点 (Wide Endpoint) 架构解析
+- [vLLM WideEP 架构](09_inference_system/vllm/hardware_optimization/deepseek_blackwell_wide_ep.md) - vLLM 宽端点 (Wide Endpoint) 架构解析
 - [Scaling DeepSeek on Blackwell](09_inference_system/vllm/hardware_optimization/scaling_deepseek_blackwell.pptx) - DeepSeek 在 Blackwell 平台上的扩展性优化
 - [从 MLA 到 CSA + HCA：DeepSeek 注意力架构的进化之路](09_inference_system/vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) - 结合 vLLM 推理引擎源码，深度解析 DeepSeek 注意力机制演进
 
