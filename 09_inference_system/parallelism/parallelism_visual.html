@@ -148,23 +148,89 @@ const strats = {
     }
   },
   ep: {
-    desc: "<strong>EP</strong>：MoE 专属。专家分散到不同 GPU，每个 token 只路由到 Top-K 专家。每个 token 的 attention 计算和 KV Cache 留在被路由到的 GPU 上，无需跨 GPU 搬 KV。通信量天然低。",
+    desc: "<strong>EP</strong>：MoE 专属。专家分散到不同 GPU，每个 token 只路由到 Top-K 专家。<b>All-to-All Dispatch</b> 将 hidden states 发送到专家所在 GPU，<b>All-to-All Combine</b> 将结果收回。KV Cache 始终驻留在 token 的 GPU 上，不跨 GPU 搬运。",
     draw() {
+      // ── Top: Token flow header ──
+      r(20, 37, 700, 56, C.bg, 1, 6); r(20, 37, 700, 56, C.border, 1, 6);
+      t(40, 69, "一个 token 进入 GPU 0 的 MoE 层", C.white, "13");
+      // Router box
+      r(290, 47, 180, 36, C.blue, .12, 5);
+      t(380, 70, "Router → Top-8 专家", C.blue, "12", "middle");
+      // Router output: expert list with GPU mapping
+      t(500, 55, "选中:", C.gray, "11");
+      t(500, 73, "E5,E23", C.blue, "11"); t(540, 73, "E67,E89", "#a371f7", "11"); t(592, 73, "E130,E155", C.orange, "11"); t(660, 73, "E201,E244", C.green, "11");
+      t(500, 88, "GPU 0", C.gray, "9"); t(540, 88, "GPU 1", C.gray, "9"); t(592, 88, "GPU 2", C.gray, "9"); t(660, 88, "GPU 3", C.gray, "9");
+
+      // ── Middle: 4 GPU cards with expert distribution ──
+      const gx = [22, 196, 370, 544], gw = 156, gh = 230, gy = 117;
+      const gcolors = [C.blue, "#a371f7", C.orange, C.green];
+      // Active experts for this token (Top-8)
+      const active = [[5,23], [67,89], [130,155], [201,244]];
+
       for (let i = 0; i < 4; i++) {
-        const x = 30 + i * 180;
-        r(x, 70, 160, 260, C.bg, 1, 8); r(x, 70, 160, 260, C.border, 1, 8);
-        t(x + 80, 98, `GPU ${i}`, C.white, "14", "middle");
-        t(x + 80, 122, `Expert ${i*64} – ${i*64+63}`, C.gray, "11", "middle");
-        // Expert blocks
-        for (let j = 0; j < 6; j++) {
-          r(x + 15, 140 + j * 26, 130, 18, C.orange, .10 + j * .02, 3);
-          t(x + 80, 153 + j * 26, `E${i*64 + j*10} ... E${i*64 + j*10+9}`, C.orange, "9", "middle");
+        const x = gx[i];
+        r(x, gy, gw, gh, C.bg, 1, 8); r(x, gy, gw, gh, C.border, 1, 8);
+        // GPU header
+        r(x, gy, gw, 28, gcolors[i], .12, 0);
+        t(x + gw/2, gy + 19, `GPU ${i}`, C.white, "13", "middle");
+        // Expert range
+        t(x + gw/2, gy + 44, `Expert ${i*64} – ${i*64+63}`, C.gray, "11", "middle");
+        // Active expert highlight blocks
+        for (let j = 0; j < active[i].length; j++) {
+          const ey = gy + 58 + j * 36;
+          r(x + 14, ey, gw - 28, 28, gcolors[i], .18, 4);
+          t(x + gw/2, ey + 19, `Expert ${active[i][j]}  ★ 激活`, gcolors[i], "12", "middle");
         }
-        // KV stored on same GPU as expert
-        r(x + 15, 305, 130, 20, C.green, .15, 4);
-        t(x + 80, 319, "KV 留在本 GPU", C.green, "11", "middle");
+        // Other experts (dimmed)
+        const otherY = gy + 58 + active[i].length * 36;
+        r(x + 14, otherY, gw - 28, gh - otherY + gy - 4, C.gray, .04, 4);
+        t(x + gw/2, otherY + 20, `其余 ${64 - active[i].length} 个专家`, C.gray, "10", "middle");
+        t(x + gw/2, otherY + 36, "（此 token 不使用）", C.gray, "9", "middle");
+        // Home badge for GPU 0
+        if (i === 0) {
+          r(x + gw/2 - 32, otherY + 54, 64, 18, C.blue, .15, 3);
+          t(x + gw/2, otherY + 67, "← token 驻留 GPU", C.blue, "10", "middle");
+        }
       }
-      t(370, 355, "每个 token 路由到 Top-K 专家 · DeepSeek-V3: 256 experts, Top-8", C.orange, "12", "middle");
+
+      // ── Dispatch fan-out: GPU 0 → GPUs 1,2,3 ──
+      const dy = 105;
+      // Vertical rise from GPU 0 up to backbone (origin of dispatch)
+      g.appendChild(ce("line", { x1: gx[0] + gw/2, y1: gy, x2: gx[0] + gw/2, y2: dy,
+        stroke: C.red, "stroke-width": 2, opacity: .5, "stroke-dasharray": "4 3" }));
+      g.appendChild(ce("polygon", { points: `${gx[0]+gw/2-4},${dy+4} ${gx[0]+gw/2+4},${dy+4} ${gx[0]+gw/2},${dy-2}`, fill: C.red, opacity: .6 }));
+      // Horizontal backbone line above all GPUs
+      g.appendChild(ce("line", { x1: gx[0] + gw/2, y1: dy, x2: gx[3] + gw/2, y2: dy,
+        stroke: C.red, "stroke-width": 2.5, opacity: .55, "stroke-dasharray": "8 4" }));
+      // Vertical drops from backbone into each GPU 1,2,3
+      for (let i = 1; i < 4; i++) {
+        g.appendChild(ce("line", { x1: gx[i] + gw/2, y1: dy, x2: gx[i] + gw/2, y2: gy,
+          stroke: C.red, "stroke-width": 2, opacity: .5, "stroke-dasharray": "4 3" }));
+        g.appendChild(ce("polygon", { points: `${gx[i]+gw/2-4},${gy-2} ${gx[i]+gw/2+4},${gy-2} ${gx[i]+gw/2},${gy+4}`, fill: C.red, opacity: .6 }));
+      }
+      t(gx[0] + gw - 40, dy - 3, "All-to-All Dispatch", C.red, "11");
+      t(gx[0] + gw - 40, dy + 9, "发送 hidden states 到远程 GPU", C.gray, "9");
+
+      // ── Combine fan-in: GPUs 1,2,3 → GPU 0 ──
+      const uy = gy + gh + 18;
+      // Vertical rises from each GPU 1,2,3 to backbone
+      for (let i = 1; i < 4; i++) {
+        g.appendChild(ce("line", { x1: gx[i] + gw/2, y1: gy + gh, x2: gx[i] + gw/2, y2: uy,
+          stroke: C.green, "stroke-width": 2, opacity: .5, "stroke-dasharray": "4 3" }));
+        g.appendChild(ce("polygon", { points: `${gx[i]+gw/2-4},${uy-4} ${gx[i]+gw/2+4},${uy-4} ${gx[i]+gw/2},${uy}`, fill: C.green, opacity: .6 }));
+      }
+      // Horizontal backbone below all GPUs, arrow to GPU 0
+      g.appendChild(ce("line", { x1: gx[0] + gw/2, y1: uy, x2: gx[3] + gw/2, y2: uy,
+        stroke: C.green, "stroke-width": 2.5, opacity: .55, "stroke-dasharray": "8 4" }));
+      g.appendChild(ce("polygon", { points: `${gx[0]+gw/2-4},${uy-4} ${gx[0]+gw/2+4},${uy-4} ${gx[0]+gw/2},${uy-8}`, fill: C.green, opacity: .6 }));
+      t(gx[0] + gw, uy + 16, "All-to-All Combine", C.green, "11");
+      t(gx[0] + gw, uy + 28, "收回专家输出到 GPU 0", C.gray, "9");
+
+      // ── Bottom: KV Cache & communication summary ──
+      const by = gy + gh + 55;
+      r(22, by, 700, 52, C.green, .04, 6); r(22, by, 700, 52, C.green, .12, 6);
+      t(40, by + 20, "KV Cache 驻留 GPU 0 — Attention 计算不跨 GPU", C.green, "13");
+      t(40, by + 38, "dispatch 仅搬运 hidden states 用于专家 FFN · 每 token 每 MoE 层通信量: FP16 ≈ 229 KB / FP8 ≈ 115 KB", C.gray, "11");
     }
   },
   sp: {

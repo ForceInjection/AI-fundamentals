@@ -16,7 +16,9 @@
   - 系统：LMCache、Mooncake、KVBM、HiCache、Tair KVCache
   - 容量：GLM-5 推演、ROI 评估
 - **[Prefill 与 Decode 深度拆解](prefill_decode/prefill_decode_qkv_calculation.md)**（[交互可视化](prefill_decode/prefill_decode_visual.html) · [校验脚本](prefill_decode/prefill_decode_validate.py)） — 从一个具体例子出发，标注每一步的矩阵形状与计算量，从 compute-bound vs memory-bound 的根本差异推导出所有优化方向的必然性。
-- **[大模型推理并行策略](parallelism/parallelism_strategies.md)**（[交互可视化](parallelism/parallelism_visual.html)） — DP、TP、PP、EP、SP 五种策略的维度拆解与混合部署案例。
+- **[大模型推理并行策略](parallelism/README.md)**（[交互可视化](parallelism/parallelism_visual.html)） — DP、TP、PP、EP、SP 五种策略的维度拆解与混合部署案例。
+  - 入门：[并行策略总览](parallelism/parallelism_strategies.md)
+  - 深度：[专家并行（EP）深度解析](parallelism/expert_parallelism_deep_dive.md)
 
 ---
 
