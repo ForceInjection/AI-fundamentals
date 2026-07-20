@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLaMA Decoder Block 数据流可视化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+#app { width: 960px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+#header { padding: 16px 24px 0; flex-shrink: 0; }
+#header h1 { font-size: 15px; color: #f0f6fc; margin: 0 0 4px; }
+#header p { font-size: 12px; color: #8b949e; }
+#svgPane { flex: 1; min-height: 0; }
+#svgPane svg { width: 100%; height: 100%; }
+#controls { display: flex; gap: 8px; padding: 10px 24px; border-top: 1px solid #21262d; flex-shrink: 0; }
+.btn { padding: 5px 12px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 11px; transition: all .15s; }
+.btn:hover { border-color: #58a6ff; background: #1f2a3a; }
+.btn.active { border-color: #58a6ff; color: #58a6ff; background: #1f2a3a; }
+#detail { padding: 8px 24px 14px; font-size: 12px; color: #8b949e; line-height: 1.6; border-top: 1px solid #21262d; flex-shrink: 0; min-height: 42px; }
+#detail b { color: #58a6ff; }
+#detail i { color: #3fb950; font-style: normal; }
+#detail em { color: #d29922; font-style: normal; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <h1>LLaMA Decoder Block — 现代 LLM 的「标准配方」</h1>
+    <p>单击任意组件查看详情 · RMSNorm 前置 + SwiGLU 门控 + RoPE 旋转编码 + 残差高速通道</p>
+  </div>
+  <div id="svgPane"><svg id="svg" viewBox="0 0 740 460"></svg></div>
+  <div id="controls">
+    <button class="btn active" data-v="0">完整数据流</button>
+    <button class="btn" data-v="1">聚焦 Attention 分支</button>
+    <button class="btn" data-v="2">聚焦 FFN 分支</button>
+  </div>
+  <div id="detail">单击上方组件查看详情</div>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const ce = (t, a) => { const e = document.createElementNS(NS, t); if (a) for (let k in a) e.setAttribute(k, a[k]); return e; };
+const svg = document.getElementById("svg");
+let g = ce("g"); svg.appendChild(g);
+
+const C = { blue: "#58a6ff", green: "#3fb950", orange: "#d29922", red: "#f85149",
+  purple: "#a371f7", gray: "#8b949e", white: "#f0f6fc", bg: "#0d1117", border: "#30363d" };
+
+function r(x, y, w, h, c, o, rx, sw) {
+  const e = ce("rect", { x, y, width: w, height: h, rx: rx || 4, fill: c, opacity: o || 1 });
+  if (sw) { e.setAttribute("stroke", c); e.setAttribute("stroke-width", sw); e.setAttribute("fill-opacity", (o||1)*.15); e.setAttribute("fill", C.bg); }
+  g.appendChild(e);
+}
+function t(x, y, s, c, sz, anchor) {
+  const e = ce("text", { x, y, "font-size": sz||"11", fill: c||C.white });
+  if (anchor) e.setAttribute("text-anchor", anchor);
+  e.textContent = s; g.appendChild(e);
+}
+function line(x1, y1, x2, y2, c, sw, dash) {
+  const e = ce("line", { x1, y1, x2, y2, stroke: c, "stroke-width": sw||1.5, opacity: .6 });
+  if (dash) e.setAttribute("stroke-dasharray", dash);
+  g.appendChild(e);
+}
+function arrow(x1, y1, x2, y2, c) {
+  line(x1, y1, x2, y2, c, 1.8, "6 3");
+  const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx*dx + dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const px = x2 - ux*6, py = y2 - uy*6;
+  const hx = -uy*4, hy = ux*4;
+  g.appendChild(ce("polygon", { points: `${x2},${y2} ${px+hx},${py+hy} ${px-hx},${py-hy}`, fill: c, opacity: .7 }));
+}
+
+// Interactive zones
+const zones = [];
+function zone(x, y, w, h, id, title, detail) {
+  r(x, y, w, h, "transparent", 0, 4);
+  zones.push({ x, y, w, h, id, title, detail });
+}
+
+// Click handler
+svg.addEventListener("click", e => {
+  const rect = svg.getBoundingClientRect();
+  const scaleX = 740 / rect.width;
+  const scaleY = 460 / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+  for (const z of zones) {
+    if (mx >= z.x && mx <= z.x + z.w && my >= z.y && my <= z.y + z.h) {
+      document.getElementById("detail").innerHTML =
+        `<b>${z.title}</b>：${z.detail}`;
+      return;
+    }
+  }
+});
+
+const details = {
+  embed: "输入 Embedding：token ID 映射为稠密向量 [seq_len, <b>4096</b>或<b>7168</b>]。LLaMA-8B 使用 d_model=4096，DeepSeek-V3 使用 7168。",
+  rms1: "<b>RMSNorm</b>：仅做缩放归一化，去掉均值居中（μ），速度比 LayerNorm 快 ~15%。公式：<i>γ · x / √(mean(x²) + ε)</i>。",
+  attn: "自注意力 + <b>RoPE</b>：RoPE 将位置信息旋入 Q·K 点积，天然支持训练时未见过的更长上下文。<em>Causal Mask</em> 确保第 t 个 token 只能看到 1..t-1（上三角 -∞）。",
+  add1: "残差相加：x + Attention(RMSNorm(x))。梯度通过 + 操作直达输入——这是堆叠 32+ 层不崩的关键。",
+  rms2: "<b>RMSNorm</b>：注意力输出归一化后送入 FFN。与第一条 RMSNorm 结构相同、参数独立。",
+  ffn: "FFN (<b>SwiGLU</b>)：可学习门控 + SiLU 激活。<i>(x·W_gate ⊙ SiLU(x·W_1))·W_2</i>。参数量约占 block 的 2/3（~88M），存储模型的「知识」。",
+  add2: "残差相加：x + FFN(RMSNorm(x))。输出送入下一个 Block。",
+  output: "重复 <b>24-80 层</b>后，经最终 RMSNorm → lm_head 投影回词表，输出 next token 概率。"
+};
+
+function draw(view) {
+  while (g.firstChild) g.removeChild(g.firstChild);
+  zones.length = 0;
+
+  // ── Left: "Input" label ──
+  const lx = 30, lw = 120, cx = lx + lw + 40, bw = 340, by1 = 55;
+  r(lx, 55, lw, 40, C.blue, .08, 6);
+  t(lx + lw/2, 80, "Token Embeddings", C.blue, "12", "middle");
+  zone(lx, 55, lw, 40, "embed", "输入 Embedding", details.embed);
+
+  // ── Arrow: Embeddings → Block input ──
+  arrow(lx + lw, 75, cx - 10, 75, C.gray);
+
+  // ── Block N header ──
+  t(cx + bw/2, 35, "Decoder Block × N（LLaMA: N = 24~80，视模型规模）", C.gray, "11", "middle");
+
+  // ── Block boundary ──
+  const by2 = by1 + 340;
+  r(cx, by1, bw, 340, C.border, .08, 8, "1");
+
+  // === Attention path ===
+  const attnY = by1 + 20;
+
+  // RMSNorm 1
+  const rx1 = cx + 30, rw = 100, rh = 28, ry1 = attnY + 20;
+  r(rx1, ry1, rw, rh, C.green, .12, 5);
+  t(rx1 + rw/2, ry1 + 18, "RMSNorm", C.green, "11", "middle");
+  zone(rx1, ry1, rw, rh, "rms1", "RMSNorm（第一条）", details.rms1);
+
+  // Arrow: RMSNorm → Attention
+  arrow(rx1 + rw, ry1 + rh/2, rx1 + rw + 25, ry1 + rh/2, C.gray);
+
+  // Self-Attention with RoPE
+  const ax = rx1 + rw + 30, aw = 140, ah = 52, ay = ry1 + rh/2 - ah/2;
+  r(ax, ay, aw, ah, C.blue, .1, 6);
+  t(ax + aw/2, ay + 18, "Self-Attention", C.blue, "11", "middle");
+  t(ax + aw/2, ay + 36, "with RoPE + Causal Mask", C.blue, "9", "middle");
+  zone(ax, ay, aw, ah, "attn", "自注意力 + RoPE", details.attn);
+
+  // Residual add 1
+  const d1x = ax + aw + 30;
+  r(d1x, ry1, 24, rh, C.orange, .12, 4);
+  t(d1x + 12, ry1 + 18, "+", C.orange, "14", "middle");
+  zone(d1x, ry1, 24, rh, "add1", "残差相加（第一条）", details.add1);
+
+  // Residual connection line (bypass)
+  line(cx + 20, ry1 + rh/2, rx1, ry1 + rh/2, C.orange, 1.2, "4 3");
+
+  // === FFN path ===
+  const ffnY = ay + ah + 38;
+
+  // RMSNorm 2
+  r(rx1, ffnY, rw, rh, C.green, .12, 5);
+  t(rx1 + rw/2, ffnY + 18, "RMSNorm", C.green, "11", "middle");
+  zone(rx1, ffnY, rw, rh, "rms2", "RMSNorm（第二条）", details.rms2);
+
+  // Arrow: RMSNorm → FFN
+  arrow(rx1 + rw, ffnY + rh/2, rx1 + rw + 25, ffnY + rh/2, C.gray);
+
+  // FFN SwiGLU
+  const fx = ax, fw = aw, fh = 52, fy = ffnY + rh/2 - ah/2;
+  r(fx, fy, fw, fh, C.purple, .1, 6);
+  t(fx + fw/2, fy + 18, "FFN (SwiGLU)", C.purple, "11", "middle");
+  t(fx + fw/2, fy + 36, "gate · SiLU · down", C.purple, "9", "middle");
+  zone(fx, fy, fw, fh, "ffn", "FFN (SwiGLU)", details.ffn);
+
+  // Residual add 2
+  r(d1x, ffnY, 24, rh, C.orange, .12, 4);
+  t(d1x + 12, ffnY + 18, "+", C.orange, "14", "middle");
+  zone(d1x, ffnY, 24, rh, "add2", "残差相加（第二条）", details.add2);
+
+  // Residual connection line (bypass)
+  line(d1x + 12, ay + ah + 14, d1x + 12, ffnY + rh/2, C.orange, 1.2, "4 3");
+
+  // ── Dimension annotations ──
+  if (view === 0 || view === 2) {
+    t(rx1 + rw/2, ry1 - 10, "[seq_len, d_model]", C.gray, "9", "middle");
+    t(fx + fw/2, fy - 10, "[seq_len, d_model]", C.gray, "9", "middle");
+  }
+
+  // ── Arrow: Block output → next block ──
+  const blockEnd = d1x + 24 + 20;
+  arrow(blockEnd, attnY + 140, blockEnd + 30, attnY + 140, C.gray);
+  arrow(blockEnd, attnY + 140, blockEnd + 30, attnY + 140 + 120, C.gray);
+
+  // ── Right: Output label ──
+  const ox = blockEnd + 40;
+  r(ox, attnY + 120, lw - 10, 40, C.green, .08, 6);
+  t(ox + (lw-10)/2, attnY + 145, "→ 下一层 Block", C.green, "11", "middle");
+  zone(ox, attnY + 120, lw - 10, 40, "output", "输出到下一层", details.output);
+
+  // ── Bottom: Comparison table ──
+  const tabX = cx, tabY = by1 + 310, colW = bw / 3;
+  t(tabX + bw/2, tabY + 8, "Post-LN（原始） vs Pre-LN（现代）", C.gray, "10", "middle");
+
+  // Post-LN mini diagram
+  const rowY = tabY + 18;
+  r(tabX + 8, rowY, colW - 16, 22, C.red, .06, 4);
+  t(tabX + colW/2, rowY + 15, "Attention → + → LayerNorm", C.red, "9", "middle");
+
+  r(tabX + colW + 8, rowY, colW - 16, 22, C.green, .06, 4);
+  t(tabX + colW + colW/2, rowY + 15, "RMSNorm → Attention → +", C.green, "9", "middle");
+
+  r(tabX + 2*colW + 8, rowY, colW - 16, 22, C.orange, .06, 4);
+  t(tabX + 2.5*colW, rowY + 15, "RMSNorm 速度 +15%", C.orange, "9", "middle");
+
+  // ── Left: Batch info ──
+  r(lx, rowY + 30, lw, 16, C.bg, 1, 0);
+  t(lx + lw/2, rowY + 42, "batch × seq_len × d_model", C.gray, "9", "middle");
+
+  // ── Highlight currently selected view ──
+  if (view === 1) {
+    r(ax - 4, ay - 4, aw + 8, ah + 8, C.blue, .15, 8);
+  } else if (view === 2) {
+    r(fx - 4, fy - 4, fw + 8, fh + 8, C.purple, .15, 8);
+  }
+}
+
+// View switching
+let curView = 0;
+document.querySelectorAll(".btn").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".btn").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    curView = parseInt(b.dataset.v);
+    while (g.firstChild) g.removeChild(g.firstChild);
+    zones.length = 0;
+    draw(curView);
+  });
+});
+
+draw(0);
+</script>
+</body>
+</html>

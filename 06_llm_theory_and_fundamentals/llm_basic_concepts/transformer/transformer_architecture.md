@@ -56,6 +56,7 @@ $$
 $$
 
 步骤拆解：
+
 1. $Q \cdot K^\top$ → 得分矩阵 S（token i 对 token j 的原始相关度）
 2. $S / \sqrt{d_k}$ → 缩放，防止大点积值导致 softmax 梯度消失
 3. $\text{softmax}$ → 归一化为概率分布（每个 token 对所有 token 的注意力权重之和 = 1）
@@ -193,7 +194,7 @@ $$
 
 ## 七、完整数据流：一个 Decoder Block 的标准配方
 
-将以上所有组件串接起来，以 LLaMA 为例——这是 2024 年主流开源 LLM 共同遵循的「标准配方」：
+将以上所有组件串接起来，以 LLaMA 为例——这是 2024 年主流开源 LLM 共同遵循的「标准配方」。交互可视化版本见 [Decoder Block 数据流可视化](transformer_block_visual.html)。
 
 ```text
 输入: token embeddings (batch, seq_len, d_model)
@@ -255,8 +256,11 @@ $$
 
 ## 九、相关资源
 
+- [Decoder Block 数据流可视化](transformer_block_visual.html) — 本文 §7 的交互可视化，可点击组件查看详情，支持完整流/Attention/FFN 三种视角。
 - [位置编码：从 Sinusoidal 到 RoPE](../positional_encoding/positional_encoding.md) — RoPE 的数学原理与 NTK/YaRN 外推技术。
 - [LLM 架构演进史](../architecture_evolution/llm_architecture_evolution.md) — Transformer 诞生后 7 年的关键拐点与「标准配方」的形成。
 - [混合专家 (MoE)](../moe/mixture_of_experts_moe_visual_guide.zh-CN.md) — 如何用稀疏激活进一步扩展参数规模。
 - 《Attention Is All You Need》(2017) — 原始论文。
-- Jay Alammar, The Illustrated Transformer — 经典图解教程。
+- Jay Alammar, [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/) — 经典图解教程。
+- Georgia Tech, [Transformer Explainer](https://poloclub.github.io/transformer-explainer/) — 交互式可视化，可逐 token 观察注意力计算。
+- [bbycroft/llm](https://bbycroft.net/llm) — 3D 可视化 GPT 类模型的完整推理过程。
