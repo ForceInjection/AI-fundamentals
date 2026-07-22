@@ -6,19 +6,32 @@
 
 本文从 SGLang 源码出发，覆盖 Chunked Prefill 的完整链路：
 
-| 章节 | 内容                                                          |
-| ---- | ------------------------------------------------------------- |
-| 一   | 概念与动机：Prefill / Decode + 是什么                         |
-| 二   | 整体流程：mermaid 流程图                                      |
-| 三   | 关键状态字段：`fill_ids`、`is_chunked`、`extend_input_len`    |
-| 四   | 调度循环：Prefill 优先与 `chunked_req` 的强制机制             |
-| 五   | PrefillAdder：截断决策者（`add_one_req` / `add_chunked_req`） |
-| 六   | Chunk 后处理：状态保存与结果输出                              |
-| 七   | 调优：参数配置 + 性能数据（chunk 翻倍 → TPS +13.9%）          |
-| 八   | 与 HiCache 的协同                                             |
-| 九   | 总结速查表                                                    |
+## 目录
 
-> 可以先看[调度器可视化动画](scheduler-visual.html)（[GIF 预览](scheduler-visual.gif)）对 Chunked Prefill 有一个直观感受，再回来看源码细节。
+- [SGLang Chunked Prefill — 原理与代码实现](#sglang-chunked-prefill--原理与代码实现)
+  - [目录](#目录)
+  - [一、概念与动机](#一概念与动机)
+    - [1.1 是什么](#11-是什么)
+  - [二、整体流程](#二整体流程)
+  - [三、关键状态字段](#三关键状态字段)
+    - [fill\_ids 截断示意](#fill_ids-截断示意)
+  - [四、调度循环：Prefill 优先于 Decode](#四调度循环prefill-优先于-decode)
+  - [五、PrefillAdder：chunk 截断的决策者](#五prefilladderchunk-截断的决策者)
+    - [构造函数参数](#构造函数参数)
+    - [`add_one_req()` 决策逻辑（`schedule_policy.py:815`）](#add_one_req-决策逻辑schedule_policypy815)
+    - [`add_chunked_req()` 继续上一轮的 chunked req（`schedule_policy.py:668`）](#add_chunked_req-继续上一轮的-chunked-reqschedule_policypy668)
+  - [六、Chunk 后处理：状态保存与结果输出](#六chunk-后处理状态保存与结果输出)
+    - [Stash：暂存部分前缀](#stash暂存部分前缀)
+    - [init\_next\_round\_input：恢复完整 fill\_ids](#init_next_round_input恢复完整-fill_ids)
+    - [Forward 结果输出](#forward-结果输出)
+  - [七、调优：参数配置与性能数据](#七调优参数配置与性能数据)
+    - [显存自动调参（`server_args.py:1401`）](#显存自动调参server_argspy1401)
+    - [预留显存公式](#预留显存公式)
+    - [性能数据](#性能数据)
+  - [八、与 HiCache 的交互](#八与-hicache-的交互)
+  - [九、总结](#九总结)
+
+> 可以先看[调度器可视化动画](assets/scheduler-visual.html)（[GIF 预览](assets/scheduler-visual.gif)）对 Chunked Prefill 有一个直观感受，再回来看源码细节。
 
 ---
 
