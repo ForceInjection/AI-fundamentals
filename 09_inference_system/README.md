@@ -48,7 +48,8 @@
 
 推理引擎提供了执行框架，模型层面的优化则进一步压缩算力和显存开销。
 
-- **[投机解码图解](model_optimization/illustrated-speculative-decoding.md)** — draft model 草拟 K 个候选、target model 批量验证，"猜和验"的核心机制。
+- **[图解投机解码](model_optimization/illustrated-speculative-decoding.md)** — draft model 草拟 K 个候选、target model 批量验证，"猜和验"的核心机制。
+- **[MTP 深度解析](model_optimization/mtp-multi-token-prediction.md)** — 训练时植入多 token 预测能力，推理时以 self-speculation 消除独立 draft forward，与投机解码并行的另一条加速路径。
 - **[NVIDIA 模型优化器](model_optimization/nvidia_model_optimizer.md)** — 工具链详解与优化实践。
 - 相关：KV Cache 层面的压缩与量化见 §1 中 [KV Cache 技术体系](kv_cache/README.md) 的压缩章节。
 

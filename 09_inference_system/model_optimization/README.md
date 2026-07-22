@@ -10,6 +10,14 @@
 
 关键符号速查：$K$（草拟步长）/ $E[A]$（接受前缀期望长度）/ $\alpha = E[A]/K$（接受率）/ $\rho = t_\text{small}/t_\text{large}$（耗时比）。
 
+### 1.1 MTP：另一种加速路径
+
+投机解码依赖外部 draft model 提供候选 token。MTP（Multi-Token Prediction）走了一条不同的路——在训练阶段就为模型植入预测未来 N 个 token 的能力，推理时用内置预测头替代独立 draft model，在单次 forward 中同时完成草拟与验证。
+
+- **[MTP 深度解析：把投机能力训进模型里](mtp-multi-token-prediction.md)**：训练架构（MTP 模块的级联设计、loss 等权求和、14B 参数代价）、推理机制（self-speculation、与因果注意力的兼容、接受率影响因素）、与投机解码的多维对比（forward 次数、灵活性、适用场景）、vLLM 工程实现（`deepseek_mtp` 专用方法与 V4 架构细节）
+
+**选型速记**：模型发布者（训练了模型）→ MTP；推理服务方（使用他人模型）→ 投机解码。
+
 ## 2. 模型压缩工具链：NVIDIA ModelOpt
 
 面向生产部署的一站式压缩工具包，覆盖从 Hugging Face / PyTorch / ONNX 模型导入到 TensorRT-LLM / vLLM 部署的完整链路。
