@@ -1,10 +1,10 @@
-# Attention Sinks 与 KV Cache 淘汰策略：滑动窗口为什么不够？
+# KV Cache 淘汰策略：从滑动窗口到注意力引导的精确淘汰
 
 KV Cache 随序列长度线性膨胀——百万级上下文下，单请求的 KV 就能吃掉几十 GB 显存。PagedAttention 通过按需分配 block 解决了"怎么高效存"，但它不回答"存不下了怎么办"。当 GPU 显存耗尽，推理系统必须选择：**谁的 KV 块被牺牲？**
 
 CPU Cache 淘汰里选错一个 cache line，多等几十个周期而已。KV Cache 淘汰里丢掉一段关键上下文，模型可能给出完全错误的答案。而最直觉的淘汰策略——滑动窗口，只保留最近 N 个 token——在实践中会导致生成质量断崖式下降。
 
-这篇文章从 Attention Sinks 这一基础发现出发，推导为什么"按位置淘汰"行不通，以及业界如何从盲目淘汰演进到用注意力结构做 guide 的精确淘汰。
+这篇文章从"滑动窗口为什么失败"入手：先介绍 Attention Sinks——一个 SoftMax + Causal Mask 导致的数值稳定现象，它构成了淘汰策略必须遵守的硬约束（前几个 token 绝对不能丢）。然后分析业界如何在这条底线之上，用注意力分数区分剩余 token 的信息价值，实现从"盲目按位置淘汰"到"精确按重要性淘汰"的演进。
 
 > **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_原理简介.md) — KV Cache 的工作机制、显存公式；[PagedAttention 原理介绍](../basic/paged_attention.md) — block 级内存管理，本文假设你已了解 block table 和按需分配的基本概念。
 
@@ -91,9 +91,9 @@ $$\alpha_{m,n} = \frac{\exp(q_m \cdot k_n / \sqrt{d})}{\sum_{j=0}^{m} \exp(q_m \
 
 ## 四、从发现到策略：Informed Eviction 的三条路线
 
-Attention Sinks 的发现回答了"为什么滑动窗口不行"，但更重要的是，它揭示了一条设计原则：**哪些 token 可以淘汰，不应该由"远近"决定，而应该由"注意力分布的结构"来决定。**
+Attention Sinks 回答了"为什么滑动窗口不行"，但它的作用止步于划出一条硬底线：**前几个 token 绝对不能丢**——丢掉的后果不是信息损失，而是数值崩溃。这是淘汰策略必须遵守的约束，不是淘汰的方法论。
 
-基于这一原则，业界发展出三类"知情淘汰"（Informed Eviction）策略。它们共享同一个底线——Attention Sink 不可丢弃——但通过不同的方式识别和保留其他重要 token。
+在这条底线之上，还需要回答另一个问题：**剩余的 token 中，哪些更值得保留？** 这个问题与 Sink 无关——它需要的是信息重要性排序，而非稳定性保障。业界发展出的三类"知情淘汰"（Informed Eviction）策略围绕这个排序问题展开，它们共享同一个硬约束（Sink 不可丢弃），但通过不同的方式识别剩余 token 的信息价值。
 
 ### 4.1 StreamingLLM：最简可行方案——Sink + Window
 
@@ -257,7 +257,7 @@ Sliding Window 不加入生产比较——它是其他所有策略的"反面教�
 
 ### 6.3 一句话总结
 
-**从 Sliding Window 到 Attention Sinks 到 Heavy Hitters，KV Cache 淘汰的本质是从"盲目按位置淘汰"走向"用注意力结构做 guide 的精确淘汰"——代价是越来越多的 bookkeeping。选择哪个策略，取决于你的任务对"丢失中间关键信息"有多敏感，以及你愿意为此付出多少额外显存和计算。**
+**KV Cache 淘汰的演进分为两步：第一步，Attention Sinks 教会我们"不能做什么"——不能按位置盲目丢弃。第二步，H2O 和 SnapKV 教会我们"可以做什么"——可以用注意力分数区分 token 的信息价值，做精确淘汰。两步共同构成了从盲目到精确的完整路径——代价是越来越多的 bookkeeping。选择哪个策略，取决于你的任务对"丢失中间关键信息"有多敏感，以及你愿意为此付出多少额外显存和计算。**
 
 如果你的场景是多轮对话——StreamingLLM 的零开销方案足够。如果需要精确 recall（RAG、长文档分析）——H2O 或 SnapKV 的注意力引导淘汰值得投入。如果你在构建推理平台——系统层 Preemption + 算法层压缩两者都需要。没有哪种方案是"最好的"，只有最匹配你的任务对"精确性 vs 成本"权衡点的那个。
 
@@ -270,6 +270,7 @@ Sliding Window 不加入生产比较——它是其他所有策略的"反面教�
 - [KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — 四维冗余模型 + 压缩全景
 - [RoPE 与 Prefix Caching](../prefix_caching/rope_and_prefix_caching.md) — 位置编码如何影响缓存复用
 - [vLLM KV Offloading Connector 与 LMCacheConnector 深度对比](../offloading/01_kv_offloading.md) — Preemption 的 offloading 视角
+- [稀疏注意力 × KV Cache Offloading：跨层联动必须回答的八个问题](../offloading/sparse_attention_driven_offloading_problems.md) — 注意力信号在层级迁移（可逆）与永久删除（不可逆）两种执行方式下的质量门槛差异（§4.4）
 
 [^1]: Xiao et al., "Efficient Streaming Language Models with Attention Sinks," ICLR 2024. [arXiv:2309.17453](https://arxiv.org/abs/2309.17453) — 提出 Attention Sinks 现象和 StreamingLLM 框架。实验跨度：Llama-2、MPT、Falcon、Pythia，最高测试 4M+ token。
 

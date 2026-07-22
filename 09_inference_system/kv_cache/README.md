@@ -12,6 +12,7 @@
 - **[PagedAttention 原理介绍](01_concepts/basic/paged_attention.md)** — OS 分页思想 → GPU 显存管理：block table、按需分配、碎片率从 60-80% 降至 <4%。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/basic/why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
 - **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA / CSA-HCA 五种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
+- **[稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少](01_concepts/basic/sparse_attention_taxonomy.md)** — 按决策时机将稀疏注意力方法分为三条路线：固定模式（Sliding Window、Longformer）、动态选择（StreamingLLM、Vegas、NSA/DSA）、压缩近似（CSA/HCA、Linformer）。每条路线的设计取舍不同，但共享同一个被普遍忽视的约束——减少 KV 读取量（省计算）不等于减少 KV 存储量（省显存）。
 - **[为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../prefill_decode/prefill_decode_qkv_calculation.md)**（[交互可视化](../prefill_decode/prefill_decode_visual.html) · [校验脚本](../prefill_decode/prefill_decode_validate.py)）：从一个具体例子出发，逐步标注 Prefill 和 Decode 每一步的矩阵形状与计算量变化，从 compute-bound vs memory-bound 的根本差异出发，推导出 GQA、量化、PagedAttention、Offloading、PD 分离等优化方向的必然性。
 
 ## 2. 核心优化技术
@@ -44,6 +45,7 @@
 - **[KV Offloading 架构对比](01_concepts/offloading/01_kv_offloading.md)**：探讨 vLLM 原生 KV Offloading 与 LMCacheConnector 将 KV Cache 卸载到 CPU/磁盘的策略与性能权衡。
 - **[KV Cache 层级流水线并行](01_concepts/offloading/02_layerwise_pipeline.md)**：按层流水线传输技术在 Prefill-Decode 分离架构中的应用，计算与 KV I/O 重叠的机制。
 - **[KV Cache Prefetching：三层预取](01_concepts/offloading/03_kv_cache_prefetching.md)**：Kernel 层（L2 prefetch）、系统层（PD 异步预取）、存储层（HiCache）三层如何隐藏 KV 访问延迟。
+- **[稀疏注意力 × KV Cache Offloading：跨层联动必须回答的八个问题](01_concepts/offloading/sparse_attention_driven_offloading_problems.md)**：当稀疏注意力的 token 重要性信号用于指导 offloading 决策时，在信号质量、信号翻译、系统副作用和经济性四个层级上的关键设计决策点。问题枚举式结构，不提供设计方案，只提供设计者绕不开的取舍。
 
 #### 2.2.4 执行模型
 
@@ -60,7 +62,7 @@
 
 压缩减小每个 token 的体量，淘汰则直接减少存储的 token 数量——当压缩做到极致后，淘汰是唯一可以继续缩容的手段。从 Attention Sinks 的发现出发，回答"滑动窗口为什么不够"和"哪些 token 的 KV 值得保留"。
 
-- **[Attention Sinks 与 KV Cache 淘汰策略：滑动窗口为什么不够？](01_concepts/eviction/attention_sinks_and_eviction.md)**：从 Attention Sinks 的基础发现出发，推导为什么"按位置淘汰"行不通，系统梳理 StreamingLLM（Sink + Window）、H2O（累积注意力 → Heavy Hitter）、SnapKV（观察窗口投票）三条 Informed Eviction 路线，以及 vLLM Preemption 在系统层的配合机制。
+- **[KV Cache 淘汰策略：从滑动窗口到注意力引导的精确淘汰](01_concepts/eviction/attention_sinks_and_eviction.md)**：Attention Sinks 作为淘汰必须遵守的硬约束，在此之上 H2O（累积注意力 → Heavy Hitter）、SnapKV（观察窗口投票）、StreamingLLM（Sink + Window）三条 Informed Eviction 路线通过注意力分数区分 token 信息价值，以及 vLLM Preemption 在系统层的配合机制。
 - **[Key-Key Semantic Affinity：用 Key 向量替代注意力分数的 KV Cache 重要性评估](01_concepts/eviction/key_key_semantic_affinity.md)**：系统介绍 SamKV (AAAI 2026) 提出的 Key-Key 语义亲和度方法——不再依赖 QK^T 注意力分数，而是用 Key 向量自身的语义距离评估 block 重要性。从循环悖论出发，分析 H2O/SnapKV 的全局累积偏差，详解高维正交性原理与浓度不等式保证，并给出层次化选择、Per-Step 集成和稳定性过滤三项工程落地路径。
 
 ---
