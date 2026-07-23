@@ -1,6 +1,6 @@
 # vLLM 投机解码方法全景：六种草拟策略的工程选择
 
-> vLLM V1 支持六种投机解码方法——ngram、suffix、Medusa、EAGLE、draft_model、MTP。它们共享同一个 Proposer 抽象框架，但草拟信号的来源、模型依赖、接入成本和收益边界完全不同。本文从 vLLM 的工程视角出发，构建六种方法的分类地图，提供选型决策框架，并追踪 roadmap 中的统一趋势。
+> vLLM V1 支持六种投机解码方法——ngram、suffix、Medusa、EAGLE、draft_model、MTP。它们共享同一个 Proposer 抽象框架，但草拟信号的来源、模型依赖、接入成本和收益边界完全不同。本文从 vLLM 的工程视角出发，构建六种方法的分类地图，提供选型决策框架，并追踪 roadmap 中的演进趋势。
 
 ---
 
@@ -15,7 +15,7 @@
 但 Proposer **如何生成**这 K 个候选，却有六种完全不同的实现路径：
 
 - 从 prompt 文本中匹配 ngram 片段
-- 从后缀模式中推测结构化输出
+- 从历史响应中匹配后缀模式推测候选 token
 - 从主模型最后一层 hidden state 上附加的 Medusa heads 预测
 - 从主模型中间层抽取特征，用 EAGLE 轻量 decoder 解码
 - 加载一个独立的小模型做完整 forward
@@ -25,7 +25,7 @@
 
 ### 1.2 本文与已有文章的分工
 
-已有文章覆盖了投机解码的算法原理和 MTP 的训练-推理机制。本文聚焦于一个不同维度：在 vLLM 工程实践中，六种方法各自如何接入 Proposer 框架？同样的硬件和模型，选哪个收益最高？roadmap 中的统一趋势如何影响今日的选型决策？
+已有文章覆盖了投机解码的算法原理和 MTP 的训练-推理机制。本文聚焦于一个不同维度：在 vLLM 工程实践中，六种方法各自如何接入 Proposer 框架？同样的硬件和模型，选哪个收益最高？roadmap 中的演进趋势如何影响今日的选型决策？
 
 ---
 
@@ -89,7 +89,7 @@ ngram 和 suffix 是投机解码最轻量的两种实现——不需要任何额
 
 因为草拟不涉及任何模型 forward，Proposer 的 wall-clock 开销接近零。Numba JIT 编译的匹配函数在 CPU 上执行，`num_tokens` 超过 8192 阈值时启用多线程并行。但接受率完全取决于 prompt 文本与当前输出的模式重复度——代码补全和翻译场景效果良好；开放对话中 ngram 匹配几乎等同于随机猜测。
 
-**suffix** 的实现位于 `suffix_decoding.py`，与 ngram 的机制完全不同。它基于 Arctic Inference 库为每个 prompt 构建一棵**后缀树（suffix tree）**，缓存该 prompt 之前的响应历史。每次 decode 时，用最近生成 token（最多 `max_tree_depth` 个）在后缀树中查找匹配，从历史响应中提取下一个 token 作为草拟候选。关键差异：
+**suffix** 的实现位于 `suffix_decoding.py`，与 ngram 的机制完全不同。它基于 Arctic Inference 库为每个 prompt 构建一棵**后缀树（suffix tree）**，初始化为 prompt token 序列，并随着 decode 逐步追加生成的响应 token。每次 decode 时，用最近生成 token（最多 `max_tree_depth` 个）在后缀树中查找匹配，从历史序列中提取下一个 token 作为草拟候选。关键差异：
 
 - **跨请求复用**：同一 prompt 的多次请求共享一个后缀树缓存，历史越长，草拟质量越高
 - **可变步长**：推测 token 数自适应变化，而非固定 K 个
@@ -115,9 +115,9 @@ Medusa heads 在主模型 forward 完成后才执行——它们消费已经计�
 
 #### 3.2.2 EAGLE / EAGLE-3：从特征层提取信号
 
-EAGLE 的洞察在于：最后一层 hidden state 经过数十层 transformer 的处理，已经丢失了大量关于"接下来可能是什么"的细粒度特征信息。因此 EAGLE 不从最后一层取信号，而是从**主模型中间层**抽取 hidden state，经过一个独立的轻量 transformer decoder 处理后，再通过独立的 lm_head 输出候选 token 概率。
+EAGLE 的洞察在于：最后一层 hidden state 经过数十层 transformer 的处理，已经丢失了大量关于"接下来可能是什么"的细粒度特征信息。因此 EAGLE 不从最后一层取信号，而是从**主模型中间层**抽取 hidden state，经过一个轻量 transformer decoder 处理后，再通过 lm_head 输出候选 token 概率。
 
-vLLM 通过 draft model 名称自动检测 EAGLE（包含 `"eagle-"` 或 `"eagle3"`）。EAGLE 需要一个独立的 draft model 文件（通常几 MB 到几十 MB），但它不是完整模型——只包含特征投影层 + 轻量 decoder + 独立 lm_head，跳过了 embedding 层和大部分 transformer 层。
+vLLM 通过 draft model 名称自动检测 EAGLE（包含 `"eagle-"` 或 `"eagle3"`）。EAGLE 需要一个独立的 draft model 文件（通常百 MB 级，取决于目标模型的 hidden size），但它不是完整模型——只包含特征投影层 + 轻量 decoder（通常 1 层），embedding 层和 lm_head 可能与目标模型共享以减少显存开销。
 
 在 vLLM 中，EAGLE Proposer（`EagleProposer`）继承自 `SpecDecodeBaseProposer`，在初始化时将 `pass_hidden_states_to_model=True` 传递给父类——这是 EAGLE 的核心设计：draft model 不独立处理 token embedding，而是消费 base model 产出的 hidden state。
 
@@ -126,12 +126,12 @@ vLLM 通过 draft model 名称自动检测 EAGLE（包含 `"eagle-"` 或 `"eagle
 | 维度         | Medusa                | EAGLE                                   |
 | ------------ | --------------------- | --------------------------------------- |
 | 信号来源     | 最后一层 hidden state | 中间层 hidden state（特征级）           |
-| 预测结构     | N 个独立线性头        | 轻量 transformer decoder + 独立 lm_head |
+| 预测结构     | N 个独立线性头        | 轻量 transformer decoder + lm_head |
 | Draft 参数量 | ~0.1% 主模型          | ~1% 主模型                              |
 | 接受率       | 中–高                 | 高（通常优于等配置 Medusa）             |
 | 微调成本     | 低（只训 heads）      | 中（需要训练 decoder）                  |
 
-**工程取舍**：轻量——draft 参数量通常 < 主模型的 1%，额外显存开销在 MB 级。但两者都需要专门的微调/训练过程来获得预测结构——对未专门调优的已有模型不可用。MMLU 或 GSM8K 等学术基准上表现优异的 Medusa/EAGLE 模型未必覆盖你的业务数据分布，使用前需要在自己的数据上验证接受率。
+**工程取舍**：轻量——draft 参数量通常 < 主模型的 1%，额外显存开销在 MB 到百 MB 级（Medusa 更轻，EAGLE 因含 decoder 和 lm_head 偏大）。但两者都需要专门的微调/训练过程来获得预测结构——对未专门调优的已有模型不可用。MMLU 或 GSM8K 等学术基准上表现优异的 Medusa/EAGLE 模型未必覆盖你的业务数据分布，使用前需要在自己的数据上验证接受率。
 
 ### 3.3 独立模型层：draft_model
 
@@ -161,7 +161,7 @@ MTP 在 vLLM 中走 self-speculation 执行路径：draft 和 target 共用同�
 
 **工程上的零成本感**。从运维视角看，MTP 是最省心的投机方案——不需要选 draft model、不需要管理第二个 KV cache pool、不需要担心 $\rho$ 的取值。模型文件加载后，投机能力自然可用。但这份便利的代价在训练时已支付——模型发布者必须从预训练阶段就决定加入 MTP。
 
-**与 EAGLE 的路径相似但本质不同**。两者在 vLLM 中都走 self-speculation 模式（draft 消费 target 的 hidden state），但 MTP 的草拟结构是预训练产物，EAGLE 的草拟结构是微调产物——前者的草拟质量来自海量预训练数据的优化，后者来自针对性微调的对齐。
+**与 EAGLE 的路径相似但本质不同**。两者在 vLLM 中都走 self-speculation 模式（draft 消费 target 的 hidden state），但 MTP 的草拟结构是预训练产物，EAGLE 的草拟结构是微调/训练产物——前者的草拟质量来自海量预训练数据的优化，后者来自针对性微调的对齐。
 
 关于 MTP 的训练架构（级联模块、loss 设计、14B 参数代价）、推理机制（self-speculation 流程、接受率影响因素）、以及与投机解码的深层对比，参见 [MTP 深度解析：把投机能力训进模型里](../../model_optimization/mtp-multi-token-prediction.md)。
 
@@ -174,10 +174,10 @@ MTP 在 vLLM 中走 self-speculation 执行路径：draft 和 target 共用同�
 | 维度               |  ngram   |     suffix     |      Medusa      |        EAGLE        |     draft_model     |         MTP          |
 | ------------------ | :------: | :------------: | :--------------: | :-----------------: | :-----------------: | :------------------: |
 | 额外参数量         |    0     |       0        |      ~0.1%       |         ~1%         |      完整模型       |     ~2%（内置）      |
-| 额外显存           |    0     |       0        |      MB 级       |        MB 级        | GB 级（参数 + KV）  |       参数自带       |
+| 额外显存           |    0     |       0        |      MB 级       |       百 MB 级        | GB 级（参数 + KV）  |       参数自带       |
 | 需要专用训练？     |    否    |       否       |       微调       |      微调/训练      |         否          |      预训练阶段      |
 | 需要独立模型文件？ |    否    |       否       | 否（heads 内嵌） |         是          |         是          |          否          |
-| Forward 次数       |    0     |       0        |    1（共享）     | 2（draft + target） | 2（draft + target） |      1（共享）       |
+| Draft 前向开销     |    0     |       0        |    极低（线性头）     | 低（轻量 decoder） | 高（完整模型 forward） |      极低（内置）       |
 | 接受率             |  低–中   |     低–中      |      中–高       |         高          |        中–高        |          高          |
 | 适用范围           | 全部模型 |    全部模型    |   特定微调模型   |    特定训练模型     |   同架构大小模型    |   内置 MTP 的模型    |
 | vLLM method 值     | `ngram`  |    `suffix`    |     `medusa`     |  `eagle`/`eagle3`   |    `draft_model`    | `deepseek_mtp`→`mtp` |
@@ -213,9 +213,9 @@ flowchart TD
 
 ---
 
-## 五、Roadmap 中的统合趋势
+## 五、Roadmap 中的演进趋势
 
-当前六种方法并存是历史演进的快照。vLLM roadmap 中有明确的统合方向，理解这些方向有助于正确的今日选型——选择正在收敛的方向，而非即将被替代的过渡方案。
+当前六种方法并存是历史演进的快照。vLLM roadmap 中有明确的演进方向，理解这些方向有助于正确的今日选型——选择正在收敛的方向，而非即将被替代的过渡方案。
 
 ### 5.1 `deepseek_mtp` → `mtp`：从专属到通用
 
@@ -223,11 +223,11 @@ flowchart TD
 
 ### 5.2 Proposer 接口标准化
 
-六种 Proposer 实现当前有各自独立的配置参数和验证回退路径。RFC [#36219](https://github.com/vllm-project/vllm/issues/36219) 提出了 Proposer 接口统一方案——所有方法共享相同的草拟-验证-回退管线，只在不同环节替换草拟信号来源。统一后的预期效果：为新模型接入任意 Proposer 的工作量从数天降为数小时，草拟-验证-回退逻辑完全复用，配置接口统一。
+六种 Proposer 实现当前有各自独立的配置参数和验证回退路径。RFC [#36219](https://github.com/vllm-project/vllm/issues/36219) 提出了 Proposer 接口统一方案——所有方法共享相同的草拟-验证-回退管线，只在不同环节替换草拟信号来源。统一后的预期效果：草拟-验证-回退逻辑完全复用，配置接口统一，大幅降低为新模型接入任意 Proposer 的开发工作量。
 
 ### 5.3 Spec decode + CUDA Graph + torch.compile
 
-当前 spec decode 的性能瓶颈正在从"草拟质量"转向"草拟开销"。即使 draft model 的 forward 比 target model 快很多，单次 kernel launch 的延迟在高并发下叠加后仍可占 step 时间的 27–43%。Roadmap 中的 full-graph capture（将整个 speculate-verify 循环捕获为单一 CUDA Graph）配合 torch.compile for draft model，将大幅压缩这部分的框架开销。对使用 draft_model 方法的用户，这意味着 ρ 的值将下降，加速比进一步提升。
+当前 spec decode 的性能瓶颈正在从"草拟质量"转向"草拟开销"。即使 draft model 的 forward 比 target model 快很多，框架层 kernel launch 和调度开销在高并发下叠加后，在 step 时间中的占比不可忽视。Roadmap 中的 full-graph capture（将整个 speculate-verify 循环捕获为单一 CUDA Graph）配合 torch.compile for draft model，将大幅压缩这部分的框架开销。对使用 draft_model 方法的用户，这意味着 ρ 的值将下降，加速比进一步提升。
 
 ### 5.4 下一代：稀疏注意力自投机
 
@@ -238,7 +238,7 @@ flowchart TD
 
 在 Qwen3-8B 上的实测：StreamingLLM（4 spec tokens）达到 ~1,600 tokens/s，Vegas（6 spec tokens）达到 ~1,850 tokens/s，相对不开投机的基准（~1,000 tokens/s），吞吐提升了 60–85%。
 
-`sparse_attn` 在分类框架中属于 Layer 1（零模型、零额外参数）但接受率接近 Layer 3。如果这一方法成熟并进入 vLLM 主分支，它将是 ngram 的强力替代——同样的零成本接入，但接受率从"依赖文本匹配"跨越到"依赖模型自身能力的稀疏推理"。某种意义上，它是 "MTP 的后继者"——同样不需要独立 draft model，同样走 self-speculation 路径，但它不需要修改训练流程。
+`sparse_attn` 在接入成本维度属于 Layer 1（无需加载额外模型文件），但需注意它与 ngram/suffix 不同——仍需跑一次 target model 的稀疏 forward，计算开销并非零；接受率则接近 Layer 3。如果这一方法成熟并进入 vLLM 主分支，它将是 ngram 的强力替代——同样的零成本接入，但接受率从"依赖文本匹配"跨越到"依赖模型自身能力的稀疏推理"。某种意义上，它是 MTP 之外的另一种 self-speculation 路径——同样不需要独立 draft model，但它不需要修改训练流程。
 
 ---
 
@@ -252,4 +252,4 @@ vLLM 的六种投机解码方法覆盖了从"零成本模式匹配"到"训练时
 
 - [图解投机解码](../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型
 - [MTP 深度解析：把投机能力训进模型里](../../model_optimization/mtp-multi-token-prediction.md) — MTP 的训练架构、推理机制与投机解码的深层对比
-- [投机解码与 KV Cache 交互](../kv_cache/01_concepts/scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程实现细节
+- [投机解码与 KV Cache 交互](../../kv_cache/01_concepts/scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程实现细节

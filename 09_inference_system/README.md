@@ -40,7 +40,7 @@
   - [HiCache 深入详解](sglang/hicache_deep_dive.md)：L1–L3 三级缓存架构、HiRadixTree 元数据拓扑、预取与写回策略
   - [Chunked Prefill 原理与实现](sglang/chunked_prefill.md)：长 prompt 切分为 chunk 与 decode 交替调度的源码级分析
   - [超大规模推理调优案例](sglang/sglang_scaling_case_study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
-  - 可视化：[推理流水线](sglang/inference-pipeline.html)、[调度器](sglang/scheduler-visual.html)
+  - 可视化：[推理流水线](sglang/assets/inference-pipeline.html)、[调度器](sglang/assets/scheduler-visual.html)
 
 ---
 
