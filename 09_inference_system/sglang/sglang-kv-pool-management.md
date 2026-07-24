@@ -67,8 +67,7 @@ sglang 的 KV cache 管理是一套 GPU 内存管理系统，负责在有限的 
 ④ 填充 ReqToTokenPool [前缀 slot | 新分配 slot] → req_to_token[req_idx, :]
                           │
                           ▼
-⑤ forward            attention kernel 按 ReqToTokenPool 索引读写 KV Pool
-    (prefill + decode)
+⑤ forward            attention kernel 按 ReqToTokenPool 索引读写 KV Pool (prefill + decode)
                           │
                           ▼
 ⑥ cache_finished_req  插入 radix tree → dec_lock_ref (旧前缀 lock_ref--)
