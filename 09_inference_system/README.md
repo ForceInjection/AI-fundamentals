@@ -39,6 +39,7 @@
 - **[SGLang 推理引擎](sglang/README.md)** — RadixAttention 前缀缓存与 HiCache 分层存储。
   - [HiCache 深入详解](sglang/hicache_deep_dive.md)：L1–L3 三级缓存架构、HiRadixTree 元数据拓扑、预取与写回策略
   - [KV Pool 管理](sglang/sglang-kv-pool-management.md)：KV Pool/Radix Tree/ReqToTokenPool 三层数据结构、lock_ref 正确性保证、Pool/Allocator 类型体系
+  - [调度器](sglang/sglang-scheduler.md)：Prefill > Decode 优先级、PrefillAdder 准入预算、retract_decode 内存保护、TTFT 时序拆解
   - [Chunked Prefill 原理与实现](sglang/chunked_prefill.md)：长 prompt 切分为 chunk 与 decode 交替调度的源码级分析
   - [超大规模推理调优案例](sglang/sglang_scaling_case_study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
   - [HiSparse 深度解析](sglang/hisparse_deep_dive.md)：DSA 稀疏选择从 attention kernel 提升到系统 coordinator，page 级选择性加载
