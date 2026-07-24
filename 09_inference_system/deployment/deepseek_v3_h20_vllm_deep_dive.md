@@ -20,7 +20,7 @@ vLLM 的 PD 分离实现围绕一个可插拔的 **KV Connector** 框架展开�
 # KVConnectorBase_V1 (line 171) — 所有 KV 传输后端的基类
 class KVConnectorBase_V1(ABC):
     @abstractmethod
-    def start_load_kv(self, kv_connector_metadata: KVConnectorMetadata) -> None:
+    def start_load_kv(self, forward_context, **kwargs) -> None:
         """发起异步 KV 加载，非阻塞调用"""
 
     @abstractmethod
@@ -28,26 +28,25 @@ class KVConnectorBase_V1(ABC):
         """等待指定层的 KV 加载完成，逐层流水线"""
 
     @abstractmethod
-    def save_kv_layer(self, layer_name: str, kv_cache, attn_metadata) -> None:
+    def save_kv_layer(self, layer_name: str, kv_layer, attn_metadata, **kwargs) -> None:
         """发起单层 KV 的异步保存"""
 
     @abstractmethod
     def wait_for_save(self) -> None:
         """等待所有层的 KV 保存完成"""
 
-    @abstractmethod
-    def get_finished(self, finished_req_ids: set[str]) -> None:
-        """检查传输完成状态，释放源端资源"""
+    def get_finished(self, finished_req_ids: set[str]) -> tuple[set[str] | None, set[str] | None]:
+        """检查传输完成状态，释放源端资源（具体方法，非抽象）"""
 ```
 
 四种传输后端由 `KVConnectorFactory`（`factory.py:27`）统一注册：
 
-| Connector | 传输方式 | 适用场景 |
-|---|---|---|
-| `NixlConnector` | RDMA（UCX），pull/push | GPU 直连，低延迟 |
-| `MooncakeConnector` | Mooncake TransferEngine | 分布式 KV 共享 |
-| `LMCacheConnectorV1` | LMCache 协议 | 跨引擎缓存复用 |
-| `OffloadingConnector` | CPU offload | 单机显存卸载 |
+| Connector             | 传输方式                | 适用场景         |
+| --------------------- | ----------------------- | ---------------- |
+| `NixlConnector`       | RDMA（UCX），pull/push  | GPU 直连，低延迟 |
+| `MooncakeConnector`   | Mooncake TransferEngine | 分布式 KV 共享   |
+| `LMCacheConnectorV1`  | LMCache 协议            | 跨引擎缓存复用   |
+| `OffloadingConnector` | CPU offload             | 单机显存卸载     |
 
 ### 1.2 NIXL：RDMA 零拷贝传输
 
@@ -63,7 +62,7 @@ xfer_handle = nixl_wrapper.make_prepped_xfer(
 state = nixl_wrapper.transfer(xfer_handle)
 ```
 
-**Push 模式**（Prefill 主动推送）：Prefill worker 使用独立后台线程 `nixl-push-writer` 异步推送 KV cache 到 Decode worker。关键路径在 `push_worker.py:122-127`——后台线程处理 PUSH_REG 通知、匹配已完成的 block、发起 WRITE 传输，主线程完全不被阻塞。
+**Push 模式**（Prefill 主动推送）：Prefill worker 使用独立后台线程 `nixl-push-writer` 异步推送 KV cache 到 Decode worker。线程在 `push_worker.py:122-127` 创建并启动，实际的 PUSH_REG 通知处理、block 匹配和 WRITE 传输逻辑在 `_push_writer_loop`（line 192）和 `_xfer_blocks`（line 563）中，主线程完全不被阻塞。
 
 两种模式都通过 ZMQ 旁路信道完成握手（`base_worker.py:533-650`），交换 NIXL agent 元数据。握手阶段包含兼容性检查：基于模型架构 hash、vLLM 版本、KV cache dtype、attention backend 等计算兼容性指纹（`metadata.py:79-139`）。
 
@@ -71,19 +70,21 @@ state = nixl_wrapper.transfer(xfer_handle)
 
 太极原文提到的 Layerwise 传输策略在 vLLM 中有直接对应——但需要注意的是，**NIXL 本身不使用逐层传输**（`connector.py:276`，`wait_for_layer_load()` 和 `save_kv_layer()` 在 NIXL 中为空操作），它是整块 KV cache 一次性传输。逐层传输由 Mooncake 等后端实现。
 
-真正实现计算-通信 overlap 的是 `@maybe_transfer_kv_layer` 装饰器（`vllm/model_executor/layers/attention/kv_transfer_utils.py:15-61`）：
+真正实现计算-通信 overlap 的是 `maybe_transfer_kv_layer` 函数装饰器（`vllm/model_executor/layers/attention/kv_transfer_utils.py:15-61`）。它使用 `@wraps(func)` 包装 attention 函数：
 
 ```python
-@contextlib.contextmanager
-def maybe_transfer_kv_layer(layer_name, kv_cache, attn_metadata):
+@wraps(func)
+def wrapper(layer_name, kv_cache, attn_metadata, *args, **kwargs):
     # 1. 等待当前层的 KV 加载完成（阻塞）
     kv_connector.wait_for_layer_load(layer_name)
-    yield  # 2. 执行 attention 计算
+    result = func(*args, **kwargs)  # 2. 执行 attention 计算
     # 3. 发起当前层 KV 的异步保存（非阻塞，与下一层计算 overlap）
     kv_connector.save_kv_layer(layer_name, kv_cache, attn_metadata)
+    return result
 ```
 
 这里的设计选择体现了工程权衡：
+
 - **NIXL**：整块传输，适合短序列（<8K），减少 handshake 次数，RDMA 带宽利用率高
 - **Mooncake**：逐层传输，适合长序列（>8K），KV 还在生成时就逐层往外发，传输延迟几乎与序列长度无关
 
@@ -144,6 +145,7 @@ def step(self, is_dummy: bool):
 关键设计决策：**不是每个 step 都记录负载**。`_should_record_current_step()`（line 660-680）只在接近下一次重排时才开启记录——`step_interval - current_step <= window_size`。这避免了在整个 interval 内持续消耗 GPU 算力维护一个会被覆盖的负载窗口。
 
 **重排流程**（`eplb_state.py:721-872`）：
+
 1. 通过 `scatter_add_` 将 per-physical-expert 负载归约为 per-logical-expert 负载
 2. All-reduce 聚合所有 EP rank 的全局负载
 3. 调用 `policy.rebalance_experts()` 计算新的 expert 分布方案
@@ -198,27 +200,27 @@ forward step N+1                   │
 
 四种权重传输后端（`eplb_communicator.py:45-776`）：
 
-| 后端 | 实现 | 特点 |
-|---|---|---|
-| `TorchDistNccl` | `batch_isend_irecv` on NCCL | 标准路径，GPU 直传 |
-| `TorchDistGlooStaged` | GPU→CPU→Gloo→CPU→GPU | CPU 中转，适合小带宽 |
-| `Nixl` | RDMA READ，零拷贝 | 最低延迟，需 NIXL 环境 |
-| `PyNccl` | `ncclSend/ncclRecv` with group | 精细控制，需 PyNccl |
+| 后端                  | 实现                           | 特点                   |
+| --------------------- | ------------------------------ | ---------------------- |
+| `TorchDistNccl`       | `batch_isend_irecv` on NCCL    | 标准路径，GPU 直传     |
+| `TorchDistGlooStaged` | GPU→CPU→Gloo→CPU→GPU           | CPU 中转，适合小带宽   |
+| `Nixl`                | RDMA READ，零拷贝              | 最低延迟，需 NIXL 环境 |
+| `PyNccl`              | `ncclSend/ncclRecv` with group | 精细控制，需 PyNccl    |
 
 ### 2.4 All-to-All 通信后端
 
 EP 模式下，每次 MoE 层的 token-to-expert dispatch/combine 都需要 All-to-All 通信。vLLM 支持 8 种后端（`vllm/distributed/device_communicators/all2all.py`）：
 
-| 后端 | 类 | 关键特性 |
-|---|---|---|
-| `allgather_reducescatter` | `AgRsAll2AllManager` | 默认方案，AllGather + ReduceScatter |
-| `deepep_high_throughput` | `DeepEPHTAll2AllManager` | SM-based，高吞吐 |
-| `deepep_low_latency` | `DeepEPLLAll2AllManager` | RDMA-based，低延迟 + round-robin routing |
-| `deepep_v2` | `DeepEPV2All2AllManager` | ElasticBuffer + NCCL Gin |
-| `nixl_ep` | `NixlEPAll2AllManager` | 支持 elastic EP（动态增减 rank） |
-| `flashinfer_nvlink_two_sided` | `FlashInferNVLinkTwoSidedManager` | MNNVL 双端 |
-| `flashinfer_nvlink_one_sided` | `FlashInferNVLinkOneSidedManager` | TRTLLM 单端 |
-| `mori_*` | `MoriAll2AllManager` | ROCm GPU 专用 |
+| 后端                          | 类                                | 关键特性                                 |
+| ----------------------------- | --------------------------------- | ---------------------------------------- |
+| `allgather_reducescatter`     | `AgRsAll2AllManager`              | 默认方案，AllGather + ReduceScatter      |
+| `deepep_high_throughput`      | `DeepEPHTAll2AllManager`          | SM-based，高吞吐                         |
+| `deepep_low_latency`          | `DeepEPLLAll2AllManager`          | RDMA-based，低延迟 + round-robin routing |
+| `deepep_v2`                   | `DeepEPV2All2AllManager`          | ElasticBuffer + NCCL Gin                 |
+| `nixl_ep`                     | `NixlEPAll2AllManager`            | 支持 elastic EP（动态增减 rank）         |
+| `flashinfer_nvlink_two_sided` | `FlashInferNVLinkTwoSidedManager` | MNNVL 双端                               |
+| `flashinfer_nvlink_one_sided` | `FlashInferNVLinkOneSidedManager` | TRTLLM 单端                              |
+| `mori_*`                      | `MoriAll2AllManager`              | ROCm GPU 专用                            |
 
 **DeepEP LL** 是太极原文中 "通信算子耗时从 40%+ 降至 20% 以下" 的对应实现。它在 `deepep_ll.py:61` 要求 hidden_size 为特定值（`[2048, 2560, 3072, 4096, 5120, 6144, 7168, 8192]`），DeepSeek-V3 的 `hidden_size=7168` 正好在支持列表中。DeepEP LL 通过 RDMA 实现低延迟传输，并支持 round-robin 专家分布（`deepep_ll.py:194-206` 中的 FP8 dispatch 路径），与太极原文描述的优化方向一致。
 
@@ -280,12 +282,12 @@ data_parallel_backend: str = "mp" # "ray" 或 "mp"（multiprocessing）
 例如：TP=2, DP=2, EP=True
   ep_size = 2 × 2 × 1 = 4
   每个 GPU 负责 256/4 = 64 个专家
-  
+
   Device 0: TP={2,0} DP={2,0} EP={4,0}
   Device 1: TP={2,0} DP={2,0} EP={4,1}
   Device 2: TP={2,0} DP={2,1} EP={4,2}
   Device 3: TP={2,0} DP={2,1} EP={4,3}
-  
+
   MoE 层：4 个 GPU 被压平为单个 EP group，专家均匀分布
   Attention 层：TP=2 仍然生效，DP 维度独立
 ```
@@ -317,6 +319,7 @@ def coordinate_batch_across_dp(num_tokens, cudagraph_mode, ...):
 ```
 
 同步的四个维度：
+
 1. **num_tokens**：各 rank 对齐到最大 token 数，不足的 rank 用 mock request 补齐
 2. **cudagraph mode**：只要有一个 rank 无法使用 cudagraph（如 batch 太小），所有 rank 回退到 eager 模式
 3. **ubatch flag**：所有 rank 必须就 ubatching 达成一致
@@ -327,6 +330,7 @@ def coordinate_batch_across_dp(num_tokens, cudagraph_mode, ...):
 ### 3.5 DP 对 KV Cache 的影响
 
 关键约束：KV Cache 是 **per-DP-engine** 的（`vllm/config/cache.py:157-161`，`kv_cache_size_tokens` 文档明确标注 "Per-DP-engine"）。每个 DP rank 维护独立的 KV Cache，不共享。这意味着：
+
 - DP 增加了系统的总有效 KV Cache（dp_size 倍），每个 rank 只需存储自己处理的请求的 KV
 - 但 PD 分离场景下，Decode 节点需要从 Prefill 节点接收完整的 KV cache——这部分由 KV Connector 框架处理，不受 DP 影响
 
@@ -350,7 +354,7 @@ class DeepSeekMultiTokenPredictor(nn.Module):
         self.logits_processor = ...   # 独立的 logits 处理器
 
         # 每个 MTP 层 = 1 个完整 DecoderLayer + 2 个 RMSNorm + eh_proj
-        self.mtp_layers = ModuleDict({
+        self.layers = ModuleDict({
             layer_idx: DeepSeekMultiTokenPredictorLayer(...)
         })
 ```
@@ -370,11 +374,11 @@ class DeepSeekMultiTokenPredictor(nn.Module):
 输出: (hidden_states, logits)
 ```
 
-**关键设计**：`shared_head` 与目标模型的 `lm_head` **是同一个对象**。在 `vllm/v1/worker/gpu/spec_decode/eagle/utils.py:67-74`，模型加载后会将 MTP 层的 `shared_head.head` 替换为目标模型的 `lm_head`：
+**关键设计**：`shared_head` 与目标模型的 `lm_head` **是同一个对象**。在 `vllm/v1/worker/gpu/spec_decode/eagle/utils.py:78-85`，模型加载后会将 MTP 层的 `shared_head.head` 替换为目标模型的 `lm_head`：
 
 ```python
 # load_eagle_model() → share target parameters
-for layer in draft_model.mtp_layers.values():
+for layer in draft_model.layers.values():
     layer.shared_head.head = target_model.lm_head
 ```
 
@@ -425,12 +429,13 @@ vLLM 配置中可通过 `--speculative-model` 或自动检测（`vllm/config/spe
 
 vLLM 对 DeepSeek MLA 架构的 KV Cache FP8 有专门优化。`vllm/v1/kv_cache_interface.py:381-388` 定义了 `fp8_ds_mla` 布局：
 
-| 模型 | Per-token 字节 | 内容 |
-|---|---|---|
-| DeepSeek-V4 | 584B | 448B NoPE + 128B RoPE + 8B scale |
-| DeepSeek V3.2 | 656B | 512B kv_lora + 64B rope + 80B scale/extra |
+| 模型          | Per-token 字节 | 内容                                      |
+| ------------- | -------------- | ----------------------------------------- |
+| DeepSeek-V4   | 584B           | 448B NoPE + 128B RoPE + 8B scale          |
+| DeepSeek V3.2 | 656B           | 512B kv_lora + 64B rope + 80B scale/extra |
 
 与 BF16 相比，FP8 KV Cache 将每 token 的显存占用减半。对于 DeepSeek-V3（d_c=512, 61 层）：
+
 - BF16 KV Cache：`512 × 61 × 2(K+V) × 2 字节 = 124,928 字节/token ≈ 122 KB/token`
 - FP8 KV Cache：约 61 KB/token，减半
 
@@ -439,6 +444,7 @@ vLLM 对 DeepSeek MLA 架构的 KV Cache FP8 有专门优化。`vllm/v1/kv_cache
 ### 5.2 模型权重 FP8
 
 vLLM 通过 `DeepseekV4FP8Config`（`vllm/models/deepseek_v4/quant_config.py:29-161`）支持 DeepSeek V4 的 FP8 量化，覆盖两种模式：
+
 - **FP8 block-wise**：`expert_dtype="fp8"`，per-128-block float32 scale
 - **MXFP4**：`expert_dtype="fp4"`，4-bit weight + FP8 e8m0 scale（group_size=16）
 
@@ -466,17 +472,17 @@ vLLM 中实现类似效果的路径是：**FP8 权重 + FP8 KV Cache + EPLB + PD
 
 ### 6.1 四技在 vLLM 中的成熟度
 
-| 技术 | vLLM 实现 | 成熟度 | 对标太极 |
-|---|---|---|---|
-| PD 分离 | NIXL/Mooncake/LMCache KV Connector | ✅ 成熟 | 对应 mPnD 架构 |
-| EPLB | DefaultEplbPolicy + 异步重排 | ✅ 成熟 | 对应 EPLB + 冗余专家 |
-| DeepEP 通信 | DeepEP LL/HT/v2 + NIXL EP 等 8 种 | ✅ 成熟 | 对应 TRMT 通信优化 |
-| DP 适配 | coordinate_batch_across_dp + batched DP | ✅ 可用 | 对应 DP 并行 + mock request |
-| 多层 MTP | DeepSeekMultiTokenPredictor + EagleProposer | ⚠️ 框架就绪 | 需自训权重（开源仅单层） |
-| w4a8c8 量化 | 不原生支持 | ❌ 无对应 | 太极自研框架独有 |
-| FP8 权重量化 | Fp8Config + DeepseekV4FP8Config | ✅ 可用 | 较 w4a8c8 有差距 |
-| FP8 KV Cache | fp8_ds_mla 布局 | ✅ 可用 | 显著降低 KV Cache 显存 |
-| MTP 接受率优化 | 不支持典型采样增强 | ❌ 无对应 | 太极独有（提升 0.1+） |
+| 技术           | vLLM 实现                                   | 成熟度      | 对标太极                    |
+| -------------- | ------------------------------------------- | ----------- | --------------------------- |
+| PD 分离        | NIXL/Mooncake/LMCache KV Connector          | ✅ 成熟     | 对应 mPnD 架构              |
+| EPLB           | DefaultEplbPolicy + 异步重排                | ✅ 成熟     | 对应 EPLB + 冗余专家        |
+| DeepEP 通信    | DeepEP LL/HT/v2 + NIXL EP 等 8 种           | ✅ 成熟     | 对应 TRMT 通信优化          |
+| DP 适配        | coordinate_batch_across_dp + batched DP     | ✅ 可用     | 对应 DP 并行 + mock request |
+| 多层 MTP       | DeepSeekMultiTokenPredictor + EagleProposer | ⚠️ 框架就绪 | 需自训权重（开源仅单层）    |
+| w4a8c8 量化    | 不原生支持                                  | ❌ 无对应   | 太极自研框架独有            |
+| FP8 权重量化   | Fp8Config + DeepseekV4FP8Config             | ✅ 可用     | 较 w4a8c8 有差距            |
+| FP8 KV Cache   | fp8_ds_mla 布局                             | ✅ 可用     | 显著降低 KV Cache 显存      |
+| MTP 接受率优化 | 不支持典型采样增强                          | ❌ 无对应   | 太极独有（提升 0.1+）       |
 
 ### 6.2 推荐 vLLM 配置
 
@@ -541,27 +547,27 @@ vllm serve deepseek-ai/DeepSeek-V3 \
 
 ## 关键源码文件索引
 
-| 模块 | 文件路径 | 关键类/函数 |
-|---|---|---|
-| PD 分离 - 基类 | `vllm/distributed/kv_transfer/kv_connector/v1/base.py` | `KVConnectorBase_V1` |
-| PD 分离 - NIXL | `vllm/distributed/kv_transfer/kv_connector/v1/nixl/` | `NixlPullConnector`, `NixlPushConnector` |
-| PD 分离 - 工厂 | `vllm/distributed/kv_transfer/kv_connector/factory.py` | `KVConnectorFactory` |
-| PD 分离 - 配置 | `vllm/config/kv_transfer.py` | `KVTransferConfig` |
-| EPLB - 状态机 | `vllm/distributed/eplb/eplb_state.py` | `EplbState`, `EplbModelState` |
-| EPLB - 策略 | `vllm/distributed/eplb/policy/default.py` | `DefaultEplbPolicy`, `balanced_packing` |
-| EPLB - 权重迁移 | `vllm/distributed/eplb/rebalance_execute.py` | `rearrange_expert_weights_inplace` |
-| EPLB - 通信 | `vllm/distributed/eplb/eplb_communicator.py` | 四种 `*EplbCommunicator` |
-| EPLB - 异步 | `vllm/distributed/eplb/async_worker.py` | `async_worker` |
-| All2All - 管理 | `vllm/distributed/device_communicators/all2all.py` | 8 种 `*All2AllManager` |
-| All2All - 配置 | `vllm/model_executor/layers/fused_moe/config.py` | `FusedMoEParallelConfig` |
+| 模块                 | 文件路径                                                     | 关键类/函数                                |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------ |
+| PD 分离 - 基类       | `vllm/distributed/kv_transfer/kv_connector/v1/base.py`       | `KVConnectorBase_V1`                       |
+| PD 分离 - NIXL       | `vllm/distributed/kv_transfer/kv_connector/v1/nixl/`         | `NixlPullConnector`, `NixlPushConnector`   |
+| PD 分离 - 工厂       | `vllm/distributed/kv_transfer/kv_connector/factory.py`       | `KVConnectorFactory`                       |
+| PD 分离 - 配置       | `vllm/config/kv_transfer.py`                                 | `KVTransferConfig`                         |
+| EPLB - 状态机        | `vllm/distributed/eplb/eplb_state.py`                        | `EplbState`, `EplbModelState`              |
+| EPLB - 策略          | `vllm/distributed/eplb/policy/default.py`                    | `DefaultEplbPolicy`, `balanced_packing`    |
+| EPLB - 权重迁移      | `vllm/distributed/eplb/rebalance_execute.py`                 | `rearrange_expert_weights_inplace`         |
+| EPLB - 通信          | `vllm/distributed/eplb/eplb_communicator.py`                 | 四种 `*EplbCommunicator`                   |
+| EPLB - 异步          | `vllm/distributed/eplb/async_worker.py`                      | `async_worker`                             |
+| All2All - 管理       | `vllm/distributed/device_communicators/all2all.py`           | 8 种 `*All2AllManager`                     |
+| All2All - 配置       | `vllm/model_executor/layers/fused_moe/config.py`             | `FusedMoEParallelConfig`                   |
 | All2All - Expert Map | `vllm/model_executor/layers/fused_moe/expert_map_manager.py` | `ExpertMapManager`, `determine_expert_map` |
-| MTP - 模型 | `vllm/model_executor/models/deepseek_mtp.py` | `DeepSeekMultiTokenPredictor` |
-| MTP - 配置 | `vllm/config/speculative.py` | `MTPModelTypes`, `hf_config_override` |
-| MTP - Speculator | `vllm/v1/worker/gpu/spec_decode/mtp/speculator.py` | `MTPSpeculator` |
-| MTP - Proposer | `vllm/v1/spec_decode/eagle.py` | `EagleProposer` |
-| MTP - 共享参数 | `vllm/v1/worker/gpu/spec_decode/eagle/utils.py` | `load_eagle_model` |
-| DP - 同步 | `vllm/v1/worker/dp_utils.py` | `coordinate_batch_across_dp` |
-| DP - GPU 同步 | `vllm/v1/worker/gpu/dp_utils.py` | `sync_cudagraph_and_dp_padding` |
-| FP8 - KV Cache | `vllm/v1/kv_cache_interface.py` | `KVQuantMode`, `fp8_ds_mla` layout |
-| FP8 - V4 量化 | `vllm/models/deepseek_v4/quant_config.py` | `DeepseekV4FP8Config` |
-| EP - 并行状态 | `vllm/distributed/parallel_state.py` | `get_ep_group()`, `get_eplb_group()` |
+| MTP - 模型           | `vllm/model_executor/models/deepseek_mtp.py`                 | `DeepSeekMultiTokenPredictor`              |
+| MTP - 配置           | `vllm/config/speculative.py`                                 | `MTPModelTypes`, `hf_config_override`      |
+| MTP - Speculator     | `vllm/v1/worker/gpu/spec_decode/mtp/speculator.py`           | `MTPSpeculator`                            |
+| MTP - Proposer       | `vllm/v1/spec_decode/eagle.py`                               | `EagleProposer`                            |
+| MTP - 共享参数       | `vllm/v1/worker/gpu/spec_decode/eagle/utils.py`              | `load_eagle_model`                         |
+| DP - 同步            | `vllm/v1/worker/dp_utils.py`                                 | `coordinate_batch_across_dp`               |
+| DP - GPU 同步        | `vllm/v1/worker/gpu/dp_utils.py`                             | `sync_cudagraph_and_dp_padding`            |
+| FP8 - KV Cache       | `vllm/v1/kv_cache_interface.py`                              | `KVQuantMode`, `fp8_ds_mla` layout         |
+| FP8 - V4 量化        | `vllm/models/deepseek_v4/quant_config.py`                    | `DeepseekV4FP8Config`                      |
+| EP - 并行状态        | `vllm/distributed/parallel_state.py`                         | `get_ep_group()`, `get_eplb_group()`       |
