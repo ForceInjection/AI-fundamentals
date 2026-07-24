@@ -1,8 +1,10 @@
-# sglang KV Pool 管理
+# SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图
 
 > 2026-07-24 | 基于 sglang v0.5.14 源码分析
 
-sglang 的 KV cache 管理是一套 GPU 内存管理系统，负责在有限的 GPU HBM 中高效存储和复用所有请求的 K/V tensor。核心能力：
+sglang 的 KV cache 管理核心是在有限的 GPU HBM 中高效存储和复用所有请求的 K/V tensor。
+
+核心能力：
 
 - **前缀共享**：通过 Radix Tree 实现跨请求的 KV cache 复用，共享前缀的请求引用同一组 GPU slot，避免重复计算。
 - **引用计数保护**：通过 `lock_ref` 机制保证活跃请求依赖的 KV 不被逐出，prefill/decode 期间所有依赖数据必定在 GPU 中。
