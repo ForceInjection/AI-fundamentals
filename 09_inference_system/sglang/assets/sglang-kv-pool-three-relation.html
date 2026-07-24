@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sglang KV Pool 三层数据结构关系图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 32px;
+    display: flex;
+    justify-content: center;
+    min-width: 880px;
+  }
+
+  .diagram {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0;
+    max-width: 920px;
+  }
+
+  /* ── Card base ── */
+  .card {
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid;
+    background: #161b22;
+  }
+  .card-title {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .card-subtitle {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 11px;
+    margin-bottom: 12px;
+    color: #8b949e;
+  }
+
+  /* ── Radix Tree (left, purple) ── */
+  .card-radix {
+    grid-row: 1;
+    grid-column: 1;
+    border-color: #2d2440;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-radix .card-title { color: #d2a8ff; }
+
+  /* ── ReqToTokenPool (right-top, blue) ── */
+  .card-req {
+    grid-row: 1;
+    grid-column: 3;
+    border-color: #1f3a5f;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-req .card-title { color: #58a6ff; }
+
+  /* ── KV Pool (bottom full-width, amber) ── */
+  .card-kv {
+    grid-row: 3;
+    grid-column: 1 / 4;
+    border-color: #5c4a1f;
+    margin-top: 4px;
+  }
+  .card-kv .card-title { color: #d29922; }
+
+  /* ── Middle column: horizontal flow arrows ── */
+  .arrows-col {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    min-width: 120px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px 0;
+  }
+  .flow-label {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 10px;
+    color: #8b949e;
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  .flow-arrow {
+    font-size: 20px;
+    color: #484f58;
+    letter-spacing: -2px;
+  }
+  .flow-desc {
+    font-size: 10px;
+    color: #8b949e;
+    text-align: center;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .flow-divider {
+    width: 100%;
+    border-top: 1px dashed #21262d;
+    margin: 6px 0;
+  }
+
+  /* ── Tree node ── */
+  .tree-node {
+    padding: 6px 10px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .tree-node-root {
+    background: #1c1829;
+  }
+  .tree-node-child {
+    background: #1c1829;
+    margin-left: 16px;
+    border-left: 2px solid #2d2440;
+  }
+  .tree-key   { color: #d2a8ff; font-weight: 700; }
+  .tree-value { color: #d29922; }
+  .tree-slot  {
+    background: #3d2e00;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #e3b341;
+    font-weight: 600;
+  }
+  .tree-mapping { color: #484f58; font-size: 11px; }
+  .tree-branch { color: #3fb950; }
+  .tree-spacer { color: transparent; }
+
+  /* ── Req row ── */
+  .req-row {
+    padding: 6px 10px;
+    background: #0d2847;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .req-name { color: #58a6ff; font-weight: 700; }
+  .req-slot-shared {
+    background: #3d2e00;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #e3b341;
+    font-weight: 600;
+  }
+  .req-slot-new {
+    background: #0d3320;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #3fb950;
+    font-weight: 600;
+  }
+  .req-pad { color: #484f58; }
+  .req-note {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 10px; color: #8b949e; margin-top: 2px;
+  }
+
+  /* ── KV Pool table ── */
+  .kv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  .kv-table td, .kv-table th {
+    padding: 6px 10px;
+    text-align: left;
+  }
+  .kv-table th {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 10px;
+    color: #8b949e;
+    font-weight: 500;
+    border-bottom: 1px solid #5c4a1f;
+  }
+  .kv-row-shared { background: rgba(210,153,34,0.1); }
+  .kv-row-shared td { color: #e3b341; }
+  .kv-row-new    { background: rgba(63,185,80,0.1); }
+  .kv-row-new td    { color: #3fb950; }
+  .kv-row-other  {}
+  .kv-row-other td { color: #8b949e; }
+  .kv-slot-num   { font-weight: 700; }
+  .kv-source     { font-size: 10px; }
+
+  /* ── Legend ── */
+  .legend {
+    margin-top: 24px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #8b949e;
+    grid-column: 1 / 4;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* ── Wide row utility ── */
+  .wide-row {
+    grid-column: 1 / 4;
+    text-align: center;
+    padding: 4px 0;
+    color: #8b949e;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="diagram">
+
+  <!-- ====== LEFT: Radix Tree ====== -->
+  <div class="card card-radix">
+    <div class="card-title">Radix Tree</div>
+    <div class="card-subtitle">逻辑索引 — key: token 序列, value: 每 token 对应一个 KV Pool slot</div>
+
+    <div class="tree-node tree-node-root">
+      <span class="tree-key">[1, 2, 3]</span><br>
+      <span class="tree-mapping">↓&nbsp;&nbsp;↓&nbsp;&nbsp;↓</span><br>
+      <span class="tree-value">value = </span>
+      <span class="tree-slot">[a, b, c]</span>
+    </div>
+
+    <div class="tree-node tree-node-child">
+      <span class="tree-branch">├──</span> <span class="tree-key">[4, 5]</span><br>
+      <span class="tree-spacer">│&nbsp;&nbsp;&nbsp;</span>
+      <span class="tree-mapping">&nbsp;↓&nbsp;&nbsp;↓</span><br>
+      <span class="tree-spacer">│&nbsp;&nbsp;&nbsp;</span>
+      <span class="tree-value">v = </span>
+      <span class="tree-slot">[d, e]</span>
+    </div>
+
+    <div class="tree-node tree-node-child">
+      <span class="tree-branch">└──</span> <span class="tree-key">[6, 7]</span><br>
+      <span class="tree-spacer">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span class="tree-mapping">&nbsp;↓&nbsp;&nbsp;↓</span><br>
+      <span class="tree-spacer">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span class="tree-value">v = </span>
+      <span class="tree-slot">[f, g]</span>
+    </div>
+  </div>
+
+  <!-- ====== CENTER: Data flow ====== -->
+  <div class="arrows-col">
+    <div class="flow-step">
+      <div class="flow-label" style="color: #58a6ff;">1. match_prefix</div>
+      <div class="flow-arrow">──────▶</div>
+      <div class="flow-desc">复制 slot 索引<br>到 ReqToTokenPool<br>的前缀部分</div>
+    </div>
+    <div class="flow-divider"></div>
+    <div class="flow-step">
+      <div class="flow-label" style="color: #d2a8ff;">3. cache_finished_req</div>
+      <div class="flow-arrow">◀──────</div>
+      <div class="flow-desc">完整 slot 索引<br>插入回 Radix Tree<br>供后续请求共享</div>
+    </div>
+  </div>
+
+  <!-- ====== RIGHT-TOP: ReqToTokenPool ====== -->
+  <div class="card card-req">
+    <div class="card-title">ReqToTokenPool</div>
+    <div class="card-subtitle">请求视图 — 按请求组织，逐一展开</div>
+
+    <div class="req-row">
+      <span class="req-name">req[0]</span> =
+      <span class="req-slot-shared">[a, b, c,</span>
+      <span class="req-pad"> 0, 0</span>]
+      <div class="req-note">token [1]→a, [2]→b, [3]→c (全部命中缓存)</div>
+    </div>
+
+    <div class="req-row">
+      <span class="req-name">req[1]</span> =
+      <span class="req-slot-shared">[a, b, c,</span>
+      <span class="req-slot-new">d, e</span>]
+      <div class="req-note">token [1]→a, [2]→b, [3]→c, [4]→d, [5]→e (前 3 个共享)</div>
+    </div>
+  </div>
+
+  <!-- ====== Step ②: ReqToTokenPool → KV Pool ====== -->
+  <div style="grid-row: 2; grid-column: 3; display: flex; align-items: center; justify-content: center; padding: 0; gap: 10px;">
+    <!-- left sub-column: vertical arrow -->
+    <div style="font-size: 22px; color: #484f58; line-height: 1; text-align: center;">│<br>▼</div>
+    <!-- right sub-column: label + description -->
+    <div style="display: flex; flex-direction: column; color: #8b949e; font-size: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+      <div style="font-size: 11px; margin-bottom: 2px; color: #d29922;">2. forward</div>
+      <div style="line-height: 1.4;">attention kernel<br>按 ReqToTokenPool 索引<br>读写 KV Pool</div>
+    </div>
+  </div>
+
+  <!-- ====== BOTTOM: KV Pool ====== -->
+  <div class="card card-kv">
+    <div class="card-title">KV Pool — GPU HBM (物理存储：只有一份)</div>
+    <div class="card-subtitle" style="margin-bottom:4px;">shape: [num_slots, head_num, head_dim] × layer_num — 每个 slot 存一个 token 在所有 layer 和 head 上的 K/V</div>
+
+    <table class="kv-table">
+      <thead>
+        <tr>
+          <th style="width: 60px;">Slot</th>
+          <th>存储内容</th>
+          <th style="min-width: 200px;">被谁引用</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="kv-row-other">
+          <td class="kv-slot-num">0</td>
+          <td>padding — dummy write 占位</td>
+          <td class="kv-source"></td>
+        </tr>
+        <tr class="kv-row-shared">
+          <td class="kv-slot-num">a</td>
+          <td><b>K/V</b> of token [1] <span style="font-size:10px;color:#8b949e;">(序列 [1,2,3] 第 1 个)</span></td>
+          <td class="kv-source">← [1,2,3].value[0], req[0][0], req[1][0]</td>
+        </tr>
+        <tr class="kv-row-shared">
+          <td class="kv-slot-num">b</td>
+          <td><b>K/V</b> of token [2] <span style="font-size:10px;color:#8b949e;">(序列 [1,2,3] 第 2 个)</span></td>
+          <td class="kv-source">← [1,2,3].value[1], req[0][1], req[1][1]</td>
+        </tr>
+        <tr class="kv-row-shared">
+          <td class="kv-slot-num">c</td>
+          <td><b>K/V</b> of token [3] <span style="font-size:10px;color:#8b949e;">(序列 [1,2,3] 第 3 个)</span></td>
+          <td class="kv-source">← [1,2,3].value[2], req[0][2], req[1][2]</td>
+        </tr>
+        <tr class="kv-row-new">
+          <td class="kv-slot-num">d</td>
+          <td><b>K/V</b> of token [4] <span style="font-size:10px;color:#8b949e;">(序列 [4,5] 第 1 个)</span></td>
+          <td class="kv-source">← [4,5].value[0], req[1][3]</td>
+        </tr>
+        <tr class="kv-row-new">
+          <td class="kv-slot-num">e</td>
+          <td><b>K/V</b> of token [5] <span style="font-size:10px;color:#8b949e;">(序列 [4,5] 第 2 个)</span></td>
+          <td class="kv-source">← [4,5].value[1], req[1][4]</td>
+        </tr>
+        <tr class="kv-row-other">
+          <td class="kv-slot-num">f</td>
+          <td><b>K/V</b> of token [6] <span style="font-size:10px;color:#8b949e;">(序列 [6,7] 第 1 个)</span></td>
+          <td class="kv-source">← [6,7].value[0] (暂无请求匹配)</td>
+        </tr>
+        <tr class="kv-row-other">
+          <td class="kv-slot-num">g</td>
+          <td><b>K/V</b> of token [7] <span style="font-size:10px;color:#8b949e;">(序列 [6,7] 第 2 个)</span></td>
+          <td class="kv-source">← [6,7].value[1] (暂无请求匹配)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== Legend ====== -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: #3d2e00; border: 1px solid #5c4a1f;"></div>
+      <span>暖金 = 共享前缀 (多个请求/节点引用同一 slot)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: #0d3320; border: 1px solid #1f4a2e;"></div>
+      <span>绿色 = req 独占 (只有该请求新增的部分)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: #161b22; border: 1px solid #30363d;"></div>
+      <span>灰色 = 未被活跃请求引用，可被逐出</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
