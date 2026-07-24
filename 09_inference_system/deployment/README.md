@@ -6,13 +6,10 @@
 
 ## 1. NVIDIA H20 集群：DeepSeek-V3 MoE
 
-以 32 卡 H20（4 × 8）部署 DeepSeek-V3（671B MoE，激活 37B），在**不量化、不蒸馏**前提下达成 200 并发 × 32K 上下文 × TTFT P95 < 1.2s 的 SLO 目标。
+以 DeepSeek-V3（671B MoE，激活 37B）在 H20 集群上的推理部署为案例。参考腾讯太极团队 16 卡 H20 达成 15,800+ tokens/s 的实测数据，对照 vLLM 源码逐一分析 PD 分离、EPLB、DP 适配、MTP 加速及 FP8 量化等关键技术的实现状态。
 
-- **[DeepSeek-V3 MoE 在 32 张 H20 GPU 集群上的部署方案（理论分析篇）](deepseek_v3_moe_vllm_h20_deployment.md)**：基于腾讯太极团队 16 卡 H20 达成 15,800+ tokens/s 实测数据的理论外推、PD 分离 + 大 EP 专家并行 + w4a8c8 量化的工程策略、显存容量核算、以及与 vLLM 源码机制的对照分析
 - **[DeepSeek-V3 H20 推理优化：基于 vLLM 源码的深度分析](deepseek_v3_h20_vllm_deep_dive.md)**：对照太极团队四大技术方向（PD 分离、EP/EPLB、DP 适配、MTP 加速），逐一分析 vLLM 源码中的对应实现——KV Connector 框架、EPLB 三层打包算法、Batched DP MoE 同步机制、DeepSeekMultiTokenPredictor 结构，以及 FP8 量化路径与 w4a8c8 的差距
-- **[`slo_calc_v2.py`](slo_calc_v2.py)**：基于腾讯太极团队实测数据修正的 **SLO 目标可达成性验证脚本**——输入并发 / 上下文 / GPU 数量，输出 TTFT、TPOT、吞吐的预期达成情况（含 3000 条脱敏业务数据集的测试条件）
-
-> 修正后的现实预期：32 卡 H20 吞吐 **26,860–40,527 tokens/s**，建议将原 50,000 tokens/s 目标调整至 30,000–35,000 tokens/s。
+- **[`slo_calc_v2.py`](slo_calc_v2.py)**：SLO 目标可达成性验证脚本——输入并发 / 上下文 / GPU 数量，输出 TTFT、TPOT、吞吐的预期达成情况
 
 ## 2. 华为昇腾平台：Qwen2-VL-7B 视觉多模态
 
