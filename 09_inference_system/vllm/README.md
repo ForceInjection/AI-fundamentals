@@ -18,6 +18,7 @@
 - [PagedAttention 退役的技术原因](./module_analysis/pagedattention_retirement.md)：基于 v0.23.1rc0 与 v0.25.0 两版源码对比，从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸无法利用新硬件等五个角度，分析 PagedAttention 被 FlashMLA/FA3 取代的技术必然性。
 - [MLA 的 TP 切分：为什么 8 张 GPU 存了同一份 KV cache](./module_analysis/mla_tp_kv_redundancy.md)：MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%，但 `ReplicatedLinear` 使全部 576 维在 8 个 TP rank 上完全复制——TP 对 MLA 的 KV cache 显存节省为 0%，冗余率 87.5%。从 vLLM v0.20.0 和 LMCache v0.5.1 的源码出发，分析这个结构性摩擦的根源，并结合 SGLang 源码验证这不是单一框架的设计选择。
 - [投机解码方法全景：六种草拟策略的工程选择](./module_analysis/speculative_decoding_landscape.md)：vLLM V1 支持 ngram、suffix、Medusa、EAGLE、draft_model、MTP 六种投机解码方法，共享同一个 Proposer 抽象框架但草拟信号的来源、模型依赖、接入成本和收益边界完全不同。从分类框架、逐层拆解、选型决策路径到 roadmap 统合趋势，提供完整的工程选型指南。
+- [Kimi K3 注意力机制深度解析：KDA、Gated MLA 与 AttnRes 的混合架构](./module_analysis/kimi_k3_attention.md)（[可视化](./module_analysis/assets/kimi_k3_attention_visual.html)）：拆解 2.8T 参数 Kimi K3 的三种注意力协同设计——KDA 用 $O(N)$ 线性注意力 + delta 修正替代 $O(N^2)$ softmax、Gated MLA 每 4 层提供完整注意力锚点、AttnRes 将可学习注意力从序列轴扩展到深度轴。涵盖 DPLR 状态更新、ReplaySSM 投机解码优化及双状态管理的服务端挑战。
 
 ---
 

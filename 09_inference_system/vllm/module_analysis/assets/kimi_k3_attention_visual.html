@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi K3 注意力机制可视化</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e6edf3;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #8b949e;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* ── Section ── */
+  .section {
+    max-width: 960px;
+    width: 100%;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 4px;
+    padding-left: 4px;
+    border-left: 3px solid;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 16px;
+    padding-left: 11px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  /* ── Diagram 1: State Comparison ── */
+  .state-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .state-panel {
+    border-radius: 6px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .state-panel.kda { background: #1a1e2e; border: 1px solid #2d3a5c; }
+  .state-panel.mla  { background: #1e1a2a; border: 1px solid #3d2d4c; }
+  .panel-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-label .dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .kda .dot { background: #58a6ff; }
+  .mla  .dot { background: #d2a8ff; }
+
+  .state-visual {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .state-row {
+    display: flex; align-items: center; gap: 8px; font-size: 11px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+  }
+  .state-row .tick { color: #8b949e; width: 28px; text-align: right; flex-shrink: 0; }
+  .state-row .bar {
+    height: 18px; border-radius: 3px; transition: width 0.3s;
+    display: flex; align-items: center; padding-left: 6px;
+    font-size: 10px; color: #0d1117; font-weight: 600;
+    white-space: nowrap; overflow: hidden;
+  }
+  .kda .bar { background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+  .mla  .bar { background: linear-gradient(90deg, #8250df, #d2a8ff); }
+
+  .state-note {
+    margin-top: 12px; font-size: 11px; color: #8b949e;
+    padding: 8px; background: #0d1117; border-radius: 4px;
+    line-height: 1.6;
+  }
+
+  /* ── Diagram 2: DPLR Pipeline ── */
+  .dplr-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap; padding: 8px 0;
+  }
+  .dplr-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .dplr-box {
+    width: 130px; height: 80px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px; font-weight: 700; text-align: center;
+    position: relative;
+  }
+  .dplr-box.s0 { background: #1a2332; border: 2px solid #30363d; color: #c9d1d9; }
+  .dplr-box.decay { background: #1a2a1f; border: 2px solid #2ea043; color: #7ee787; }
+  .dplr-box.delta { background: #2a1a1a; border: 2px solid #f85149; color: #ff7b72; }
+  .dplr-box.write { background: #1a1a2e; border: 2px solid #1f6feb; color: #79c0ff; }
+  .dplr-box.s1 { background: #1a2332; border: 2px solid #c9d1d9; color: #e6edf3; }
+  .dplr-arrow {
+    font-size: 18px; color: #484f58; margin: 0 8px; font-weight: 300;
+  }
+  .dplr-label {
+    font-size: 10px; color: #8b949e; text-align: center; max-width: 120px;
+    line-height: 1.4; margin-top: 2px;
+  }
+  .dplr-formula {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px; color: #8b949e; margin-top: 4px;
+    text-align: center;
+  }
+
+  /* ── Diagram 3: Layer Stack ── */
+  .layer-stack {
+    display: flex; flex-direction: column; gap: 1px;
+    max-height: 500px; overflow-y: auto;
+    border: 1px solid #30363d; border-radius: 6px;
+    background: #0d1117; padding: 2px;
+  }
+  .layer-row {
+    display: flex; align-items: center; height: 16px; gap: 6px;
+    font-size: 10px; font-family: 'SF Mono', 'Menlo', monospace;
+  }
+  .layer-num {
+    width: 24px; text-align: right; color: #484f58; flex-shrink: 0;
+  }
+  .layer-block {
+    height: 12px; border-radius: 2px; flex: 1;
+    transition: opacity 0.2s;
+  }
+  .layer-block.kda { background: #1f6feb; }
+  .layer-block.mla { background: #8250df; }
+  .layer-row:hover .layer-block { opacity: 0.8; }
+  .layer-legend {
+    display: flex; gap: 16px; margin-top: 10px; font-size: 11px;
+  }
+  .layer-legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend-dot.kda-dot { background: #1f6feb; }
+  .legend-dot.mla-dot { background: #8250df; }
+
+  /* ── Diagram 4: AttnRes ── */
+  .attnres-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .attnres-panel {
+    border-radius: 6px; padding: 16px;
+  }
+  .attnres-panel.standard { background: #1a1f24; border: 1px solid #30363d; }
+  .attnres-panel.attnres  { background: #1a241f; border: 1px solid #1f6e3a; }
+
+  .depth-block {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+    font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px;
+  }
+  .depth-idx {
+    width: 22px; text-align: right; color: #484f58; flex-shrink: 0;
+  }
+  .depth-bar {
+    height: 16px; border-radius: 2px; display: flex; align-items: center;
+    padding: 0 6px; font-size: 10px; color: #0d1117; font-weight: 600;
+  }
+  .standard .depth-bar { background: #30363d; color: #8b949e; }
+  .attnres  .depth-bar { background: linear-gradient(90deg, #1f6e3a, #2ea043); }
+  .depth-weight {
+    font-size: 10px; color: #8b949e; width: 36px; text-align: right; flex-shrink: 0;
+  }
+
+  /* ── Diagram 5: Memory Pool ── */
+  .mem-pool {
+    position: relative; height: 80px; background: #0d1117;
+    border: 1px solid #30363d; border-radius: 6px;
+    display: flex; align-items: center; overflow: hidden;
+  }
+  .mem-kda {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #1a2332, #1f2a3d);
+    border-right: 2px dashed #1f6feb;
+    display: flex; align-items: center; padding-left: 12px;
+    font-size: 12px; font-weight: 600; color: #58a6ff;
+  }
+  .mem-free {
+    position: absolute;
+    background: repeating-linear-gradient(
+      90deg, transparent, transparent 4px, #1a2332 4px, #1a2332 5px
+    );
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #484f58;
+  }
+  .mem-mla {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    background: linear-gradient(270deg, #1e1a2a, #2a1d3a);
+    border-left: 2px dashed #8250df;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 12px;
+    font-size: 12px; font-weight: 600; color: #d2a8ff;
+  }
+  .mem-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #8b949e; margin-top: 8px;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+  }
+  .btn {
+    padding: 4px 12px; border: 1px solid #30363d; border-radius: 4px;
+    background: #21262d; color: #c9d1d9; font-size: 12px; cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .btn:hover { background: #30363d; }
+  .btn.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+  /* ── ReplaySSM diagram ── */
+  .replay-diagram {
+    display: flex; align-items: center; gap: 16px; padding: 16px 0;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .replay-step {
+    text-align: center; font-size: 11px;
+  }
+  .replay-box {
+    width: 100px; height: 56px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 11px; font-weight: 600; text-align: center;
+  }
+  .replay-box.draft  { background: #1a1a2e; border: 2px solid #1f6feb; color: #79c0ff; }
+  .replay-box.store  { background: #1a2a1f; border: 2px solid #2ea043; color: #7ee787; }
+  .replay-box.fold   { background: #2a1a1a; border: 2px solid #f85149; color: #ff7b72; }
+  .replay-box.result { background: #1a2332; border: 2px solid #c9d1d9; color: #e6edf3; }
+  .replay-arrow { color: #484f58; font-size: 16px; font-weight: 300; }
+  .replay-label { color: #8b949e; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Kimi K3 注意力机制 · 交互可视化</h1>
+<div class="subtitle">KDA 递推状态 · DPLR 三步更新 · 混合层架构 · AttnRes 深度注意力 · 双状态内存池 · ReplaySSM</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 1: KDA vs MLA State Evolution
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #1f6feb;">一、KDA 递推状态 vs MLA KV Cache</div>
+  <div class="section-desc">
+    KDA：定长矩阵状态，每步原地覆写（固定 ~54 MB，TP=8）。MLA：追加式 KV，随序列长度线性增长。
+    拖动滑块模拟 128K token 序列中两种状态的演化。
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <span style="font-size:12px;color:#8b949e;">已处理 token 数：</span>
+      <input type="range" id="tokenSlider" min="1" max="128" value="16" step="1"
+             style="flex:1;max-width:460px;"
+             oninput="updateStates(this.value)">
+      <span id="tokenCount" style="font-size:13px;font-weight:700;color:#e6edf3;width:60px;">1K</span>
+    </div>
+
+    <div class="state-compare">
+      <!-- KDA panel -->
+      <div class="state-panel kda">
+        <div class="panel-label">
+          <span class="dot"></span> KDA 递推状态（69 层 × 固定大小）
+        </div>
+        <div class="state-visual" id="kdaVis"></div>
+        <div class="state-note" id="kdaNote">
+          状态大小不变 ≈ <b>54 MB</b>（TP=8）&nbsp;|&nbsp;
+          单层 ≈ MLA 几千 token 的 cache
+        </div>
+      </div>
+
+      <!-- MLA panel -->
+      <div class="state-panel mla">
+        <div class="panel-label">
+          <span class="dot"></span> Gated MLA KV Cache（24 层 × 追加式）
+        </div>
+        <div class="state-visual" id="mlaVis"></div>
+        <div class="state-note" id="mlaNote">
+          KV cache 随序列增长 ≈ <b>27 KB/步</b>（全部 24 层）
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 2: DPLR Three-Step State Update
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #2ea043;">二、DPLR 三步状态更新</div>
+  <div class="section-desc">
+    KDA 将 $(I - \beta_t k_t k_t^\top) \cdot \mathrm{Diag}(\alpha_t) \cdot S_{t-1} + \beta_t k_t v_t^\top$ 分解为三步，
+    全部通过向量-矩阵运算实现，避免物化任何 $d_k \times d_k$ 矩阵。
+  </div>
+
+  <div class="card">
+    <div class="dplr-flow">
+      <div class="dplr-step">
+        <div class="dplr-box s0">S<sub>t-1</sub></div>
+        <div class="dplr-label">上一步状态<br>d<sub>k</sub> × d<sub>v</sub></div>
+      </div>
+      <div class="dplr-arrow">→</div>
+      <div class="dplr-step">
+        <div class="dplr-box decay">Diag(α<sub>t</sub>)</div>
+        <div class="dplr-label">逐通道遗忘</div>
+        <div class="dplr-formula">S' = Diag(α<sub>t</sub>) · S<sub>t-1</sub></div>
+      </div>
+      <div class="dplr-arrow">→</div>
+      <div class="dplr-step">
+        <div class="dplr-box delta">δ 修正</div>
+        <div class="dplr-label">删除 key 方向旧成分</div>
+        <div class="dplr-formula">S'' = S' − β<sub>t</sub>·k<sub>t</sub>(k<sub>t</sub><sup>T</sup>S')</div>
+      </div>
+      <div class="dplr-arrow">→</div>
+      <div class="dplr-step">
+        <div class="dplr-box write">KV 写入</div>
+        <div class="dplr-label">写入新 key-value</div>
+        <div class="dplr-formula">S<sub>t</sub> = S'' + β<sub>t</sub>·k<sub>t</sub>v<sub>t</sub><sup>T</sup></div>
+      </div>
+      <div class="dplr-arrow">=</div>
+      <div class="dplr-step">
+        <div class="dplr-box s1">S<sub>t</sub></div>
+        <div class="dplr-label">新状态</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 3: Hybrid Architecture Layer Stack
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #8250df;">三、混合层架构（3:1 交替）</div>
+  <div class="section-desc">
+    93 层中，69 层为 KDA（蓝色），24 层为 Gated MLA（紫色）。每四个注意力层中，三个是 KDA，一个是 Gated MLA。
+    悬停查看层编号。
+  </div>
+
+  <div class="card">
+    <div class="layer-stack" id="layerStack"></div>
+    <div class="layer-legend">
+      <span><span class="legend-dot kda-dot"></span> KDA（69 层）— $O(N)$ 线性注意力</span>
+      <span><span class="legend-dot mla-dot"></span> Gated MLA（24 层）— $O(N^2)$ 完整注意力锚点</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 4: AttnRes vs Standard Residual
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #2ea043;">四、AttnRes：注意力在深度上的扩展</div>
+  <div class="section-desc">
+    标准残差中每个前置层输出权重恒为 1（被"冲淡"），AttnRes 用可学习的伪查询向量选择性检索前置 block 的表示。
+    Block AttnRes（N=8）是 Kimi K3 实际使用的变体。
+  </div>
+
+  <div class="card">
+    <div class="attnres-compare">
+      <!-- Standard residual -->
+      <div class="attnres-panel standard">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#8b949e;">
+          标准残差连接
+        </div>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:12px;">
+          每个前置子层输出以固定权重 1 累加
+        </div>
+        <div class="depth-block" style="margin-bottom:4px;color:#8b949e;font-size:10px;">
+          <span style="width:60px;">来源层</span>
+          <span style="flex:1;">贡献</span>
+          <span style="width:36px;text-align:right;">权重</span>
+        </div>
+        <div id="standardResVis"></div>
+        <div style="margin-top:8px;font-size:10px;color:#8b949e;text-align:center;">
+          h<sub>l</sub> = Σ v<sub>i</sub>（全部权重 = 1）
+        </div>
+      </div>
+
+      <!-- AttnRes -->
+      <div class="attnres-panel attnres">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#7ee787;">
+          Block AttnRes（Kimi K3）
+        </div>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:12px;">
+          伪查询向量 w<sub>l</sub> 学习各 block 的重要程度
+        </div>
+        <div class="depth-block" style="margin-bottom:4px;color:#8b949e;font-size:10px;">
+          <span style="width:60px;">来源 Block</span>
+          <span style="flex:1;">注意力</span>
+          <span style="width:36px;text-align:right;">权重</span>
+        </div>
+        <div id="attnResVis"></div>
+        <div style="margin-top:8px;font-size:10px;color:#8b949e;text-align:center;">
+          h<sub>l</sub> = Σ α<sub>i→l</sub> · v<sub>i</sub> &nbsp; α = softmax(w<sub>l</sub><sup>T</sup> · φ(v<sub>i</sub>))
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 5: Dual-State Memory Pool
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #f0883e;">五、双状态统一内存池</div>
+  <div class="section-desc">
+    KDA 递推状态和 MLA KV blocks 共享一块物理内存，从两端向中间增长。不再需要为两种状态预分配独立池。
+  </div>
+
+  <div class="card">
+    <div class="mem-pool">
+      <div class="mem-kda" id="memKda" style="width:30%;">
+        KDA 递推状态<br><span style="font-size:10px;font-weight:400;">按 head 切分 (TP)</span>
+      </div>
+      <div class="mem-free" id="memFree" style="left:30%;right:45%;">
+        空闲区域
+      </div>
+      <div class="mem-mla" id="memMla" style="width:45%;">
+        <span style="font-size:10px;font-weight:400;">按 token 切分 (TP)</span><br>MLA KV Blocks
+      </div>
+    </div>
+    <div class="mem-label">
+      <span style="color:#58a6ff;">◀ KDA 增长方向</span>
+      <span style="color:#d2a8ff;">MLA 增长方向 ▶</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     Diagram 6: ReplaySSM
+     ════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title" style="border-color: #f85149;">六、ReplaySSM：投机解码中的 KDA 状态管理</div>
+  <div class="section-desc">
+    投机解码时不保存完整 KDA 快照（每层每头 64 KB），改为保存原始输入（~1 KB/步）。
+    sampler 确定接受长度后，fused fold kernel 仅重放被接受的 prefix——结果逐比特相同。
+  </div>
+
+  <div class="card">
+    <div class="replay-diagram">
+      <div class="replay-step">
+        <div class="replay-box draft">draft model<br>生成候选 token</div>
+        <div class="replay-label">每步生成 1 token</div>
+      </div>
+      <div class="replay-arrow">→</div>
+      <div class="replay-step">
+        <div class="replay-box store">存储原始输入<br>(v<sub>i</sub>, k<sub>i</sub>, gk<sub>i</sub>, β<sub>i</sub>)</div>
+        <div class="replay-label">~1 KB/步（非 64 KB 快照）</div>
+      </div>
+      <div class="replay-arrow">→</div>
+      <div class="replay-step">
+        <div class="replay-box fold">fused fold kernel<br>重放接受的 prefix</div>
+        <div class="replay-label">从 checkpoint 出发</div>
+      </div>
+      <div class="replay-arrow">=</div>
+      <div class="replay-step">
+        <div class="replay-box result">bit-identical<br>KDA 状态</div>
+        <div class="replay-label">32× 内存削减</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Diagram 1: State Evolution ──
+function updateStates(val) {
+  const tokens = Math.pow(2, parseInt(val));  // 2^1=2 to 2^7=128, scaled
+  // Use log scale for better progression
+  const steps = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
+                 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
+  const idx = Math.min(Math.floor(parseInt(val) / 128 * (steps.length - 1)), steps.length - 1);
+  const t = steps[Math.floor(parseInt(val) / 128 * (steps.length - 1))];
+
+  // Format token count
+  let label;
+  if (t >= 1024) label = (t/1024).toFixed(0) + 'K';
+  else label = t.toString();
+  if (t >= 131072) label = '128K';
+  document.getElementById('tokenCount').textContent = label;
+
+  const kdaVis = document.getElementById('kdaVis');
+  const mlaVis = document.getElementById('mlaVis');
+
+  // KDA: always same size (fixed)
+  const kdaSize = 54; // MB
+  const barWidth = Math.min(100, kdaSize / 0.6);
+  kdaVis.innerHTML = Array.from({length: 5}, (_, i) => {
+    const steps = [1, 128, 1024, 32768, 131072];
+    return `<div class="state-row">
+      <span class="tick">${steps[i] >= 1024 ? (steps[i]/1024).toFixed(0)+'K' : steps[i]}</span>
+      <span class="bar" style="width:${barWidth}%;">${kdaSize} MB</span>
+    </div>`;
+  }).join('');
+
+  // MLA: grows linearly
+  const kbPerToken = 27 / 24; // ~1.125 KB per MLA layer per token
+  mlaVis.innerHTML = Array.from({length: 5}, (_, i) => {
+    const steps = [1, 128, 1024, 32768, 131072];
+    const s = steps[i];
+    const size = Math.min(8000, s * 0.027); // 27 KB per token for all 24 layers
+    const width = Math.min(100, size / 80);
+    return `<div class="state-row">
+      <span class="tick">${s >= 1024 ? (s/1024).toFixed(0)+'K' : s}</span>
+      <span class="bar" style="width:${width}%;">${size < 10 ? size.toFixed(1) : size.toFixed(0)} MB</span>
+    </div>`;
+  }).join('');
+
+  // Update notes
+  document.getElementById('kdaNote').innerHTML =
+    `状态大小不变 ≈ <b>54 MB</b>（TP=8）&nbsp;|&nbsp;单层 ≈ MLA 几千 token 的 cache`;
+  document.getElementById('mlaNote').innerHTML =
+    `KV cache 随序列增长 ≈ <b>27 KB/步</b>（全部 24 层）&nbsp;|&nbsp;${label} token 总计 ≈ <b>${(t * 0.027).toFixed(1)} MB</b>`;
+}
+
+// ── Diagram 3: Layer Stack ──
+function buildLayerStack() {
+  // Pattern: KDA, KDA, KDA, MLA repeating
+  // 69 KDA + 24 Gated MLA = 93 total
+  const stack = document.getElementById('layerStack');
+  let html = '';
+  let kdaCount = 0, mlaCount = 0;
+  for (let i = 0; i < 93; i++) {
+    // 3:1 pattern: every 4th layer is MLA
+    const isMLA = (i % 4 === 3);
+    const type = isMLA ? 'mla' : 'kda';
+    if (isMLA) mlaCount++; else kdaCount++;
+    html += `<div class="layer-row">
+      <span class="layer-num">${i + 1}</span>
+      <span class="layer-block ${type}" title="Layer ${i+1}: ${isMLA ? 'Gated MLA' : 'KDA'}"></span>
+    </div>`;
+  }
+  stack.innerHTML = html;
+
+  // Update legend with counts
+  document.querySelector('.layer-legend').innerHTML = `
+    <span><span class="legend-dot kda-dot"></span> KDA（${kdaCount} 层）— \$O(N)\$ 线性注意力</span>
+    <span><span class="legend-dot mla-dot"></span> Gated MLA（${mlaCount} 层）— \$O(N^2)\$ 完整注意力锚点</span>
+  `;
+}
+
+// ── Diagram 4: AttnRes ──
+function buildAttnRes() {
+  const standardVis = document.getElementById('standardResVis');
+  const attnResVis = document.getElementById('attnResVis');
+
+  // Standard: uniform weights
+  for (let i = 0; i < 8; i++) {
+    standardVis.innerHTML += `<div class="depth-block">
+      <span class="depth-idx">B${i+1}</span>
+      <span class="depth-bar" style="width:${85 + Math.random() * 15}%;">v${i+1}</span>
+      <span class="depth-weight">1.00</span>
+    </div>`;
+  }
+
+  // AttnRes: learned weights (softmax over pseudo-query × keys)
+  const weights = [0.05, 0.08, 0.12, 0.18, 0.22, 0.17, 0.11, 0.07];
+  for (let i = 0; i < 8; i++) {
+    const pct = Math.round(weights[i] * 100);
+    attnResVis.innerHTML += `<div class="depth-block">
+      <span class="depth-idx">B${i+1}</span>
+      <span class="depth-bar" style="width:${Math.max(3, pct * 0.8)}%;">
+        ${i === 4 ? '← 最高权重' : ''}
+      </span>
+      <span class="depth-weight">${weights[i].toFixed(2)}</span>
+    </div>`;
+  }
+}
+
+// ── Init ──
+updateStates(64);
+buildLayerStack();
+buildAttnRes();
+</script>
+
+</body>
+</html>
