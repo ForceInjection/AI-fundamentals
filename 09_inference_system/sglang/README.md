@@ -6,6 +6,7 @@ SGLang 是新一代 LLM 推理框架，以 RadixAttention 前缀缓存和高效�
 
 - **[HiCache 深入详解](hicache_deep_dive.md)**：将 GPU/CPU/分布式后端统一为 L1-L3 缓存，通过 HiRadixTree 与 `page_first` 内存布局实现跨节点零拷贝。系统梳理演进背景、HiRadixTree 元数据拓扑、三种预取策略与三种写回策略、存储后端热插拔控制面，以及容量/异构 TP/PD 一致性/存储成本四维度的架构权衡。
 - **[SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](sglang-kv-pool-management.md)**（[可视化](assets/sglang-kv-pool-three-relation.html)）：基于 v0.5.14 源码，拆解 KV Pool（物理存储）、Radix Tree（逻辑索引）、ReqToTokenPool（请求视图）及其单向数据流循环。涵盖 `lock_ref` 正确性保证、六种 Pool 类型与七种分配器的选择逻辑、`page_size` 全栈贯穿机制，以及 L1→L2→L3 多级逐出与 `write_through`/`write_back` 策略。
+  - **[KV Cache L1↔L2 数据流深度分析](sglang-kvcache-dataflow-analysis.md)**：作为 KV Pool 管理 §6 的深度配套文章，逐操作拆解 write_backup（HBM → L2）、eviction（释放 HBM）、load_back（L2 → HBM）的完整代码路径，包含 backup 连续前缀不变量、逐出三条分支、load_back 阈值/配额检查，以及 write_through vs write_back 的策略权衡与 CXL 场景适配。
 - **[SGLang 调度器](sglang-scheduler.md)**：基于 v0.5.14 源码，拆解 Prefill > Decode 优先级决策、`PrefillAdder` 五种准入预算机制、decode batch 管理与 `retract_decode` 内存压力保护，以及 TTFT 的四阶段时序拆解（queue → schedule → forward）。
 - **[SGLang Scaling Pain 超大规模推理调优案例](sglang_scaling_case_study.md)**（译自 [z.ai blog](https://z.ai/blog/scaling-pain)）：利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷，覆盖三类异常现象的识别机制、投机采样指标在实时质量监控中的作用，以及 LayerSplit 分层存储在 120K 上下文下 +132% TPS 的探索性收益。
 - **[SGLang Chunked Prefill 原理与代码实现](chunked_prefill.md)**：长 prompt 切分为固定 chunk 与 decode 交替调度的完整机制，涵盖 PrefillAdder 截断逻辑、chunk 间 stash/restore 状态管理、按 GPU 显存自动调参策略，以及 Qwen3.5-122B 8×H100 实测数据（chunk 翻倍 TPS +13.9%）。
