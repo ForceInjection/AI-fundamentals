@@ -30,7 +30,7 @@
 ### 2.1 vLLM
 
 - **[vLLM 推理系统](vllm/README.md)** — 模块分析、路由调度、硬件优化的完整导航。
-  - 注意力架构：MHA→MLA→NSA 演进、DeepSeek V4 支持、MLA→CSA/HCA 进化、[DeepSeek-V3 端到端 Pipeline 走读](vllm/module_analysis/deepseek_v3_inference_pipeline.md)
+  - 注意力架构：MHA→MLA→NSA 演进、DeepSeek V4 支持、MLA→CSA/HCA 进化、[DeepSeek-V3 / V4 端到端 Pipeline 走读](vllm/module_analysis/deepseek_v3_inference_pipeline.md)
   - 系统机制：CUDA Graph、Hybrid KV Cache Manager、投机解码方法全景、原生 KV Offloading
   - 路由：Router 架构、Semantic Router
   - 硬件：WideEP、Blackwell/GB200 优化

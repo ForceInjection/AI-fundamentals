@@ -465,6 +465,7 @@ MoE FFN 占每层延迟的 ~72%——这是 DeepSeek-V3 decode 的最大性能�
 
 - [vLLM `deepseek_v2.py` 源码](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/deepseek_v2.py)
 - [SGLang `deepseek_v2.py` 源码](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/models/deepseek_v2.py)
+- [DeepSeek-V4 端到端推理 Pipeline 走读](deepseek_v4_inference_pipeline.md) — V4 架构的根本性重构：mHC 多流残差、MQA+CSA/HCA、Hash-MoE
 - [DeepSeek-V3 配置](https://huggingface.co/deepseek-ai/DeepSeek-V3-Base/blob/main/configuration_deepseek.py)
 - [MLA 的 TP 切分：为什么 8 张 GPU 存了同一份 KV cache](mla_tp_kv_redundancy.md)
 - [投机解码方法全景：六种草拟策略的工程选择](speculative_decoding_landscape.md)
