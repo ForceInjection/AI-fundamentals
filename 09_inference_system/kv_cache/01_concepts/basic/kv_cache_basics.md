@@ -131,16 +131,16 @@ $$
 
 $$
 \begin{aligned}
-\text{per\_token} &= 2 \times b_{kv} \times L \times \frac{H \times N_{kv}}{N_{attn}} \\[4pt]
-\text{per\_sequence} &= \text{per\_token} \times S \quad \text{(序列长度)} \\[4pt]
-\text{total} &= \text{per\_sequence} \times B \quad \text{(并发请求数)}
+\mathrm{per token} &= 2 \times b_{kv} \times L \times \frac{H \times N_{kv}}{N_{attn}} \\[4pt]
+\mathrm{per sequence} &= \mathrm{per token} \times S \quad \text{(序列长度)} \\[4pt]
+\text{total} &= \mathrm{per sequence} \times B \quad \text{(并发请求数)}
 \end{aligned}
 $$
 
 以 **Qwen2.5-7B**（L=28, H_kv=4, head_dim=128, FP16）为例：
 
 $$
-\text{per\_token} = 2 \times 2 \times 28 \times 4 \times 128 \div (1024) \approx 56\ \text{KB}
+\mathrm{per token} = 2 \times 2 \times 28 \times 4 \times 128 \div (1024) \approx 56\ \text{KB}
 $$
 
 | batch | seq_len | total_tokens | KV Cache  | 与模型权重 (14 GB) 对比 |
@@ -160,7 +160,7 @@ $$
 再看 **Qwen2.5-72B**（L=80, H_kv=8, head_dim=128, FP16，模型权重 ~144 GB）：
 
 $$
-\text{per\_token} = 2 \times 2 \times 80 \times 8 \times 128 \div (1024) = 320\ \text{KB}
+\mathrm{per token} = 2 \times 2 \times 80 \times 8 \times 128 \div (1024) = 320\ \text{KB}
 $$
 
 | batch | seq_len |                 KV Cache                 |

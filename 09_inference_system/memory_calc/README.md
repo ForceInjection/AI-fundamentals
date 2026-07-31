@@ -1,6 +1,6 @@
 # LLM 推理显存估算
 
-显存是 LLM 推理中**最先触达的系统性瓶颈**：它同时约束了单卡可加载的模型规模、可服务的并发请求数（Batch Size）以及可支持的上下文长度（Context Window）。在自回归生成场景中，KV Cache 随序列长度线性增长，一个看似够用的配置可能在长对话第 10 轮时 OOM。以 **Llama-3-8B（GQA：32 层 × 8 KV heads × 128 head\_dim，FP16）** 为例：每 token 的 KV Cache 约 **128 KiB**，累积 32K tokens 后单个会话已占用 **4 GiB**；若 batch=8 并发，仅 KV 就咬掉 **32 GiB**，足以在一张 A100-40G 上触发 OOM。本目录把"模型权重 + KV Cache + 中间激活"三部分拆开估算，并针对 **MHA/GQA/MLA 与 DeepSeek V4 新型注意力** 给出差异化公式，配套可直接运行的估算脚本。
+显存是 LLM 推理中**最先触达的系统性瓶颈**：它同时约束了单卡可加载的模型规模、可服务的并发请求数（Batch Size）以及可支持的上下文长度（Context Window）。在自回归生成场景中，KV Cache 随序列长度线性增长，一个看似够用的配置可能在长对话第 10 轮时 OOM。以 **Llama-3-8B（GQA：32 层 × 8 KV heads × 128 head dim，FP16）** 为例：每 token 的 KV Cache 约 **128 KiB**，累积 32K tokens 后单个会话已占用 **4 GiB**；若 batch=8 并发，仅 KV 就咬掉 **32 GiB**，足以在一张 A100-40G 上触发 OOM。本目录把"模型权重 + KV Cache + 中间激活"三部分拆开估算，并针对 **MHA/GQA/MLA 与 DeepSeek V4 新型注意力** 给出差异化公式，配套可直接运行的估算脚本。
 
 ## 1. 理论分析
 

@@ -33,7 +33,7 @@ Decode Step t:
 Decoder 的 causal mask 只允许每个 token 关注自己及之前的 token。这意味着：
 
 - token t 的 Q_t 查询 `[1, t]` 范围
-- token t+1 的 Q\_{t+1} 查询 `[1, t+1]` 范围
+- token t+1 的 Q {t+1} 查询 `[1, t+1]` 范围
 - **token t+1 永远不需要用 Q_t 去查任何东西**
 
 Q 是单次使用的：提出、得到答案、丢弃。K 和 V 是被反复使用的：每生成一个新 token，在标准 full causal attention 下所有历史的 K 和 V 都要被读一次。这就是 Q 不该被缓存的根本原因——**缓存一种不会被再次使用的东西，纯粹浪费显存。**

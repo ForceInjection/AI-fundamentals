@@ -162,7 +162,7 @@ Key-Key Semantic Affinity 是 per-step 的即时评估，这意味着单步的�
 
 但语义真正的规律是：**真正相关的 block 会在连续多步中持续获得高亲和度，而噪声尖峰是瞬时的**。这一性质可以通过一个简单的滑动窗口机制来利用：
 
-$$\text{stability\_score}(b) = \frac{\text{count}(semantic\_affinity(b, t) \geq \theta_{affinity}, t \in [T-W+1, T])}{W}$$
+$$\mathrm{stability score}(b) = \frac{\text{count}(semantic affinity(b, t) \geq \theta_{affinity}, t \in [T-W+1, T])}{W}$$
 
 其中 W 是窗口大小（通常 20 步），θ_affinity 是单步高亲和度阈值（通常 0.5）。这个分数的物理含义是：在最近 W 个 decode 步中，block b 有多少步被判定为"高语义相关"。一个只在单步获得 0.9 的 block，如果其余 19 步都是 0.2，stability_score = 1/20 = 0.05——远不足以触发加载；而一个连续 20 步都在 0.6 以上的 block，stability_score = 1.0。
 

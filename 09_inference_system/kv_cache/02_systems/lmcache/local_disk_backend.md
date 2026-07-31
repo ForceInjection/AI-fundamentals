@@ -23,7 +23,7 @@
   - Key: `model/layer/chunk_hash`
   - Filename: `model-layer-chunk_hash.pt`
 
-代码实现参考 [\_key_to_path](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L174-L178)：
+代码实现参考 [ key_to_path](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L174-L178)：
 
 ```python
     def _key_to_path(
@@ -52,7 +52,7 @@
 
 为了在无元数据头的扁平文件中快速定位和还原 Tensor，`LocalDiskBackend` 在内存中维护了一个全局的元数据索引。这个索引是整个后端正常工作的核心，它弥补了文件系统无法自描述的缺陷。
 
-- **索引结构**: `self.dict` (线程安全字典)。初始化时通过 `self.cache_policy.init_mutable_mapping()` 创建，参考 [\_\_init\_\_](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L113)。
+- **索引结构**: `self.dict` (线程安全字典)。初始化时通过 `self.cache_policy.init_mutable_mapping()` 创建，参考 [  init  ](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L113)。
 - **映射关系**: `CacheEngineKey` -> `DiskCacheMetadata`。
 - **DiskCacheMetadata 核心字段**: (定义于 [lmcache/utils.py](https://github.com/LMCache/LMCache/blob/main/lmcache/utils.py#L257-L266))
   - `path`: 文件绝对路径。

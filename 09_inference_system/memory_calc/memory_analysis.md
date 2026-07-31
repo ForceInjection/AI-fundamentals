@@ -227,7 +227,7 @@ $$
 
 - $L = 28$
 - $N_{kv} = 8$ (GQA, ratio = 0.5)
-- 每层每 Token： $2 \times N_{kv} \times \text{head\_dim} \times \text{Precision} = 2 \times 8 \times 128 \times 2 = 4{,}096\,\text{Bytes}$
+- 每层每 Token： $2 \times N_{kv} \times \mathrm{head dim} \times \text{Precision} = 2 \times 8 \times 128 \times 2 = 4{,}096\,\text{Bytes}$
 - 跨全模型（28 层）： $4{,}096 \times 28 = 114{,}688\,\text{Bytes} \approx 112\,\text{KiB}$
 
 相比于传统的 13B 级模型（单 Token 约 0.8 MB），小模型配合 GQA 技术使得 KV Cache 极小，这意味着在同样的显存预算下可以支持极大的并发或超长的上下文。对于采用 MLA/DSA 等机制的模型，请参见 4.5 速查表获取按实现口径整理的数据。
@@ -298,7 +298,7 @@ DeepSeek V4 引入了一种全新的注意力范式，其 KV Cache 计算无法�
 **c4a 层（每层、每序列）**：
 
 $$
-M_{\text{c4a\_layer}} = b_{kv} \times \left[ \left(W + \frac{S}{C_{c4a}}\right) \times d_{kv} + \frac{S}{C_{c4a}} \times d_{idx} \right]
+M_{\mathrm{c4a layer}} = b_{kv} \times \left[ \left(W + \frac{S}{C_{c4a}}\right) \times d_{kv} + \frac{S}{C_{c4a}} \times d_{idx} \right]
 $$
 
 - 第一项 $(W + S/C_{c4a}) \times d_{kv}$：主 KV Cache（含滑动窗口未压缩部分 + 压缩后的部分）。
@@ -309,7 +309,7 @@ $$
 **c128a 层（每层、每序列）**：
 
 $$
-M_{\text{c128a\_layer}} = b_{kv} \times \left(W + \frac{S}{C_{c128a}}\right) \times d_{kv}
+M_{\mathrm{c128a layer}} = b_{kv} \times \left(W + \frac{S}{C_{c128a}}\right) \times d_{kv}
 $$
 
 c128a 层 $k$ 值（8192）足够大，可视为全注意力，因此无需独立的 Indexer Cache。
@@ -317,7 +317,7 @@ c128a 层 $k$ 值（8192）足够大，可视为全注意力，因此无需独�
 **全模型总 KV Cache**：
 
 $$
-M_{KV,\text{total}} = B \times \left[ L_{c4a} \times M_{\text{c4a\_layer}} + L_{c128a} \times M_{\text{c128a\_layer}} \right]
+M_{KV,\text{total}} = B \times \left[ L_{c4a} \times M_{\mathrm{c4a layer}} + L_{c128a} \times M_{\mathrm{c128a layer}} \right]
 $$
 
 #### 4.6.3 数值示例：1M 上下文（BF16）
@@ -328,7 +328,7 @@ $$
 
 $$
 \begin{aligned}
-M_{\text{c4a\_layer}} &= 2 \times \left[ \left(128 + \frac{1{,}048{,}576}{4}\right) \times 512 + \frac{1{,}048{,}576}{4} \times 128 \right] \\
+M_{\mathrm{c4a layer}} &= 2 \times \left[ \left(128 + \frac{1{,}048{,}576}{4}\right) \times 512 + \frac{1{,}048{,}576}{4} \times 128 \right] \\
 &= (128 + 262{,}144) \times 1024 + 262{,}144 \times 256 \\
 &\approx 268{,}582{,}912 + 67{,}108{,}864 \approx 335{,}691{,}776 \ \text{Bytes} \approx 320.1 \ \text{MiB}
 \end{aligned}
@@ -338,7 +338,7 @@ $$
 
 $$
 \begin{aligned}
-M_{\text{c128a\_layer}} &= 2 \times \left(128 + \frac{1{,}048{,}576}{128}\right) \times 512 \\
+M_{\mathrm{c128a layer}} &= 2 \times \left(128 + \frac{1{,}048{,}576}{128}\right) \times 512 \\
 &= (128 + 8{,}192) \times 1024 \approx 8{,}519{,}680 \ \text{Bytes} \approx 8.1 \ \text{MiB}
 \end{aligned}
 $$
@@ -543,7 +543,7 @@ $$
 4. 跨 Token 压缩模型的 KV Cache（DeepSeek V4 范式）：
 
    $$
-   M_{\text{kv}} = B \times \sum_{t \in \text{types}} L_{t} \times b_{kv} \times \left[ \left(W + \frac{S}{C_{t}}\right) \times d_{kv} + \mathbf{1}_{\text{has\_indexer}}(t) \times \frac{S}{C_{t}} \times d_{idx} \right]
+   M_{\text{kv}} = B \times \sum_{t \in \text{types}} L_{t} \times b_{kv} \times \left[ \left(W + \frac{S}{C_{t}}\right) \times d_{kv} + \mathbf{1}_{\mathrm{has indexer}}(t) \times \frac{S}{C_{t}} \times d_{idx} \right]
    $$
 
    其中 $C_{t}$ 为层类型 $t$ 的压缩比，$L_{t}$ 为对应层数。对 c128a 层，无 Indexer 项。严格计算时用 $\min(S, W)$ 替代 $W$，当 $S \gg W$ 时两者等价。

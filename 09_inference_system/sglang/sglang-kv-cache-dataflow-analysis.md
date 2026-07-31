@@ -9,7 +9,7 @@ SGLang 的 KV cache 以 radix tree 组织。每个 `TreeNode` 代表一个 prefi
 
 ## 一、为什么需要 L2 —— GPU HBM 的容量天花板
 
-KV cache 是 attention 计算的副产品，每生成一个 token，K 和 V 就追加一行。在标准 MHA 下，一个 token 的 KV 需要 $2 \times \mathrm{num\\_layers} \times \mathrm{num\\_kv\\_heads} \times \mathrm{head\\_dim} \times \mathrm{dtype\\_size}$ 字节——以 Llama-3-8B (BF16) 为例，每 1K tokens 产生约 128MB 的 KV cache，128K context 就是 16GB。而 GPU HBM 留给 KV cache 的空间是有限的：H100 80GB 中模型权重占 ~16GB，加上中间激活值和框架开销，留给 KV cache 的容量在大量并发请求下迅速吃紧。
+KV cache 是 attention 计算的副产品，每生成一个 token，K 和 V 就追加一行。在标准 MHA 下，一个 token 的 KV 需要 $2 \times \mathrm{num\ layers} \times \mathrm{num\ kv\ heads} \times \mathrm{head\ dim} \times \mathrm{dtype\ size}$ 字节——以 Llama-3-8B (BF16) 为例，每 1K tokens 产生约 128MB 的 KV cache，128K context 就是 16GB。而 GPU HBM 留给 KV cache 的空间是有限的：H100 80GB 中模型权重占 ~16GB，加上中间激活值和框架开销，留给 KV cache 的容量在大量并发请求下迅速吃紧。
 
 这引出一个根本性的选择：HBM 满了，旧的 KV 数据往哪里去？
 

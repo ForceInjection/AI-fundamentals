@@ -147,7 +147,7 @@ def get(self, key, location=None):
 
 存储后端的创建顺序定义在 `lmcache/v1/storage_backend/__init__.py` 中的 `CreateStorageBackends` 函数里。
 
-[lmcache/v1/storage_backend/\_\_init\_\_.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/__init__.py)
+[lmcache/v1/storage_backend/  init  .py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/__init__.py)
 
 目前的层级顺序是固定的（Hardcoded）：
 

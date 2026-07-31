@@ -34,7 +34,7 @@
 
 为了规避 OOM（Out Of Memory）风险并保障系统稳定性，`LocalCPUBackend` 实现了**动态容量校准机制**。
 
-参考代码 [\_calculate_effective_cpu_size](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L271-L326)，系统能够实时探测宿主机的可用物理内存，在扣除配置的预留空间（`reserve_local_cpu_size`）后，动态计算出当前环境下的安全缓存容量上限。
+参考代码 [ calculate_effective_cpu_size](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L271-L326)，系统能够实时探测宿主机的可用物理内存，在扣除配置的预留空间（`reserve_local_cpu_size`）后，动态计算出当前环境下的安全缓存容量上限。
 
 ```python
 # Effective memory: min(configured_size, available_memory - reserve_size)

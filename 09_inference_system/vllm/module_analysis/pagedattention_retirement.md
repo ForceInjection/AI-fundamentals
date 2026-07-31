@@ -23,7 +23,7 @@ const int64_t physical_block_number = block_table[block_idx];
 PagedAttention 要计算的注意力长这样：
 
 $$
-QK^\top V, \quad K, V \in \mathbb{R}^{\text{seq\_len} \times \text{head\_size}}
+QK^\top V, \quad K, V \in \mathbb{R}^{\mathrm{seq len} \times \mathrm{head size}}
 $$
 
 K 是 `[num_blocks, num_heads, head_size/x, block_size, x]` 的五维张量，V 是类似的四维张量。这是标准 Multi-Head Attention 的存储形态——K 和 V 各占一块显存，互不干扰。
@@ -36,7 +36,7 @@ const cache_t* __restrict__ v_cache,  // [num_blocks, num_kv_heads,
                                        //   head_size, block_size]
 ```
 
-但 2025 年以后，DeepSeek V2 引入 MLA——Multi-head Latent Attention。MLA 把 K 和 V 从独立的矩阵压缩为一个低秩表示 `[c_kv, k_rope]`。在标准 MHA 中，KV 的维度是 $2 \times \text{num\_layers} \times \text{num\_heads} \times \text{head\_size}$；在 MLA 中，这个数字缩小到了 $\text{kv\_lora\_rank} + \text{qk\_rope\_head\_dim}$——约为原来的 $27\%$。
+但 2025 年以后，DeepSeek V2 引入 MLA——Multi-head Latent Attention。MLA 把 K 和 V 从独立的矩阵压缩为一个低秩表示 `[c_kv, k_rope]`。在标准 MHA 中，KV 的维度是 $2 \times \mathrm{num layers} \times \mathrm{num heads} \times \mathrm{head size}$；在 MLA 中，这个数字缩小到了 $\mathrm{kv lora rank} + \mathrm{qk rope head dim}$——约为原来的 $27\%$。
 
 PagedAttention 的 kernel 期望拿到两个独立的张量，一个叫 `k_cache`，一个叫 `v_cache`。MLA 只给一个压缩表示。PagedAttention 没有从 `[c_kv, k_rope]` 解压回 K 和 V 的代码路径。**这不是一个可以「修一修」就解决的问题——需要从存储格式、计算流程、到显存布局都重新设计。**
 

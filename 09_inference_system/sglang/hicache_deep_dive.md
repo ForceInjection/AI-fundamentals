@@ -23,7 +23,7 @@
     - [4.4 存储成本与命中率的量化权衡](#44-存储成本与命中率的量化权衡)
   - [5. 配置示例](#5-配置示例)
     - [5.1 最简配置：仅启用主机内存](#51-最简配置仅启用主机内存)
-    - [5.2 多实例共享：Mooncake + page\_first\_direct](#52-多实例共享mooncake--page_first_direct)
+    - [5.2 多实例共享：Mooncake + page first direct](#52-多实例共享mooncake--page_first_direct)
     - [5.3 集群式部署：HF3FS + 异构 TP](#53-集群式部署hf3fs--异构-tp)
     - [5.4 PD 分离部署下的 HiCache](#54-pd-分离部署下的-hicache)
     - [5.5 运行时动态挂载 / 卸载 L3 后端](#55-运行时动态挂载--卸载-l3-后端)

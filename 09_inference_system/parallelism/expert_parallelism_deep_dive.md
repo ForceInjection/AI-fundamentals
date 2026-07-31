@@ -90,11 +90,11 @@ Step 5 — Router 加权求和（本 GPU ⊗，无通信）
 
 通信量的精算：
 
-- **Dispatch**：token 被发送到它路由到的专家所在的 GPU。最坏情况每个 token 的 Top-8 分布在 8 张不同的 GPU 上，数据量 = $\text{batch\_size} \times \text{top\_k} \times \text{hidden\_size} \times \text{dtype\_size}$。但实际上，一个 token 的 Top-8 通常集中分布在 2-4 张 GPU 上（因为相邻编号的专家在连续 token 上有相似的激活模式）。
+- **Dispatch**：token 被发送到它路由到的专家所在的 GPU。最坏情况每个 token 的 Top-8 分布在 8 张不同的 GPU 上，数据量 = $\mathrm{batch size} \times \mathrm{top k} \times \mathrm{hidden size} \times \mathrm{dtype size}$。但实际上，一个 token 的 Top-8 通常集中分布在 2-4 张 GPU 上（因为相邻编号的专家在连续 token 上有相似的激活模式）。
 - **Combine**：与 dispatch 对称，从各 GPU 收回专家计算结果，数据量与 dispatch 相同。
-- **总通信量（每 token 每 MoE 层）**： $2 \times \text{top\_k} \times \text{hidden\_size} \times 2\,\text{bytes}$（FP16）= $2 \times 8 \times 7168 \times 2 \approx 229\,\text{KB}$。如果使用 FP8 通信，减半至 $\approx 115\,\text{KB}$。
+- **总通信量（每 token 每 MoE 层）**： $2 \times \mathrm{top k} \times \mathrm{hidden size} \times 2\,\text{bytes}$（FP16）= $2 \times 8 \times 7168 \times 2 \approx 229\,\text{KB}$。如果使用 FP8 通信，减半至 $\approx 115\,\text{KB}$。
 
-对比 TP 的 All-Reduce：TP=8 的每次 All-Reduce 通信量 $\approx 2 \times \text{hidden\_size} \times 2\,\text{bytes} \times (N-1)/N \approx 2 \times 7168 \times 2 \times 7/8 \approx 25\,\text{KB}$。但 TP 每层有多次 All-Reduce（QKV proj、output proj、FFN up、FFN down），总共约 4-6 次 All-Reduce 每层。
+对比 TP 的 All-Reduce：TP=8 的每次 All-Reduce 通信量 $\approx 2 \times \mathrm{hidden size} \times 2\,\text{bytes} \times (N-1)/N \approx 2 \times 7168 \times 2 \times 7/8 \approx 25\,\text{KB}$。但 TP 每层有多次 All-Reduce（QKV proj、output proj、FFN up、FFN down），总共约 4-6 次 All-Reduce 每层。
 
 EP 的每次通信量比 TP 大（229 KB vs 25 KB），但 EP 只在 MoE 层通信（attention 层无 EP 通信），且 EP 的 combine 可以和最后一轮专家计算并行。
 

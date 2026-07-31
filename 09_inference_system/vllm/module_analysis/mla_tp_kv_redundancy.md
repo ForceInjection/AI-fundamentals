@@ -38,10 +38,10 @@ MLA（Multi-head Latent Attention）也是一个好设计。它不缓存显式�
 标准 MHA 中，K 和 V 的投影权重分别是 column-parallel 线性层：
 
 $$
-W_K \in \mathbb{R}^{\text{hidden\_size} \times (N_{\text{kv\_heads}} \times D_{\text{head}})}
+W_K \in \mathbb{R}^{\mathrm{hidden size} \times (N_{\mathrm{kv heads}} \times D_{\text{head}})}
 $$
 
-TP=8 时使用列切分：每个 rank 拿总列数的 $1/8$，即 $\frac{N_{\text{kv\_heads}}}{8}$ 个 head 对应列。每个 rank 算出的 K、V 只覆盖自己的 head，不相重叠。**切分后的所有权重列都是唯一的，没有一列出现在两个 rank 上。**
+TP=8 时使用列切分：每个 rank 拿总列数的 $1/8$，即 $\frac{N_{\mathrm{kv heads}}}{8}$ 个 head 对应列。每个 rank 算出的 K、V 只覆盖自己的 head，不相重叠。**切分后的所有权重列都是唯一的，没有一列出现在两个 rank 上。**
 
 ### 2.2 MLA 的投影：没有 head，也就不需要切
 
@@ -189,12 +189,12 @@ def wait_for_save(self):
 
 不要用压缩公式直接推算 per-GPU KV cache 分配量。$512 + 64 = 576$ 元素/token/层（576 bytes in FP8）既是信息量，也是**per-rank 分配量**——二者相等，因为 MLA 在 TP 下没有节省任何 KV cache 显存。
 
-标准 MHA TP=8 的公式：$\frac{N_{\text{kv\_heads}} \times D_{\text{head}} \times 2}{\text{tp\_size}}$——有除以 tp_size。
+标准 MHA TP=8 的公式：$\frac{N_{\mathrm{kv heads}} \times D_{\text{head}} \times 2}{\mathrm{tp size}}$——有除以 tp_size。
 
-MLA TP=8 的公式：$R_{\text{kv\_lora}} + D_{\text{qk\_rope}}$——**没有除以 tp_size。**
+MLA TP=8 的公式：$R_{\mathrm{kv lora}} + D_{\mathrm{qk rope}}$——**没有除以 tp_size。**
 
 $$
-\text{MLA per-rank KV (bytes per token per layer)} = kv\_lora\_rank + qk\_rope\_head\_dim = 576
+\text{MLA per-rank KV (bytes per token per layer)} = kv lora rank + qk rope head dim = 576
 $$
 
 如果你部署 DeepSeek V3 在 8×GPU 上，每个 GPU 的 KV cache 预算和单 GPU 部署完全一样。TP 帮你分担了权重和激活值，但对 KV cache 无能为力。

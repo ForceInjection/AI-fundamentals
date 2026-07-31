@@ -78,7 +78,7 @@ Gemma-3-27B 有 52 个 Sliding Window 层和 10 个 Full Attention 层，比例�
 Mamba 层的状态大小（state size）通常远大于 Attention 层的 kv_hidden_size。由于必须保证所有 group 的 page size 相同，当前算法是：
 
 1. 增大 Attention 层的 `block_size`，直到：
-   $$\texttt{block\_size} \times \texttt{kv\_hidden\_size}_{\text{attn}} \ge \texttt{state\_size}_{\text{mamba}}$$
+   $$\texttt{block size} \times \texttt{kv hidden size}_{\text{attn}} \ge \texttt{state size}_{\text{mamba}}$$
 2. 将 Mamba 的 state 填充（pad）到 `block_size × kv_hidden_size_attn`；
 3. 再按 Case 3 的策略分组。
 

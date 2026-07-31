@@ -50,7 +50,7 @@
 MHA 为每个 token 显式缓存独立的 K 与 V 向量。在全量上下文参与计算的场景下，其单层 KV 存储的理论显存开销可由以下公式近似表示：
 
 $$
-\text{Memory}_{KV} \approx 2 \times N_{\text{kv\_heads}} \times D_{\text{head}} \times \text{sizeof}(\texttt{dtype})
+\text{Memory}_{KV} \approx 2 \times N_{\mathrm{kv heads}} \times D_{\text{head}} \times \text{sizeof}(\texttt{dtype})
 $$
 
 当 `num_kv_heads = num_attention_heads` 时为标准 MHA；当 `num_kv_heads = 1` 时为 MQA；其余情况通常为 GQA。vLLM 在模型架构转换逻辑中显式采用这一定义 [6]。
@@ -121,7 +121,7 @@ MLA（Multi-head Latent Attention）通过低秩投影大幅压缩了 KV Cache �
 与传统 MHA 显式存储键值对不同，MLA 通过缓存低秩的潜变量（Latent Vector）与解耦的旋转位置编码（RoPE）分量来重建注意力，从而显著降低显存开销。其典型存储近似公式为：
 
 $$
-\text{Memory}_{KV} \approx (R_{\text{kv\_lora}} + D_{\text{qk\_rope}}) \times \text{sizeof}(\texttt{dtype})
+\text{Memory}_{KV} \approx (R_{\mathrm{kv lora}} + D_{\mathrm{qk rope}}) \times \text{sizeof}(\texttt{dtype})
 $$
 
 以 DeepSeek-V3 常见参数 `kv_lora_rank = 512`、`qk_rope_head_dim = 64`、`bf16` 为例，估算约为 `1,152` 字节 / token / 层。该量级显著小于同等头维设置下的标准 MHA [7]。

@@ -132,11 +132,11 @@ python fetch_pricing.py --no-cache
 
 $$
 \begin{aligned}
-\text{cost} &= (\text{cached\_tokens} \times \text{Price\_Input\_Cache\_Read}) \\
-&\quad + (\text{cache\_write\_tokens} \times \text{Price\_Input\_Cache\_Write}) \\
-&\quad + \big[ (\text{prompt\_tokens} - \text{cached\_tokens} - \text{cache\_write\_tokens}) \times \text{Price\_Input} \big] \\
-&\quad + (\text{completion\_tokens} \times \text{Price\_Output}) \\
-&\quad + (\text{Web\_Search\_Count} \times \text{Price\_Web\_Search})
+\text{cost} &= (\mathrm{cached tokens} \times \mathrm{Price Input Cache Read}) \\
+&\quad + (\mathrm{cache write tokens} \times \mathrm{Price Input Cache Write}) \\
+&\quad + \big[ (\mathrm{prompt tokens} - \mathrm{cached tokens} - \mathrm{cache write tokens}) \times \mathrm{Price Input} \big] \\
+&\quad + (\mathrm{completion tokens} \times \mathrm{Price Output}) \\
+&\quad + (\mathrm{Web Search Count} \times \mathrm{Price Web Search})
 \end{aligned}
 $$
 
@@ -160,11 +160,11 @@ $$
 
 $$
 \begin{aligned}
-\text{单次调用总成本} &= (\text{Tokens}_{cached} \times \text{Price\_Input\_Cache\_Read}) \\
-&\quad + (\text{Tokens}_{cache\_write} \times \text{Price\_Input\_Cache\_Write}) \\
-&\quad + \big[ (\text{Tokens}_{prompt} - \text{Tokens}_{cached} - \text{Tokens}_{cache\_write}) \times \text{Price\_Input} \big] \\
-&\quad + (\text{Tokens}_{completion} \times \text{Price\_Output}) \\
-&\quad + (\text{Web\_Search\_Count} \times \text{Price\_Web\_Search})
+\text{单次调用总成本} &= (\text{Tokens}_{cached} \times \mathrm{Price Input Cache Read}) \\
+&\quad + (\text{Tokens}_{cache write} \times \mathrm{Price Input Cache Write}) \\
+&\quad + \big[ (\text{Tokens}_{prompt} - \text{Tokens}_{cached} - \text{Tokens}_{cache write}) \times \mathrm{Price Input} \big] \\
+&\quad + (\text{Tokens}_{completion} \times \mathrm{Price Output}) \\
+&\quad + (\mathrm{Web Search Count} \times \mathrm{Price Web Search})
 \end{aligned}
 $$
 
@@ -181,10 +181,10 @@ $$
 
 $$
 \begin{aligned}
-\text{Input\_Cost} &= \text{Total\_Input\_Tokens} \times \big[ R_{hit} \times P_{hit} + (1 - R_{hit}) \times P_{miss} \big] \\
-\text{单次调用总成本} &= \text{Input\_Cost} \\
-&\quad + (\text{Total\_Output\_Tokens} \times \text{Price\_Output}) \\
-&\quad + (\text{Web\_Search\_Count} \times \text{Price\_Web\_Search})
+\mathrm{Input Cost} &= \mathrm{Total Input Tokens} \times \big[ R_{hit} \times P_{hit} + (1 - R_{hit}) \times P_{miss} \big] \\
+\text{单次调用总成本} &= \mathrm{Input Cost} \\
+&\quad + (\mathrm{Total Output Tokens} \times \mathrm{Price Output}) \\
+&\quad + (\mathrm{Web Search Count} \times \mathrm{Price Web Search})
 \end{aligned}
 $$
 
@@ -193,21 +193,21 @@ $$
 $$
 P_{hit} =
 \begin{cases}
-\text{Price\_Input\_Cache\_Read}, & \text{if } > 0 \\
-\text{Price\_Input}, & \text{otherwise}
+\mathrm{Price Input Cache Read}, & \text{if } > 0 \\
+\mathrm{Price Input}, & \text{otherwise}
 \end{cases}
 $$
 
 $$
 P_{miss} =
 \begin{cases}
-\text{Price\_Input\_Cache\_Write}, & \text{if } > 0 \\
-\text{Price\_Input}, & \text{otherwise}
+\mathrm{Price Input Cache Write}, & \text{if } > 0 \\
+\mathrm{Price Input}, & \text{otherwise}
 \end{cases}
 $$
 
 > [!NOTE]
-> 注 1：$\text{Web\_Search\_Count}$ 指 API 后台实际发起的搜索工具调用次数，可能大于用户在界面上的单次触发请求。
+> 注 1：$\mathrm{Web Search Count}$ 指 API 后台实际发起的搜索工具调用次数，可能大于用户在界面上的单次触发请求。
 > 注 2：该回退策略仅在模型支持缓存功能但未单独定价时完全适用。若模型底层完全不支持上下文缓存（如 DeepSeek Chat），则 $P_{hit}$ 与 $P_{miss}$ 将自动回退为普通输入价，即不受缓存命中率 $R_{hit}$ 的影响。
 
 ### 2.4 典型业务场景下的成本测算
@@ -310,8 +310,8 @@ $$
 - **单卡输入吞吐 ($V_{in}$)**：基于 3.1 节推导，取 **4,000 Tokens/s**。
 - **月度总输入产能 ($N_{in}$)**：
   $$ N_{in} = T_{effective} \times V_{in} = 1{,}425{,}600 \times 4{,}000 = 5{,}702{,}400{,}000\,\text{Tokens} $$
-- **每百万 Token 输入硬件成本 ($Price_{in\_hw}$)**：
-  $$ Price_{\text{in\_hw}} = \left( \frac{C_{\text{month}}}{N_{in}} \right) \times 10^6 = \left( \frac{45{,}000}{5{,}702{,}400{,}000} \right) \times 10^6 \approx 7.89\,\text{¥/M} $$
+- **每百万 Token 输入硬件成本 ($Price_{in hw}$)**：
+  $$ Price_{\mathrm{in hw}} = \left( \frac{C_{\text{month}}}{N_{in}} \right) \times 10^6 = \left( \frac{45{,}000}{5{,}702{,}400{,}000} \right) \times 10^6 \approx 7.89\,\text{¥/M} $$
   > [!NOTE]
   > 注：此处推导出的 7.89 ¥/M 为**理想峰值吞吐下的边际成本极限**。在实际生产环境中，随着上下文长度（Context Length）的增加，Prefill 阶段的计算量呈平方级增长，吞吐量可能急剧下降（如 8K 上下文下吞吐可能跌至 1,500 Tokens/s 以下），导致实际硬件成本通常是该理论下限的 2-3 倍。
 
@@ -320,8 +320,8 @@ $$
 - **单卡输出吞吐 ($V_{out}$)**：基于 3.1 节推导，取 **2,500 Tokens/s**。
 - **月度总输出产能 ($N_{out}$)**：
   $$ N_{out} = T_{effective} \times V_{out} = 1{,}425{,}600 \times 2{,}500 = 3{,}564{,}000{,}000\,\text{Tokens} $$
-- **每百万 Token 输出硬件成本 ($Price_{out\_hw}$)**：
-  $$ Price_{\text{out\_hw}} = \left( \frac{C_{\text{month}}}{N_{out}} \right) \times 10^6 = \left( \frac{45{,}000}{3{,}564{,}000{,}000} \right) \times 10^6 \approx 12.63\,\text{¥/M} $$
+- **每百万 Token 输出硬件成本 ($Price_{out hw}$)**：
+  $$ Price_{\mathrm{out hw}} = \left( \frac{C_{\text{month}}}{N_{out}} \right) \times 10^6 = \left( \frac{45{,}000}{3{,}564{,}000{,}000} \right) \times 10^6 \approx 12.63\,\text{¥/M} $$
 
 ### 3.3 商业定价与系统级 TCO 对标分析
 
