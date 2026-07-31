@@ -136,7 +136,7 @@ $$
 对比标准 MHA（GQA, 8 个 KV head, TP=8）：冗余率 **0%**。TP 为 KV cache 节省的显存：
 
 $$
-\text{标准 MHA TP=8：节省 } 87.5\%，\quad \text{MLA TP=8：节省 } 0\%
+\text{标准 MHA TP=8：节省 } 87.5\%,\quad \text{MLA TP=8：节省 } 0\%
 $$
 
 **MLA 抹去了 TP 对 KV cache 的显存收益。** TP 仍然为模型权重、激活值节省显存——但 KV cache 这部分，被 MLA 的跨 head 共享设计完全归零了。

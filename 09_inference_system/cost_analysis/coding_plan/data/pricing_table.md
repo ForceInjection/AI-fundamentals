@@ -24,7 +24,7 @@
 | MiniMax | MiniMax Token Plan | Plus（标准版） | CNY | 49 | 40.83 |  | M2.7：1500 次请求/5 小时（以官方定价文档为准） |  | https://platform.minimaxi.com/docs/guides/pricing-token-plan | 2026-04-17 | ok |
 | MiniMax | MiniMax Token Plan | Starter（标准版） | CNY | 29 | 24.17 |  | M2.7：600 次请求/5 小时（以官方定价文档为准） |  | https://platform.minimaxi.com/docs/guides/pricing-token-plan | 2026-04-17 | ok |
 | Replit | Replit | Core | USD | 25 | 20 |  |  |  | https://replit.com/pricing | 2026-04-17 | ok |
-| Replit | Replit | Pro | USD | 100 | 95 |  | $100 monthly credits（以官方页面说明为准） |  | https://replit.com/pricing | 2026-04-17 | ok |
+| Replit | Replit | Pro | USD | 100 | 95 |  | $100 monthly credits（以官方页面说明为准） |  | https://replit.com/pricing | 2026-04-17 | ok | $
 | Tabnine | Tabnine | unknown |  |  |  |  |  |  | https://old-www.tabnine.com/pricing | 2026-04-18 | download_failed |
 | Windsurf | Windsurf (Codeium) | Free | USD | 0.0 |  |  |  |  | https://windsurf.com/pricing | 2026-04-18 | ok |
 | Windsurf | Windsurf (Codeium) | Pro | USD | 20 |  |  | Prompt Credits 与模型支持范围以官方页面为准 |  | https://windsurf.com/pricing | 2026-04-17 | ok |
