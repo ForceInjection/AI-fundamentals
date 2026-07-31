@@ -18,13 +18,19 @@
 
 **选型速记**：模型发布者（训练了模型）→ MTP；推理服务方（使用他人模型）→ 投机解码。
 
-## 2. 模型压缩工具链：NVIDIA ModelOpt
+## 2. 量化基础：格式、粒度与算法
+
+量化是"最便宜的优化"——不改结构、不需重训，只降位宽。但 FP8 格式本身怎么设计、量化的粒度如何影响精度、权重量化和 KV Cache 量化为何难度不同——是选型前必须理解的基础。
+
+- **[推理量化技术基础：FP8、INT8 与 FP4](inference_quantization.md)**：E4M3 vs E5M2 的分工、四种量化粒度（per-tensor/per-channel/per-token/per-group）、权重量化 vs 激活量化 vs KV Cache 量化的难度差异、三种权重量化算法对比（SmoothQuant 迁移难度、AWQ 保护重要通道、GPTQ 逐列误差补偿）
+
+## 3. 模型压缩工具链：NVIDIA ModelOpt
 
 面向生产部署的一站式压缩工具包，覆盖从 Hugging Face / PyTorch / ONNX 模型导入到 TensorRT-LLM / vLLM 部署的完整链路。
 
 - **[NVIDIA Model Optimizer 技术详解](nvidia_model_optimizer.md)**：量化（FP8 / INT8 / INT4 / Blackwell NVFP4，内置 SmoothQuant / AWQ / SVDQuant / AutoQuantize）、2:4 结构化稀疏（SparseGPT / ASP）、剪枝、蒸馏，以及与 TensorRT-LLM / vLLM 的部署集成
 
-## 3. 选型思路
+## 4. 选型思路
 
 两条路径并非互斥，实际落地常组合使用：
 

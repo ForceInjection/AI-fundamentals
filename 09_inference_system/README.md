@@ -53,10 +53,11 @@
 
 推理引擎提供了执行框架，模型层面的优化则进一步压缩算力和显存开销。
 
+- **[推理量化技术基础](model_optimization/inference_quantization.md)** — FP8 格式（E4M3 vs E5M2）、四种量化粒度、权重 vs 激活 vs KV Cache 的量化差异、SmoothQuant / AWQ / GPTQ 三种权重量化算法对比。
 - **[图解投机解码](model_optimization/illustrated-speculative-decoding.md)** — draft model 草拟 K 个候选、target model 批量验证，"猜和验"的核心机制。
 - **[MTP 深度解析](model_optimization/mtp-multi-token-prediction.md)** — 训练时植入多 token 预测能力，推理时以 self-speculation 消除独立 draft forward，与投机解码并行的另一条加速路径。
 - **[NVIDIA 模型优化器](model_optimization/nvidia_model_optimizer.md)** — 工具链详解与优化实践。
-- 相关：KV Cache 层面的压缩与量化见 §1 中 [KV Cache 技术体系](kv_cache/README.md) 的压缩章节。
+- 相关：KV Cache 层面的压缩与量化见 §1 中 [KV Cache 技术体系](kv_cache/README.md) 的压缩章节与 [KV Cache 量化深度解析](kv_cache/01_concepts/compression/kv_cache_quantization.md)。
 
 ---
 
