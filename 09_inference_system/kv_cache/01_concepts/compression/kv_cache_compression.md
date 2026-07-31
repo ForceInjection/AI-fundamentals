@@ -25,7 +25,7 @@ Transformer 的每层自注意力机制需要将每个 token 投影为 Key 向�
 
 > $\text{Memory}_{KV} \approx 2 \times b_{kv} \times L \times B \times S \times N_{kv} \times d_{head}$
 >
-> _(注：$b_{kv}$ 为单个数值的字节数（如 FP16 为 2，FP8 为 1，INT4 为 0.5）；系数 2 代表同时缓存 Key 和 Value 矩阵、$L$ 为层数、$B$ 为批处理规模、$S$ 为上下文序列长度、$N_{kv}$ 为 KV 头数、$d_{head}$ 为每个头的特征维度。若模型采用 GQA/MQA 架构，$N_{kv}$ 将小于 Query 头数 $N_{attn}$，整体缓存规模随之大幅缩减。) 
+> _(注：$b_{kv}$ 为单个数值的字节数（如 FP16 为 2，FP8 为 1，INT4 为 0.5）；系数 2 代表同时缓存 Key 和 Value 矩阵、$L$ 为层数、$B$ 为批处理规模、$S$ 为上下文序列长度、$N_{kv}$ 为 KV 头数、$d_{head}$ 为每个头的特征维度。若模型采用 GQA/MQA 架构，$N_{kv}$ 将小于 Query 头数 $N_{attn}$，整体缓存规模随之大幅缩减。)_
 >
 > 据此可估算系统最大并发请求数（理论上限）：$B_{max} \approx \frac{M_{GPU} - M_{model}}{M_{\text{KV per sample}}}$，其中 $M_{GPU}$ 为 GPU 总显存，$M_{model}$ 为模型权重占用，$M_{\text{KV per sample}}$ 为单个请求（给定上下文长度下）的 KV Cache 占用。压缩 $M_{\text{KV per sample}}$ 将直接等比例提升 $B_{max}$，从而推高系统吞吐上限。
 

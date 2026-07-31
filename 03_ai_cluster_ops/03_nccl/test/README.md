@@ -15,17 +15,17 @@
 
 ## 测试套件
 
-| 套件 | 脚本 | 测试数 | 内容 |
-|------|------|--------|------|
-| `syntax` | `test_syntax_basic.sh` | 1 | `bash -n` 静态语法检查 |
-| `args` | `test_arg_parsing.sh` | 11 | `--size` / `--time` / `--network` / `--dry-run` 参数解析 |
-| `config` | `test_config_manager.sh` | 20 | `set_nccl_config` / `setup_network_config` / `cache_system_info` |
-| `optimization` | `test_optimization_levels.sh` | 8 | conservative / balanced / aggressive 三种优化级别 |
-| `pxn` | `test_pxn_mode.sh` | 7 | PXN 模式参数和配置 |
+| 套件           | 脚本                          | 测试数 | 内容                                                             |
+| -------------- | ----------------------------- | ------ | ---------------------------------------------------------------- |
+| `syntax`       | `test_syntax_basic.sh`        | 1      | `bash -n` 静态语法检查                                           |
+| `args`         | `test_arg_parsing.sh`         | 11     | `--size` / `--time` / `--network` / `--dry-run` 参数解析         |
+| `config`       | `test_config_manager.sh`      | 20     | `set_nccl_config` / `setup_network_config` / `cache_system_info` |
+| `optimization` | `test_optimization_levels.sh` | 8      | conservative / balanced / aggressive 三种优化级别                |
+| `pxn`          | `test_pxn_mode.sh`            | 7      | PXN 模式参数和配置                                               |
 
 ## 文件结构
 
-```
+```text
 test/
 ├── README.md
 ├── run_all_tests.sh              # 测试运行器

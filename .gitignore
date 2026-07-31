@@ -197,3 +197,6 @@ Gemfile.lock
 # config.py 可能包含 API Key（从 config.example.py 复制后填写）；sessions/ 写入会话 JSON 与 SqliteSaver checkpoint
 08_agentic_system/memory/langchain/code/config.py
 08_agentic_system/memory/langchain/code/sessions/
+
+# markdownlint config (personal preference, not enforced)
+.markdownlint.yaml

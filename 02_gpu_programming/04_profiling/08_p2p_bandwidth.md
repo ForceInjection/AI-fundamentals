@@ -8,13 +8,14 @@
 
 多 GPU 训练和推理中，数据需要在 GPU 间频繁搬移：
 
-| 场景 | P2P 流量 | 带宽需求 |
-|------|---------|---------|
-| Tensor Parallelism (TP) | 每层 All-Reduce，每 step 数百 MB | **对延迟和带宽极其敏感** |
-| KV Cache 跨卡搬运 | 每 decode step 搬运 KV block | Disaggregated Serving 核心 |
-| 梯度同步 (All-Reduce) | 每 step 完整梯度 | 数据并行的通信瓶颈 |
+| 场景                    | P2P 流量                         | 带宽需求                   |
+| ----------------------- | -------------------------------- | -------------------------- |
+| Tensor Parallelism (TP) | 每层 All-Reduce，每 step 数百 MB | **对延迟和带宽极其敏感**   |
+| KV Cache 跨卡搬运       | 每 decode step 搬运 KV block     | Disaggregated Serving 核心 |
+| 梯度同步 (All-Reduce)   | 每 step 完整梯度                 | 数据并行的通信瓶颈         |
 
 GPU 间通信有两条物理路径：
+
 - **NVLink**：600 GB/s 双向 (A100)，GPU 直连或经 NVSwitch
 - **PCIe**：~28 GB/s (Gen 4)，经过 PCIe Switch（如果存在）和 CPU Root Complex
 
@@ -37,11 +38,11 @@ GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  NV12
 GPU7    SYS   SYS   SYS   SYS   NODE  NODE  PXB    X
 ```
 
-| GPU 对 | 连接类型 | 物理路径 | P2P 支持 | 期望带宽 |
-|--------|---------|---------|---------|---------|
-| GPU 0 ↔ GPU 3 | **NV12** | NVLink 3.0 (12 links × 25 GB/s) | ✅ | ~240-300 GB/s |
-| GPU 3 ↔ GPU 7 | **SYS** | QPI/UPI + PCIe Gen 4 | ❌ | N/A（不支持 P2P） |
-| GPU 3 ↔ GPU 6 | **NV12** | NVLink 3.0 | ✅ | ~240 GB/s |
+| GPU 对        | 连接类型 | 物理路径                        | P2P 支持 | 期望带宽          |
+| ------------- | -------- | ------------------------------- | -------- | ----------------- |
+| GPU 0 ↔ GPU 3 | **NV12** | NVLink 3.0 (12 links × 25 GB/s) | ✅       | ~240-300 GB/s     |
+| GPU 3 ↔ GPU 7 | **SYS**  | QPI/UPI + PCIe Gen 4            | ❌       | N/A（不支持 P2P） |
+| GPU 3 ↔ GPU 6 | **NV12** | NVLink 3.0                      | ✅       | ~240 GB/s         |
 
 > **关键洞察**：NV12 意味着 12 条 NVLink 全通 → P2P 可用且高速。SYS/NODE/PXB 意味着通信必须经过 CPU → P2P **不可用**。我们在 [NVLink 诊断与实操](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md) 中详细分析了 GPU 7 的异常。
 
@@ -88,11 +89,11 @@ Test passed
 
 ### 带宽对标
 
-| 路径 | 实测带宽 | 理论带宽 | 效率 |
-|------|---------|---------|------|
-| NVLink P2P (单向) | **239.28 GB/s** | 300 GB/s (12 × 25 GB/s) | ~80% |
-| PCIe H2D (Gen 4) | ~28 GB/s | 31.5 GB/s | ~89% |
-| HBM D2D (片内) | ~1188 GB/s (4MB) | 2039 GB/s | ~58% |
+| 路径              | 实测带宽         | 理论带宽                | 效率 |
+| ----------------- | ---------------- | ----------------------- | ---- |
+| NVLink P2P (单向) | **239.28 GB/s**  | 300 GB/s (12 × 25 GB/s) | ~80% |
+| PCIe H2D (Gen 4)  | ~28 GB/s         | 31.5 GB/s               | ~89% |
+| HBM D2D (片内)    | ~1188 GB/s (4MB) | 2039 GB/s               | ~58% |
 
 **NVLink P2P 比 PCIe H2D 快 8.5 倍**（239 vs 28 GB/s）。这就是为什么 Tensor Parallelism **必须**走 NVLink——每层 All-Reduce 如果走 PCIe，通信时间会放大近一个数量级。
 
@@ -111,6 +112,7 @@ CUDA_VISIBLE_DEVICES=3,7 ./simpleP2P
 **为什么 SYS 连接不支持 P2P？**
 
 P2P 要求 GPU 能直接通过 DMA 访问对方显存，这需要：
+
 - 同一 PCIe domain 内的设备（PIX/NV12）
 - ACS (Access Control Services) 已禁用或配置允许 P2P
 - 无 IOMMU 隔离阻止
@@ -125,11 +127,11 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 `simpleP2P` 同时对比了两种方法：
 
-| 方法 | 64 MB 带宽 | 解释 |
-|------|-----------|------|
-| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink） | **239.28 GB/s** | 直接 D2D，走 NVLink |
+| 方法                                     | 64 MB 带宽               | 解释                                       |
+| ---------------------------------------- | ------------------------ | ------------------------------------------ |
+| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink）  | **239.28 GB/s**          | 直接 D2D，走 NVLink                        |
 | `cudaMemcpy`（GPU0 → GPU1，启用 P2P 后） | 与 `cudaMemcpyPeer` 相同 | 启用 P2P 后，普通 `cudaMemcpy` 也走 NVLink |
-| `cudaMemcpy`（Host → GPU） | ~28 GB/s (Gen 4) | 经过 PCIe |
+| `cudaMemcpy`（Host → GPU）               | ~28 GB/s (Gen 4)         | 经过 PCIe                                  |
 
 **编程要点**：一旦通过 `cudaDeviceEnablePeerAccess` 启用了 P2P，CUDA runtime 会自动将 `cudaMemcpy` 和 UVA (Unified Virtual Addressing) 的访问路径优化为 NVLink。
 
@@ -139,15 +141,16 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 ```text
                      GPU 0-6 (NV12)              GPU 7 (No NVLink)
-                     ┌─────────────────┐         ┌─────────┐
+                     ┌─────────────────┐         ┌───────────────┐
  TP 可行             │ 可高效 All-Reduce │         │ 不可放入 TP 组 │
- DP 正常             │ 梯度同步 OK       │         │ 梯度同步 OK     │
- NCCL 路径            │ NVLink 直连      │         │ CPU 中转       │
- 推荐用法            │ 主力计算 + TP    │         │ 独立推理/小训练│
-                     └─────────────────┘         └─────────┘
+ DP 正常             │ 梯度同步 OK       │         │ 梯度同步 OK    │
+ NCCL 路径           │ NVLink 直连      │         │ CPU 中转       │
+ 推荐用法             │ 主力计算 + TP    │          │ 独立推理/小训练.│
+                     └─────────────────┘         └───────────────┘
 ```
 
 **生产建议**：
+
 - 将需要 P2P 的 workload（TP/PP）限制在 GPU 0-6 之间
 - GPU 7 用于数据并行（DP）副本或独立推理任务——DP 的梯度同步可以容忍 PCIe 带宽
 - 部署前用脚本检查所有 GPU 的 `nvidia-smi topo -m` 和 `cudaDeviceCanAccessPeer`，把 NVLink 异常的卡标记为 `no-p2p`

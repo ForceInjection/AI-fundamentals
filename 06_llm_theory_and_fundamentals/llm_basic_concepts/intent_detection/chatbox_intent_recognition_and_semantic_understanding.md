@@ -513,54 +513,54 @@ flowchart TD
 
 1. **混合检索策略**  
 
-```python
-def hybrid_retrieval(query, weights=[0.6, 0.4]):
-    # 向量检索
-    vector_results = vector_db.search(query, top_k=5)
-    # 关键词检索
-    keyword_results = bm25_search(query, top_k=5)
-    
-    # 混合排序
-    combined = []
-    for doc in set(vector_results + keyword_results):
-        score = weights[0] * doc.vector_score + weights[1] * doc.bm25_score
-        combined.append((doc, score))
-    return sorted(combined, key=lambda x: x[1], reverse=True)[:3]
-```
+    ```python
+    def hybrid_retrieval(query, weights=[0.6, 0.4]):
+        # 向量检索
+        vector_results = vector_db.search(query, top_k=5)
+        # 关键词检索
+        keyword_results = bm25_search(query, top_k=5)
+        
+        # 混合排序
+        combined = []
+        for doc in set(vector_results + keyword_results):
+            score = weights[0] * doc.vector_score + weights[1] * doc.bm25_score
+            combined.append((doc, score))
+        return sorted(combined, key=lambda x: x[1], reverse=True)[:3]
+    ```
 
 2. **知识融合算法**
 
-```python
-def knowledge_fusion(query, retrieved, llm):
-    context_str = "\n".join([f"[知识{i}] {doc.content}" for i, doc in enumerate(retrieved)])
-    
-    prompt = f"""
-    ## 知识整合任务
-    用户查询：{query}
-    相关知识：
-    {context_str}
-    
-    请生成满足以下要求的回答：
-    1. 精确回答用户问题
-    2. 必要时修正知识冲突（根据时效性排序）
-    3. 标注信息来源
-    """
-    return llm.generate(prompt, max_tokens=1024)
-```
+    ```python
+    def knowledge_fusion(query, retrieved, llm):
+        context_str = "\n".join([f"[知识{i}] {doc.content}" for i, doc in enumerate(retrieved)])
+        
+        prompt = f"""
+        ## 知识整合任务
+        用户查询：{query}
+        相关知识：
+        {context_str}
+        
+        请生成满足以下要求的回答：
+        1. 精确回答用户问题
+        2. 必要时修正知识冲突（根据时效性排序）
+        3. 标注信息来源
+        """
+        return llm.generate(prompt, max_tokens=1024)
+    ```
 
 3. **实时知识更新状态**
 
-```dashboard
-[知识库状态]
- 总条目：海量级别 
- 昨日更新：大量新增 
- 检索命中率：优秀水平
- 
-[来源分布]
- 结构化数据 ████████ 主要来源 
- 文档知识 ██████ 重要补充 
- 实时API ███ 动态更新
-```
+    ```dashboard
+    [知识库状态]
+    总条目：海量级别 
+    昨日更新：大量新增 
+    检索命中率：优秀水平
+    
+    [来源分布]
+    结构化数据 ████████ 主要来源 
+    文档知识 ██████ 重要补充 
+    实时API ███ 动态更新
+    ```
 
 ### 3.4 推理验证与纠错机制
 

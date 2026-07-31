@@ -6,12 +6,12 @@ generated_by: Claude Agent Skill (pdf_translator)
 ---
 
 Claude Agent Skills - PDF Translator Test
-1. Introduction
-This is a test PDF document created to demonstrate the PDF Translator Skill.
-The goal is to extract this text and translate it.
-2. Technical Details
-The skill uses PyPDF2 for extraction and Claude for translation.
-It demonstrates the progressive disclosure pattern.
-3. Conclusion
-Skills are a powerful way to extend Claude's capabilities.
 
+1. Introduction
+   This is a test PDF document created to demonstrate the PDF Translator Skill.
+   The goal is to extract this text and translate it.
+2. Technical Details
+   The skill uses PyPDF2 for extraction and Claude for translation.
+   It demonstrates the progressive disclosure pattern.
+3. Conclusion
+   Skills are a powerful way to extend Claude's capabilities.

@@ -303,15 +303,15 @@ $$
 
 - **月度折旧成本 ($C_{month}$)**：取 H100 预留实例的折中值，假设为 **¥45,000/卡/月**。
 - **月度有效运行秒数 ($T_{effective}$)**：实际业务请求存在明显的高峰（如白天 70% 利用率）与低谷（夜间 20% 利用率）。此处取综合利用率中位数 55%（_注：此测算为理想线性扩展下限，未计入 Prefill-Decode 干涉导致的排队损耗及显存碎片导致的 Batch 填充不足损耗_）：
-  $$ T_{effective} = 30\,\text{天} \times 24\,\text{小时} \times 3600\,\text{秒} \times 55\% \approx 1{,}425{,}600\,\text{秒} $$
+  $$ T\_{effective} = 30\,\text{天} \times 24\,\text{小时} \times 3600\,\text{秒} \times 55\% \approx 1{,}425{,}600\,\text{秒} $$
 
 **2. 输入阶段 (Prefill) 成本测算**：
 
 - **单卡输入吞吐 ($V_{in}$)**：基于 3.1 节推导，取 **4,000 Tokens/s**。
 - **月度总输入产能 ($N_{in}$)**：
-  $$ N_{in} = T_{effective} \times V_{in} = 1{,}425{,}600 \times 4{,}000 = 5{,}702{,}400{,}000\,\text{Tokens} $$
+  $$ N*{in} = T*{effective} \times V\_{in} = 1{,}425{,}600 \times 4{,}000 = 5{,}702{,}400{,}000\,\text{Tokens} $$
 - **每百万 Token 输入硬件成本 ($Price_{in hw}$)**：
-  $$ Price_{\mathrm{in hw}} = \left( \frac{C_{\text{month}}}{N_{in}} \right) \times 10^6 = \left( \frac{45{,}000}{5{,}702{,}400{,}000} \right) \times 10^6 \approx 7.89\,\text{¥/M} $$
+  $$ Price*{\mathrm{in hw}} = \left( \frac{C*{\text{month}}}{N\_{in}} \right) \times 10^6 = \left( \frac{45{,}000}{5{,}702{,}400{,}000} \right) \times 10^6 \approx 7.89\,\text{¥/M} $$
   > [!NOTE]
   > 注：此处推导出的 7.89 ¥/M 为**理想峰值吞吐下的边际成本极限**。在实际生产环境中，随着上下文长度（Context Length）的增加，Prefill 阶段的计算量呈平方级增长，吞吐量可能急剧下降（如 8K 上下文下吞吐可能跌至 1,500 Tokens/s 以下），导致实际硬件成本通常是该理论下限的 2-3 倍。
 
@@ -319,9 +319,9 @@ $$
 
 - **单卡输出吞吐 ($V_{out}$)**：基于 3.1 节推导，取 **2,500 Tokens/s**。
 - **月度总输出产能 ($N_{out}$)**：
-  $$ N_{out} = T_{effective} \times V_{out} = 1{,}425{,}600 \times 2{,}500 = 3{,}564{,}000{,}000\,\text{Tokens} $$
+  $$ N*{out} = T*{effective} \times V\_{out} = 1{,}425{,}600 \times 2{,}500 = 3{,}564{,}000{,}000\,\text{Tokens} $$
 - **每百万 Token 输出硬件成本 ($Price_{out hw}$)**：
-  $$ Price_{\mathrm{out hw}} = \left( \frac{C_{\text{month}}}{N_{out}} \right) \times 10^6 = \left( \frac{45{,}000}{3{,}564{,}000{,}000} \right) \times 10^6 \approx 12.63\,\text{¥/M} $$
+  $$ Price*{\mathrm{out hw}} = \left( \frac{C*{\text{month}}}{N\_{out}} \right) \times 10^6 = \left( \frac{45{,}000}{3{,}564{,}000{,}000} \right) \times 10^6 \approx 12.63\,\text{¥/M} $$
 
 ### 3.3 商业定价与系统级 TCO 对标分析
 

@@ -59,7 +59,7 @@ if not write_back and not node.parent.backuped:
 
 write_backup 要求父节点已经完成备份，否则直接返回 0 跳过。这个不变量的动机是**确保备份的节点在 radix tree 中形成从 root 开始的连续前缀，避免 gap**。
 
-为什么 gap 是问题？load_back 沿树向上恢复 evicted 节点（见[第四章](#四操作三load_back--l2-hbm)），如果树中存在"祖先未备份、子节点已备份"的断点，恢复时祖先节点的 host 数据不存在，子节点的 host 数据也无法和 GPU 端数据拼接成连续的前缀——恢复链路断裂。连续前缀不变量从根本上防止了这个场景。
+为什么 gap 是问题？load_back 沿树向上恢复 evicted 节点（见[第四章](#四操作三load-back--l2--hbm)），如果树中存在"祖先未备份、子节点已备份"的断点，恢复时祖先节点的 host 数据不存在，子节点的 host 数据也无法和 GPU 端数据拼接成连续的前缀——恢复链路断裂。连续前缀不变量从根本上防止了这个场景。
 
 **第三步：DMA 搬运与空间竞争：**
 
@@ -178,7 +178,7 @@ L2 满   → evict_host（释放 L2，删除节点，永久丢失）
 
 ---
 
-## 四、操作三：load_back —— L2 → HBM
+## 四、操作三：load-back —— L2 → HBM
 
 **load_back 在后续请求匹配到已 evict 的 prefix node 时，从 L2 将 KV 数据恢复到 GPU HBM，使 node 重新变为 `evicted=False`，后续 decode 可以直接使用。** 它是"空间换时间"的兑现——如果没有这一步，前面 write_backup 付出 L2 空间代价就没有机会转化为 prefill 节省。
 

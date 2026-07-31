@@ -15,7 +15,7 @@ AI Fundamentals is a Chinese-language knowledge repository covering the full AI 
 
 This repo uses **Conventional Commits** with Chinese descriptions:
 
-```
+```text
 docs(scope): description
 chore(scope): description
 refactor(scope): description
@@ -23,7 +23,6 @@ feat(scope): description
 ```
 
 Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `npu`, `training`, `llm-theory`, `rag`, `graph_rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `ai-native`, `smart_customer_service`, `kvbm`, `submodule`. Look at `git log --oneline` for recent examples before committing.
-
 
 ## File conventions
 

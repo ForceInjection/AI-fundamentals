@@ -2,8 +2,8 @@
 
 > **原文**：`https://journal.hexmos.com/marker-pdf-document-ai/`
 > **译文**：`https://baoyu.io/translations/ai/marker-pdf-document-ai`
-> `Marker` 处理中文不是特别好，后续我们会介绍国内开源的 `MinerU` (https://github.com/opendatalab/MinerU)。
-
+> `Marker` 处理中文不是特别好，后续我们会介绍国内开源的 [MinerU](https://github.com/opendatalab/MinerU)。
+>
 > 本文时间：**2023 年 12 月 10 日**，距离现在已经过去了一年多了，因此最新进展请参考 `Mark GitHub`：`https://github.com/VikParuchuri/marker`
 
 ![深入探索：AI 驱动的 PDF 布局检测引擎源代码解析](https://journal-wa6509js.s3.ap-south-1.amazonaws.com/697a028a31dcfb35b3d681331f1d04ebbd178b8aa8669d7e4f1b36c84bd22b96.png)
