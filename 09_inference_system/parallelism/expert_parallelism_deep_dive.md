@@ -407,7 +407,7 @@ EP 的核心取舍：
 ## 延伸阅读
 
 - [并行策略总览：DP、TP、PP、EP、SP](parallelism_strategies.md) — 五种策略的对比性入门
-- [DeepSeek-V3 MoE vLLM 部署方案](../deployment/deepseek_v3_moe_vllm_h20_deployment.md) — EP=32 的生产环境配置与 SLO 验证
+- [DeepSeek-V3 MoE vLLM 部署方案](../deployment/deepseek_v3_h20_vllm_deep_dive.md) — EP=32 的生产环境配置与 SLO 验证
 - [vLLM WideEP 架构解析](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md) — EP + DP 在 Blackwell 上的专门优化
 - [MLA TP KV Cache 冗余分析](../vllm/module_analysis/mla_tp_kv_redundancy.md) — EP 下 KV Cache 归属问题的深入探讨
 - [vLLM 官方 EP 部署文档](https://docs.vllm.ai/en/stable/serving/expert_parallel_deployment.html)

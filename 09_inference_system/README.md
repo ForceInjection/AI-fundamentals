@@ -10,7 +10,7 @@
 
 在讨论任何优化之前，先理解推理的两阶段（Prefill/Decode）、KV Cache 为什么存在、以及并行策略如何把大模型塞进多张 GPU。
 
-- **[KV Cache 技术体系](kv_cache/README.md)** — 25 篇文章，从 KV Cache 基础到分布式管理的完整导航。
+- **[KV Cache 技术体系](kv_cache/README.md)** — 42 篇文章，从 KV Cache 基础到分布式管理的完整导航。
   - 基础：KV Cache 原理、PagedAttention、五种注意力存储格式
   - 优化：Prefix Caching、压缩量化、淘汰策略、Chunked Prefill、PD 分离传输、Prefetching、CUDA Graph
   - 系统：LMCache、Mooncake、KVBM、HiCache、Tair KVCache
@@ -43,7 +43,7 @@
   - [调度器](sglang/sglang-scheduler.md)：Prefill > Decode 优先级、PrefillAdder 准入预算、retract_decode 内存保护、TTFT 时序拆解
   - [Overlap Scheduling](sglang/sglang-overlap-scheduling.md)：CPU-GPU 双流水线，将上轮 CPU 处理与本轮 GPU forward 并行执行
   - [Chunked Prefill 原理与实现](sglang/chunked_prefill.md)：长 prompt 切分为 chunk 与 decode 交替调度的源码级分析
-  - [超大规模推理调优案例](sglang/sglang_scaling_case_study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
+  - [超大规模推理调优案例](sglang/sglang-scaling-case-study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
   - [HiSparse 深度解析](sglang/hisparse_deep_dive.md)：DSA 稀疏选择从 attention kernel 提升到系统 coordinator，page 级选择性加载
   - 可视化：[推理流水线](sglang/assets/inference-pipeline.html)、[调度器](sglang/assets/scheduler-visual.html)、[KV Pool 三层关系](sglang/assets/sglang-kv-pool-three-relation.html)
 

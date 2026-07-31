@@ -34,7 +34,7 @@
 
 ### 1.3 FP8 的动态范围代价
 
-E4M3 的动态范围（最大 448）远小于 FP16（最大 65504）和 BF16（最大 3.39×10³⁸）。这意味着无法直接用 FP8 表示 outlier 值——那些在 FP16 下合法的"极端大的 activation 值"在 E4M3 下会直接溢出到无穷。这正是 per-tensor 量化在 E4M3 下精度不足的根本原因：一个 scale 无法同时保护 outlier 和正常值。
+E4M3 的动态范围（最大 448）远小于 FP16（最大 65504）和 BF16（最大 3.39×10³⁸）。这意味着无法直接用 FP8 表示 outlier 值——那些在 FP16 下合法的"极端大的 activation 值"在 E4M3 下会溢出到 NaN/饱和到最大值（E4M3 不表示无穷）。这正是 per-tensor 量化在 E4M3 下精度不足的根本原因：一个 scale 无法同时保护 outlier 和正常值。
 
 ---
 
@@ -82,9 +82,9 @@ E4M3 的动态范围（最大 448）远小于 FP16（最大 65504）和 BF16（�
 
 ### 4.1 SmoothQuant：将量化难度从权重转移到激活
 
-SmoothQuant（Xiao et al., 2023）的核心洞察：weight 的 outlier 通道和 activation 的 outlier 通道是**对偶**的——weight 中 outlier 大的通道，activation 中该通道的值通常较小。
+SmoothQuant（Xiao et al., 2023）的核心洞察：activation 的 outlier 是系统性的（固定通道），而权重量化相对容易；SmoothQuant 把量化难度从激活迁移到权重。
 
-算法的做法：在 forward 前，对每个通道 j 计算一个平滑因子 `s_j = max(|W_j|)ᵃ / max(|X_j|)¹⁻ᵃ`（α 是迁移强度，通常 0.5），然后将 `W_j` 缩小 `s_j` 倍，`X_j` 放大 `s_j` 倍——保证数学等价（`W_j·X_j` 不变），同时将量化难度从 outlier 多的 weight 通道转移到分布更均匀的 activation 通道。
+算法的做法：在 forward 前，对每个通道 j 计算一个平滑因子 `s_j = max(|X_j|)^α / max(|W_j|)^(1-α)`（α 是迁移强度，通常 0.5），然后将 `X_j` 除以 `s_j`，`W_j` 乘以 `s_j`——保证数学等价（`W_j·X_j` = `(W_j·s_j)·(X_j/s_j)` 不变），同时将量化难度从 outlier 多的激活通道转移到分布更均匀的权重通道。
 
 ```text
 变换前: Y = W · X           ← W 有 outlier 通道，精度损失大
@@ -108,9 +108,9 @@ AWQ 的做法：根据激活值的量级为每个权重通道计算一个 per-ch
 
 ### 4.3 GPTQ：逐层最优的权重量化
 
-GPTQ（Frantar et al., 2023）用更数学化的方法解决 outlier 问题。核心思想源于 1990 年代的 Optimal Brain Quantization（OBQ）算法：**对每一层，逐列选择量化误差最小的列来量化，量化一列后立即补偿剩余列的权重以消除累积误差。**
+GPTQ（Frantar et al., 2023）用更数学化的方法解决 outlier 问题。核心思想源于 Optimal Brain Surgeon（Hassibi & Stork, 1993）的 OBS 思想，由其 2022 年的 OBQ 版本（Frantar & Alistarh, NeurIPS 2022）演进而来：**对每一层，逐列选择量化误差最小的列来量化，量化一列后立即补偿剩余列的权重以消除累积误差。**
 
-GPTQ 的简化：OBQ 的复杂度是 O(d⁴)（d 为权重矩阵大小），无法直接用于 LLM。GPTQ 的改进是将权重矩阵分块（block-wise），每次量化 128 列，块内同步补偿——复杂度降到 O(d²)，可以处理 70B+ 模型。
+GPTQ 的简化：OBQ 的复杂度是 O(d⁴)（d 为权重矩阵大小），无法直接用于 LLM。GPTQ 的改进是将权重矩阵分块（block-wise），每次量化 128 列，块内同步补偿——复杂度降到 O(max{d_row·d_col², d_col³})（方阵约 O(d³)），可以处理 70B+ 模型。
 
 不同于 SmoothQuant（转换权重分布→量化）和 AWQ（选择性保护重要通道），GPTQ **不需要分析激活值**——它通过逐列量化 + 误差补偿，在数学上保证量化后的权重点积与原权重点积的最小二乘误差。但它需要校准数据集来准确评估量化误差。
 

@@ -11,7 +11,7 @@
 
 如果每次请求都从零开始计算这些重复前缀的 KV Cache，将造成巨大的**计算浪费**。以一个 8K token 的 System Prompt 为例：
 
-- 按照 [KV Cache 原理简介](../basic/kv_cache_原理简介.md) 中的分析，Prefill 阶段 Attention 部分的计算复杂度为 $O(N^2)$
+- 按照 [KV Cache 原理简介](../basic/kv_cache_basics.md) 中的分析，Prefill 阶段 Attention 部分的计算复杂度为 $O(N^2)$
 - 如果每秒有 100 个请求，每个请求都重复计算这 8K token 的 KV Cache，将消耗大量 GPU 算力
 - 这些重复计算本质上是**完全冗余的**——相同的输入总是产生相同的 KV 输出
 
@@ -493,7 +493,7 @@ Prefix Caching 是 LLM 推理优化中的关键技术，通过缓存和复用重
 
 ### 9.1 延伸阅读
 
-- [KV Cache 原理简介](../basic/kv_cache_原理简介.md) - KV Cache 基础概念
+- [KV Cache 原理简介](../basic/kv_cache_basics.md) - KV Cache 基础概念
 - `LMCache 架构概览` - LMCache 系统设计
 - `LMCacheConnector 源码分析` - vLLM 集成实现
 - `CacheBlend 技术详解` - RAG 场景的非前缀复用

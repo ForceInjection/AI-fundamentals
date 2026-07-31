@@ -232,16 +232,16 @@ CSA/HCA (DeepSeek V4):
   → block_size=256，大 block 对压缩 token 批量 I/O 更友好
 ```
 
-同一个 `KVCacheGroupSpec` 接口，不同的物理存储布局——这是 vLLM 能同时支持 MHA、GQA、MLA、Sliding Window、CSA/HCA 的关键抽象。V4 的实现细节详见 [vLLM 中的 DeepSeek V4](../../vllm/module_analysis/deepseek_v4.md) 和 [MLA 到 CSA/HCA 进化](../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。
+同一个 `KVCacheGroupSpec` 接口，不同的物理存储布局——这是 vLLM 能同时支持 MHA、GQA、MLA、Sliding Window、CSA/HCA 的关键抽象。V4 的实现细节详见 [vLLM 中的 DeepSeek V4](../../../vllm/module_analysis/deepseek_v4.md) 和 [MLA 到 CSA/HCA 进化](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。
 
 ---
 
 ## 八、相关资源
 
 - [A Visual Guide to Attention Variants in Modern LLMs](https://magazine.sebastianraschka.com/p/visual-attention-variants) — Sebastian Raschka, MHA→GQA→MLA 架构图和 KV Cache 对比（推荐与本文互补：有图 + 有精确计算）
-- [KV Cache 原理简介](kv_cache_原理简介.md) — KV Cache 的工作机制和显存公式
+- [KV Cache 原理简介](kv_cache_basics.md) — KV Cache 的工作机制和显存公式
 - [KV Cache 为什么叫 KV Cache？——Q 去哪了](why_only_kv.md) — 为什么 Q 不参与缓存
-- [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../prefill_decode/prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
+- [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md) — 两阶段计算过程详解
 - [大模型 KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — GQA/MQA 之外的压缩手段
 - [vLLM kv_cache_groups.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/utils.py) — `KVCacheGroupSpec` 的源码实现
 - [kv_cache_calc.py](kv_cache_calc.py) — 本文所有 KV Cache 数值的可复现计算脚本

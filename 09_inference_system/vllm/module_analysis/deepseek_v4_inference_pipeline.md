@@ -8,7 +8,7 @@ DeepSeek-V4 不是 V3 的增量升级。这是一次根本性的架构重构—�
 | ----------------- | ----------------------------- | --------------------------------------------------------- |
 | 隐藏维度          | 7168                          | **4096**（减半）                                          |
 | 注意力机制        | MLA（128 头，低秩 KV 压缩）   | **MQA（1 个 KV 头，K==V 共享）+ CSA/HCA 时域压缩**        |
-| 每头维度          | 192（128 nope + 64 rope）     | **512**（加倍）                                           |
+| 每头维度          | 192（128 nope + 64 rope）     | **512**（2.67×，nope 448 + rope 64）                      |
 | 残差连接          | 标准 residual: `h = x + f(x)` | **mHC 多流残差**（4 条并行流，Sinkhorn-Knopp 双随机矩阵） |
 | 层数              | 61                            | **43**                                                    |
 | 前几层            | Dense MLP（前 3 层）          | **Hash-MoE**（前 3 层，冻结路由）                         |
@@ -128,30 +128,32 @@ mHC 的直觉：标准残差 `y = x + f(x)` 中，所有前置层的贡献权重
 
 ### 3.1 mHC 的三输出：pre、post、comb
 
-`DeepseekV4HyperConnection.forward()` 接收 4 条流 `[B, S, 4, 4096]`，输出三个量：
+`DeepseekV4HyperConnection.forward()` 接收 4 条流 `[B, S, 4, 4096]`，返回三个量（实际签名为 `→ (post, comb, collapsed)`）：
 
-| 输出   | 形状           | 作用                                                        |
-| ------ | -------------- | ----------------------------------------------------------- |
-| `pre`  | `[B, S, 4]`    | 加权求和 4 条流 → 折叠为 1 条，供 attention/mlp 使用        |
-| `post` | `[B, S, 4]`    | 将 attention/mlp 输出分配到 4 条流（权重范围 [0, 2]）       |
-| `comb` | `[B, S, 4, 4]` | 4×4 混合矩阵（Sinkhorn-Knopp 迭代 20 步投影到双随机流形上） |
+| 输出         | 形状           | 作用                                                        |
+| ------------ | -------------- | ----------------------------------------------------------- |
+| `post`       | `[B, S, 4]`    | 将子层输出分配到 4 条流（权重范围 [0, 2]）                  |
+| `comb`       | `[B, S, 4, 4]` | 4×4 混合矩阵（Sinkhorn-Knopp 投影到双随机流形）             |
+| `collapsed`  | `[B, S, 4096]` | `pre` 加权折叠 4 条流 → 1 条，供子层使用（pre 是内部变量） |
 
 ```python
-# modeling_deepseek_v4.py, DeepseekV4HyperConnection.forward()
+# modeling_deepseek_v4.py, DeepseekV4HyperConnection.forward() (simplified)
 hc = self.hc_mult  # = 4
 flat = self.input_norm(hidden_streams.flatten(start_dim=2).float())
 pre_w, post_w, comb_w = F.linear(flat, self.fn).split([hc, hc, hc*hc], dim=-1)
+pre_b, post_b, comb_b = self.base.split([hc, hc, hc*hc])
+pre_scale, post_scale, comb_scale = self.scale.unbind(0)
 
-pre = torch.sigmoid(pre_w * pre_scale + pre_b) + eps     # [0+eps, 1+eps]
-post = 2 * torch.sigmoid(post_w * post_scale + post_b)    # [0, 2]
-comb = softmax(comb_logits) + eps                         # 初始行归一化
-# Sinkhorn-Knopp: 交替行列归一化 20 次 → 双随机矩阵
-for _ in range(hc_sinkhorn_iters - 1):
-    comb = comb / comb.sum(dim=-1, keepdim=True)  # 行归一化
-    comb = comb / comb.sum(dim=-2, keepdim=True)  # 列归一化
+pre = torch.sigmoid(pre_w * pre_scale + pre_b) + self.hc_eps
+post = 2 * torch.sigmoid(post_w * post_scale + post_b)
+comb_logits = comb_w.view(*comb_w.shape[:-1], hc, hc) * comb_scale + comb_b.view(hc, hc)
+comb = torch.softmax(comb_logits, dim=-1) + self.hc_eps
+comb = comb / (comb.sum(dim=-2, keepdim=True) + self.hc_eps)  # 初始列归一化
+for _ in range(self.hc_sinkhorn_iters - 1):   # 共 20 步（含初始列归一 + 19 轮）
+    comb = comb / (comb.sum(dim=-1, keepdim=True) + self.hc_eps)
+    comb = comb / (comb.sum(dim=-2, keepdim=True) + self.hc_eps)
 
-# 折叠：pre 权重加权求和 4 条流 → 1 条
-collapsed = (pre.unsqueeze(-1) * hidden_streams).sum(dim=2)
+collapsed = (pre.unsqueeze(-1) * hidden_streams).sum(dim=2).to(hidden_streams.dtype)
 return post, comb, collapsed
 ```
 
@@ -197,7 +199,7 @@ q = self.q_b_norm(q)
 q = apply_rotary_pos_emb(q, cos, sin)
 ```
 
-对比 V3：V3 的 Q 低秩维度是 1536，每头 192 维（128 nope + 64 rope），V4 是 1024 → 每头 512 维（全部参与 partial RoPE）。V4 的每头维度大得多——这是 V4 降低头数（128→64）但扩大每头维度（192→512）的设计选择。
+对比 V3：V3 的 Q 低秩维度是 1536，每头 192 维（128 nope + 64 rope），V4 是 1024 → 每头 512 维（448 nope + 64 rope，仅 rope 部分参与 RoPE）。V4 的每头维度大得多——这是 V4 降低头数（128→64）但扩大每头维度（192→512）的设计选择。
 
 ### 4.2 KV 的 MQA 投影
 
@@ -231,7 +233,7 @@ self.kv_proj = nn.Linear(config.hidden_size, self.head_dim, bias=False)
 | HCA                 | 128:1  | 无                | 默认配置的前 2 层，后续与 CSA 交替 |
 | CSA                 | 4:1    | Lightning Indexer | 默认配置中与 HCA 交替              |
 
-滑动窗口（128 token）是**所有类型的公共基础**——即使是 HCA/CSA 层也保留窗口内的完整 KV。HCA/CSA 在窗口之上增加了压缩支路：HCA 每 128 token 压 1 条摘要，CSA 每 4 token 压 1 条并用 Indexer 做稀疏检索。前 2 层默认为 HCA（用于 bootstrap），后续 CSA 与 HCA 交替排列。
+滑动窗口（128 token）是**所有类型的公共基础**——即使是 HCA/CSA 层也保留窗口内的完整 KV。HCA/CSA 在窗口之上增加了压缩支路：HCA 每 128 token 压 1 条摘要，CSA 每 4 token 压 1 条并用 Indexer 做稀疏检索。默认配置中前 3 层为 HCA（前 2 层 bootstrap + 交替以 HCA 起始），后续 CSA 与 HCA 交替排列。
 
 以下动画演示了 CSA（c4a）注意力处理 13 个 token 的过程——压缩 token（彩色方块）如何覆盖滑动窗口外的历史，Indexer 如何选出最相关的几条参与注意力计算：
 
@@ -262,7 +264,7 @@ Indexer: 64 头 × 128 维，对全部压缩条目做注意力
   → 滑动窗口 (128) + 选中的 512 条压缩摘要 → attention
 ```
 
-CSA 的压缩率适中（4:1），配合 Indexer 的精准检索，在精度和效率之间取得平衡。这是 V4 最主要的注意力类型。
+CSA 的压缩率适中（4:1），配合 Indexer 的精准检索，在精度和效率之间取得平衡。在默认配置中 CSA 与 HCA 交替排列，两者数量相当。
 
 ### 4.5 分组输出投影
 
@@ -270,13 +272,15 @@ Attention 输出 `(1, 64×512=32768)` 不是直接投影回 4096，而是先按 
 
 ```python
 # 8 groups，每组 64/8=8 heads
-# 每组：8×512=4096 → o_a_proj → 8×1024=8192 → o_b_proj → 8×512=4096
-grouped = attn_output.view(1, 8, -1)      # (1, 8 groups, 8×512=4096 per group)
-grouped = self.o_a_proj(grouped).flatten(2) # (1, 8×1024=8192)
+# 每组内：8×512=4096 → o_a_proj → 1024 → o_b_proj → 4096
+# o_a_proj (per-group): 4096 → 1024, total 8×4096×1024 params
+# o_b_proj: 8×1024=8192 → 4096
+grouped = attn_output.view(1, 8, -1)      # (1, 8 groups, 4096 per group)
+grouped = self.o_a_proj(grouped).flatten(2) # (1, 8192)
 output = self.o_b_proj(grouped)             # (1, 4096)
 ```
 
-分组输出投影的核心假设：不同组的注意力头在输出空间中是近似解耦的——组内 heads 共享一个低秩瓶颈，组间独立。这比 V3 的全局 O 投影参数量更少（8×4096×1024 + 8192×4096 vs 32768×4096），参数量减少约 20%。
+分组输出投影的核心假设：不同组的注意力头在输出空间中是近似解耦的——组内 heads 共享一个低秩瓶颈，组间独立。这比 V3 的全局 O 投影参数量更少（8×4096×1024 + 8192×4096 ≈ 67M vs 32768×4096 ≈ 134M），参数量减半。
 
 ### 4.6 KV Cache：V3 与 V4 的对比
 
@@ -292,7 +296,7 @@ V4: MQA K==V 共享，每 token 512 dim → ~1 KB/token
     → 43 层 × (~128 KB + ~8 MB) ≈ 350 MB（1M 上下文）
 ```
 
-V4 的 KV cache 不再是每 token 独立存储——在长序列下，压缩摘要主导了存储。这使 V4 在 1M 上下文中保持了可控的 KV cache 量级，同时不牺牲窗口内的精确注意力。上述计算使用 BF16 精度（便于与 V3 对比）；vLLM 生产部署中对滑动窗口使用 FP8（~584B/token）并对索引器使用 FP4，实际 KV cache 可进一步缩减。
+V4 的 KV cache 不再是每 token 独立存储——在长序列下，压缩摘要主导了存储。上述计算采用纯 HCA 层的简化估算（43 层约 350 MB）；若计入 CSA 层（c4a indexer + 4:1 压缩主 KV，1M 上下文下每层约 320 MB），实际总量在 GB 级别。完整数据见 vLLM 博客附录：V4-Pro（61 层混合配置）1M 上下文下 BF16 KV cache 约 9.62 GiB。生产部署中对滑动窗口使用 FP8（~584B/token）并对索引器使用 FP4，可进一步缩减。
 
 > **Prefill 的差异**：输入形状从 `(1, 4096)` 变为 `(N, 4096)`。滑动窗口支路逐 token 追加 KV（同标准 MQA）；压缩支路每 `compress_rate` 个 token 触发一次 compressor forward，产出一条压缩摘要。CSA 的 Indexer 在 prefill 末尾对整个压缩库做一次全局 top-512 检索，建立首 token 的稀疏注意力索引。
 
@@ -322,9 +326,9 @@ Hash-MoE 的专家计算与标准 MoE 完全相同（gate_proj → up_proj → S
 
 ```text
 hidden_states (1, 4096) → gate → router_logits (1, 256)
-  → 分组路由（8 组中选 top-4 组 → 选 top-6 专家）
+  → 直接 top-6（scoring_func="sqrtsoftplus"，无分组路由）
     → 6 个专家各自 gate_up → SiLU → down（每专家中间维度 2048）
-      → 路由权重归一化（除以 routed_scaling_factor=1.5）
+      → 路由权重乘以 routed_scaling_factor=1.5
         → 加权和 + shared_expert(hidden)
 ```
 
@@ -340,7 +344,7 @@ hidden_states (1, 4096) → gate → router_logits (1, 256)
 
 ```python
 # 最后一个 mHC，将 4 流融为 1 流
-hidden_states = self.hyper_head(hidden_states)  # (1, 4, 4096) → (1, 4096)
+hidden_states = self.hc_head(hidden_states)  # (1, 4, 4096) → (1, 4096)
 ```
 
 ### 6.2 Final Norm + LM Head

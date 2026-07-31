@@ -345,7 +345,7 @@ def compute_logits(self, hidden_states: torch.Tensor) -> torch.Tensor | None:
 
 MTP 像是阅读时的"预判"。你读到"法国的首都是"——还没看到下一个词，脑子里已经自动浮现了"巴黎"。MTP 在主模型算完当前 token 之后、采样出新 token 之前，用几个中间层的"理解"快速预测接下来几个 token 可能是什么。这些预测不是最终输出——它们是草稿，下一轮主 forward 会并行验证。如果猜对了，一轮 forward 就推进了多个 token；猜错了也无妨，只丢弃草稿，恢复主路径。这就是 self-speculation：**模型既是 draft 的作者，也是 verifier**。
 
-MTP（Multi-Token Prediction）的原理已有专文（[MTP 多 Token 预测](mtp-multi-token-prediction.md)），这里简化为它在 forward pipeline 中的位置。
+MTP（Multi-Token Prediction）的原理已有专文（[MTP 多 Token 预测](../../model_optimization/mtp-multi-token-prediction.md)），这里简化为它在 forward pipeline 中的位置。
 
 ### 7.1 MTP 在 call stack 中的位置
 
@@ -469,5 +469,5 @@ MoE FFN 占每层延迟的 ~72%——这是 DeepSeek-V3 decode 的最大性能�
 - [DeepSeek-V3 配置](https://huggingface.co/deepseek-ai/DeepSeek-V3-Base/blob/main/configuration_deepseek.py)
 - [MLA 的 TP 切分：为什么 8 张 GPU 存了同一份 KV cache](mla_tp_kv_redundancy.md)
 - [投机解码方法全景：六种草拟策略的工程选择](speculative_decoding_landscape.md)
-- [MTP 多 Token 预测：训练、推理与 Self-Speculation](./mtp-multi-token-prediction.md)（`model_optimization/` 目录）
+- [MTP 多 Token 预测：训练、推理与 Self-Speculation](../../model_optimization/mtp-multi-token-prediction.md)（`model_optimization/` 目录）
 - [专家并行（EP）深度解析](../../parallelism/expert_parallelism_deep_dive.md)

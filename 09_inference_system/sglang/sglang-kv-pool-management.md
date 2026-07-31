@@ -492,4 +492,4 @@ sglang 的 KV Pool 管理围绕一个核心问题展开：**如何在有限的 G
 
 HiCache 在此基础上扩展了多级存储：L2 (CPU DRAM) 作为快速恢复层，L3 (NVMe/远程) 作为持久化层。`page_size` 将 token 分组为原子管理单元，使内容寻址、page 级 I/O 和 radix tree 压缩成为可能。`write_through` / `write_back` 两种策略提供了即时持久化与延迟批量写入之间的选择。
 
-> **深度阅读**：L1↔L2 之间 write_backup、eviction、load_back 三个操作的完整代码路径与决策逻辑，见 **[KV Cache L1↔L2 数据流深度分析](./sglang-kvcache-dataflow-analysis.md)**。
+> **深度阅读**：L1↔L2 之间 write_backup、eviction、load_back 三个操作的完整代码路径与决策逻辑，见 **[KV Cache L1↔L2 数据流深度分析](./sglang-kv-cache-dataflow-analysis.md)**。

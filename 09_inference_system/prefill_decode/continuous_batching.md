@@ -190,7 +190,7 @@ def _preempt_request(self, request: Request, timestamp: float) -> None:
 
 ### 4.4 完成与回收
 
-请求完成后（生成 EOS 或达到 max_tokens），在 `update_from_output()`（`scheduler.py:1499`）中处理。`_free_request()` 将请求标记为 `FINISHED`，记录到 `finished_req_ids`，并立即释放 KV cache block（`scheduler.py:2108-2114`）。在启用 `defer_block_free` 的少数场景（如同步调度、preemption 的 block 延迟释放），释放会被延后到 GPU 侧操作完成——但在常见路径下，block 的回收是即时的。
+请求完成后（生成 EOS 或达到 max_tokens），在 `update_from_output()`（`scheduler.py:1499`）中处理。`_free_request()` 将请求标记为 `FINISHED`，记录到 `finished_req_ids`，并立即释放 KV cache block（`scheduler.py:2108-2114`）。`defer_block_free` 在异步/重叠调度且启用 KV Connector（consumer 侧）时激活，此时 block 释放被延后到 GPU 侧的写入操作完成后——但在常见路径下，block 的回收是即时的。
 
 ---
 
@@ -281,7 +281,7 @@ vLLM 的 preemption 也可能将请求从 running 移回 waiting，但在实际�
 
 ### 6.1 时间复杂度：SGLang O(N) vs vLLM O(N²) 的误解
 
-调度器复杂度常被用来比较两个框架，SGLang 重新调度所有 running 请求导致 O(N²) 是一种常见批评。但这混淆了"遍历 running 列表"和"重新分配"——所有请求的 KV cache block 分配状态都在 block table 中持久化。update_running_batch 只做 filter（O(N)）、check_decode_mem（O(1) 水位判断）、prepare_for_decode（构建 tensor），没有逐请求的重新分配。两个框架的调度器在纯 decode 维护上都是 O(N) 遍历量级。真正的复杂度差异在于 O(N²) 数据结构——高效的密集并查集等操作——但这不是调度路径的常态，也不影响迭代级调度这个基本结论。
+调度器复杂度常被用来比较两个框架，SGLang 需要逐请求越权检查导致 O(N²) 是一种常见批评。但两个框架的纯 decode 维护路径都是 O(N) 量级：filter 移除已完成请求（O(N)）、check_decode_mem 逐请求统计下轮页需求（也是 O(N)）、prepare_for_decode 逐请求分配 1 token 页（O(N)）——这些遍历虽然都是线性，但没有嵌套的"请求×请求"配对操作。真正的复杂度差异不在 decode 维护路径，而在 prefill 准入阶段——SGLang 的 PrefillAdder 对每个候选请求做前缀匹配（radix tree 查找），匹配开销与树深度和 KV cache 规模相关，这才是可能产生超线性的地方，但也不是简单 O(N²)。
 
 ### 6.2 调度优先级
 

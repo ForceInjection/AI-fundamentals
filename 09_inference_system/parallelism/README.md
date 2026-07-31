@@ -21,7 +21,7 @@
 1. **先读** [并行策略总览](parallelism_strategies.md) — 建立五种策略的全局认知，理解 DP/TP/PP/EP/SP 各自的定位
 2. **再读** [EP 深度解析](expert_parallelism_deep_dive.md) — 如果工作涉及 MoE 模型（DeepSeek-V3/V4、Mixtral 等），这篇是必读
 3. **搭配** [并行策略可视化](parallelism_visual.html) — 浏览器打开，边读边对照
-4. **延伸** [推理优化参考设计](../reference_design/README.md) 中的并行策略选型章节，以及 [DeepSeek-V3 MoE 部署方案](../deployment/deepseek_v3_moe_vllm_h20_deployment.md) 中的 EP=32 实战配置
+4. **延伸** [推理优化参考设计](../reference_design/README.md) 中的并行策略选型章节，以及 [DeepSeek-V3 MoE 部署方案](../deployment/deepseek_v3_h20_vllm_deep_dive.md) 中的 EP=32 实战配置
 
 ---
 

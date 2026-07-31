@@ -57,5 +57,5 @@ Q 是单次使用的：提出、得到答案、丢弃。K 和 V 是被反复使�
 
 ## 相关资源
 
-- [KV Cache 原理简介](kv_cache_原理简介.md) — KV Cache 的工作机制、显存公式与工程实践
+- [KV Cache 原理简介](kv_cache_basics.md) — KV Cache 的工作机制、显存公式与工程实践
 - [为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../../../prefill_decode/prefill_decode_qkv_calculation.md) — §4.1-4.2 有因果掩码和不缓存 Q 的数学推导

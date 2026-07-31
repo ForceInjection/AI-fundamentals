@@ -6,7 +6,7 @@ CPU Cache 淘汰里选错一个 cache line，多等几十个周期而已。KV Ca
 
 这篇文章从"滑动窗口为什么失败"入手：先介绍 Attention Sinks——一个 SoftMax + Causal Mask 导致的数值稳定现象，它构成了淘汰策略必须遵守的硬约束（前几个 token 绝对不能丢）。然后分析业界如何在这条底线之上，用注意力分数区分剩余 token 的信息价值，实现从"盲目按位置淘汰"到"精确按重要性淘汰"的演进。
 
-> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_原理简介.md) — KV Cache 的工作机制、显存公式；[PagedAttention 原理介绍](../basic/paged_attention.md) — block 级内存管理，本文假设你已了解 block table 和按需分配的基本概念。
+> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_basics.md) — KV Cache 的工作机制、显存公式；[PagedAttention 原理介绍](../basic/paged_attention.md) — block 级内存管理，本文假设你已了解 block table 和按需分配的基本概念。
 
 ---
 
@@ -265,7 +265,7 @@ Sliding Window 不加入生产比较——它是其他所有策略的"反面教�
 
 ## 相关阅读
 
-- [KV Cache 原理简介](../basic/kv_cache_原理简介.md) — KV Cache 的工作机制和显存公式
+- [KV Cache 原理简介](../basic/kv_cache_basics.md) — KV Cache 的工作机制和显存公式
 - [PagedAttention 原理介绍](../basic/paged_attention.md) — Block 级内存管理：block table、按需分配、碎片率
 - [KV Cache 压缩技术详解](../compression/kv_cache_compression.md) — 四维冗余模型 + 压缩全景
 - [RoPE 与 Prefix Caching](../prefix_caching/rope_and_prefix_caching.md) — 位置编码如何影响缓存复用

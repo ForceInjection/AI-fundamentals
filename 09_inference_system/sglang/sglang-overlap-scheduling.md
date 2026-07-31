@@ -54,10 +54,10 @@ SGLang 的 overlap scheduling 正是利用这个依赖间隙：在 GPU 执行 ba
 
 ### 2.1 event_loop_overlap 的整体结构
 
-`event_loop_overlap`（`scheduler.py:1590`）是 overlap scheduling 的主循环。核心数据结构是 `result_queue`——一个 `(batch, result)` 的队列，用于延迟处理：
+`event_loop_overlap`（`scheduler.py:1535`）是 overlap scheduling 的主循环。核心数据结构是 `result_queue`——一个 `(batch, result)` 的队列，用于延迟处理：
 
 ```python
-# scheduler.py:1590-1658, simplified
+# scheduler.py:1535-1658, simplified
 def event_loop_overlap(self):
     self.result_queue: Deque[Tuple[ScheduleBatch, Result]] = deque()
 
@@ -65,8 +65,7 @@ def event_loop_overlap(self):
         recv_reqs = self.request_receiver.recv_requests()  # ① 收请求
         self.process_input_requests(recv_reqs)
 
-        plan = self.get_next_batch_to_run(...)              # ② 组建 batch N
-        batch = plan.batch_to_run
+        batch = self.get_next_batch_to_run(...)              # ② 组建 batch N
 
         if disable_overlap_for_batch:
             pop_and_process()                               # ← 不能 overlap，立即处理上轮
@@ -83,7 +82,8 @@ def event_loop_overlap(self):
                 pop_and_process()                           # ④ CPU 处理 batch N-1
         #                                                    （与 GPU(batch N) 并行！）
 
-        self.launch_batch_sample_if_needed(batch_result, batch)  # ⑤ 采样
+        if self.is_generation:
+            self.launch_batch_sample_if_needed(batch_result)      # ⑤ 采样（单参数 API）
         self.last_batch = batch
 ```
 
@@ -105,11 +105,11 @@ CPU 处理被"藏"在 GPU forward 的时间里——从串行变成并行，端�
 
 ### 2.2 pop_and_process：延迟处理的执行体
 
-`pop_and_process` 从 `result_queue` 左侧弹出上一轮的 `(batch, result)`，调用 `process_batch_result`（`scheduler.py:3547`）——这条路径处理 decode 和 prefill 的结果，将 output token 发回 tokenizer、更新 metrics、发送健康检查信号。重要的是，这一切发生在 GPU 正在执行当前 batch forward 的同时。
+`pop_and_process` 从 `result_queue` 左侧弹出上一轮的 `(batch, result)`，调用 `process_batch_result`（`scheduler.py:3367`）——这条路径处理 decode 和 prefill 的结果，将 output token 发回 tokenizer、更新 metrics、发送健康检查信号。重要的是，这一切发生在 GPU 正在执行当前 batch forward 的同时。
 
 ### 2.3 采样时机的协调
 
-采样（`launch_batch_sample_if_needed`，`scheduler.py:3517`）必须在 `pop_and_process` 之后调用——因为采样依赖上轮 CPU 处理更新了请求状态（如 grammar 约束）。但采样本身不阻塞 GPU——它发生在 CPU 侧，与下一轮的 GPU 准备（收请求、组 batch）并行。
+采样（`launch_batch_sample_if_needed`，`scheduler.py:3335`）必须在 `pop_and_process` 之后调用——因为采样依赖上轮 CPU 处理更新了请求状态（如 grammar 约束）。但采样本身不阻塞 GPU——它发生在 CPU 侧，与下一轮的 GPU 准备（收请求、组 batch）并行。
 
 ---
 
@@ -134,7 +134,7 @@ self.future_map.stash(
 )
 ```
 
-下一轮 batch 组建 GPU 输入时，通过 `resolve_forward_inputs(batch, self.future_map)`（`scheduler.py:3327`）从 relay 缓冲区中取出上一轮的 output tokens，拼入当前 batch 的 input tensor——这些值是在上一轮采样后立即写入的，不受本轮的 CPU-GPU 竞态影响。最后 `future_map.publish` 更新 seq_lens 供再下一轮使用。
+下一轮 batch 组建 GPU 输入时，通过 `resolve_forward_inputs(batch, self.future_map)`（`scheduler.py:3187`）从 relay 缓冲区中取出上一轮的 output tokens，拼入当前 batch 的 input tensor——这些值是在上一轮采样后立即写入的，不受本轮的 CPU-GPU 竞态影响。最后 `future_map.publish` 更新 seq_lens 供再下一轮使用。
 
 `FutureMap` 本质是一个"双缓冲 relay"——上轮的采样输出在 CPU 处理阶段写入，下轮的 GPU 输入在 forward 前取出，两者通过 relay 解耦，不直接读写同一份状态。
 
@@ -150,10 +150,10 @@ DP Attention 模式下，多个 DP rank 各自独立做 attention 计算，然�
 
 ### 4.2 同步决策
 
-DP Attention 模式下，`is_disable_overlap_for_batch`（`scheduler.py:1663`）通过 `require_mlp_sync` 标志自动切换到全局同步的判断逻辑：
+DP Attention 模式下，`is_disable_overlap_for_batch`（`scheduler.py:1594`）通过 `require_mlp_sync` 标志自动切换到全局同步的判断逻辑：
 
 ```python
-# scheduler.py:1671-1674
+# scheduler.py:1602-1605
 if self.require_mlp_sync:
     is_extend = lambda b: b and b.is_extend_in_batch  # 全局同步的 flag
 else:
@@ -166,20 +166,20 @@ else:
 
 ## 五、不适合 overlap 的场景
 
-overlap 并非无代价。它引入了一层间接（result_queue）+ relay 开销（FutureMap），并且在连续 prefill 和 spec+grammar 两种场景下并行反而会伤害延迟或正确性。`is_disable_overlap_for_batch`（`scheduler.py:1663`）是这两个条件的集中判断：
+overlap 并非无代价。它引入了一层间接（result_queue）+ relay 开销（FutureMap），并且在连续 prefill 和 spec+grammar 两种场景下并行反而会伤害延迟或正确性。`is_disable_overlap_for_batch`（`scheduler.py:1594`）是这两个条件的集中判断：
 
 ### 5.1 连续 prefill batch
 
 两轮 iteration 都是 prefill 时，overlap 被禁用。原因：prefill 的 TTFT 是最关键的用户感知指标。如果 GPU(prefill N) 与 CPU(prefill N-1) 重叠，prefill N-1 的采样延迟会推迟 prefill N 的 TTFT——与"降低 TTFT"的目标直接冲突。由环境变量控制（默认关闭，即默认允许 prefill 间 overlap）：
 
 ```python
-# environ.py:371
+# environ.py:315
 SGLANG_DISABLE_CONSECUTIVE_PREFILL_OVERLAP = EnvBool(False)
 ```
 
 ### 5.2 投机解码 + grammar 场景
 
-当 decode batch 同时使用投机解码和 grammar 约束且 `result_queue` 非空时，overlap 被临时关闭。原因：grammar 约束下的采样依赖步骤间状态的一致性，overlap 延迟了上轮采样，可能导致 grammar 状态错位。源码中 `is_disable_overlap_for_batch` 的第二个条件（`scheduler.py:1688-1694`）：
+当 decode batch 同时使用投机解码和 grammar 约束且 `result_queue` 非空时，overlap 被临时关闭。原因：grammar 约束下的采样依赖步骤间状态的一致性，overlap 延迟了上轮采样，可能导致 grammar 状态错位。源码中 `is_disable_overlap_for_batch` 的第二个条件（`scheduler.py:1614-1620`）：
 
 ```python
 need_grammar_sync = (

@@ -54,7 +54,7 @@ while True:
 
 ### 1.3 调度优先级：Prefill > Decode
 
-`get_next_batch_to_run()` 的决策逻辑（`scheduler.py:2684`）：
+`get_next_batch_to_run()` 的决策逻辑（`scheduler.py:2555`）：
 
 ```text
 new_batch = get_new_batch_prefill()   # 尝试组建 prefill batch
@@ -156,7 +156,7 @@ Request C ──┘       │
 
 ## 三、Prefill Batch 组建
 
-核心是 `PrefillAdder`（`schedule_policy.py:441`）。它像一个预算管理器：
+核心是 `PrefillAdder`（`schedule_policy.py:425`）。它像一个预算管理器：
 
 ```text
 PrefillAdder 参数:
@@ -192,7 +192,7 @@ PrefillAdder 参数:
 | 预算          | 失败返回   | 效果                                        |
 | ------------- | ---------- | ------------------------------------------- |
 | KV cache 空间 | `NO_TOKEN` | 设置 `batch_is_full`，本轮不再 admit 新请求 |
-| 计算量        | `NO_TOKEN` | 同上                                        |
+| 计算量        | `OTHER`    | 直接 break，不设 batch_is_full              |
 | 公平性        | `OTHER`    | 直接 break，跳过当前请求                    |
 | 请求数        | `OTHER`    | 同上                                        |
 | 请求槽位      | —          | 在循环体中直接设置 `batch_is_full` 后 break |
@@ -206,14 +206,14 @@ total_tokens = extend_input_len + max_new + page_size
 ```
 
 - `extend_input_len`：需要新 prefill 的 token（不含 prefix cache 已命中部分）
-- `max_new`：预估输出 token 数（`max_new_tokens × ratio - 已生成`）——**预留 decode 阶段 KV cache 空间**
+- `max_new`：预估输出 token 数（`min(max_new_tokens − 已生成, CLIP_MAX_NEW_TOKENS)`，ratio 仅用于 running 请求的 offset）——**预留 decode 阶段 KV cache 空间**
 - `page_size`：页对齐开销（最多一页）
 
 已有 prefix cache（`prefix_indices`）**不重复扣预算**——它已占用 L1，`_req_inc_lock_ref` 加锁防止被驱逐。
 
 ### 3.3 Prefill 日志解读
 
-每条 Prefill 日志是一次 GPU forward，处理一组请求的 extend tokens 并行计算。decode 日志有采样机制（`scheduler_components/metrics_reporter.py:714`，`forward_ct_decode % decode_log_interval != 0` 时跳过，默认间隔 40），prefill 无此限制——每次 EXTEND forward 都输出日志。
+每条 Prefill 日志是一次 GPU forward，处理一组请求的 extend tokens 并行计算。decode 日志有采样机制（`scheduler_components/metrics_reporter.py:674`，`forward_ct_decode % decode_log_interval != 0` 时跳过，默认间隔 40），prefill 无此限制——每次 EXTEND forward 都输出日志。
 
 关键字段：
 
@@ -228,7 +228,7 @@ total_tokens = extend_input_len + max_new + page_size
 
 ## 四、Decode Batch 管理
 
-已在生成的请求组成 `running_batch`。每次 decode step（`update_running_batch`, `scheduler.py:3135`）：
+已在生成的请求组成 `running_batch`。每次 decode step（`update_running_batch`, `scheduler.py:2995`）：
 
 ```text
 update_running_batch():
@@ -268,9 +268,9 @@ TTFT_ms     = queue_ms + schedule_ms + forward_ms
 
 | 文件                                                 | 方法/类                          | 作用                             |
 | ---------------------------------------------------- | -------------------------------- | -------------------------------- |
-| `scheduler.py:2684`                                  | `get_next_batch_to_run()`        | 调度决策入口                     |
-| `scheduler.py:2844`                                  | `_get_new_batch_prefill_raw()`   | 组建 prefill batch               |
-| `scheduler_components/batch_result_processor.py:180` | `process_batch_result_prefill()` | prefill 结果处理                 |
-| `schedule_policy.py:441`                             | `PrefillAdder`                   | chunk 截断决策                   |
-| `schedule_policy.py:976`                             | `add_one_req()`                  | 单请求 admit 逻辑                |
-| `schedule_batch.py:1162`                             | `init_next_round_input()`        | 前缀匹配 + extend_input_len 计算 |
+| `scheduler.py:2555`                                  | `get_next_batch_to_run()`        | 调度决策入口                     |
+| `scheduler.py:2722`                                  | `_get_new_batch_prefill_raw()`   | 组建 prefill batch               |
+| `scheduler_components/batch_result_processor.py:178` | `process_batch_result_prefill()` | prefill 结果处理                 |
+| `schedule_policy.py:425`                             | `PrefillAdder`                   | chunk 截断决策                   |
+| `schedule_policy.py:858`                             | `add_one_req()`                  | 单请求 admit 逻辑                |
+| `schedule_batch.py:1123`                             | `init_next_round_input()`        | 前缀匹配 + extend_input_len 计算 |

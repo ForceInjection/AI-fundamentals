@@ -115,7 +115,7 @@ Medusa heads 在主模型 forward 完成后才执行——它们消费已经计�
 
 #### 3.2.2 EAGLE / EAGLE-3：从特征层提取信号
 
-EAGLE 的洞察在于：最后一层 hidden state 经过数十层 transformer 的处理，已经丢失了大量关于"接下来可能是什么"的细粒度特征信息。因此 EAGLE 不从最后一层取信号，而是从**主模型中间层**抽取 hidden state，经过一个轻量 transformer decoder 处理后，再通过 lm_head 输出候选 token 概率。
+EAGLE 的洞察在于：与其用 token 级别的草拟（每个候选 token 都需要一次独立的解码），不如从主模型的**倒数第二层**（near-output layer）抽取 hidden state 作为特征，经过一个轻量 transformer decoder 直接在特征空间做自回归草拟——这就是特征级（feature-level）投机：草拟循环跑在低维特征空间而非完整的 token 空间，大幅降低了每步草拟的成本。EAGLE-3 进一步压缩了特征维度。
 
 vLLM 通过 draft model 名称自动检测 EAGLE（包含 `"eagle-"` 或 `"eagle3"`）。EAGLE 需要一个独立的 draft model 文件（通常百 MB 级，取决于目标模型的 hidden size），但它不是完整模型——只包含特征投影层 + 轻量 decoder（通常 1 层），embedding 层和 lm_head 可能与目标模型共享以减少显存开销。
 

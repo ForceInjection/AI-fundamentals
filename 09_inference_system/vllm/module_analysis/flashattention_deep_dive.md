@@ -79,7 +79,7 @@ FlashAttention 的解决方案是一次遍历完成 softmax。算法的核心是
 
 ### 2.3 回到 FlashAttention 的上下文：Online Softmax + Tiling
 
-将 online softmax 应用到 attention 中。以下算法直接对应 FA1 论文 Algorithm 1（注：FA1 在每步内层循环将 O 除以 ℓ 以保持归一化；FA2 将除法延后到循环结束，省去了每步的除法开销——两者数学等价，FA2 更高效）：
+将 online softmax 应用到 attention 中。以下算法与 FA1 论文 Algorithm 1 数学等价（注：论文用分块局部变量 m̃_ij、P̃_ij、ℓ̃_ij 逐块重缩放；此处直接用新全局 max 重缩放，等价但形式上更简洁。FA2 将除法延后到循环结束，省去每步的除法开销）：
 
 ```text
 外层循环：Q 的每个 block (在 SRAM 中)
@@ -145,7 +145,7 @@ FA1 的 IO 复杂度公式（定理 2）揭示了 tiling 的收益：FlashAttent
 
 ```text
 S_ij = Q_i × K_j^T
-P_ij = exp(S_ij - m_i) / l_i      ← 和 forward 逐 bit 相同
+P_ij = exp(S_ij - m_i) / l_i      ← 与完整 softmax 数学精确等价（浮点路径不同，非逐 bit 相同）
 ```
 
 以 128K 序列、64 头、128 维 head、BF16 为例：存储全量 P = 2 TB（远超单 GPU HBM），存储 (m, l) = 32 MB——差距 ~64,000 倍。在 per-block 粒度上，SRAM 内重算一次小 GEMM 远便宜于从 HBM 读回对应的 P 分块。
@@ -176,7 +176,7 @@ FA1 在每个 thread block 内，所有 warp 需要将中间结果写到 shared 
 
 ## 六、FlashAttention-3：利用 Hopper 的异步硬件
 
-FA2 在 A100 上达到了 73% 的峰值利用率。但同样的 kernel 原封不动搬到 H100 上，利用率骤降到 35%——不是 kernel 变差了，是 Ampere 的并行策略没有利用 H100 最关键的硬件特性。Ampere 上计算和 load/store 必须串行：load 数据 → 等 → 计算 → 存结果 → 等 → 循环。Hopper 打破了这个限制，引入了两个关键的异步能力。
+FA2 在 A100 上达到了 73% 的峰值利用率。但同样的 kernel 原封不动搬到 H100 上，利用率骤降到 35%——不是 kernel 变差了，是 Ampere 的并行策略没有利用 H100 最关键的硬件特性。FA2 在 A100 上已使用 `cp.async` 异步拷贝，但 Ampere 的 MMA 指令仍是同步的（发射后须等结果返回），计算和 load 的 overlap 深度有限。FA3 专门为 Hopper 的两项关键异步能力设计：TMA（不占寄存器/发射槽的批量异步拷贝）和 `wgmma`（异步矩阵乘法），实现了更深层的计算与 HBM 搬运重叠。
 
 ### 6.1 TMA：独立的异步拷贝引擎
 
@@ -236,9 +236,9 @@ FA1-4 解决的都是同一个场景：Q、K、V 是 dense tensor，每个 token
 
 ### 7.1 FlashMLA：MLA 的专用 kernel
 
-MLA（DeepSeek V2/V3）的 KV 在压缩空间中（kv_lora_rank=512 + k_rope=64 = 576 维）。标准 FA 要求 Q、K、V 维度对齐——无法直接处理 MLA 的"KV 是 576 维压缩向量、需要矩阵吸收后再展开"的计算模式。
+MLA（DeepSeek V2/V3）的 KV 在压缩空间中（kv_lora_rank=512 + k_rope=64 = 576 维）。标准 FA 要求 Q、K、V 维度对齐，而 MLA 通过矩阵吸收（`q @ W_UK^T`）将 Q 变换到压缩空间——吸收由模型层 GEMM（或将 `W_UK` 折叠进 Q 投影权重）完成，无需在 attention 时展开 K/V。
 
-FlashMLA 是专门为 MLA 设计的 CUDA kernel。它将 MLA 的"矩阵吸收"步骤（将 `W_UK` 吸收进 Q）融合进 attention 计算——在 SRAM 中完成吸收 + 点积，不在 HBM 中物化展开后的 K 和 V。这保留了 FA 的 IO-aware 特性，同时适配了 MLA 的压缩运算。
+FlashMLA 是专门为 MLA 设计的 CUDA kernel。它直接消费 576 维的潜变量 query 和 kv_c + k_rope 缓存，在压缩空间中完成点积与 online softmax——展开后的 K 和 V 永不物化。这保留了 FA 的 IO-aware 特性，同时适配了 MLA 的压缩运算。`W_UV` 侧的吸收在 kernel 之后由 `_v_up_proj_and_o_proj` 完成。
 
 vLLM 中 FlashMLA 作为一个独立的 attention backend 注册（`FlashMLABackend`），仅对 MLA 架构的模型（DeepSeek V2/V3）自动激活。
 

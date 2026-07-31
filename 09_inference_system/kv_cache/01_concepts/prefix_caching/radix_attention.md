@@ -8,7 +8,7 @@
 
 ### 1.1 LLM 推理中的重复计算问题
 
-大语言模型（LLM）的推理过程分为两个阶段：**Prefill（预填充）** 和 **Decode（解码）**。在 Prefill 阶段，模型需要处理完整的输入序列并生成对应的 KV Cache。根据 [KV Cache 原理简介](../basic/kv_cache_原理简介.md) 中的分析，由于 Transformer 的自注意力机制，Prefill 阶段的计算复杂度为 $O(N^2)$ ，其中 $N$ 为输入序列长度。
+大语言模型（LLM）的推理过程分为两个阶段：**Prefill（预填充）** 和 **Decode（解码）**。在 Prefill 阶段，模型需要处理完整的输入序列并生成对应的 KV Cache。根据 [KV Cache 原理简介](../basic/kv_cache_basics.md) 中的分析，由于 Transformer 的自注意力机制，Prefill 阶段的计算复杂度为 $O(N^2)$ ，其中 $N$ 为输入序列长度。
 
 在实际的 LLM 应用中，大量请求存在**共享前缀**的现象：
 

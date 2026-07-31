@@ -18,8 +18,8 @@
   - [四、调度循环：Prefill 优先于 Decode](#四调度循环prefill-优先于-decode)
   - [五、PrefillAdder：chunk 截断的决策者](#五prefilladderchunk-截断的决策者)
     - [构造函数参数](#构造函数参数)
-    - [`add_one_req()` 决策逻辑（`schedule_policy.py:815`）](#add_one_req-决策逻辑schedule_policypy815)
-    - [`add_chunked_req()` 继续上一轮的 chunked req（`schedule_policy.py:668`）](#add_chunked_req-继续上一轮的-chunked-reqschedule_policypy668)
+    - [`add_one_req()` 决策逻辑（`schedule_policy.py:858`）](#add_one_req-决策逻辑schedule_policypy815)
+    - [`add_chunked_req()` 继续上一轮的 chunked req（`schedule_policy.py:704`）](#add_chunked_req-继续上一轮的-chunked-reqschedule_policypy668)
   - [六、Chunk 后处理：状态保存与结果输出](#六chunk-后处理状态保存与结果输出)
     - [Stash：暂存部分前缀](#stash暂存部分前缀)
     - [init\_next\_round\_input：恢复完整 fill\_ids](#init_next_round_input恢复完整-fill_ids)
@@ -254,7 +254,7 @@ class PrefillAdder:
                             # None 表示禁用 chunked prefill
 ```
 
-### `add_one_req()` 决策逻辑（[`schedule_policy.py:815`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L815)）
+### `add_one_req()` 决策逻辑（[`schedule_policy.py:858`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L815)）
 
 核心截断逻辑（[`schedule_policy.py:907-953`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L907)）：
 
@@ -280,7 +280,7 @@ def add_one_req(self, req, has_chunked_req, truncation_align_size):
         # is_chunked += 1 不在这里！在 scheduler.py:2805 中统一执行
 ```
 
-### `add_chunked_req()` 继续上一轮的 chunked req（[`schedule_policy.py:668`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L668)）
+### `add_chunked_req()` 继续上一轮的 chunked req（[`schedule_policy.py:704`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L668)）
 
 ```python
 def add_chunked_req(self, req):
@@ -313,7 +313,7 @@ def stash_chunked_request(self, req):
 
 ### init_next_round_input：恢复完整 fill_ids
 
-每轮调度前重建 `fill_ids` 并重新匹配前缀（[`schedule_batch.py:988`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_batch.py#L988)）：
+每轮调度前重建 `fill_ids` 并重新匹配前缀（[`schedule_batch.py:1123`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_batch.py#L988)）：
 
 ```python
 def init_next_round_input(tree_cache):

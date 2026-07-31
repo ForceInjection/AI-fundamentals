@@ -10,7 +10,7 @@
 
 ### 1.1 投机解码的答案：用另一个模型猜
 
-[投机解码](illustrated-speculative-decoding.md) 提供了一个巧妙的绕行方案：让一个更快、更小的 **draft model** 先行草拟 K 个候选 token，然后让 target model 一次性批量验证。从接收率 $\alpha$ 和草拟-验证耗时比 $\rho$ 推导，当 $\alpha K > 1 + \rho K$ 时，投机解码带来净加速。在理想条件下，decode 延迟可以降低 2–3 倍。
+[投机解码](illustrated-speculative-decoding.md) 提供了一个巧妙的绕行方案：让一个更快、更小的 **draft model** 先行草拟 K 个候选 token，然后让 target model 一次性批量验证。从接受率 $\alpha$ 和草拟-验证耗时比 $\rho$ 推导，当 $\alpha K > 1 + \rho K$ 时，投机解码带来净加速。在理想条件下，decode 延迟可以降低 2–3 倍。
 
 但这个方案绑定了一个前提：**需要两次 forward**。Draft model 一次，target model 一次。两次 forward 意味着两倍的 KV cache 查询、两倍的 kernel launch 开销、两倍的调度器往返。
 
@@ -209,8 +209,7 @@ MTP 的 forward 不会与 attention 后端产生冲突。因为 MTP 模块消费
 
 在 AIME 2024 基准上，DeepSeek V4-Flash 开启 MTP（NVFP4-FP8 量化，`num_speculative_tokens=1`）的表现：
 
-- 草拟 token 接受率 **81.6%**（concurrency=8）
-- 接受率在 c=1 到 c=16 之间保持 ~88% 平坦——批处理不降低草拟质量
+- 草拟 token 接受率约 **82–88%**（concurrency=1–16，接受率不随并发增加衰减，说明 self-speculation 的草拟质量不受 batch 内其他请求干扰）
 - Wall-clock 加速比约 **2.95×**（相对不开 MTP 的等硬件配置）
 
 接受率不随并发增加而衰减，说明 MTP 的草拟质量不受 batch 内其他请求的 KV cache 状态干扰——这是 self-speculation（不依赖外部 draft model）的天然优势。

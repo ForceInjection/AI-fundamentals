@@ -246,7 +246,7 @@ DeepSeek-V3 是少数不需要 TP 的模型——MLA 的 KV 压缩效果远超�
 
 ## 八、相关资源
 
-- [KV Cache 原理简介](../kv_cache/01_concepts/basic/kv_cache_原理简介.md) — TP 和 SP 对 KV Cache 的影响机制
+- [KV Cache 原理简介](../kv_cache/01_concepts/basic/kv_cache_basics.md) — TP 和 SP 对 KV Cache 的影响机制
 - [Prefill 与 Decode 深度拆解](../prefill_decode/prefill_decode_qkv_calculation.md) — 理解 TP 通信量为什么必须低的计算背景
 - [NCCL 通信路径逐层压测](../../03_ai_cluster_ops/03_nccl/06_nccl_path_benchmark.md) — TP 依赖的 NVLink 带宽实测
 - [GPU 调度——拓扑感知](../../03_ai_cluster_ops/04_gpu_scheduling/03_topology_aware_scheduling.md) — TP 组为什么必须在同一节点

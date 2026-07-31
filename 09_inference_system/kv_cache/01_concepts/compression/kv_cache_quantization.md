@@ -42,7 +42,7 @@ scale 的精度决定了量化误差的大小。**每个数值共享同一个 sc
 
 ## 二、三种量化模式的原理与实现
 
-vLLM 通过 `KVQuantMode` 枚举定义了四种量化模式（外加 `NONE`）[^1]：
+vLLM 通过 `KVQuantMode` 枚举定义了五种量化模式（外加 `NONE`）[^1]：
 
 ```python
 # vllm/v1/kv_cache_interface.py
@@ -51,7 +51,8 @@ class KVQuantMode(IntEnum):
     FP8_PER_TENSOR = 1       # per-tensor scales (当前 fp8 默认路径)
     INT8_PER_TOKEN_HEAD = 2  # per-token-head 动态 int8 量化
     FP8_PER_TOKEN_HEAD = 3   # per-token-head 动态 fp8 量化
-    NVFP4 = 4                # 打包 fp4 数据 + fp8 block scales
+    INT4_PER_TOKEN_HEAD = 4  # per-token-head 动态 int4 量化
+    NVFP4 = 5                # 打包 fp4 数据 + fp8 block scales
 ```
 
 ### 2.1 FP8 Per-Tensor：最简路径
@@ -62,7 +63,7 @@ Per-Tensor 是整个 KV Cache 张量共享一个 scale：`K_fp8 = K_fp16 / scale
 
 **缺点**：一个 scale 覆盖所有 token 和所有 head。长序列下，不同位置的 token 的 $K$ 值分布差异很大——开头 token（Attention Sink）的 $K$ 值可能远大于中间 token。一个全局 scale 无法精确表示所有 token，尾部 token 的量化误差最严重。
 
-**vLLM 中的配置**：`--kv-cache-dtype fp8` 或 `--kv-cache-dtype fp8_e4m3`。这是当前生产环境中最常用的量化配置。
+**vLLM 中的配置**：`--kv-cache-dtype fp8` 或 `--kv-cache-dtype fp8_e4m3`[^2]。这是当前生产环境中最常用的量化配置。
 
 ### 2.2 Per-Token-Head（FP8/INT8）：精度换来的压缩
 
@@ -83,8 +84,8 @@ Per-Token-Head 量化的 scale 计算：
 
 | 模型               | num_tokens | num_kv_heads | scale 总数 (K+V) | 额外存储 (FP16) |
 | ------------------ | :--------: | :----------: | :--------------: | :-------------: |
-| LLaMA-2 70B @ 32K  |   32768    |      8       |     524,288      |     ~1 MB       |
-| LLaMA-2 70B @ 128K |   131072   |      8       |    2,097,152     |     ~4 MB       |
+| LLaMA-2 70B @ 32K  |   32768    |      8       |     524,288      |      ~1 MB      |
+| LLaMA-2 70B @ 128K |   131072   |      8       |    2,097,152     |      ~4 MB      |
 
 相对于 KV Cache 本身（32K context × 80 layers × 4 KB ≈ 10 GB），~1 MB 的 scale 开销仍然可忽略不计。
 
@@ -164,6 +165,6 @@ vLLM 当前对此的处理方式是：**在同一 vLLM 实例内，所有请求�
 - [Attention Sinks 与 KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) — 量化 + 淘汰 = 压缩的两条腿
 - [KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache](https://arxiv.org/abs/2402.02750) — INT4 K + FP16 V 的非对称量化方案
 
-[^1]: vLLM 量化模式枚举 [`vllm/v1/kv_cache_interface.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/kv_cache_interface.py) — `KVQuantMode` 定义四种量化模式：`NONE`/`FP8_PER_TENSOR`/`INT8_PER_TOKEN_HEAD`/`FP8_PER_TOKEN_HEAD`/`NVFP4`；`get_kv_quant_mode()` 根据 `kv_cache_dtype` 字符串映射到对应模式。
+[^1]: vLLM 量化模式枚举 [`vllm/v1/kv_cache_interface.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/kv_cache_interface.py) — `KVQuantMode` 定义五种量化模式：`NONE`/`FP8_PER_TENSOR`/`INT8_PER_TOKEN_HEAD`/`FP8_PER_TOKEN_HEAD`/`INT4_PER_TOKEN_HEAD`/`NVFP4`；`get_kv_quant_mode()` 根据 `kv_cache_dtype` 字符串映射到对应模式。
 
 [^2]: vLLM Cache 配置 [`vllm/config/cache.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/cache.py) — `cache_dtype: CacheDType = "auto"`，可选值包括 `auto`/`fp8`/`fp8_e4m3`/`fp8_e5m2`/`fp8_per_token_head`/`int8_per_token_head`/`nvfp4`。`--kv-cache-dtype` 启动参数映射到此配置项。

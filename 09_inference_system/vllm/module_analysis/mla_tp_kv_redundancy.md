@@ -223,18 +223,18 @@ $$
 
 V3 的 61 层全部是 MLA，每层 576 维，全部复制。分析 V3 时是一个简单的答案：「是的，全部复制。」
 
-DeepSeek V4 引入了更复杂的注意力体系——四组不同压缩比的 KV cache：MLA 主缓存（c4a, 4×）、Indexer（c128a, 128×）、SWA 滑动窗口（1×）、Compressor 状态（1×）。直觉上，四组的 TP 行为应该像第三章描述的标准 MHA 那样——分别判断、各不相同。但 vLLM v0.20.0 的代码给出了一个意外的答案。
+DeepSeek V4 引入了更复杂的注意力体系——四组不同压缩比的 KV cache：MLA 主缓存（c4a/c128a，4×/128×）、Indexer（c4a 层专用，条目 128 维）、SWA 滑动窗口（1×）、Compressor 状态（1×）。直觉上，四组的 TP 行为应该像第三章描述的标准 MHA 那样——分别判断、各不相同。但 vLLM v0.20.0 的代码给出了一个意外的答案。
 
 ### 6.1 四组全部是 MLA 变体
 
 vLLM v0.20.0 中，V4 的四组 KV cache 使用的是 MLA 家族 spec，不是标准 MHA spec：
 
-| KV cache 组       | Spec 类型                              | kv_size     | 存储形状              |
-| ----------------- | -------------------------------------- | ----------- | --------------------- |
-| MLA 主缓存（c4a） | `MLAAttentionSpec(num_kv_heads=1)`     | 1（rank-3） | `(NB, BS, head_size)` |
-| Indexer（c128a）  | `MLAAttentionSpec(num_kv_heads=1)`     | 1（rank-3） | `(NB, BS, head_size)` |
-| SWA 滑动窗口      | `SlidingWindowMLASpec(num_kv_heads=1)` | 1（rank-3） | `(NB, BS, head_size)` |
-| Compressor 状态   | `SlidingWindowMLASpec(num_kv_heads=1)` | 1（rank-3） | `(NB, BS, head_size)` |
+| KV cache 组           | Spec 类型                              | kv_size     | 存储形状              |
+| --------------------- | -------------------------------------- | ----------- | --------------------- |
+| MLA 主缓存（c4a）     | `MLAAttentionSpec(num_kv_heads=1)`     | 1（rank-3） | `(NB, BS, head_size)` |
+| Indexer（c4a 层专用） | `MLAAttentionSpec(num_kv_heads=1)`     | 1（rank-3） | `(NB, BS, head_size)` |
+| SWA 滑动窗口          | `SlidingWindowMLASpec(num_kv_heads=1)` | 1（rank-3） | `(NB, BS, head_size)` |
+| Compressor 状态       | `SlidingWindowMLASpec(num_kv_heads=1)` | 1（rank-3） | `(NB, BS, head_size)` |
 
 `SlidingWindowMLASpec` 在 vLLM v0.20.0 的 `vllm/v1/kv_cache_interface.py` 中定义。它与标准 `SlidingWindowSpec` 的关键区别在于 `real_page_size_bytes`——移除了标准 spec 中的 `2 ×` 因子（K+V 分离的乘数）。`CompressorBackend.get_kv_cache_shape()` 返回 `(num_blocks, block_size, head_size)`——明确是 rank-3，单向量。
 
@@ -242,13 +242,13 @@ LMCache v0.5.1 的 `kv_layer_groups.py` 用假设性例子描述了 `engine_kv_f
 
 ### 6.2 冗余表：V3 vs V4
 
-|              | V3（全 MLA）         | V4 MLA 主缓存       | V4 Indexer          | V4 SWA              | V4 Compressor          |
-| ------------ | -------------------- | ------------------- | ------------------- | ------------------- | ---------------------- |
-| 压缩方式     | 低秩（kv_lora_rank） | slot 压缩（c4a）    | slot 压缩（c128a）  | 无（SWA attention） | 无（compressor state） |
-| 存储格式     | rank-3               | rank-3              | rank-3              | rank-3              | rank-3                 |
-| kv_size      | 1                    | 1                   | 1                   | 1                   | 1                      |
-| num_kv_heads | 1                    | 1                   | 1                   | 1                   | 1                      |
-| TP 冗余？    | **是**（100% 复制）  | **是**（100% 复制） | **是**（100% 复制） | **是**（100% 复制） | **是**（100% 复制）    |
+|              | V3（全 MLA）         | V4 MLA 主缓存          | V4 Indexer                | V4 SWA              | V4 Compressor          |
+| ------------ | -------------------- | ---------------------- | ------------------------- | ------------------- | ---------------------- |
+| 压缩方式     | 低秩（kv_lora_rank） | slot 压缩（c4a/c128a） | 条目 128 维（c4a 层专用） | 无（SWA attention） | 无（compressor state） |
+| 存储格式     | rank-3               | rank-3                 | rank-3                    | rank-3              | rank-3                 |
+| kv_size      | 1                    | 1                      | 1                         | 1                   | 1                      |
+| num_kv_heads | 1                    | 1                      | 1                         | 1                   | 1                      |
+| TP 冗余？    | **是**（100% 复制）  | **是**（100% 复制）    | **是**（100% 复制）       | **是**（100% 复制） | **是**（100% 复制）    |
 
 V3 的答案是「全部复制，冗余 87.5%」。V4 的答案没有变——**全部四组都复制。**
 

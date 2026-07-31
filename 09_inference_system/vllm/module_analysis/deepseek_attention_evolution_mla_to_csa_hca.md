@@ -88,7 +88,7 @@ DeepSeek V2/V3 的具体参数：
 | `qk_rope_head_dim` (R) | 64  | RoPE 维度                |
 | `v_head_dim` (V)       | 128 | 每头 V 维度              |
 
-原始 KV 维度为 `128 × 128 = 16384`，压缩到 512 维，**压缩率达到 96.9%**。而 KV Cache 实际存储为 `kv_lora_rank + qk_rope_head_dim = 512 + 64 = 576` 维，相对于 MHA 的压缩比约为 **93.3%**。
+原始 KV 维度为 `128 × 128 = 16384`，压缩到 512 维，对 K 的 content 部分压缩率达到 96.9%。KV Cache 实际存储 `kv_lora_rank + qk_rope_head_dim = 512 + 64 = 576` 维（~1.15 KB BF16），相对于 MHA 的完整 KV（K+V 共 128 heads × 320 dim = 40,960 elems）压缩约 **98.6%**，即 MLA 的 KV cache 仅占标准 MHA 的 ~1.4%。
 
 ### 2.2 "矩阵吸收" —— 推理时永远不需要还原
 
@@ -198,7 +198,7 @@ vLLM 的 MLA 实现区分了两种计算模式：
 
 ## 第三章：当上下文到达百万 —— MLA 的隐形天花板
 
-MLA 是对"存储瓶颈"的极致优化，将 KV Cache 的显存占用和读取带宽都降低了 93%+。但它有一个根本性的局限：**注意力机制的计算复杂度本质未变**。
+MLA 是对"存储瓶颈"的极致优化，将 KV Cache 的显存占用和读取带宽都降低了 98%+。但它有一个根本性的局限：**注意力机制的计算复杂度本质未变**。
 
 ### 3.1 从 8K 到 1M：计算量增长 15000 倍
 
@@ -391,7 +391,7 @@ HCA 的计算量：$O(n \times n/128) = O(n^2/128)$，相比原始 $O(n^2)$ 降�
 
 ### 5.4 混合策略与层级分配
 
-V4 共 61 层注意力，具体分配为 **30 个 c4a 层 + 31 个 c128a 层**：
+V4-Pro 共 61 层注意力，具体分配为 **30 个 c4a 层 + 31 个 c128a 层**（V4-Flash 为 43 层，架构相同但规模更小）：
 
 - **c128a 层（31 层）**：提供全局语义覆盖，每层通过 128x 压缩 + top-8192 实现对全序列的稠密注意力;
 - **c4a 层（30 层）**：提供精确检索能力，每层通过 4x 压缩 + top-512 稀疏选择定位关键信息;
@@ -424,7 +424,7 @@ _LAYER_TYPE_C4A = "c4a"          # CSA 层（compress_ratio=4）
 _LAYER_TYPE_C128A = "c128a"      # HCA 层（compress_ratio=128）
 ```
 
-模型共 61 层：30 个 c4a 层 + 31 个 c128a 层。每种层类型有独立的 FlashMLA tile-scheduler 计划，同类型的所有层在同一步内共享调度元数据。
+V4-Pro 共 61 层：30 个 c4a 层 + 31 个 c128a 层（V4-Flash 为 43 层）。每种层类型有独立的 FlashMLA tile-scheduler 计划，同类型的所有层在同一步内共享调度元数据。
 
 **`DeepseekV4MultiHeadLatentAttentionWrapper`** 的核心结构：
 
@@ -597,7 +597,7 @@ output = self.wo_b(z.flatten(1))
 
 ## 第七章：V4 的 KV Cache 量化对比
 
-根据 vLLM 官方博客的精确计算：**在 1M token、BF16 KV Cache 下，V4 的 KV Cache 仅需 9.62 GiB，相比 V3.2 风格 61 层堆栈的 83.9 GiB 节省了约 88.5%。**
+根据 vLLM 官方博客的精确计算：**在 1M token、BF16 KV Cache 下，V4-Pro 的 KV Cache（61 层，BF16）仅需 9.62 GiB，相比 V3.2 风格 61 层堆栈的 83.9 GiB 节省了约 88.5%。**
 
 以下是详细推导（来自 vLLM 博客附录）：
 
@@ -715,8 +715,8 @@ Qwen 的 SSM + Attention 混合路线（类似 Mamba-2 + Attention 交替层）�
 
 | 模型版本 | 注意力机制  | 核心文件                                                                                                                                                                                                                                                                                                                                                                       | KV Cache 格式         | 适用场景 |
 | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | -------- |
-| V2/V3    | MLA         | [`mla_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/attention/mla_attention.py), [`mla.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mla.py)                                                                                                                                                       | 576B (BF16)           | 8K-128K  |
-| V3.2     | MLA + NSA   | [`sparse_attn_indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/sparse_attn_indexer.py), [`indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/indexer.py)                                                                                                                                         | 576B + FP8 索引 K     | 128K+    |
+| V2/V3    | MLA         | [`mla_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/attention/mla_attention.py), [`mla.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mla.py)                                                                                                                                                       | ~1.15 KB (BF16)       | 8K-128K  |
+| V3.2     | MLA + NSA   | [`sparse_attn_indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/sparse_attn_indexer.py), [`indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/indexer.py)                                                                                                                                         | ~1.15 KB + FP8 索引 K | 128K+    |
 | V4       | CSA+HCA+SWA | [`deepseek_v4_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_v4_attention.py), [`deepseek_compressor.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_compressor.py), [`sparse_swa.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/sparse_swa.py) | FP8 SWA (584B) + 压缩 | 1M       |
 
 ### A.2 关键源码文件索引
@@ -766,7 +766,7 @@ head_dim = 576           # 总 head_dim = Lkv + R = 512 + 64
 ```python
 # 来源：vLLM sparse_swa.py 和 deepseek_v4_attention.py
 compress_ratios = [1, 4, 128]    # 三种层类型
-num_layers = 61                   # 30 c4a + 31 c128a
+num_layers = 61                   # V4-Pro: 30 c4a + 31 c128a (V4-Flash: 43 layers)
 head_dim = 512                    # V4 的 head dimension (K=V 共享)
 nope_head_dim = 448               # 不含 RoPE
 rope_head_dim = 64                # RoPE 维度

@@ -4,7 +4,7 @@ PD 分离（Prefill-Decode Disaggregation）把 Prefill 放到高算力 GPU 上�
 
 本文从传输时序、发起方、传输内容三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 三种方案在 Push/Pull、Eager/Pipelined、完整/增量上的不同选择及其代价。
 
-> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_原理简介.md) — Prefill 与 Decode 的计算特性差异；[Chunked Prefill 如何改变 KV Cache 管理](../scheduling/01_vllm_chunked_prefill.md) — PD 分离的前置概念。
+> **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_basics.md) — Prefill 与 Decode 的计算特性差异；[Chunked Prefill 如何改变 KV Cache 管理](../scheduling/01_vllm_chunked_prefill.md) — PD 分离的前置概念。
 >
 > **配合阅读**：本文是概念层面的方案对比。各系统的完整源码分析见 [LMCache PD Backend](../../02_systems/lmcache/pd_backend.md)、[Mooncake 架构](../../02_systems/mooncake/mooncake_architecture.md)、[层级流水线并行](../offloading/02_layerwise_pipeline.md)。
 

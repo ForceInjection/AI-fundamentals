@@ -60,7 +60,7 @@ v0.25.0 的发布说明从侧面印证了这一点。DeepSeek V4 相关条目占
 
 但 DeepSeek V4-Flash 的 batch 可以达到数十甚至上百——每个请求的 KV 长度在 prefix caching 开启后可能上万 tokens。当 KV 总量远超 L2 cache 时，两遍遍历意味着对 HBM 的访问量翻倍——而 H100 的 FP8 matmul 是 A100 的 $6\times$，HBM 带宽只增长了 $1.7\times$。
 
-FlashMLA 和 FlashAttention 3 把 $QKV$ 融合为单次遍历。在 v0.25.0 中，FlashAttention 3 被明确标注为「built against the torch stable API」，意味着它不再是实验性后端，而是稳定接口之上的标准实现。这比 PagedAttention 快的最直接原因，就是少了一遍遍历。
+FlashMLA 和 FlashAttention 系列（FA1→FA2→FA3）通过 IO-aware tiling 把 QKV 融合为单次遍历——中间 attention matrix 永不离开 SRAM。这是整个 FlashAttention 家族共有的设计，而非 FA3 独有的特性。在 v0.25.0 中，FlashAttention 3 被明确标注为「built against the torch stable API」，意味着它不再是实验性后端，而是稳定接口之上的标准实现。这比 PagedAttention 快的最直接原因，就是少了一遍 HBM 遍历。
 
 ## 4. 当模型是 FP8 的，为什么还要 dequant？
 
@@ -116,6 +116,6 @@ V1/MRv2 成为 standard path 是一个关键信号。它意味着「每个模型
 
 在这个体系里，保留一个不再被任何新模型路径使用的旧 kernel 没有意义。9 个文件，400 个 kernel 实例，每次变更都要确保它们不被破坏——而它们已经不再服务于任何生产模型。
 
-对用户来说，唯一的变化是标准 MHA 模型（如 Qwen、Llama）的注意力计算自动路由到了 FlashAttention v3 或 FlashInfer 后端；DeepSeek 系列自动路由到了 FlashMLA 或 Triton MLA 后端。不需要任何配置变更——vLLM 根据模型架构和 GPU 型号在后端矩阵中自动选择。A100 用户跑标准 MHA 模型不受影响（FA3 同样支持 sm_80）。唯一保留 PagedAttention 这个名字的代码在 `vllm/_custom_ops.py:120`——一个 ROCm 专用的 `paged_attention_rocm()` 函数，它在 AMD GPU 上仍然需要手动分页逻辑。除此之外，PagedAttention 的 CUDA 实现已经没有任何一行代码存在于 v0.25.0 的源码树中。
+对用户来说，唯一的变化是标准 MHA 模型（如 Qwen、Llama）的注意力计算自动路由到了 FlashAttention v3 或 FlashInfer 后端；DeepSeek 系列自动路由到了 FlashMLA 或 Triton MLA 后端。不需要任何配置变更——vLLM 根据模型架构和 GPU 型号在后端矩阵中自动选择。A100 用户跑标准 MHA 模型不受影响（FA2 支持 sm_80）；H100 用户自动获得 FA3/FA4 后端。唯一保留 PagedAttention 这个名字的代码在 `vllm/_custom_ops.py:120`——一个 ROCm 专用的 `paged_attention_rocm()` 函数，它在 AMD GPU 上仍然需要手动分页逻辑。除此之外，PagedAttention 的 CUDA 实现已经没有任何一行代码存在于 v0.25.0 的源码树中。
 
 **It is time.**

@@ -101,7 +101,7 @@ NSA（Native Sparse Attention）/ DSA 是 DeepSeek 的稀疏选择技术，在 V
 
 Indexer 与 Vegas 的累积分数有本质区别：Indexer 是**当前 query 驱动的实时打分**——它根据当前 query 的内容判断哪些 token 可能相关。Vegas 的累积分数是**历史驱动的统计打分**——它根据过去被关注的频率判断哪些 token 重要。前者的扫描更精确（专为当前 query 定制），但扫描计算量更大；后者的扫描更廉价（只是查表和排序），但可能错过从未被关注但当前 query 恰好需要的 token。
 
-**vLLM 支持状态**：DeepSeek V3.2 / GLM-5 的 Sparse MLA 后端已支持（`FLASHMLA_SPARSE`、`FLASHINFER_MLA_SPARSE`）。Indexer 模块位于 `vllm/model_executor/layers/sparse_attn_indexer.py`。关于 Indexer 与 MLA 的集成细节，参见 [注意力机制演进与 vLLM 支持全景](../../vllm/module_analysis/attention_mha_mla_nsa.md) §4。
+**vLLM 支持状态**：DeepSeek V3.2 / GLM-5 的 Sparse MLA 后端已支持（`FLASHMLA_SPARSE`、`FLASHINFER_MLA_SPARSE`）。Indexer 模块位于 `vllm/model_executor/layers/sparse_attn_indexer.py`。关于 Indexer 与 MLA 的集成细节，参见 [注意力机制演进与 vLLM 支持全景](../../../vllm/module_analysis/attention_mha_mla_nsa.md) §4。
 
 ### 3.5 H2O：一个边界案例
 
@@ -143,7 +143,7 @@ CSA（Compressed Sparse Attention）和 HCA（Heavy Compressed Attention）代�
 
 **CSA 和 HCA 的分工**：CSA 负责「检索」——在 4× 压缩的粗粒度表示上做 top-512 的精确选择，定位关键信息的位置。HCA 负责「整合」——在 128× 压缩的极粗粒度表示上做全量注意力，获得全局上下文。两层各有 30 个 transformer layer，交替排布。
 
-关于 CSA/HCA 的完整架构演进——它们如何从 V2 的 MLA、V3.2 的 NSA 逐步演化而来——参见 [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。本节仅聚焦于 CSA/HCA 在稀疏注意力分类框架中的位置：它们代表了压缩近似的工程成熟形态。
+关于 CSA/HCA 的完整架构演进——它们如何从 V2 的 MLA、V3.2 的 NSA 逐步演化而来——参见 [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。本节仅聚焦于 CSA/HCA 在稀疏注意力分类框架中的位置：它们代表了压缩近似的工程成熟形态。
 
 ### 4.4 压缩近似的共同取舍
 
@@ -217,7 +217,7 @@ CSA（Compressed Sparse Attention）和 HCA（Heavy Compressed Attention）代�
 
 **压缩近似的不可逆信息损失**。CSA 的 4× 压缩抹平了相邻 4 个 token 的 K/V 差异。对于大多数 token 这无关紧要（语义是冗余的），但对于代码中的变量名、数字、API key——一个 token 的差异就决定了对错。「哪些 token 不能被压缩」这个判断本身需要计算，而做这个判断的计算又抵消了压缩节省的计算。是否存在任务感知的压缩粒度——对代码层使用 2× 压缩，对自然语言层使用 8× 压缩？
 
-**稀疏注意力 × speculative decoding 的深层协同**。当 sparse_attn self-speculation（[投机解码方法全景](../../vllm/module_analysis/speculative_decoding_landscape.md) §5.4）成熟后，稀疏注意力的输出将同时服务于两个目的：减少当前 forward 的 KV 读取量（省计算），以及为下一轮 speculative decoding 提供草拟信号（保接受率）。两个目的的稀疏度需求可能冲突——前者要求极稀疏（top-256），后者要求中等稀疏（top-2048，否则接受率暴跌）。同一个稀疏选择能否用不同的 k 同时兼容两个目的？
+**稀疏注意力 × speculative decoding 的深层协同**。当 sparse_attn self-speculation（[投机解码方法全景](../../../vllm/module_analysis/speculative_decoding_landscape.md) §5.4）成熟后，稀疏注意力的输出将同时服务于两个目的：减少当前 forward 的 KV 读取量（省计算），以及为下一轮 speculative decoding 提供草拟信号（保接受率）。两个目的的稀疏度需求可能冲突——前者要求极稀疏（top-256），后者要求中等稀疏（top-2048，否则接受率暴跌）。同一个稀疏选择能否用不同的 k 同时兼容两个目的？
 
 ---
 
@@ -231,9 +231,9 @@ CSA（Compressed Sparse Attention）和 HCA（Heavy Compressed Attention）代�
 
 - [KV Cache 淘汰策略：从滑动窗口到注意力引导的精确淘汰](../eviction/attention_sinks_and_eviction.md) — Attention Sinks 的发现，StreamingLLM、H2O、SnapKV 的淘汰策略（本文 §3.2、§3.5 的延伸）
 - [稀疏注意力 × KV Cache Offloading：跨层联动必须回答的八个问题](../offloading/sparse_attention_driven_offloading_problems.md) — 稀疏注意力信号用于指导 offloading 的问题空间，eviction 术语混淆（本文 §3.5、§5.2 的延伸）
-- [投机解码方法全景](../../vllm/module_analysis/speculative_decoding_landscape.md) — §5.4 sparse_attn self-speculation 的工程实现与性能数据（本文 §6.2 的延伸）
-- [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) — CSA/HCA 的完整技术演进脉络（本文 §4.3 的延伸阅读）
-- [注意力机制演进与 vLLM 支持全景](../../vllm/module_analysis/attention_mha_mla_nsa.md) — NSA/DSA 的 vLLM 工程支持细节与跨平台兼容性（本文 §3.4 的延伸阅读）
+- [投机解码方法全景](../../../vllm/module_analysis/speculative_decoding_landscape.md) — §5.4 sparse_attn self-speculation 的工程实现与性能数据（本文 §6.2 的延伸）
+- [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) — CSA/HCA 的完整技术演进脉络（本文 §4.3 的延伸阅读）
+- [注意力机制演进与 vLLM 支持全景](../../../vllm/module_analysis/attention_mha_mla_nsa.md) — NSA/DSA 的 vLLM 工程支持细节与跨平台兼容性（本文 §3.4 的延伸阅读）
 
 [^1]: Xiao et al., "Efficient Streaming Language Models with Attention Sinks," ICLR 2024.
 

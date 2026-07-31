@@ -242,7 +242,7 @@ PagedAttention 回答了一个简单但影响深远的问题：**KV Cache 到底
 ## 相关阅读
 
 - [交互可视化：传统预分配 vs PagedAttention](paged_attention_visual.html) — 6 步并排对比，键盘 ← → 翻页
-- [KV Cache 原理简介](kv_cache_原理简介.md) — 本文依赖的 KV Cache 基础概念与显存公式
+- [KV Cache 原理简介](kv_cache_basics.md) — 本文依赖的 KV Cache 基础概念与显存公式
 - [不同注意力类型的 KV Cache 到底长什么样](attention_kv_cache_formats.md) — GQA/MQA/MLA/CSA-HCA 下 block 物理形状的变化
 - [Prefix Caching 原理分析](../prefix_caching/prefix_caching.md) — PagedAttention 之上的 block 级复用
 - [KV Cache Offloading 分析](../offloading/01_kv_offloading.md) — block 粒度的存储层次迁移

@@ -32,12 +32,7 @@
 - **低并行度**：单步序列长度为 1 的前向计算难以充分发挥张量并行的算力优势。
 - **串行依赖**：即便引入 `KV Cache` 降低了历史 token 的重复计算，逐 token 的因果依赖仍严格限制了生成吞吐。
 
-投机解码的核心动机是：以更快、成本更低的小模型先行草拟 `K` 个候选，再由大模型一次性验证并批量接纳。以 Qwen2-72B（大）和 Qwen2-0.5B（小）且 `K=3` 为例：
-
-- 约用 **1.5×** 的单步时间
-- 期望产出约 **3×** 的有效 token
-
-从而显著降低了 `TPOT` 与单字成本。
+投机解码的核心动机是：以更快、成本更低的小模型先行草拟 `K` 个候选，再由大模型一次性验证并批量接纳。以 Qwen2-7B（draft）配合 Qwen2-72B（target）且 `K=4` 为例：草拟耗时比 ρ ≈ 0.1，接受率 α ≈ 0.75，相对单步时间 = (1+0.1×4)/(0.75×4) ≈ 0.47——即用不到一半的时间产出等量 token，约 **2.1×** 加速。草拟模型越小（ρ 越小）收益越大，但接受率 α 会随能力差距扩大而下降——两者存在最优权衡。
 
 ### 1.2 草拟与验证机制
 
@@ -125,7 +120,7 @@ stateDiagram-v2
 - **N-gram Prompt Lookup（工业实现）**：基于提示前缀与候选的局部匹配来进行快速提议与验证，依赖 `prompt_lookup_min/max` 控制匹配长度窗口。该方法实现简单、易于在推理引擎中落地，适合作为投机功能的基础选项（如在 vLLM 中可通过 `method=ngram` 启用）。
 - **Draft Model / Assisted Generation（经典范式）** [1]：以小模型作为 draft，大模型作为 verifier。小模型选型可采用同架构缩小版、蒸馏模型或剪枝/量化变体。**权衡要点**：小模型越弱，接受率下降；小模型越强，接受率提升但草拟成本增加。
 - **多头辅助与一次多 token（如 Medusa）** [2]：在大模型上附加多预测头以一次性产生多个候选序列，显著减少往返步骤与跨模型通信成本，但增加了模型结构的工程复杂度。
-- **Look-ahead / 非自回归风格变体（如 EAGLE）** [3]：面向更长步长的前瞻生成与高效回退策略，强调在保证质量的前提下扩大一次验证可接纳的 token 数。
+- **特征级自回归（如 EAGLE）** [3]：从主模型倒数第二层抽取 hidden state 作为特征，在低维特征空间做自回归草拟——草拟循环跑在特征空间而非完整 token 空间，大幅降低每步草拟成本。EAGLE-3 进一步压缩了特征维度。
 - **再草拟与重写（如 ReDrafter）**：通过候选重写、分层校验与更细粒度的接纳规则来提升有效步长与生成质量，适合对文本连贯性与风格一致性要求更高的应用场景。
 
 ### 2.2 引擎与缓存实现要点
@@ -232,7 +227,7 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 
 在评估是否引入投机解码以及选择具体方案时，架构师通常需要将其与其他主流的推理加速技术进行横向对比，以权衡性能、成本与系统复杂度：
 
-- **MTP (多 token 预测)**：借助多头一次产出多 token，减少往返，但需修改大模型结构。
+- **MTP (多 token 预测)**：借助级联预测模块一次产出多 token，减少往返，但需修改大模型结构。
 - **Contrastive Decoding (对比解码)**：强化校验分布，提升生成质量，但引入了额外计算开销。
 - **并行解码/分枝搜索**：更偏向于输出多样性与广度探索。
 
@@ -241,7 +236,7 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 | 推理加速技术      | 实现成本 | 收益稳定性 | 质量影响 (负向) | 可移植性 |
 | :---------------- | :------- | :--------- | :-------------- | :------- |
 | **投机解码**      | 低       | 高         | 低              | 高       |
-| **MTP 多头**      | 高       | 中         | 中              | 低       |
+| **MTP 级联模块**   | 高       | 中         | 中              | 低       |
 | **对比解码**      | 中       | 中         | 高              | 中       |
 | **并行/分枝搜索** | 低       | 低         | 中              | 低       |
 
@@ -293,4 +288,4 @@ python -m vllm.entrypoints.openai.api_server --speculative-model <draft_model_na
 [2] T. Cai et al., "Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads," _arXiv preprint arXiv:2401.10774_, 2024. [Online]. Available: https://arxiv.org/abs/2401.10774
 [3] Y. Li et al., "EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty," _arXiv preprint arXiv:2401.15077_, 2024. [Online]. Available: https://arxiv.org/abs/2401.15077
 [4] vLLM Team, "Speculative Decoding in vLLM," _vLLM Documentation_. [Online]. Available: https://docs.vllm.ai/en/latest/features/speculative_decoding/
-[5] Z.ai Team, "Scaling Pain：超大规模 Coding Agent 推理实践," _z.ai Blog_, 2025. [Online]. Available: https://z.ai/blog/scaling-pain （翻译版见本仓 [SGLang Scaling Pain 超大规模推理调优案例](../sglang/sglang_scaling_case_study.md)）
+[5] Z.ai Team, "Scaling Pain：超大规模 Coding Agent 推理实践," _z.ai Blog_, 2025. [Online]. Available: https://z.ai/blog/scaling-pain （翻译版见本仓 [SGLang Scaling Pain 超大规模推理调优案例](../sglang/sglang-scaling-case-study.md)）

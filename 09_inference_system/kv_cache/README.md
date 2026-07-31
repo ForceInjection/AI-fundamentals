@@ -1,6 +1,6 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=8——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 25 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=8——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 42 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
 > **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划。每篇文章独立可读，前后交叉引用。
 
@@ -8,7 +8,7 @@
 
 在深入优化之前，首先要回答三个基础问题：KV Cache 存了什么、为什么只存 K 和 V 不存 Q、不同注意力架构下存储的形态有何不同。
 
-- **[KV Cache 原理简介](01_concepts/basic/kv_cache_原理简介.md)** ([配套 PPT](01_concepts/basic/kv_cache_原理简介.pptx))：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
+- **[KV Cache 原理简介](01_concepts/basic/kv_cache_basics.md)** ([配套 PPT](01_concepts/basic/kv_cache_basics.pptx))：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 - **[PagedAttention 原理介绍](01_concepts/basic/paged_attention.md)** — OS 分页思想 → GPU 显存管理：block table、按需分配、碎片率从 60-80% 降至 <4%。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/basic/why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
 - **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA / CSA-HCA 五种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
@@ -26,6 +26,7 @@
 - **[RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](01_concepts/prefix_caching/radix_attention.md)** ([配套 PPT](01_concepts/prefix_caching/radix_attention.pptx))：深入剖析基于 Radix Tree 自动复用 KV Cache 的核心原理及其在系统中的调度机制，并与 vLLM 的 APC 方案进行对比。
 - **[Prefix Caching 原理与实现](01_concepts/prefix_caching/prefix_caching.md)** ([配套 PPT](01_concepts/prefix_caching/prefix_caching.pptx))：详细介绍了 Prefix Caching 的核心原理、vLLM 的 Automatic Prefix Caching (APC) 实现，以及 LMCache 的多级 Prefix Caching 架构。涵盖哈希算法设计、跨实例共享模式、性能收益分析及最佳实践。
 - **[Claude 提示词缓存机制与源码实现深度分析](01_concepts/prefix_caching/claude_prompt_caching.md)**：分析 Claude 如何在终端 Agent 环境下落地 Prompt Caching 机制，通过复用请求的上下文前缀降低大规模任务的处理延迟。
+- **[RoPE 与 Prefix Caching 的互作用](01_concepts/prefix_caching/rope_and_prefix_caching.md)**：探讨 Rotary Position Embedding 的位置编码机制如何影响 Prefix Caching 的正确性与实现约束。
 
 ### 2.2 调度、传输与执行优化
 
