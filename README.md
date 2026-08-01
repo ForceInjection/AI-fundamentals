@@ -441,7 +441,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 - [vLLM CUDA Graphs 深度解析](09_inference_system/vllm/module_analysis/cuda_graph_deep_dive.md) - 深入探讨 vLLM 解码阶段 CUDA Graphs 的核心机制与实践
 - [vLLM Router 架构解析](09_inference_system/vllm/routing/router.md) - 高性能、轻量级请求转发系统
 - [vLLM Semantic Router](09_inference_system/vllm/routing/semantic_router_deep_dive.md) - 基于语义的智能路由策略
-- [DeepSeek V4 长上下文注意力支持解析](09_inference_system/vllm/module_analysis/deepseek_v4.md) - 深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化
+- [DeepSeek V4 长上下文注意力支持解析](09_inference_system/vllm/module_analysis/deepseek_v4_attention_support.md) - 深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化
 - [PagedAttention 退役的技术原因](09_inference_system/vllm/module_analysis/pagedattention_retirement.md) - 从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸等角度分析 PagedAttention 被取代的技术必然性
 - [MLA 的 TP 切分：KV Cache 冗余分析](09_inference_system/vllm/module_analysis/mla_tp_kv_redundancy.md) - MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%，但 TP 对其显存节省为 0%，冗余率达 87.5%
 

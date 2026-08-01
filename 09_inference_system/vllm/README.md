@@ -13,7 +13,7 @@
 - [CUDA Graphs 深度解析](./module_analysis/cuda_graph_deep_dive.md)：探讨 vLLM 在解码阶段如何利用 CUDA Graphs 技术大幅降低 CPU 调度开销及其底层内存固化机制。
 - [注意力机制演进与 vLLM 支持全景（MHA / MLA / NSA）](./module_analysis/attention_mha_mla_nsa.md)：系统梳理 **MHA / MQA / GQA**、**DeepSeek 风格 MLA**、**DeepSeek-V3.2 / GLM-5 稀疏 MLA（NSA 语义）** 三类机制的理论演进与 vLLM 代码层适配现状，覆盖 CUDA / ROCm / CPU 跨平台兼容性、Sparse MLA 后端与 Indexer 机制、以及 Hybrid KV Cache Manager 场景下 OffloadingConnector / LMCacheConnectorV1 的支持边界。
   - [注意力机制演进讲稿](./module_analysis/attention_mha_mla_nsa.pptx)：配套幻灯片，可用于内部培训或方案评审。
-- [DeepSeek V4 长上下文注意力支持解析](./module_analysis/deepseek_v4.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
+- [DeepSeek V4 长上下文注意力支持解析](./module_analysis/deepseek_v4_attention_support.md)：深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化。
 - [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](./module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)：系统梳理 DeepSeek V2/V3/V4 三代注意力机制（MLA → NSA/DSA → CSA+HCA）的技术演进脉络与架构权衡。
 - [DeepSeek-V3 端到端推理 Pipeline 走读](./module_analysis/deepseek_v3_inference_pipeline.md)：一个 token 穿越 61 层的完整旅程——Embedding → MLA Attention → MoE FFN（前 3 层 dense + 后 58 层 sparse）→ Final Norm → LM Head → MTP。概念驱动 + 代码验证，将 MLA、MoE、MTP、FP8 四组技术在前向传播中的时间顺序与数据依赖串联为一条完整链路。
 - [DeepSeek-V4 端到端推理 Pipeline 走读](./module_analysis/deepseek_v4_inference_pipeline.md)：V4 是 V3 的根本性重构——隐藏维度减半（4096）、MQA 替代 MLA、mHC 多流残差替代标准 residual、Hash-MoE 替代前 3 层 dense MLP、CSA/HCA 时域压缩替代低秩 KV 压缩。用一个 token 穿越 43 层的旅程展示六个阶段的数据流，与 V3 文章形成对照。

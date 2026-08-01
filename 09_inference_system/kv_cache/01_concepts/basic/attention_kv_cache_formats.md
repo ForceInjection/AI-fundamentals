@@ -232,7 +232,7 @@ CSA/HCA (DeepSeek V4):
   → block_size=256，大 block 对压缩 token 批量 I/O 更友好
 ```
 
-同一个 `KVCacheGroupSpec` 接口，不同的物理存储布局——这是 vLLM 能同时支持 MHA、GQA、MLA、Sliding Window、CSA/HCA 的关键抽象。V4 的实现细节详见 [vLLM 中的 DeepSeek V4](../../../vllm/module_analysis/deepseek_v4.md) 和 [MLA 到 CSA/HCA 进化](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。
+同一个 `KVCacheGroupSpec` 接口，不同的物理存储布局——这是 vLLM 能同时支持 MHA、GQA、MLA、Sliding Window、CSA/HCA 的关键抽象。V4 的实现细节详见 [vLLM 中的 DeepSeek V4](../../../vllm/module_analysis/deepseek_v4_attention_support.md) 和 [MLA 到 CSA/HCA 进化](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。
 
 ---
 

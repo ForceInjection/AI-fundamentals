@@ -25,7 +25,7 @@ vLLM Router 提供了丰富的功能模块，涵盖从基础的请求路由到�
 
 ## 2. 系统架构
 
-本章将深入介绍 vLLM Router 的整体系统架构设计理念以及代码的组织结构，帮助读者全面理解系统各组件之间的协作关系和数据流转过程。
+vLLM Router 的分层设计围绕一个目标：**请求处理路径上的每一层只做一件事**——中间件层处理横切关注点，路由层按协议分发，负载均衡层选节点，核心层维护节点状态。数据流自顶向下单向流动。
 
 ### 2.1 整体架构图
 
@@ -76,62 +76,22 @@ vLLM Router 提供了丰富的功能模块，涵盖从基础的请求路由到�
 
 ### 2.2 代码结构
 
-项目代码采用清晰的模块化组织方式，将不同功能职责的代码分离到独立的目录和文件中，其中 Rust 核心源码位于 `src/` 目录下，而 Python 包装层的代码则位于 `py_src/` 目录中，以下是详细的目录结构说明：
+Rust 核心位于 `src/`，按职责分为六组；Python 包装位于 `py_src/vllm_router/`：
 
-```text
-src/
-├── main.rs                 # CLI 入口，参数解析
-├── lib.rs                  # 库入口，PyO3 绑定
-├── server.rs               # Axum HTTP 服务器，路由注册，AppContext
-├── config/                 # 配置模块
-│   ├── mod.rs
-│   ├── types.rs           # RouterConfig, RoutingMode, PolicyConfig 等
-│   └── validation.rs      # 配置验证逻辑
-├── core/                   # 核心抽象
-│   ├── worker.rs          # Worker trait, BasicWorker, DPAwareWorker
-│   ├── worker_registry.rs # WorkerRegistry 集中式工作节点管理
-│   ├── circuit_breaker.rs # 熔断器状态机
-│   ├── retry.rs           # RetryExecutor 指数退避重试
-│   └── token_bucket.rs    # 令牌桶速率限制
-├── policies/               # 负载均衡策略
-│   ├── random.rs          # 随机策略
-│   ├── round_robin.rs     # 轮询策略
-│   ├── consistent_hash.rs # 一致性哈希
-│   ├── power_of_two.rs    # 两次随机选择
-│   ├── cache_aware.rs     # 缓存感知策略
-│   └── registry.rs        # PolicyRegistry
-├── routers/                # 路由器实现
-│   ├── http/              # HTTP 路由器
-│   │   ├── router.rs      # 标准单池路由器
-│   │   ├── openai_router.rs # OpenAI 兼容路由器
-│   │   ├── pd_router.rs   # PD 分离路由器
-│   │   └── vllm_pd_router.rs # vLLM 原生 PD 路由器
-│   ├── grpc/              # gRPC 路由器
-│   └── router_manager.rs  # RouterManager 多路由器协调
-├── protocols/              # 协议定义
-│   ├── spec.rs            # OpenAI API 类型定义
-│   └── worker_spec.rs     # Worker API 响应类型
-├── service_discovery.rs    # Kubernetes 服务发现
-├── middleware.rs           # 中间件（请求ID、认证、限流等）
-├── metrics.rs              # Prometheus 指标导出
-├── tokenizer/              # 分词器支持
-│   ├── huggingface.rs     # Hugging Face 分词器
-│   ├── tiktoken.rs        # tiktoken 分词器
-│   └── factory.rs         # 分词器工厂
-└── tree.rs                 # Radix 树（缓存感知路由）
-
-py_src/vllm_router/         # Python 包
-├── launch_router.py        # CLI 入口
-├── router.py               # PyO3 桥接
-├── router_args.py          # 参数解析
-└── mini_lb.py              # 纯 Python 备用负载均衡器
-```
+| 目录         | 职责             | 关键文件                                                                                                 |
+| ------------ | ---------------- | -------------------------------------------------------------------------------------------------------- |
+| `core/`      | 节点状态与可靠性 | `worker.rs`（Worker trait）、`worker_registry.rs`、`circuit_breaker.rs`、`retry.rs`、`token_bucket.rs`   |
+| `policies/`  | 五种负载均衡策略 | `random.rs`、`round_robin.rs`、`consistent_hash.rs`、`power_of_two.rs`、`cache_aware.rs` + `registry.rs` |
+| `routers/`   | 协议与拓扑路由   | `http/`（标准/OpenAI/PD/vLLM PD 四种路由器）、`grpc/`、`router_manager.rs`                               |
+| `tokenizer/` | 前缀缓存感知     | `huggingface.rs`、`tiktoken.rs` + `tree.rs`（Radix 树）                                                  |
+| 顶层         | 基础设施         | `server.rs`（Axum 服务器）、`middleware.rs`、`metrics.rs`、`service_discovery.rs`、`protocols/`          |
+| `py_src/`    | Python 包装      | `launch_router.py`（CLI）、`router.py`（PyO3 桥接）、`mini_lb.py`（纯 Python 备用 LB）                   |
 
 ---
 
 ## 3. 核心功能详解
 
-本章将详细介绍 vLLM Router 的各项核心功能，涵盖多种路由模式的配置与使用、内置负载均衡策略的原理与适用场景、确保系统稳定性的可靠性特性，以及与 Kubernetes 集群深度集成的服务发现机制。
+vLLM Router 的核心功能分四组：路由模式（部署拓扑的选择）、负载均衡策略（请求分配的依据）、可靠性特性（故障下的行为）与 Kubernetes 服务发现（节点来源的自动化）。
 
 ### 3.1 路由模式
 
@@ -193,6 +153,8 @@ vLLM Router 内置了五种经过精心设计的负载均衡策略，每种策�
 | `consistent_hash` | 相同会话路由到相同节点 | 是         | 否       | 多轮对话，KV 缓存复用 |
 | `power_of_two`    | 两次随机选择最优       | 否         | 是       | 负载敏感型工作负载    |
 | `cache_aware`     | 基于前缀缓存优化路由   | 是（缓存） | 是       | 重复提示词，few-shot  |
+
+前两种是**无状态策略**：`round_robin` 维护一个游标按顺序轮流分发，`random` 从健康节点中均匀随机选取。两者都不需要负载信息、不维护会话状态，实现最简单、开销最低——代价是无法利用 KV cache 亲和性。它们是后三种有状态策略的基线：一致性哈希把"亲和"加进来，二次选择把"负载感知"加进来，缓存感知把"前缀复用"加进来。选型时先问"我需要亲和还是负载感知"——都不需要就用 `round_robin`。
 
 #### 3.2.1 Consistent Hash 策略
 
@@ -480,7 +442,7 @@ vLLM Router 对外暴露了完整的 RESTful API 接口，主要分为四大类�
 
 ## 5. 配置参考
 
-本章系统性地列出了 vLLM Router 的各项配置参数及其默认值，涵盖服务器基础参数、认证配置以及 JSON 配置文件格式，为用户在不同部署场景下的配置调优提供参考。
+配置入口有三个：命令行参数、环境变量与 JSON 配置文件——前两者适合运维脚本，JSON 配置适合声明式管理（Kubernetes ConfigMap、版本控制）。
 
 ### 5.1 主要配置项
 
@@ -528,106 +490,29 @@ API_KEY_VALIDATION_URLS=https://auth.example.com/validate
 
 ---
 
-## 6. 构建与开发
+## 6. 性能特点
 
-本章面向希望参与项目开发或需要从源码构建的用户，详细介绍构建环境的搭建要求以及日常开发中常用的命令和工作流程。
+vLLM Router 的性能优势来自架构选择与官方 benchmark 两组证据。架构层面，全异步 Tokio 运行时、持久连接池、优化序列化与 Thin LTO 编译优化共同保证了低开销转发。数据层面，vLLM 官方发布博客（2025-12-13）给出了与同类方案的对比：
 
-### 6.1 前置要求
+| 场景                                          | 对比对象    | 吞吐            | TTFT           |
+| --------------------------------------------- | ----------- | --------------- | -------------- |
+| Llama 3.1 8B，8 Prefill + 8 Decode pods       | llm-d       | **+25%**        | **快 ~1200ms** |
+| Llama 3.1 8B，8 Prefill + 8 Decode pods       | K8s 原生 LB | **+100%（2×）** | 接近           |
+| DeepSeek V3，1 Prefill (TP8) + 1 Decode (TP8) | llm-d       | 接近            | **快 ~2000ms** |
+| DeepSeek V3，1 Prefill (TP8) + 1 Decode (TP8) | K8s 原生 LB | **+100%**       | **快 ~2000ms** |
 
-构建和开发 vLLM Router 需要预先安装以下工具链，建议使用较新版本以获得最佳兼容性：
-
-- **Rust 工具链**：推荐通过 rustup 安装和管理，项目需要稳定版工具链
-- **protobuf-compiler / libprotobuf-dev**：gRPC 功能依赖 Protocol Buffers 编译器，用于在构建时编译 `.proto` 文件
-- **Python 3.8+**：用于构建 Python wheel 包以及运行 Python 测试套件
-
-### 6.2 构建命令
-
-项目同时包含 Rust 和 Python 两部分代码，以下分别列出两侧的常用构建、测试和代码质量检查命令。
-
-**Rust 侧命令：**
-
-```bash
-cargo build --release          # 构建发布版本
-cargo test                     # 运行测试
-cargo clippy --all-targets     # 代码检查
-cargo fmt                      # 代码格式化
-cargo bench                    # 运行基准测试
-```
-
-**Python 侧命令：**
-
-```bash
-pip install -e ".[dev]"        # 以可编辑模式安装项目及开发依赖
-pytest py_test/                # 运行完整的 Python 测试套件
-pytest py_test/unit/           # 仅运行单元测试（速度快，无外部依赖）
-pytest py_test/integration/    # 运行集成测试（需要启动模拟服务）
-pytest py_test/e2e/            # 运行端到端测试（需要完整环境）
-```
-
-**Makefile 快捷命令（推荐日常开发使用）：**
-
-```bash
-make build       # cargo build --release
-make test        # cargo test
-make check       # cargo check + cargo clippy
-make fmt         # cargo fmt
-make bench       # 完整基准测试
-make bench-quick # 快速基准测试
-make clean       # cargo clean
-```
-
-### 6.3 Pre-commit Hooks
-
-为了确保提交到仓库的代码符合项目的质量标准，项目配置了 pre-commit hooks，会在每次 `git commit` 前自动运行一系列检查，建议所有开发者在克隆仓库后首先安装这些 hooks：
-
-```bash
-pip install pre-commit && pre-commit install
-```
-
-这些 hooks 涵盖了多种代码质量检查，包括：去除行尾空白字符、验证 YAML/TOML 文件格式、运行 `cargo fmt` 确保 Rust 代码风格一致、运行 `cargo clippy` 进行静态分析、使用 `black` 格式化 Python 代码、通过 `ruff` 进行 Python 代码检查，以及使用 `mypy` 进行类型检查。
+两个观察：**吞吐优势在 PD 分离场景下对 K8s 原生 LB 稳定在 2×**——因为 K8s 原生 LB 不感知 Prefill/Decode 状态，而 vLLM Router 的 PD 路由 + 一致性哈希让 KV cache 亲和性最大化；**TTFT 优势随模型变大而扩大**——DeepSeek V3 场景比 Llama 3.1 场景快得更多（~2000ms vs ~1200ms），说明 PD 感知路由在长序列、重 prefill 负载下价值更高。benchmark 排除了 vLLM 内置 DP/EP coordinator——其已知性能问题使吞吐仅为其他方案的 1/8。
 
 ---
 
-## 7. 部署示例
+## 7. 部署要点
 
-本章提供了在生产环境中部署 vLLM Router 的两种主流方式的详细示例：适合单机或小规模部署的 Docker 容器化方案，以及适合大规模生产环境的 Kubernetes 编排方案。
-
-### 7.1 Docker 部署
-
-对于快速验证或小规模部署场景，可以使用项目自带的 Dockerfile 构建容器镜像并直接运行，以下示例展示了完整的构建和启动流程：
-
-```dockerfile
-# 使用 Dockerfile.router 构建镜像
-docker build -f Dockerfile.router -t vllm-router:latest .
-
-# 运行容器（Dockerfile 默认端口为 8080）
-docker run -d \
-  -p 8080:8080 \
-  -p 29000:29000 \
-  vllm-router:latest \
-  --worker-urls http://worker1:8000 http://worker2:8000 \
-  --policy round_robin
-```
-
-### 7.2 Kubernetes 部署
-
-对于生产环境的大规模部署，推荐使用 Kubernetes 进行编排管理，项目在 `scripts/k8s/` 目录下提供了多种经过验证的部署配置示例，用户可以根据自身需求进行参考和定制：
-
-- **`llama3/`**：包含 Llama 3 模型的完整部署配置，涵盖 Deployment、Service、ConfigMap 等资源
-- **`llama3.1/`**：针对 Llama 3.1 模型优化的部署配置，包含推荐的资源限制和调度策略
-- **`deepseek-v31/`**：DeepSeek V3.1 大模型的部署配置，针对其特殊的内存和计算需求进行了调优
-- **`pd_disagg/`**：Prefill-Decode 分离模式的部署配置，展示了如何分别部署和配置预填充节点与解码节点
+vLLM Router 提供两条部署路径：Docker 容器适合快速验证与小规模部署（`docker build -f Dockerfile.router` 构建，默认端口 8080，指标端口 29000）；Kubernetes 编排适合生产环境，项目在 `scripts/k8s/` 下提供了 `llama3/`、`llama3.1/`、`deepseek-v31/`、`pd_disagg/` 四套经过验证的部署配置——其中 `pd_disagg/` 展示了 Prefill 与 Decode 节点分离部署的完整形态。完整的构建、测试与 pre-commit 流程见项目仓库 README。
 
 ---
 
-## 8. 性能特点
+## 延伸阅读
 
-vLLM Router 从架构设计到实现细节都以高性能为首要目标，在多个层面进行了深入优化，确保在高并发场景下仍能保持稳定的低延迟表现：
-
-- **全异步架构**：基于 Tokio 运行时的异步 I/O 模型，单个路由器实例即可高效处理数万并发连接，充分利用现代多核 CPU 的处理能力
-- **连接池优化**：HTTP 客户端维护持久连接池，避免了频繁建立和销毁 TCP 连接的开销，并通过合理的空闲超时和最大连接数配置平衡资源占用与性能
-- **高效序列化**：采用优化的 JSON 序列化/反序列化实现，在处理大型请求和响应时尽可能减少内存分配和数据拷贝
-- **编译优化**：发布版本启用了 Thin LTO（链接时优化）和单代码生成单元配置，通过跨模块优化生成更高效的机器码
-- **极低转发延迟**：在典型部署场景下，路由器引入的额外延迟仅在毫秒级别，对端到端推理延迟的影响可以忽略不计
+- [vLLM Semantic Router 深度剖析](semantic_router_deep_dive.md)：vLLM Router 与 Semantic Router 是 vllm-project 组织下**两个独立的项目**（独立仓库、独立技术栈）——vLLM Router 是 Rust 请求网关，解决"把请求分发到哪个**节点实例**"；Semantic Router 是 Go + Envoy ExtProc 的模型选择器，解决"把请求路由给哪个**模型**"。两者不是层级关系，而是两个不同的路由问题维度。生产中可以组合：Semantic Router 先基于信号选定模型，vLLM Router 再把请求分发到该模型的多个实例。
 
 ---
