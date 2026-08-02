@@ -57,7 +57,7 @@
 **内容**:
 
 - **Token 的定义**
-  - AI 处理文本的最小单位（约 0.75 个汉字 / 4 个英文字符）
+  - AI 处理文本的最小单位（约 0.7 个汉字 / 4 个英文字符，即 1 个汉字约 1-1.5 个 token）
   - 模型"思考"和"回答"都以 token 计量
   - 一次对话 = 输入 token + 输出 token
 - **为什么 token 是经济单位**
@@ -289,7 +289,7 @@
 - **演进节点**
   - Tesla (2006)：首个 CUDA 架构
   - Volta (2017)：Tensor Core——AI 计算专用单元
-  - Ampere (2020)：第二代 Tensor Core
+  - Ampere (2020)：第三代 Tensor Core（Turing 2018 为第二代）
   - Hopper (2022)：Transformer 引擎、FP8
   - **Blackwell (2024-2025)：FP4、NVLink-C2C**
   - **Rubin (2026-2027)：下一代**
@@ -430,7 +430,7 @@
   - 同样的模型 + 同样的 GPU，引擎不同，成本差 2-4 倍
 - **主流引擎（2026）**
   - **vLLM**：PagedAttention，最广泛部署
-  - **SGLang**：RadixAttention、DSpark 投机解码，迭代最快（574 PR/月）
+  - **SGLang**：RadixAttention、DSpark 投机解码，迭代最快（月均 400+ PR，单版本 574 PR）
   - **TensorRT-LLM**：NVIDIA 官方，极致优化
   - **llama.cpp**：轻量级，CPU/边缘
 - **关键指标**
