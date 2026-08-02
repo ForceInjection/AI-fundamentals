@@ -7,7 +7,7 @@ AI Fundamentals 课程资源库汇集了人工智能领域的系统性课程、�
 以下四大核心模块梳理了 AI 学习的基础设施与实战应用，为学习者构建了清晰的知识导航体系。
 
 - **[AI 编程入门](ai_coding/README.md)**：包含 AI 辅助编程的基础概念与实战演示课件。
-- **[AI 基础设施](ai_infra_course/入门级/README.md)**：聚焦 AI 计算底座，包含 GPU 架构、集群网络等入门级科普与讲稿。
+- **[Token Factory 讲座](ai_infra_lecture/入门级/README.md)**：AI 推理成本革命——四层杠杆（模型架构/硬件/推理引擎/基础设施与生态）如何让每 token 成本四年下降 100 倍。
 - **[多智能体系统](multi_agent_system/multi_agent_training/README.md)**：深入讲解多智能体架构设计、LangGraph 框架应用及企业级落地实践。
 - **[Trae 编程实战](trae/README.md)**：围绕 Trae 智能 IDE 展开的从基础到高级的全流程实战开发教程。
 
@@ -21,11 +21,12 @@ AI 编程基础培训通过实战演示与交互式课件，指导开发者如�
 
 - 课件资源：包含多页 HTML 格式的演示幻灯片，可通过浏览器直接查看（附带 `ppt-mode.js` 驱动）。
 
-### 2.2 AI 基础设施
+### 2.2 Token Factory 讲座
 
-基础设施课程从底层硬件架构切入，深入剖析 GPU 与计算集群核心组件，揭示大模型背后的算力支撑原理。详见 [ai_infra_course/入门级/README.md](ai_infra_course/入门级/README.md)。
+一场 90 分钟的技术普及讲座，回答一个问题：AI 推理成本为什么在四年里下降 100 倍？答案沿"模型架构 → 硬件 → 推理引擎 → 基础设施与生态"四层杠杆展开，覆盖 2026 年最新格局（DeepSeek-V4 CSA/HCA、Kimi K3 2.8T、开源价格战 28 倍价差、1M 上下文、Agentic 编程）。详见 [ai_infra_lecture/入门级/README.md](ai_infra_lecture/入门级/README.md)。
 
-- 演示资源：包含了生动的视频演示资料（如 GPU 与 CPU 的对比演示视频）以及丰富的 HTML 幻灯片。
+- **内容资产**：40 页 PPT 大纲（单一数据源）+ 552 行演讲逐字稿 + 自制 PPT 成品（40 页）。
+- **演示资源**：GPU 与 CPU 对比演示视频、Transwarp 品牌 Logo。
 
 ### 2.3 多智能体系统
 
