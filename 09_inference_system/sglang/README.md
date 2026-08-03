@@ -4,6 +4,7 @@ SGLang 是新一代 LLM 推理框架，以 RadixAttention 前缀缓存和高效�
 
 ## 内容索引
 
+- **[SGLang UnifiedRadixTree：一棵树，四种注意力](sglang-unified-radix-tree.md)**：对比旧版三棵树（RadixCache/MambaRadixCache/SWARadixCache）的并存代价，拆解 0.5.16 默认化的 UnifiedRadixTree——统一树核心 + 可插拔组件（FULL/MAMBA/SWA 独立 LRU 与缓存语义），以及它作为 ReplaySSM 同步、命中状态精确重置、GLM-5.2 缓存层拆分（-74%）和 DSpark 动态调度的地基。
 - **[SGLang 0.5.16 发布解读：当推理系统学会逐请求精算](sglang-0.5.16-release.md)**：574 个 PR、169 位贡献者的重大版本。以 DSpark 置信度驱动投机解码为主线——从固定验证窗口的瓶颈出发，拆解半自回归块草稿器、置信度头、顺序温度缩放、ragged verify + CUDA graph 全图捕获、零开销调度的完整链条；以 Inkling 975B 多模态 MoE 的 Day-0 支持为副线，分析 ShortConv 融合、全前向 CUDA 图捕获、共享专家 Sink 线性化布局等专项优化。包含 12 项破坏性变更清单与升级建议。
 - **[HiCache 深入详解](hicache_deep_dive.md)**：将 GPU/CPU/分布式后端统一为 L1-L3 缓存，通过 HiRadixTree 与 `page_first` 内存布局实现跨节点零拷贝。系统梳理演进背景、HiRadixTree 元数据拓扑、三种预取策略与三种写回策略、存储后端热插拔控制面，以及容量/异构 TP/PD 一致性/存储成本四维度的架构权衡。
 - **[SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](sglang-kv-pool-management.md)**（[可视化](assets/sglang-kv-pool-three-relation.html)）：基于 v0.5.14 源码，拆解 KV Pool（物理存储）、Radix Tree（逻辑索引）、ReqToTokenPool（请求视图）及其单向数据流循环。涵盖 `lock_ref` 正确性保证、六种 Pool 类型与七种分配器的选择逻辑、`page_size` 全栈贯穿机制，以及 L1→L2→L3 多级逐出与 `write_through`/`write_back` 策略。
