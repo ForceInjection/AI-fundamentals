@@ -508,7 +508,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 - [动手跑大模型](99_misc/mac-deepseek-r1.md) - 手把手教你如何跑大模型
 - [Ollama 推理框架详解](99_misc/ollama/README.md) - Ollama 的架构原理与进阶配置
-- [DeepSeek-V3 MoE 模型 vLLM 部署](09_inference_system/deployment/deepseek_v3_moe_vllm_h20_deployment.md) - H20 硬件上的部署方案与 SLO 验证
+- [DeepSeek-V3 H20 推理优化：基于 vLLM 源码的深度分析](09_inference_system/deployment/deepseek_v3_h20_vllm_deep_dive.md) - PD 分离、EPLB、DP 适配、MTP 加速、FP8 量化的源码级分析
 - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/deployment/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
 
 ### 9.8 DeepSeek 专题
