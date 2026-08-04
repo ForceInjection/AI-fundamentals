@@ -69,6 +69,30 @@ These are primarily educational references, not a cohesive application. There is
 - Article series that follow a numbered sequence (e.g., `09_inference_system/reference_design/`) use zero-padded numeric prefixes with Chinese descriptive filenames: `01-背景与目标.md`, `02-集群规模分类与特征分析.md`. Maintain this convention when adding new entries to an existing series.
 - Interactive HTML visualizations (e.g., inference pipeline demos) placed alongside the markdown documents they complement should include a `.gif` preview in the same directory when possible.
 
+## Source-code-based deep-dive articles
+
+When writing technical deep-dives that reference external codebases (vLLM, SGLang, etc.), follow these conventions:
+
+- **Verify every claim against source code.** Never describe a mechanism from memory or secondary sources alone — read the actual source file and confirm line numbers, method signatures, and behavior. If the referenced codebase is not available locally, state this explicitly and fall back to public documentation.
+- **Use `file_path:line_number` format** for all source references (e.g., `vllm/distributed/eplb/eplb_state.py:526-658`). Line ranges should reference specific methods or logic blocks, not entire files.
+- **Include a source file index** at the end of the article, listing every referenced file with its key classes/functions.
+- **Prefer code excerpts over prose descriptions** for critical mechanisms. Show the actual code (simplified pseudocode is acceptable for readability, but the behavior must match the source).
+- **Be honest about gaps.** If the target framework (e.g., vLLM) doesn't support a feature described in a reference article (e.g., w4a8c8 quantization), mark it clearly as "not available" rather than inventing a workaround.
+- **Article structure**: Context → per-technique source analysis (mechanism + code + config) → maturity assessment → practical configuration → source file index.
+
+Commonly referenced codebases and their local paths:
+
+| Codebase | Local path |
+|---|---|
+| vLLM | `/Users/wangtianqing/Project/ai-infra/vLLM/` |
+| SGLang | `/Users/wangtianqing/Project/ai-infra/sglang/` |
+| LMCache | `/Users/wangtianqing/Project/ai-infra/LMCache/` |
+
+## Article lifecycle
+
+- When a new source-code-verified article **supersedes** an older theoretical/estimation-based article on the same topic, **delete the old article** and update all references (directory README, top-level README). Do not keep both — conflicting information from outdated articles misleads readers.
+- Update the parent directory's `README.md` portal whenever adding, removing, or renaming an article. Also check the top-level `README.md` for stale links to the changed file.
+
 ## Companion media files
 
 Markdown documents are frequently accompanied by:
