@@ -6,6 +6,10 @@
 
 ---
 
+> **前瞻**：DeepSeek-V4 和 Kimi K3 从架构层面对 attention 做了根本性改造，KV Cache 从 250GB 降到 5GB，旧叙事终结。但新架构带来了新的系统挑战。详见 **[当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md)**（对照 vLLM/SGLang 源码 ✓，含 39 处代码验证）。
+
+---
+
 ## 1. 基础原理
 
 在讨论任何优化之前，先理解推理的两阶段（Prefill/Decode）、KV Cache 为什么存在、以及并行策略如何把大模型塞进多张 GPU。

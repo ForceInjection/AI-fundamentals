@@ -11,7 +11,6 @@
 - **[Transformer 架构详解](llm_basic_concepts/transformer/transformer_architecture.md)** — 从自注意力、多头注意力、FFN 到完整 Decoder Block 的逐组件拆解，现代 LLM 的基石架构。
 - **[位置编码](llm_basic_concepts/positional_encoding/positional_encoding.md)** — 从 Sinusoidal 到 RoPE 的演进，RoPE 的旋转数学原理与 NTK/YaRN 外推技术。
 - **[LLM 架构演进史](llm_basic_concepts/architecture_evolution/llm_architecture_evolution.md)** — GPT-1 到 DeepSeek-V3：Decoder-only 如何胜出、标准配方如何形成、MoE 与推理 Scaling 的新方向。
-- **[MLA 之后，推理系统的新瓶颈在哪里](post-mla-inference-bottlenecks.md)** — 基于 DeepSeek-V4（CSA/HCA 混合注意力）与 Kimi K3（KDA 线性注意力）技术报告，分析注意力架构演进如何消灭旧瓶颈并制造五个新瓶颈。**[分析性文章，非实测结论]**
 - **[思维链 (CoT)](llm_basic_concepts/cot/chain_of_thought_cot_intro.md)** — 通过显式推理步骤提升复杂问题求解能力，是多跳推理与工具调用的前置条件。
 - **[嵌入 (Embedding)](llm_basic_concepts/embedding/README.md)** — 从 Bag-of-Words / TF-IDF 到 Transformer 句向量的演进，覆盖距离度量、降维可视化与 RAG/聚类/分类等下游用法。
 - **[混合专家 (MoE)](llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md)** — 稀疏激活架构如何在不线性放大推理成本的前提下扩展参数规模。
