@@ -117,6 +117,8 @@ def generate_naive(model, prompt, max_new_tokens=50):
 
 每一步都对**所有前置 token** 计算 Q、K、V 投影和注意力分数，但最终只消费最后一个位置的 logits。序列长度 T 时，第 t 步的计算量与 t² 成正比——这是平方级增长的浪费。
 
+![GPT-2 自回归解码：每步计算所有位置的注意力分数，但只消费最后一个位置的 logits，下一步又要重算](https://www.datocms-assets.com/104802/1785352692-4.png?auto=format&w=1200)
+
 ---
 
 ## 二、KV Cache：用空间换时间
@@ -176,6 +178,8 @@ $$\text{KV Cache 大小} = 2 \times n_{\text{layer}} \times n_{\text{kv\_heads}}
 
 更关键的是，解码时的每步都要从 HBM 中**流式读出全部 KV Cache**。即使计算量已经减小，内存带宽仍是瓶颈：每步 decode 的计算强度（FLOP/Byte）极低，属于 **memory-bound** 操作。
 
+![KV Cache 解码时的 HBM 读写模式：每步两次 O(ND) 读、两次 O(1D) 写，Cache 随序列长度线性增长](https://www.datocms-assets.com/104802/1785352769-5.png?auto=format&w=1200)
+
 > **注**：KV Cache 的存储、压缩、量化、淘汰策略等，详见本站 **[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)**（42 篇文章）。PagedAttention 如何将 KV Cache 从连续内存中"打碎"以消除碎片，See **[vLLM PagedAttention 源码分析](../../../09_inference_system/vllm/README.md)**。
 
 ---
@@ -197,6 +201,8 @@ softmax 在 Q·K 乘积**之后**施加非线性（指数 + 归一化），导�
 $$\phi(Q) \cdot \left(\phi(K)^\top \cdot V\right) = \left(\phi(Q) \cdot \phi(K)^\top\right) \cdot V$$
 
 前者先算 φ(K)ᵀ·V（D×D 矩阵），再与 φ(Q) 相乘——复杂度 O(ND²)，与序列长度 N **线性**相关。后者先算 φ(Q)·φ(K)ᵀ（N×N 矩阵）——复杂度 O(N²D)。
+
+![Softmax 注意力（左）必须先算 QK^T（N×N 矩阵），线性注意力（右）可以先折叠 K^T·V 为固定大小的 D×D 状态](https://www.datocms-assets.com/104802/1785352800-6.png?auto=format&w=1200)
 
 ```python
 import torch
@@ -257,10 +263,10 @@ class LinearAttention(nn.Module):
 
 ### 3.2 与标准注意力的对比
 
-| 机制 | 状态大小 | 每步解码复杂度 | 瓶颈 |
-|---|---|---|---|
-| Softmax + KV Cache | O(N·D) 随序列增长 | O(N·D) 从 HBM 读取全部 cache | 内存带宽 |
-| 线性注意力（循环） | O(D²) **固定不变** | O(D²) 纯矩阵乘法 | 状态容量（D² 有限） |
+| 机制               | 状态大小           | 每步解码复杂度               | 瓶颈                |
+| ------------------ | ------------------ | ---------------------------- | ------------------- |
+| Softmax + KV Cache | O(N·D) 随序列增长  | O(N·D) 从 HBM 读取全部 cache | 内存带宽            |
+| 线性注意力（循环） | O(D²) **固定不变** | O(D²) 纯矩阵乘法             | 状态容量（D² 有限） |
 
 ### 3.3 代价：表达力的损失
 
@@ -359,6 +365,8 @@ class DeltaNetAttention(nn.Module):
 
 Q 是可学习的「指针」：Wq 和 Wk 读取同一残差流，查询向量指向该事实被写入时的 key 方向。更新流程是——先问当前 key 从 cache 里取回了什么旧信息，将其从要存的值中减去，再乘以 key 加回状态矩阵。旧信息被移除，新信息在它的位置上写入。
 
+![Delta 规则三步走：用 key 读回旧值 → 计算 delta → 外积写入状态矩阵](https://www.datocms-assets.com/104802/1785352983-11.png?auto=format&w=1200)
+
 ---
 
 ## 五、分块并行化 DeltaNet：让 Prefill 也能高效
@@ -439,6 +447,8 @@ def chunked_delta_net(q, k, v, beta, chunk_size=64):
     return torch.cat(outputs, dim=1)  # [B, T, D]
 ```
 
+![分块计算策略：C=N 恢复 O(N²) 全注意力，C=1 退化为纯循环。实际 C=64 在并行度与计算量之间取得平衡](https://www.datocms-assets.com/104802/1785353051-12.png?auto=format&w=1200)
+
 ### 5.4 Delta 规则的完整块内修正（前向代入）
 
 上述简化实现使用纯加性更新跨块折叠。真正的 DeltaNet 分块实现需要在块内做 **delta 修正**，这是通过前向代入（forward substitution）求快速逆来实现的：
@@ -487,7 +497,7 @@ def delta_correction_within_chunk(k_c, v_c, beta_c, S):
 
 ### 5.5 C 的选择：FLOP 最少 vs 墙钟最快
 
-```
+```text
 C = 1   → 退化为纯循环线性注意力（最少 FLOP，但 GPU 利用率极低）
 C = T   → 恢复完整 O(T²) softmax 注意力（最多 FLOP，但 GPU 矩阵乘法硬件充分利用）
 C = 64  → 当前 GPU 张量核（如 UMMA 指令）的最佳粒度
@@ -497,13 +507,15 @@ C = 64  → 当前 GPU 张量核（如 UMMA 指令）的最佳粒度
 
 ### 5.6 对比：MHA vs DeltaNet
 
-| 维度 | MHA + KV Cache | DeltaNet（循环模式） |
-|---|---|---|
-| 每步解码 FLOP | O(T·D) | O(D²) |
-| 显存占用（每层） | O(T·D) 随序列增长 | O(D²) **固定** |
-| 信息更新方式 | 每次重读全部上下文 | Delta 规则——增量修正 |
-| 旧信息移除 | KV Cache 淘汰策略（LRU 等） | Delta 规则自动擦除 |
-| Prefill 效率 | O(T²) 但可并行 | O(T·D²) 需要分块并行 |
+| 维度             | MHA + KV Cache              | DeltaNet（循环模式） |
+| ---------------- | --------------------------- | -------------------- |
+| 每步解码 FLOP    | O(T·D)                      | O(D²)                |
+| 显存占用（每层） | O(T·D) 随序列增长           | O(D²) **固定**       |
+| 信息更新方式     | 每次重读全部上下文          | Delta 规则——增量修正 |
+| 旧信息移除       | KV Cache 淘汰策略（LRU 等） | Delta 规则自动擦除   |
+| Prefill 效率     | O(T²) 但可并行              | O(T·D²) 需要分块并行 |
+
+![MHA Transformer（左）与 DeltaNet Transformer（右）的架构对比：DeltaNet 用固定 D×D 状态矩阵替代了随序列增长的 KV Cache](https://www.datocms-assets.com/104802/1785353199-15.png?auto=format&w=1200)
 
 ---
 
@@ -526,6 +538,7 @@ Gated DeltaNet 将两种机制合并：
 $$S_t = \alpha_t \cdot S_{t-1} - \beta_t \cdot (k_t^\top \otimes (k_t \cdot (\alpha_t \cdot S_{t-1}))) + \beta_t \cdot (k_t^\top \otimes v_t)$$
 
 两个参数各司其职：
+
 - **α（衰减门）**：控制旧状态的全局保留程度。α=1 时完全保留，α=0 时清空记忆。
 - **β（写入强度）**：控制新信息的写入力度。β=0 时跳过更新。
 
@@ -589,13 +602,15 @@ class GatedDeltaNet(nn.Module):
 
 ### 6.3 架构演进至此
 
-```
+```text
 加性线性注意力 (2020)     →  固定大小状态，但信息只进不出
       ↓
 DeltaNet                   →  用 Delta 规则移除旧关联再写入，但无法全局衰减
       ↓
 Gated DeltaNet (GDN)       →  合并门控衰减 + Delta 修正，记忆管理完整了
 ```
+
+![线性注意力 → DeltaNet → Gated DeltaNet 的架构演进全景](https://www.datocms-assets.com/104802/1785353294-20.png?auto=format&w=1200)
 
 > **注**：这一演进线（加性 → Delta → Gated Delta）独立于 Transformer 的 MHA→MQA→GQA→MLA 主线。两条线在 Kimi Linear / Kimi K3 中交汇：KDA 提供恒定大小的循环记忆，周期性的 MLA 层提供完整上下文的 softmax 检索。详见 [post-kv-cache-era-challenges.md](../../../09_inference_system/post-kv-cache-era-challenges.md) §3。
 
@@ -671,6 +686,8 @@ class KimiLinearAttention(nn.Module):
         return torch.stack(outputs, dim=1)
 ```
 
+![KDA 的逐通道门控：每个通道有独立的衰减速率 α_d，高频通道快速遗忘、低频通道保留长程信息](https://www.datocms-assets.com/104802/1785353343-22.png?auto=format&w=1200)
+
 逐通道门控不是简单的参数量增加——它有精确的数学作用：让不同通道学会不同的衰减时间尺度。高频通道快速遗忘旧 token 的局部语法细节，低频通道保留跨句子的实体和主题信息。
 
 > **注**：逐通道衰减本质上是一组可学习的指数移动平均（EMA）滤波器。每个通道的 α_d 决定了该维度的有效记忆长度：记忆半衰期 = log(0.5) / log(α_d)。当 α_d → 1 时，该通道成为事实上的「持久记忆槽」。
@@ -687,7 +704,7 @@ Kimi Linear 的解码吞吐比全注意力最高提升 6 倍——这个提升�
 
 Kimi K3 在 Kimi Linear 的基础上做了规模化升级。其核心架构是一个**23 次循环的宏结构**：
 
-```
+```text
 每个宏循环（共 23 次）：
   ├── Layer_i+0: KDA + 稠密 FFN + SiTU 激活
   ├── Layer_i+1: KDA + LatentMoE + SiTU 激活
@@ -696,6 +713,8 @@ Kimi K3 在 Kimi Linear 的基础上做了规模化升级。其核心架构是�
 
 每 3 个宏循环（12 层）做一次 AttnRes
 ```
+
+![Kimi K3 的四层宏循环结构：3 层 KDA + 1 层 Gated MLA，每 12 层插入一次 AttnRes](https://www.datocms-assets.com/104802/1785353466-25.png?auto=format&w=1200)
 
 设计哲学："KDA 提供恒定状态循环记忆，周期性 MLA 层保留对完整上下文的 softmax 检索。"
 
@@ -942,6 +961,8 @@ class AttnRes(nn.Module):
         return h
 ```
 
+![AttnRes 的选择性深度访问：标准残差流对所有前层等权求和（左），AttnRes 用学习到的注意力权重做加权求和（右）](https://www.datocms-assets.com/104802/1785353651-27.png?auto=format&w=1200)
+
 ### 9.3 AttnRes 与 MLA 的分工
 
 Ali Taha 给出了一个精辟的总结：
@@ -964,16 +985,16 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 
 从 GPT-2 到 Kimi K3，注意力机制的演进不是简单的规模放大，而是每一次架构迭代都针对前一代的具体缺陷：
 
-| 阶段 | 解决了什么 | 新引入的代价 |
-|---|---|---|
-| **GPT-2** (2019) | — 基础 softmax 注意力 | 自回归解码 O(N²) 计算，每一步重算所有前置 token |
-| **KV Cache** | 已生成 token 的 K/V 不需要重算 | Cache 随序列长度线性增长，解码受限于内存带宽 |
-| **线性注意力** (2020) | 用固定大小状态矩阵替代不断增长的 cache | ELU+1 近似 softmax，表达力下降 |
-| **DeltaNet** | Delta 规则解决加性更新的信息干扰 | 只能替换不能衰减，prefill 需要分块并行化 |
-| **Gated DeltaNet** | 合并门控衰减 + Delta 修正 | 标量门控太粗粒度 |
-| **KDA / Kimi Linear** | 逐通道门控 + MLA 混合 + MoE | 混合架构的复杂性 |
-| **Kimi K3** | 工业规模混合 + Gated MLA + LatentMoE + SiTU | 新激活函数需要融合内核，架构极其复杂 |
-| **AttnRes** | 选择性深度残差访问，解耦横向与纵向信息检索 | +2% 推理延迟 |
+| 阶段                  | 解决了什么                                  | 新引入的代价                                    |
+| --------------------- | ------------------------------------------- | ----------------------------------------------- |
+| **GPT-2** (2019)      | — 基础 softmax 注意力                       | 自回归解码 O(N²) 计算，每一步重算所有前置 token |
+| **KV Cache**          | 已生成 token 的 K/V 不需要重算              | Cache 随序列长度线性增长，解码受限于内存带宽    |
+| **线性注意力** (2020) | 用固定大小状态矩阵替代不断增长的 cache      | ELU+1 近似 softmax，表达力下降                  |
+| **DeltaNet**          | Delta 规则解决加性更新的信息干扰            | 只能替换不能衰减，prefill 需要分块并行化        |
+| **Gated DeltaNet**    | 合并门控衰减 + Delta 修正                   | 标量门控太粗粒度                                |
+| **KDA / Kimi Linear** | 逐通道门控 + MLA 混合 + MoE                 | 混合架构的复杂性                                |
+| **Kimi K3**           | 工业规模混合 + Gated MLA + LatentMoE + SiTU | 新激活函数需要融合内核，架构极其复杂            |
+| **AttnRes**           | 选择性深度残差访问，解耦横向与纵向信息检索  | +2% 推理延迟                                    |
 
 根本洞见可以归结为一句话：**固定容量的联想记忆需要逐出策略**。纯加性线性操作一旦达到容量就会引入干扰——这就是为什么每一代架构都在增加「选择性」：门控是选择性的写入衰减，Delta 规则是选择性的值替换，MLA 是选择性的 token 检索，AttnRes 是选择性的深度检索。
 
@@ -988,4 +1009,3 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 > - 架构主线：[LLM 架构演进史](llm_architecture_evolution.md) — GPT-1 到 DeepSeek-V3 的七个拐点
 > - KV Cache：[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md) — 42 篇文章，从原理到分布式管理
 > - 基础概念：[Transformer 架构详解](../transformer/transformer_architecture.md) — 从自注意力到完整 Decoder Block
-
