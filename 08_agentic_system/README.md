@@ -22,6 +22,7 @@
 单个 Agent 内部到底如何组织「思考→行动→反思」？这里汇总了业界经过验证的主流模式，包括推理-行动交织的 ReAct、面向复杂长文本创作的写作工作流、对话系统中的指代消解，以及在真实业务中落地的 TradingAgents 等案例。
 
 - [ReAct Agent 模式详解](./agent_design/docs/react-agent.md) - 剖析推理 (Reasoning) 与行动 (Acting) 深度协同的经典机制，提升智能体解决复杂任务的可靠性。
+- [确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](./agent_design/docs/open-code-review-deep-dive.md) - 基于阿里开源项目源码与论文的原理分析：规则引导调度、有界工具审查循环、信息边界反思如何以确定性约束超越自由 Agent（SEM-F1 25.1% vs 11.6%），并提炼可迁移的 Agent 设计原则。
 - [写作 Agentic Agent 设计](./agent_design/docs/writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
 - [多轮指代消解对话系统](./agent_design/docs/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
 - [12-Factor Agents](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
