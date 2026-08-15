@@ -76,6 +76,7 @@ PCIe 是异构通信（CPU↔GPU、GPU↔NIC、GPU↔NVMe）的通用标准，�
 - **[PCIe 总线技术大全](pcie/01_pcie_comprehensive_guide.md)**：从物理层到协议层全面解析 PCIe 总线架构及带宽演进。
 - **[Linux PCIe P2PDMA 技术介绍](pcie/02_p2pdma_technology.md)**：从 PCIe 硬件机制、Linux 内核实现到 GPUDirect Storage (GDS) 场景实践，全面解析设备直连 DMA 技术。
 - **[GPU BAR1 内存映射](pcie/05_bar1_memory_mapping.md)**：BAR1 窗口大小对 Unified Memory 性能的影响、ReBAR 状态检查、BAR1 vs FB 对比。
+- **[CXL 互联协议全景解读](pcie/08_cxl_interconnect_overview.md)**：基于 arXiv 2306.11227 综述，以 C-I-S-T 叙事拆解 CXL 1.1/2.0/3.0 三代协议（一致性、内存语义、池化、织网）与延迟/带宽实测数据，含 Linux 下 CPU 访问 CXL 内存的设备形态源码分析与对 AI 基础设施的启示。
 
 **拓扑层次与可视化**：
 
