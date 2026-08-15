@@ -7,6 +7,7 @@ PCIe 是异构计算系统中最基础的互连标准——CPU↔GPU、GPU↔NIC
 - [**PCIe 总线技术大全**](01_pcie_comprehensive_guide.md)：物理层到协议层全面解析，带宽演进（Gen3→Gen6），TLP/DLLP 包结构。
 - [**Linux PCIe P2PDMA 技术**](02_p2pdma_technology.md)：设备直连 DMA 的硬件机制与内核实现，GDS 场景下的实践。
 - [**GPU BAR1 内存映射**](05_bar1_memory_mapping.md)：BAR1 窗口对 Unified Memory 性能的影响，ReBAR 状态检查。
+- [**CXL 互联协议全景解读**](08_cxl_interconnect_overview.md)：基于 arXiv 2306.11227 综述，以 C-I-S-T 叙事拆解 CXL 1.1/2.0/3.0 三代协议（一致性、内存语义、池化、织网）与延迟/带宽实测数据，含 Linux 下 CPU 访问 CXL 内存的三种设备形态（System RAM / devdax / pmem-fsdax）源码分析。
 
 ## 拓扑与可视化
 
