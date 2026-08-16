@@ -9,7 +9,7 @@
 
 **Star History**:
 
-![Star History Chart](https://api.star-history.com/svg?repos=ForceInjection/AI-fundamentals&type=date&legend=top-left)
+![Star History Chart](https://star-history.dera.page/svg?repos=ForceInjection/AI-fundamentals&type=date&legend=top-left)
 
 ---
 
