@@ -43,7 +43,13 @@
 
 - **[LLM 评估体系](evaluation/llm_evaluation.md)** — 主流 Benchmark (MMLU/GSM8K/HumanEval/MT-Bench)、评估方法分类（选择题/开放生成/LLM-as-Judge）与数据污染/Prompt 敏感性等关键陷阱。
 
-## 7. 相关资源
+## 7. 内容溯源与识别（水印）
+
+幻觉回答的是「内容会不会是编的」，水印回答的是「内容是不是 AI 生成的」。监管（欧盟《人工智能法案》第 50 条、中国《人工智能生成合成内容标识办法》）推动厂商把水印做进生成管线，也催生了水印去除工具的攻防竞赛：
+
+- **[AI 水印攻防全景](watermark/ai_watermark_attack_and_defense.md)** — 以 KGW / SynthID-Text 统计水印、C2PA 内容凭证、SynthID-media / StegaStamp / Tree-Ring 图像水印为线索，复盘四回合攻防（隐形字符 → 概率水印 → 文件签名 → 像素重建），含 watermarks-remover 的开源去水印方案与 MarkLLM 本地自测闭环。
+
+## 8. 相关资源
 
 - [推理系统与优化](../../09_inference_system/README.md)
 - [模型训练与微调](../../05_model_training_and_fine_tuning/README.md)
