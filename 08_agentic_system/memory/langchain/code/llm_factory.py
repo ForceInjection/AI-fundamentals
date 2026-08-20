@@ -219,6 +219,48 @@ class LLMFactory:
         )
 
     @staticmethod
+    def create_orcarouter_llm(
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        timeout: Optional[int] = None
+    ) -> ChatOpenAI:
+        """
+        创建 OrcaRouter LLM 实例（通过 OpenAI 兼容接口）
+
+        OrcaRouter 提供 OpenAI 兼容的 API 接口，通过统一网关按请求智能路由到各厂商模型。
+        默认模型 `orcarouter/auto` 是路由名（不是具体模型），后端自动选择最优模型。
+
+        Args:
+            api_key: OrcaRouter API 密钥
+            model: 模型名称（默认 orcarouter/auto）
+            temperature: 温度参数
+            max_tokens: 最大token数
+            timeout: 超时时间
+
+        Returns:
+            ChatOpenAI实例
+        """
+        api_key = api_key or config.orcarouter_api_key
+        model = model or config.orcarouter_model or "orcarouter/auto"
+        temperature = temperature if temperature is not None else config.temperature
+        max_tokens = max_tokens or config.max_tokens
+        timeout = timeout or config.timeout
+
+        if not api_key:
+            raise ValueError("OrcaRouter API Key 不能为空！请设置 ORCAROUTER_API_KEY 环境变量或在配置文件中指定")
+
+        return ChatOpenAI(
+            api_key=api_key,
+            base_url="https://api.orcarouter.ai/v1",
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=timeout
+        )
+
+    @staticmethod
     def create_llm(
         provider: str = "openai",
         **kwargs
@@ -227,7 +269,7 @@ class LLMFactory:
         根据提供商创建LLM实例
 
         Args:
-            provider: 提供商类型 ("openai", "deepseek", "minimax", "local", "ollama")
+            provider: 提供商类型 ("openai", "deepseek", "minimax", "orcarouter", "local", "ollama")
             **kwargs: 其他参数
 
         Returns:
@@ -241,19 +283,21 @@ class LLMFactory:
             return LLMFactory.create_deepseek_llm(**kwargs)
         elif provider == "minimax":
             return LLMFactory.create_minimax_llm(**kwargs)
+        elif provider == "orcarouter":
+            return LLMFactory.create_orcarouter_llm(**kwargs)
         elif provider == "local":
             return LLMFactory.create_local_llm(**kwargs)
         elif provider == "ollama":
             return LLMFactory.create_ollama_llm(**kwargs)
         else:
-            raise ValueError(f"不支持的提供商: {provider}。支持的提供商: openai, deepseek, minimax, local, ollama")
+            raise ValueError(f"不支持的提供商: {provider}。支持的提供商: openai, deepseek, minimax, orcarouter, local, ollama")
     
     @staticmethod
     def auto_create_llm() -> BaseLanguageModel:
         """
         自动选择可用的LLM实例
 
-        优先级：OpenAI > DeepSeek > MiniMax > 本地模型 > Ollama
+        优先级：OpenAI > DeepSeek > MiniMax > OrcaRouter > 本地模型 > Ollama
 
         Returns:
             LLM实例
@@ -282,6 +326,14 @@ class LLMFactory:
         except Exception as e:
             print(f"⚠️ MiniMax 模型创建失败: {e}")
 
+        # 尝试OrcaRouter
+        try:
+            if config.validate_config("orcarouter"):
+                print("🤖 使用 OrcaRouter 模型")
+                return LLMFactory.create_orcarouter_llm()
+        except Exception as e:
+            print(f"⚠️ OrcaRouter 模型创建失败: {e}")
+
         # 尝试本地模型
         try:
             if config.validate_config("local"):
@@ -302,8 +354,9 @@ class LLMFactory:
             "1. 设置 OPENAI_API_KEY 环境变量\n"
             "2. 或设置 DEEPSEEK_API_KEY 环境变量\n"
             "3. 或设置 MINIMAX_API_KEY 环境变量\n"
-            "4. 或配置本地模型 LOCAL_BASE_URL\n"
-            "5. 或启动 Ollama 服务"
+            "4. 或设置 ORCAROUTER_API_KEY 环境变量\n"
+            "5. 或配置本地模型 LOCAL_BASE_URL\n"
+            "6. 或启动 Ollama 服务"
         )
 
 def get_openai_llm(**kwargs):
@@ -342,12 +395,24 @@ def get_minimax_llm(**kwargs):
     """
     return LLMFactory.create_minimax_llm(**kwargs)
 
+def get_orcarouter_llm(**kwargs):
+    """
+    获取OrcaRouter LLM实例
+
+    Args:
+        **kwargs: 额外参数
+
+    Returns:
+        ChatOpenAI实例
+    """
+    return LLMFactory.create_orcarouter_llm(**kwargs)
+
 def get_llm(provider: Optional[str] = None, **kwargs) -> BaseLanguageModel:
     """
     便捷函数：获取LLM实例
 
     Args:
-        provider: 提供商类型 ("openai", "deepseek", "minimax", "local", "ollama")，如果为None则自动选择
+        provider: 提供商类型 ("openai", "deepseek", "minimax", "orcarouter", "local", "ollama")，如果为None则自动选择
         **kwargs: 其他参数
 
     Returns:

@@ -79,6 +79,10 @@ DEEPSEEK_MODEL = "deepseek-chat"
 MINIMAX_API_KEY = "your-minimax-api-key"
 MINIMAX_MODEL = "MiniMax-M3"
 
+# OrcaRouter
+ORCAROUTER_API_KEY = "sk-orca-your-orcarouter-api-key"
+ORCAROUTER_MODEL = "orcarouter/auto"
+
 # 本地模型（Ollama / vLLM / LocalAI 等）
 LOCAL_BASE_URL = "http://localhost:11434/v1"
 LOCAL_MODEL = "qwen2.5"
@@ -90,6 +94,7 @@ LOCAL_MODEL = "qwen2.5"
 export OPENAI_API_KEY="your-openai-api-key"
 export DEEPSEEK_API_KEY="your-deepseek-api-key"
 export MINIMAX_API_KEY="your-minimax-api-key"
+export ORCAROUTER_API_KEY="sk-orca-your-orcarouter-api-key"
 export LOCAL_BASE_URL="http://localhost:11434/v1"
 ```
 
@@ -196,6 +201,9 @@ python main.py --interactive --persistent   # 聊天历史写入 sessions/checkp
 | `DEEPSEEK_MODEL`   | DeepSeek 模型名称   | `deepseek-chat`                 |
 | `MINIMAX_API_KEY`  | MiniMax API 密钥    | 无                              |
 | `MINIMAX_MODEL`    | MiniMax 模型名称    | `MiniMax-M3`                    |
+| `ORCAROUTER_API_KEY`  | OrcaRouter API 密钥    | 无                          |
+| `ORCAROUTER_BASE_URL` | OrcaRouter API 基础 URL | `https://api.orcarouter.ai/v1` |
+| `ORCAROUTER_MODEL`    | OrcaRouter 模型名称    | `orcarouter/auto`            |
 | `LOCAL_BASE_URL`   | 本地模型 API URL    | `http://localhost:11434/v1`     |
 | `LOCAL_MODEL`      | 本地模型名称        | `qwen2.5`                       |
 
@@ -241,7 +249,18 @@ MINIMAX_MODEL = "MiniMax-M3"
 
 MiniMax 提供 OpenAI 兼容接口，默认使用最新旗舰模型 `MiniMax-M3`（512K 上下文、128K 最大输出，支持图像输入）；也支持上一代 `MiniMax-M2.7`（1M 上下文）/ `MiniMax-M2.7-highspeed`。
 
-### 6.4 本地模型（Ollama）
+### 6.4 OrcaRouter
+
+[OrcaRouter](https://www.orcarouter.ai) 是一个智能模型路由网关，通过一个统一端点按请求动态路由到各厂商最新模型，并提供网关级安全防护。它提供 OpenAI 兼容接口，默认模型 `orcarouter/auto` 是智能路由名（非具体模型），后端自动选择最优模型。
+
+```python
+ORCAROUTER_API_KEY = "sk-orca-your-orcarouter-api-key"
+ORCAROUTER_MODEL = "orcarouter/auto"
+```
+
+它也支持显式指定 `orcarouter/fusion`（1M 上下文旗舰）、`orcarouter/fusion-flash`（200K 高速）、`orcarouter/fusion-mini`（1M 经济型）等模型。
+
+### 6.5 本地模型（Ollama）
 
 ```bash
 curl -fsSL https://ollama.ai/install.sh | sh
@@ -254,7 +273,7 @@ LOCAL_BASE_URL = "http://localhost:11434/v1"
 LOCAL_MODEL = "qwen2.5"
 ```
 
-### 6.5 其他 OpenAI 兼容服务
+### 6.6 其他 OpenAI 兼容服务
 
 ```python
 # 例如：vLLM, FastChat, LocalAI 等

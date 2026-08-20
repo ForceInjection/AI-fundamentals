@@ -38,6 +38,20 @@ MINIMAX_API_KEY = "your-minimax-api-key-here"
 MINIMAX_MODEL = "MiniMax-M3"
 
 # ================================
+# OrcaRouter 配置（可选）
+# ================================
+
+# OrcaRouter API Key
+# 获取地址：https://www.orcarouter.ai
+ORCAROUTER_API_KEY = "sk-orca-your-orcarouter-api-key-here"
+
+# OrcaRouter API Base URL（可选，默认官方网关地址）
+ORCAROUTER_BASE_URL = "https://api.orcarouter.ai/v1"
+
+# OrcaRouter 模型名称（可选，默认智能路由 orcarouter/auto）
+ORCAROUTER_MODEL = "orcarouter/auto"
+
+# ================================
 # 本地模型配置（可选）
 # ================================
 
@@ -90,6 +104,9 @@ export OPENAI_BASE_URL="https://api.openai.com/v1"
 export OPENAI_MODEL="gpt-3.5-turbo"
 export MINIMAX_API_KEY="your-minimax-api-key-here"
 export MINIMAX_MODEL="MiniMax-M3"
+export ORCAROUTER_API_KEY="sk-orca-your-orcarouter-api-key-here"
+export ORCAROUTER_BASE_URL="https://api.orcarouter.ai/v1"
+export ORCAROUTER_MODEL="orcarouter/auto"
 export LOCAL_BASE_URL="http://localhost:8000/v1"
 export LOCAL_MODEL="qwen2.5:7b"
 export LLM_TEMPERATURE="0.7"
@@ -104,6 +121,9 @@ set OPENAI_BASE_URL=https://api.openai.com/v1
 set OPENAI_MODEL=gpt-3.5-turbo
 set MINIMAX_API_KEY=your-minimax-api-key-here
 set MINIMAX_MODEL=MiniMax-M3
+set ORCAROUTER_API_KEY=sk-orca-your-orcarouter-api-key-here
+set ORCAROUTER_BASE_URL=https://api.orcarouter.ai/v1
+set ORCAROUTER_MODEL=orcarouter/auto
 set LOCAL_BASE_URL=http://localhost:8000/v1
 set LOCAL_MODEL=qwen2.5:7b
 set LLM_TEMPERATURE=0.7
@@ -126,6 +146,12 @@ set MAX_TOKEN_LIMIT=1000
 - MiniMax-M3: 最新旗舰模型，512K 上下文窗口、128K 最大输出，支持图像输入
 - MiniMax-M2.7: 上一代旗舰模型，1M 上下文窗口
 - MiniMax-M2.7-highspeed: M2.7 的高速推理版本
+
+# OrcaRouter 模型（https://www.orcarouter.ai）
+- orcarouter/auto: 智能路由名（不是具体模型），后端自动选择最优模型
+- orcarouter/fusion: 1M 上下文窗口旗舰模型
+- orcarouter/fusion-flash: 200K 上下文窗口高速模型
+- orcarouter/fusion-mini: 1M 上下文窗口经济型模型
 
 # 本地模型（Ollama）
 - qwen2.5:7b: 通义千问2.5 7B参数版本
