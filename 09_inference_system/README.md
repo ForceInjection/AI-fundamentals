@@ -81,7 +81,7 @@
 企业级落地需要参考架构与运维方案。
 
 - **[推理优化参考设计](reference_design/README.md)** — 14 篇系列文章：背景目标、集群规模分类、技术选型、架构设计、性能评估、实施检查清单。
-- **[模型部署](deployment/README.md)** — DeepSeek-V3 H20、Qwen2-VL 昇腾的方案与 SLO 验证。
+- **[模型部署](deployment/README.md)** — DeepSeek-V3 H20、Qwen2-VL 昇腾的方案与 SLO 验证，以及基于 logprobs 的输出精度判别与排错方法论。
 
 ---
 
