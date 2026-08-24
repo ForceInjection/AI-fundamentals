@@ -498,6 +498,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 - [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
+- [Token Factory 演讲素材库](99_misc/token_factory_talk/README.md) — 对外演讲《Token Factory: AI 推理的成本革命》完整素材：可排练提纲（逐页重点地图、Q&A 预判、数据核查清单）+ 7 份参考资料（财务测算模型、上市公司财报证据、白皮书提炼、杰文斯悖论数据）
 - [KV Cache 容量规划](09_inference_system/kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) — GLM-5 显存容量推演与 ROI 评估
 - [KV Cache 压缩技术](09_inference_system/kv_cache/01_concepts/compression/kv_cache_compression.md) — INT8/FP8 量化、稀疏化与注意力优化
 - [Claude Prompt Caching 机制分析](09_inference_system/kv_cache/01_concepts/prefix_caching/claude_prompt_caching.md) — 提示词缓存的终端 Agent 源码实现与成本优化
