@@ -2,11 +2,11 @@
 
 ## 概述
 
-本文档是《多智能体 AI 系统基础：理论与框架》（[part1_multi_agent_ai_fundamentals.md](./part1_multi_agent_ai_fundamentals.md)）的实战篇，专注于使用 LangGraph 和 LangSmith 构建企业级多智能体 AI 系统的具体实现。基于 Part1 的理论基础，本文档提供完整的代码实现、部署方案和最佳实践，帮助开发者将多智能体理论转化为生产级系统。
+本文档是[《多智能体AI系统基础：理论与框架》](./part1_multi_agent_ai_fundamentals.md)的实战篇，专注于使用 LangGraph 和 LangSmith 构建企业级多智能体 AI 系统的具体实现。基于 Part1 的理论基础，本文档提供完整的代码实现、部署方案和最佳实践，帮助开发者将多智能体理论转化为生产级系统。
 
 **完整项目实现**: 本文档对应的完整可运行代码位于 [`multi_agent_system/`](../multi_agent_system) 目录。
 
-**前置阅读建议**: 建议先阅读 [part1_multi_agent_ai_fundamentals.md](./part1_multi_agent_ai_fundamentals.md) 了解理论基础，再通过本文档进行实战实现。
+**前置阅读建议**: 建议先阅读 [多智能体AI系统基础：理论与框架](./part1_multi_agent_ai_fundamentals.md) 了解理论基础，再通过本文档进行实战实现。
 
 ## 目录
 
@@ -1667,7 +1667,7 @@ class ResourcePoolManager:
 
 - **配置文件**：[`config.json`](../multi_agent_system/config.json) - 系统配置
 - **部署文件**：[`docker-compose.yml`](../multi_agent_system/docker-compose.yml) - 容器化部署
-- **文档说明**：[`README.md`](../../README.md) - 详细使用说明
+- **文档说明**：[企业级多智能体 AI 系统](../multi_agent_system/README.md) - 详细使用说明
 
 ### 5.3 技术价值
 

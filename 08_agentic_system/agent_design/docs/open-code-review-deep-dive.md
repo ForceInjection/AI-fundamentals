@@ -331,4 +331,4 @@ OpenCodeReview 的价值不止于一个评审工具——它是**"确定性工�
 >
 > - 项目源码：[github.com/alibaba/open-code-review](https://github.com/alibaba/open-code-review)（Apache 2.0，Go 实现；仓库 README 为官方文档入口）
 > - 论文：[OpenCodeReview: Determinism over Non-Determinism for Cost-Effective Agent-Based Code Review](https://arxiv.org/html/2608.09290v1)（arXiv:2608.09290，阿里 + 南京大学 + 北大）
-> - 相关：[ReAct Agent 模式详解](./react-agent.md) — 本文 §5 的循环机制源于 ReAct 模式
+> - 相关：[Cursor IDE ReAct Agent 技术架构深度分析](./react-agent.md) — 本文 §5 的循环机制源于 ReAct 模式

@@ -2,7 +2,7 @@
 
 > 面向想系统学习 AI Agent 的开发者，按「知名度 × star 数 × 开源」三个标准筛选的课程与项目清单。所有 star 数均于 2026-08-24 通过 GitHub API 实时核实。
 >
-> 配套阅读：[小白学习路线图](./learning-roadmap.md) —— 不知道怎么开始，先看路线图；已经上路，用本清单按类补齐弹药。
+> 配套阅读：[Agent 学习路线图：从小白到构建者](./learning-roadmap.md) —— 不知道怎么开始，先看路线图；已经上路，用本清单按类补齐弹药。遇到不懂的术语，查 [Agent 术语速查](./glossary.md)。
 
 ## 筛选标准
 
@@ -39,20 +39,23 @@
 | [google/adk-python](https://github.com/google/adk-python)                     | **21.2K** | Apache-2.0 | Google Agent Development Kit，代码优先，A2A 协议原生                                                                             |
 | [camel-ai/camel](https://github.com/camel-ai/camel)                           | **17.6K** | Apache-2.0 | 多智能体研究与角色扮演框架，学术向                                                                                               |
 
-## 三、Harness 与编码 Agent（驾驭工程，6 个）
+## 三、Harness 与编码 Agent（驾驭工程，7 个）
 
-> 「Harness（驾驭）」指围绕 LLM 构建的运行时/工作环境——不是让你从零写 Agent，而是让 AI 在真实环境（终端、IDE、容器）中自主完成任务。推荐与仓库内 [Harness_Engineering.md](../../98_llm_programming/Harness_Engineering.md)、[Agent_First.md](../../98_llm_programming/Agent_First.md) 对照阅读。
+> 「Harness（驾驭）」指围绕 LLM 构建的运行时/工作环境——不是让你从零写 Agent，而是让 AI 在真实环境（终端、IDE、容器）中自主完成任务。推荐与仓库内 [驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)、[Agent First：软件工程的下一个范式转移](../../98_llm_programming/Agent_First.md) 对照阅读。
 
-| 项目                                                                | ⭐        | License    | 特点                                                                                                                                     |
-| ------------------------------------------------------------------- | --------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands) | **84.9K** | MIT        | 通用 AI 软件工程 Agent：浏览器 + 终端 + 编辑器全驾驭，可自托管，研究 Agent 运行时的最佳开源标本                                          |
-| [cline/cline](https://github.com/cline/cline)                       | **66.7K** | Apache-2.0 | IDE 内的自主编码 Agent（VS Code 插件 + SDK），人机协作 Plan/Act 模式                                                                     |
-| [block/goose](https://github.com/block/goose)                       | **53.3K** | Apache-2.0 | Block 出品的本地优先编码 Agent，MCP 原生，可扩展任何工具                                                                                 |
-| [Aider-AI/aider](https://github.com/Aider-AI/aider)                 | **48.4K** | Apache-2.0 | 终端里的 AI 结对编程，仓库地图 + 自动 commit，上手最快的命令行 Agent                                                                     |
-| [Hmbown/DeepSeek-TUI](https://github.com/Hmbown/DeepSeek-TUI)       | **40.8K** | MIT        | 榨干 DeepSeek 长上下文的命令行编程 Agent，TUI + 审批模式 + MCP 扩展；本仓库有[实战解析](../agent_infra/docs/deepseek-tui-in-practice.md) |
-| [opencode-ai/opencode](https://github.com/opencode-ai/opencode)     | **13.7K** | MIT        | 终端 AI 编码 Agent，开放式 Agent 协议；⚠️ 更新停于 2025-09                                                                               |
+| 项目                                                                            | ⭐         | License    | 特点                                                                                                                                                                      |
+| ------------------------------------------------------------------------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) | **190.0K** | MIT        | DeepSeek 官方通用 Agent Harness（`dsh`）：“一切皆插件”架构，基于 Cordis 运行时，`npx @deepseek-ai/dsh web` 一条命令跑起 Web UI；⚠️ 开发者预览，迭代极快、可能有破坏性变更 |
+| [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)             | **84.9K**  | MIT        | 通用 AI 软件工程 Agent：浏览器 + 终端 + 编辑器全驾驭，可自托管，研究 Agent 运行时的最佳开源标本                                                                           |
+| [cline/cline](https://github.com/cline/cline)                                   | **66.7K**  | Apache-2.0 | IDE 内的自主编码 Agent（VS Code 插件 + SDK），人机协作 Plan/Act 模式                                                                                                      |
+| [block/goose](https://github.com/block/goose)                                   | **53.3K**  | Apache-2.0 | Block 出品的本地优先编码 Agent，MCP 原生，可扩展任何工具                                                                                                                  |
+| [Aider-AI/aider](https://github.com/Aider-AI/aider)                             | **48.4K**  | Apache-2.0 | 终端里的 AI 结对编程，仓库地图 + 自动 commit，上手最快的命令行 Agent                                                                                                      |
+| [Hmbown/DeepSeek-TUI](https://github.com/Hmbown/DeepSeek-TUI)                   | **40.8K**  | MIT        | 命令行编程 Agent，TUI + 审批模式 + MCP 扩展；本仓库有 [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](../agent_infra/docs/deepseek-tui-in-practice.md)                                  |
+| [opencode-ai/opencode](https://github.com/opencode-ai/opencode)                 | **13.7K**  | MIT        | 终端 AI 编码 Agent，开放式 Agent 协议；⚠️ 更新停于 2025-09                                                                                                                |
 
 > 生产级 Agent 编排框架补充：[microsoft/agent-framework](https://github.com/microsoft/agent-framework)（13.1K，MIT）——微软新一代 Agent 框架，AutoGen 的官方继任者，适合框架选型时作为 LangGraph 的对照项。
+>
+> 注：[deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（DeepSeek 官方）与 [DeepSeek-TUI](https://github.com/Hmbown/DeepSeek-TUI)（社区项目）定位不同——前者是插件化的通用驾驭框架，后者是榨干 DeepSeek 长上下文的命令行编程 Agent。
 
 ## 四、案例库与速查（3 个）
 
@@ -74,19 +77,19 @@
 
 > 本仓库自产或整理的学习资料，与外部清单互补——**star 不作为筛选标准**，但内容与本仓库深度文章一体同源。
 
-| 项目/资料                                                                                                                                       | 类型     | 说明                                                                                                                                                            |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ForceInjection/awesome-skills](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)） | 开源项目 | 优秀认知技能（Agent Skill）合集：深度代码阅读、架构分析、文档评审等自动化工作流，与 [anthropics/skills](../agent_skills/docs/claude_skills_guide.md) 的学习配套 |
-| [多智能体 AI 系统培训材料](../../10_ai_related_course/multi_agent_system/multi_agent_training/README.md)                                        | 仓库课程 | 五天结构化培训（理论基础 → LangGraph → LangSmith → 企业级架构 → 应用实践），配套本仓库两篇多智能体深度文档                                                      |
-| [微软 AI Agents for Beginners 课程笔记](../../10_ai_related_course/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)        | 仓库笔记 | 微软 15 课的中文学习笔记，可与原课程配套使用                                                                                                                    |
-| [ForceInjection/OpenSpec-practise](https://github.com/ForceInjection/OpenSpec-practise)                                                         | 开源项目 | Spec 驱动开发（SDD）工程实践：意图 → Spec → AI → 代码 & 验证，Harness 时代的工作流范式                                                                          |
-| [MiniMax-AI/mmx-cli](https://github.com/MiniMax-AI/cli)                                                                                         | 开源项目 | MiniMax 官方 CLI 技能（遵循 agentskills.io 标准），Agent Skills 在多媒体生成场景的实例                                                                          |
+| 项目/资料                                                                                                                                       | 类型     | 说明                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ForceInjection/awesome-skills](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)） | 开源项目 | 优秀认知技能（Agent Skill）合集：深度代码阅读、架构分析、文档评审等自动化工作流，与 [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](../agent_skills/docs/claude_skills_guide.md) 配套学习 |
+| [多智能体 AI 系统培训材料](../../10_ai_related_course/multi_agent_system/multi_agent_training/README.md)                                        | 仓库课程 | 五天结构化培训（理论基础 → LangGraph → LangSmith → 企业级架构 → 应用实践），配套本仓库两篇多智能体深度文档                                                                                            |
+| [AI Agents for Beginners 课程之 AI Agent及使用场景简介](../../10_ai_related_course/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md)        | 仓库笔记 | 微软 15 课的中文学习笔记，可与原课程配套使用                                                                                                                                                          |
+| [ForceInjection/OpenSpec-practise](https://github.com/ForceInjection/OpenSpec-practise)                                                         | 开源项目 | Spec 驱动开发（SDD）工程实践：意图 → Spec → AI → 代码 & 验证，Harness 时代的工作流范式                                                                                                                |
+| [MiniMax-AI/mmx-cli](https://github.com/MiniMax-AI/cli)                                                                                         | 开源项目 | MiniMax 官方 CLI 技能（遵循 agentskills.io 标准），Agent Skills 在多媒体生成场景的实例                                                                                                                |
 
 ---
 
 ## 学习顺序建议
 
-1. **零基础**：微软 15 课（或 hello-agents 前 3 章）建立概念 → 详见 [学习路线图](./learning-roadmap.md)
+1. **零基础**：微软 15 课（或 hello-agents 前 3 章）建立概念 → 详见 [Agent 学习路线图：从小白到构建者](./learning-roadmap.md)
 2. **想懂原理**：hello-agents 手搓 ReAct/Plan-and-Solve/Reflection，再回头读 LangGraph 源码会豁然开朗
 3. **想快速实战**：crewAI 或 smolagents 出第一个 demo → GenAI_Agents 跟练 → awesome-llm-apps 找灵感
 4. **想做编码 Agent**：Aider 上手 → Cline/OpenHands 深挖 → 对照 Harness_Engineering 理解设计

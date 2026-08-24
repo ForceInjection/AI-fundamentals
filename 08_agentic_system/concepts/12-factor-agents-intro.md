@@ -33,7 +33,7 @@
 
 ### 要素 1：自然语言到工具调用 (Natural Language to Tool Calls)
 
-**📁 详细文档**：[factor-01-natural-language-to-tool-calls.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-01-natural-language-to-tool-calls.md)
+**📁 详细文档**：[要素 1：自然语言到工具调用](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-01-natural-language-to-tool-calls.md)
 
 **可视化示例**：
 
@@ -105,7 +105,7 @@ async def handle_tool_call(tool_call: ToolCall):
 
 ### 要素 2：拥有自己的提示词 (Own Your Prompts)
 
-**📁 详细文档**：[factor-02-own-your-prompts.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-02-own-your-prompts.md)
+**📁 详细文档**：[要素 2：拥有自己的提示词](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-02-own-your-prompts.md)
 
 **可视化示例**：
 
@@ -182,7 +182,7 @@ function DetermineNextStep(thread: string) ->
 
 ### 要素 3：拥有自己的上下文窗口 (Own Your Context Window)
 
-**📁 详细文档**：[factor-03-own-your-context-window.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-03-own-your-context-window.md)
+**📁 详细文档**：[要素 3：拥有自己的上下文窗口](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-03-own-your-context-window.md)
 
 **可视化示例**：
 
@@ -276,7 +276,7 @@ def thread_to_prompt(thread: Thread) -> str:
 
 ### 要素 4：工具只是结构化输出 (Tools Are Structured Outputs)
 
-**📁 详细文档**：[factor-04-tools-are-structured-outputs.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-04-tools-are-structured-outputs.md)
+**📁 详细文档**：[要素 4：工具只是结构化输出](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-04-tools-are-structured-outputs.md)
 
 **可视化示例**：
 
@@ -337,7 +337,7 @@ async def handle_tool_call(tool_call: ToolCall) -> dict:
 
 ### 要素 5：统一执行状态和业务状态 (Unify Execution State)
 
-**📁 详细文档**：[factor-05-unify-execution-state.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-05-unify-execution-state.md)
+**📁 详细文档**：[要素 5：统一执行状态和业务状态](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-05-unify-execution-state.md)
 
 **可视化示例**：
 
@@ -391,7 +391,7 @@ class Thread:
 
 ### 要素 6：使用简单 API 启动/暂停/恢复 (Launch/Pause/Resume)
 
-**📁 详细文档**：[factor-06-launch-pause-resume.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-06-launch-pause-resume.md)
+**📁 详细文档**：[要素 6：使用简单 API 启动/暂停/恢复](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-06-launch-pause-resume.md)
 
 **可视化示例**：
 
@@ -450,7 +450,7 @@ class AgentAPI:
 
 ### 要素 7：通过工具调用联系人类 (Contact Humans With Tools)
 
-**📁 详细文档**：[factor-07-contact-humans-with-tools.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-07-contact-humans-with-tools.md)
+**📁 详细文档**：[要素 7：通过工具调用联系人类](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-07-contact-humans-with-tools.md)
 
 **可视化示例**：
 
@@ -537,7 +537,7 @@ async def handle_human_request(request: RequestHumanInput):
 
 ### 要素 8：拥有自己的控制流 (Own Your Control Flow)
 
-**📁 详细文档**：[factor-08-own-your-control-flow.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-08-own-your-control-flow.md)
+**📁 详细文档**：[要素 8：拥有自己的控制流](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-08-own-your-control-flow.md)
 
 **可视化示例**：
 
@@ -596,7 +596,7 @@ async def handle_next_step(thread: Thread) -> None:
 
 ### 要素 9：将错误压缩到上下文窗口中 (Compact Errors)
 
-**📁 详细文档**：[factor-09-compact-errors.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-09-compact-errors.md)
+**📁 详细文档**：[要素 9：将错误压缩到上下文窗口中](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-09-compact-errors.md)
 
 **可视化示例**：
 
@@ -703,7 +703,7 @@ async def execute_with_recovery(thread: Thread, tool_call: ToolCall):
 
 ### 要素 10：小型、专注的智能体 (Small, Focused Agents)
 
-**📁 详细文档**：[factor-10-small-focused-agents.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-10-small-focused-agents.md)
+**📁 详细文档**：[要素 10：小型、专注的智能体](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-10-small-focused-agents.md)
 
 **可视化示例**：
 
@@ -798,7 +798,7 @@ class DeploymentOrchestrator:
 
 ### 要素 11：从任何地方触发 (Trigger From Anywhere)
 
-**📁 详细文档**：[factor-11-trigger-from-anywhere.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-11-trigger-from-anywhere.md)
+**📁 详细文档**：[要素 11：从任何地方触发](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-11-trigger-from-anywhere.md)
 
 **可视化示例**：
 
@@ -909,7 +909,7 @@ class UniversalTrigger:
 
 ### 要素 12：让智能体成为无状态归约器 (Stateless Reducer)
 
-**📁 详细文档**：[factor-12-stateless-reducer.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-12-stateless-reducer.md)
+**📁 详细文档**：[要素 12：让智能体成为无状态归约器](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-12-stateless-reducer.md)
 
 **可视化示例**：
 
