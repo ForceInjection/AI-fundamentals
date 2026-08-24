@@ -29,6 +29,6 @@
 
 上线前的端到端验证常被「输出几乎一致、只有一两个 token 不同」卡住：这是硬件浮点噪声，还是缓存链路丢了数据？本小节提供一套定量的判别方法。
 
-- **[输出差了一点点：用 logprobs 判别 LLM 推理系统的精度问题](logprobs-precision-diagnosis.md)**：基于真实排查故事（KV Cache 端到端验证，Falcon-H1 7B），用 `logprobs` 参数的三个定量判别（gap、跨路径差、全局 vs 局部）把「采样噪声 vs 数据 bug」分开，再以写/介质/读三对照把根因收敛到一行代码
+- **[输出差了一点点？用 logprobs 分清「噪声」还是「bug」](logprobs-precision-diagnosis.md)**：基于真实排查故事（KV Cache 端到端验证，Falcon-H1 7B），用 `logprobs` 参数的三个定量判别（gap、跨路径差、全局 vs 局部）把「采样噪声 vs 数据 bug」分开，再以写/介质/读三对照把根因收敛到一行代码
 
 > 相关阅读：并行策略理论参见 [核心推理优化技术深度解析](../reference_design/03-核心推理优化技术深度解析.md)；SLO 指标定义参见 [性能评估指标体系](../reference_design/05-性能评估指标体系.md)。
