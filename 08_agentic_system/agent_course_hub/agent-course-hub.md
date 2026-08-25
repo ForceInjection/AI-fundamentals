@@ -2,7 +2,7 @@
 
 > 面向想系统学习 AI Agent 的开发者，按「知名度 × star 数 × 开源」三个标准筛选的课程与项目清单。所有 star 数均于 2026-08-24 通过 GitHub API 实时核实。
 >
-> 配套阅读：[Agent 学习路线图：从小白到构建者](./learning-roadmap.md) —— 不知道怎么开始，先看路线图；已经上路，用本清单按类补齐弹药。遇到不懂的术语，查 [Agent 术语速查](./glossary.md)。
+> 配套阅读：[Agent 学习路线图：先跑通，再理解，最后造轮子](./learning-roadmap.md) —— 不知道怎么开始，先看路线图；已经上路，用本清单按类补齐弹药。遇到不懂的术语，查 [Agent 术语速查](./glossary.md)。
 
 ## 筛选标准
 
@@ -89,7 +89,7 @@
 
 ## 学习顺序建议
 
-1. **零基础**：微软 15 课（或 hello-agents 前 3 章）建立概念 → 详见 [Agent 学习路线图：从小白到构建者](./learning-roadmap.md)
+1. **零基础**：微软 15 课（或 hello-agents 前 3 章）建立概念 → 详见 [Agent 学习路线图：先跑通，再理解，最后造轮子](./learning-roadmap.md)
 2. **想懂原理**：hello-agents 手搓 ReAct/Plan-and-Solve/Reflection，再回头读 LangGraph 源码会豁然开朗
 3. **想快速实战**：crewAI 或 smolagents 出第一个 demo → GenAI_Agents 跟练 → awesome-llm-apps 找灵感
 4. **想做编码 Agent**：Aider 上手 → Cline/OpenHands 深挖 → 对照 Harness_Engineering 理解设计

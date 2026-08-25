@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+    <marker id="mGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="mIndigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4f46e5"/>
+    </marker>
+    <marker id="mTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+    <marker id="mAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="980" fill="#f8fafc"/>
+
+  <!-- 标题 -->
+  <text x="60" y="78" font-size="36" font-weight="700" fill="#0f172a">2026 年 AI Agent 学习路线图</text>
+  <text x="62" y="112" font-size="18" fill="#64748b">先跑通，再理解，最后造轮子 · 七个阶段，每阶段一个验收标志，达成即前进</text>
+
+  <!-- ============ 阶段卡片（蛇形流） ============ -->
+
+  <!-- 阶段 0 -->
+  <g>
+    <rect x="60" y="160" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="104" cy="212" r="22" fill="#64748b"/>
+    <text x="104" y="212" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">0</text>
+    <text x="138" y="216" font-size="20" font-weight="700" fill="#0f172a">前置基础</text>
+    <text x="138" y="244" font-size="13" fill="#64748b">1–2 周 · 可跳过部分</text>
+    <line x1="84" y1="272" x2="386" y2="272" stroke="#f1f5f9"/>
+    <text x="84" y="294" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="84" y="322" font-size="15" fill="#334155">能写多轮对话的 CLI 聊天脚本</text>
+  </g>
+
+  <!-- 阶段 1 -->
+  <g>
+    <rect x="443" y="160" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="487" cy="212" r="22" fill="#64748b"/>
+    <text x="487" y="212" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">1</text>
+    <text x="521" y="216" font-size="20" font-weight="700" fill="#0f172a">Agent 是什么</text>
+    <text x="521" y="244" font-size="13" fill="#64748b">1 周</text>
+    <line x1="467" y1="272" x2="769" y2="272" stroke="#f1f5f9"/>
+    <text x="467" y="294" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="467" y="322" font-size="15" fill="#334155">讲清 Agent 与 Chatbot 的区别</text>
+  </g>
+
+  <!-- 阶段 2（最重要） -->
+  <g>
+    <rect x="826" y="160" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="870" cy="212" r="22" fill="#4f46e5"/>
+    <text x="870" y="212" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">2</text>
+    <text x="904" y="216" font-size="20" font-weight="700" fill="#0f172a">手搓核心范式</text>
+    <text x="904" y="244" font-size="13" fill="#64748b">2–3 周</text>
+    <line x1="850" y1="272" x2="1152" y2="272" stroke="#f1f5f9"/>
+    <text x="850" y="294" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="850" y="316" font-size="15" fill="#334155">不靠框架手写 ReAct Agent</text>
+    <text x="850" y="337" font-size="15" fill="#334155">（查天气 + 算数 + 失败重试）</text>
+    <rect x="1068" y="178" width="88" height="30" rx="15" fill="#f59e0b"/>
+    <text x="1112" y="193" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="700" fill="#ffffff">最重要</text>
+  </g>
+
+  <!-- 阶段 3 -->
+  <g>
+    <rect x="1209" y="160" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="1253" cy="212" r="22" fill="#4f46e5"/>
+    <text x="1253" y="212" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">3</text>
+    <text x="1287" y="216" font-size="20" font-weight="700" fill="#0f172a">框架实战</text>
+    <text x="1287" y="244" font-size="13" fill="#64748b">2–3 周</text>
+    <line x1="1233" y1="272" x2="1535" y2="272" stroke="#f1f5f9"/>
+    <text x="1233" y="294" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="1233" y="316" font-size="15" fill="#334155">LangGraph 做出带状态应用</text>
+    <text x="1233" y="337" font-size="15" fill="#334155">支持中断恢复</text>
+  </g>
+
+  <!-- 阶段 4 -->
+  <g>
+    <rect x="1209" y="430" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="1253" cy="482" r="22" fill="#0d9488"/>
+    <text x="1253" y="482" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">4</text>
+    <text x="1287" y="486" font-size="20" font-weight="700" fill="#0f172a">协议 · 记忆 · 上下文</text>
+    <text x="1287" y="514" font-size="13" fill="#64748b">2–3 周</text>
+    <line x1="1233" y1="542" x2="1535" y2="542" stroke="#f1f5f9"/>
+    <text x="1233" y="564" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="1233" y="586" font-size="15" fill="#334155">接 3 个 MCP 工具 + 跨会话记忆</text>
+    <text x="1233" y="607" font-size="15" fill="#334155">再写一个自己的 Agent Skill</text>
+  </g>
+
+  <!-- 阶段 5 -->
+  <g>
+    <rect x="826" y="430" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="870" cy="482" r="22" fill="#7c3aed"/>
+    <text x="870" y="482" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">5</text>
+    <text x="904" y="486" font-size="20" font-weight="700" fill="#0f172a">案例与多智能体</text>
+    <text x="904" y="514" font-size="13" fill="#64748b">2–4 周</text>
+    <line x1="850" y1="542" x2="1152" y2="542" stroke="#f1f5f9"/>
+    <text x="850" y="564" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="850" y="586" font-size="15" fill="#334155">独立完成一个完整项目</text>
+    <text x="850" y="607" font-size="15" fill="#334155">（智能客服 / Data Agent / Deep Research）</text>
+  </g>
+
+  <!-- 阶段 6（持续） -->
+  <g>
+    <rect x="443" y="430" width="350" height="192" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#shadow)"/>
+    <circle cx="487" cy="482" r="22" fill="#e11d48"/>
+    <text x="487" y="482" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="700" fill="#ffffff">6</text>
+    <text x="521" y="486" font-size="20" font-weight="700" fill="#0f172a">Harness 与工程化</text>
+    <text x="521" y="514" font-size="13" fill="#64748b">持续</text>
+    <line x1="467" y1="542" x2="769" y2="542" stroke="#f1f5f9"/>
+    <text x="467" y="564" font-size="12" fill="#94a3b8">验收标志</text>
+    <text x="467" y="586" font-size="15" fill="#334155">日常开发 30% 由 Harness 完成</text>
+    <text x="467" y="607" font-size="15" fill="#334155">且能说清它们的设计取舍</text>
+    <rect x="685" y="448" width="88" height="30" rx="15" fill="#e11d48"/>
+    <text x="729" y="463" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="700" fill="#ffffff">持续</text>
+  </g>
+
+  <!-- 顶层箭头 -->
+  <line x1="414" y1="256" x2="438" y2="256" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <line x1="797" y1="256" x2="821" y2="256" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <line x1="1180" y1="256" x2="1204" y2="256" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <!-- 换行箭头 -->
+  <line x1="1384" y1="357" x2="1384" y2="424" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <!-- 底层箭头（右向左） -->
+  <line x1="1205" y1="526" x2="1180" y2="526" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <line x1="822" y1="526" x2="797" y2="526" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+  <!-- 流向路径面板 -->
+  <line x1="618" y1="627" x2="618" y2="674" stroke="#94a3b8" stroke-width="2" marker-end="url(#mGray)"/>
+
+  <!-- ============ 两条可选路径 ============ -->
+  <g>
+    <rect x="60" y="680" width="1490" height="280" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="84" y="718" font-size="20" font-weight="700" fill="#0f172a">两条可选路径</text>
+    <text x="1526" y="718" text-anchor="end" font-size="14" fill="#64748b">实线：主线推进　　虚线：回头补课</text>
+    <line x1="84" y1="740" x2="1526" y2="740" stroke="#f1f5f9"/>
+
+    <!-- 课程派 -->
+    <text x="84" y="784" font-size="16" font-weight="700" fill="#334155">课程派（稳扎稳打）· 4–6 个月</text>
+    <text x="84" y="806" font-size="13" fill="#64748b">适合学生、转行者</text>
+    <g fill="#4f46e5">
+      <circle cx="460" cy="790" r="20"/>
+      <circle cx="610" cy="790" r="20"/>
+      <circle cx="760" cy="790" r="20"/>
+      <circle cx="910" cy="790" r="20"/>
+      <circle cx="1060" cy="790" r="20"/>
+      <circle cx="1210" cy="790" r="20"/>
+      <circle cx="1360" cy="790" r="20"/>
+    </g>
+    <g fill="#ffffff" font-size="15" font-weight="700" text-anchor="middle" dominant-baseline="central">
+      <text x="460" y="790">0</text>
+      <text x="610" y="790">1</text>
+      <text x="760" y="790">2</text>
+      <text x="910" y="790">3</text>
+      <text x="1060" y="790">4</text>
+      <text x="1210" y="790">5</text>
+      <text x="1360" y="790">6</text>
+    </g>
+    <g stroke="#4f46e5" stroke-width="2" marker-end="url(#mIndigo)">
+      <line x1="482" y1="790" x2="588" y2="790"/>
+      <line x1="632" y1="790" x2="738" y2="790"/>
+      <line x1="782" y1="790" x2="888" y2="790"/>
+      <line x1="932" y1="790" x2="1038" y2="790"/>
+      <line x1="1082" y1="790" x2="1188" y2="790"/>
+      <line x1="1232" y1="790" x2="1338" y2="790"/>
+    </g>
+
+    <!-- 实战派 -->
+    <text x="84" y="890" font-size="16" font-weight="700" fill="#334155">实战派（以用带学）· 2–3 个月见效</text>
+    <text x="84" y="912" font-size="13" fill="#64748b">适合在职工程师、急着落地</text>
+    <g fill="#0d9488">
+      <circle cx="460" cy="900" r="20"/>
+      <circle cx="610" cy="900" r="20"/>
+      <circle cx="910" cy="900" r="20"/>
+      <circle cx="1210" cy="900" r="20"/>
+    </g>
+    <g fill="#ffffff" stroke="#cbd5e1">
+      <circle cx="760" cy="900" r="20"/>
+      <circle cx="1060" cy="900" r="20"/>
+    </g>
+    <g fill="#ffffff" font-size="15" font-weight="700" text-anchor="middle" dominant-baseline="central">
+      <text x="460" y="900">0</text>
+      <text x="610" y="900">1</text>
+      <text x="910" y="900">3</text>
+      <text x="1210" y="900">5</text>
+    </g>
+    <g fill="#94a3b8" font-size="15" font-weight="700" text-anchor="middle" dominant-baseline="central">
+      <text x="760" y="900">2</text>
+      <text x="1060" y="900">4</text>
+    </g>
+    <!-- 主线：0→1 直线，1→3、3→5 越过 2、4 的弧线 -->
+    <g stroke="#0d9488" stroke-width="2" fill="none" marker-end="url(#mTeal)">
+      <line x1="482" y1="900" x2="588" y2="900"/>
+      <path d="M630,900 C 700,856 820,856 888,900"/>
+      <path d="M930,900 C 1000,856 1120,856 1188,900"/>
+    </g>
+    <!-- 回头补 2、4 -->
+    <g stroke="#f59e0b" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#mAmber)">
+      <path d="M886,914 C 858,942 800,942 786,914"/>
+      <path d="M1186,914 C 1150,942 1092,942 1086,914"/>
+    </g>
+    <text x="1005" y="948" text-anchor="middle" font-size="13" fill="#d97706">先出成果，回头补 2、4</text>
+  </g>
+</svg>

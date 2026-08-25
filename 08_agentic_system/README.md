@@ -145,6 +145,7 @@ Agent 领域的技术脉络仍在快速演化。本章保留了我们追踪的�
 本目录的深度文章适合"想懂原理"的读者；想从零系统学习 Agent 开发，或寻找外部课程与参考项目，从这里开始。
 
 - **[Agent 学习课程 Hub](./agent_course_hub/README.md)** - 按「知名度 × star 数 × 开源」筛选的外部课程与项目导航（star 数 2026-08-24 实时核实）
-  - [Agent 学习路线图：从小白到构建者](./agent_course_hub/learning-roadmap.md) - 七个阶段循序渐进，每阶段附参考课程、项目与本仓库关联文章
+  - [Agent 学习路线图：先跑通，再理解，最后造轮子](./agent_course_hub/learning-roadmap.md) - 七个阶段循序渐进，每阶段附参考课程、项目与本仓库关联文章
+  - [2026 年 AI Agent 学习路线图：先跑通，再理解，最后造轮子](./agent_course_hub/2026-agent-learning-roadmap-blog.md) - 学习路线图的对外发布版，仓库内部链接替换为 GitHub 直链，适合公众号等渠道发布
   - [Agent 学习课程 Hub](./agent_course_hub/agent-course-hub.md) - 系统课程 4 门、开源框架 8 个、Harness/编码 Agent 7 个、案例库与生态协议 6 个
   - [Agent 术语速查](./agent_course_hub/glossary.md) - 27 个高频术语按七类分组，一句话解释 + 本仓库深读文章与官方出处
