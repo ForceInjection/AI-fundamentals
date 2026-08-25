@@ -38,15 +38,15 @@ Harness 爆发。让 Agent 自主干活的"驾驭系统"成为主战场：Cursor
 
 ![2026 年 AI Agent 学习路线图全景](2026-agent-learning-roadmap.png)
 
-| 阶段 | 主题 | 周期 | 验收标志 |
-| ---- | ---- | ---- | ---- |
-| 0 | 前置基础 | 1–2 周 | 能写多轮对话 CLI 脚本 |
-| 1 | Agent 是什么 | 1 周 | 讲清 Agent 与 Chatbot 的区别 |
-| 2 | 手搓核心范式 | 2–3 周 | 不靠框架手写 ReAct Agent |
-| 3 | 框架实战 | 2–3 周 | LangGraph 做出带状态可中断恢复的应用 |
-| 4 | 协议、记忆与上下文 | 2–3 周 | 3 个 MCP 工具 + 跨会话记忆 + 自写 Skill |
-| 5 | 案例与多智能体 | 2–4 周 | 独立完成一个完整项目 |
-| 6 | Harness 与工程化 | 持续 | 日常开发 30% 由 Harness 完成 |
+| 阶段 | 主题               | 周期   | 验收标志                                |
+| ---- | ------------------ | ------ | --------------------------------------- |
+| 0    | 前置基础           | 1–2 周 | 能写多轮对话 CLI 脚本                   |
+| 1    | Agent 是什么       | 1 周   | 讲清 Agent 与 Chatbot 的区别            |
+| 2    | 手搓核心范式       | 2–3 周 | 不靠框架手写 ReAct Agent                |
+| 3    | 框架实战           | 2–3 周 | LangGraph 做出带状态可中断恢复的应用    |
+| 4    | 协议、记忆与上下文 | 2–3 周 | 3 个 MCP 工具 + 跨会话记忆 + 自写 Skill |
+| 5    | 案例与多智能体     | 2–4 周 | 独立完成一个完整项目                    |
+| 6    | Harness 与工程化   | 持续   | 日常开发 30% 由 Harness 完成            |
 
 这条路径的安排逻辑很简单：每一阶段的目标，都建立在上一步的产出之上。下一步永远是对上一步的自然延伸，不用另起炉灶。
 
@@ -113,7 +113,7 @@ Harness 爆发。让 Agent 自主干活的"驾驭系统"成为主战场：Cursor
 
 会造 Agent 之后，最后一课是 Harness Engineering（驾驭工程）：让 Agent 在真实环境中自主干活，并把它变成可维护的工程系统。本质上就是像管员工一样管 Agent：给工具、定边界、加监督、留容错。这一层正在成为软件工程的新范式。
 
-按从易到难的顺序走：先用 [Aider-AI/aider](https://github.com/Aider-AI/aider)（48.4K）当用户，体验终端结对编程；再上手 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（190.0K），DeepSeek 官方 Harness，「一切皆插件」架构，`npx @deepseek-ai/dsh web` 一条命令跑起 Web UI（开发者预览，更新快）；进阶看 [cline/cline](https://github.com/cline/cline)（66.7K）与 [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)（84.9K），浏览器 + 终端 + 编辑器全驾驭的通用 Harness 标本，值得读源码；编排层看 [microsoft/agent-framework](https://github.com/microsoft/agent-framework)（13.1K，生产级编排框架）。
+按从易到难的顺序走：先用 [Aider-AI/aider](https://github.com/Aider-AI/aider)（48.4K）当用户，体验终端结对编程；顺手试试 [anomalyco/opencode](https://github.com/anomalyco/opencode)（201.2K），目前最流行的开源终端编码 Agent，和 Claude Code 同类；再上手 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（190.0K），DeepSeek 官方 Harness，「一切皆插件」架构，`npx @deepseek-ai/dsh web` 一条命令跑起 Web UI（开发者预览，更新快）；进阶看 [cline/cline](https://github.com/cline/cline)（66.7K）与 [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)（84.9K），浏览器 + 终端 + 编辑器全驾驭的通用 Harness 标本，值得读源码；编排层看 [microsoft/agent-framework](https://github.com/microsoft/agent-framework)（13.1K，生产级编排框架）。
 
 - 深度阅读：[驾驭工程：为什么你的 AI 编程助手总在失控？](https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/Harness_Engineering.md)，如何构建驾驭系统的深度解析，本阶段必读；[Agent First：软件工程的下一个范式转移](https://github.com/ForceInjection/AI-fundamentals/blob/main/98_llm_programming/Agent_First.md)，范式认知。
 

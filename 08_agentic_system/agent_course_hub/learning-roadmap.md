@@ -143,6 +143,7 @@
 **参考项目**（从易到难）：
 
 - [Aider-AI/aider](https://github.com/Aider-AI/aider)（48.4K），终端结对编程，先当用户
+- [anomalyco/opencode](https://github.com/anomalyco/opencode)（201.2K），目前最流行的开源终端编码 Agent（Claude Code 同类）
 - [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（190.0K），DeepSeek 官方 Harness，「一切皆插件」架构，`npx @deepseek-ai/dsh web` 一条命令跑起 Web UI（开发者预览，更新快）
 - [cline/cline](https://github.com/cline/cline)（66.7K），IDE 内自主编码 Agent
 - [All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)（84.9K），读源码：浏览器+终端+编辑器全驾驭的通用 Harness 标本
