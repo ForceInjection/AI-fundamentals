@@ -1,0 +1,61 @@
+# 素材：模型性价比跃迁——GLM-5.3-Flash 与 Qwen3.8-Flash 同日双发
+
+> 用途：支撑「**模型性价比越来越高**」主题——4.6 价格瀑布"每美元智能持续改善"、第三部分架构稀疏化实证、国产芯片成本论据。
+>
+> 来源：智谱官方发布文 + 阿里（千问）官方发布文 + 媒体解读（云头条），均发布于 **2026-08-26**——两家同一天发布"前沿智力 + 地板价"的 Flash 模型。
+
+## 一、GLM-5.3-Flash（智谱，开源）
+
+- **规模**：320B 总参数、仅激活 18B（320B-A18B）；GLM-5 系列**首个原生多模态**模型。
+- **性能**：AA 综合智能指数 **57 分，与 Claude Opus 4.8 持平**；Z.ai Code Bench 编程表现与 Opus 4.8 相当；**全面超越参数量高出一倍的 GLM-5.2**。
+- **价格**：定价为 GLM-5.3 的 **1/10**，限时折扣内 **1/20**，为 Opus 4.8 的 **1/40**——"同样智力，1/40 价格，前沿智能第一次不需要省着用"。
+- **架构**（专为极低成本设计）：总参数与 GLM-4.5 相当（355B vs 320B），激活 **32B→18B**、层数 **92→45** 几乎减半；30T Token 多模态预训练；首个采用**稀疏注意力 + 线性注意力混合架构**的开源前沿模型（IndexPool 将索引器 4 个缓存向量压为 1 个）；流形约束超连接（mHC）。
+- **效率实测**：相比 GLM-5.3，注意力计算量降 **3.01 倍**、KV 缓存降 **4.44 倍**；在与 GLM-5.3 / DeepSeek-V4-Flash / Kimi-K3 的对比中注意力计算量**最低**。
+- **国产芯片**：Ox-Alpha 匿名测试期（OpenCode + OpenRouter 当周最受欢迎模型）流量**全部由国产芯片集群**提供；SGLang 上自研推理引擎，端到端服务性能提升 **3 倍**，**单 token 成本与主流英伟达 GPU 相当**。
+- 开源：`zai-org/GLM-5.3-Flash`（Hugging Face）。
+
+## 二、Qwen3.8-Flash（阿里，开源 Next 权重）
+
+- **规模**：Transformer **125B** + 51B N-gram Embedding，每 token 仅激活 **6B**；多模态 MoE；原生 262K 上下文、YaRN 扩至 1M。
+- **性能**：**超越 Claude Opus 4.6、接近 Opus 4.8**；智能体编程 SWE-bench Pro 领先 Opus 4.6 达 **9.1 分**；JobBench 超近 **20 分**；AndroidWorld 高 **22.5 分**、MathVision 高 **25.1 分**、ERQA 领先 **31.5 分**；Base 模型 14 个 benchmark 中 8 个最优（MMLU-Pro / SuperGPQA / BBH / SWEBench-Pretrain / MGSM / MMMLU）。
+- **价格**：每百万 Tokens **输入 1 元、输出 3 元**——为 Claude Opus 4.6 的 **3%**，DeepSeek-V4-Flash 闲时价的 2/3、忙时价的 1/3。
+- **训练成本**：约为 Qwen3.7-Plus 的 **1/9**（骤降近 90%），编码与办公能力反而更强。
+- **架构四升级**（Next 架构，Qwen4 雏形）：
+  - **GDN + QSA 混合注意力**：每 4 层中 3 层 GDN（循环状态压缩历史）+ 1 层全局注意力；QSA 以 micro-block 粒度索引，省掉 token 级 indexer 开销——1M 上下文高缓存命中场景**提速 8 倍以上**（Attention Kernel：Prefill 7.6× / Decode 4.9×；Prefix Cache 命中 90% 时 1M Prefill 吞吐为 Qwen3.7-Plus 的 **8.6 倍**）
+  - **Gated Residual**：残差流 1 条扩为 4 条并行分支 + 动态门控；残差状态可 FP8 存储
+  - **N-gram Embedding**：51B 参数查表记忆，**几乎不增加每 token 计算**，可卸载到 Host Memory 异步预取
+  - **Muon 优化器**：重拟合 Scaling Law，支持更大 LR 与 Batch Size；省去 Batch Size Warmup（相当于少跑 **18.8%** optimizer steps）
+- **生态**：Qwen3.8 系列已开源 2.4T Max / 27B / Flash 三大尺寸；Qwen 全球下载量突破 **30 亿次**、衍生模型数超 **30 万个**；千问办公"标准模式"内置，可完成 95% 日常办公任务。
+
+## 三、性价比对照与演讲用法
+
+| 维度 | GLM-5.3-Flash | Qwen3.8-Flash |
+| --- | --- | --- |
+| 总参数 / 激活 | 320B / 18B | 125B + 51B Embedding / 6B |
+| 性能锚点 | AA 57 分 = Opus 4.8 | 超 Opus 4.6、接近 4.8 |
+| 价格 | Opus 4.8 的 1/40（限时 1/20） | 输入 1 元/百万 = Opus 4.6 的 3% |
+| 训练降本 | —（架构减半路线） | 训练成本 = 上代的 1/9 |
+
+**演讲用法（口播级，三个点任选）**：
+
+1. **每美元智能在跃迁**（4.6 价格瀑布）：2026-08-26 同日双发——GLM 用 Opus 4.8 的 1/40 价格给出同级智力，Qwen 用 Opus 4.6 的 3% 输入价给出更高性能。"便宜"与"更强"第一次同时发生。
+2. **架构稀疏化的最新实证**（第三部分呼应）：激活 18B/6B（计算维）、KV 降 4.44 倍与 QSA 1M 提速 8 倍（存储维）、IndexPool/N-gram 查表（能不传就不传）——本演讲第三部分的框架在 2026-08-26 的发布里全部再次兑现。
+3. **国产芯片单 token 成本与英伟达相当**（呼应能量维与素材 07）：GLM 官方披露，国产芯片集群端到端性能提升 3 倍后成本打平——"算电深度绑定"的国产化论据。
+4. **分时定价 = 时间占用率杠杆进目录价**（DeepSeek 现行定价实况）：DeepSeek 官方定价页（2026-08-26 核查）已采用**闲时/忙时双轨价**——忙时为工作日 9:00–12:00、14:00–18:00，闲时价 = 忙时半价：V4-Flash 输入未命中 1.5 元/3.0 元、输出 4.5 元/9.0 元；V4-Pro 输出 13.5 元/27.0 元。用价格削峰填谷，正是演讲 3.6「时间占用率」杠杆在目录价上的直接体现。
+
+## 四、口径注（引用前必读）
+
+- 性能均为**厂商自报/自研评测口径**（AA 指数 57 分、Code Bench、"超 Opus 4.6"分别出自智谱与阿里），引用时标注"厂商口径"；第三方复测（Artificial Analysis / LMArena）待观察。
+- 两篇文章混用 "Opus 4.6 / 4.8" 两代命名，演讲中避免同时给出两个版本号，统一说"Opus 4.x 前沿档"或直接报具体分值对照。
+- 价格为 API 目录价；GLM"限时折扣 1/20"有时效性，演讲前复核。
+- "千亿总参数仅激活 6B"为阿里口径；与 DeepSeek V4-Pro 激活 490 亿（1.6T）等历史锚点放在一起讲时，注意口径并列说明。
+- **214 倍锚点已重锚为 140 倍（2026-08-26）**：官方定价页已无 plain V4、OpenRouter 快照亦无 V4 条目——$0.28（V4 首发口径）不再可验证；新锚点：GPT-4 输出 $60 → Qwen3.8-Flash 输出 3 元/百万（≈$0.43，官方目录价）= **140 倍**。V4-Flash 闲时输出 4.5 元反而高于 $0.28，是"下降并非单调"的又一实例。
+
+## 五、来源链接
+
+- 智谱官方发布文：https://mp.weixin.qq.com/s/J3woe8mTxIQVqrs5Jdbecg
+- 阿里千问官方发布文：https://mp.weixin.qq.com/s/BwDb9PBg0kYRmWu9hkLFxA
+- 媒体解读（云头条）：https://mp.weixin.qq.com/s/16MOkzjvg6SLfozl1HjymA
+- GLM 技术博客：https://z.ai/blog/glm-5.3-flash
+- Qwen 技术报告：https://github.com/QwenLM/Qwen3.8-Flash-Next/blob/main/tech_report.pdf
+- DeepSeek 官方定价页：https://api-docs.deepseek.com/zh-cn/quick_start/pricing/
