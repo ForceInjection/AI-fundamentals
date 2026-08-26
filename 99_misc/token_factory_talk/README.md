@@ -14,6 +14,7 @@
 | [references/05-jevons-demand-future.md](references/05-jevons-demand-future.md)                 | 杰文斯悖论、需求爆发数据、政策落地、未来方向                                                                           |
 | [references/06-listed-companies.md](references/06-listed-companies.md)                         | **上市公司财报证据**：硅基流动招股书（毛利率 −24%）、CoreWeave 季报（66% 毛利仍净亏）、一级市场同行数据                |
 | [references/07-tokenfactory-whitepaper-2026.md](references/07-tokenfactory-whitepaper-2026.md) | **TokenFactory 白皮书 2026**（九章云极 × InfoQ）结构化全文：八章核心内容、成本结构、产业链三层、九章云极实践、趋势风险 |
+| [references/08-hf-open-models-summer-2026.md](references/08-hf-open-models-summer-2026.md) | HF《State of Open Models: Summer 2026 Observations》报告摘要：模型能力与供给丰富度信号（万亿参数开源竞赛、开源追平闭源、296 万个模型）与 Agent 流量 |
 
 ## 注意
 
