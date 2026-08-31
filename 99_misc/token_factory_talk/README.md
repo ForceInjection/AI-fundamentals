@@ -17,6 +17,7 @@
 | [references/08-hf-open-models-summer-2026.md](references/08-hf-open-models-summer-2026.md) | HF《State of Open Models: Summer 2026 Observations》报告摘要：模型能力与供给丰富度信号（万亿参数开源竞赛、开源追平闭源、296 万个模型）与 Agent 流量 |
 | [references/09-model-price-performance.md](references/09-model-price-performance.md) | **模型性价比跃迁**：GLM-5.3-Flash 与 Qwen3.8-Flash 同日双发（2026-08-26）——性能/价格/架构数据、演讲用法、口径注 |
 | [references/10-cluster-capacity-assessment.md](references/10-cluster-capacity-assessment.md) | **集群产能评估框架**（内部仓库引入）：SLO Goodput、单卡产能/集群日上限/日产值四数、品质承诺 P99 体系——"利用率是第一杠杆"的运营量化版 |
+| [references/11-parameter-vs-throughput.md](references/11-parameter-vs-throughput.md) | **模型选型对产能的影响**：V4 Pro/Flash 实测——单卡产能 ~2×、同卡数端到端 3.8×、通信税（拓扑 NVLink/IB 决定税率） |
 
 ## 注意
 
