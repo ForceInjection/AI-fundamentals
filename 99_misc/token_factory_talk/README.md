@@ -7,6 +7,7 @@
 | 文件                                                                                           | 说明                                                                                                                   |
 | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | [outline.md](outline.md)                                                                       | **可排练版演讲提纲**：四部分结构 + 时间分配 + 逐小节要点/数据/转场句/观众收获 + Q&A 预判 + 数据核查清单                |
+| [cluster-capacity-measurement.md](cluster-capacity-measurement.md)                             | **对外发布文档**：《Token 工厂的产能怎么算？》——Goodput 框架 + AIPerf 落地（概念公开、内部数据脱敏）                  |
 | [references/01-wechat-token-factory-model.md](references/01-wechat-token-factory-model.md)     | 两年砍柴《Token工厂财务运营测算工具》微信原文（8 张 Sheet 模型全拆解，含下载方法）                                     |
 | [references/02-ai-factory-ecosystem.md](references/02-ai-factory-ecosystem.md)                 | AI Factory 定义/黄仁勋叙事/分类框架/全球格局                                                                           |
 | [references/03-business-model-and-finance.md](references/03-business-model-and-finance.md)     | 商业模式变革、财务测算结果、**电力占比口径矛盾辨析**、仓库成本锚点                                                     |
