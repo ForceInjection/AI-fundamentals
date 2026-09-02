@@ -19,6 +19,7 @@
 | [references/09-model-price-performance.md](references/09-model-price-performance.md) | **模型性价比跃迁**：GLM-5.3-Flash 与 Qwen3.8-Flash 同日双发（2026-08-26）——性能/价格/架构数据、演讲用法、口径注 |
 | [references/10-cluster-capacity-assessment.md](references/10-cluster-capacity-assessment.md) | **集群产能评估框架**（内部仓库引入）：SLO Goodput、单卡产能/集群日上限/日产值四数、品质承诺 P99 体系——"利用率是第一杠杆"的运营量化版 |
 | [references/11-parameter-vs-throughput.md](references/11-parameter-vs-throughput.md) | **模型选型对产能的影响**：V4 Pro/Flash 实测——单卡产能 ~2×、同卡数端到端 3.8×、通信税（拓扑 NVLink/IB 决定税率） |
+| [references/12-silicon-data-token-index.md](references/12-silicon-data-token-index.md) | **Silicon Data LLM Token 支出指数**：全市场平均支付价跌破 $1/百万（历史新低、较峰值腰斩）——市场级价格锚点 |
 
 ## 注意
 
