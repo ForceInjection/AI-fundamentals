@@ -24,6 +24,8 @@
 - **高速互连与数据传输技术**
   - [PCIe 总线技术大全](./01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md)
   - [Linux PCIe P2PDMA 技术介绍](./01_hardware_architecture/pcie/02_p2pdma_technology.md)
+  - [CXL 互联协议全景解读：从 PCIe 时代到可组合数据中心](./01_hardware_architecture/pcie/08_cxl_interconnect_overview.md)
+  - [CXL 命令行工具链全景：cxl / daxctl / ndctl 从查看到配置](./01_hardware_architecture/pcie/09_cxl_cli_tools.md)
   - [NVLink 技术入门](./01_hardware_architecture/nvlink/nvlink_intro.md)
   - [NVIDIA GPUDirect P2P 技术详解：节点内 GPU 高速互联](./01_hardware_architecture/gpudirect/02_gpudirect_p2p.md)
   - [NVIDIA GPUDirect RDMA 与 Storage 技术详解](./01_hardware_architecture/gpudirect/01_gpudirect_technology.md)
@@ -247,6 +249,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
   - [Tiktokenizer 在线版](https://tiktokenizer.vercel.app/?model=gpt-4o) - 交互式 Token 分析工具。
 - [一文读懂思维链（Chain-of-Thought, CoT）](06_llm_theory_and_fundamentals/llm_basic_concepts/cot/chain_of_thought_cot_intro.md) - 推理能力增强的核心技术。
 - [大模型的幻觉及其应对措施](06_llm_theory_and_fundamentals/llm_basic_concepts/hallucination/llm_hallucination_and_mitigation.md) - 幻觉问题的成因分析与解决方案。
+- [AI 水印：道高一尺，魔高一丈](06_llm_theory_and_fundamentals/llm_basic_concepts/watermark/ai_watermark_attack_and_defense.md) - AI 水印的攻防博弈：嵌入与检测技术、去除攻击与工程应对。
 - [大模型文件格式完整指南](06_llm_theory_and_fundamentals/llm_basic_concepts/file_formats/llm_file_formats_complete_guide.md) - 模型存储与部署的技术规范。
 
 ### 7.2 嵌入技术与表示学习
@@ -297,6 +300,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 精选《大模型技术 30 讲》《Hands-On Large Language Models》《百面大模型》等著作，涵盖从 Transformer 理论解构、模型从零预训练到全栈工程落地的系统性阅读指南。
 
+- [从芯片到 Agent：AI 基础设施的阅读地图](99_misc/book-recommendations.md) - 按本仓库章节体系组织的系统书单，覆盖硬件、集群、云原生、GPU 编程、LLM 理论/训练/推理、Agent、RAG 全链路。
 - [大模型技术 30 讲](https://mp.weixin.qq.com/s/bNH2HaN1GJPyHTftg62Erg) - 大模型时代，智能体崛起：从技术解构到工程落地的全栈指南。
   - 第三方：[大模型技术 30 讲（英文 & 中文批注）](https://ningg.top/Machine-Learning-Q-and-AI) - 带有中英文对照及批注的版本。
 - [大模型基础](https://github.com/ZJU-LLMs/Foundations-of-LLMs)
@@ -371,7 +375,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 长文本与高并发推理的核心瓶颈突破，解析自回归生成机制、Prefix Caching 前缀缓存与 RadixTree 自动复用原理，并深度对比 LMCache 分层架构与阿里云 Tair KVCache 的企业级分布式部署方案。
 
 - [KV Cache 技术体系](09_inference_system/kv_cache/README.md) - KV Cache 技术体系全景指南
-- [KV Cache 原理简介](09_inference_system/kv_cache/01_concepts/basic/kv_cache_原理简介.md) - 自回归生成的挑战与 KV Cache 的工作机制
+- [KV Cache 原理简介](09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md) - 自回归生成的挑战与 KV Cache 的工作机制
 - [Prefix Caching 技术详解](09_inference_system/kv_cache/01_concepts/prefix_caching/prefix_caching.md) ([配套 PPT](09_inference_system/kv_cache/01_concepts/prefix_caching/prefix_caching.pptx)) - 从原理到 vLLM/LMCache 实践的前缀缓存技术
 - [RadixAttention 技术详解](09_inference_system/kv_cache/01_concepts/prefix_caching/radix_attention.md) ([配套 PPT](09_inference_system/kv_cache/01_concepts/prefix_caching/radix_attention.pptx)) - 基于 Radix Tree 自动复用 KV Cache 的核心原理与 SGLang 实践
 
@@ -419,14 +423,21 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 #### 9.3.3 SGLang 推理引擎
 
-SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 分层 KV 缓存、Chunked Prefill 调度机制、超大规模推理调优实践与交互式可视化演示。
+SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache 管理源码系列（UnifiedRadixTree、KV Pool、HiCache、HiSparse）、调度器源码（Chunked Prefill、Overlap Scheduling）、版本解读、超大规模推理调优实践与交互式可视化演示。
 
 - [SGLang 内容索引](09_inference_system/sglang/README.md) - 源码分析、案例研究与可视化演示导航
+- [SGLang UnifiedRadixTree：一棵树，四种注意力](09_inference_system/sglang/sglang-unified-radix-tree.md) - 0.5.16 默认化的统一 Radix Tree：FULL/MAMBA/SWA 统一索引与可插拔缓存语义
+- [SGLang 0.5.16 发布解读](09_inference_system/sglang/sglang-0.5.16-release.md) - 574 个 PR 的重大版本：DSpark 置信度驱动投机解码与 Inkling 975B Day-0 支持，含破坏性变更清单
 - [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构（L1/L2/L3）与 HiRadixTree 源码分析
+- [SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](09_inference_system/sglang/sglang-kv-pool-management.md) - KV Pool/Radix Tree/ReqToTokenPool 三层结构与 L1→L2→L3 多级逐出
+  - [KV Cache L1↔L2 数据流深度分析](09_inference_system/sglang/sglang-kv-cache-dataflow-analysis.md) - write_backup/eviction/load_back 逐操作代码路径与 CXL 场景适配
+- [SGLang 调度器](09_inference_system/sglang/sglang-scheduler.md) - Prefill > Decode 优先级决策、PrefillAdder 五种准入预算与 retract_decode 内存压力保护
+- [SGLang Overlap Scheduling 深度解析](09_inference_system/sglang/sglang-overlap-scheduling.md) - CPU-GPU 双流水线：result_queue 打破串行依赖与 FutureMap relay 输入
+- [SGLang HiSparse 深度解析](09_inference_system/sglang/hisparse_deep_dive.md) - 将 DSA 稀疏选择提升到系统 coordinator 层：page 级选择性加载与双模式索引转换
+- [SGLang Scaling Pain 超大规模推理调优案例](09_inference_system/sglang/sglang-scaling-case-study.md) - 利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷
 - [Chunked Prefill 原理与代码实现](09_inference_system/sglang/chunked_prefill.md) - 长 prompt 切分、PrefillAdder 截断决策、调度循环与 HiCache 协同的完整源码级分析
-- [SGLang Scaling Pain 超大规模推理调优案例](09_inference_system/sglang/sglang_scaling_case_study.md) - 利用投机采样定位 PD 分离架构下的 KV Cache 竞态与时序缺陷
-- [SGLang 推理流水线可视化](09_inference_system/sglang/inference-pipeline.html) - 交互式 Prefill & Decode 流水线演示，追踪 HiCache 三级缓存全流程
-- [SGLang 调度器可视化](09_inference_system/sglang/scheduler-visual.html)（[GIF 预览](09_inference_system/sglang/scheduler-visual.gif)） - 模拟 6 请求 × 22 步的 Chunked Prefill 调度过程
+- [SGLang 推理流水线可视化](09_inference_system/sglang/assets/inference-pipeline.html) - 交互式 Prefill & Decode 流水线演示，追踪 HiCache 三级缓存全流程
+- [SGLang 调度器可视化](09_inference_system/sglang/assets/scheduler-visual.html)（[GIF 预览](09_inference_system/sglang/assets/scheduler-visual.gif)） - 模拟多请求到达与 Chunked Prefill 的调度过程
 
 ### 9.4 推理优化技术体系
 
@@ -443,6 +454,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 - [vLLM Semantic Router](09_inference_system/vllm/routing/semantic_router_deep_dive.md) - 基于语义的智能路由策略
 - [DeepSeek V4 长上下文注意力支持解析](09_inference_system/vllm/module_analysis/deepseek_v4_attention_support.md) - 深入探讨 vLLM 对 DeepSeek V4 模型高效注意力机制的底层实现与算子优化
 - [PagedAttention 退役的技术原因](09_inference_system/vllm/module_analysis/pagedattention_retirement.md) - 从 MLA 不兼容、两遍遍历浪费带宽、无原生 FP8 计算、模板爆炸等角度分析 PagedAttention 被取代的技术必然性
+- [gpu-memory-utilization 的谢幕：vLLM 如何用「实测」替代「估算」](09_inference_system/vllm/module_analysis/gpu-memory-utilization-retirement.md) - VMM 机制、四步显存核算流程与可增长 KV Cache 的前瞻分析
 - [MLA 的 TP 切分：KV Cache 冗余分析](09_inference_system/vllm/module_analysis/mla_tp_kv_redundancy.md) - MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%，但 TP 对其显存节省为 0%，冗余率达 87.5%
 
 **显存与缓存优化**：
@@ -457,6 +469,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 - [NIXL 网络存储介绍](09_inference_system/kv_cache/02_systems/nixl/nixl_introduction.md) - 高性能网络存储架构与应用
 - [NVIDIA 模型优化器](09_inference_system/model_optimization/nvidia_model_optimizer.md) - NVIDIA 模型优化工具链详解
 - [图解投机解码](09_inference_system/model_optimization/illustrated-speculative-decoding.md) - Speculative Decoding 的核心思想、系统实现与工程调优要点
+- [一次前向，白赚 4 个 token：DFlash 2 块扩散投机解码技术详解](09_inference_system/model_optimization/dflash-block-diffusion-speculative-decoding.md) - 块扩散式的投机解码架构与实现深度解析
 - [vLLM GB200 优化](09_inference_system/vllm/hardware_optimization/gb200_optimization.pptx) - vLLM 在 GB200 硬件上的性能优化策略
 
 ### 9.5 推理优化参考设计
@@ -498,7 +511,10 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 - [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
-- [Token Factory 演讲素材库](99_misc/token_factory_talk/README.md) — 对外演讲《Token Factory: AI 推理的成本革命》完整素材：可排练提纲（逐页重点地图、Q&A 预判、数据核查清单）+ 对外图文讲解（PPT 逐页配图）+ 12 份参考资料（成本构成、财报证据、产能评估框架、模型性价比等）
+- **[Token Factory 演讲素材库](99_misc/token_factory_talk/README.md)** — 对外演讲《Token Factory: AI 推理的成本革命》完整素材：可排练提纲（逐页重点地图、Q&A 预判、数据核查清单）+ 对外图文讲解（PPT 24 页逐页配图）+ 12 份参考资料（成本构成、财报证据、产能评估框架、模型性价比等）
+
+  <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
+
 - [KV Cache 容量规划](09_inference_system/kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) — GLM-5 显存容量推演与 ROI 评估
 - [KV Cache 压缩技术](09_inference_system/kv_cache/01_concepts/compression/kv_cache_compression.md) — INT8/FP8 量化、稀疏化与注意力优化
 - [Claude Prompt Caching 机制分析](09_inference_system/kv_cache/01_concepts/prefix_caching/claude_prompt_caching.md) — 提示词缓存的终端 Agent 源码实现与成本优化
@@ -509,6 +525,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 HiCache 
 
 - [动手跑大模型](99_misc/mac-deepseek-r1.md) - 手把手教你如何跑大模型
 - [Ollama 推理框架详解](99_misc/ollama/README.md) - Ollama 的架构原理与进阶配置
+- [输出差了一点点？用 logprobs 分清「噪声」还是「bug」](09_inference_system/deployment/logprobs-precision-diagnosis.md) - logprobs 精度判别与推理排错实战
 - [DeepSeek-V3 H20 推理优化：基于 vLLM 源码的深度分析](09_inference_system/deployment/deepseek_v3_h20_vllm_deep_dive.md) - PD 分离、EPLB、DP 适配、MTP 加速、FP8 量化的源码级分析
 - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/deployment/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
 
@@ -614,6 +631,10 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 ### 10.4 前沿学术与行业研究
 
 汇集 24 种主流 Agent Workflow 模式综述、Deep Research 深度研究架构等核心学术论文，以及 2025 年度 LangChain 开发者诉求与 Agent 工程化现状等权威行业报告。
+
+**学习路径**：
+
+- [Agent 学习课程 Hub](08_agentic_system/agent_course_hub/README.md) - 从零学 AI Agent 的课程与项目导航：七阶段学习路线图、系统课程与开源框架清单、27 个高频术语速查（[对外发布版路线图](08_agentic_system/agent_course_hub/2026-agent-learning-roadmap-blog.md)适合公众号等渠道转发）
 
 **学术论文**：
 
