@@ -9,6 +9,7 @@ AI Fundamentals is a Chinese-language knowledge repository covering the full AI 
 - **License**: Apache 2.0
 - **Content** is organized in semantically numbered top-level directories (`01_hardware_architecture/` through `11_ai_native_everything/`, plus `98_llm_programming/` and `99_misc/`). Each directory corresponds to a major topic area with its own `README.md` portal.
 - **`02_dpu_programming/`、`02_gpu_programming/` 和 `02_npu_programming/`** share the `02_` prefix — all three are sub-modules under "底层计算与异构编程."
+- **`99_misc/`** hosts standalone project folders that don't fit a topic directory (e.g., `token_factory_talk/` — a complete talk project: outline + illustrated article + companion PPTX + page images in `img/` + numbered source notes in `references/`). This "project folder" pattern (article + PPTX + `img/` + `references/`) is reusable for any new talk or long-form deliverable.
 - **`AGENTS.md`** exists alongside this file and covers module-level architecture details for GitHub Copilot. This file focuses on project-level conventions that apply to all work in the repo.
 
 ## Commit conventions
@@ -22,7 +23,9 @@ refactor(scope): description
 feat(scope): description
 ```
 
-Scopes are derived from directory/topic areas. Common scopes seen in the history: `readme`, `dpu`, `gpu`, `npu`, `training`, `llm-theory`, `rag`, `graph_rag`, `agentic`, `agent_infra`, `inference`, `kv_cache`, `vllm`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`, `trae`, `multi_agent`, `ai-native`, `smart_customer_service`, `kvbm`, `submodule`. Look at `git log --oneline` for recent examples before committing.
+Scopes are derived from the topic directory or subject area. Frequent scopes in the history: `readme`, `kv_cache`, `cuda`, `npu`, `inference`, `misc`, `vllm`, `memory`, `gpu`, `pcie`, `agentic`, `agentic_system`, `agent_infra`, `deployment`, `data-agent`, `sglang`, `theory`, `profiling`, `gpudirect`, `trae`, `rag`, `graph_rag`, `reference_design`, `storage`, `gpu_manager`, `k8s`, `course`. Scope naming has natural variation (e.g., `kv_cache` vs `kv-cache`, `agentic` vs `agentic_system`) — check `git log --oneline` for recent examples and match the dominant form for the area you're touching.
+
+**No AI attribution trailers** — commit messages must not include `Co-Authored-By` or similar generated-by lines.
 
 ## File conventions
 
@@ -41,8 +44,9 @@ When creating a new technical article, follow this sequence:
 2. **Write** — create the `.md` file in the appropriate topic directory with a numeric prefix and Chinese descriptive filename.
 3. **Link** — add the new article to the parent directory's `README.md` link tree.
 4. **Review** — use `doc-reviewer` (outline + content + format) to catch structural, accuracy, and formatting issues.
-5. **Validate** — use `md-link-checker` to ensure all local and external links are accessible.
-6. **Commit** — use `update-submitter` to generate a Conventional Commit message and submit.
+5. **Polish** (external-facing docs) — use `humanizer-zh` to strip AI-writing tells before publishing; recent commits have applied this to outward-facing documents.
+6. **Validate** — use `md-link-checker` to ensure all local and external links are accessible.
+7. **Commit** — use `update-submitter` to generate a Conventional Commit message and submit.
 
 ## Python demos and notebooks
 
@@ -68,6 +72,7 @@ These are primarily educational references, not a cohesive application. There is
 - Major section headings in long-form articles often use **Chinese numerals** (一、二、三…) rather than Arabic numbers. Follow the existing heading style of the document you are editing.
 - Article series that follow a numbered sequence (e.g., `09_inference_system/reference_design/`) use zero-padded numeric prefixes with Chinese descriptive filenames: `01-背景与目标.md`, `02-集群规模分类与特征分析.md`. Maintain this convention when adding new entries to an existing series.
 - Interactive HTML visualizations (e.g., inference pipeline demos) placed alongside the markdown documents they complement should include a `.gif` preview in the same directory when possible.
+- **Time-sensitive data** (prices, benchmarks, model releases, market stats): record the as-of date in the document, and mark vendor-claimed figures vs independently measured ones (e.g., 「厂商口径」). Add a 复核 reminder when data is fast-moving (see `99_misc/token_factory_talk/README.md` for the pattern).
 
 ## Source-code-based deep-dive articles
 
@@ -97,10 +102,13 @@ Commonly referenced codebases and their local paths:
 
 Markdown documents are frequently accompanied by:
 
-- **`.pptx` slide decks** — PowerPoint presentations that mirror or expand on the markdown content. Placed in the same directory as the `.md` file. When creating new technical deep-dives, consider whether a companion slide deck would be helpful.
+- **`.pptx` slide decks** — PowerPoint presentations that mirror or expand on the markdown content. Placed in the same directory as the `.md` file. When creating new technical deep-dives, consider whether a companion slide deck would be helpful. To produce a page-by-page illustrated article ("PPT 逐页配图"), render the deck with `soffice --headless --convert-to pdf`, then `pdftoppm -jpeg -r 110` — output filenames are zero-padded (`slide-01.jpg`). Store page images in a sibling `img/` directory named by page (`01.jpg`…, `cover.jpg` for the title slide).
+- **`references/` source notes** — when building a talk or deep-dive from external material, capture each source as a numbered note (`01-xxx.md`, `02-xxx.md`…) in a `references/` subdirectory; WeChat 公众号 articles are a common source (use `wechat-article-downloader`).
 - **`.pdf` references** — Reference papers, whitepapers, or exported slide decks, typically in a `references/` subdirectory.
 - **`.gif` previews** — Animated previews of interactive HTML visualizations, placed alongside the `.html` file.
 - **`.ipynb` notebooks** — Jupyter notebooks with executable code demonstrations.
+
+`.pptx` decks in this repo are frequently hand-edited by the user in PowerPoint — before any scripted edit, re-read the file from disk rather than relying on an earlier read.
 
 ## Project-specific skills
 
@@ -115,6 +123,11 @@ This repo has a rich set of Skills available for content authoring and review. U
 | `tech-outline-planner` | Plan and structure new technical articles using context-first + process-narrative approach |
 | `update-submitter` | Analyze git changes and generate Conventional Commit messages |
 | `reference-organizer` | Format and organize reference links into structured citations |
+| `humanizer-zh` | Rewrite AI-flavored Chinese prose into natural human writing — apply to external-facing docs before publishing |
+| `pptx-reader` | Extract text and render slides from companion `.pptx` decks |
+| `pptx-editor` | Shape-targeted text edits in existing `.pptx` files, with render verification |
+| `wechat-article-downloader` | Download WeChat 公众号 articles as Markdown/HTML source material for `references/` notes |
+| `web-content-downloader` | Download arbitrary web pages to Markdown, preserving original language |
 
 ## Multi-IDE support
 
@@ -128,4 +141,6 @@ These directories are all in `.gitignore` — they are local development environ
 
 ## CI/CD
 
-This repo has **no GitHub Actions workflows or CI pipelines**. There is no build step, no linting, and no automated testing. Content quality is maintained through manual review (using the `doc-reviewer` skill).
+This repo has **no GitHub Actions workflows or CI pipelines**. There is no build step, no enforced linting, and no automated testing. Content quality is maintained through manual review (using the `doc-reviewer` skill).
+
+A local `.markdownlint.yaml` (gitignored — personal preference, not enforced) relaxes the markdownlint rules that clash with Chinese technical writing: line length (MD013), inline HTML (MD033), first-line heading (MD041), table pipe style (MD060), emphasis marker style (MD049), `$` in shell blocks (MD014), image alt text (MD045), and duplicate headings across sections (MD024 `siblings_only`). Don't reformat existing prose to satisfy markdownlint defaults.
