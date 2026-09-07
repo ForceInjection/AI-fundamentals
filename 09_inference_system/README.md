@@ -7,6 +7,8 @@
 ---
 
 > **前瞻**：DeepSeek-V4 和 Kimi K3 从架构层面对 attention 做了根本性改造，KV Cache 从 250GB 降到 5GB，旧叙事终结。但新架构带来了新的系统挑战。详见 **[当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md)**（对照 vLLM/SGLang 源码 ✓，含 39 处代码验证）。
+>
+> **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。详见 **[当 Agent 流量成为推理系统的主要负载](agent_serving/agent-workload-serving.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
 
 ---
 

@@ -358,6 +358,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 剖析现代推理系统的底层架构创新，重点解构 Mooncake 等以 KV Cache 为中心的高效 LLM 调度系统设计模式与性能调优策略。
 
 - [Mooncake 架构详解：以 KV Cache 为中心的高效 LLM 推理系统设计](09_inference_system/kv_cache/02_systems/mooncake/mooncake_architecture.md) - 新一代推理系统的架构创新与性能优化策略
+- [当 Agent 流量成为推理系统的主要负载](09_inference_system/agent_serving/agent-workload-serving.md) - KV 生命周期错配、调度语义失真、会话粘性与容量公式失效：Agent 负载下的四连锁问题与两引擎源码级现状
 - [大模型推理并行策略](09_inference_system/parallelism/parallelism_strategies.md)（[交互可视化](09_inference_system/parallelism/parallelism_visual.html)） - DP、TP、PP、EP、SP 五种策略的统一拆解与混合部署案例
   - [专家并行（EP）深度解析](09_inference_system/parallelism/expert_parallelism_deep_dive.md) - EP 独立深度文章：DP/TP/PP 为什么解决不了 MoE、All-to-All 通信模式、EP+DP 耦合、DeepEP 低延迟后端、EPLB 负载均衡、选型决策
 
