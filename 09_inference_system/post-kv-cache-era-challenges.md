@@ -5,6 +5,8 @@
 > 2026-08-07 | 基于 DeepSeek-V4（arXiv:2606.19348）与 Kimi K3（arXiv:2607.24653）技术报告，对照 vLLM（`c810e5e`）与 SGLang（`4d4f802`）源码交叉验证
 >
 > **性质说明**：本文是基于两篇技术报告的推理和分析，部分数据已与 vLLM/SGLang 源码对照验证（标注 ✓）。未标注 ✓ 的量化估算（如 Sinkhorn-Knopp 迭代次数、$n_{hc}$ 值等依赖模型 config.json 的参数）为量级示意，实际数据需在使用时根据模型配置确认。
+>
+> **2026-09-07 网络校对**：修正 K3 层数（表 1 为 93 层，96 是注意力头数）、mHC 与 KDA 参考文献条目（mHC 为 arXiv:2512.24880/2025-12；arXiv:2510.26692 标题为 Kimi Linear）；MoonEP 的 RDMA 表述与 V4 通用加速倍数已按第三方印证情况标注。TileLang 微秒级引文、C/B ≤ 2d 数值、V4-Pro 层数为论文正文细节，网络未能独立核验，引用前请对照 PDF。
 
 ---
 
@@ -14,7 +16,7 @@ PagedAttention 把碎片率从 40–60% 降到 4% 以下。RadixAttention 用前
 
 这条叙事在 2026 年走到了终点。不是因为问题被完美解决了，而是因为问题本身被消解了——DeepSeek-V4 和 Kimi K3 从架构层面对 attention 动了根本性的手术，**KV Cache 不再是首要矛盾了**。
 
-但旧矛盾消退的同时，新架构带来了新的系统层挑战。这些挑战中，有的是架构直接制造的硬问题，有的已经被工程化解但需随规模持续关注。本文将它们分为两类：**需要解决的**（仍影响 scalability 或用户体验的硬问题）与**需要持续关注的**（已有有效方案，但需要在演进中保持重视的方向）。一共五个方向，逐一分析。
+但旧矛盾消退的同时，新架构带来了新的系统层挑战。这些挑战中，有的是架构直接制造的硬问题，有的已经被工程化解但需随规模持续关注。本文将它们分为两类：**需要解决的**（仍影响 scalability 或用户体验的硬问题）与**需要持续关注的**（已有有效方案，但需要在演进中保持重视的方向）。一共五个方向，按系统栈自底向上逐一分析：kernel 编排（§2，持续关注）、prefill 串行（§3，需要解决）、EP 通信（§4，持续关注）、前缀缓存（§5，需要解决）、层间连接（§6，持续关注）。
 
 ---
 
@@ -87,7 +89,7 @@ V4 的推理框架做了三层优化：
 
 ### 2.3 对推理引擎的启示
 
-传统推理引擎的 attention kernel 围绕"一次调用，完成整个 attention 计算"设计。V4 的 CSA 打破了这一假设——需要**可编排的多流执行**：Q/KV 投影 + Compressor + Indexer 三路并行，各流之间通过 event 同步。vLLM/SGLang 已通过多 CUDA stream + TileLang ✓ 实现了这一模式。这标志着 attention kernel 的设计范式转换——从"一个 kernel 解决一切"到"一套可组合的 kernel 原语，按模型结构编排"——这一范式已确立，但值得作为通用设计原则被更多引擎采纳。
+传统推理引擎的 attention kernel 围绕"一次调用，完成整个 attention 计算"设计，V4 的 CSA 打破了这一假设。vLLM/SGLang 已用多 CUDA stream + TileLang ✓ 落地了多流方案，机制上一节已经拆过；这里值得留下的是范式层面的判断：attention kernel 正在从"一个 kernel 解决一切"走向"一套可组合的 kernel 原语，按模型结构编排"。这一范式已确立，值得作为通用设计原则被更多引擎采纳。
 
 ---
 
@@ -108,7 +110,7 @@ Chunk 1: [tok_C+1 ... tok_2C] → 并行计算（依赖 S[0]）→ 产出 S[1]
 Chunk N: ... → 产出最终输出
 ```
 
-这就是核心 trade-off：chunk 越大，串行步数越少，但 chunk 内计算量越大（O(C²) 的因果掩码矩阵乘法）。chunk 越小，计算越轻，但串行步数越多。vLLM 和 SGLang 的 KDA 实现均使用 `FLA_CHUNK_SIZE=64` ✓，1M 上下文意味着约 **15,625 步**串行——每一步都必须等待上一步的 recurrent state，且每一步都需要做一次 chunk 内 attention。这对 prefill 延迟的影响远大于此前估算的 "63 步"。
+这就是核心 trade-off：chunk 越大，串行步数越少，但 chunk 内计算量越大（O(C²) 的因果掩码矩阵乘法）。chunk 越小，计算越轻，但串行步数越多。vLLM 和 SGLang 的 KDA 实现均使用 `FLA_CHUNK_SIZE=64` ✓，1M 上下文意味着约 **15,625 步**串行：每一步都必须等待上一步的 recurrent state，且每一步都需要做一次 chunk 内 attention。prefill 延迟的下限，就是这 1.5 万步的累加。
 
 ### 3.2 K3 的应对
 
@@ -116,15 +118,17 @@ K3 论文的 §2.1.1 描述了两个关键优化：
 
 **Lower-bounded decay**：KDA 的前身 Kimi Linear 使用负 Softplus 映射，log-decay 无下界，导致对角 tile 需要逐位置计算。K3 改用有下界的 scaled sigmoid，vLLM 代码中硬编码下界为 `_KDA_GATE_LOGBOUND_MIN = -5.0` ✓，实际使用的 `gate_lower_bound` 由模型 config 指定（取值在 [-5.0, 0) 之间）。这使得对角 tile 也能用 Tensor Core 做稠密矩阵乘法。这个改动本身不减少串行步数，但减少了每步内的计算延迟。
 
-**FlashKDA kernel**：论文在基础设施章节（§5 "Systems Co-Design for KDA"）提到专门为 KDA 开发的 fused kernel，支持 KDA Context Parallelism（跨设备切分序列长度以分摊 chunkwise 串行开销）和 state-aware prefix caching（在 prompt 边界和每 block 结尾处 checkpoint KDA 循环状态）。vLLM 中通过 `mamba_cache_mode` 控制 checkpoint 策略 ✓（支持 `"all"`/`"none"`/selective 三种模式，间隔由 `kv_cache_spec.block_size` 决定）。核心思路是将 chunk 内的因果注意力、recurrent state 更新和输出投影融合到单个 kernel 中，避免中间结果写回 HBM。
+**Fused KDA kernel**：论文在基础设施章节（§5 "Systems Co-Design for KDA"）提到专门为 KDA 开发的 fused kernel（原文未单独命名，社区俗称 FlashKDA），支持 KDA Context Parallelism（跨设备切分序列长度以分摊 chunkwise 串行开销，§5.1.2）和 state-aware prefix caching（在 prompt 边界和每 block 结尾处 checkpoint KDA 循环状态）。vLLM 中通过 `mamba_cache_mode` 控制 checkpoint 策略 ✓（支持 `"all"`/`"none"`/selective 三种模式，间隔由 `kv_cache_spec.block_size` 决定）。核心思路是将 chunk 内的因果注意力、recurrent state 更新和输出投影融合到单个 kernel 中，避免中间结果写回 HBM。
 
 ### 3.3 与标准 Prefill 的对比
 
-标准 attention 的 prefill 是完全并行的——所有 token 同时计算，chunked prefill 把长序列切成 chunk 是为了让 decode 能插队，不是为了解决 attention 本身的并行性。
+标准 attention 的 prefill 是完全并行的：所有 token 同时计算，chunked prefill 把长序列切成 chunk 是为了让 decode 能插队，不是为了解决 attention 本身的并行性。
 
-KDA 的 prefill 是**本质串行**的——chunk N 严格依赖 chunk N-1 的 recurrent state。这意味着即使给 KDA 分配更多的 GPU 做 tensor 并行，串行步数不会减少——唯一加速的方式是缩小每步的计算延迟。
+KDA 的 prefill 是**本质串行**的：chunk N 严格依赖 chunk N-1 的 recurrent state。这意味着即使给 KDA 分配更多的 GPU 做 tensor 并行，串行步数不会减少，唯一加速的方式是缩小每步的计算延迟。
 
-这对 PD 分离架构有直接影响：在 Prefill 节点上，标准 MLA 的 prefill 可以通过大 TP 加速（compute-bound），但 KDA 的 prefill 是 latency-bound——串行步数决定了 TTFT 的下限。
+### 3.4 对 PD 分离架构的影响
+
+上述串行性改变了 PD 分离的一个隐含前提：在 Prefill 节点上，标准 MLA 的 prefill 可以通过大 TP 加速（compute-bound），而 KDA 的 prefill 是 latency-bound，串行步数决定了 TTFT 的下限。
 
 ---
 
@@ -144,7 +148,7 @@ V4 论文的 3.1 节提供了一个关键数据：V4-Pro 每 token-expert 对需
 
 V4 的核心创新是 **wave-level pipeline**：不等到所有专家通信完成才开始计算。把专家分成多个 wave，每个 wave 含少量专家。wave 内通信完成后立即开始计算，同时下一波 token 的传输和已完成专家的结果回传在后台进行。
 
-效果：通用推理加速 1.50–1.73×，延迟敏感的 RL rollout 场景最高 1.96×（3.1 节）。已开源在 DeepGEMM 的 MegaMoE 组件中（该机制实现在编译库中，vLLM/SGLang 通过 `prepare_megamoe_inputs` Python 接口调用，无法从 Python 源码直接验证 wave scheduling 细节）。
+效果：通用推理加速 1.50–1.73×，延迟敏感的 RL rollout 场景最高 1.96×（3.1 节；RL 1.96× 已获 SemiAnalysis 等第三方转述印证，通用场景倍数建议对照原文复核）。已开源在 DeepGEMM 的 MegaMoE 组件中（该机制实现在编译库中，vLLM/SGLang 通过 `prepare_megamoe_inputs` Python 接口调用，无法从 Python 源码直接验证 wave scheduling 细节）。
 
 V4 论文还给硬件厂商提了一个反直觉的建议：**在满足 C/B ≤ 2d 之后，再增加互联带宽对 MoE 推理的收益递减**。更有效的是增加 GPU 本身的计算密度，让每 GBps 的带宽能喂饱更多的算力。
 
@@ -152,7 +156,7 @@ V4 论文还给硬件厂商提了一个反直觉的建议：**在满足 C/B ≤ 
 
 K3 的 Stable LatentMoE 在架构层面就降低了通信量：routed expert 在 latent space（维度 ℓ < d）中操作 ✓（vLLM 中由 `config.routed_expert_hidden_size` 控制，`LatentMoERunner` 实现），权重和激活的字节数都更少。896 个专家、top-16 激活（稀疏度 56），比 DeepSeek-V3 的 256 专家 top-8 更分散，每个 token 的通信目标更多但单次通信量更小。此外，K3 的 MoE 计算直接复用了 V4 的 `DeepseekV4MegaMoEExperts` 组件 ✓。
 
-MoonEP（论文 §5）从两方向优化 EP 通信：一是静态计算形状——预先确定每个 GPU 上的专家分布和 token batch 大小，消除动态路由带来的通信形状变化和同步开销；二是零拷贝通信——通过 RDMA 直接读写远端 GPU 的专家权重缓冲区，避免中间数据在 CPU 内存中的拷贝。两者叠加确保了 2.8T 参数模型在 EP 模式下的通信效率。
+MoonEP（论文 §5.2.1）从两方向优化 EP 通信：一是静态计算形状——预先确定每个 GPU 上的专家分布和 token batch 大小，消除动态路由带来的通信形状变化和同步开销；二是零拷贝通信（zero-copy communication）——直接读写远端 GPU 的专家权重缓冲区，避免中间数据在 CPU 内存中的拷贝（原文未明示 RDMA 传输层）。两者叠加确保了 2.8T 参数模型在 EP 模式下的通信效率。
 
 ---
 
@@ -180,7 +184,7 @@ vLLM 通过 `MLAAttentionSpec` 的参数化（`compress_ratio`/`model_version`/`
 
 **但前缀缓存层没有跟上。** 前缀缓存的核心逻辑是：匹配到多少个 token 的公共前缀，就跳过多少 token 的 attention 计算。当不同层的 KV 存储粒度不同时，"多少个 token" 这个前提本身出了问题。vLLM 代码明确承认了这一限制 ✓：`find_longest_cache_hit` "only supports one attention type or two types of full-attention plus exactly one another type"——通用多类型前缀缓存还没有实现。
 
-这意味着当前在生产中部署 V4 时，前缀缓存的收益被打了折扣。一个 system prompt 的前缀命中需要同时满足 C4A 的 4-token 粒度、C128A 的 128-token 粒度、SWA 的 token 粒度——而当前实现只覆盖其中 1–2 种。
+这意味着当前在生产中部署 V4 时，前缀缓存的收益被打了折扣。按限制条款的字面口径，C4A 与 C128A 可归入「两种 full-attention」、Indexer 恰好是「另一种类型」，看似落在支持范围内。但条款没有回答跨粒度对齐：一次前缀命中需要同时满足 C4A 的 4-token、C128A 的 128-token 与 SWA 的 1-token 三种存储粒度，命中长度必须取各层粒度的公倍数，当前实现没有做这层换算；若再单算 Indexer 的独立 pool，类型数也逼近「exactly one another type」的上限。实际效果是只有其中 1–2 种 KV 类型能稳定参与前缀复用。
 
 ### 5.3 配置的自适应也是一个开放问题
 
@@ -230,10 +234,10 @@ K3 的 AttnRes（论文 §2.2）更激进。vLLM 中 ✓ AttnRes 由 Triton kern
   前面各 block 的快照转换为"key/value"
   通过 softmax attention 聚合跨 block 信息
 
-完整形式的计算量: O(L²d)，L=96 层，K3 的 d 很大
+完整形式的计算量: O(L²d)，L=93 层，K3 的 d 很大
 ```
 
-Block 大小由 `config.attn_res_block_size` 指定 ✓（默认 `None` 即未启用）。若 96 层按 block_size=12 分组，则为 N=8 个 block，计算量降至 O(N·d)。推理时每层需要计算跨 block 的 attention weights——这部分计算不在 GPU 的序列维度 attention kernel 里，而是在一个完全不同的维度（深度维度）上。
+Block 大小由 `config.attn_res_block_size` 指定 ✓（默认 `None` 即未启用）。若 93 层按 block_size≈12 分组，则 N≈8 个 block，计算量降至 O(N·d)。推理时每层需要计算跨 block 的 attention weights——这部分计算不在 GPU 的序列维度 attention kernel 里，而是在一个完全不同的维度（深度维度）上。
 
 ### 6.4 对推理引擎的影响
 
@@ -277,5 +281,5 @@ vLLM 和 SGLang 均已为 mHC 实现了高效的 fused kernel ✓（`mhc_pre`/`m
 >
 > - DeepSeek-AI. "DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence." arXiv:2606.19348, 2026.
 > - Kimi Team. "Kimi K3: Open Frontier Intelligence — Technical Report of Kimi K3." arXiv:2607.24653, 2026.
-> - Xie et al. "Manifold-Constrained Hyper-Connections." 2026.（V4 引用的 mHC 原始论文）
-> - Kimi Team. "Kimi Delta Attention."（K3 引用的 KDA 原始论文，arXiv:2510.26692）
+> - Xie et al. "mHC: Manifold-Constrained Hyper-Connections." arXiv:2512.24880, 2025.（V4 引用的 mHC 原始论文）
+> - Kimi Team. "Kimi Linear: An Expressive, Efficient Attention Architecture." arXiv:2510.26692, 2025.（KDA 为该文提出的模块，K3 引用的 KDA 原始出处）
