@@ -511,7 +511,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 
 - [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
-- **[Token Factory 演讲素材库](99_misc/token_factory_talk/README.md)** — 对外演讲《Token Factory: AI 推理的成本革命》完整素材：可排练提纲（逐页重点地图、Q&A 预判、数据核查清单）+ 对外图文讲解（PPT 24 页逐页配图）+ 12 份参考资料（成本构成、财报证据、产能评估框架、模型性价比等）
+- **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料）见 [项目 README](99_misc/token_factory_talk/README.md)
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
 

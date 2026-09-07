@@ -2,6 +2,10 @@
 
 对外演讲《Token Factory: AI 推理的成本革命》（南京大学校友会）的完整素材库。
 
+**对外图文讲解**：[《Token Factory：AI 推理的成本革命》24 页 PPT 逐页配图讲解](talk-illustrated.md)——按 PPT 页序完整还原现场内容，适合直接阅读与转发。
+
+<img src="./img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
+
 ## 内容结构
 
 | 文件                                                                                           | 说明                                                                                                                   |
