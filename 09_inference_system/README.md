@@ -15,6 +15,8 @@
 > **输出合法性税**：同系列姊妹篇——[约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](agent_serving/constrained-decoding-engines.md)，编译/每步/交互三笔账单 + 双引擎逐项对照 + jump-forward 重分词差异。
 >
 > **线性注意力**：没有 KV Cache 的模型来了——delta-rule 一脉（KDA/Gated DeltaNet，Qwen3-Next 与 Kimi K3 都在其中）落地后，prefill 串行化、前缀缓存重写为状态检查点、状态池成硬并发上限。系列入口：[线性注意力与推理系统](linear_attention/README.md)（总览 + 机制/调度/状态语义三篇深挖）。
+>
+> **内存介质**：算法把每步读取压下去之后，介质本身成了下一个变量。Hot Chips 2026 上 OXMIQ 用一套 (β, α) 坐标系和一行 `max()` 公式回答「HBF 是不是便宜的 HBM」——容量便宜 8–16 倍，但单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，结论是它只在一个很窄的低带宽区间里划算。详见 **[HBF 是 HBM 的替代吗：单位存储便宜了，Token 成本却可能更高](hbf-vs-hbm.md)**（22 页幻灯片逐页核对 + 独立报道交叉验证，含一份 2026-08 的反方实测）。
 
 ---
 
