@@ -319,7 +319,7 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 
 ## 8. 大模型训练
 
-涵盖从 SFT 监督微调到大规模预训练的完整工程路径，结合 70B 模型从零训练实战，剖析数据清洗、硬件集群配置、超参数优化 (CARBS) ，以及面向 AIOps 场景的 Kubernetes 模型后训练 (Post-Training) 与评估框架设计。详细指南可参考：[模型训练与微调总览](05_model_training_and_fine_tuning/README.md) 。
+涵盖从 SFT 监督微调、RL 后训练到大规模预训练的完整工程路径，结合 70B 模型从零训练实战，剖析数据清洗、硬件集群配置、超参数优化 (CARBS) ，以及面向 AIOps 场景的 Kubernetes 模型后训练 (Post-Training) 与评估框架设计。详细指南可参考：[模型训练与微调总览](05_model_training_and_fine_tuning/README.md) 。
 
 ### 8.1 指令微调与监督学习
 
@@ -346,6 +346,12 @@ LLM 核心理论与架构基石，深入解析 Tokenizer 分词机制、Embeddin
 - [AIOps 后训练技术](05_model_training_and_fine_tuning/ai_ops_design/aiops_post_training.md) - 面向智能运维场景的模型后训练技术与实践。
 - [Kubernetes 模型评估框架](05_model_training_and_fine_tuning/ai_ops_design/kubernetes_model_evaluation_framework.md) - 基于 K8s 的大模型评估框架设计与实现。
 - [Kubernetes AIOps 基准测试生成框架](05_model_training_and_fine_tuning/ai_ops_design/kubernetes_aiops_benchmark_generation_framework.md) - 自动化生成 AIOps 基准测试数据集的框架设计。
+
+### 8.4 RL 后训练的系统约束
+
+SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎产生、梯度由训练框架计算——两个系统对同一份权重算出的 log-probability 并不相同，这个差异会直接把策略梯度带偏。
+
+- [训练不稳，可能是推理引擎的锅：Miles 的三条对齐路线](05_model_training_and_fine_tuning/rl_training/miles-train-rollout-alignment.md) - 逐位对齐、量化路径统一、路由重放与重要性采样修正三条路线的源码级拆解，含各自的适用边界与实测数字。
 
 ---
 
