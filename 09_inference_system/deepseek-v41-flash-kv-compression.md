@@ -7,6 +7,8 @@
 > 2026-09 | 基于 DeepSeek-V4.1-Flash 技术报告（[`deepseek-ai/DeepSeek-V4.1-Flash`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash)，51 页）与官方 `config.json` 逐条核对；benchmark 数字均为**厂商口径**。report 章节以 § 标注，config 字段以 `等宽` 标注。
 >
 > **2026-09-12 补**：§十一 补入两个引擎的落地形态（vLLM recipe 2026-09-11 版、SGLang cookbook `6657f7d8`），并据此订正该节原先「引擎侧没有公开信息」的说法。那句是初稿只依据技术报告下的结论，而 vLLM 的 recipe 早在 2026-09-09 就已存在——是没查证，不是当时没有。
+>
+> **2026-09-14 补**：§十一 再叠一层 LMSYS 博客（2026-09-10，SGLang 与 Miles 团队）。补上 SWA Bounded Replay 的两种模式与层切分、Engram 的 189 GiB 与两种 host 布局取舍，并据此**订正该节对 all-reduce 的表述**——初版把「可以切到无 all-reduce 的布局」写成了「切了就消失」，而实测容器上自动选择保留了 all-reduce。
 
 ---
 
@@ -19,7 +21,7 @@
 V4/V4.1 除最前两层只有 SWA 之外，每一层都有两条注意力分支，各自产生自己的 KV：
 
 | 分支                  | 覆盖范围          | 产生的 KV                                                        |
-| --------------------- | ----------------- | ---------------------------------------------------------------- |
+|-----------------------|-------------------|------------------------------------------------------------------|
 | global（全局注意力）  | 整个上下文        | **main KV**（压缩后的 KV 条目）+ **indexer K**（供稀疏选择打分） |
 | SWA（滑动窗口注意力） | 最近 128 个 token | **SWA KV**（窗口内的未压缩 KV）                                  |
 
@@ -32,7 +34,7 @@ V4/V4.1 除最前两层只有 SWA 之外，每一层都有两条注意力分支�
 同一个 token 的 KV 在生命周期里会依次落在三级存储上，各级的保留策略完全不同：
 
 | 层级                  | 放什么                        | 介质                    | 保留多久     | 受什么约束     |
-| --------------------- | ----------------------------- | ----------------------- | ------------ | -------------- |
+|-----------------------|-------------------------------|-------------------------|--------------|----------------|
 | 运行时常驻            | 活跃请求的 KV（global + SWA） | HBM                     | 请求生命周期 | 显存容量       |
 | SWA 复用池（V4.1 起） | SWA KV，供活跃会话跨轮复用    | 每机划出的 10% 主机内存 | 分钟级 TTL   | 池子定容       |
 | 持久化层              | 供跨请求复用的 KV             | SSD + 主机内存          | 至少 72 小时 | 磁盘与内存容量 |
@@ -44,7 +46,7 @@ V4/V4.1 除最前两层只有 SWA 之外，每一层都有两条注意力分支�
 ### 1.3 于是数字的口径清楚了
 
 | 指标                              | 数值                                     |
-| --------------------------------- | ---------------------------------------- |
+|-----------------------------------|------------------------------------------|
 | 骨干参数 / Engram 参数            | 552B / 196B                              |
 | 每 token 激活（prefill / decode） | **8B / 16B**                             |
 | global 分支的 KV，常驻 HBM        | **890 字节/token**，约为 V4-Flash 的 1/4 |
@@ -73,7 +75,7 @@ _图源：DeepSeek-V4.1-Flash 技术报告 Figure 1(b)。_
 仓库里记录过 vLLM 官方博客的一组数据：V4 在 1M 上下文、bf16 下约 9.62 GiB 每序列（[vLLM 中的 DeepSeek V4](vllm/module_analysis/deepseek_v4_attention_support.md) §8.7 倍节省估算背后的算术）。它和 890 B/token 不能相除，两者不是同一件事：
 
 |          | 9.62 GiB（vLLM 博客）           | 890 B/token（报告）       |
-| -------- | ------------------------------- | ------------------------- |
+|----------|---------------------------------|---------------------------|
 | 模型     | V4-Pro，61 层                   | V4.1-Flash，40 层         |
 | 精度     | bf16（博客的估算前提）          | main KV FP4               |
 | 统计范围 | main KV + c4a 索引器 + SWA 窗口 | 只算常驻 HBM 的 global KV |
@@ -91,7 +93,7 @@ _图源：DeepSeek-V4.1-Flash 技术报告 Figure 2。_
 报告是自述，`config.json` 是机器的语言。两者对一遍，比读十遍正文更能确认理解无误：
 
 | 报告表述（§2.4、§4.2.1）                                     | `config.json` 实际值                                                                         |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+|--------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | encoder 分 3 组 × 6 层，每组首层 Full；decoder 首组首层 Full | `kv_source_layer_ids = [2, 8, 14, 20]`，正是这 4 个 Full 层                                  |
 | decoder 其余四组首层 Reindex                                 | `index_source_layer_ids` 比上一行多出 `[24, 28, 32, 36]`                                     |
 | 候选池 2048 块 × 8 位置                                      | `candidate_topk_blocks = 2048`、`candidate_block_size = 8`、`candidate_source_layer_id = 20` |
@@ -112,7 +114,7 @@ _图源：DeepSeek-V4.1-Flash 技术报告 Figure 2。_
 这是整篇报告理论价值最高的一段（§2.3）。它把 KV 存储拆成三个**相乘**的维度：
 
 | 维度                        | 怎么压                          | 代表工作                   |
-| --------------------------- | ------------------------------- | -------------------------- |
+|-----------------------------|---------------------------------|----------------------------|
 | entry size（每条目多大）    | GQA 减 KV 头数，MLA 用小 latent | GQA、MLA                   |
 | sequence（几 token 压一条） | 每 m 个 token 压成一个条目      | CSA、HCA（V4）             |
 | layer（几层共享一份）       | 跨层复用 KV 或索引              | IndexCache、YOIO、HySparse |
@@ -168,7 +170,7 @@ O(N·L)  →  O(N·L/2 + n_win·L/2)  ≈  O(N·L/2)
 CSA2 把每个层的角色**静态**分成三种（§2.3.1）：
 
 | 模式    | main KV    | indexer K | Top-K 索引                                    |
-| ------- | ---------- | --------- | --------------------------------------------- |
+|---------|------------|-----------|-----------------------------------------------|
 | Full    | 自己算     | 自己投    | 自己跑 indexer 产生                           |
 | Reindex | 复用前面层 | 复用      | **用自己的 indexer Q 重打分**，选择可逐层变化 |
 | Reuse   | 复用       | 复用      | 复用，不跑 indexer                            |
@@ -179,7 +181,7 @@ CSA2 把每个层的角色**静态**分成三种（§2.3.1）：
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 4。看颜色即可分清「哪些是本层算的」：绿 = 本层计算，黄 = 复用最近一个 Full Mode 层的 main KV 与 indexer K，红 = 复用最近一个产索引层（Full 或 Reindex）的 Top-K 索引。Reindex 模式的 indexer Q 是绿的（自己重打分），所以它没有红块。_
 
-这套分工可以一句话概括：**4 层产 KV，4 层重选，剩下 30 层搭便车。**
+这套分工是：**4 层产 KV，4 层重选，剩下 30 层搭便车。**
 
 实际分配（§4.2.1，与 config 一致）：
 
@@ -277,8 +279,6 @@ CED 的 decoder 侧同理：从 encoder 出来之后，decoder 各层的 SWA KV 
 
 > This bounded replay is the cornerstone of the design: it turns a catastrophic miss into a graceful, inexpensive degradation.
 
-换成中文就是这手棋的全部价值：**把一次灾难性的缓存未命中，换成一次廉价的、有界的重算。**
-
 ### 7.3 与仓库里既有判断的冲突
 
 [post-KV-cache 篇](post-kv-cache-era-challenges.md) 把「跨类型前缀缓存」列为**需要解决的硬缺口**，依据是 vLLM 代码里的限制：
@@ -334,7 +334,7 @@ X_{l+1} = B_l X_l + C_l F_l(A_{l-1} X_l)
 预训练的关键配置（§4.2.2）：
 
 | 项              | 值                                                              |
-| --------------- | --------------------------------------------------------------- |
+|-----------------|-----------------------------------------------------------------|
 | 训练 token 总量 | **45T**（多模态）                                               |
 | batch size      | 100.6M tokens（全程固定）                                       |
 | 学习率          | 2000 步 warmup → 2.6e-4，28T 起 cosine 衰减至 2.6e-5            |
@@ -371,7 +371,7 @@ benchmark 数字**全部为厂商口径**。下表取自报告 Table 3（Max eff
 **领先项**：
 
 | Benchmark            | V4.1-Flash | Opus-5 | GPT-5.6 Sol |
-| -------------------- | ---------- | ------ | ----------- |
+|----------------------|------------|--------|-------------|
 | DeepSWE v1.1         | **74.2**   | 74.0   | 73.0        |
 | Terminal-Bench 2.1   | **90.6**   | 89.1   | 88.8        |
 | Automation-Bench     | **54.8**   | 50.3   | 45.8        |
@@ -382,7 +382,7 @@ benchmark 数字**全部为厂商口径**。下表取自报告 Table 3（Max eff
 **落后项**：
 
 | Benchmark          | V4.1-Flash | Opus-5   | GPT-5.6 Sol |
-| ------------------ | ---------- | -------- | ----------- |
+|--------------------|------------|----------|-------------|
 | Terminal-Bench 4.0 | 31.2       | **51.8** | 39.9        |
 | Terminal-Bench 3.0 | 30.0       | **43.3** | 34.4        |
 | ProgramBench       | 20.3       | **37.0** | 23.0        |
@@ -416,12 +416,12 @@ effort 25 → 100：8 个推理密集 benchmark 平均 Pass@1   67.1% → 76.3%
 
 **报告自己承认的**（§6）：CSA2 的潜在选择错误、SWA Bounded Replay 的近似状态重构，都可能在**未测边界**上导致能力退化。内部评测没观察到系统性下降，但「no finite test suite can cover every extreme input」。后续的重点是长上下文稀疏检索、以及缓存恢复边界处的 SWA 状态重构。
 
-**引擎侧已经接上了**（以下依据 2026-09-12 抓取的 vLLM recipe 与 SGLang cookbook）。
+**引擎侧已经接上了**（依据 vLLM recipe、SGLang cookbook 与 LMSYS 博客《SGLang and Miles Add Day-0 Support for DeepSeek-V4.1》，抓取日期见源文件索引）。
 
 报告 §3.2 只讲了 DeepSeek 自研推理系统的实现（15/11 个 kernel、EPD 分离、持久化 KV 管理与 SWA Bounded Replay），没有涉及第三方引擎。两个引擎现在的落地形态是：
 
 | 引擎   | 镜像                                                    | 已验证硬件                          |
-| ------ | ------------------------------------------------------- | ----------------------------------- |
+|--------|---------------------------------------------------------|-------------------------------------|
 | vLLM   | `vllm/vllm-openai:deepseekv41-flash-0909`               | H200 / GB200 / GB300 / MI350X       |
 | SGLang | `lmsysorg/sglang:dev-dsv41`（AMD 为 `dev-dsv41-mi35x`） | H200 / B200 / B300 / GB300 / MI350X |
 
@@ -429,9 +429,19 @@ effort 25 → 100：8 个推理密集 benchmark 平均 Pass@1   67.1% → 76.3%
 
 报告里这几个机制在引擎侧的样子：
 
-- **SWA Bounded Replay**：SGLang 已经做成显式开关 `--enable-decoder-swa-bounded-replay`，对它的四条约束与报告逐条对应：只验 decode 路径、按设计拒绝 prompt logprobs、与完整 prefill 数值不等价、与 prefill CUDA graph 和 DP attention 互斥。vLLM 的 recipe（2026-09-11 版）没有暴露对应旋钮。
-- **Engram**：SGLang 默认按行分片加载到 TP 组，每层一次 all-reduce；`SGLANG_ENABLE_DSV41_ENGRAM_HOST_TABLE=1` 可改成一份 host 共享副本，两次 all-reduce 消失、腾出的 HBM 给 KV 池，且**输出 bitwise 不变**。代价是 host RAM、更长的加载，以及需要大页支撑。
+- **SWA Bounded Replay**：SGLang 做成了两个可叠加的开关，对应重建 window KV 的两个位置。
+  - `--enable-encoder-swa-bounded-replay`：前缀缓存只留压缩 KV 与 indexer key，命中时重算缓存前缀的**最后 128 个 token** 重建 window KV，缓存内容本身不动。
+  - `--enable-decoder-swa-bounded-replay`：每个 prefill chunk 里 layers 0–20 跑全量 token，**layers 21–39 只跑每请求最后 128 个 token**。能这么切是因为 layer 20 是最后一个压缩 KV 源，21 层往后都在复用它。
+
+  两种模式都在重建边界截断局部注意力，重算出的 hidden state 与完整 prefill 存在差异，博客明说这是近似。实测（8 条 8K prompt 一批）：prefill 吞吐 **1.56×（8×H200）/ 1.37×（4×GB300）**，4×GB300 上 AIME 2026 开关前后命中数相同（453/480）。对报告的四条约束逐条对应：只验 decode 路径、按设计拒绝 prompt logprobs、与完整 prefill 数值不等价、与 prefill CUDA graph 和 DP attention 互斥。vLLM 的 recipe（2026-09-11 版）没有暴露对应旋钮。
+
+- **Engram**：两张 fp8 表合计 **189 GiB**（SGLang 口径；按 §1.4 那组 `config.json` 参数折算约 183 GiB，两者差 3%，来源未核），而每步只读其中几行。默认按行分片到 TP 组，每层一次 all-reduce。offload 到 host 有两种摆法，差别就在查表要不要通信：**host-sharded**（每个 rank 持一份 host 分片，**保留** lookup all-reduce）与 **shared host**（所有 rank 读同一份完整副本、各自 gather，**消除** lookup all-reduce）。
+
+  要留意的是，这个开关**不保证**切到后者。实测的那台 GB300 容器上，自动选择挑的正是 host-sharded、all-reduce 保留——host-sharded 用的是支持大页的匿名映射，shared 映射不支持，而大页正是随机查表性能的关键。那句 +36% KV 容量的收益，也是在 host-sharded + 保留 all-reduce 的配置下测出来的（4×GB300，TP4/EP4，paired test，decode 吞吐与 TTFT 相当，28 个 greedy probe 输出全部与基线一致）。选哪种取决于 CPU–GPU 链路、大页可得性与负载；代价则是 host RAM 占用与更长的加载时间。
+
 - **CSA2 与 FP4 KV**：两个引擎都收进了自动选择的后端，不暴露给用户。SGLang 明确警告不要手动覆盖 `--attention-backend` / `--moe-runner-backend` / `--fp8-gemm-backend`，覆盖会把 32 宽的 ue8m0 block 打到 Triton fallback，吃掉大部分 bs=1 吞吐。
+
+- **几处引擎侧实现细节**（报告未涉及）：FP4 indexer heads 在 TP rank 间**复制**而非分片——这是 MQA 形状的算子，分片省不下 key 带宽，反而要引入随上下文长度增长的 score all-reduce；indexer 把 RoPE、FP4 量化、打包与缓存写入融进一个 kernel，但必须保住中间的舍入与 scaling，少一次中间写不等于少一次数值影响；ratio-2 的 decode pooling 合成单个 kernel；单 token 的输出投影走专用 BF16 matvec（通用 matmul 在单 token 上打不满）；mHC 的 Sinkhorn reduction 用**与 batch size 无关的固定顺序**，保证同一个 token 在不同 batch 组成下拿到一致的系数。
 
 **一处引擎自陈的局限**：SGLang cookbook 写明「output is not bitwise stable across batch composition today」，且 `--enable-deterministic-inference` 在该后端被拒绝。同一个请求在不同 batch 组成下输出可能不同。对做回归测试与结果复现的人来说，这是条硬约束。
 
@@ -440,7 +450,7 @@ effort 25 → 100：8 个推理密集 benchmark 平均 Pass@1   67.1% → 76.3%
 **对我们这边判断的修正。** 连同开头说的跨层共享，一共三处需要更新：
 
 | 原判断（[post-KV-cache 篇](post-kv-cache-era-challenges.md)） | V4.1 给出的更新                                                              |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+|---------------------------------------------------------------|------------------------------------------------------------------------------|
 | Cross-Layer 共享「基本无意义」                                | 成了 CSA2 的核心；单层绝对量小之后，杠杆从「每层压多少」转向「几层共用一份」 |
 | 跨类型前缀缓存是「需要解决」的硬缺口                          | 被绕开：SWA KV 退出持久层，前缀缓存只依赖 global KV                          |
 | mHC 的 Sinkhorn 迭代可能无法被 kernel fusion 覆盖             | Single-Pass mHC 改掉依赖关系，Mega-mHC 融成单 kernel，流量减半               |
@@ -474,22 +484,23 @@ CSA2 的三个乘性维度也是同一路数：先搭一个坐标系，再找出
 
 本文的「源码」是技术报告与模型配置，引用点以章节号与配置字段标注。
 
-| 来源                                            | 关键内容                                                   | 引用点                                                                                                            |
-| ----------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| DeepSeek-V4.1-Flash 技术报告                    | 摘要、问题定义、KV 压缩目标                                | Abstract、§1                                                                                                      |
-| 同上                                            | CED 架构、式 1、prefill 复杂度                             | §2.2                                                                                                              |
-| 同上                                            | 三个乘性维度、CSA2 简化、三模式、层级索引器                | §2.3、§2.3.1、§2.3.2                                                                                              |
-| 同上                                            | Single-Pass mHC、Engram、DSpark、FP4 main KV               | §2.4.1–§2.4.4                                                                                                     |
-| 同上                                            | 推理系统、持久化 KV 管理、SWA Bounded Replay               | §3.2、§3.2.1、§3.2.2                                                                                              |
-| 同上                                            | 模型配置、训练超参、数据配比                               | §4.2.1、§4.2.2                                                                                                    |
-| 同上                                            | 后训练立场、任务合成、DSec、reasoning effort、异步 RL、OPD | §5.1–§5.2                                                                                                         |
-| 同上                                            | 评测结果、effort / scaffold / 多智能体消融                 | §5.3.2–§5.3.5                                                                                                     |
-| 同上                                            | 局限性声明                                                 | §6                                                                                                                |
-| `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` | 全部架构参数的独立核对                                     | `compress_ratios`、`kv_source_layer_ids`、`index_source_layer_ids`、`candidate_*`、`engram_*`、`dspark_*`、`hc_*` |
-| `deepseek-ai/DeepSeek-V4-Pro` `config.json`     | V4-Pro 层类型计数（30 c4a + 31 c128a）                     | `compress_ratios`                                                                                                 |
-| DeepSeek-V4 技术报告（arXiv:2606.19348）        | HCA 全称与定义                                             | §2.3.2                                                                                                            |
-| vLLM recipe `DeepSeek-V4.1-Flash.yaml`          | 镜像、显存门槛、已验证硬件、可选 flag、PD 分离布局         | 全文（2026-09-11 版）                                                                                             |
-| SGLang cookbook `DeepSeek-V4_1.mdx`             | SWA Bounded Replay 开关、Engram host table、后端解析与限制 | §1、§2（`6657f7d8`，2026-09-12）                                                                                  |
+| 来源                                                               | 关键内容                                                                                                | 引用点                                                                                                            |
+|--------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| DeepSeek-V4.1-Flash 技术报告                                       | 摘要、问题定义、KV 压缩目标                                                                             | Abstract、§1                                                                                                      |
+| 同上                                                               | CED 架构、式 1、prefill 复杂度                                                                          | §2.2                                                                                                              |
+| 同上                                                               | 三个乘性维度、CSA2 简化、三模式、层级索引器                                                             | §2.3、§2.3.1、§2.3.2                                                                                              |
+| 同上                                                               | Single-Pass mHC、Engram、DSpark、FP4 main KV                                                            | §2.4.1–§2.4.4                                                                                                     |
+| 同上                                                               | 推理系统、持久化 KV 管理、SWA Bounded Replay                                                            | §3.2、§3.2.1、§3.2.2                                                                                              |
+| 同上                                                               | 模型配置、训练超参、数据配比                                                                            | §4.2.1、§4.2.2                                                                                                    |
+| 同上                                                               | 后训练立场、任务合成、DSec、reasoning effort、异步 RL、OPD                                              | §5.1–§5.2                                                                                                         |
+| 同上                                                               | 评测结果、effort / scaffold / 多智能体消融                                                              | §5.3.2–§5.3.5                                                                                                     |
+| 同上                                                               | 局限性声明                                                                                              | §6                                                                                                                |
+| `deepseek-ai/DeepSeek-V4.1-Flash` `config.json`                    | 全部架构参数的独立核对                                                                                  | `compress_ratios`、`kv_source_layer_ids`、`index_source_layer_ids`、`candidate_*`、`engram_*`、`dspark_*`、`hc_*` |
+| `deepseek-ai/DeepSeek-V4-Pro` `config.json`                        | V4-Pro 层类型计数（30 c4a + 31 c128a）                                                                  | `compress_ratios`                                                                                                 |
+| DeepSeek-V4 技术报告（arXiv:2606.19348）                           | HCA 全称与定义                                                                                          | §2.3.2                                                                                                            |
+| vLLM recipe `DeepSeek-V4.1-Flash.yaml`                             | 镜像、显存门槛、已验证硬件、可选 flag、PD 分离布局                                                      | 全文（2026-09-11 版）                                                                                             |
+| SGLang cookbook `DeepSeek-V4_1.mdx`                                | SWA Bounded Replay 开关、Engram host table、后端解析与限制                                              | §1、§2（`6657f7d8`，2026-09-12）                                                                                  |
+| LMSYS 博客《SGLang and Miles Add Day-0 Support for DeepSeek-V4.1》 | SWA Bounded Replay 两种模式与层切分、Engram 189 GiB 与两种 host 布局、prefill 吞吐实测、kernel 实现细节 | §1–§5（2026-09-10）                                                                                               |
 
 ---
 
@@ -498,6 +509,7 @@ CSA2 的三个乘性维度也是同一路数：先搭一个坐标系，再找出
 - DeepSeek-AI, [DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash), HuggingFace, 2026——技术报告与模型权重（MIT）
 - DeepSeek-AI, [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348), arXiv:2606.19348, 2026——HCA 定义与前代架构
 - vLLM, [DeepSeek V4 支持公告](https://vllm.ai/blog/deepseek-v4)——9.62 GiB/1M 序列的 bf16 估算与混合 KV 缓存实现
+- SGLang & Miles Teams, [SGLang and Miles Add Day-0 Support for DeepSeek-V4.1](https://www.lmsys.org/blog/2026-09-10-deepseek-v41), LMSYS, 2026-09-10——SWA Bounded Replay 两模式、Engram 布局取舍与实测、kernel 优化（**RL 训练侧本文未涉及**，原文有完整一节）
 - Sun et al., [You Only Cache Once (YoCo)](https://arxiv.org/abs/2405.05254), 2024——CED 的灵感来源
 - Xie et al., [mHC: Manifold-Constrained Hyper-Connections](https://arxiv.org/abs/2512.24880), arXiv:2512.24880, 2025——V4 引入、V4.1 改为 Single-Pass 的残差流方案
 - Rouhani et al., [Microscaling Data Formats for Deep Learning](https://arxiv.org/abs/2310.10537), arXiv:2310.10537, 2023——MXFP4 格式定义
