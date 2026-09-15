@@ -57,8 +57,11 @@ NVLink 总双向带宽 = 单 link 速率 × 双向 × link 数量 [3]。
 > [!NOTE]
 > **消费级 GPU (GeForce RTX) 不支持 NVLink**。自 RTX 30 系列起，NVIDIA 移除了消费级 GPU 的 NVLink 接口。仅数据中心 GPU (Tesla/Quadro/HGX) 支持 NVLink [3]。
 >
-> B300 数据为 HGX B300 规格。NVL72 SXM 变体为 279 GB HBM3e / 8.0 TB/s [10]。  
-> **来源**: [5] NVIDIA H100 Data Sheet; [6] NVIDIA H200 Product Page; [7] 本仓库 `superchips/nvidia_gb300.md`; [3] 本仓库 `nvlink/nvlink_intro.md`; [10] NVIDIA Blackwell Ultra Datasheet。
+> B300 数据为 **HGX B300 形态**。NVL72 SXM 变体为 279 GB HBM3e / 8.0 TB/s [10]。
+>
+> **注意 270 / 279 是「系统可用显存」而非卡规格。** B300 的卡规格是 **288 GB HBM3e**（NVIDIA 官方博客口径）；系统形态下的可用值按 [MIG 产品页](https://www.nvidia.com/en-us/technologies/multi-instance-gpu/)分档：**HGX B300 = `1x 270 GB`，GB300 NVL72 = `1x 279 GB`**。该页脚注标明这些为 `Preliminary specifications`，且 NVL72 形态比裸卡少约 6–9 GB 属惯例（GB200 同样 186 vs 192）。**读规格表用 288，做容量规划用 270/279。**
+>
+> **来源**: [5] NVIDIA H100 Data Sheet; [6] NVIDIA H200 Product Page; [7] 本仓库 `superchips/nvidia_gb300.md`; [3] 本仓库 `nvlink/nvlink_intro.md`; [10] NVIDIA Blackwell Ultra Datasheet; [11] NVIDIA MIG Product Page。
 
 ---
 

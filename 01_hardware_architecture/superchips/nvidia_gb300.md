@@ -30,6 +30,12 @@ Blackwell 架构 GPU 采用**双芯片 (Dual-Die) 封装设计**，集成 2080 �
 | **网络带宽 (每 GPU)** | 400 Gb/s (CX-7)     | **800 Gb/s (CX-8)**         | 增加 100%  |
 | **CPU-GPU 互连**      | 900 GB/s NVLink-C2C | **900 GB/s NVLink-C2C**     | 规格一致   |
 
+> **显存口径说明**：B300 的**卡规格**是 **288 GB HBM3e**（NVIDIA Blackwell Ultra 官方博客：「288 GB of HBM3e per GPU」）。上表写的 279 GB 是**系统形态下的单卡可用值**，不是裸卡规格。
+>
+> NVIDIA 的 [MIG 产品页](https://www.nvidia.com/en-us/technologies/multi-instance-gpu/)把两种形态的可用显存分档列出：**GB300 NVL72 为 `1x 279 GB`，HGX B300 为 `1x 270 GB`**。该页脚注标明这些属于 `Preliminary specifications`（初步规格，可能变动），且 NVL72 形态比裸卡少约 6–9 GB 是惯例——GB200 同样出现 186 GB vs 192 GB 的差额。
+>
+> **读规格表时用 288，做容量规划时用 279 或 270**，两者不要混。
+
 ---
 
 ## 2. 物理拓扑架构
