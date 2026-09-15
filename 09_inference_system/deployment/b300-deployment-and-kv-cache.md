@@ -614,7 +614,7 @@ n=8 那一行可以校验：AMD 的 perf 测试注释写 `roughly 192 GB of the 
 
 这是全篇最反直觉的一条。K3 的 KV 几何在 SGLang 计算器源码里写死了（`_kimi_k3_mamba_ratio_calculator.jsx:117-126`）：
 
-```
+```text
 MLA: 24 层 × (512 + 64) × 1 B   = 13,824 B/token        （FP8）
 KDA: 69 层 × (96/8 × 128 × 128 × 2 B + 3×3 × 96/8 × 128 × 2 B)
                                 = 27.69 MiB/slot         （bf16, attnTP=8）
@@ -622,23 +622,23 @@ KDA: 69 层 × (96/8 × 128 × 128 × 2 B + 3×3 × 96/8 × 128 × 2 B)
 
 每请求占几个 slot 由**缓存策略**决定，与 n 无关【源码】：`kv_cache_configurator.py:167-172` 给出 `base = 3`，`extra_buffer_lazy` + overlap scheduler 给 `+1`，共 **4 个 slot**。预设钉的正是 `--mamba-radix-cache-strategy extra_buffer_lazy`。
 
-| 项                        | 16 卡          | 32 卡 | 64 卡 |
-| ------------------------- | -------------- | ----- | ----- |
-| 每卡 MLA KV               | 13,824 B/token | **同** | **同** |
-| 每卡 KDA state            | 27.69 MiB/slot | **同** | **同** |
+| 项                         | 16 卡          | 32 卡  | 64 卡  |
+| -------------------------- | -------------- | ------ | ------ |
+| 每卡 MLA KV                | 13,824 B/token | **同** | **同** |
+| 每卡 KDA state             | 27.69 MiB/slot | **同** | **同** |
 | **每请求 state（4 slot）** | **110.8 MiB**  | **同** | **同** |
 
 单请求总账（FP8 KV + bf16 state），三档共用同一组数字：
 
-| 上下文 | KV        | state     | **合计**      |
-| ------ | --------- | --------- | ------------- |
-| 8K     | 108.0 MiB | 110.8 MiB | **218.8 MiB** |
-| 32K    | 432.0 MiB | 110.8 MiB | **542.8 MiB** |
+| 上下文 | KV        | state     | **合计**       |
+| ------ | --------- | --------- | -------------- |
+| 8K     | 108.0 MiB | 110.8 MiB | **218.8 MiB**  |
+| 32K    | 432.0 MiB | 110.8 MiB | **542.8 MiB**  |
 | 128K   | 1728 MiB  | 110.8 MiB | **1838.8 MiB** |
 
 内存怎么分给这两个池也是固定的【源码】，见 `kv_cache_configurator.py:2493-2497`：
 
-```
+```text
 mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-ratio
 ```
 
