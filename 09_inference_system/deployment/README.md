@@ -17,9 +17,9 @@
 
 ## 3. NVIDIA B300：部署配方与 KV Cache 实践
 
-B300（Blackwell Ultra，SM103）是当前代的旗舰，但它的部署实践有两个反直觉之处：**世代红利只给了 FP4**——FP8/BF16 相对 B200 零提升，而 INT8 因为 PTX 未授权 sm_103a 而完全不可用；**且 MLA 模型上加 TP 会复制而非切分 KV**。本文以 vLLM/SGLang 官方 recipe 与厂商 model card 为依据，给出可直接使用的启动命令、KV Cache 的实际配置，以及一份按危害排序的误算清单。
+B300（Blackwell Ultra，SM103）是当前代的旗舰，但它的部署实践有两个反直觉之处：**世代红利只给了 FP4**——FP8/BF16 相对 B200 零提升，而 INT8 因为 PTX 未授权 sm_103a 而完全不可用；**且 MLA 模型上加 TP 会复制而非切分 KV**。这篇不讨论可能性，只整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，每条推荐都标注出处。
 
-- **[B300 上的模型部署与 KV Cache 实践](b300-deployment-and-kv-cache.md)**：Kimi-K3 与 DeepSeek-V4 的完整启动命令、SM103 独立 target 等三道门槛、Deep PP 为什么用 `--tp-size 1`、HiCache 三档的 canonical 参数、NVFP4 KV 为何不能进生产（附实测反例），以及 8 条常见误算
+- **[B300 上的模型部署与 KV Cache：官方手册最佳实践](b300-deployment-and-kv-cache.md)**：Kimi-K3 与 DeepSeek-V4 的完整启动命令、SM103 独立 target 等三道门槛、vLLM 的 `-O0`~`-O3` 优化等级与 `2 + N` 物理核公式、Deep PP 为什么用 `--tp-size 1`、SGLang 的 KV 量化官方精度对照表、HiCache 的 canonical 参数与布局兼容性、两家的调优判据（`available_gpu_mem` / `token usage` / `num_preemptions`），以及 NVFP4 KV 为何不能进生产
 - 相关原理：[从 H200 到 Blackwell 的飞跃](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)（WideEP / NVFP4 / Weight Offloading v2）
 
 ## 4. 方法论抽象

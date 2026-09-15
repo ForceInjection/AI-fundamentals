@@ -1,19 +1,16 @@
-# B300 上的模型部署与 KV Cache 实践
+# B300 上的模型部署与 KV Cache：官方手册最佳实践
 
-**as-of 2026-09-15** ｜ 本文只讲两件事：**怎么把模型跑起来**、**KV Cache 怎么配**。全部内容以 vLLM/SGLang 的官方 recipe、厂商 model card 与本地源码为依据，不做抽象推导。
+**as-of 2026-09-15** ｜ 本文整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，以及厂商 model card 上跑通过的组合。每条推荐都标了出处。
 
 ## 口径与来源
 
-| 标注           | 含义                                                 |
-| -------------- | ---------------------------------------------------- |
-| **【SGLang】** | SGLang cookbook（本地检出 `c415f977b8`，2026-09-10） |
-| **【vLLM】**   | vLLM 官方文档/博客/release notes                     |
-| **【NVIDIA】** | NVIDIA model card 或官方博客                         |
-| **【源码】**   | 本人对本地 vLLM/SGLang 检出逐行核对                  |
-| **【实测】**   | 有测量数据的第三方或独立结果                         |
-| **【查不到】** | 明确留空                                             |
-
-**一条贯穿全篇的限制**：截至写作，**没有任何第三方独立复现过 B300 上的完整推理基准**。下面所有性能数字都来自厂商或其合作方的实测。
+| 标注           | 含义                                                               |
+| -------------- | ------------------------------------------------------------------ |
+| **【SGLang】** | SGLang 官方文档，本地检出 `c415f977b8`（2026-09-10）               |
+| **【vLLM】**   | vLLM 官方文档，本地检出 `43d691ec6b`（v0.26.1rc0-459，2026-08-07） |
+| **【NVIDIA】** | NVIDIA model card、官方博客或 MIG 产品页                           |
+| **【源码】**   | 对本地 vLLM/SGLang 检出逐行核对                                    |
+| **【实测】**   | 有测量数据的第三方结果                                             |
 
 ---
 
@@ -27,9 +24,7 @@
 
 **② INT8 在这块卡上不可用。**
 
-PTX 的 `.kind::i8` 目标列表是 `sm_100a / sm_101a / sm_110a`，**从未扩展到 sm_103a**；CUTLASS 按 arch guard 跳过 INT8 UMMA；vLLM 没有 INT8 GEMM。所以：
-
-> **所有量化方案只能走 FP8 / NVFP4。**
+PTX 的 `.kind::i8` 目标列表是 `sm_100a / sm_101a / sm_110a`，**从未扩展到 sm_103a**；CUTLASS 按 arch guard 跳过 INT8 UMMA；vLLM 没有 INT8 GEMM。所以所有量化方案只能走 FP8 / NVFP4。
 
 ⚠️ **失败时机很坑**：vLLM 是在**模型完整加载之后**才硬报错。POC 阶段先用 ~1B 模型冒烟，不要等 405B 下载完。
 
@@ -51,7 +46,24 @@ PTX 的 `.kind::i8` 目标列表是 `sm_100a / sm_101a / sm_110a`，**从未扩�
 - vLLM：DeepEP MoE all-to-all 在 SM103/GB300 **不可用**（issue #41687 仍 open），实测「通信占 decode kernel 时间 ~93%」
 - SGLang：tcgen05 kernel 在 sm_103 失败 Xid 13（#34340 open）；MegaMoE 路径 `CUDA_ERROR_ILLEGAL_ADDRESS`（#37559 open）
 
-### 1.3 按模型给配方
+### 1.3 vLLM 的四个优化等级
+
+vLLM 提供 `-O0` 到 `-O3` 四档，用启动时间换稳态性能【vLLM】：
+
+| 等级              | 内容                                                      |
+| ----------------- | --------------------------------------------------------- |
+| `-O0`             | 无优化，启动最快                                          |
+| `-O1`             | 简单编译 + 快速融合 + PIECEWISE cudagraphs                |
+| **`-O2`（默认）** | **额外编译区间、额外融合、FULL_AND_PIECEWISE cudagraphs** |
+| `-O3`             | 激进优化（当前等于 O2）                                   |
+
+**三个官方给的启动加速手段**：
+
+1. **复用编译缓存**——`torch.compile` 产物存在 `VLLM_CACHE_ROOT`（默认 `~/.cache/vllm`），可跨机器拷贝、也可烤进镜像。设 `VLLM_FORCE_AOT_LOAD=1` 让缓存未命中时显式报错，而不是静默重编
+2. **`--kv-cache-memory` 跳过显存 profiling**——启动日志会打印能复现当前分配的精确值，下次启动传回去即可跳过测量与 CUDA graph 估算。该值只在同卡、同初始空闲显存下有效
+3. **`--enforce-eager` 跳过 CUDA graph**——启动最快，代价是稳态 decode 性能
+
+### 1.4 按模型给配方
 
 以下命令均来自官方 cookbook / model card，可直接作为起点。
 
@@ -130,7 +142,7 @@ python3 -m sglang.launch_server \
 
 ⚠️ **DSv4 的 HiCache host 层用 `--hicache-ratio`（host/device token 比）定容，不是 `--hicache-size`**。
 
-### 1.4 并行策略：从实践里读出的三条
+### 1.5 并行策略
 
 **① MLA 模型上，attention TP > 1 会复制 KV，不是切分。**
 
@@ -162,19 +174,45 @@ return max(1, total_num_kv_heads // parallel_config.tensor_parallel_size)
 
 **但并发低于 ~8 时反过来**：pipeline 填不满，TEP16 领先（1947 vs 1227），此时用 `--tp-size 16 --ep-size 16`。
 
-**② 大 MoE 的默认形态是 Attention DP + MoE EP**，不是单一 TP。
+**② vLLM 官方的「何时用哪种并行」**【vLLM】：
+
+| 策略   | 官方给的适用场景                                                       |
+| ------ | ---------------------------------------------------------------------- |
+| **TP** | 模型单卡装不下；或需要降低每卡权重占用，以腾出更多 KV 空间             |
+| **PP** | TP 已吃满但还要继续切；跨节点；很深很窄的模型                          |
+| **EP** | **MoE 专用**。设 `enable_expert_parallel=True`，用 EP 替代 MoE 层的 TP |
+| **DP** | 有足够 GPU 复制整个模型；要扩吞吐而非扩模型；多用户环境                |
+
+**SGLang 官方的表述更直接**：`Data parallelism is better for throughput. When there is enough GPU memory, always favor data parallelism for throughput.`【SGLang】所以大 MoE 的默认形态是 Attention DP + MoE EP，不是单一 TP。
 
 **③ GB300 跨 pod MNNVL 传输要加三个环境变量。**
 
-cookbook 原文：某些 GB300 集群上跨 pod NVLink 传 KV 会失败于 `nvlink_transport.cpp:497 Requested address ... not found!`，解法是在 prefill 和 decode 两侧的 `sglang serve` 前都加上：
+cookbook 原文：某些 GB300 集群上跨 pod NVLink 传 KV 会失败于 `nvlink_transport.cpp:497 Requested address ... not found!`，解法是在 prefill 和 decode 两侧的 `sglang serve` 前都加上【SGLang】：
 
 ```bash
 MC_FORCE_MNNVL=1 NCCL_MNNVL_ENABLE=1 NCCL_CUMEM_ENABLE=1
 ```
 
-### 1.5 PD 分离：先看厂商自己的数据
+### 1.6 CPU 与 NUMA：一条官方公式
 
-**vLLM 官方文档开篇直写：`Disaggregated prefill DOES NOT improve throughput`。**
+vLLM V1 是多进程架构，每个进程都要 CPU。官方给出的**最低物理核数公式**【vLLM】：
+
+```
+单 DP：至少 2 + N 个物理核（1 API server + 1 engine core + N GPU worker）
+多 DP：A + DP + N + (1 if DP > 1 else 0)
+```
+
+其中 `A` 是 API server 数（默认等于 DP），`N` 是 GPU 总数。官方举的例子：8 卡上 `DP=4, TP=2` → 4 API server + 4 engine core + 8 GPU worker + 1 DP coordinator = **17 个进程**。
+
+> **官方警告原文**：`Using fewer physical CPU cores than processes will cause contention and significantly degrade throughput and latency. The engine core process runs a busy loop and is particularly sensitive to CPU starvation.`
+
+⚠️ 注意是**物理核**：开了超线程的话，1 vCPU = 1 超线程 = 半个物理核，所以要 `2 × (2 + N)` 个 vCPU 起。
+
+**NUMA 绑定**：多路服务器上用 `--numa-bind`，vLLM 会自动探测 GPU-to-NUMA 映射并施加 `--cpunodebind=<node> --membind=<node>`。需要自定义时加 `--numa-bind-nodes` / `--numa-bind-cpus`。容器里可能需要 `--cap-add SYS_NICE`。
+
+### 1.7 PD 分离
+
+**先看官方的定性**：vLLM 文档开篇直写 `Disaggregated prefill DOES NOT improve throughput`【vLLM】。
 
 Dynamo 自己的 GB300 实测（Kimi-K3，agentic 负载）【NVIDIA】：
 
@@ -187,7 +225,7 @@ Dynamo 自己的 GB300 实测（Kimi-K3，agentic 负载）【NVIDIA】：
 
 **聚合部署的系统吞吐更高、TTFT 低 5–6 倍**；PD 分离只在 per-user 吞吐上赢。
 
-**它会减少 decode 侧的 KV 容量**（Dynamo 明文）：`Moving prefill to dedicated workers ... reserves GPUs for a pool whose KV cache is not used during decode`。而且两侧都付权重代价。
+**它会减少 decode 侧的 KV 容量**（Dynamo 明文）：`Moving prefill to dedicated workers ... reserves GPUs for a pool whose KV cache is not used during decode`。
 
 **Dynamo 明确拒绝给固定 P:D 比**：`Treat replica counts as a response to observed bottlenecks rather than as fixed ratios.`
 
@@ -223,16 +261,52 @@ requested_memory = math.ceil(init_snapshot.total_memory * cache_config.gpu_memor
 
 ⚠️ **TensorRT-LLM 用的是相反约定**：`free_gpu_memory_fraction` 分母是初始化时的**空闲**显存。跨引擎混用必错。
 
-### 2.2 精度：只到 FP8
+### 2.2 量化：官方推荐 `fp8_e4m3`
 
-| 档位                  | 结论                       |
-| --------------------- | -------------------------- |
-| **FP8（`fp8_e4m3`）** | ✅ 唯一可放心用。KV 池翻倍 |
-| **NVFP4 KV**          | ❌ **不进入任何生产配置**  |
+SGLang 官方手册有专门的 Best Practices 小节，三条【SGLang】：
+
+1. **优先用离线量化的模型**——scaling factor 已包含在 checkpoint 里
+2. **格式选 `fp8_e4m3`（推荐）**；`fp8_e5m2` 用于更大动态范围；`nvfp4` / `fp4_mx_block16` 用于最大显存节省（**实验性**）
+3. **确认 attention backend 支持**量化 KV
+
+**官方警告**：量化 KV 在 attention 里使用前要反量化，**如果反量化没有和 attention kernel 融合，性能会极慢**，可能抵消掉显存收益。
+
+**显存收益（官方数字）**【SGLang】：
+
+| 对比        | 可容纳 token 数 |
+| ----------- | --------------- |
+| FP4 vs BF16 | **≈ 3.56×**     |
+| FP4 vs FP8  | **≈ 1.78×**     |
+
+（已计入 block scaling factor 的额外开销）
+
+**精度对照表（官方实测，KV16 = BF16 / KV8 = FP8 E4M3 / KV4 = FP4 E2M1）**【SGLang】：
+
+| 模型             | 数据集       | KV16   | KV8    | KV4        |
+| ---------------- | ------------ | ------ | ------ | ---------- |
+| Qwen3-235B-A22B  | gsm8k        | 0.9168 | 0.9181 | 0.9186     |
+| Qwen3-235B-A22B  | aime25       | 0.7733 | 0.7333 | **0.6000** |
+| Qwen3-235B-A22B  | gpqa_diamond | 0.7010 | 0.6899 | 0.6778     |
+| DeepSeek-R1-0528 | gsm8k        | 0.9157 | 0.9154 | 0.9124     |
+| DeepSeek-R1-0528 | aime25       | 0.5067 | 0.4934 | **0.4000** |
+| DeepSeek-R1-0528 | gpqa_diamond | 0.7707 | 0.7697 | 0.7273     |
+| GPT-OSS-120B     | gsm8k        | 0.9161 | 0.9163 | 0.9152     |
+| GPT-OSS-120B     | aime25       | 0.7533 | 0.7667 | **0.3533** |
+| GPT-OSS-120B     | gpqa_diamond | 0.5081 | 0.5434 | **0.3202** |
+
+**官方给的三条结论**：
+
+- **简单数据集**（gsm8k）：FP4 在两种规模上都接近 FP8/BF16
+- **模型越大越能容忍 FP4**（200B+ 明显好于小模型）
+- **长上下文可能退化更明显**——量化误差会累积
+
+> 官方 Tip 原文：`Large models on simpler tasks typically show minimal degradation, while smaller models or complex reasoning tasks may require FP8 or BF16 for acceptable accuracy.`
+
+**工程含义**：`fp8_e4m3` 是安全默认；FP4 KV 只在「大模型 + 简单任务」上考虑，且必须自己复测。
 
 **FP8 在实践里的地位**——它不是可选项，是承重项。SGLang cookbook 写得很直接：`--kv-cache-dtype fp8_e4m3` **is load-bearing**，因为 bf16 KV 装不下每 replica 128 个请求。
 
-**NVFP4 KV 的禁用理由**（vLLM issue #55673，2026-09-07 开，**仍 open**）【实测】：
+**NVFP4 KV 的生产禁用理由**（vLLM issue #55673，2026-09-07 开，**仍 open**）【实测】：
 
 4×B200、Qwen3.5-397B、FlashInfer TRT-LLM attention，1,319 题 GSM8K：
 
@@ -244,9 +318,7 @@ requested_memory = math.ceil(init_snapshot.total_memory * cache_config.gpu_memor
 
 报告人排除了「高并发伪影」（两个并发上限都失败，FP8 对照组用同一后端）。**根因至今未定位**：PR #55670 修了一个真实的 scale 转换缺陷，打补丁后仍是 4.776%，说明该缺陷 `is not sufficient to explain this Qwen failure`。
 
-**适用范围**：特定几何（`head_dim=256 / 8 query heads / 1 KV head`）上的问题，不等于所有模型都会挂。但**同族、同后端、对照组正常、根因未定位**——足以构成生产禁用。
-
-SGLang 侧同一能力的官方 KV4 表也印证：GPT-OSS-120B 在 aime25 上从 KV8 的 0.7667 掉到 **KV4 的 0.3533**。
+**适用范围**：特定几何（`head_dim=256 / 8 query heads / 1 KV head`）上的问题，不等于所有模型都会挂。但**同族、同后端、对照组正常、根因未定位**，足以构成生产禁用。
 
 **两个记账陷阱**：
 
@@ -264,14 +336,67 @@ NVIDIA + SGLang 的 GB300 长文用的是朴素 576；vLLM 实际是 512 B FP8 N
 
 ### 2.3 分层：HiCache 的实际配置
 
-SGLang 的 HiCache 分三档，**每档都有一套 canonical 参数**，不要自己发挥【SGLang】：
+#### SGLang HiCache
 
-| 档位                          | 配置                                      | 说明                                                                                   |
-| ----------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| **L2（GPU + CPU）**           | Storage 留 `auto`                         | 冷 KV 页只溢出到 CPU pinned memory                                                     |
-| **L3（GPU + CPU + Storage）** | 选 `file` / `mooncake` / `hf3fs` / `nixl` | Playground 会生成 `page_first_direct` + `direct` IO backend + `wait_complete` 预取策略 |
+**先记住一条官方定性**【SGLang】：
 
-**写策略**默认 `write_through`（上游默认）；存储层慢时切 `write_back` / `write_through_selective` 用持久性换写速。
+> L1 和 L2 是**单实例私有**的；只有 L3 能共享。`Host memory cannot be pooled across instances or across hosts, not even for two instances on the same node.`
+
+所以想要跨实例复用，**必须配 `--hicache-storage-backend`**。`file` 后端默认落在节点本地 `/tmp/hicache`；`mooncake` / `hf3fs` / `nixl` / `aibrix` 在共享同一 namespace 时可达集群级。
+
+**核心参数与官方推荐值**【SGLang】：
+
+```bash
+--page-size 64                        # 缓存管理的页大小
+--enable-hierarchical-cache           # 启用 HiCache
+--hicache-ratio 2                     # host 内存为 GPU 显存的 2 倍
+--hicache-size 100                    # 直接给 GB 数，会覆盖上面的 ratio
+--hicache-io-backend kernel           # CPU↔GPU 搬运的 I/O 后端
+--hicache-write-policy write_through  # GPU→CPU 的写策略
+--hicache-storage-backend             # 可选：hf3fs / mooncake / nixl / aibrix
+```
+
+**内存布局的兼容性（官方）**：
+
+| 布局                | 兼容性                                                             |
+| ------------------- | ------------------------------------------------------------------ |
+| `page_first`        | **只兼容 `kernel` I/O 后端**；用 `direct` 会自动切到 `layer_first` |
+| `page_first_direct` | 专为 `direct` 后端设计，兼容 fa3，零拷贝性能与 `page_first` 相同   |
+| `layer_first`       | —                                                                  |
+
+**预取策略三选一（官方）**：
+
+| 策略            | 语义                         |
+| --------------- | ---------------------------- |
+| `best_effort`   | 需要时终止预取               |
+| `wait_complete` | 保证完整预取，缓存复用率更高 |
+| `timeout`       | 两者折中                     |
+
+**与 PD 分离的两种官方组合**：
+
+1. **仅 Prefill 开 HiCache**——让 Prefill 实例之间共享 KV（适合 SystemPrompt 场景）
+2. **Prefill 开 HiCache + Decode 开异步卸载**——让 Prefill 能复用 Decode 节点的 KV（适合多轮对话）
+
+第二种的 Decode 侧多一个 flag：`--disaggregation-decode-enable-offload-kvcache`。
+
+**异构 TP 支持**：不同部署用不同 TP（如 tp=4 和 tp=8）共享同一存储时，用 `--hicache-storage-backend-extra-config '{"tp_lcm_size": 8}'`，值是所有 TP size 的**最小公倍数**。
+
+**现成的 Mooncake 部署样例（官方）**：
+
+```bash
+export MOONCAKE_TE_META_DATA_SERVER="http://127.0.0.1:8080/metadata"
+export MOONCAKE_GLOBAL_SEGMENT_SIZE=816043786240
+export MOONCAKE_PROTOCOL="rdma"
+export MOONCAKE_DEVICE="$DEVICE_LIST"
+export MOONCAKE_MASTER=127.0.0.1:50051
+
+python3 -m sglang.launch_server \
+  --model-path $MODEL_PATH --tp 8 --page-size 64 \
+  --enable-hierarchical-cache --hicache-ratio 2 \
+  --hicache-mem-layout page_first_direct --hicache-io-backend direct \
+  --hicache-storage-backend mooncake --hicache-write-policy write_through \
+  --hicache-storage-prefetch-policy timeout
+```
 
 **一条容易踩的坑**（K3 的 DCP recipe）：**host 层还没完全 DCP-aware**——
 
@@ -279,10 +404,58 @@ SGLang 的 HiCache 分三档，**每档都有一套 canonical 参数**，不要�
 - L1+L2 **开着 Spec Decode 时**也丢；关掉 Spec Decode 才保留
 - 丢掉 DCP 之后，MLA KV 退回 TP 复制，**每请求的 KV 容量相应缩水**
 
-**真正的原生机制**（vLLM 侧）是 `OffloadingConnector` + `TieringOffloadingSpec`。要点：
+#### vLLM KV 卸载
 
-- 只有 CPU 一级 tier 能直连 GPU；二级 tier（`fs` / `obj` / `p2p`）**必须经 CPU 中转**
-- 单层（纯 CPU）配置时，**`cpu_bytes_to_use` 要大于 GPU KV 总量**——卸载是即时的，CPU tier 比 GPU 小就只是镜像，不提升命中率
+**两套 spec**，由 `kv_connector_extra_config` 的 `spec_name` 选【vLLM】：
+
+- `CPUOffloadingSpec`（默认）：单 CPU 层，完成的 GPU block 拷进 pinned host memory
+- `TieringOffloadingSpec`：多级，CPU 主层 + 一个或多个二级层
+
+**关键约束（官方）**：`Only the CPU primary tier has direct GPU access. Secondary tiers cannot read from or write to GPU memory; all GPU↔secondary transfers are staged through the CPU primary tier.`
+
+**单层（纯 CPU）最小配置**：
+
+```bash
+vllm serve <model> \
+  --kv-transfer-config '{
+    "kv_connector": "OffloadingConnector",
+    "kv_role": "kv_both",
+    "kv_connector_extra_config": {
+      "block_size": 64,
+      "cpu_bytes_to_use": 1000000000
+    }
+  }'
+```
+
+**多层（CPU + 文件系统）**：
+
+```bash
+vllm serve <model> \
+  --kv-transfer-config '{
+    "kv_connector": "OffloadingConnector",
+    "kv_role": "kv_both",
+    "kv_connector_extra_config": {
+      "spec_name": "TieringOffloadingSpec",
+      "cpu_bytes_to_use": 10737418240,
+      "block_size": 16,
+      "eviction_policy": "lru",
+      "secondary_tiers": [
+        {"type": "fs", "root_dir": "/mnt/kv_cache",
+         "n_read_threads": 32, "n_write_threads": 16}
+      ]
+    }
+  }'
+```
+
+**官方的 Tuning Tips（原文照译）**【vLLM】：
+
+- `cpu_bytes_to_use` 越大越好——更大的 CPU 层意味着更少去访问更慢的二级层、命中率更高。**这个值是所有 worker 的总和，不是每 worker**
+- **单层（纯 CPU）配置时，`cpu_bytes_to_use` 要大于 GPU KV 总量**。因为卸载是即时的，CPU 层比 GPU 小就只是镜像，不提升命中率
+- `block_size` / `blocks_per_chunk`：更大的卸载块减少簿记开销，但会加大查找粒度
+- **FS 线程数**：`n_read_threads` / `n_write_threads` 按存储能承受的并发调。**读在 prefill 路径上对延迟敏感，prefill 命中率高时多给读线程**
+- 共享 `root_dir` 的多实例：模型、`block_size`、并行布局、dtype 都一样才会共用一个 `<digest>` 子目录；改任何一项都会生成新目录，旧的成为孤儿（无害，可删）
+
+**跨实例共享的硬前提**：`PYTHONHASHSEED` 必须在所有实例上设成同一个固定值（如 `0`），否则每个进程的 block 内容哈希种子不同，**同样内容会算出不同文件名**。P2P 层会**强制校验**这一点——没设就启动失败，握手里发现对端值不同会被拒绝。
 
 **卸载的收益与代价（实测数据）**：
 
@@ -302,7 +475,7 @@ SGLang 的 HiCache 分三档，**每档都有一套 canonical 参数**，不要�
 
 ### 2.4 复用：两项已经被实测的收益
 
-**Prefix Caching / RadixAttention**
+**Prefix Caching / RadixAttention**：
 
 Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex session，~350,000 LLM steps）【实测】：
 
@@ -312,9 +485,11 @@ Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex sessio
 
 **一个直接可用的调参**：超时从 1 分钟提到 1 小时，命中率 85.4% → 98.6%，但存储比从 R=0.74 涨到 5.07（**约 7 倍**）。**大部分收益是便宜的**——5 分钟时已达 ~94% 命中，R≈1.9。
 
+**官方给的调度策略**【SGLang】：`--schedule-policy lpm`（longest prefix match）会重排请求以提升缓存命中，代价是调度开销增加——共享前缀多的负载用。
+
 **Radix cache 不是永远开着好**：K3 cookbook 明确——**对无前缀的流量（离线批处理、评测）关掉它**，因为一个请求占 4–5 个 state slot，关掉只占 1 个。
 
-**cache-aware 路由**
+**cache-aware 路由**：
 
 | 调度器                 | 输出 tok/s | TTFT p90    |
 | ---------------------- | ---------- | ----------- |
@@ -353,7 +528,7 @@ Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex sessio
 
 **Kimi-K3 on 8×B300 的现成配置**【NVIDIA model card】：
 
-```
+```bash
 --quantization modelopt_mixed --tensor-parallel-size 8
 --moe-backend flashinfer_trtllm --kv-cache-dtype fp8
 --max-model-len 196608 --max-num-seqs 32
@@ -388,19 +563,89 @@ return int(max_concurrency * max_model_len), max_concurrency
 
 **一条最好的单变量对照**（RTX 4090 / Qwen3-8B bf16）【提交者自测】：`max_num_batched_tokens` 从 2048 提到 8192，KV 池缩 10%，**p99 TTFT 涨 71%**（23.9s → 40.8s），goodput 从 54.7% 掉到 46.2%，而总吞吐不变。
 
+---
+
+## 三、官方调优方法
+
+### 3.1 SGLang：看日志里的三个数
+
+**启动后看 `available_gpu_mem`**【SGLang】：
+
+```
+[2025-08-11 17:17:03] max_total_num_tokens=665690, chunked_prefill_size=8192,
+max_prefill_tokens=16384, max_running_requests=4096, context_len=65536, available_gpu_mem=13.50 GB
+```
+
+官方判据：
+
+- **5–8 GB = 合适**（留给 activations 和 CUDA graph）
+- **10–20 GB = 太高**，调大 `--mem-fraction-static` 把内存给 KV
+- **太低 = 有 OOM 风险**，调小
+
+`mem_fraction_static = (模型权重 + KV cache pool) / GPU 显存容量`。官方给的实操法：**以 0.01 为步长往上加，直到你的负载出现 OOM**。
+
+**稳态看 `token usage` 和 `#queue-req`**【SGLang】：
+
+```
+Decode batch. #running-req: 233, #token: 370959, token usage: 0.82, cuda graph: True, gen throughput (token/s): 4594.01, #queue-req: 317
+```
+
+- `#queue-req` 健康区间 **100–2000**。**频繁看到 0 = 客户端提交太慢**
+- **`token usage > 0.9` 才算利用得好**。若 < 0.9 且 `#queue-req > 0`，说明服务端太保守，把 `--schedule-conservativeness` 降到 **0.3**
+- 反之若频繁看到 `KV cache pool is full. Retract requests.`，把 `--schedule-conservativeness` 提到 **1.3**。**每分钟约 1 次是可以接受的**
+
+**OOM 的三条处置（官方）**：
+
+- prefill 时 OOM → `--chunked-prefill-size` 降到 **4096 或 2048**（代价：长 prompt 的 prefill 变慢）
+- decode 时 OOM → 降 `--max-running-requests`
+- 都可以再降 `--mem-fraction-static` 到 **0.8 或 0.7**（代价：限制并发上限、降峰值吞吐）
+
+**CUDA graph 上限**：默认只对小 batch（<160 或 256）开。大 TP 的模型上 CUDA graph 到 512 或 768 仍有用，可调大 `--cuda-graph-max-bs-decode`，但要同时降 `--mem-fraction-static`。
+
 **`--mem-fraction-static` 的实践取值**：SGLang 在 B300 上给 VLM 的保守起点是 **0.82**（`raise it toward 0.85 if startup reports insufficient memory`）；大 MoE 吞吐档用 0.88–0.92。DSv4 的 DSpark 路径明确要 `Keep --mem-fraction-static 0.90 to leave enough headroom for the batch-256 verify graph`。
+
+### 3.2 vLLM：preemption 的四条处置
+
+出现这条 warning 说明 KV 不够【vLLM】：
+
+```
+WARNING ... Sequence group 0 is preempted by PreemptionMode.RECOMPUTE mode
+because there is not enough KV cache space. This can affect the end-to-end
+performance. Increase gpu_memory_utilization or tensor_parallel_size to
+provide more KV cache memory.
+```
+
+**官方给的四个动作**：
+
+1. 提高 `gpu_memory_utilization`
+2. 降低 `max_num_seqs` 或 `max_num_batched_tokens`
+3. 提高 `tensor_parallel_size`（切分权重腾出显存，但同步开销上升）
+4. 提高 `pipeline_parallel_size`（层分到多卡，但有延迟惩罚）
+
+**监控**：`vllm:num_preemptions`。V1 的默认 preemption 模式是 `RECOMPUTE` 而非 `SWAP`。
+
+### 3.3 chunked prefill 的调参
+
+vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
+
+- **调小**（如 2048）→ ITL 更好（prefill 更少打断 decode）
+- **调大** → TTFT 更好
+- **官方推荐**：`For optimal throughput, we recommend setting max_num_batched_tokens > 8192 especially for smaller models on large GPUs`
 
 ---
 
-## 三、上线前必测项
+## 四、上线前必测项
 
-| #   | 项                                                     | 理由                                                                                                                                                                            |
-| --- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ①   | **KV 量化的 ≥100K needle retrieval**                   | vLLM #56700 原话：`Wrong interpretation passes short-prompt smoke tests and only fails at ≥100K needle retrieval — silent numerical corruption.` **短 prompt 冒烟测试等于没测** |
-| ②   | 官方镜像 `TORCH_CUDA_ARCH_LIST` 无 `10.3` 的长期稳定性 | 建议自建镜像显式加入                                                                                                                                                            |
-| ③   | TRT-LLM arm64/sbsa 容器可用性（若用 GB300）            | NGC API 403，无法枚举                                                                                                                                                           |
-| ④   | 长上下文任务的**忠实度**回归                           | 独立论文：INT4 KV 下 `over 90% of faithfulness changes are negative, i.e., accuracy metrics are blind to this regression`                                                       |
-| ⑤   | 精度验收绑定 kernel backend 版本                       | 同一份 NVFP4 权重换 backend 差约 1 分 GSM8K                                                                                                                                     |
+| #   | 项                                                            | 理由                                                                                                                                                                            |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ①   | **KV 量化的 ≥100K needle retrieval**                          | vLLM #56700 原话：`Wrong interpretation passes short-prompt smoke tests and only fails at ≥100K needle retrieval — silent numerical corruption.` **短 prompt 冒烟测试等于没测** |
+| ②   | **物理核数 ≥ `2 + N`**（多 DP 用官方公式）                    | vLLM 官方：CPU 不足会 `significantly degrade throughput and latency`                                                                                                            |
+| ③   | **自建镜像显式加入 `10.3` arch**                              | 官方镜像的 `TORCH_CUDA_ARCH_LIST` 不含它                                                                                                                                        |
+| ④   | **`--disaggregation-decode-extra-slots` 显式设定**（若配 PD） | 不设则 32 请求以上默认归零                                                                                                                                                      |
+| ⑤   | **跨实例共享 KV 时统一 `PYTHONHASHSEED`**                     | vLLM 官方：否则同样内容算出不同文件名                                                                                                                                           |
+| ⑥   | **精度验收绑定 kernel backend 版本**                          | 同一份 NVFP4 权重换 backend 差约 1 分 GSM8K                                                                                                                                     |
+| ⑦   | **启动后确认 `available_gpu_mem` 落在 5–8 GB**                | SGLang 官方判据                                                                                                                                                                 |
+| ⑧   | **长上下文任务的忠实度回归**                                  | 独立论文：INT4 KV 下 `over 90% of faithfulness changes are negative, i.e., accuracy metrics are blind to this regression`                                                       |
 
 **另外两条来自 cookbook 的提醒**：
 
@@ -409,22 +654,10 @@ return int(max_concurrency * max_model_len), max_concurrency
 
 ---
 
-## 四、查不到（不编）
-
-1. 任何独立的、非厂商的 B300/GB300 KV 卸载基准（最好的独立工作只跑在 H100/RTX 上）
-2. 任何独立的 NVFP4-KV 长上下文基准
-3. 框架文档级的 FP8 vs BF16 MMLU/LongBench 对照表
-4. NVIDIA 官方的 KV Cache 容量计算公式（其 TCO 博客无任何 KV 尺寸公式）
-5. NVIDIA 的固定 P:D 比建议（Dynamo 明确拒绝给）
-6. PD 分离对 KV 总容量的净影响量化
-7. B300 显存带宽的口径：NVIDIA 博客写 8 TB/s，而仓库文档区分 HGX 7.7 / NVL72 8.0 TB/s，无法判定后者是否是有意的形态区分
-
----
-
 ## 附：三条收口判断
 
-1. **KV 量化只到 FP8。** NVFP4 KV 有未定位的灾难性精度 bug，不碰。
-2. **容量规划用实测 + 带 SLO 的 goodput**，别信 `GPU KV cache size` 那行日志，别用 288 GB 当分母，别按 576 B/token 算 MLA。
+1. **KV 量化只到 FP8。** `fp8_e4m3` 是 SGLang 官方明写的推荐值；FP4 KV 官方标为实验性，且 aime25 上有 0.75 → 0.35 的实测反例。
+2. **MLA 模型上用 DP，不用 TP。** 两家官方都写明 TP > 1 时 MLA KV 被复制；SGLang 的 Deep PP 实测差距达 2.75 倍。
 3. **第一杠杆是模型选型。** MLA 与 Qwen3-235B 的 GQA 差近 5 倍 per-token KV（40 KB vs 188 KB），量级大于任何量化手段。
 
 ---
@@ -433,7 +666,7 @@ return int(max_concurrency * max_model_len), max_concurrency
 
 - [KV Cache 技术体系](../kv_cache/README.md)——本文只讲 B300 上的配置实践，压缩、淘汰、卸载的机制原理见该目录
 - [显存估算](../memory_calc/README.md)——容量测算的方法与脚本
-- [vLLM 助力 DeepSeek 吞吐量飙升 5 倍](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)——WideEP、NVFP4/FP8 与 Weight Offloading v2 的原理拆解，本文 §1.4 的并行策略是它在部署侧的另一面
+- [vLLM 助力 DeepSeek 吞吐量飙升 5 倍](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)——WideEP、NVFP4/FP8 与 Weight Offloading v2 的原理拆解，本文 §1.5 的并行策略是它在部署侧的另一面
 - [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../deepseek-v41-flash-kv-compression.md)——模型架构侧的 KV 压缩（CSA2、FP4 main KV），与本文的引擎侧实践互补
 - [NVIDIA GB300 NVL72 架构解析](../../01_hardware_architecture/superchips/nvidia_gb300.md)——本文用到的显存口径在那一篇有完整的拓扑与带宽背景
 - [核心推理优化技术深度解析](../reference_design/03-核心推理优化技术深度解析.md)——KV Cache、Continuous Batching、量化等技术的原理层梳理
