@@ -1,6 +1,6 @@
 # B300 上的模型部署与 KV Cache：官方手册最佳实践
 
-**as-of 2026-09-15** ｜ 本文整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，以及厂商 model card 上跑通过的组合。§三 是唯一一节非手册内容——它按官方 cookbook 与 SGLang 源码，把 Kimi-K3 从 16 卡扩到 64 卡的三笔账（权重 / KV / 通信）逐轴算清楚。每条推荐都标了出处。
+**as-of 2026-09-15** ｜ 本文整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，以及厂商 model card 上跑通过的组合。§三 是唯一一节非手册内容：按官方 cookbook 与 SGLang 源码，把 Kimi-K3 从 16 卡扩到 64 卡的三笔账（权重 / KV / 通信）逐轴算清楚。每条推荐都标了出处。
 
 ## 口径与来源
 
@@ -20,7 +20,7 @@
 
 **① SM103 是独立 target，不是 SM100。**
 
-`sm_100a` 的 cubin 不能直接跑在 B300 上，必须走 `sm_100f` family 目标或 `sm_103a`。这是大量 `no kernel image is available` 事故的根因。**用 CUDA 13 镜像是充分条件**——不要去找所谓「SM103 专用 tag」，SGLang 安装页里 grep `SM103`/`B300` 是零命中。
+`sm_100a` 的 cubin 不能直接跑在 B300 上，必须走 `sm_100f` family 目标或 `sm_103a`。这是大量 `no kernel image is available` 事故的根因。**用 CUDA 13 镜像是充分条件**，不必去找所谓的「SM103 专用 tag」：SGLang 安装页里 grep `SM103`/`B300` 是零命中。
 
 **② INT8 在这块卡上不可用。**
 
@@ -59,9 +59,9 @@ vLLM 提供 `-O0` 到 `-O3` 四档，用启动时间换稳态性能【vLLM】：
 
 **三个官方给的启动加速手段**：
 
-1. **复用编译缓存**——`torch.compile` 产物存在 `VLLM_CACHE_ROOT`（默认 `~/.cache/vllm`），可跨机器拷贝、也可烤进镜像。设 `VLLM_FORCE_AOT_LOAD=1` 让缓存未命中时显式报错，而不是静默重编
-2. **`--kv-cache-memory` 跳过显存 profiling**——启动日志会打印能复现当前分配的精确值，下次启动传回去即可跳过测量与 CUDA graph 估算。该值只在同卡、同初始空闲显存下有效
-3. **`--enforce-eager` 跳过 CUDA graph**——启动最快，代价是稳态 decode 性能
+1. **复用编译缓存**：`torch.compile` 产物存在 `VLLM_CACHE_ROOT`（默认 `~/.cache/vllm`），可跨机器拷贝、也可烤进镜像。设 `VLLM_FORCE_AOT_LOAD=1` 让缓存未命中时显式报错，而不是静默重编
+2. **`--kv-cache-memory` 跳过显存 profiling**：启动日志会打印能复现当前分配的精确值，下次启动传回去即可跳过测量与 CUDA graph 估算。该值只在同卡、同初始空闲显存下有效
+3. **`--enforce-eager` 跳过 CUDA graph**：启动最快，代价是稳态 decode 性能
 
 ### 1.4 按模型给配方
 
@@ -98,7 +98,7 @@ sglang serve \
   --host 0.0.0.0 --port 30000
 ```
 
-扩展方式：**保持每 replica 的形状不变，只动 replica 数**。这个形状锁死在 8 卡——从 16 扩到 64 卡买到什么、买不到什么，见 §三。
+扩展方式：**保持每 replica 的形状不变，只动 replica 数**。这个形状锁死在 8 卡；从 16 扩到 64 卡买到什么、买不到什么，见 §三。
 
 | GPUs | B200/B300 节点 | `--tp-size` / `--ep-size` | `--dp-size` |
 | ---- | -------------- | ------------------------- | ----------- |
@@ -106,9 +106,9 @@ sglang serve \
 | 32   | 4×8            | 32                        | 4           |
 | 64   | 8×8            | 64                        | 8           |
 
-**两个关键 flag 的理由**：
+**这两个 flag 为什么必须给**：
 
-- `--kv-cache-dtype fp8_e4m3` **是承重的**——cookbook 原文：`bf16 KV does not fit 128 requests per replica`
+- `--kv-cache-dtype fp8_e4m3` 是承重的。cookbook 原文：`bf16 KV does not fit 128 requests per replica`
 - `--mamba-ssm-dtype bfloat16`：KDA state 的 dtype 决定每卡账单，只有 attention-TP 宽度、SSM dtype、cache 策略三个旋钮能动它
 
 #### DeepSeek-V4 系列
@@ -138,7 +138,7 @@ python3 -m sglang.launch_server \
 
 高并发档（DEP8 + DP attention，并发 64–160）换 `--dp 8 --enable-dp-attention --ep-size 8 --mem-fraction-static 0.88 --swa-full-tokens-ratio 0.02 --hicache-ratio 8`，并把 `--chunked-prefill-size` 提到 49152。
 
-⚠️ **`--chunked-prefill-size` 是全局预算，会被 `--dp` 均分**——上面那个 49152 除以 dp8 才是每 rank 的 6144。
+⚠️ **`--chunked-prefill-size` 是全局预算，会被 `--dp` 均分**：上面那个 49152 除以 dp8 才是每 rank 的 6144。
 
 ⚠️ **DSv4 的 HiCache host 层用 `--hicache-ratio`（host/device token 比）定容，不是 `--hicache-size`**。
 
@@ -157,7 +157,7 @@ if self.use_mla:
 return max(1, total_num_kv_heads // parallel_config.tensor_parallel_size)
 ```
 
-注意 GQA 分支：**KV heads 少于 TP 时也是「复制」**——Qwen3-235B（4 个 KV head）上开 TP8，8 卡各存一份完整副本。
+注意 GQA 分支：**KV heads 少于 TP 时也是「复制」**：Qwen3-235B（4 个 KV head）上开 TP8，8 卡各存一份完整副本。
 
 **SGLang cookbook 把这条写成了 Deep PP 的依据**：Deep PP 用 `--tp-size 1 --pp-size 8`（B300/GB300），因为
 
@@ -212,7 +212,7 @@ vLLM V1 是多进程架构，每个进程都要 CPU。官方给出的**最低物
 
 ### 1.7 PD 分离
 
-**先看官方的定性**：vLLM 文档开篇直写 `Disaggregated prefill DOES NOT improve throughput`【vLLM】。
+vLLM 文档开篇直写 `Disaggregated prefill DOES NOT improve throughput`【vLLM】。
 
 Dynamo 自己的 GB300 实测（Kimi-K3，agentic 负载）【NVIDIA】：
 
@@ -257,7 +257,7 @@ MIG 页脚注标明这些是 `Preliminary specifications`。**读规格表用 28
 requested_memory = math.ceil(init_snapshot.total_memory * cache_config.gpu_memory_utilization)
 ```
 
-默认 **0.92**（`vllm/config/cache.py:68`）——网上大量二手资料写 0.9，会算错。
+默认 **0.92**（`vllm/config/cache.py:68`）。网上大量二手资料写 0.9，会算错。
 
 ⚠️ **TensorRT-LLM 用的是相反约定**：`free_gpu_memory_fraction` 分母是初始化时的**空闲**显存。跨引擎混用必错。
 
@@ -265,7 +265,7 @@ requested_memory = math.ceil(init_snapshot.total_memory * cache_config.gpu_memor
 
 SGLang 官方手册有专门的 Best Practices 小节，三条【SGLang】：
 
-1. **优先用离线量化的模型**——scaling factor 已包含在 checkpoint 里
+1. **优先用离线量化的模型**：scaling factor 已包含在 checkpoint 里
 2. **格式选 `fp8_e4m3`（推荐）**；`fp8_e5m2` 用于更大动态范围；`nvfp4` / `fp4_mx_block16` 用于最大显存节省（**实验性**）
 3. **确认 attention backend 支持**量化 KV
 
@@ -298,13 +298,13 @@ SGLang 官方手册有专门的 Best Practices 小节，三条【SGLang】：
 
 - **简单数据集**（gsm8k）：FP4 在两种规模上都接近 FP8/BF16
 - **模型越大越能容忍 FP4**（200B+ 明显好于小模型）
-- **长上下文可能退化更明显**——量化误差会累积
+- **长上下文可能退化更明显**：量化误差会累积
 
 > 官方 Tip 原文：`Large models on simpler tasks typically show minimal degradation, while smaller models or complex reasoning tasks may require FP8 or BF16 for acceptable accuracy.`
 
 **工程含义**：`fp8_e4m3` 是安全默认；FP4 KV 只在「大模型 + 简单任务」上考虑，且必须自己复测。
 
-**FP8 在实践里的地位**——它不是可选项，是承重项。SGLang cookbook 写得很直接：`--kv-cache-dtype fp8_e4m3` **is load-bearing**，因为 bf16 KV 装不下每 replica 128 个请求。
+**FP8 在实践里是承重项。** SGLang cookbook 写得很直接：`--kv-cache-dtype fp8_e4m3` **is load-bearing**，因为 bf16 KV 装不下每 replica 128 个请求。
 
 **NVFP4 KV 的生产禁用理由**（vLLM issue #55673，2026-09-07 开，**仍 open**）【实测】：
 
@@ -338,7 +338,7 @@ NVIDIA + SGLang 的 GB300 长文用的是朴素 576；vLLM 实际是 512 B FP8 N
 
 #### SGLang HiCache
 
-**先记住一条官方定性**【SGLang】：
+SGLang 官方文档写得很直接【SGLang】：
 
 > L1 和 L2 是**单实例私有**的；只有 L3 能共享。`Host memory cannot be pooled across instances or across hosts, not even for two instances on the same node.`
 
@@ -374,8 +374,8 @@ NVIDIA + SGLang 的 GB300 长文用的是朴素 576；vLLM 实际是 512 B FP8 N
 
 **与 PD 分离的两种官方组合**：
 
-1. **仅 Prefill 开 HiCache**——让 Prefill 实例之间共享 KV（适合 SystemPrompt 场景）
-2. **Prefill 开 HiCache + Decode 开异步卸载**——让 Prefill 能复用 Decode 节点的 KV（适合多轮对话）
+1. **仅 Prefill 开 HiCache**：让 Prefill 实例之间共享 KV（适合 SystemPrompt 场景）
+2. **Prefill 开 HiCache + Decode 开异步卸载**：让 Prefill 能复用 Decode 节点的 KV（适合多轮对话）
 
 第二种的 Decode 侧多一个 flag：`--disaggregation-decode-enable-offload-kvcache`。
 
@@ -398,7 +398,7 @@ python3 -m sglang.launch_server \
   --hicache-storage-prefetch-policy timeout
 ```
 
-**一条容易踩的坑**（K3 的 DCP recipe）：**host 层还没完全 DCP-aware**——
+**一条容易踩的坑**（K3 的 DCP recipe）：host 层还没完全 DCP-aware。
 
 - L3 **总是**丢掉 DCP flag
 - L1+L2 **开着 Spec Decode 时**也丢；关掉 Spec Decode 才保留
@@ -449,13 +449,13 @@ vllm serve <model> \
 
 **官方的 Tuning Tips（原文照译）**【vLLM】：
 
-- `cpu_bytes_to_use` 越大越好——更大的 CPU 层意味着更少去访问更慢的二级层、命中率更高。**这个值是所有 worker 的总和，不是每 worker**
+- `cpu_bytes_to_use` 越大越好：更大的 CPU 层意味着更少去访问更慢的二级层、命中率更高。**这个值是所有 worker 的总和，不是每 worker**
 - **单层（纯 CPU）配置时，`cpu_bytes_to_use` 要大于 GPU KV 总量**。因为卸载是即时的，CPU 层比 GPU 小就只是镜像，不提升命中率
 - `block_size` / `blocks_per_chunk`：更大的卸载块减少簿记开销，但会加大查找粒度
 - **FS 线程数**：`n_read_threads` / `n_write_threads` 按存储能承受的并发调。**读在 prefill 路径上对延迟敏感，prefill 命中率高时多给读线程**
 - 共享 `root_dir` 的多实例：模型、`block_size`、并行布局、dtype 都一样才会共用一个 `<digest>` 子目录；改任何一项都会生成新目录，旧的成为孤儿（无害，可删）
 
-**跨实例共享的硬前提**：`PYTHONHASHSEED` 必须在所有实例上设成同一个固定值（如 `0`），否则每个进程的 block 内容哈希种子不同，**同样内容会算出不同文件名**。P2P 层会**强制校验**这一点——没设就启动失败，握手里发现对端值不同会被拒绝。
+**跨实例共享的硬前提**：`PYTHONHASHSEED` 必须在所有实例上设成同一个固定值（如 `0`），否则每个进程的 block 内容哈希种子不同，**同样内容会算出不同文件名**。P2P 层会**强制校验**这一点：没设就启动失败，握手里发现对端值不同会被拒绝。
 
 **卸载的收益与代价（实测数据）**：
 
@@ -479,15 +479,15 @@ vllm serve <model> \
 
 Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex session，~350,000 LLM steps）【实测】：
 
-- fresh tokens 只占 append tokens 的 **19.0%**——**约 81% 的 prefill 原则上可命中**
+- fresh tokens 只占 append tokens 的 **19.0%**，约 81% 的 prefill 原则上可命中
 - miss 是**空闲驱动**的：间隔超 5 分钟开始出现低命中，1 小时后几乎全 miss
 - **cache 命中占 agent 总成本 59.5%**，append 占 29.2%，output 只占 11.2%
 
-**一个直接可用的调参**：超时从 1 分钟提到 1 小时，命中率 85.4% → 98.6%，但存储比从 R=0.74 涨到 5.07（**约 7 倍**）。**大部分收益是便宜的**——5 分钟时已达 ~94% 命中，R≈1.9。
+**一个直接可用的调参**：超时从 1 分钟提到 1 小时，命中率 85.4% → 98.6%，但存储比从 R=0.74 涨到 5.07（**约 7 倍**）。**大部分收益是便宜的**：5 分钟时已达 ~94% 命中，R≈1.9。
 
-**官方给的调度策略**【SGLang】：`--schedule-policy lpm`（longest prefix match）会重排请求以提升缓存命中，代价是调度开销增加——共享前缀多的负载用。
+**官方给的调度策略**【SGLang】：`--schedule-policy lpm`（longest prefix match）会重排请求以提升缓存命中，代价是调度开销增加；共享前缀多的负载用。
 
-**Radix cache 不是永远开着好**：K3 cookbook 明确——**对无前缀的流量（离线批处理、评测）关掉它**，因为一个请求占 4–5 个 state slot，关掉只占 1 个。
+**Radix cache 不是永远开着好**：K3 cookbook 明确写了，**对无前缀的流量（离线批处理、评测）关掉它**，因为一个请求占 4–5 个 state slot，关掉只占 1 个。
 
 **cache-aware 路由**：
 
@@ -506,10 +506,10 @@ Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex sessio
 
 **harness 侧的硬规则**（可直接抄进开发规范）：
 
-- 保持 prompt 前缀稳定——**哪怕一个 token 的差异都会让从该点起的缓存全部失效**
+- 保持 prompt 前缀稳定：**哪怕一个 token 的差异都会让从该点起的缓存全部失效**
 - 系统提示开头放时间戳会直接杀掉命中率
 - 上下文保持 append-only
-- **序列化必须确定性**——很多库不保证 JSON key 顺序稳定，会静默破坏缓存
+- **序列化必须确定性**：很多库不保证 JSON key 顺序稳定，会静默破坏缓存
 
 ### 2.5 容量与并发：实际调过的数字
 
@@ -535,9 +535,9 @@ Agent 场景的真实命中率 **95.7%**（~4,300 个 Claude Code + Codex sessio
 --attention-backend FLASHINFER_MLA
 ```
 
-配套限制：`flashinfer_trtllm` **是强制的**——`auto-resolution never triggers the TRT-LLM deferred-finalize path, and flashinfer_cutlass lacks a SiTU kernel for routed experts`；且 `a pip-installed SGLang cannot load this checkpoint`（SGLang 路径需专用镜像）。
+配套限制：`flashinfer_trtllm` **是强制的**，`auto-resolution never triggers the TRT-LLM deferred-finalize path, and flashinfer_cutlass lacks a SiTU kernel for routed experts`；且 `a pip-installed SGLang cannot load this checkpoint`（SGLang 路径需专用镜像）。
 
-**DCP 换并发**【SGLang】：`--dcp-size 8` 去重 attention-TP 组内的 MLA KV——**同等引擎吞吐下并发上限 +72%，代价是 ITL 约 1.8×**。适用于上下文 ≥ ~16K，或每 replica 并发超过 128。
+**DCP 换并发**【SGLang】：`--dcp-size 8` 去重 attention-TP 组内的 MLA KV：**同等引擎吞吐下并发上限 +72%，代价是 ITL 约 1.8×**。适用于上下文 ≥ ~16K，或每 replica 并发超过 128。
 
 ### 2.6 常见误算
 
@@ -553,12 +553,12 @@ return int(max_concurrency * max_model_len), max_concurrency
 **按危害排序的误算清单**：
 
 1. **activation / CUDA graph 显存没算进去**（vLLM 现已默认开启估算并打印等效换算）
-2. **profiling 看不到的临时 buffer**——KDA 的 chunked-scan buffer 随 `max_num_batched_tokens` 线性增长、在 forward 内部瞬时分配，**启动 profiling 覆盖不到**；超出某个 chunk size 后引擎会在**服务中途**死掉
+2. **profiling 看不到的临时 buffer**：KDA 的 chunked-scan buffer 随 `max_num_batched_tokens` 线性增长、在 forward 内部瞬时分配，**启动 profiling 覆盖不到**；超出某个 chunk size 后引擎会在**服务中途**死掉
 3. **把 `max_model_len × 并发` 当 KV 需求**
-4. **preemption 在 OOM 之前先毁掉 p99**——读 `vllm:num_preemptions`，不要从日志推断
+4. **preemption 在 OOM 之前先毁掉 p99**：读 `vllm:num_preemptions`，不要从日志推断
 5. **hybrid attention 模型给滑窗层分配了全上下文 KV**（修复后 SWA 层改用 `SlidingWindowSpec`）
 6. **`max_num_seqs` 一职两用，且等待队列无界**（`--max-num-queued-tokens` 默认关闭）
-7. **block size 在 hybrid 模型上被逼到病态值**——GLM-5.3-Flash 上曾出现 block size 7808，一个 12-token 的 prompt 占掉 32.9% 的池
+7. **block size 在 hybrid 模型上被逼到病态值**：GLM-5.3-Flash 上曾出现 block size 7808，一个 12-token 的 prompt 占掉 32.9% 的池
 8. **按 576 B/token 算 MLA 容量**（实际打包是 656 B，少算 14%）
 
 **一条最好的单变量对照**（RTX 4090 / Qwen3-8B bf16）【提交者自测】：`max_num_batched_tokens` 从 2048 提到 8192，KV 池缩 10%，**p99 TTFT 涨 71%**（23.9s → 40.8s），goodput 从 54.7% 掉到 46.2%，而总吞吐不变。
@@ -568,6 +568,8 @@ return int(max_concurrency * max_model_len), max_concurrency
 ## 三、扩展账：Kimi-K3 从 16 卡到 64 卡
 
 §1.4 那张扩展表看着像「加卡」，但它生成的每一条命令都把**单 replica 的形状锁死在 8 卡**。这一章逐轴算清楚扩到 64 卡到底买到了什么。结论里最反直觉的一条是：**每卡的 KV 容量三档完全一样**。
+
+**这一章只有 Kimi-K3。** SGLang cookbook 的 16–64 卡大规模预设目前只给了这一个模型：`configs/` 下带「Cluster Size」面板的只有 `kimi-k3.jsx`。DeepSeek-V4 最大的 recipe 停在 2 节点 TP=16（`DeepSeek-V4.mdx:174`），没有可比的扩展表。下面的算法对任何 MLA + MoE 模型都成立，但只有 K3 有可核对的官方数字。
 
 ### 3.1 形状锁死在 8 卡
 
@@ -589,7 +591,7 @@ const dp = n / 8;
 
 8 正好是 B300 的单节点卡数。cookbook 把设计意图写明了：`The per-step KDA all-reduce stays within one 8-GPU B200/B300 node`（`Kimi-K3.mdx:397`）。KDA 每步都要 all-reduce，把 attnTP 钉在节点宽度上，这条延迟敏感的集合通信就永远不跨网络。
 
-代价是**扩展只加副本，不加宽度**。下面三节都是这句话的展开。
+代价是**扩展只加副本，不加宽度**。下面三节逐轴展开。
 
 ### 3.2 权重：唯一随 n 缩小的轴
 
@@ -606,7 +608,7 @@ K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` �
 
 n=8 那一行可以校验：AMD 的 perf 测试注释写 `roughly 192 GB of the 288 GB on each of the 8 GPUs`（`test_kimi_k3_eval_mi35x.py:19-21`），模型算出 186.2 GB，差 3%。
 
-**非专家那 2.0 GB 是地板**——再扩副本也压不掉，因为它只切 8 份。16 卡时它占权重的 2%，64 卡时占 8%。
+**非专家那 2.0 GB 是地板**：再扩副本也压不掉，因为它只切 8 份。16 卡时它占权重的 2%，64 卡时占 8%。
 
 ### 3.3 KV 与 state：一个字节都不变
 
@@ -634,7 +636,7 @@ KDA: 69 层 × (96/8 × 128 × 128 × 2 B + 3×3 × 96/8 × 128 × 2 B)
 | 32K    | 432.0 MiB | 110.8 MiB | **542.8 MiB** |
 | 128K   | 1728 MiB  | 110.8 MiB | **1838.8 MiB** |
 
-内存怎么分给这两个池也是固定的【源码】——`kv_cache_configurator.py:2493-2497`：
+内存怎么分给这两个池也是固定的【源码】，见 `kv_cache_configurator.py:2493-2497`：
 
 ```
 mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-ratio
@@ -642,7 +644,7 @@ mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-r
 
 按计算器默认 L = 11264 算，Peak Throughput 的 r ≈ 0.75（state 拿 43%，KV 拿 57%）。
 
-**开不开 DCP 只动 KV 那一半。** Peak Throughput 不开 DCP，于是这 432 MiB 在 attnTP 组内**被复制 8 份**——一个 32K 请求在集群里实占 **4.2 GiB**。Peak Capacity 的 `--dcp-size 8` 把这 8 份去重，state 的 110.8 MiB/卡一分不动。所以那一档的收益（官方口径：**同等引擎吞吐下并发 +72%，代价 ITL 约 1.8×**）全部来自 KV 去重，而 state 池仍是并发天花板——cookbook 的原话是 `The KDA state pool is the concurrency ceiling`（`Kimi-K3.mdx:391`）。
+**开不开 DCP 只动 KV 那一半。** Peak Throughput 不开 DCP，于是这 432 MiB 在 attnTP 组内**被复制 8 份**：一个 32K 请求在集群里实占 **4.2 GiB**。Peak Capacity 的 `--dcp-size 8` 把这 8 份去重，state 的 110.8 MiB/卡一分不动。所以那一档的收益（官方口径：**同等引擎吞吐下并发 +72%，代价 ITL 约 1.8×**）全部来自 KV 去重，而 state 池仍是并发天花板——cookbook 的原话是 `The KDA state pool is the concurrency ceiling`（`Kimi-K3.mdx:391`）。
 
 ### 3.4 通信：唯一变贵的轴
 
@@ -656,17 +658,17 @@ mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-r
 | 32   | 12.8          | 75%        | 9.56                |
 | 64   | 14.3          | 87.5%      | **12.47**           |
 
-跨节点的 fan-out 从 5.15 涨到 12.47，**2.4×**。这就是 16 → 64 卡真正的账单，而它不体现在权重表也不体现在 KV 表里。
+跨节点的 fan-out 从 5.15 涨到 12.47，**2.4×**。这笔开销不体现在权重表，也不体现在 KV 表里。
 
-⚠️ **一个前提要说清**：上表假设专家在 rank 间随机放置。若按 EPLB 连续/分组放置，一个 token 的 16 个专家在 16 卡和 32 卡下可能全落在 1 个 rank 内（`ceil(16 / (896/n))` = 1），64 卡才变 2 个——**放置策略的影响比 n 本身还大**。上表应视为随机放置下的上界。
+⚠️ **一个前提要说清**：上表假设专家在 rank 间随机放置。若按 EPLB 连续/分组放置，一个 token 的 16 个专家在 16 卡和 32 卡下可能全落在 1 个 rank 内（`ceil(16 / (896/n))` = 1），64 卡才变 2 个。**放置策略的影响比 n 本身还大**。上表应视为随机放置下的上界。
 
 ### 3.5 三个不能照搬的结论
 
-**①「64 卡 ~3K tok/s per GPU」不是这个预设的成绩。** cookbook 明说它属于另一个形状——`--dp-size` = 卡数、attention-TP 1、必须 288 GB 卡、radix 强制关闭，并且 `is not a preset`（`Kimi-K3.mdx:401`）。拿它当 64 卡预设的预期会严重高估。
+**①「64 卡 ~3K tok/s per GPU」不是这个预设的成绩。** cookbook 明说它属于另一个形状：`--dp-size` = 卡数、attention-TP 1、必须 288 GB 卡、radix 强制关闭，并且 `is not a preset`（`Kimi-K3.mdx:401`）。拿它当 64 卡预设的预期会严重高估。
 
 **② 别给 DCP 叠 EP a2a。** `Don't use EP with an a2a backend: a2a buffers reclaim the KV that DCP buys`（`Kimi-K3.mdx:191`）。两者抢的是同一块显存。
 
-**③ 绝对并发数本文不给。** 从 n=8 反推时可以看到：静态预算里除了权重还有约 **36 GB 的非权重预留**（CUDA graph + activation）——纯用 state 池反算 B300 1×8 Balanced 公布的 101 并发会差 3.7 倍，补上这个预留才自洽。而这个预留依赖 batch 和 graph 捕获配置，仓库里没有可引用的数字。所以 §3.2 那张表的「权重/GPU」是下限，真正能分给两个池的还要再扣掉它。
+**③ 绝对并发数本文不给。** 从 n=8 反推时可以看到：静态预算里除了权重还有约 **36 GB 的非权重预留**（CUDA graph + activation）。纯用 state 池反算 B300 1×8 Balanced 公布的 101 并发会差 3.7 倍，补上这个预留才自洽。而这个预留依赖 batch 和 graph 捕获配置，仓库里没有可引用的数字。所以 §3.2 那张表的「权重/GPU」是下限，能分给两个池的还要再扣掉它。
 
 ---
 
@@ -754,7 +756,7 @@ vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
 
 **另外两条来自 cookbook 的提醒**：
 
-- **B300 1×8 上只有 `Unified` 的 Low-Latency 与 Balanced 两格是 Verified**，其余全部标 `Final Verification In Progress`——「treat those as starting points to verify」
+- **B300 1×8 上只有 `Unified` 的 Low-Latency 与 Balanced 两格是 Verified**，其余全部标 `Final Verification In Progress`：「treat those as starting points to verify」
 - **大规模预设没有一个在最终权重上跑过完整 serving round**：`the constants derive from measured single- and dual-node rounds plus a 64-GPU sweep. Validate throughput and accuracy on your workload before committing a fleet.`
 
 ---
