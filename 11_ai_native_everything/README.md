@@ -53,7 +53,7 @@ AI 作为"一等协作者"参与工程：开发者提供意图、约束、契约
 
 以"认知性质决定技术分层"为唯一裁断准则，将业务能力收敛为 Agent / Skill / Tool 三层，并在共享治理平面上落地七项工程实践。从真实电力现货交易场景推导完整链路。
 
-> 📂 详见：[ai-native-devops/ai-native-architecture](https://github.com/ForceInjection/ai-native-devops/tree/main/ai-native-architecture)（[在线版](https://forceinjection.github.io/ai-native-devops/ai-native-architecture)）
+> 📂 详见：[ai-native-devops/ai-native-architecture](https://github.com/ForceInjection/ai-native-devops/tree/main/ai-native-architecture)（[在线版](https://forceinjection.github.io/ai-native-devops/ai-native-architecture/ai-native-architecture.html)）
 
 **三问决策启发法**：① 能否用非 LLM 系统可验证完成？→ Tool（MCP 暴露）；② 是否固定流程只需编排？→ Skill；③ 是否需在新颖情况下决定下一步？→ Agent
 
@@ -82,7 +82,16 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 4. 按角色推荐阅读路径
+## 4. FDE：把 AI 能力交付到业务现场
+
+前三节讲的是 AI 如何进入**开发流程**与**应用架构**。还有一条线：AI 如何进入**客户的业务流程**。这一步发生在组织边界之外，靠的不只是工具链，还有人的派驻、语义层的沉淀和交付模式的设计。
+
+- **[模型不稀缺了，稀缺的是把模型塞进业务的人](fde/forward-deployed-engineer.md)** — 从 80/95/99 规律出发，讲清 FDE 是什么、不是什么（不是售前、不是驻场外包、不是咨询顾问、不是产品工程师）；为什么 AI 同时拉低了知识蒸馏、定制开发和复合型人才供给三道成本门槛，让一个 2003 年就存在的角色在 2026 年成为最缺的岗位；以及本体层、Skill 与连接器如何构成规模化的地基。含腾讯研究院报告、范冰开源手册与一线从业者实录三份材料的用法指引
+  - 源笔记：[腾讯研究院《FDE模式行业观察与实践》](fde/references/01-腾讯研究院-FDE模式行业观察与实践.md) · [范冰《前线部署工程师（FDE）》](fde/references/02-范冰-FDE开源手册.md) · [Jove Zhong《我在 AI 异世界重生为 FDE》](fde/references/03-Jove-北美AI-Agent公司一线实录.md)
+
+---
+
+## 5. 按角色推荐阅读路径
 
 | 角色             | 推荐入口                                                           |
 | ---------------- | ------------------------------------------------------------------ |
@@ -99,5 +108,5 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 - **[08_agentic_system](../08_agentic_system/README.md)** — Agent 系统全栈工程，补充单 Agent 内部机制与基础设施
 - **[04_cloud_native_ai_platform](../04_cloud_native_ai_platform/README.md)** — Tool 层（MCP 暴露）与 DevOps 实践所需的集群底座
 - **[06_llm_theory_and_fundamentals](../06_llm_theory_and_fundamentals/README.md)** — LLM 理论基础，影响 Agent 层推理成本与性能边界
-- **[domain-driven-design-skills](https://github.com/domain-driven-design-skills)** — DDD 建模 Skill 集，覆盖战略/战术建模与 OpenSpec 桥接
+- **[domain-driven-design-skills](https://github.com/ForceInjection/domain-driven-design-skills)** — DDD 建模 Skill 集，覆盖战略/战术建模与 OpenSpec 桥接
 - **[OpenSpec-practise](https://github.com/ForceInjection/OpenSpec-practise)** — 规范驱动开发工作流，含 `proposal.md` / `design.md` / `tasks.md` / `specs/` 及 `/opsx:*` 指令体系

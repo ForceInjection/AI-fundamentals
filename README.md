@@ -773,6 +773,12 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 - [驾驭工程](98_llm_programming/Harness_Engineering.md) - 深度解析如何构建驾驭系统，提升 AI 编程助手的可控性与效能。
 - [OpenSpec 实战指南](https://github.com/ForceInjection/OpenSpec-practise/blob/main/README.md) - Spec 驱动开发 (Spec-Driven Development) 的工程实践，演示了"意图 → Spec → AI → 代码 & 验证"的新一代开发工作流。
 
+### 13.2 把 AI 交付到客户业务现场
+
+AI 进入**开发流程**与**应用架构**之外，还有一条线：进入**客户的业务流程**。这一步发生在组织边界之外，靠的不只是工具链，还有人的派驻、语义层的沉淀和交付模式的设计。
+
+- [模型不稀缺了，稀缺的是把模型塞进业务的人](11_ai_native_everything/fde/forward-deployed-engineer.md) - 从 80/95/99 规律出发讲清 FDE：是什么、不是什么（不是售前、不是驻场外包、不是咨询顾问、不是产品工程师）；三道成本门槛如何被 AI 拉低；本体层、Skill 与连接器如何构成规模化的地基。含腾讯研究院报告与范冰开源手册两份材料的用法指引
+
 ---
 
 ## Buy Me a Coffee
