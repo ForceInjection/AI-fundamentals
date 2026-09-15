@@ -538,7 +538,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [输出差了一点点？用 logprobs 分清「噪声」还是「bug」](09_inference_system/deployment/logprobs-precision-diagnosis.md) - logprobs 精度判别与推理排错实战
 - [DeepSeek-V3 H20 推理优化：基于 vLLM 源码的深度分析](09_inference_system/deployment/deepseek_v3_h20_vllm_deep_dive.md) - PD 分离、EPLB、DP 适配、MTP 加速、FP8 量化的源码级分析
 - [Qwen2-VL-7B 华为昇腾部署](09_inference_system/deployment/qwen2_vl_7b_huawei.md) - 国产硬件平台的部署优化
-- [B300 上的模型部署与 KV Cache：官方手册最佳实践](09_inference_system/deployment/b300-deployment-and-kv-cache.md) - vLLM/SGLang 官方手册的推荐配置与调优判据：SM103 三道门槛、Kimi-K3/DeepSeek-V4 启动配方、-O0~-O3 与 2+N 物理核公式、KV 量化官方精度表、HiCache 三档配置、NVFP4 KV 禁用理由
+- [B300 上的模型部署与 KV Cache：官方手册最佳实践](09_inference_system/deployment/b300-deployment-and-kv-cache.md) - vLLM/SGLang 官方手册的推荐配置与调优判据：SM103 三道门槛、Kimi-K3/DeepSeek-V4 启动配方、-O0~-O3 与 2+N 物理核公式、KV 量化官方精度表、HiCache 三档配置、NVFP4 KV 禁用理由；含 §三 K3 从 16 卡到 64 卡的权重/KV/通信三笔账
 
 ### 9.8 DeepSeek 专题
 

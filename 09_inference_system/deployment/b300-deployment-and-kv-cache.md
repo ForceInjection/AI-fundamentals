@@ -1,6 +1,6 @@
 # B300 上的模型部署与 KV Cache：官方手册最佳实践
 
-**as-of 2026-09-15** ｜ 本文整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，以及厂商 model card 上跑通过的组合。每条推荐都标了出处。
+**as-of 2026-09-15** ｜ 本文整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，以及厂商 model card 上跑通过的组合。§三 是唯一一节非手册内容——它按官方 cookbook 与 SGLang 源码，把 Kimi-K3 从 16 卡扩到 64 卡的三笔账（权重 / KV / 通信）逐轴算清楚。每条推荐都标了出处。
 
 ## 口径与来源
 
@@ -98,7 +98,7 @@ sglang serve \
   --host 0.0.0.0 --port 30000
 ```
 
-扩展方式：**保持每 replica 的形状不变，只动 replica 数**。
+扩展方式：**保持每 replica 的形状不变，只动 replica 数**。这个形状锁死在 8 卡——从 16 扩到 64 卡买到什么、买不到什么，见 §三。
 
 | GPUs | B200/B300 节点 | `--tp-size` / `--ep-size` | `--dp-size` |
 | ---- | -------------- | ------------------------- | ----------- |
@@ -197,7 +197,7 @@ MC_FORCE_MNNVL=1 NCCL_MNNVL_ENABLE=1 NCCL_CUMEM_ENABLE=1
 
 vLLM V1 是多进程架构，每个进程都要 CPU。官方给出的**最低物理核数公式**【vLLM】：
 
-```
+```text
 单 DP：至少 2 + N 个物理核（1 API server + 1 engine core + N GPU worker）
 多 DP：A + DP + N + (1 if DP > 1 else 0)
 ```
@@ -565,13 +565,118 @@ return int(max_concurrency * max_model_len), max_concurrency
 
 ---
 
-## 三、官方调优方法
+## 三、扩展账：Kimi-K3 从 16 卡到 64 卡
 
-### 3.1 SGLang：看日志里的三个数
+§1.4 那张扩展表看着像「加卡」，但它生成的每一条命令都把**单 replica 的形状锁死在 8 卡**。这一章逐轴算清楚扩到 64 卡到底买到了什么。结论里最反直觉的一条是：**每卡的 KV 容量三档完全一样**。
+
+### 3.1 形状锁死在 8 卡
+
+预设的生成逻辑在 `kimi-k3.jsx:975-987`，两行决定一切：
+
+```js
+const dp = n / 8;
+`--tp-size ${n}`, `--ep-size ${n}`,
+...(dp > 1 ? ["--enable-dp-attention", `--dp-size ${dp}`, "--enable-dp-lm-head"] : []),
+```
+
+`--tp-size` 和 `--ep-size` 都等于卡数 n，`--dp-size` 等于 `n/8`。于是 attention-TP 宽度 = `tp/dp` **恒等于 8**：
+
+| GPUs | `--tp-size` / `--ep-size` | `--dp-size` | **attnTP = tp/dp** | 专家/GPU（896/n） | B300 节点数 |
+| ---- | ------------------------- | ----------- | ------------------ | ----------------- | ----------- |
+| 16   | 16                        | 2           | **8**              | 56                | 2           |
+| 32   | 32                        | 4           | **8**              | 28                | 4           |
+| 64   | 64                        | 8           | **8**              | 14                | 8           |
+
+8 正好是 B300 的单节点卡数。cookbook 把设计意图写明了：`The per-step KDA all-reduce stays within one 8-GPU B200/B300 node`（`Kimi-K3.mdx:397`）。KDA 每步都要 all-reduce，把 attnTP 钉在节点宽度上，这条延迟敏感的集合通信就永远不跨网络。
+
+代价是**扩展只加副本，不加宽度**。下面三节都是这句话的展开。
+
+### 3.2 权重：唯一随 n 缩小的轴
+
+K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` 等多处硬编码），routed expert 走 latent 3584（`kimi_k3.py:661-663`），896 routed expert + 1 shared，top-k = 16。checkpoint 是 MXFP4，**约 1.5 TB**（`test_kimi_k3_eval_mi35x.py:19-21`）。
+
+按逐投影形状累加，attention + embedding 部分约 **16.3 GB**（非官方数字，估算），剩下 ≈ 1.474 TB 全是专家。**专家按 EP = n 切，非专家按 attnTP = 8 切**：
+
+| GPUs | 专家/GPU | 专家权重 | 非专家权重 | **权重/GPU** |
+| ---- | -------- | -------- | ---------- | ------------ |
+| 8    | 112      | 184.2 GB | 2.0 GB     | **186.2 GB** |
+| 16   | 56       | 92.1 GB  | 2.0 GB     | **94.1 GB**  |
+| 32   | 28       | 46.1 GB  | 2.0 GB     | **48.1 GB**  |
+| 64   | 14       | 23.0 GB  | 2.0 GB     | **25.1 GB**  |
+
+n=8 那一行可以校验：AMD 的 perf 测试注释写 `roughly 192 GB of the 288 GB on each of the 8 GPUs`（`test_kimi_k3_eval_mi35x.py:19-21`），模型算出 186.2 GB，差 3%。
+
+**非专家那 2.0 GB 是地板**——再扩副本也压不掉，因为它只切 8 份。16 卡时它占权重的 2%，64 卡时占 8%。
+
+### 3.3 KV 与 state：一个字节都不变
+
+这是全篇最反直觉的一条。K3 的 KV 几何在 SGLang 计算器源码里写死了（`_kimi_k3_mamba_ratio_calculator.jsx:117-126`）：
+
+```
+MLA: 24 层 × (512 + 64) × 1 B   = 13,824 B/token        （FP8）
+KDA: 69 层 × (96/8 × 128 × 128 × 2 B + 3×3 × 96/8 × 128 × 2 B)
+                                = 27.69 MiB/slot         （bf16, attnTP=8）
+```
+
+每请求占几个 slot 由**缓存策略**决定，与 n 无关【源码】：`kv_cache_configurator.py:167-172` 给出 `base = 3`，`extra_buffer_lazy` + overlap scheduler 给 `+1`，共 **4 个 slot**。预设钉的正是 `--mamba-radix-cache-strategy extra_buffer_lazy`。
+
+| 项                        | 16 卡          | 32 卡 | 64 卡 |
+| ------------------------- | -------------- | ----- | ----- |
+| 每卡 MLA KV               | 13,824 B/token | **同** | **同** |
+| 每卡 KDA state            | 27.69 MiB/slot | **同** | **同** |
+| **每请求 state（4 slot）** | **110.8 MiB**  | **同** | **同** |
+
+单请求总账（FP8 KV + bf16 state），三档共用同一组数字：
+
+| 上下文 | KV        | state     | **合计**      |
+| ------ | --------- | --------- | ------------- |
+| 8K     | 108.0 MiB | 110.8 MiB | **218.8 MiB** |
+| 32K    | 432.0 MiB | 110.8 MiB | **542.8 MiB** |
+| 128K   | 1728 MiB  | 110.8 MiB | **1838.8 MiB** |
+
+内存怎么分给这两个池也是固定的【源码】——`kv_cache_configurator.py:2493-2497`：
+
+```
+mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-ratio
+```
+
+按计算器默认 L = 11264 算，Peak Throughput 的 r ≈ 0.75（state 拿 43%，KV 拿 57%）。
+
+**开不开 DCP 只动 KV 那一半。** Peak Throughput 不开 DCP，于是这 432 MiB 在 attnTP 组内**被复制 8 份**——一个 32K 请求在集群里实占 **4.2 GiB**。Peak Capacity 的 `--dcp-size 8` 把这 8 份去重，state 的 110.8 MiB/卡一分不动。所以那一档的收益（官方口径：**同等引擎吞吐下并发 +72%，代价 ITL 约 1.8×**）全部来自 KV 去重，而 state 池仍是并发天花板——cookbook 的原话是 `The KDA state pool is the concurrency ceiling`（`Kimi-K3.mdx:391`）。
+
+### 3.4 通信：唯一变贵的轴
+
+**不变的那半**：KDA 的 per-step all-reduce 永远在 attnTP = 8 的组内，就是一个 B300 节点。从 16 卡扩到 64 卡，这条一个字不变。
+
+**变贵的那半**：MoE all-to-all。一个 token 的 top-k = 16 个专家散落在 n 个 rank 上，期望命中的不同 rank 数是 `n × (1 − (1 − 1/n)^16)`：
+
+| GPUs | 期望目的 rank | 跨节点占比 | **跨节点目的 rank** |
+| ---- | ------------- | ---------- | ------------------- |
+| 16   | 10.3          | 50%        | 5.15                |
+| 32   | 12.8          | 75%        | 9.56                |
+| 64   | 14.3          | 87.5%      | **12.47**           |
+
+跨节点的 fan-out 从 5.15 涨到 12.47，**2.4×**。这就是 16 → 64 卡真正的账单，而它不体现在权重表也不体现在 KV 表里。
+
+⚠️ **一个前提要说清**：上表假设专家在 rank 间随机放置。若按 EPLB 连续/分组放置，一个 token 的 16 个专家在 16 卡和 32 卡下可能全落在 1 个 rank 内（`ceil(16 / (896/n))` = 1），64 卡才变 2 个——**放置策略的影响比 n 本身还大**。上表应视为随机放置下的上界。
+
+### 3.5 三个不能照搬的结论
+
+**①「64 卡 ~3K tok/s per GPU」不是这个预设的成绩。** cookbook 明说它属于另一个形状——`--dp-size` = 卡数、attention-TP 1、必须 288 GB 卡、radix 强制关闭，并且 `is not a preset`（`Kimi-K3.mdx:401`）。拿它当 64 卡预设的预期会严重高估。
+
+**② 别给 DCP 叠 EP a2a。** `Don't use EP with an a2a backend: a2a buffers reclaim the KV that DCP buys`（`Kimi-K3.mdx:191`）。两者抢的是同一块显存。
+
+**③ 绝对并发数本文不给。** 从 n=8 反推时可以看到：静态预算里除了权重还有约 **36 GB 的非权重预留**（CUDA graph + activation）——纯用 state 池反算 B300 1×8 Balanced 公布的 101 并发会差 3.7 倍，补上这个预留才自洽。而这个预留依赖 batch 和 graph 捕获配置，仓库里没有可引用的数字。所以 §3.2 那张表的「权重/GPU」是下限，真正能分给两个池的还要再扣掉它。
+
+---
+
+## 四、官方调优方法
+
+### 4.1 SGLang：看日志里的三个数
 
 **启动后看 `available_gpu_mem`**【SGLang】：
 
-```
+```text
 [2025-08-11 17:17:03] max_total_num_tokens=665690, chunked_prefill_size=8192,
 max_prefill_tokens=16384, max_running_requests=4096, context_len=65536, available_gpu_mem=13.50 GB
 ```
@@ -586,7 +691,7 @@ max_prefill_tokens=16384, max_running_requests=4096, context_len=65536, availabl
 
 **稳态看 `token usage` 和 `#queue-req`**【SGLang】：
 
-```
+```bash
 Decode batch. #running-req: 233, #token: 370959, token usage: 0.82, cuda graph: True, gen throughput (token/s): 4594.01, #queue-req: 317
 ```
 
@@ -604,11 +709,11 @@ Decode batch. #running-req: 233, #token: 370959, token usage: 0.82, cuda graph: 
 
 **`--mem-fraction-static` 的实践取值**：SGLang 在 B300 上给 VLM 的保守起点是 **0.82**（`raise it toward 0.85 if startup reports insufficient memory`）；大 MoE 吞吐档用 0.88–0.92。DSv4 的 DSpark 路径明确要 `Keep --mem-fraction-static 0.90 to leave enough headroom for the batch-256 verify graph`。
 
-### 3.2 vLLM：preemption 的四条处置
+### 4.2 vLLM：preemption 的四条处置
 
 出现这条 warning 说明 KV 不够【vLLM】：
 
-```
+```bash
 WARNING ... Sequence group 0 is preempted by PreemptionMode.RECOMPUTE mode
 because there is not enough KV cache space. This can affect the end-to-end
 performance. Increase gpu_memory_utilization or tensor_parallel_size to
@@ -624,7 +729,7 @@ provide more KV cache memory.
 
 **监控**：`vllm:num_preemptions`。V1 的默认 preemption 模式是 `RECOMPUTE` 而非 `SWAP`。
 
-### 3.3 chunked prefill 的调参
+### 4.3 chunked prefill 的调参
 
 vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
 
@@ -634,7 +739,7 @@ vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
 
 ---
 
-## 四、上线前必测项
+## 五、上线前必测项
 
 | #   | 项                                                            | 理由                                                                                                                                                                            |
 | --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

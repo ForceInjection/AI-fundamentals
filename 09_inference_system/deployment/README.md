@@ -20,6 +20,7 @@
 B300（Blackwell Ultra，SM103）是当前代的旗舰，但它的部署实践有两个反直觉之处：**世代红利只给了 FP4**——FP8/BF16 相对 B200 零提升，而 INT8 因为 PTX 未授权 sm_103a 而完全不可用；**且 MLA 模型上加 TP 会复制而非切分 KV**。这篇不讨论可能性，只整理 vLLM 与 SGLang 官方手册推荐的配置、调优判据和现成配方，每条推荐都标注出处。
 
 - **[B300 上的模型部署与 KV Cache：官方手册最佳实践](b300-deployment-and-kv-cache.md)**：Kimi-K3 与 DeepSeek-V4 的完整启动命令、SM103 独立 target 等三道门槛、vLLM 的 `-O0`~`-O3` 优化等级与 `2 + N` 物理核公式、Deep PP 为什么用 `--tp-size 1`、SGLang 的 KV 量化官方精度对照表、HiCache 的 canonical 参数与布局兼容性、两家的调优判据（`available_gpu_mem` / `token usage` / `num_preemptions`），以及 NVFP4 KV 为何不能进生产
+- 同篇 §三 **扩展账：Kimi-K3 从 16 卡到 64 卡**：按 cookbook 预设源码与 SGLang 计算器逐轴核算——`attnTP ≡ 8` 的形状锁定、每卡权重 186→25 GB 的降落曲线、**每卡 KV 与 state 三档一个字节不变**（13,824 B/token、110.8 MiB/请求）、MoE all-to-all 跨节点扇出 2.4× 的账单
 - 相关原理：[从 H200 到 Blackwell 的飞跃](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)（WideEP / NVFP4 / Weight Offloading v2）
 
 ## 4. 方法论抽象
