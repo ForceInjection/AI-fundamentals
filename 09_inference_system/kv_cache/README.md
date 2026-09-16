@@ -52,14 +52,20 @@
 
 - **[CUDA Graph 与 KV Cache](01_concepts/execution/01_vllm_cuda_graph.md)**：Full / Piecewise / FULL_AND_PIECEWISE 三种模式如何容纳动态 block table——可变输入缓冲区、多尺寸预录制、re-capture 触发条件。
 
-### 2.3 压缩与量化机制
+### 2.3 跨模型 KV 复用
+
+§2.1 的 Prefix Caching 和 §2.2.2 的 PD 传输都有一个共同前提：缓存的产生者和消费者是**同一个模型**。换了模型，缓存全部作废——而长 agentic 会话与多模型编排正在让"换模型"变成常态，每次切换都要对累积上下文重新 prefill 一遍。
+
+- **[把 14B 的 KV 交给 32B：跨模型复用的可能与代价](01_concepts/cross_model/cross_model_kv_transfer.md)**：NVIDIA 的闭式线性映射方案（arXiv:2608.03893）。从"KV 是残差流的线性投影"推导出线性映射为何是正确的函数形式，拆解 cross-layer selection / RoPE factoring / per-head ridge 三个组件，核对六组模型对的 retention、GSM8K 断层、R² 与 retention 不相关的反直觉发现，以及 mapper 体积、方向性与校准成本这笔部署账。文末给出适用边界的判断。
+
+### 2.4 压缩与量化机制
 
 针对超长上下文带来的显存压力，探索如何通过量化、剪枝等技术压缩 KV Cache 的物理体积。
 
 - **[KV Cache 压缩技术详解：原理、架构与趋势](01_concepts/compression/kv_cache_compression.md)** ([配套 PPT](01_concepts/compression/kv_cache_compression.pptx))：系统解析了通过量化（如 INT8/FP8/INT4）、稀疏化（如 StreamingLLM、H2O）以及注意力机制优化等手段，大幅降低大语言模型长上下文场景下的显存占用与传输带宽需求。
 - **[KV Cache 量化深度解析](01_concepts/compression/kv_cache_quantization.md)**：拆解三种量化粒度——Per-Tensor、Per-Token-Head（FP8/INT8）、NVFP4——的精度差异、工程实现与 vLLM 配置，以及量化对 Prefix Caching 和误差传播的影响。
 
-### 2.4 淘汰策略
+### 2.5 淘汰策略
 
 压缩减小每个 token 的体量，淘汰则直接减少存储的 token 数量——当压缩做到极致后，淘汰是唯一可以继续缩容的手段。从 Attention Sinks 的发现出发，回答"滑动窗口为什么不够"和"哪些 token 的 KV 值得保留"。
 
