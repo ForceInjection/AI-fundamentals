@@ -24,7 +24,7 @@
 
 在讨论任何优化之前，先理解推理的两阶段（Prefill/Decode）、KV Cache 为什么存在、以及并行策略如何把大模型塞进多张 GPU。
 
-- **[KV Cache 技术体系](kv_cache/README.md)** — 43 篇文章，从 KV Cache 基础到分布式管理的完整导航。
+- **[KV Cache 技术体系](kv_cache/README.md)** — 44 篇文章，从 KV Cache 基础到分布式管理的完整导航。
   - 基础：KV Cache 原理、PagedAttention、五种注意力存储格式
   - 优化：Prefix Caching、跨模型复用、压缩量化、淘汰策略、Chunked Prefill、PD 分离传输、Prefetching、CUDA Graph
   - 系统：LMCache、Mooncake、KVBM、HiCache、Tair KVCache

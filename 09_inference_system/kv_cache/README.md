@@ -40,6 +40,7 @@
 #### 2.2.2 PD 分离传输
 
 - **[PD 分离架构下的 KV Cache 传输](01_concepts/pd_transfer/01_disaggregated_prefill_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 的设计选择。
+- **[压缩、重叠、复用、隔离：PD 状态交接优化的四条轴](01_concepts/pd_transfer/02-pd-state-handoff-optimization-map.md)**：PD 状态交接（handoff：数据、时序、状态生效、生命周期四层）优化空间的地图。压缩（线上量化、稀疏感知传输）、重叠（chunk-wise 流水线、元数据先行）、复用（cache-aware 路由、去重、混合路径）、隔离（传输与计算的干扰）四条主轴，加故障恢复兜底轴；逐轴给出业界实践锚点（SGLang 源码、Mooncake 设计文档、llm-d 实测、CacheGen/DualPath 论文）与证据等级表，并标注哪些是业界双空白。
 
 #### 2.2.3 卸载与预取
 
