@@ -63,7 +63,7 @@ AI 作为"一等协作者"参与工程：开发者提供意图、约束、契约
 
 ## 2. CloudPilot 端到端案例
 
-CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。以 Vibe Coding 为日常工作流，完成 P1-P4 阶段（访谈 → OpenSpec），仅需 6 层工件：访谈笔记 → PRD → Mock UI → DDD 模型 → OpenSpec → 代码桥接。所有 Prompt 可录制并由 `ddd-modeler` 和 `openspec-author` 两个 sub-agent 重放。
+CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。以 Vibe Coding 为日常工作流，走完从业务调研到实现与测试的链路，产出 7 层工件：访谈笔记 → PRD → Mock UI → DDD 模型 → OpenSpec → 代码桥接 → 实现工作流。所有 Prompt 可录制，由 `ddd-modeler` 和 `openspec-author` 两个 sub-agent 重放。
 
 > 📂 详见：[ai-native-devops/cloudpilot-case](https://github.com/ForceInjection/ai-native-devops/tree/main/cloudpilot-case)
 
@@ -104,7 +104,7 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 5. 关联模块与参考
+## 6. 关联模块与参考
 
 - **[08_agentic_system](../08_agentic_system/README.md)** — Agent 系统全栈工程，补充单 Agent 内部机制与基础设施
 - **[04_cloud_native_ai_platform](../04_cloud_native_ai_platform/README.md)** — Tool 层（MCP 暴露）与 DevOps 实践所需的集群底座
