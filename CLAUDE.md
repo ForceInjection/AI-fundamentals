@@ -106,10 +106,12 @@ Use these when the task matches:
 
 ## CI/CD
 
-No build step, no test suite. The one automated gate is a markdown **structure** check — `scripts/check_md_structure.py` (needs `markdown-it-py`) — wired into two places:
+No build step, no test suite. `.github/workflows/md-structure.yml` is the only **workflow file**; the rest of the automation comes from GitHub's default setup and repo settings, and is not visible in the tree. `gh workflow list --all` currently shows five active workflows: the structure check, `CodeQL` (default setup, runs on push to main and weekly, scanning c-cpp / go / javascript / python / typescript), `pages-build-deployment` (builds the GitHub Pages site the README links to), `Dependabot Updates`, and `Dependency Graph`. So "this repo has no CI" is wrong — check before claiming it.
+
+**Markdown structure check** — `scripts/check_md_structure.py` (needs `markdown-it-py`), wired into two places:
 
 - **Pre-commit hook** (`.pre-commit-config.yaml`): catches your own commits. Needs `pre-commit install` once per clone; `pre-commit run --all-files` checks the whole repo.
-- **GitHub Actions** (`.github/workflows/md-structure.yml`): catches pull requests. External contributors won't have the hook installed, so CI is the only thing covering them.
+- **GitHub Actions**: catches pull requests. External contributors won't have the hook installed, so CI is the only thing covering them.
 
 It flags two failure modes that silently drop content: an unclosed code fence, and a broken Chinese section sequence (`## 一、` → `## 二、` → …). Syntax linting catches neither — the original regression case (`attention_kv_cache_formats.md`, fixed in `20127cb`) passes markdownlint with zero warnings, because a 4-backtick fence closed by a 4-backtick fence *is* valid CommonMark. Only the rendered result gives it away. Long-fence inconsistencies are warnings and don't fail the build.
 
