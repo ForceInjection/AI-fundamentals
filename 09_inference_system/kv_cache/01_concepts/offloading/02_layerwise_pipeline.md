@@ -71,7 +71,7 @@ gantt
 3. **显存节省 (Memory Savings)**:
    通过逐层分配和释放 KV Cache 空间，显存只需持有当前正在计算的那一层 (或几层) 数据。这使得峰值显存占用可降低至原来的 1/L（L 为模型层数），为增大 Batch Size 提供了可能，但实际收益受限于计算瓶颈和调度开销，从而在条件允许下提高 GPU 计算单元的利用率。
 
-![层级流水线并行](layer-wise%20pipeline.png)
+![层级流水线并行](layer-wise-pipeline.png)
 
 ### 2.1 理想生命周期
 
