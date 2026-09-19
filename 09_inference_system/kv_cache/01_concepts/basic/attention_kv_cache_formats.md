@@ -94,7 +94,7 @@ MQA 的 KV Cache 极小，但代价是注意力质量下降——只有一组 K/
 
 DeepSeek V2/V3 提出的 MLA 彻底改变了 KV Cache 的物理形态。传统注意力下 K 和 V 是直接存储的——形状是 `(num_kv_heads, head_dim)`。MLA 的核心思路是：**不存完整的 K 和 V，只存一个压缩后的 latent vector，注意力和生成时再实时解压。**
 
-````text
+```text
 DeepSeek-V3（MLA）：
   d_model = 7168
   num_q_heads = 128
@@ -112,6 +112,7 @@ MLA 实际存储（两部分）：
   KV latent (K/V 共享压缩向量): (512,) = 512 fp16   = 1 KB
   Decoupled K (RoPE 位置编码): (64,) = 64 fp16 = 128 B  ← 共享于所有 head，RoPE 只需一份
   合计：~1.13 KB / token / layer   ← 约为传统 MHA 的 1/57
+```
 
 > DeepSeek 发现位置信息只需一个共享的 RoPE key 即可编码——内容部分 (k^C) 通过低秩分解承载 per-head 语义，位置部分 (k^R) 是所有 head 共用的一维信号。因此 decoupled RoPE K 不乘 head 数，仅为 `qk_rope_head_dim = 64` 维。
 
