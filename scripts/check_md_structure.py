@@ -28,7 +28,21 @@ from pathlib import Path
 from markdown_it import MarkdownIt
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SKIP_DIRS = {'.git', 'node_modules', '.venv', 'venv', '__pycache__'}
+# 只跳过目录名，不做完整的 .gitignore 匹配——仓库里会出现 md 的产物目录就这几个，
+# 漏掉一个的后果是扫描列表里混进无关文件（比如 .pytest_cache/README.md），不会误报。
+SKIP_DIRS = {
+    '.git',
+    'node_modules',
+    '__pycache__',
+    '.mypy_cache',
+    '.nox',
+    '.pytest_cache',
+    '.ruff_cache',
+    '.tox',
+    '.venv',
+    '.ipynb_checkpoints',
+    'venv',
+}
 
 CN_DIGITS = '一二三四五六七八九十'
 SECTION_RE = re.compile(r'^([一二三四五六七八九十]+)、')
