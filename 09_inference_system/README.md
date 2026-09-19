@@ -6,11 +6,7 @@
 
 ---
 
-> **前瞻**：DeepSeek-V4 和 Kimi K3 从架构层面对 attention 做了根本性改造，KV Cache 从 250GB 降到 5GB，旧叙事终结。但新架构带来了新的系统挑战。详见 **[当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md)**（对照 vLLM/SGLang 源码 ✓，含 39 处代码验证）。
->
-> **续篇 · KV 压缩推到极限**：一个月后 DeepSeek 发布 V4.1-Flash，全局 KV 再压到 1/4、持久化压到 1/8，并推翻了前篇三处判断（跨层共享「无意义」、跨类型前缀缓存「未解决」、mHC 迭代「无法被 kernel fusion 覆盖」）。详见 **[把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](deepseek-v41-flash-kv-compression.md)**（报告 §章节 + 官方 `config.json` 双向核对）。
->
-> **三续 · 压缩之后，分层缓存怎么办**：压缩把 KV 从「一个张量」变成一组异构池——分层缓存的三个隐含假设（单池 / 节点粒度备份 / backuped 二元状态）全部失效。以 SGLang HiCache 为对象，把 V4 的七池与 V4.1 的八池摆在一起看演进（ratio 4/128 的压缩 KV 换成 ratio 1/2 的 fp4 latent，两个状态环直接消失），拆三个结构性冲突（所有池必须同时就位 / 状态池不在匹配语义里 / 复制型 KV 与按 rank 切分的 sidecar）与上游的三条对策，以及 V4.1 真正接不住的两处（request-scoped pair ring 不能走 CPU 备份、unified KV 被拒）。详见 **[七池与八池：HiCache 支持 DeepSeek V4 与 V4.1 的不同接法](multilevel-cache-meets-multi-pool-kv.md)**（SGLang `c475ac5eaf` 源码逐条核对 ✓，60 处 `文件:行号` 引用）。
+> **KV 压缩推到极限**：DeepSeek-V4 与 Kimi K3 从架构层面重写了 attention，1M 上下文下 KV 从 250GB 量级降到个位数 GB，旧叙事随之作废；一个月后 V4.1-Flash 又把全局 KV 压到 V4-Flash 的 1/4，并推翻前篇三处判断。但压缩只是把问题换了位置：单层的绝对量小到极点之后，杠杆从「每层压多少」转向「几层共用一份」，而一个 token 的状态不再是连续张量，变成了一组异构池，其中还混着不是 KV 的压缩器状态。系列入口：**[KV 压缩推到极限：从架构改造到分层缓存](kv_compression/README.md)**（体积账 → 报告精读 → 分层缓存三篇深挖；核对口径各不相同：源码验证、报告章节与 `config.json` 对照、`文件:行号` 逐条复验）。
 >
 > **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。详见 **[当 Agent 流量成为推理系统的主要负载](agent_serving/agent-workload-serving.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
 >

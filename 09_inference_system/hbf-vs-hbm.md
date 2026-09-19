@@ -239,7 +239,7 @@ $$
 
 $\varphi$ 是每步真正读的比例，$\varphi^*$ 是介质能承受的比例上限。当 $\varphi$ 远小于 $\varphi^*$ 时，整份 KV 可以便宜地摊在 HBF 上，每步只把 top-k 那一两千行捞出来。报告把这条标成「A genuine HBF fit」，但加了一个前提条件：只在稀疏注意力模型上成立，点名的是 DSA（DeepSeek Sparse Attention）、CSA（Compressed Sparse Attention）与 Kimi-Linear。
 
-这条和我们仓库里已经写过的东西正好接上。[当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md) 讲的是算法侧把每步要读的字节砍掉一个数量级，[把 KV Cache 压缩推到极限](deepseek-v41-flash-kv-compression.md) 讲的是压缩比再往下推。算法把 $b$ 压下去，硬件才有空间把介质换成便宜的。所以 HBF 能不能成立，取决于模型架构愿不愿意继续把稀疏度做上去。
+这条和我们仓库里已经写过的东西正好接上。[当百万 Token KV Cache 从 250GB 降到 5GB](kv_compression/01-post-kv-cache-era.md) 讲的是算法侧把每步要读的字节砍掉一个数量级，[把 KV Cache 压缩推到极限](kv_compression/02-deepseek-v41-flash.md) 讲的是压缩比再往下推。算法把 $b$ 压下去，硬件才有空间把介质换成便宜的。所以 HBF 能不能成立，取决于模型架构愿不愿意继续把稀疏度做上去。
 
 顺带一提，稀疏注意力的读取模式和 HBF 的偏好是冲突的。top-k 是散读，而闪存喜欢顺序大块。这个矛盾在我们的 [稀疏注意力 × KV Cache Offloading](kv_cache/01_concepts/offloading/sparse_attention_driven_offloading_problems.md) 里已经从卸载角度枚举过八类问题，换成 HBF 只会更尖锐。
 

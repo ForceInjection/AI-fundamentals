@@ -774,6 +774,6 @@ vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
 - [KV Cache 技术体系](../kv_cache/README.md)——本文只讲 B300 上的配置实践，压缩、淘汰、卸载的机制原理见该目录
 - [显存估算](../memory_calc/README.md)——容量测算的方法与脚本
 - [vLLM 助力 DeepSeek 吞吐量飙升 5 倍](../vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)——WideEP、NVFP4/FP8 与 Weight Offloading v2 的原理拆解，本文 §1.5 的并行策略是它在部署侧的另一面
-- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../deepseek-v41-flash-kv-compression.md)——模型架构侧的 KV 压缩（CSA2、FP4 main KV），与本文的引擎侧实践互补
+- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../kv_compression/02-deepseek-v41-flash.md)——模型架构侧的 KV 压缩（CSA2、FP4 main KV），与本文的引擎侧实践互补
 - [NVIDIA GB300 NVL72 架构解析](../../01_hardware_architecture/superchips/nvidia_gb300.md)——本文用到的显存口径在那一篇有完整的拓扑与带宽背景
 - [核心推理优化技术深度解析](../reference_design/03-核心推理优化技术深度解析.md)——KV Cache、Continuous Batching、量化等技术的原理层梳理

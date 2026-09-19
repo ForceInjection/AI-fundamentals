@@ -8,7 +8,7 @@
 >
 > **2026-09-07 网络校对**：修正 K3 层数（表 1 为 93 层，96 是注意力头数）、mHC 与 KDA 参考文献条目（mHC 为 arXiv:2512.24880/2025-12；arXiv:2510.26692 标题为 Kimi Linear）；MoonEP 的 RDMA 表述与 V4 通用加速倍数已按第三方印证情况标注。TileLang 微秒级引文、C/B ≤ 2d 数值、V4-Pro 层数为论文正文细节，网络未能独立核验，引用前请对照 PDF。
 >
-> **2026-09-11 后续**：DeepSeek 发布 V4.1-Flash，本文三处判断有了新的答案——Cross-Layer 共享不再「无意义」（成了 CSA2 的核心）、跨类型前缀缓存被绕开而非填平、mHC 的迭代开销由 Single-Pass mHC + Mega-mHC 正面解决。详见 **[把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](deepseek-v41-flash-kv-compression.md)**。本次另修正 §6.2 末尾一处与 §6.4、本文分类理由自相矛盾的表述（原称 mHC 算子「可能无法被现有推理引擎的 kernel fusion 覆盖」）。
+> **2026-09-11 后续**：DeepSeek 发布 V4.1-Flash，本文三处判断有了新的答案——Cross-Layer 共享不再「无意义」（成了 CSA2 的核心）、跨类型前缀缓存被绕开而非填平、mHC 的迭代开销由 Single-Pass mHC + Mega-mHC 正面解决。详见 **[把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](02-deepseek-v41-flash.md)**。本次另修正 §6.2 末尾一处与 §6.4、本文分类理由自相矛盾的表述（原称 mHC 算子「可能无法被现有推理引擎的 kernel fusion 覆盖」）。
 
 ---
 
@@ -245,7 +245,7 @@ Block 大小由 `config.attn_res_block_size` 指定 ✓（默认 `None` 即未�
 
 vLLM 和 SGLang 均已为 mHC 实现了高效的 fused kernel ✓（`mhc_pre`/`mhc_post`/`mhc_fused_post_pre`，含 TileLang/CUDA/AITER 多种后端），将 pre-norm、RMS-norm、Sinkhorn 迭代和残差混合融合为单个 kernel。但优化空间仍然存在：
 
-- **mHC**：Sinkhorn-Knopp 迭代次数取决于 `config.hc_sinkhorn_iters`，这个值一直没公布；V4.1-Flash 的 config 给出了答案——`hc_sinkhorn_iters = 20`、`hc_mult = 4`（见 [V4.1 篇](deepseek-v41-flash-kv-compression.md) §1.4）。若配置允许，仍可尝试降低迭代次数评估精度损失，用 TileLang 自动生成不同迭代次数的 kernel 变体
+- **mHC**：Sinkhorn-Knopp 迭代次数取决于 `config.hc_sinkhorn_iters`，这个值一直没公布；V4.1-Flash 的 config 给出了答案——`hc_sinkhorn_iters = 20`、`hc_mult = 4`（见 [V4.1 篇](02-deepseek-v41-flash.md) §1.4）。若配置允许，仍可尝试降低迭代次数评估精度损失，用 TileLang 自动生成不同迭代次数的 kernel 变体
 - **AttnRes**：Block 形式的跨 block attention 可以跟层的 forward 做 pipeline——当 block n 计算时，block n+1 的 attention weights 可以预取 block 0,...,n 的表示
 
 这些都是推理引擎已通过 fused kernel 接入的调度逻辑 ✓，不属于传统 attention/FFN 的范畴，但在模型规模和序列长度持续增长的背景下需要持续关注。

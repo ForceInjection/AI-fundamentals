@@ -1,6 +1,6 @@
 # 把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读
 
-> 2026 年 8 月，[当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md) 写下过一句判断：KV Cache 不再是首要矛盾了。一个月后，DeepSeek 用一篇 51 页的技术报告回应——还能再压：global KV 压到 V4-Flash 的 1/4，持久化 KV 压到 1/8。
+> 2026 年 8 月，[当百万 Token KV Cache 从 250GB 降到 5GB](01-post-kv-cache-era.md) 写下过一句判断：KV Cache 不再是首要矛盾了。一个月后，DeepSeek 用一篇 51 页的技术报告回应——还能再压：global KV 压到 V4-Flash 的 1/4，持久化 KV 压到 1/8。
 >
 > 它还推翻了那篇文章里的一个判断。当时我们在复用价值表里写过：**Cross-Layer 共享，基本无意义**，理由是压缩后的单层 KV 已经极小。V4.1 的核心创新恰恰是跨层共享。
 >
@@ -66,13 +66,13 @@ V4 的持久化 KV
 
 报告 Figure 1(b) 把这条曲线拉长到了整个世代，逐代绝对值是：V1 的 **389,120** 字节/token、V3.2 的 48,068、V4-Flash 的 3,514，到 V4.1-Flash 只剩 **890**。据此报告给出两个倍数：相对 V4-Flash 约 1/4，相对 V1 约 **1/437**。
 
-![历代 DeepSeek 模型的全局 KV Cache 每 token 体积](assets/deepseek-v41-fig1b-kv-per-token.png)
+![历代 DeepSeek 模型的全局 KV Cache 每 token 体积](../assets/deepseek-v41-fig1b-kv-per-token.png)
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 1(b)。_
 
 不对称激活（prefill 8B、decode 16B）则对着 Agent 负载的形态设计：输入重、输出轻。报告反复强调这一点：长程 Agent 让工作负载越来越 **input-heavy**，prefill 侧的参数激活量因此被单独拿出来优化。
 
-仓库里记录过 vLLM 官方博客的一组数据：V4 在 1M 上下文、bf16 下约 9.62 GiB 每序列（[vLLM 中的 DeepSeek V4](vllm/module_analysis/deepseek_v4_attention_support.md) §8.7 倍节省估算背后的算术）。它和 890 B/token 不能相除，两者不是同一件事：
+仓库里记录过 vLLM 官方博客的一组数据：V4 在 1M 上下文、bf16 下约 9.62 GiB 每序列（[vLLM 中的 DeepSeek V4](../vllm/module_analysis/deepseek_v4_attention_support.md) §8.7 倍节省估算背后的算术）。它和 890 B/token 不能相除，两者不是同一件事：
 
 |          | 9.62 GiB（vLLM 博客）           | 890 B/token（报告）       |
 |----------|---------------------------------|---------------------------|
@@ -84,7 +84,7 @@ _图源：DeepSeek-V4.1-Flash 技术报告 Figure 1(b)。_
 
 报告还给了另一个量级感更强的数字：上下文从 4K 扩到 1M，涨了 256 倍，单 token 的 Decode FLOPs 只增加约 1/4。注意这里的 FLOPs 是**按精度加权**计算的（BF16、FP8、FP4 分别记 1、0.5、0.25），所以 FP4 的引入本身就在往下压这条曲线。
 
-![各代 DeepSeek 模型单 token Decode FLOPs 随上下文长度的变化](assets/deepseek-v41-fig2-decode-flops.png)
+![各代 DeepSeek 模型单 token Decode FLOPs 随上下文长度的变化](../assets/deepseek-v41-fig2-decode-flops.png)
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 2。_
 
@@ -129,11 +129,11 @@ _图源：DeepSeek-V4.1-Flash 技术报告 Figure 2。_
 
 ### 2.1 与仓库里既有判断的冲突
 
-[post-KV-cache 篇](post-kv-cache-era-challenges.md) 的「旧优化技术的位置」表里，Cross-Layer 共享一栏写的是：
+[post-KV-cache 篇](01-post-kv-cache-era.md) 的「旧优化技术的位置」表里，Cross-Layer 共享一栏写的是：
 
 > V4 架构下「基本无意义（压缩后的单层 KV 已经极小）」，K3 架构下「同样无意义」
 
-这个判断在当时是合理的：V4 压缩后每层每 token 只剩约 18 字节（c4a 层，见 [KV Cache 存储形态](kv_cache/01_concepts/basic/attention_kv_cache_formats.md)），看起来确实没有可压缩的余地。
+这个判断在当时是合理的：V4 压缩后每层每 token 只剩约 18 字节（c4a 层，见 [KV Cache 存储形态](../kv_cache/01_concepts/basic/attention_kv_cache_formats.md)），看起来确实没有可压缩的余地。
 
 V4.1 给出了相反的答案。当单层的绝对量已经很小，压缩的杠杆就从「每层压多少」转向了「几层共用一份」。38 个 CSA2 层里，**只有 4 层产出 main KV**（`kv_source_layer_ids` 的 2/8/14/20，即全部 Full Mode 层），另有 4 层复用 main KV 但自己重算索引（`index_source_layer_ids` 里多出的 24/28/32/36），剩下 30 层连索引都直接复用。
 
@@ -145,7 +145,7 @@ CED（Causal Encoder-Decoder，§2.2）的灵感来自 YoCo：让 Transformer �
 
 机制不算复杂。40 层切成两半，前 20 层是 causal encoder（头两层是纯 SWA，其余 18 层用 CSA2），后 20 层是 decoder。decoder 的 global KV 不从自己的 hidden state 来，而是从 encoder 的输出投影出来（报告式 1）：
 
-![DeepSeek-V4.1-Flash 整体架构：40 层如何切成 Causal Encoder 与 Decoder](assets/deepseek-v41-fig3-architecture.png)
+![DeepSeek-V4.1-Flash 整体架构：40 层如何切成 Causal Encoder 与 Decoder](../assets/deepseek-v41-fig3-architecture.png)
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 3。图中 CSA2(ratio, mode) 标出每层的压缩率与模式，与本文 §四的配置表一致；底部的 Engram、单一入口的 Single-Pass mHC、顶部的 DSpark 也标了出来。_
 
@@ -177,7 +177,7 @@ CSA2 把每个层的角色**静态**分成三种（§2.3.1）：
 
 三种模式都自己算 main Q 和 SWA KV。Reindex 是这套设计里最实用的一档：它保住了缓存共享，同时允许各层选择不同的条目，避免「一层选错、全组跟着错」。
 
-![CSA2 的三种工作模式：Full / Reindex / Reuse](assets/deepseek-v41-fig4-csa2-modes.png)
+![CSA2 的三种工作模式：Full / Reindex / Reuse](../assets/deepseek-v41-fig4-csa2-modes.png)
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 4。看颜色即可分清「哪些是本层算的」：绿 = 本层计算，黄 = 复用最近一个 Full Mode 层的 main KV 与 indexer K，红 = 复用最近一个产索引层（Full 或 Reindex）的 Top-K 索引。Reindex 模式的 indexer Q 是绿的（自己重打分），所以它没有红块。_
 
@@ -216,7 +216,7 @@ decoder（20 层 CSA2，压缩率 m=1）→ 5 组 × 4 层
   从「随上下文长度线性」变成「常数」
 ```
 
-![层级稀疏索引器：候选池如何从块级选择中产生，后续层如何在池内搜索](assets/deepseek-v41-fig5-hierarchical-indexer.png)
+![层级稀疏索引器：候选池如何从块级选择中产生，后续层如何在池内搜索](../assets/deepseek-v41-fig5-hierarchical-indexer.png)
 
 _图源：DeepSeek-V4.1-Flash 技术报告 Figure 5。绿块 = 被选中的索引位置，蓝框 = 按块内最大分数选中的块。最左是 Full Mode 层扫全量并建池，中间与右侧是 Reindex 层只在候选池内打分。_
 
@@ -281,11 +281,11 @@ CED 的 decoder 侧同理：从 encoder 出来之后，decoder 各层的 SWA KV 
 
 ### 7.3 与仓库里既有判断的冲突
 
-[post-KV-cache 篇](post-kv-cache-era-challenges.md) 把「跨类型前缀缓存」列为**需要解决的硬缺口**，依据是 vLLM 代码里的限制：
+[post-KV-cache 篇](01-post-kv-cache-era.md) 把「跨类型前缀缓存」列为**需要解决的硬缺口**，依据是 vLLM 代码里的限制：
 
 > `find_longest_cache_hit` "only supports one attention type or two types of full-attention plus exactly one another type"
 >
-> （转引自 [post-KV-cache 篇](post-kv-cache-era-challenges.md) 对 vLLM 源码的引用，本文未独立核对源码。）
+> （转引自 [post-KV-cache 篇](01-post-kv-cache-era.md) 对 vLLM 源码的引用，本文未独立核对源码。）
 
 V4.1 没有去实现通用的多类型前缀缓存，而是**让前缀缓存只依赖一种类型**：SWA KV 退出持久层之后，前缀命中只需要匹配 global KV。缺口还在 vLLM 那边，只是不再挡在 V4.1 前面了。
 
@@ -317,7 +317,7 @@ X_{l+1} = B_l X_l + C_l F_l(A_{l-1} X_l)
 
 **相当于把依赖关系整体挪开一格**，残差流的每一块 tile 于是可以立即同时用于输入混合和系数预测。部署侧再用 **Mega-mHC** 把三个 kernel 融成一个，拿到理想的 `(n+1)d` 读 + `(n+1)d` 写，流量减半。config 里的 `hc_mult = 4`、`hc_sinkhorn_iters = 20` 与前文一致。
 
-> [post-KV-cache 篇](post-kv-cache-era-challenges.md) 对 mHC 的判断有点摇摆：§6.4 说 fused kernel 已经覆盖，§6.2 末尾又留了一句「可能无法被现有推理引擎的 kernel fusion 覆盖」。V4.1 回答的是后一个问题——不是覆盖不了，而是要先改掉依赖关系。
+> [post-KV-cache 篇](01-post-kv-cache-era.md) 对 mHC 的判断有点摇摆：§6.4 说 fused kernel 已经覆盖，§6.2 末尾又留了一句「可能无法被现有推理引擎的 kernel fusion 覆盖」。V4.1 回答的是后一个问题——不是覆盖不了，而是要先改掉依赖关系。
 
 **Engram（§2.4.2）**是条件记忆模块，196B 参数，放在第 1 和第 14 层。每个模块用 2/3/4-gram、8 个 hash head，每个 order 的总嵌入维度 2048，每张表约 16M 条目、表大小取不同质数。嵌入表与 KV 投影都用 FP8。相比原设计省掉了短因果卷积（收益不足以抵消推理栈的复杂度）。推理时地址是确定的，所以嵌入可以从主机内存用 **RDMA 后台预取**，第一个模块的预取与第一个 Transformer block 的计算重叠。
 
@@ -445,11 +445,11 @@ effort 25 → 100：8 个推理密集 benchmark 平均 Pass@1   67.1% → 76.3%
 
 **一处引擎自陈的局限**：SGLang cookbook 写明「output is not bitwise stable across batch composition today」，且 `--enable-deterministic-inference` 在该后端被拒绝。同一个请求在不同 batch 组成下输出可能不同。对做回归测试与结果复现的人来说，这是条硬约束。
 
-作为对照，V4 这边仓库里记录得更细：混合 KV 缓存用逻辑块 256 个原生 token 位置、按 `block_size × compress_ratio × per_entry_size` 归并成三种页面大小桶、压缩器状态注册为滑动窗口规范（[vLLM 中的 DeepSeek V4](vllm/module_analysis/deepseek_v4_attention_support.md)）。
+作为对照，V4 这边仓库里记录得更细：混合 KV 缓存用逻辑块 256 个原生 token 位置、按 `block_size × compress_ratio × per_entry_size` 归并成三种页面大小桶、压缩器状态注册为滑动窗口规范（[vLLM 中的 DeepSeek V4](../vllm/module_analysis/deepseek_v4_attention_support.md)）。
 
 **对我们这边判断的修正。** 连同开头说的跨层共享，一共三处需要更新：
 
-| 原判断（[post-KV-cache 篇](post-kv-cache-era-challenges.md)） | V4.1 给出的更新                                                              |
+| 原判断（[post-KV-cache 篇](01-post-kv-cache-era.md)） | V4.1 给出的更新                                                              |
 |---------------------------------------------------------------|------------------------------------------------------------------------------|
 | Cross-Layer 共享「基本无意义」                                | 成了 CSA2 的核心；单层绝对量小之后，杠杆从「每层压多少」转向「几层共用一份」 |
 | 跨类型前缀缓存是「需要解决」的硬缺口                          | 被绕开：SWA KV 退出持久层，前缀缓存只依赖 global KV                          |
@@ -471,12 +471,12 @@ CSA2 的三个乘性维度也是同一路数：先搭一个坐标系，再找出
 
 ## 相关阅读
 
-- [当百万 Token KV Cache 从 250GB 降到 5GB](post-kv-cache-era-challenges.md)——本文的出发点，三处判断在本文中被更新
-- [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)——V2→V3→V3.2→V4 的完整演进，含 vLLM 源码级实现
-- [vLLM 中的 DeepSeek V4：高效长上下文注意力](vllm/module_analysis/deepseek_v4_attention_support.md)——混合 KV 缓存、算子融合与多流编排
-- [不同注意力类型的 KV Cache 到底长什么样](kv_cache/01_concepts/basic/attention_kv_cache_formats.md)——CSA/HCA 的存储形态与逐 token 字节数
-- [稀疏注意力分类学](kv_cache/01_concepts/basic/sparse_attention_taxonomy.md)——CSA/HCA 在稀疏注意力三条路线中的位置
-- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../08_agentic_system/agent_infra/docs/deepseek-harness-deep-dive.md)——V4.1 评测所用的 harness
+- [当百万 Token KV Cache 从 250GB 降到 5GB](01-post-kv-cache-era.md)——本文的出发点，三处判断在本文中被更新
+- [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)——V2→V3→V3.2→V4 的完整演进，含 vLLM 源码级实现
+- [vLLM 中的 DeepSeek V4：高效长上下文注意力](../vllm/module_analysis/deepseek_v4_attention_support.md)——混合 KV 缓存、算子融合与多流编排
+- [不同注意力类型的 KV Cache 到底长什么样](../kv_cache/01_concepts/basic/attention_kv_cache_formats.md)——CSA/HCA 的存储形态与逐 token 字节数
+- [稀疏注意力分类学](../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md)——CSA/HCA 在稀疏注意力三条路线中的位置
+- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../../08_agentic_system/agent_infra/docs/deepseek-harness-deep-dive.md)——V4.1 评测所用的 harness
 
 ---
 

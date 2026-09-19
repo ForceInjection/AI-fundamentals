@@ -503,7 +503,7 @@ C = T   → 恢复完整 O(T²) softmax 注意力（最多 FLOP，但 GPU 矩阵
 C = 64  → 当前 GPU 张量核（如 UMMA 指令）的最佳粒度
 ```
 
-> **注**：Kimi K3 的 KDA 实际使用 `FLA_CHUNK_SIZE = 64`（`vllm/third_party/flash_linear_attention/ops/utils.py:31`）。对于 100 万 token 的上下文，这需要 15,625 次串行跨块步骤——这是我们在 [post-kv-cache-era-challenges.md](../../../09_inference_system/post-kv-cache-era-challenges.md) §3 中分析的 KDA chunkwise serial 约束的来源。
+> **注**：Kimi K3 的 KDA 实际使用 `FLA_CHUNK_SIZE = 64`（`vllm/third_party/flash_linear_attention/ops/utils.py:31`）。对于 100 万 token 的上下文，这需要 15,625 次串行跨块步骤——这是我们在 [01-post-kv-cache-era.md](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md) §3 中分析的 KDA chunkwise serial 约束的来源。
 
 ### 5.6 对比：MHA vs DeltaNet
 
@@ -612,7 +612,7 @@ Gated DeltaNet (GDN)       →  合并门控衰减 + Delta 修正，记忆管理
 
 ![线性注意力 → DeltaNet → Gated DeltaNet 的架构演进全景](https://www.datocms-assets.com/104802/1785353294-20.png?auto=format&w=1200)
 
-> **注**：这一演进线（加性 → Delta → Gated Delta）独立于 Transformer 的 MHA→MQA→GQA→MLA 主线。两条线在 Kimi Linear / Kimi K3 中交汇：KDA 提供恒定大小的循环记忆，周期性的 MLA 层提供完整上下文的 softmax 检索。详见 [post-kv-cache-era-challenges.md](../../../09_inference_system/post-kv-cache-era-challenges.md) §3。
+> **注**：这一演进线（加性 → Delta → Gated Delta）独立于 Transformer 的 MHA→MQA→GQA→MLA 主线。两条线在 Kimi Linear / Kimi K3 中交汇：KDA 提供恒定大小的循环记忆，周期性的 MLA 层提供完整上下文的 softmax 检索。详见 [01-post-kv-cache-era.md](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md) §3。
 
 ---
 
@@ -1005,7 +1005,7 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 > **参考与延伸阅读**
 >
 > - 原文：[22,580: GPT-2 to Kimi K3, explained](https://www.baseten.co/blog/22580-gpt-2-to-kimi-k3-explained/) — Ali Taha, Baseten (2026.07.30)
-> - 源码验证：[post-kv-cache-era-challenges.md](../../../09_inference_system/post-kv-cache-era-challenges.md) — 39 处对照 vLLM/SGLang 源码的机制验证
+> - 源码验证：[01-post-kv-cache-era.md](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md) — 逐条对照 vLLM/SGLang 源码的机制验证
 > - 架构主线：[LLM 架构演进史](llm_architecture_evolution.md) — GPT-1 到 DeepSeek-V3 的七个拐点
 > - KV Cache：[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md) — 42 篇文章，从原理到分布式管理
 > - 基础概念：[Transformer 架构详解](../transformer/transformer_architecture.md) — 从自注意力到完整 Decoder Block

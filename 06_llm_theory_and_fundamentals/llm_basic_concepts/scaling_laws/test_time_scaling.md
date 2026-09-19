@@ -272,5 +272,5 @@ _版本：arXiv:2609.02702v1，2026-09-02。所有实验数字为该论文口径
 - Xu Zou, Jie Tang. [Trace as State: Reasoning Traces as Conditional States for Long-Context Transformers](https://arxiv.org/abs/2609.02702). arXiv:2609.02702, 2026——本文全部实验与理论结论的出处
 - [Scaling Laws：从 Kaplan 到推理时间](scaling_laws.md)——训练侧三代缩放定律与数据墙，本文的上下文
 - [当 Agent 流量成为推理系统的主要负载](../../../09_inference_system/agent_serving/agent-workload-serving.md)——多轮会话下的 KV 生命周期错配，与本文「状态前置伤前缀复用」这一代价直接相关
-- [当百万 Token KV Cache 从 250GB 降到 5GB](../../../09_inference_system/post-kv-cache-era-challenges.md)——长上下文压力的架构侧解法，与本文的「信息顺序」侧解法互为参照
-- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../../../09_inference_system/deepseek-v41-flash-kv-compression.md)——本文的评测模型之一（DeepSeek V4 Pro）所属系列的架构拆解
+- [当百万 Token KV Cache 从 250GB 降到 5GB](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md)——长上下文压力的架构侧解法，与本文的「信息顺序」侧解法互为参照
+- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)——本文的评测模型之一（DeepSeek V4 Pro）所属系列的架构拆解

@@ -17,13 +17,13 @@
 - **MLA（多头潜注意力，格式压缩）**：DeepSeek-V2（2024-05）首创，缓存前把完整 KV 压缩进低维潜空间（512 维），KV Cache 减少约 **93.3%**（约 16 倍）；"吸收技巧"使 query 直接在潜空间点积，推理无需真正解压。效果：最大生成吞吐提高 5.76 倍，训练成本省 42.5%。被 Kimi K2、GLM-5 等主流模型采纳。来源：百度百科、国泰君安、SemiAnalysis。
 - **DSA（DeepSeek 稀疏注意力，注意力选择）**：DeepSeek-V3.2-Exp（2025-09）引入，"先筛选、后计算"——闪电索引器（仅约自注意力 5% 的计算量）给历史 token 打分，细粒度选择器只保留 Top-k（128K 上下文选 2048 个）做完整注意力。复杂度 O(L²) → O(L·k)，注意力计算量减少约 **98%**（2048/131072 ≈ 1.6%，与官方及百度百科口径一致）；128K 上下文处理速度 +1.8 倍、GPU 内存占用 -40%；GLM-5 集成案例 H800 上推理成本降 40–50%、性能损失 <1%。**归属注**：DSA 本质是计算维稀疏（省注意力 FLOPs），其 KV 收益是次要的——在三维框架中挂"存储维"仅因演讲叙事方便，引用时说明其为跨维机制。来源：百度百科、百度千帆。
 - **量化（精度压缩）**：4-bit 权重把每 token 权重读取量从 74GB 降至 18.5GB（decode 是 memory-bound，读取量直接决定速度）；KV 量化 FP16→INT8 再省 50–75%。
-- **端到端架构结果**（本仓库 `post-kv-cache-era-challenges.md`）：V4 的三大稀疏机制 = MoE（参数）+ Engram（条件记忆）+ DSA（注意力选择），1M 上下文下 V4-Pro 单 token 推理 FLOPs 是 V3.2 的 **27%**、KV 是 **10%**；V4-Flash FLOPs 仅 **10%**、KV 仅 **7%**；相对标准 BF16 GQA8 基线 KV 体积降至约 **2%**（250GB → 5GB）。Kimi K3 走另一条路（KDA 线性注意力，复杂度 O(N) + Gated MLA），1M 上下文 decode 加速 6.3×。**注**：mHC（流形约束超连接）是训练稳定性/层间连接设计，不属于稀疏化机制，勿与三大机制并列。
+- **端到端架构结果**（本仓库 `09_inference_system/kv_compression/01-post-kv-cache-era.md`）：V4 的三大稀疏机制 = MoE（参数）+ Engram（条件记忆）+ DSA（注意力选择），1M 上下文下 V4-Pro 单 token 推理 FLOPs 是 V3.2 的 **27%**、KV 是 **10%**；V4-Flash FLOPs 仅 **10%**、KV 仅 **7%**；相对标准 BF16 GQA8 基线 KV 体积降至约 **2%**（250GB → 5GB）。Kimi K3 走另一条路（KDA 线性注意力，复杂度 O(N) + Gated MLA），1M 上下文 decode 加速 6.3×。**注**：mHC（流形约束超连接）是训练稳定性/层间连接设计，不属于稀疏化机制，勿与三大机制并列。
 - 一句话：**记忆不必完整（压缩后仍可恢复），也不必全部看（只读相关的）。**
 
 ### 0.3 通信维：模型大到必须拆卡 → 协作成本成为新瓶颈
 
 - MoE 的 all-to-all（每个 token 跨卡找专家）、TP 每层 all-reduce、PD 分离的 KV 跨机搬运——模型越大，通信越接近瓶颈。
-- 定量证据（本仓库 `post-kv-cache-era-challenges.md`）：V4-Pro 每 GBps 带宽需对应 **6.1 TFLOP/s** 算力才能隐藏通信；NVLink 4.0 900GB/s 可满足卡内，跨节点 25G/100G 以太网不足。
+- 定量证据（本仓库 `09_inference_system/kv_compression/01-post-kv-cache-era.md`）：V4-Pro 每 GBps 带宽需对应 **6.1 TFLOP/s** 算力才能隐藏通信；NVLink 4.0 900GB/s 可满足卡内，跨节点 25G/100G 以太网不足。
 - 对策：EP 专家并行与专家本地化、拓扑感知调度、PD 分离就近传输（腾讯太极 16×H20 实测 15,800 tok/s，PD 分离端到端 +30–40%）。
 - 一句话：**分工产生协作成本——架构选择决定通信拓扑；这是三维中最难稀疏化的一维。**
 
@@ -52,7 +52,7 @@
 
 - **KV Cache 墙**（`09_inference_system/cost_analysis/llm_api_pricing_analysis.md` §3.1–3.4）：70B/8K 上下文单请求 KV 占 1.25GB（GQA 1/8 + FP8）~ 5.0GB（GQA 1/4 + BF16）；H100 80GB 装下 70GB 权重后仅剩 10GB，理论只支撑 **4–8 路并发**。
 - **KV 密度速查**（`09_inference_system/memory_calc/memory_analysis.md` §4.5，BF16）：Qwen3-32B 约 256KB/token（128K 满上下文 ~32GB）；DeepSeek-R1（MLA）69KB/token；GLM-5 97.8KB/token；**DeepSeek-V4 仅约 9.4KB/token**（1M 上下文 9.62GiB，混合精度 4.3GiB）。
-- **架构代际差**（`09_inference_system/post-kv-cache-era-challenges.md`）：标准 BF16 GQA8 在 1M token 时 KV 约 **250GB**，DeepSeek-V4-Flash 仅约 **5GB**（约 2%，与公开报道"V4 KV 仅需 5.48GB HBM"吻合，为部署/混合精度口径）；V4-Pro 的 KV 是 V3.2 的 10%。**口径注**：同文件 §1.2 另有 BF16 理论值 9.62GiB（`memory_analysis.md` §4.5）——5GB 与 9.62GiB 分别对应混合精度部署与 BF16 理论口径，引用时二选一，勿并列。
+- **架构代际差**（`09_inference_system/kv_compression/01-post-kv-cache-era.md`）：标准 BF16 GQA8 在 1M token 时 KV 约 **250GB**，DeepSeek-V4-Flash 仅约 **5GB**（约 2%，与公开报道"V4 KV 仅需 5.48GB HBM"吻合，为部署/混合精度口径）；V4-Pro 的 KV 是 V3.2 的 10%。**口径注**：同文件 §1.2 另有 BF16 理论值 9.62GiB（`memory_analysis.md` §4.5）——5GB 与 9.62GiB 分别对应混合精度部署与 BF16 理论口径，引用时二选一，勿并列。
 - **KV 是最大的显存消费者**（`09_inference_system/kv_cache/README.md`）：32K token prompt、70B、batch=8 时 KV 占 320GB 显存，是模型权重本身的 2 倍以上。
 - **PagedAttention**（`09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md`）：传统预分配内存利用率仅 20–40%，PagedAttention 将碎片率降到 4% 以下，同等显存服务 2–4 倍并发。
 - **缓存 ROI**（`09_inference_system/kv_cache/01_concepts/capacity_planning/kv_cache_roi.md`）：KV Cache 分层后系统有效并发承载力提升近 2 倍（高命中场景 2.3–14 倍），单次 AI 调用算力成本摊薄 50% 以上；热请求 TTFT 缩短高达 75%（命中缓存可完全跳过 Prefill）。

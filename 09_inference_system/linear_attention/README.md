@@ -15,5 +15,5 @@ delta-rule 线性注意力（Qwen3-Next/3.5/3.8 的 Gated DeltaNet、Kimi Linear
 
 ## 相关链接
 
-- [post-KV-cache 篇](../post-kv-cache-era-challenges.md)——本文系列的出发点（§3 chunkwise 串行、§5 状态检查点两块「需要解决」）
+- [post-KV-cache 篇](../kv_compression/01-post-kv-cache-era.md)——本文系列的出发点（§3 chunkwise 串行、§5 状态检查点两块「需要解决」）
 - [Agent 负载篇](../agent_serving/agent-workload-serving.md)——会话型负载与容量公式（状态池硬顶的推论见其 §2.4）

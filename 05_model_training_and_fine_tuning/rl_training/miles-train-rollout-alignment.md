@@ -245,5 +245,5 @@ Miles 之所以把 SGLang 和 Megatron 缝在一起，一部分原因就在这�
 
 ## 相关阅读
 
-- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../../09_inference_system/deepseek-v41-flash-kv-compression.md)——同一个模型的推理侧，其 §十一 记录了引擎落地形态
+- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)——同一个模型的推理侧，其 §十一 记录了引擎落地形态
 - [当 Agent 流量成为推理系统的主要负载](../../09_inference_system/agent_serving/agent-workload-serving.md)——长程 Agent 负载如何改变推理系统的设计前提

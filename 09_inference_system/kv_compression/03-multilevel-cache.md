@@ -1,6 +1,6 @@
 # 七池与八池：HiCache 支持 DeepSeek V4 与 V4.1 的不同接法
 
-> [上篇 - 把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](deepseek-v41-flash-kv-compression.md) 读的是 V4.1-Flash 的技术报告，算的是每 token 的体积账：常驻 HBM 的 global KV 压到 890 字节/token，比 V4-Flash 小 3.9 倍。但压缩改掉的不只是体积，还有 KV 的**形态**：一个 token 的状态不再是一段连续张量，而是散在一组异构池里。
+> [上篇 - 把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](02-deepseek-v41-flash.md) 读的是 V4.1-Flash 的技术报告，算的是每 token 的体积账：常驻 HBM 的 global KV 压到 890 字节/token，比 V4-Flash 小 3.9 倍。但压缩改掉的不只是体积，还有 KV 的**形态**：一个 token 的状态不再是一段连续张量，而是散在一组异构池里。
 >
 > **先纠正一个概念。** KV Cache Offloading 这个词已经不够用了：V4 要下推的不只是 KV，还有一整类压缩器的滚动状态（state）。它们同样占显存，同样要下推到 host，恢复时也得找回来，但在匹配语义、备份单位、能否备份这三件事上跟 KV 并不一样。本文说的「池」，KV 与 state 都算。
 >
@@ -14,7 +14,7 @@
 
 V4 的每一层产出不止一种状态。压缩后的主 KV、稀疏选择要用的 indexer K、压缩器的滚动状态，各自有独立的内存池。
 
-![一个 token 的状态被拆成四类](assets/deepseek-v4-token-state-split.svg)
+![一个 token 的状态被拆成四类](../assets/deepseek-v4-token-state-split.svg)
 
 SGLang 把这些池的名字收在同一个枚举里（`hicache_storage.py:60-92`），V4 相关的有十五个取值，实际注册进 host pool group 的是其中一部分。
 
@@ -58,7 +58,7 @@ class LogicalHostPool:
 
 换句话说，V4 在 host 上的真实字节全部落在别的池里，锚点只提供索引空间和「是否已备份」的记账。
 
-![锚点给槽位，sidecar 给字节](assets/deepseek-v4-anchor-sidecar.svg)
+![锚点给槽位，sidecar 给字节](../assets/deepseek-v4-anchor-sidecar.svg)
 
 ### 1.3 V4.1：ratio 1/2 的 latent，状态环消失
 
@@ -101,7 +101,7 @@ V4.1-Flash 的 40 层（cookbook `:87`）里没有一层是 ratio 4 或 128，�
 
 **七变成八，装的东西几乎全不一样。** V4 的压缩主 KV 与压缩器状态被换成了 V4.1 的低比例 latent 与其 fp4 indexer，状态环这一类干脆不存在。
 
-![V4 与 V4.1 的池清单对照](assets/deepseek-v4-v41-pools.svg)
+![V4 与 V4.1 的池清单对照](../assets/deepseek-v4-v41-pools.svg)
 
 枚举里还有几个池名实践中不出现：
 
@@ -237,7 +237,7 @@ swa（SWA 环内的 KV）
 
 ### 3.2 写路径：入了队，但还没提交
 
-L1→L2 有两种写策略：**write_through** 在节点被第二次访问时（`hit_count >= write_through_threshold`，默认 1）就立即备份，**write_back** 等到 HBM 满、节点被驱逐时才写。完整对比见 [KV Cache L1↔L2 数据流深度分析](sglang/sglang-kv-cache-dataflow-analysis.md)：那篇拆的是旧版 HiRadixCache 的路径，识别符与本节不同，但不变量的道理相通。下面这段时序在两种策略下都成立，只有设备锁那一条是 write_through 专属。
+L1→L2 有两种写策略：**write_through** 在节点被第二次访问时（`hit_count >= write_through_threshold`，默认 1）就立即备份，**write_back** 等到 HBM 满、节点被驱逐时才写。完整对比见 [KV Cache L1↔L2 数据流深度分析](../sglang/sglang-kv-cache-dataflow-analysis.md)：那篇拆的是旧版 HiRadixCache 的路径，识别符与本节不同，但不变量的道理相通。下面这段时序在两种策略下都成立，只有设备锁那一条是 write_through 专属。
 
 `commit_backup` 的调用位置决定了整条写路径的时序：
 
@@ -272,7 +272,7 @@ L1→L2 有两种写策略：**write_through** 在节点被第二次访问时（
 
 所以 `commit_backup` 执行时，host 侧的副本既不在内存里、搬运也还没开始，操作只是躺在 `write_queue` 里等着被合并提交。**窗口比「搬运在飞」更宽**：
 
-![写路径的三段时序与三道守卫](assets/deepseek-v4-write-path-timeline.svg)
+![写路径的三段时序与三道守卫](../assets/deepseek-v4-write-path-timeline.svg)
 
 t1 与 t3 之间就是那个窗口。`backuped` 的判据只是主 KV 在 host 上有没有值（`unified_tree_core.py:160-163`）：
 
@@ -494,13 +494,13 @@ V4 注册的池里除了锚点和 `swa` 其余五个都是 sidecar，V4.1 是六
 
 ## 相关阅读
 
-- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](deepseek-v41-flash-kv-compression.md)——本文的上篇，算的是每 token 的体积账
-- [HiCache 深入详解](sglang/hicache_deep_dive.md)——分层缓存的整体架构、HiRadixTree 元数据拓扑与三种预取/写回策略
-- [KV Cache L1↔L2 数据流深度分析](sglang/sglang-kv-cache-dataflow-analysis.md)——write_backup / eviction / load_back 的逐操作代码路径，本文 §3.2 的时序细节在那里有更完整的展开
-- [SGLang UnifiedRadixTree：一棵树，四种注意力](sglang/sglang-unified-radix-tree.md)——组件注册表与 FULL/SWA/MAMBA 各组件的语义，本文 §2.2 的 validator 机制在那里有完整讲解
-- [SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](sglang/sglang-kv-pool-management.md)——page size 如何贯穿整个栈
-- [不同注意力类型的 KV Cache 到底长什么样](kv_cache/01_concepts/basic/attention_kv_cache_formats.md)——c4a/c128a 的压缩维度与逐 token 字节数
-- [vLLM 中的 DeepSeek V4：高效长上下文注意力](vllm/module_analysis/deepseek_v4_attention_support.md)——同一模型在 vLLM 侧的混合 KV 缓存实现
+- [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](02-deepseek-v41-flash.md)——本文的上篇，算的是每 token 的体积账
+- [HiCache 深入详解](../sglang/hicache_deep_dive.md)——分层缓存的整体架构、HiRadixTree 元数据拓扑与三种预取/写回策略
+- [KV Cache L1↔L2 数据流深度分析](../sglang/sglang-kv-cache-dataflow-analysis.md)——write_backup / eviction / load_back 的逐操作代码路径，本文 §3.2 的时序细节在那里有更完整的展开
+- [SGLang UnifiedRadixTree：一棵树，四种注意力](../sglang/sglang-unified-radix-tree.md)——组件注册表与 FULL/SWA/MAMBA 各组件的语义，本文 §2.2 的 validator 机制在那里有完整讲解
+- [SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](../sglang/sglang-kv-pool-management.md)——page size 如何贯穿整个栈
+- [不同注意力类型的 KV Cache 到底长什么样](../kv_cache/01_concepts/basic/attention_kv_cache_formats.md)——c4a/c128a 的压缩维度与逐 token 字节数
+- [vLLM 中的 DeepSeek V4：高效长上下文注意力](../vllm/module_analysis/deepseek_v4_attention_support.md)——同一模型在 vLLM 侧的混合 KV 缓存实现
 
 ## 参考资料
 

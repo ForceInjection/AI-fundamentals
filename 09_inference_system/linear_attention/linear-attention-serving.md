@@ -4,7 +4,7 @@
 >
 > 2026-09 | 基于 vLLM（`43d691ec6b`，2026-08-07）与 SGLang（`f7101b0ae6`，2026-08-18）源码验证；架构结论引自 Kimi Linear（arXiv:2510.26692）、Kimi K3（arXiv:2607.24653）技术报告
 >
-> **性质说明**：机制与行为均经源码验证；性能数字（6.3×、75% 等）为各技术报告口径；涉及耗时的数字为量级示意。本文是 [post-KV-cache 新挑战](../post-kv-cache-era-challenges.md) §3/§5 两块「需要解决」的纵深展开。
+> **性质说明**：机制与行为均经源码验证；性能数字（6.3×、75% 等）为各技术报告口径；涉及耗时的数字为量级示意。本文是 [post-KV-cache 新挑战](../kv_compression/01-post-kv-cache-era.md) §3/§5 两块「需要解决」的纵深展开。
 
 ---
 
@@ -20,7 +20,7 @@
 | Qwen3.5               | 延续混合路线（GDN）       | 标量门控 | vLLM、SGLang（Day-0，2026-02） |
 | Qwen3.8（2.4T-A95B）  | 69 层 GDN                 | 标量门控 | SGLang（Day-0，2026-08）       |
 
-共同点有三条：3:1 的混合比（3 层线性层配 1 层全注意力/MLA 层，线性层省成本，少数全注意力层保全局交互能力）；循环状态替代 KV 序列（历史压缩进与序列长度无关的状态矩阵）；位置信息走衰减门（不需要 RoPE）。公开口径下，K3 在 1M 上下文的 decode 提速 6.3×、KV 体积降至全注意力基线的零头（技术报告口径，见 [post-KV-cache 篇 §1](../post-kv-cache-era-challenges.md) 的核验记录）。
+共同点有三条：3:1 的混合比（3 层线性层配 1 层全注意力/MLA 层，线性层省成本，少数全注意力层保全局交互能力）；循环状态替代 KV 序列（历史压缩进与序列长度无关的状态矩阵）；位置信息走衰减门（不需要 RoPE）。公开口径下，K3 在 1M 上下文的 decode 提速 6.3×、KV 体积降至全注意力基线的零头（技术报告口径，见 [post-KV-cache 篇 §1](../kv_compression/01-post-kv-cache-era.md) 的核验记录）。
 
 对推理系统来说，适配已经落进了两个主流引擎：vLLM 合入了 `GDNAttentionBackend`、`mamba_attn` 后端与 `MambaSpec`，SGLang 合入了 `hybrid_linear_attn_backend` 与自研 KDA PTX kernel（`layers/attention/linear/kda_ptx.py`）。至于适配的成色，从第二节开始逐层拆。
 
@@ -32,7 +32,7 @@
 
 标准 attention 的 prefill 所有 token 一起算；线性层的推理要走 chunkwise 循环：chunk 内并行，chunk 间串行传递状态。SGLang 的 chunk 大小取自 FLA 库的 `FLA_CHUNK_SIZE`（缺省 64，`server_args.py:9092-9103` 有引擎侧的取舍逻辑），1M（10⁶）上下文就是约 15,625 个串行步。
 
-这笔账的两个性质（[post-KV-cache 篇 §3](../post-kv-cache-era-challenges.md) 已推导，此处只列结论）：tensor 并行不减少串行步数，只能缩短每步延迟；TTFT 的下限由「步数 × 每步延迟」决定。K3 报告的应对是三件套：给衰减门加下界（scaled sigmoid，让 chunk 内的对角块能上 Tensor Core）、fused kernel 把 chunk 内计算合成一次、以及 KDA Context Parallelism（跨设备切序列分摊串行开销，报告 §5.1.2）。
+这笔账的两个性质（[post-KV-cache 篇 §3](../kv_compression/01-post-kv-cache-era.md) 已推导，此处只列结论）：tensor 并行不减少串行步数，只能缩短每步延迟；TTFT 的下限由「步数 × 每步延迟」决定。K3 报告的应对是三件套：给衰减门加下界（scaled sigmoid，让 chunk 内的对角块能上 Tensor Core）、fused kernel 把 chunk 内计算合成一次、以及 KDA Context Parallelism（跨设备切序列分摊串行开销，报告 §5.1.2）。
 
 ### 2.2 前缀缓存语义重写：从「token 匹配」到「状态检查点」
 
