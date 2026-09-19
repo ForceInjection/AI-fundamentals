@@ -1,0 +1,23 @@
+# markdown 结构检查。
+#
+# 跑的是 scripts/check_md_structure.py，和本地 pre-commit hook
+# （.pre-commit-config.yaml）同一个脚本。本地 hook 拦自己的提交，
+# 这里拦 PR——外部贡献者本机不会装 hook，只有 CI 才盖得到。
+name: markdown 结构检查
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  structure:
+    name: 围栏闭合与中文序号连续性
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet 'markdown-it-py>=3.0'
+      - run: python3 scripts/check_md_structure.py

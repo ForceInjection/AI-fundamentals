@@ -1,0 +1,14 @@
+# 提交前的 markdown 结构检查。脚本在 scripts/check_md_structure.py，
+# CI 侧跑的是同一个（.github/workflows/md-structure.yml）。
+#
+# 首次使用需要 pre-commit install；也可以随时手动跑：
+#     pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: md-structure
+        name: markdown 结构检查（围栏闭合 / 中文序号连续性）
+        entry: python3 scripts/check_md_structure.py
+        language: python
+        additional_dependencies: ['markdown-it-py>=3.0']
+        files: \.md$
