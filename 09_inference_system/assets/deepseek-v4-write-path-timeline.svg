@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="888" height="400" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="460" y="50" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">写路径的三段时序：入了队，但还没提交</text>
+  <text x="460" y="76" text-anchor="middle" font-size="13" fill="#64748B">commit_backup 把节点标记为「已备份」时，D→H 搬运甚至还没提交</text>
+
+  <!-- tick labels -->
+  <text x="120" y="102" text-anchor="middle" font-size="12" class="mono" fill="#64748B">t0</text>
+  <text x="330" y="102" text-anchor="middle" font-size="12" class="mono" fill="#64748B">t1</text>
+  <text x="790" y="102" text-anchor="middle" font-size="12" class="mono" fill="#64748B">t3</text>
+
+  <text x="120" y="126" text-anchor="middle" font-size="12.5" fill="#334155">分配 host 槽位</text>
+  <text x="330" y="126" text-anchor="middle" font-size="12.5" fill="#334155">入队 + commit_backup</text>
+  <text x="790" y="126" text-anchor="middle" font-size="12.5" fill="#334155">ack 到达</text>
+
+  <text x="330" y="144" text-anchor="middle" font-size="11.5" fill="#94A3B8">节点标记为「已备份」</text>
+  <text x="790" y="144" text-anchor="middle" font-size="11.5" fill="#94A3B8">清除标记、释放设备锁</text>
+
+  <!-- axis -->
+  <line x1="70" y1="160" x2="852" y2="160" stroke="#CBD5E1" stroke-width="2" marker-end="url(#arrow)"/>
+  <circle cx="120" cy="160" r="7" fill="#1F2937"/>
+  <circle cx="330" cy="160" r="7" fill="#B45309"/>
+  <circle cx="790" cy="160" r="7" fill="#1F2937"/>
+
+  <!-- window band -->
+  <rect x="330" y="174" width="460" height="44" rx="6" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.2"/>
+  <text x="560" y="201" text-anchor="middle" font-size="12.5" font-weight="600" fill="#92400E">窗口：节点已标记「已备份」，数据还没提交</text>
+
+  <text x="460" y="248" text-anchor="middle" font-size="13" font-weight="600" fill="#475569">三件事兜住这个窗口</text>
+
+  <!-- guards -->
+  <rect x="40" y="264" width="270" height="122" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="175" y="292" text-anchor="middle" font-size="14" font-weight="700" fill="#1F2937">设备锁</text>
+  <text x="175" y="322" text-anchor="middle" font-size="12" fill="#475569">非 write_back 路径下</text>
+  <text x="175" y="346" text-anchor="middle" font-size="12" fill="#475569">commit_backup 后加锁</text>
+  <text x="175" y="370" text-anchor="middle" font-size="12" fill="#475569">到 ack 才释放</text>
+
+  <rect x="325" y="264" width="270" height="122" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="460" y="292" text-anchor="middle" font-size="12.5" font-weight="700" class="mono" fill="#1F2937">write_through_pending_id</text>
+  <text x="460" y="322" text-anchor="middle" font-size="12" fill="#475569">给每个覆盖到的节点</text>
+  <text x="460" y="346" text-anchor="middle" font-size="12" fill="#475569">盖上 ack id</text>
+  <text x="460" y="370" text-anchor="middle" font-size="12" fill="#475569">ack 到达时按 id 清除</text>
+
+  <rect x="610" y="264" width="270" height="122" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="745" y="292" text-anchor="middle" font-size="14" font-weight="700" fill="#1F2937">丢弃计数</text>
+  <text x="745" y="322" text-anchor="middle" font-size="12" fill="#475569">驱逐真赶在 ack 之前</text>
+  <text x="745" y="346" text-anchor="middle" font-size="12" fill="#475569">这次备份就算作废</text>
+  <text x="745" y="370" text-anchor="middle" font-size="12" fill="#475569">记进 dropped_tokens_total</text>
+</svg>

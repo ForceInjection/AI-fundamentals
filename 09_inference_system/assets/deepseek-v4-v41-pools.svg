@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 706" width="920" height="706">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card -->
+  <rect x="16" y="12" width="888" height="682" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- Title -->
+  <text x="460" y="50" text-anchor="middle" font-size="21" font-weight="700" fill="#111827">V4 与 V4.1 的池清单对照</text>
+  <text x="460" y="76" text-anchor="middle" font-size="13" fill="#64748B">同一套 HiCache，两代喂进去的池不一样：数量只差一个，组成几乎全换</text>
+
+  <!-- Column headers -->
+  <text x="245" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2937">V4 · 七个池</text>
+  <text x="675" y="112" text-anchor="middle" font-size="15" font-weight="700" fill="#1F2937">V4.1 · 八个池</text>
+
+  <!-- ============ Band 1 ============ -->
+  <rect x="40" y="128" width="840" height="26" rx="5" fill="#F1F5F9"/>
+  <text x="54" y="146" font-size="13" font-weight="600" fill="#475569">两代相同</text>
+
+  <rect x="40" y="162" width="410" height="34" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="56" y="184" font-size="12" class="mono" fill="#0F172A">kv</text>
+  <text x="180" y="184" font-size="12" fill="#64748B">锚点，不装数据，只提供槽位</text>
+  <rect x="470" y="162" width="410" height="34" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="486" y="184" font-size="12" class="mono" fill="#0F172A">kv</text>
+  <text x="615" y="184" font-size="12" fill="#64748B">锚点，不装数据，只提供槽位</text>
+
+  <rect x="40" y="202" width="410" height="34" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="56" y="224" font-size="12" class="mono" fill="#0F172A">swa</text>
+  <text x="180" y="224" font-size="12" fill="#64748B">SWA 环内的未压缩 KV</text>
+  <rect x="470" y="202" width="410" height="34" rx="6" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="486" y="224" font-size="12" class="mono" fill="#0F172A">swa</text>
+  <text x="615" y="224" font-size="12" fill="#64748B">SWA 环内的未压缩 KV</text>
+
+  <!-- ============ Band 2 ============ -->
+  <rect x="40" y="252" width="840" height="26" rx="5" fill="#F1F5F9"/>
+  <text x="54" y="270" font-size="13" font-weight="600" fill="#475569">压缩主 KV 与 indexer　—　这一族被整族换掉</text>
+
+  <rect x="40" y="286" width="410" height="34" rx="6" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="56" y="308" font-size="12" class="mono" fill="#78350F">c4</text>
+  <text x="180" y="308" font-size="12" fill="#92400E">ratio 4 的压缩主 KV</text>
+  <rect x="40" y="326" width="410" height="34" rx="6" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="56" y="348" font-size="12" class="mono" fill="#78350F">c4_indexer</text>
+  <text x="180" y="348" font-size="12" fill="#92400E">indexer K</text>
+  <rect x="40" y="366" width="410" height="34" rx="6" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="56" y="388" font-size="12" class="mono" fill="#78350F">c128</text>
+  <text x="180" y="388" font-size="12" fill="#92400E">ratio 128 的压缩主 KV</text>
+
+  <rect x="470" y="286" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="308" font-size="12" class="mono" fill="#065F46">c1</text>
+  <text x="615" y="308" font-size="12" fill="#047857">ratio 1 的 fp4 latent</text>
+  <rect x="470" y="326" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="348" font-size="12" class="mono" fill="#065F46">c1_indexer</text>
+  <text x="615" y="348" font-size="12" fill="#047857">indexer K，payload</text>
+  <rect x="470" y="366" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="388" font-size="12" class="mono" fill="#065F46">c1_indexer_scale</text>
+  <text x="615" y="388" font-size="12" fill="#047857">indexer K，scale</text>
+  <rect x="470" y="406" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="428" font-size="12" class="mono" fill="#065F46">c2</text>
+  <text x="615" y="428" font-size="12" fill="#047857">ratio 2 的 fp4 latent</text>
+  <rect x="470" y="446" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="468" font-size="12" class="mono" fill="#065F46">c2_indexer</text>
+  <text x="615" y="468" font-size="12" fill="#047857">indexer K，payload</text>
+  <rect x="470" y="486" width="410" height="34" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1"/>
+  <text x="486" y="508" font-size="12" class="mono" fill="#065F46">c2_indexer_scale</text>
+  <text x="615" y="508" font-size="12" fill="#047857">indexer K，scale</text>
+
+  <!-- ============ Band 3 ============ -->
+  <rect x="40" y="540" width="840" height="26" rx="5" fill="#F1F5F9"/>
+  <text x="54" y="558" font-size="13" font-weight="600" fill="#475569">压缩器的滚动状态环</text>
+
+  <rect x="40" y="574" width="410" height="34" rx="6" fill="#FEE2E2" stroke="#FCA5A5" stroke-width="1"/>
+  <text x="56" y="596" font-size="12" class="mono" fill="#7F1D1D">c4_state</text>
+  <text x="180" y="596" font-size="12" fill="#991B1B">C4 层压缩器的滚动状态</text>
+  <rect x="40" y="614" width="410" height="34" rx="6" fill="#FEE2E2" stroke="#FCA5A5" stroke-width="1"/>
+  <text x="56" y="636" font-size="12" class="mono" fill="#7F1D1D">c4_indexer_state</text>
+  <text x="180" y="636" font-size="12" fill="#991B1B">C4 indexer 的压缩状态</text>
+
+  <rect x="470" y="574" width="410" height="74" rx="6" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1.2" stroke-dasharray="5 4"/>
+  <text x="675" y="606" text-anchor="middle" font-size="13" fill="#991B1B">这一类不存在</text>
+  <text x="675" y="628" text-anchor="middle" font-size="11.5" fill="#B91C1C">没有 ratio 4 的层，注册整段都不执行</text>
+
+  <!-- Footnote -->
+  <text x="40" y="676" font-size="11.5" fill="#94A3B8">c128_state 在 PoolName 枚举里，但没有 host pool 承接，永远被 entry_map 过滤掉，故未列出。</text>
+</svg>

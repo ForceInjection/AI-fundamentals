@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 484" width="920" height="484">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="888" height="456" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="460" y="50" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">锚点给槽位，sidecar 给字节</text>
+  <text x="460" y="76" text-anchor="middle" font-size="13" fill="#64748B">一个不装数据的池，是怎么当上派生池的锚的</text>
+
+  <!-- anchor -->
+  <text x="60" y="116" font-size="13" font-weight="600" fill="#1F2937">锚点池 kv　—　LogicalHostPool</text>
+  <text x="60" y="138" font-size="12" fill="#94A3B8">alloc / free 只按页对齐地记账，搬运方法全是 pass</text>
+
+  <rect x="60" y="152" width="800" height="46" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <line x1="193" y1="152" x2="193" y2="198" stroke="#CBD5E1" stroke-width="1"/>
+  <line x1="327" y1="152" x2="327" y2="198" stroke="#CBD5E1" stroke-width="1"/>
+  <line x1="461" y1="152" x2="461" y2="198" stroke="#CBD5E1" stroke-width="1"/>
+  <line x1="594" y1="152" x2="594" y2="198" stroke="#CBD5E1" stroke-width="1"/>
+  <line x1="728" y1="152" x2="728" y2="198" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="126" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 0</text>
+  <text x="260" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 1</text>
+  <text x="394" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 2</text>
+  <text x="527" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 3</text>
+  <text x="661" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 4</text>
+  <text x="794" y="181" text-anchor="middle" font-size="12" class="mono" fill="#94A3B8">slot 5</text>
+  <text x="460" y="216" text-anchor="middle" font-size="12" fill="#94A3B8">token 级槽位，不存任何 KV 字节</text>
+
+  <!-- derivation -->
+  <line x1="220" y1="228" x2="220" y2="278" stroke="#94A3B8" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="700" y1="228" x2="700" y2="278" stroke="#94A3B8" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <text x="460" y="248" text-anchor="middle" font-size="12.5" fill="#475569">索引从这里派生</text>
+  <text x="460" y="268" text-anchor="middle" font-size="12.5" fill="#475569">不各算各的</text>
+
+  <!-- sidecars -->
+  <rect x="80" y="290" width="280" height="104" rx="8" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1.2"/>
+  <text x="220" y="320" text-anchor="middle" font-size="13" class="mono" fill="#065F46">c4 / c128</text>
+  <text x="220" y="346" text-anchor="middle" font-size="12" fill="#047857">压缩主 KV 的真实字节</text>
+  <text x="220" y="368" text-anchor="middle" font-size="12" fill="#047857">落在这里</text>
+
+  <rect x="560" y="290" width="280" height="104" rx="8" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1.2"/>
+  <text x="700" y="320" text-anchor="middle" font-size="13" class="mono" fill="#065F46">c4_indexer</text>
+  <text x="700" y="346" text-anchor="middle" font-size="12" fill="#047857">indexer K</text>
+  <text x="700" y="368" text-anchor="middle" font-size="12" fill="#047857">同一批槽位</text>
+
+  <!-- takeaway -->
+  <rect x="60" y="410" width="800" height="34" rx="6" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="460" y="432" text-anchor="middle" font-size="12.5" fill="#92400E">状态池走另一条线：它们挂 swa，不挂这个锚点</text>
+</svg>
