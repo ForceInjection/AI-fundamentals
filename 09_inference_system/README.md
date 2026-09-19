@@ -10,6 +10,8 @@
 >
 > **续篇 · KV 压缩推到极限**：一个月后 DeepSeek 发布 V4.1-Flash，全局 KV 再压到 1/4、持久化压到 1/8，并推翻了前篇三处判断（跨层共享「无意义」、跨类型前缀缓存「未解决」、mHC 迭代「无法被 kernel fusion 覆盖」）。详见 **[把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](deepseek-v41-flash-kv-compression.md)**（报告 §章节 + 官方 `config.json` 双向核对）。
 >
+> **三续 · 压缩之后，分层缓存怎么办**：压缩把 KV 从「一个张量」变成一组异构池——分层缓存的三个隐含假设（单池 / 节点粒度备份 / backuped 二元状态）全部失效。以 SGLang HiCache 为对象，把 V4 的七池与 V4.1 的八池摆在一起看演进（ratio 4/128 的压缩 KV 换成 ratio 1/2 的 fp4 latent，两个状态环直接消失），拆三个结构性冲突（所有池必须同时就位 / 状态池不在匹配语义里 / 复制型 KV 与按 rank 切分的 sidecar）与上游的三条对策，以及 V4.1 真正接不住的两处（request-scoped pair ring 不能走 CPU 备份、unified KV 被拒）。详见 **[七池与八池：HiCache 支持 DeepSeek V4 与 V4.1 的不同接法](multilevel-cache-meets-multi-pool-kv.md)**（SGLang `c475ac5eaf` 源码逐条核对 ✓，60 处 `文件:行号` 引用）。
+>
 > **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。详见 **[当 Agent 流量成为推理系统的主要负载](agent_serving/agent-workload-serving.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
 >
 > **输出合法性税**：同系列姊妹篇——[约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](agent_serving/constrained-decoding-engines.md)，编译/每步/交互三笔账单 + 双引擎逐项对照 + jump-forward 重分词差异。
