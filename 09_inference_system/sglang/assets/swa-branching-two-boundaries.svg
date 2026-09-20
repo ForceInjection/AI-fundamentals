@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <pattern id="gap-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="#FEF2F2"/>
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#FCA5A5" stroke-width="2"/>
+    </pattern>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="888" height="406" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="460" y="48" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">混合注意力下的两个可复用边界</text>
+  <text x="460" y="72" text-anchor="middle" font-size="13" fill="#64748B">Full 的命中能到 L，SWA 只覆盖到 L_s —— 两者的差就是每个分叉请求都要重算的部分</text>
+
+  <!-- ============ Full bar ============ -->
+  <text x="66" y="128" font-size="13" font-weight="600" fill="#1D4ED8">Full 层 KV</text>
+  <rect x="66" y="138" width="620" height="34" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="76" y="160" font-size="12.5" fill="#1E40AF">永久有效，一路命中到 L</text>
+  <text x="692" y="160" font-size="11.5" class="mono" fill="#1E40AF">full_kv_hit_length = L</text>
+
+  <!-- ============ SWA bar ============ -->
+  <text x="66" y="203" font-size="13" font-weight="600" fill="#047857">SWA 层 KV</text>
+  <rect x="66" y="213" width="420" height="34" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+  <text x="76" y="235" font-size="12.5" fill="#065F46">可复用范围止于 L_s</text>
+  <rect x="486" y="213" width="200" height="34" rx="6" fill="url(#gap-hatch)" stroke="#F87171" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="586" y="235" text-anchor="middle" font-size="12" font-weight="600" fill="#B91C1C">已被出窗回收释放</text>
+
+  <!-- ============ Gap brace ============ -->
+  <path d="M 486 262 L 486 274 L 576 274 M 686 274 L 686 262" stroke="#DC2626" stroke-width="1.5" fill="none"/>
+  <text x="586" y="292" text-anchor="middle" font-size="12.5" font-weight="600" fill="#DC2626">缺口：必须重算（≈ 一个窗口）</text>
+
+  <!-- ============ Token axis ============ -->
+  <line x1="66" y1="330" x2="810" y2="330" stroke="#94A3B8" stroke-width="1.5"/>
+  <!-- ticks -->
+  <line x1="66" y1="324" x2="66" y2="336" stroke="#475569" stroke-width="1.5"/>
+  <line x1="486" y1="324" x2="486" y2="336" stroke="#475569" stroke-width="1.5"/>
+  <line x1="686" y1="324" x2="686" y2="336" stroke="#475569" stroke-width="1.5"/>
+  <line x1="790" y1="324" x2="790" y2="336" stroke="#94A3B8" stroke-width="1.5"/>
+  <text x="66" y="354" text-anchor="middle" font-size="12.5" class="mono" fill="#334155">0</text>
+  <text x="486" y="354" text-anchor="middle" font-size="12.5" class="mono" fill="#334155">L_s</text>
+  <text x="686" y="354" text-anchor="middle" font-size="12.5" class="mono" fill="#334155">L</text>
+  <text x="790" y="354" text-anchor="middle" font-size="12.5" class="mono" fill="#64748B">L+q</text>
+
+  <!-- Fork suffix region: bracket below axis -->
+  <path d="M 694 306 L 694 298 L 740 298 M 786 298 L 786 306" stroke="#94A3B8" stroke-width="1.2" fill="none"/>
+  <text x="740" y="290" text-anchor="middle" font-size="11" fill="#64748B">请求自己的后缀</text>
+
+  <!-- ============ Branching point marker ============ -->
+  <line x1="686" y1="90" x2="686" y2="330" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="596" y="86" width="180" height="26" rx="5" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5"/>
+  <text x="686" y="104" text-anchor="middle" font-size="12" class="mono" font-weight="600" fill="#B45309">swa_branching_seqlen</text>
+  <text x="586" y="104" text-anchor="end" font-size="11.5" fill="#B45309">分叉点 = 页对齐的 L（越过边界时才存在）</text>
+
+  <!-- foot note -->
+  <text x="66" y="402" font-size="11.5" fill="#94A3B8">示意图：L_s 与 L 的间距按机制示意，不代表实际比例；变量名对应 v0.5.20 的 MatchResult 字段。</text>
+</svg>

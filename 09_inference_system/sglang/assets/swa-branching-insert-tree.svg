@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="920" height="440">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="888" height="416" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="460" y="48" text-anchor="middle" font-size="20" font-weight="700" fill="#111827">插入时的两条边界：墓碑切在哪，窗口钉到哪</text>
+  <text x="460" y="72" text-anchor="middle" font-size="13" fill="#64748B">窗口外的节点留作墓碑保拓扑，窗口内的 SWA 值由 SWARebuild 从 Full 翻译而来</text>
+
+  <!-- ================= node chain ================= -->
+  <!-- n1 tombstone -->
+  <rect x="70" y="170" width="120" height="44" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="130" y="189" text-anchor="middle" font-size="12" font-weight="600" fill="#94A3B8">墓碑</text>
+  <text x="130" y="205" text-anchor="middle" font-size="10.5" class="mono" fill="#94A3B8">SWA = None</text>
+  <!-- n2 tombstone -->
+  <rect x="190" y="170" width="120" height="44" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="250" y="189" text-anchor="middle" font-size="12" font-weight="600" fill="#94A3B8">墓碑</text>
+  <text x="250" y="205" text-anchor="middle" font-size="10.5" class="mono" fill="#94A3B8">SWA = None</text>
+  <!-- n3 straddler: split at x=370 -->
+  <rect x="310" y="170" width="60" height="44" rx="0" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <rect x="370" y="170" width="60" height="44" fill="#D1FAE5" stroke="#10B981" stroke-width="1.3"/>
+  <rect x="310" y="170" width="120" height="44" rx="0" fill="none" stroke="#10B981" stroke-width="1.3"/>
+  <line x1="370" y1="164" x2="370" y2="220" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <text x="340" y="196" text-anchor="middle" font-size="11" font-weight="600" fill="#94A3B8">切开后</text>
+  <text x="340" y="210" text-anchor="middle" font-size="10" fill="#94A3B8">外侧墓碑</text>
+  <text x="400" y="196" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">内侧拿</text>
+  <text x="400" y="210" text-anchor="middle" font-size="10" fill="#065F46">SWA 值</text>
+  <!-- n4 alive -->
+  <rect x="430" y="170" width="120" height="44" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.3"/>
+  <text x="490" y="189" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">SWA 值</text>
+  <text x="490" y="205" text-anchor="middle" font-size="10.5" fill="#059669">从 Full 翻译</text>
+  <!-- n5 alive -->
+  <rect x="550" y="170" width="120" height="44" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.3"/>
+  <text x="610" y="189" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">SWA 值</text>
+  <text x="610" y="205" text-anchor="middle" font-size="10.5" fill="#059669">从 Full 翻译</text>
+  <!-- chain connector -->
+  <line x1="70" y1="230" x2="670" y2="230" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="130" y="248" text-anchor="middle" font-size="10.5" fill="#94A3B8">n1</text>
+  <text x="250" y="248" text-anchor="middle" font-size="10.5" fill="#94A3B8">n2</text>
+  <text x="370" y="248" text-anchor="middle" font-size="10.5" fill="#94A3B8">n3（跨界）</text>
+  <text x="490" y="248" text-anchor="middle" font-size="10.5" fill="#94A3B8">n4</text>
+  <text x="610" y="248" text-anchor="middle" font-size="10.5" fill="#94A3B8">n5</text>
+
+  <!-- boundary labels -->
+  <text x="370" y="152" text-anchor="middle" font-size="11.5" class="mono" font-weight="600" fill="#B45309">swa_evicted_seqlen</text>
+  <text x="370" y="137" text-anchor="middle" font-size="11" fill="#B45309">墓碑边界：此前已出窗回收</text>
+
+  <line x1="670" y1="120" x2="670" y2="230" stroke="#3B82F6" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <text x="670" y="108" text-anchor="middle" font-size="11.5" class="mono" font-weight="600" fill="#1D4ED8">swa_branching_seqlen</text>
+  <text x="670" y="93" text-anchor="middle" font-size="11" fill="#1D4ED8">插入边界推到这里</text>
+
+  <!-- ================= inset: full->swa mapping ================= -->
+  <rect x="708" y="120" width="176" height="150" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="796" y="142" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">full→SWA 映射</text>
+  <rect x="724" y="154" width="42" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="745" y="170" text-anchor="middle" font-size="10.5" class="mono" fill="#1E40AF">f1</text>
+  <rect x="774" y="154" width="42" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="795" y="170" text-anchor="middle" font-size="10.5" class="mono" fill="#1E40AF">f2</text>
+  <rect x="824" y="154" width="42" height="24" rx="4" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+  <text x="845" y="170" text-anchor="middle" font-size="10.5" class="mono" fill="#1E40AF">f3</text>
+  <line x1="796" y1="184" x2="796" y2="206" stroke="#94A3B8" stroke-width="1.3"/>
+  <polygon points="796,212 792,203 800,203" fill="#94A3B8"/>
+  <text x="796" y="200" text-anchor="middle" font-size="10" fill="#64748B">查表翻译</text>
+  <rect x="724" y="216" width="42" height="24" rx="4" fill="#D1FAE5" stroke="#10B981" stroke-width="1"/>
+  <text x="745" y="232" text-anchor="middle" font-size="10.5" class="mono" fill="#065F46">s1</text>
+  <rect x="774" y="216" width="42" height="24" rx="4" fill="#D1FAE5" stroke="#10B981" stroke-width="1"/>
+  <text x="795" y="232" text-anchor="middle" font-size="10.5" class="mono" fill="#065F46">s2</text>
+  <rect x="824" y="216" width="42" height="24" rx="4" fill="#D1FAE5" stroke="#10B981" stroke-width="1"/>
+  <text x="845" y="232" text-anchor="middle" font-size="10.5" class="mono" fill="#065F46">s3</text>
+  <text x="796" y="260" text-anchor="middle" font-size="10.5" fill="#64748B">alloc 时成对登记</text>
+
+  <!-- ================= bottom notes ================= -->
+  <rect x="70" y="286" width="814" height="74" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="88" y="312" font-size="12.5" fill="#334155">• 墓碑只留拓扑：节点还在树上，后续匹配能走到这里再判定；Full 的值始终完好。</text>
+  <text x="88" y="336" font-size="12.5" fill="#334155">• 存活窗口 = 两条边界之间；下一个在同一位分叉的请求，从这里直接命中。</text>
+
+  <text x="70" y="396" font-size="11.5" fill="#94A3B8">示意图：节点宽度与边界位置按机制示意；函数与字段名对应 v0.5.20 的 SWAComponent（swa.py）。</text>
+</svg>

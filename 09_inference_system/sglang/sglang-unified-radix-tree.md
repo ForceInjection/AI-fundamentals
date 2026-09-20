@@ -120,7 +120,7 @@ COMPONENT_REGISTRY = {
 }
 ```
 
-`ComponentType` 枚举（FULL / MAMBA / SWA）是节点的"状态维度"。**新增注意力类型 = 实现一个组件接口 + 注册**——树的 match/insert/evict 一行不用改。三个组件的实现在独立的 `unified_cache_components/` 子目录（`full_component.py` / `mamba_component.py` / `swa_component.py`）——树核心、注册表、组件实现三层分离。
+`ComponentType` 枚举（FULL / MAMBA / SWA）是节点的"状态维度"。**新增注意力类型 = 实现一个组件接口 + 注册**——树的 match/insert/evict 一行不用改。三个组件的实现在独立的 `unified_cache/components/` 子目录（`full.py` / `mamba.py` / `swa.py`）——树核心、注册表、组件实现三层分离。
 
 ### 3.3 节点结构
 
@@ -182,6 +182,8 @@ DSA 的缓存支持完全来自组件组合，没有新增组件——组件化�
 ### 5.1 默认化与破坏性变更
 
 PR #30468 让 UnifiedRadixTree 成为 SWA、Mamba、DSA 模型的默认缓存实现。release notes 明确标注这是**行为变化**（breaking change）：缓存命中逻辑改变，升级后需要重新验证这些架构的缓存行为。
+
+默认化分两步走，这一步只管混合架构模型。全量默认是 v0.5.19 的 #35081（`Using unified radix tree by default for all case`）——到那时统一树才成为所有情况下的默认树缓存，`SGLANG_ENABLE_UNIFIED_RADIX_TREE` 随之失效。
 
 默认化之前，PR #21206 做过正确性验证：AIME 25 精度测试中统一树与旧版每模型树基本持平（如 Qwen3-next 64.38% vs 64.79% pass@1、GPT-OSS-20B 73.33% vs 71.67%）——统一没有牺牲正确性。
 
