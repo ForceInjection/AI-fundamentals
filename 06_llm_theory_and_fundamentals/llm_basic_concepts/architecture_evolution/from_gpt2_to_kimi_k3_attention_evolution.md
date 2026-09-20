@@ -702,17 +702,22 @@ Kimi Linear 的解码吞吐比全注意力最高提升 6 倍——这个提升�
 
 ## 八、Kimi K3：工业化混合架构
 
-Kimi K3 在 Kimi Linear 的基础上做了规模化升级。其核心架构是一个**23 次循环的宏结构**：
+Kimi K3 在 Kimi Linear 的基础上做了规模化升级。其核心架构是 **23 个宏循环（92 层）加一个末层额外 MLA，共 93 层**：
 
 ```text
-每个宏循环（共 23 次）：
+每个宏循环（共 23 次，第 1–92 层）：
   ├── Layer_i+0: KDA + 稠密 FFN + SiTU 激活
   ├── Layer_i+1: KDA + LatentMoE + SiTU 激活
   ├── Layer_i+2: KDA + LatentMoE + SiTU 激活
   └── Layer_i+3: MLA + LatentMoE + SiTU 激活  ← Gated MLA + 周期性 softmax 检索
 
+末层（第 93 层）：额外的 1 个 MLA，收尾完整上下文检索
+→ 全模型 69 个 KDA 层 + 24 个 MLA 层
+
 每 3 个宏循环（12 层）做一次 AttnRes
 ```
+
+> 层数依据 `moonshotai/Kimi-K3` config.json 的 `full_attn_layers`（23 项 [4,8,…,92] + [93]）与 `kda_layers`（69 项）逐层清单。
 
 ![Kimi K3 的四层宏循环结构：3 层 KDA + 1 层 Gated MLA，每 12 层插入一次 AttnRes](https://www.datocms-assets.com/104802/1785353466-25.png?auto=format&w=1200)
 
@@ -1006,6 +1011,7 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 >
 > - 原文：[22,580: GPT-2 to Kimi K3, explained](https://www.baseten.co/blog/22580-gpt-2-to-kimi-k3-explained/) — Ali Taha, Baseten (2026.07.30)
 > - 源码验证：[01-post-kv-cache-era.md](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md) — 逐条对照 vLLM/SGLang 源码的机制验证
+> - KV Cache 视角：[Attention 演进与 KV Cache 之变](attention_evolution_kv_cache.md) — 同一条时间线上，每代架构在存储侧省下的那笔账（2019–2026）
 > - 架构主线：[LLM 架构演进史](llm_architecture_evolution.md) — GPT-1 到 DeepSeek-V3 的七个拐点
 > - KV Cache：[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md) — 42 篇文章，从原理到分布式管理
 > - 基础概念：[Transformer 架构详解](../transformer/transformer_architecture.md) — 从自注意力到完整 Decoder Block
