@@ -52,7 +52,7 @@ evict_threshold = pre_len - max(sliding_window_size, page_size)
 
 ![两个可复用边界与缺口](assets/swa-branching-two-boundaries.svg)
 
-*图 1｜两个可复用边界：Full 的命中延伸到 L，SWA 只覆盖到 L_s，两者的差就是每个分叉请求都要重算的部分；分叉点是页对齐后的 L，越过边界时才存在。*
+_图 1｜两个可复用边界：Full 的命中延伸到 L，SWA 只覆盖到 L_s，两者的差就是每个分叉请求都要重算的部分；分叉点是页对齐后的 L，越过边界时才存在。_
 
 Full 组件能命中的前缀长度（代码里叫 `full_kv_hit_length`）**可以一直延伸到 L**，而匹配的实际落点 `L_s` 由 SWA 决定——它只有一个窗口。两者之差，就是前向必须重新计算的那一段。
 
@@ -122,12 +122,12 @@ assert swa_evicted_seqlen % self.tree_core.page_size == 0, (
 
 分叉点算出来之后，要穿过四个层次才能变成实际的缓存写入。这条链在代码里是可以完整追下来的：
 
-| 位置 | 字段 | 含义 |
-| --- | --- | --- |
-| `base_prefix_cache.py:256` | `MatchResult.swa_branching_seqlen` | 匹配结果里带出来 |
-| `managers/schedule_policy.py:212` | `req.swa_branching_seqlen` | 挂到请求上 |
-| `base_prefix_cache.py:90` | `InsertParams.swa_branching_seqlen` | 传给插入流程 |
-| `base_prefix_cache.py:112` | `InsertResult.swa_branch_inserted` | 插入回执（布尔） |
+| 位置                              | 字段                                | 含义             |
+| --------------------------------- | ----------------------------------- | ---------------- |
+| `base_prefix_cache.py:256`        | `MatchResult.swa_branching_seqlen`  | 匹配结果里带出来 |
+| `managers/schedule_policy.py:212` | `req.swa_branching_seqlen`          | 挂到请求上       |
+| `base_prefix_cache.py:90`         | `InsertParams.swa_branching_seqlen` | 传给插入流程     |
+| `base_prefix_cache.py:112`        | `InsertResult.swa_branch_inserted`  | 插入回执（布尔） |
 
 注意第三段的字段名和第一段相同、但语义不同：匹配侧它是「缺口在哪」，插入侧它是「把窗口钉在哪」。同一个整数，从观察变成了指令。
 
@@ -250,7 +250,7 @@ return alloc_full_indices
 
 ![插入时的两条边界](assets/swa-branching-insert-tree.svg)
 
-*图 2｜插入时的两条边界：`swa_evicted_seqlen` 左侧留墓碑保拓扑，两条边界之间的存活窗口由 `SWARebuild` 从 Full 翻译而来，插入边界推到分叉点。右侧的翻译查表即本节的 full→SWA 映射。*
+_图 2｜插入时的两条边界：`swa_evicted_seqlen` 左侧留墓碑保拓扑，两条边界之间的存活窗口由 `SWARebuild` 从 Full 翻译而来，插入边界推到分叉点。右侧的翻译查表即本节的 full→SWA 映射。_
 
 ### 3.4 两条调用路径与释放时机
 
@@ -300,7 +300,7 @@ if envs.SGLANG_OPT_UNIFIED_CACHE_FREE_OUT_OF_WINDOW_SLOTS.get():
 
 ![修复前后对比](assets/swa-branching-before-after.svg)
 
-*图 3｜修复前后的对比：缺口从「每个分叉请求重算一遍再释放」变成「一次物化、后续复用」。图中数字为官方自测口径，边界见 §5.4。*
+_图 3｜修复前后的对比：缺口从「每个分叉请求重算一遍再释放」变成「一次物化、后续复用」。图中数字为官方自测口径，边界见 §5.4。_
 
 测试把这个闭环写成了显式断言（`test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py:6506-6524`）：
 
@@ -443,17 +443,17 @@ SGLANG_UNIFIED_RADIX_TREE_CORE_BACKEND = EnvStr("python")
 
 ## 源文件索引
 
-| 文件 | 关键内容 | 引用点 |
-| --- | --- | --- |
-| `python/sglang/srt/mem_cache/base_prefix_cache.py` | `MatchResult` / `InsertParams` / `InsertResult` 中分叉点字段的定义 | `:90`, `:112`, `:238-240`, `:256` |
-| `python/sglang/srt/mem_cache/unified_cache/components/swa.py` | SWA 组件：匹配终局计算、插入改写、重叠分支处理、写回、SWA 值翻译与重建、清理、HiCache 备份采集 | `:60-68`, `:92-131`, `:102`, `:221-224`, `:344-386`, `:388-466`, `:410-412`, `:509-544`, `:925-952`, `:967-971`, `:973-991`, `:1501-1507` |
-| `python/sglang/srt/mem_cache/unified_radix_cache.py` | 两条插入路径的调用顺序与释放时机 | `:959-1090`（finished）、`:1098-1160`（unfinished，释放在前） |
-| `python/sglang/srt/mem_cache/allocator/swa.py` | SWA 池分配与 full→SWA 映射的建立 | `:202-204`, `:219-232` |
-| `python/sglang/srt/mem_cache/common.py` | SWA 出窗释放阈值 | `:55-100`（阈值在 `:86`） |
-| `python/sglang/srt/managers/schedule_policy.py` | 分叉点从匹配结果挂到请求上 | `:212` |
-| `python/sglang/srt/environ.py` | 树核后端默认值、出窗释放开关、SWA 逐出间隔 | `:664`, `:666`, `:672` |
-| `rust/sglang-radix-tree/src/components/swa.rs` | Rust 侧的分叉点计算与插入回执 | `:427-433`, `:606-608` |
-| `test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py` | 复用闭环的显式断言 | `:6482-6524`, `:6526-6584` |
+| 文件                                                                  | 关键内容                                                                                       | 引用点                                                                                                                                    |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `python/sglang/srt/mem_cache/base_prefix_cache.py`                    | `MatchResult` / `InsertParams` / `InsertResult` 中分叉点字段的定义                             | `:90`, `:112`, `:238-240`, `:256`                                                                                                         |
+| `python/sglang/srt/mem_cache/unified_cache/components/swa.py`         | SWA 组件：匹配终局计算、插入改写、重叠分支处理、写回、SWA 值翻译与重建、清理、HiCache 备份采集 | `:60-68`, `:92-131`, `:102`, `:221-224`, `:344-386`, `:388-466`, `:410-412`, `:509-544`, `:925-952`, `:967-971`, `:973-991`, `:1501-1507` |
+| `python/sglang/srt/mem_cache/unified_radix_cache.py`                  | 两条插入路径的调用顺序与释放时机                                                               | `:959-1090`（finished）、`:1098-1160`（unfinished，释放在前）                                                                             |
+| `python/sglang/srt/mem_cache/allocator/swa.py`                        | SWA 池分配与 full→SWA 映射的建立                                                               | `:202-204`, `:219-232`                                                                                                                    |
+| `python/sglang/srt/mem_cache/common.py`                               | SWA 出窗释放阈值                                                                               | `:55-100`（阈值在 `:86`）                                                                                                                 |
+| `python/sglang/srt/managers/schedule_policy.py`                       | 分叉点从匹配结果挂到请求上                                                                     | `:212`                                                                                                                                    |
+| `python/sglang/srt/environ.py`                                        | 树核后端默认值、出窗释放开关、SWA 逐出间隔                                                     | `:664`, `:666`, `:672`                                                                                                                    |
+| `rust/sglang-radix-tree/src/components/swa.rs`                        | Rust 侧的分叉点计算与插入回执                                                                  | `:427-433`, `:606-608`                                                                                                                    |
+| `test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py` | 复用闭环的显式断言                                                                             | `:6482-6524`, `:6526-6584`                                                                                                                |
 
 ## 参考
 
