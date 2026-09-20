@@ -172,7 +172,7 @@ def generate_with_kv_cache(model, prompt, max_new_tokens=50):
 
 KV Cache 将每步解码的计算量从 O(T²·D) 降到 O(T·D)，但存储随序列长度**线性增长**：
 
-$$\text{KV Cache 大小} = 2 \times n_{\text{layer}} \times n_{\text{kv\_heads}} \times d_{\text{head}} \times \text{seq\_len} \times \text{dtype\_bytes}$$
+$$\text{KV Cache 大小} = 2 \times n_{\text{layer}} \times n_{\text{kv heads}} \times d_{\text{head}} \times \text{seq len} \times \text{bytes}$$
 
 对于 70B 模型、128K 上下文的标准 GQA8 配置，仅 KV Cache 就吃掉了约 320 GB 显存。
 

@@ -30,7 +30,7 @@
 
 用一个迷你模型把账建立起来：2 层、每层 2 个注意力头、head_dim = 4、fp16（2 字节）。每个 token 在每层每头要存 K 和 V 两组向量：
 
-$$\text{每 token KV} = 2 \times n_{\text{layer}} \times n_{\text{kv\_heads}} \times d_{\text{head}} \times \text{dtype\_bytes} = 2 \times 2 \times 2 \times 4 \times 2 = \text{64 字节}$$
+$$\text{每 token KV} = 2 \times n_{\text{layer}} \times n_{\text{kv heads}} \times d_{\text{head}} \times \text{bytes} = 2 \times 2 \times 2 \times 4 \times 2 = \text{64 字节}$$
 
 10 个 token 的上下文就是 640 字节。迷你模型无所谓，但这个公式后面会反复用到。
 
@@ -92,9 +92,9 @@ GQA 的思路是「少存几份」；DeepSeek 在 V2（2024）提出的 MLA 换�
 
 ### 4.1 存的是什么
 
-MLA 把每 token 的 K/V 压成一个 `kv_lora_rank`（d_c）维的隐向量 c^KV，另加一段为兼容 RoPE 而解耦出来的位置键（`qk_rope_head_dim` = d_h^R 维）。推理时只需要缓存这两样（V2 论文 §2.1.1/§2.1.3 原文：「only needs to cache c_t^KV」「the decoupled key … should be cached with c_t^KV together」）：
+MLA 把每 token 的 K/V 压成一个 `kv_lora_rank`（`d_c`）维的隐向量 `c^KV`，另加一段为兼容 RoPE 而解耦出来的位置键（`qk_rope_head_dim` = d_h^R 维）。推理时只需要缓存这两样（V2 论文 §2.1.1/§2.1.3 原文：「only needs to cache c_t^KV」「the decoupled key … should be cached with c_t^KV together」）：
 
-$$\text{每 token KV} = (d_c + d_h^R) \times n_{\text{layer}} \times \text{dtype\_bytes}$$
+$$\text{每 token KV} = (d_c + d_h^R) \times n_{\text{layer}} \times \text{bytes}$$
 
 V2 论文 Table 1 的 caption 给出了换算：按 d_c = 4·d_h、d_h^R = d_h/2 的配置，**MLA 的账相当于只有 2.25 组的 GQA，但检索能力「Stronger」**。账面到了 MQA 的水平，能力保住 MHA 的档位。
 

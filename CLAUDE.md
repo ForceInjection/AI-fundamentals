@@ -50,6 +50,7 @@ The full sequence is packaged as the **`tech-article-pipeline`** skill — invok
 - Long-form articles often use **Chinese numerals** for major headings (一、二、三…). Follow the existing heading style of the document you're editing.
 - Numbered article series use zero-padded prefixes with Chinese descriptive filenames (`01-背景与目标.md`, `02-集群规模分类与特征分析.md`).
 - **Time-sensitive data** (prices, benchmarks, model releases, market stats): record the as-of date, mark vendor-claimed vs independently measured figures (e.g. 「厂商口径」), and add a 复核 reminder when data moves fast (see `99_misc/token_factory_talk/README.md`).
+- **Math formulas (`$$`)**: never put underscores inside `\text{}` — GitHub restores `\_` to a bare `_` before handing TeX to its math renderer, which then fails with `'_' allowed only in math mode` (local MathJax tolerates it, so it passes local checks and only breaks on GitHub). Use spaces or short words in subscripts (`n_{\text{kv heads}}`, `\text{bytes}`); wrap bare notation in prose (`c^KV`, `d_c`) in code spans. Self-check with `grep -n '\$\$.*\\text{[^}]*_'`.
 
 ## Source-code-based deep-dive articles
 
