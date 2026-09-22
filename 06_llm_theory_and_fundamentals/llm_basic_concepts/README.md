@@ -27,6 +27,7 @@
 - **[GPT-2 到 Kimi K3 的注意力机制演进](architecture_evolution/from_gpt2_to_kimi_k3_attention_evolution.md)** — 注意力**计算侧**的演进线：MHA 的多头分工、稀疏与滑窗的取舍、Delta 规则线性化，直到 K3 的 KDA + Gated MLA 混合架构；机制逐段对照论文与源码。
 - **[Attention 演进与 KV Cache 之变](architecture_evolution/attention_evolution_kv_cache.md)** — 2020–2026 年 17 个代表性模型的存储侧账目：MHA→GQA→MLA→滑窗→稀疏→线性→压缩，每代记「存了什么、省几倍、代价什么」；2026 年三条路线（序列压缩/稀疏选择/线性混合）的账不可互相比较。全部数字对照 config.json 与引擎源码核对。
 - **[七张图讲透 KV Cache](architecture_evolution/kv_cache_seven_charts.md)** — 上文的图解传播版：从「7 年前一个 token 要 4.5 MB、今天只要 890 B」讲起，手绘风格，每图配文不超过 150 字，入门从这里开始。
+- **[注意力算力账](architecture_evolution/attention_compute_fifteen_charts.md)** — 计算侧的十五张图：从 171.7 亿格的注意力矩阵，到 Delta 规则、门控衰减、K3 的 93 层混合，再到 DeepSeek 的先挑后算与序列压缩——三条路线三本账。
 
 ### 3.2 参数效率与推理优化
 

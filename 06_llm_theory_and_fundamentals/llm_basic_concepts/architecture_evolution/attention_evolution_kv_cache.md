@@ -4,7 +4,7 @@
 >
 > **口径说明**：文中「每 token KV」均按训练精度 2 字节/元素（fp16/bf16）计算，公式随各节给出；2026 年模型的池结构数字为 config + 池代码公式推算，未跑引擎实测。GPT-3 精度论文未声明（按 2 字节假设），单独标注。
 >
-> 相关文章：[七张图讲透 KV Cache](kv_cache_seven_charts.md)——本文的图解传播版；[GPT-2 到 Kimi K3 的注意力机制演进](from_gpt2_to_kimi_k3_attention_evolution.md)——同一时间线上注意力**计算侧**的演进，本文专注**存储侧**的那笔账；[KV 压缩推到极限三部曲](../../../09_inference_system/kv_compression/README.md)——2026 年序列压缩路线的深挖。
+> 相关文章：[七张图讲透 KV Cache](kv_cache_seven_charts.md)——本文的图解传播版；[注意力算力账](attention_compute_fifteen_charts.md)——计算侧演进的十五张图；[GPT-2 到 Kimi K3 的注意力机制演进](from_gpt2_to_kimi_k3_attention_evolution.md)——同一时间线上注意力**计算侧**的演进，本文专注**存储侧**的那笔账；[KV 压缩推到极限三部曲](../../../09_inference_system/kv_compression/README.md)——2026 年序列压缩路线的深挖。
 
 ---
 
