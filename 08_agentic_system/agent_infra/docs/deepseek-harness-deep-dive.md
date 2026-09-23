@@ -262,6 +262,7 @@ dsh 做的事情，可以概括成一句话：它把 Agent 的骨架拆成了插
 
 ## 相关阅读
 
+- [DeepSeek Harness：一本书讲透 Agent 怎么组织](deepseek-harness-book-charts.md)——同主题新书（亦凯，异步图书 2026-09）的书介与概念图解，与本文第六节推荐的《Harness 工程实战》分工互补
 - [OpenHarness 深入浅出：解密开源智能体基础设施](openharness-deep-dive.md)——另一个开源 Harness 的架构拆解，可对照看「Harness 该包含什么」
 - [Agent Sandbox 的演进与设计范式](agent-sandbox-design.md)——沙箱从「硬件级隔离」向「策略优先」的演进
 - [Claude Code Sandbox 安全隔离机制解析](claude-code-sandbox.md)——Bubblewrap 隔离架构的工程实现
