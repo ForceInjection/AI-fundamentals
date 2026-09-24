@@ -42,6 +42,9 @@ AI Agent 的一次任务执行通常需要多个推理轮次。每轮推理时�
 
 这意味着 **content-identical ≠ cache-identical**。位置信息已经"烧进"了 K 的数值表示里。在 Agent 场景中，由于上下文结构的高度动态性，这个问题尤为突出。
 
+
+vLLM APC 的 block hash 使用父块哈希、当前块的 token IDs 和必要的 extra keys，不拿 embedding 或 KV 向量计算哈希。和RoPE关系不大。。这里的描述有问题吧，"K 向量不同导致 block hash 不同" 完全没道理
+
 ---
 
 ## 二、RoPE 做了什么——从旋转角度到缓存障碍
