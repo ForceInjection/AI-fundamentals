@@ -8,6 +8,8 @@
 
 ## 内容导航
 
+> Engram（条件记忆 / N-gram Embedding）是 V4.1-Flash 的配套机制但主题独立，专文见 [`../engram/`](../engram/README.md)。
+
 - **[01 · 当百万 Token KV Cache 从 250GB 降到 5GB](01-post-kv-cache-era.md)** — V4 与 K3 各自的稀疏化路线、1M 上下文下每 token 的 FLOPs 与 KV 体积账，以及旧优化技术在新架构下的位置重排（对照 vLLM/SGLang 源码交叉验证，逐条标注 ✓）。**从这里读起。**
 - **[02 · 把 KV Cache 压缩推到极限](02-deepseek-v41-flash.md)** — DeepSeek-V4.1-Flash 技术报告精读：全局 KV 再压到 1/4、持久化压到 1/8，CED 架构、CSA2 跨层复用、单入口 mHC、Engram、FP4 main KV。它推翻了 01 的三处判断（报告 §章节与官方 `config.json` 对照）。
 - **[03 · 七池与八池](03-multilevel-cache.md)** — 压缩之后的系统后果。以 SGLang HiCache 为对象，对照 V4 的七个池与 V4.1 的八个池（数量只差一个，组成几乎全换），拆三个结构性冲突与上游的对策，以及 V4.1 落在这套机制之外的两处例外（SGLang 源码逐条核对，引用均带 `文件:行号`）。

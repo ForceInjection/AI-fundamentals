@@ -471,6 +471,7 @@ CSA2 的三个乘性维度也是同一路数：先搭一个坐标系，再找出
 
 ## 相关阅读
 
+- [条件记忆：DeepSeek V4.1 Engram 如何用 O(1) 查表换掉一层计算](../engram/01-engram-deep-dive.md)——本文 §八 Engram 的源码级展开：官方 demo 与 SGLang 实现、LPDDR 换 HBM 的优势与代价
 - [当百万 Token KV Cache 从 250GB 降到 5GB](01-post-kv-cache-era.md)——本文的出发点，三处判断在本文中被更新
 - [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)——V2→V3→V3.2→V4 的完整演进，含 vLLM 源码级实现
 - [vLLM 中的 DeepSeek V4：高效长上下文注意力](../vllm/module_analysis/deepseek_v4_attention_support.md)——混合 KV 缓存、算子融合与多流编排

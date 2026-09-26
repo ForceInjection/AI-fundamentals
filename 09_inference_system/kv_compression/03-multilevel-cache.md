@@ -494,6 +494,7 @@ V4 注册的池里除了锚点和 `swa` 其余五个都是 sidecar，V4.1 是六
 
 ## 相关阅读
 
+- [条件记忆：DeepSeek V4.1 Engram 如何用 O(1) 查表换掉一层计算](../engram/01-engram-deep-dive.md)——本文 §Engram 例外（`engram.py:547` 钉住内存不进池）的源码级展开，含两种 host 布局的取舍
 - [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](02-deepseek-v41-flash.md)——本文的上篇，算的是每 token 的体积账
 - [HiCache 深入详解](../sglang/hicache_deep_dive.md)——分层缓存的整体架构、HiRadixTree 元数据拓扑与三种预取/写回策略
 - [KV Cache L1↔L2 数据流深度分析](../sglang/sglang-kv-cache-dataflow-analysis.md)——write_backup / eviction / load_back 的逐操作代码路径，本文 §3.2 的时序细节在那里有更完整的展开
