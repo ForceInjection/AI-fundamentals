@@ -4,6 +4,7 @@ SGLang 是新一代 LLM 推理框架，以 RadixAttention 前缀缓存和高效�
 
 ## 内容索引
 
+- **[MoE 与百万上下文：请求怎么分卡，长文怎么切](sglang-dp-attention-dcp.md)**：MoE 与长上下文把 attention 推向两条正交并行轴。dp-attention 切请求（attention 复制、MoE 摊满、逐 forward 的 padding 成本决策、pad 行真跑 router 的坑）；DCP 切序列位置（owner rule 与虚拟地址加宽契约、decode 三后端合并、CUDA graph 原地改写），以及两者的叠加条件与例外。
 - **[SGLang UnifiedRadixTree：一棵树，四种注意力](sglang-unified-radix-tree.md)**：对比旧版三棵树（RadixCache/MambaRadixCache/SWARadixCache）的并存代价，拆解 0.5.16 默认化的 UnifiedRadixTree——统一树核心 + 可插拔组件（FULL/MAMBA/SWA 独立 LRU 与缓存语义），以及它作为 ReplaySSM 同步、命中状态精确重置、GLM-5.2 缓存层拆分（-74%）和 DSpark 动态调度的地基。
 - **[SGLang 分叉点缓存源码解析：从 43.8% 到 60.8% 的命中率是怎么来的](sglang-swa-branching-point-cache.md)**：承接统一树的下一站。混合注意力让前缀缓存第一次有了两个边界——Full 能命中整段共享前缀，SWA 只保留一个窗口，两者之差就是每次分叉都要重算的部分。逐段拆解分叉点 `swa_branching_seqlen` 的计算（匹配侧）、把窗口钉进树的插入改写（插入侧）、复用闭环的测试断言，以及 Rust 核移植的真实性质（功能对齐、默认关闭）和 43.8%→60.8% 这个数字的口径边界。
 - **[SGLang 0.5.16 发布解读：当推理系统学会逐请求精算](sglang-0.5.16-release.md)**：574 个 PR、169 位贡献者的重大版本。以 DSpark 置信度驱动投机解码为主线——从固定验证窗口的瓶颈出发，拆解半自回归块草稿器、置信度头、顺序温度缩放、ragged verify + CUDA graph 全图捕获、零开销调度的完整链条；以 Inkling 975B 多模态 MoE 的 Day-0 支持为副线，分析 ShortConv 融合、全前向 CUDA 图捕获、共享专家 Sink 线性化布局等专项优化。包含 12 项破坏性变更清单与升级建议。
