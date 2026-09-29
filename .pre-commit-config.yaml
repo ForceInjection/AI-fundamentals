@@ -1,14 +1,20 @@
-# 提交前的 markdown 结构检查。脚本在 scripts/check_md_structure.py，
-# CI 侧跑的是同一个（.github/workflows/md-structure.yml）。
+# 提交前的 markdown 结构检查（围栏闭合 / 中文序号连续性）。
+# 脚本正本在作者的用户级技能：~/.claude/skills/md-structure-checker/scripts/check_md_structure.py
+# （2026-09-29 从本仓库移出；CI 工作流已随之退役——GitHub runner 够不到本机技能目录，
+# 外部贡献者的 PR 不再被此检查自动拦截）。
 #
+# 技能存在则执行检查；不存在则优雅跳过（外部贡献者装了 pre-commit 也不会红）。
 # 首次使用需要 pre-commit install；也可以随时手动跑：
 #     pre-commit run --all-files
+#     python3 ~/.claude/skills/md-structure-checker/scripts/check_md_structure.py
 repos:
   - repo: local
     hooks:
       - id: md-structure
         name: markdown 结构检查（围栏闭合 / 中文序号连续性）
-        entry: python3 scripts/check_md_structure.py
-        language: python
-        additional_dependencies: ['markdown-it-py>=3.0']
+        entry: >-
+          bash -c 'S="$HOME/.claude/skills/md-structure-checker/scripts/check_md_structure.py";
+          [ -f "$S" ] && exec python3 "$S" "$@" ||
+          { echo "跳过：未安装 md-structure-checker 技能（~/.claude/skills/）"; exit 0; }' _
+        language: system
         files: \.md$
