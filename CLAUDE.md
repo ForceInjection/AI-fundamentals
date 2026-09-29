@@ -100,7 +100,7 @@ Self-contained educational Python projects and notebooks, each possibly with its
 
 ## CI/CD
 
-No build step, no test suite, no repo-owned workflow files — what runs (CodeQL, Pages build, Dependabot, Dependency Graph) is GitHub default setup, invisible in the tree. "This repo has no CI" is wrong — check `gh workflow list --all` first.
+No build step, no test suite, no repo-owned workflow files — what runs (CodeQL, Pages build, Dependabot, Dependency Graph) is GitHub default setup, invisible in the tree. "This repo has no CI" is wrong — check `gh workflow list --all` first. Note: CodeQL's `actions` language was unchecked in default setup (2026-09-29) — with zero workflow files the Actions-analysis job fails on "no source code"; re-check it in repo Settings if workflows ever come back.
 
 **Structure check retired from CI (2026-09-29)**: the script moved to the author's skill `md-structure-checker` (GitHub runners can't reach `~/.claude/skills/`), so the workflow was deleted. Remaining coverage: the pre-commit hook (`.pre-commit-config.yaml`) calls the skill's script and skips gracefully when the skill is absent — **external contributors' PRs are no longer structure-checked**. It flags the two content-vanishing modes markdownlint cannot see: unclosed code fence, and broken `## 一、` → `## 二、` sequence (the original case, `attention_kv_cache_formats.md` fixed in `20127cb`, passes markdownlint clean because 4-backtick-open + 4-backtick-close is valid CommonMark — only the render shows it). Long-fence inconsistencies are warnings.
 
