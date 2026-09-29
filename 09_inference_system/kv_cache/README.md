@@ -140,8 +140,9 @@ NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等
 
 ## 4. 容量规划与 ROI 分析
 
-掌握了"怎么做"之后，最后一个问题是"值不值得做"。KV Cache 本质是一次「用存储成本换计算成本」的投资——合理的分层容量与命中率假设决定整体 ROI。以下推演以 GLM-5 与 Agent 业务负载为基准。
+掌握了"怎么做"之后，最后一个问题是"值不值得做"。KV Cache 本质是一次「用存储成本换计算成本」的投资——合理的分层容量与命中率假设决定整体 ROI。容量账的机制基础是 L1 KV Pool 的三态记账与准入逻辑，推演以 GLM-5 与 Agent 业务负载为基准。
 
+- **[L2 还有大半空着，TTFT 为什么先崩了？L1 KV Pool 才是系统并发的上限](01_concepts/capacity_planning/hbm_kv_pool_concurrency.md)**：并发上限公式、used/evictable/available 三态记账、容量组与缓存组两组观测指标、L1/L2 分工，以及「L2 空余但 P99 TTFT 崩」的诊断清单——SGLang 与 vLLM 双栈源码对照。
 - **[KV Cache 引入收益评估](01_concepts/capacity_planning/kv_cache_roi.md)**：全面评估在 Agent 业务爆发和长上下文常态化背景下，引入 KV Cache（如 LMCache）技术的整体收益与投资回报。
 - **[GLM-5 模型 KV Cache 容量规划报告](01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)**：针对 GLM-5 模型的显存与各级存储（CPU 内存、NVMe 固态硬盘）的容量需求进行详细推演。
 

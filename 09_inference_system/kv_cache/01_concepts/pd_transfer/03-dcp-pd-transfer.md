@@ -1,6 +1,6 @@
 # 分卡之后再跨机：DCP 与 PD 分离叠加时的 KV 传输
 
-> 2026-09-28 | 源码深读。基于 SGLang main `f4de6abee6`（2026-09-25）。本文是 [PD 分离架构下的 KV Cache 传输](01_disaggregated_prefill_kv_transfer.md)与 [PD 状态交接优化的四条轴](02-pd-state-handoff-optimization-map.md)的续篇，回答一个此前留白的问题：**DCP（decode context parallel，按位置分卡）开启时，PD 分离的 KV 传输怎么变**。全部结论来自静态源码阅读（行号已核对），未实际运行测试——涉及部署验证的部分见文末诚实声明。
+> 2026-09-28 | 源码深读。基于 SGLang main `f4de6abee6`（2026-09-28）。本文是 [PD 分离架构下的 KV Cache 传输](01_disaggregated_prefill_kv_transfer.md)与 [PD 状态交接优化的四条轴](02-pd-state-handoff-optimization-map.md)的续篇，回答一个此前留白的问题：**DCP（decode context parallel，按位置分卡）开启时，PD 分离的 KV 传输怎么变**。全部结论来自静态源码阅读（行号已核对），未实际运行测试——涉及部署验证的部分见文末诚实声明。
 
 前两篇讲 PD 分离的 KV 传输时，decode 侧还是「一张卡（或一个 TP 组）拿着完整 KV」的形态。开了 DCP 之后，decode 侧的每张卡只持有这个请求序列的 1/c——按 owner rule，rank r 只存位置 p % c == r 的那些 token，物理上放在第 p // c 行。
 
@@ -61,7 +61,7 @@ NIXL 的复用是个巧思：TP8 × DCP8 的拓扑下，`tp_rank % 8` 相同的�
 
 打包缓冲装不下当前批（cache hit 让待传 KV 超出预期时会发生），`try_pack_dcp_src` 返回 None，回退为 **per-token RDMA**：不打包，直接对每个散行发起小传输。性能含义在单测里有断言（`test_dcp_pack.py:141-150`）：不打包时源行是跨步 c 的散行，`group_concurrent_contiguous` 退化成单行一组——从「每层一条大块」变成 O(tokens/c × layers) 条小 RDMA。前文说的按容量切段，就是为了让正常路径不落到这条回退上。
 
-## 七、诚实声明
+## 七、说明
 
 - 本文全部结论来自静态源码阅读（行号以 `f4de6abee6` 为准），**未实际运行任何 PD×DCP 传输**；端到端验证由 `test_kimi_linear_pd_dcp4.py` 覆盖（prefill TP4 无 DCP → decode TP4 + DCP4，32K NIAH + GSM8K ≥ 0.88）；
 - draft 全量复制的设计动机是推断（源码无注释）；「draft 不参与 DCP 分片」到「draft/verify 前向为何这样写」之间有一段未验证的空隙；
@@ -85,7 +85,7 @@ NIXL 的复用是个巧思：TP8 × DCP8 的拓扑下，`tp_rank % 8` 相同的�
 
 ## 参考资料
 
-- [SGLang](https://github.com/sgl-project/sglang) 仓库，commit `f4de6abee6`（2026-09-25）——本文所有源码引用的基准版本
+- [SGLang](https://github.com/sgl-project/sglang) 仓库，commit `f4de6abee6`（2026-09-28）——本文所有源码引用的基准版本
 - 本站 [PD 分离架构下的 KV Cache 传输](01_disaggregated_prefill_kv_transfer.md)——传输时序/发起方/内容的三维框架
 - 本站 [PD 状态交接优化的四条轴](02-pd-state-handoff-optimization-map.md)——压缩、重叠、复用、隔离的优化地图
 - 本站 [MoE 与百万上下文：请求怎么分卡，长文怎么切](../../../sglang/sglang-dp-attention-dcp.md)——DCP 本体的机制篇，本文是它在 PD 场景的落地

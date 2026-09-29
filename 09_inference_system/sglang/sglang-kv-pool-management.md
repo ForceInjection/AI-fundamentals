@@ -229,6 +229,8 @@ attention kernel 按此行索引从 KV Pool 读写 KV，kernel 不关心 slot �
 
 ### 3.3 逐出与恢复
 
+> 注：本文基于 v0.5.14。当前 main 的逐出已改为按需 eviction heap（支持 LRU/LFU 等 strategy，分配缺口出现时缺多少逐多少），`evictable_leaves` 是 v0.5.14 时的结构——机制对照见 [L2 还有大半空着，TTFT 为什么先崩了？L1 KV Pool 才是系统并发的上限](../kv_cache/01_concepts/capacity_planning/hbm_kv_pool_concurrency.md)。
+
 `lock_ref` 归零后，节点进入 `evictable_leaves` 集合。逐出发生时：
 
 ```text

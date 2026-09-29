@@ -525,6 +525,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
 
+- [L1 KV Pool 与系统并发上限](09_inference_system/kv_cache/01_concepts/capacity_planning/hbm_kv_pool_concurrency.md) — 并发上限公式、三态记账与指标观测；为什么 L2 空余救不了 P99 TTFT（SGLang/vLLM 对照）
 - [KV Cache 容量规划](09_inference_system/kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) — GLM-5 显存容量推演与 ROI 评估
 - [KV Cache 压缩技术](09_inference_system/kv_cache/01_concepts/compression/kv_cache_compression.md) — INT8/FP8 量化、稀疏化与注意力优化
 - [Claude Prompt Caching 机制分析](09_inference_system/kv_cache/01_concepts/prefix_caching/claude_prompt_caching.md) — 提示词缓存的终端 Agent 源码实现与成本优化
