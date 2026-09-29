@@ -87,26 +87,22 @@ Re-capture 的代价不低（~100-200ms），因此 vLLM 选择了 Piecewise 作
 
 ---
 
-## 三、Piecewise CUDA Graph：只 Capture 纯计算
+## 三、Piecewise CUDA Graph：在 attention 算子处切开，其余全部录制
 
 ### 3.1 机制
 
-Piecewise CUDA Graph 不录制整个 forward pass——它只 capture attention 中不依赖 block table 的计算密集部分。具体来说：
+Piecewise CUDA Graph 不录制整个 forward pass——它在 attention 算子处把计算图切开：依赖 block table 的 attention 算子留在图外按普通 kernel 运行，其余计算全部 capture 进子图。具体来说：
 
 ```text
 Full Graph 录制的范围：
-  [slot_mapping 计算] → [block_table 查找 + QKV 加载] → [Q·K^T] → [SoftMax] → [A·V] → [output projection]
+  [QKV 投影] → [attention（读 block table）] → [输出投影] → [FFN/MoE] → 下一层
 
-Piecewise Graph 录制的范围：
-  （slot_mapping 计算：动态，不录制）
-  （block_table 查找 + QKV 加载：动态，不录制）
-  [Q·K^T] ────────────┐
-  [SoftMax]            ├── 录制为 Piecewise CUDA Graph
-  [A·V]                │
-  [output projection] ─┘
+Piecewise Graph 的切分与录制：
+  [attention 算子]                     ← 不录制（运行时读 block table）
+  [QKV 投影、输出投影、FFN/MoE] ──────┘ 逐段录制为 Piecewise 子图
 ```
 
-Piecewise 的核心思想是：**只录制那些"输入张量形状固定、与 block table 内容无关"的数学运算**。Q、K、V 已经通过动态路径从 block table 中加载到寄存器/SRAM 中，后续的矩阵乘法、SoftMax、加权求和、输出投影等操作不再关心 block table——它们只关心"K 和 V 已经就位"这个事实。
+Piecewise 的核心思想是：**被录制的子图里，全部是"输入张量形状固定、与 block table 内容无关"的数学运算**。真正读 block table 的只有 attention 算子本身——K、V 通过动态路径从 paged KV 中按 block_table 加载，Q·K^T、SoftMax、A·V 都在图外按普通 kernel 运行；QKV 投影、输出投影、FFN/MoE 的数学运算形状固定、与 block table 内容无关，可以整段 capture。
 
 ### 3.2 与 KV Cache 的交互
 
@@ -132,7 +128,7 @@ KV Connector 实现者可以通过 `requires_piecewise_for_cudagraph` 属性告�
 | 模式                           |         录制范围          |            性能             |                Re-capture 风险                | 适用场景                      |
 | ------------------------------ | :-----------------------: | :-------------------------: | :-------------------------------------------: | ----------------------------- |
 | **Full**                       |    整个 decode forward    | 最高（CPU launch 完全消除） | 高（batch size / block table 格式变化时触发） | 稳态大批量 decode             |
-| **Piecewise**                  | 仅 attention 计算密集部分 |  中（保留部分 CPU launch）  |                      无                       | 混合 prefill/decode，抖动场景 |
+| **Piecewise**                  | 除 attention 外的全部计算 |  中（保留部分 CPU launch）  |                      无                       | 混合 prefill/decode，抖动场景 |
 | **FULL_AND_PIECEWISE**（默认） |        自适应切换         |       最优（自动化）        |                 仅 Full 部分                  | 所有生产场景                  |
 | **NONE**                       |             —             |            最低             |                       —                       | Debug / 兼容性                |
 
