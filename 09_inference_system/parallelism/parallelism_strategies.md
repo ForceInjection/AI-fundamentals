@@ -250,3 +250,4 @@ DeepSeek-V3 是少数不需要 TP 的模型——MLA 的 KV 压缩效果远超�
 - [Prefill 与 Decode 深度拆解](../prefill_decode/prefill_decode_qkv_calculation.md) — 理解 TP 通信量为什么必须低的计算背景
 - [NCCL 通信路径逐层压测](../../03_ai_cluster_ops/03_nccl/06_nccl_path_benchmark.md) — TP 依赖的 NVLink 带宽实测
 - [GPU 调度——拓扑感知](../../03_ai_cluster_ops/04_gpu_scheduling/03_topology_aware_scheduling.md) — TP 组为什么必须在同一节点
+- [MoE 与百万上下文：请求怎么分卡，长文怎么切](../sglang/sglang-dp-attention-dcp.md) — 两条引擎级并行轴的 SGLang 源码落地：dp-attention 切请求（MLA KV 复制问题）、DCP 切序列位置（owner rule 与 LSE 合并），即本文 DP 与 SP 在推理引擎里的最新形态

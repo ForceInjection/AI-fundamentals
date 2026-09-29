@@ -12,6 +12,7 @@
 | --------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [并行策略总览](parallelism_strategies.md)                 | 入门   | DP、TP、PP、EP、SP 五种策略的统一拆解：每种策略切的维度、每张 GPU 持有的内容、KV Cache 分布、通信量与典型场景。建议作为第一篇阅读。                                             |
 | [专家并行（EP）深度解析](expert_parallelism_deep_dive.md) | 深度   | EP 的独立深度文章：为什么 DP/TP/PP 解决不了 MoE、All-to-All 通信模式、EP+DP 耦合关系、DeepEP 低延迟后端、EPLB 负载均衡、生产环境选型决策。已与 vLLM v0.25+ 和 SGLang 源码校对。 |
+| [dp-attention 与 DCP：MoE 与百万上下文实战](../sglang/sglang-dp-attention-dcp.md) | 深度（SGLang 实测） | 两条引擎级新轴：dp-attention 切请求（MLA KV 复制问题、padding 成本决策、world size 语义变化）、DCP 切序列位置（owner rule 地址契约、LSE 合并三后端），与叠加条件、实测取舍。已与 SGLang main 源码校对。 |
 | [并行策略交互可视化](parallelism_visual.html)             | 可视化 | 浏览器中交互式演示五种并行策略的张量切分与通信模式。                                                                                                                            |
 
 ---
