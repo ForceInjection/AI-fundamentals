@@ -6,6 +6,7 @@
 > | -------------- | ------------------------------------------------------- | ---------------------------- | ------------------ |
 > | `nvidia/`      | GPU 架构（Volta → Blackwell）、GPGPU vs NPU             | Tensor Core, HBM, SM         | §2.1               |
 > | `tpu/`         | Google TPU 脉动阵列架构                                 | Systolic Array, XLA          | §2.2               |
+> | `ascend/`      | 华为昇腾 950 微架构、DSA 稀疏注意力算子优化             | Cube + Vector, FixPipe       | §2.4               |
 > | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER                  | Gen3–Gen6, Root Complex      | §3.1               |
 > | `nvlink/`      | NVLink / NVSwitch 高速互连                              | 1.8 TB/s, GPU-to-GPU         | §3.2               |
 > | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)                    | Zero-copy, Bounce Buffer     | §4.1 / §4.2 / §4.3 |
@@ -21,7 +22,7 @@
 
 | 层级       | 关键技术                                     | 决定的性能维度               | 章节 |
 | ---------- | -------------------------------------------- | ---------------------------- | ---- |
-| 计算芯片   | GPU SM / Tensor Core、TPU 脉动阵列、CPU AMX  | 算力密度、片上 SRAM/HBM 访存 | §2   |
+| 计算芯片   | GPU SM / Tensor Core、TPU 脉动阵列、CPU AMX、昇腾 Cube+Vector | 算力密度、片上 SRAM/HBM 访存 | §2   |
 | 节点内互连 | PCIe Gen3–Gen6（RC/Switch/Bridge）、NVLink 5 | 卡间 / 卡-外设带宽与延迟     | §3   |
 | 跨设备直通 | GPUDirect P2P / RDMA / Storage(GDS)          | 是否绕开 CPU Bounce Buffer   | §4   |
 | 系统级融合 | NVLink-C2C、GB300 NVL72、多 domain NUMA      | 部署单位、并行策略、拓扑评估 | §5   |
@@ -60,6 +61,13 @@ TPU 是 Google 为深度学习量身打造的另一条路径。它的核心思�
 CPU 侧的矩阵加速同样值得关注。Intel 从 Sapphire Rapids 起引入 **AMX (Advanced Matrix Extensions)**，对标 GPU Tensor Core，在小 batch 推理和实时场景下有延迟优势。
 
 - **[CPU AMX vs GPU Tensor Core](performance/03_amx_vs_tensorcore.md)**：Intel AMX 与 NVIDIA Tensor Core 的硬件规格对比、适用场景分析与混合计算 Pipeline 设计。
+
+### 2.4 华为昇腾：Ascend 950 微架构
+
+2026-09-30 DeepSeek 开源昇腾平台推理组件时，随 FlashMLA 仓库附了一篇官方微架构解析——公开渠道少见的 950 一手资料：每个 AI Core 为 **1 Cube + 2 Vector** 核、L1 双 bank 共 512K、FixPipe 128 Byte/cycle/AI Core、MTE2 单 Vector 核在飞拷贝上限等，并结合 DSA 稀疏注意力的 prefill/decode 算子讲优化实践（prefill 410 TFLOPS / decode 360 TFLOPS，达硬件峰值 95% / 83%）。
+
+- **[Ascend950 稀疏注意力 Forward 算子与优化技术简析](ascend/Ascend950_稀疏注意力Forward算子与优化技术简析.md)**：深度求索官方文档转载存档（源自 FlashMLA 仓库，MIT License），覆盖算法建模、流水排布与 950 微架构要点。
+- **[Ascend950 微架构速查](ascend/Ascend950_微架构速查.md)**：把上面这篇里的硬件信息抽出来整理成速查表——AI Core 构成（1 Cube + 2 Vector）、L1 双 bank / L2 5 TB/s、MTE2 队列深度 16、FixPipe 128 B/cycle，以及每个设计决策的硬件依据；含「文档没有的卡级规格」边界说明。
 
 ---
 

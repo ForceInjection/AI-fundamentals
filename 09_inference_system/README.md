@@ -17,6 +17,8 @@
 > **内存介质**：算法把每步读取压下去之后，介质本身成了下一个变量。Hot Chips 2026 上 OXMIQ 用一套 (β, α) 坐标系和一行 `max()` 公式回答「HBF 是不是便宜的 HBM」——容量便宜 8–16 倍，但单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，结论是它只在一个很窄的低带宽区间里划算。详见 **[HBF 是 HBM 的替代吗：单位存储便宜了，Token 成本却可能更高](hbf-vs-hbm.md)**（22 页幻灯片逐页核对 + 独立报道交叉验证，含一份 2026-08 的反方实测）。
 >
 > **条件记忆**：稀疏有了第二根轴——V4.1-Flash 把 196B 参数从 HBM 搬进主机内存（LPDDR），靠 O(1) 查表替代多层对静态知识的重建。系列入口：**[Engram：条件记忆与主机内存参数](engram/README.md)**（首篇源码深读：官方 demo + SGLang 巨页手术，LPDDR 的优势与代价逐项算账）。
+>
+> **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 把家底搬上了昇腾：六个组件、三种双端模式与一份 950 微架构报告](deepseek_ascend/deepseek-ascend-open-source.md)**（三种双端模式 + 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
 
 ---
 

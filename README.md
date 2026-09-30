@@ -21,6 +21,7 @@
   - [深入理解 GPU 架构](./01_hardware_architecture/nvidia/understand_gpu_architecture/README.md)
   - [TPU 101：深度学习专用加速器架构解析](./01_hardware_architecture/tpu/tpu%20101.md)
   - [GPGPU vs NPU：大模型推理训练对比](./01_hardware_architecture/nvidia/GPGPU_vs_NPU_大模型推理训练对比.md)
+  - [Ascend950 稀疏注意力 Forward 算子与优化技术简析](./01_hardware_architecture/ascend/Ascend950_稀疏注意力Forward算子与优化技术简析.md) — 深度求索官方 950 微架构解析（1 Cube + 2 Vector、L1 双 bank、FixPipe），DSA 稀疏注意力 prefill/decode 优化转载存档
 - **高速互连与数据传输技术**
   - [PCIe 总线技术大全](./01_hardware_architecture/pcie/01_pcie_comprehensive_guide.md)
   - [Linux PCIe P2PDMA 技术介绍](./01_hardware_architecture/pcie/02_p2pdma_technology.md)
@@ -364,6 +365,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 - [约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](09_inference_system/agent_serving/constrained-decoding-engines.md) - 结构化输出的编译账/每步账/交互账：双引擎实现逐项对照与 jump-forward 差异
 - [线性注意力与推理系统](09_inference_system/linear_attention/README.md) - delta-rule 一脉（KDA/Gated DeltaNet）落地后的系统挑战：prefill 串行化、状态检查点缓存、状态语义深水区——总览 + 机制/调度/状态语义四篇
 - [HBF 是 HBM 的替代吗：单位存储便宜了，Token 成本却可能更高](09_inference_system/hbf-vs-hbm.md) - Hot Chips 2026 的 (β, α) 坐标系与 $/token 公式：单位容量便宜 8–16 倍、单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，HBF 只在一个很窄的低带宽区间里划算
+- [DeepSeek 把家底搬上了昇腾：六个组件、三种双端模式与一份 950 微架构报告](09_inference_system/deepseek_ascend/deepseek-ascend-open-source.md) - 逐仓拆解 TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect 的昇腾版：三种双端模式、950 微架构要点与诚实缺口清单
 - [大模型推理并行策略](09_inference_system/parallelism/parallelism_strategies.md)（[交互可视化](09_inference_system/parallelism/parallelism_visual.html)） - DP、TP、PP、EP、SP 五种策略的统一拆解与混合部署案例
   - [专家并行（EP）深度解析](09_inference_system/parallelism/expert_parallelism_deep_dive.md) - EP 独立深度文章：DP/TP/PP 为什么解决不了 MoE、All-to-All 通信模式、EP+DP 耦合、DeepEP 低延迟后端、EPLB 负载均衡、选型决策
 
