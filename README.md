@@ -614,6 +614,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 - [基础设施技术栈](08_agentic_system/agent_infra/docs/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层
 - [基础设施的崛起](08_agentic_system/agent_infra/docs/the-rise-of-ai-agent-infrastructure.md) - 生态演进趋势与未来投资方向
 - [OpenHarness 深入浅出：解密开源智能体基础设施](08_agentic_system/agent_infra/docs/openharness-deep-dive.md) ([配套 PPT](08_agentic_system/agent_infra/docs/openharness-deep-dive.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
+- [4 个工具、42 家供应商、11 万 star：Pi 的极简 harness，与 DeepSeek Harness、OpenHarness 的路线对比](08_agentic_system/agent_infra/docs/pi-agent-deep-dive.md) - 极简 harness 源码深读：默认 4 工具、系统提示 677 token、可替换协议与 42 家供应商；含与 DeepSeek Harness、OpenHarness 的三路线对比
 - [Agent Sandbox 的演进与设计范式](08_agentic_system/agent_infra/docs/agent-sandbox-design.md) ([配套 PPT](08_agentic_system/agent_infra/docs/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
 - [深度解析 Kagent：以构建 Kubernetes 运维智能体为例](08_agentic_system/agent_infra/docs/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](08_agentic_system/agent_infra/docs/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
 - [OpenClaw Operator 架构深度解析](08_agentic_system/agent_infra/docs/openclaw-operator-deep-dive.md) - 云原生时代 AI Agent 运行时环境编排机制
