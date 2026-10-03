@@ -1,5 +1,7 @@
 # 云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析
 
+> 2026-04-16 | 源码解读。基于 openclaw-rocks/openclaw-operator（commit `3711bce`，2026-04-12）本地克隆核对；引用前建议对目标版本重新核对。
+
 本文将深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践。在云原生时代，如何安全、高效地编排复杂的 AI Agent 运行时环境成为了一个重要课题。OpenClaw 通过声明式 API 和精巧的控制平面设计，为这一痛点提供了优雅的解决方案。
 
 ---

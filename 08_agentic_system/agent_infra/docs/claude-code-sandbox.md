@@ -1,5 +1,7 @@
 # Claude Code Sandbox 安全隔离机制解析
 
+> 2026-04-22 | 机制解析。基于 Claude Code 官方文档与本地源码快照（commit `de14c0a`，2026-03-31）核对；Claude Code 为闭源产品，实现细节以官方文档为准。
+
 本文从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界。在此基础上，深度剖析了 Linux 环境下基于 Bubblewrap 的底层隔离架构与工程实现。文中的数据与技术原理主要提炼自 Claude Code 官方文档、内部工程源码以及 Bubblewrap 开源项目。
 
 **目录**：
