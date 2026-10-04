@@ -68,3 +68,11 @@ NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vL
 - **Gang Scheduling**：[All-or-Nothing 调度](04_gpu_scheduling/02_gang_scheduling_for_training.md)——Volcano Coscheduling vs K8s SchedulingGates。
 - **拓扑感知**：[NVLink / NUMA / 跨节点](04_gpu_scheduling/03_topology_aware_scheduling.md)——三层拓扑感知 + NVIDIA Topology-Aware Scheduler。
 - **GPU 共享**：[MIG、MPS、Time-slicing](04_gpu_scheduling/04_gpu_sharing_scheduling.md)——三种共享方式在 K8s 中的资源表达。
+
+---
+
+## 6. [数据中心市场与容量](04_datacenter/README.md)
+
+GPU 调度之上还有一层更物理的问题：**这些集群所在的数据中心本身**——中国市场有多大、建在哪、谁在租。SemiAnalysis 用逐栋模型回答了这件事，本节是该报告的精读存档。
+
+- **市场全景**：[中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](04_datacenter/china-dc-boom-semianalysis.md)——高空置与 AI 容量短缺并存的双速市场、四阶段史、「东数西算」的配额传导机制、12 个月交付 100MW 的速度账，以及需求侧五家（字节/阿里/腾讯/百度/华为）的多套打法；全部数字为 SemiAnalysis 模型口径。
