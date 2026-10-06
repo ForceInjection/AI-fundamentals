@@ -779,6 +779,7 @@ AI 进入**开发流程**与**应用架构**之外，还有一条线：进入**�
 
 - [模型不稀缺了，稀缺的是把模型塞进业务的人](11_ai_native_everything/fde/forward-deployed-engineer.md) - 从 80/95/99 规律出发讲清 FDE：是什么、不是什么（不是售前、不是驻场外包、不是咨询顾问、不是产品工程师）；三道成本门槛如何被 AI 拉低；本体层、Skill 与连接器如何构成规模化的地基。含腾讯研究院报告与范冰开源手册两份材料的用法指引
 - [《FDE：AI落地实战指南》导读](11_ai_native_everything/fde/fde-ai-landing-guide.md) - 樊中恺（百度主任架构师、文心应用技术负责人）著，人民邮电出版社 2026 年 10 月出版。七篇三十章的骨架，五种死法、访谈提问法与"工作化石"三处要点，以及第 22 章按周复盘的案例写法
+- [别让写代码的 Agent 评审自己：AI 代码评审的三道闸门](11_ai_native_everything/vibe_coding/docs/ai-code-review-three-gates.md) - 生成成本归零后评审成为新瓶颈：METR 实验自评 +20% 实测 −19% 的感知差、LLM 评审的否定盲区、假统计传播三个信号失真；给出机械门（确定性脚本）、流程门（六步自评审）、多 Agent 门（Builder–Critic 信息边界）三道闸门，融合 OpenCodeReview 三阶段架构与公开研究数据，含 6 张手绘图
 
 ---
 

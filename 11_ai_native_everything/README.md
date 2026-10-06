@@ -93,7 +93,15 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 5. 按角色推荐阅读路径
+## 5. 评审：AI 生成代码的质量闸门
+
+生成成本归零之后，瓶颈移到了评审侧。这一篇把评审原则组织成三道闸门，全部论证与案例可追溯：
+
+- **[别让写代码的 Agent 评审自己：AI 代码评审的三道闸门](vibe_coding/docs/ai-code-review-three-gates.md)** — 从 METR 实验（自评 +20%、实测 −19%）切入，拆出评审信号的三个失真（自评不可信、LLM 评审的否定盲区、二手统计污染），给出三道闸门的组织原则：机械门（确定性脚本判机器能判的）、流程门（六步自评审，把「我改了什么」当别人的补丁读）、多 Agent 门（Builder–Critic 与信息边界分离），融合 OpenCodeReview 三阶段架构深读与 METR、GitClear、Anthropic Code Review 的公开数据，含 6 张手绘图
+
+---
+
+## 6. 按角色推荐阅读路径
 
 | 角色             | 推荐入口                                                           |
 | ---------------- | ------------------------------------------------------------------ |
@@ -105,7 +113,7 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 6. 关联模块与参考
+## 7. 关联模块与参考
 
 - **[08_agentic_system](../08_agentic_system/README.md)** — Agent 系统全栈工程，补充单 Agent 内部机制与基础设施
 - **[04_cloud_native_ai_platform](../04_cloud_native_ai_platform/README.md)** — Tool 层（MCP 暴露）与 DevOps 实践所需的集群底座
