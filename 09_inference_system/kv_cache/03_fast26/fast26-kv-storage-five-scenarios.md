@@ -1,4 +1,4 @@
-# KV Cache 撞上 SSD：FAST'26 用九篇论文把五个场景各打了一遍——端侧提速 3.1×，弹性吞吐升 36%
+# 当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案
 
 > **元信息**：本文是 FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）「AI and LLMs」两个 session 的系列总纲。五篇 KV Cache × 存储核心论文均有单篇精读：[SolidAttention](solidattention.md) · [CacheSlide](cacheslide.md) · [Bidaw](bidaw.md) · [AITURBO](aiturbo.md) · [PPC/modelFS](../../deployment/fast26-programmable-page-cache.md)（另 2 篇训练检查点、2 篇支撑性工作计入口径，Agent 精读报告见 [references/](references/)）。**版本勘误（2026-10-11）**：初版调研时 PDF 解析器只读出各篇前几页（误判 CacheSlide/Bidaw 为 6 页 short paper），后经全文复核已全部修正——五篇均为完整论文，官方页码范围分别为 pp. 255–270（AITURBO）、117–132（modelFS/PPC）、67–82（SolidAttention）、83–99（CacheSlide）、101–116（Bidaw）。整理日期 2026-10-10，勘误日期 2026-10-11。本文数字均已在全文复核时与论文原文逐条对照。
 
