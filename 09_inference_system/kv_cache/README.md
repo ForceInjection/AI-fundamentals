@@ -189,3 +189,11 @@ NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等
 - marsggbo. easy-kvcache. <https://github.com/marsggbo/easy-kvcache>
 - vLLM Project. <https://github.com/vllm-project/vllm>
 - SGLang Project. <https://github.com/sgl-project/sglang>
+
+## 6. FAST'26 专题：KV Cache × 存储
+
+FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了同一个问题的五个切面：KV Cache 装不进内存、必须和存储打交道时，性能怎么丢、怎么拿回来。五个场景五种打法，没有通吃方案——共同支点是「可复现的 I/O 特征」。
+
+- **[KV Cache 撞上 SSD：FAST'26 用九篇论文把五个场景各打了一遍——端侧提速 3.1×，弹性吞吐升 36%](03_fast26/fast26-kv-storage-five-scenarios.md)**：五象限全景（端侧 batch=1 / 智能体 RPDC 复用 / 多轮对话两级存储 / 分离式数据中心 / MaaS 冷启动），按「数据放不对 / 复用算不对 / 调度看不见」三类矛盾归并拆解，附选型对号表与共同边界（特征不可复现时的退化）。含 1 张手绘全景图
+- 精读报告（Agent 按统一框架产出，数字标注论文出处，推断标「精读员注」）：[SolidAttention](03_fast26/references/solidattention-report.md) · [CacheSlide](03_fast26/references/cacheslide-report.md) · [Bidaw](03_fast26/references/bidaw-report.md) · [AITURBO](03_fast26/references/aiturbo-report.md)
+- 关联：[可编程页缓存（PPC/modelFS）单篇精读](../deployment/fast26-programmable-page-cache.md)（五象限中的 MaaS 冷启动篇）

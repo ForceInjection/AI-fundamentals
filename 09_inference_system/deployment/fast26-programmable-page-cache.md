@@ -1,6 +1,6 @@
 # 大模型启动，七成时间花在加载权重上：FAST'26 论文用可编程页缓存把延迟砍了 79%
 
-> **元信息**：论文 *Accelerating Model Loading in LLM Inference by Programmable Page Cache*，Yubo Liu 等 8 人，Huawei Technologies，FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）。正式论文集 Article No. 8，pp. 117–132；[USENIX 页面](https://www.usenix.org/conference/fast26/presentation/liu-yubo)公开 PDF 为 6 页版（本文分析基于此版本，完整评估见论文集第 5 节）。文中提到的 ModelFS 是该技术在 openEuler 侧的开源实现名，论文本身无此名。阅读日期 2026-10-09。
+> **元信息**：论文 *Accelerating Model Loading in LLM Inference by Programmable Page Cache*，Yubo Liu 等 8 人，Huawei Technologies，FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）。正式论文集 Article No. 8，pp. 117–132；[USENIX 页面](https://www.usenix.org/conference/fast26/presentation/liu-yubo)。**勘误（2026-10-11）**：初版因 PDF 解析器缺陷误判为「6 页版」，实际为 16 页全本（pp.117–132），§5 完整评估已补入本文 §五。文中提到的 ModelFS 是该技术在 openEuler 侧的开源实现名，论文本身无此名。阅读日期 2026-10-09，勘误日期 2026-10-11。
 
 把一个 MaaS 推理服务拉起来要多久？论文给的数字：启动 DeepSeek-R1-671B，从对象存储加载模型占启动时间的 70% 以上；Qwen2.5-72B 的加载是分钟级的，占掉启动开销的一半以上。推理引擎的初始化、KV Cache 分配这些环节都被压缩得很好，唯独「把几百 GB 的权重从盘上读进加速卡」这一步，多年来基本靠内核默认行为硬扛。
 
@@ -58,7 +58,7 @@ PPC 由两个组件构成（论文 §3，Fig.2–3）。
 
 **阅后即焚淘汰（Burn-after-Reading）**，对应观察三。页一旦读进 XPU 立即从页缓存释放——一次性读不占内存，热页不再被挤出。
 
-效果（摘要口径）：与现有兼容方案相比，模型加载延迟在内存充裕场景最多降 **79%**、内存受限场景降 **74%**；弹性部署的真实应用中，推理吞吐较其他受测方案最高提升 **36%**。五个主流模型实测，Qwen2.5-72B、Llama-70B 在公开版中可见。
+效果（§5 完整评估）：测试床为 4×48 核 Kunpeng 9250 + 8×Ascend 910B NPU + 1 TB DRAM + 3.75 TB SSD，vLLM-Ascend 上跑五个模型（Qwen2.5-7B/32B/72B、Llama-7B/70B），基线分「兼容类」（Native 内核默认、PreCache 一次性全预取、EagerLoad 命中即弃）与「不兼容类」（ServerlessLLM NPU 适配版，有 bug 仅测内存充足场景）。模型加载延迟：内存充裕场景较 Native 最多降 **79%**、受限场景（cgroup 限 64 GB）降 **74%**；EagerLoad 比 MAIO 慢 32%（不能精确预取）、PreCache 慢 37%（不考虑 XPU 亲和）；较 SLLM-NPU 降 17%。推理启动延迟（含框架初始化与 KV Cache 初始化）降 38%/51%。弹性部署真实负载（启动/执行/销毁三阶段循环）中，推理吞吐较 Native 提升 **13%/28%**（充足/受限内存），较 PreCache/EagerLoad 在内存受限下平均提升 19%/21%。
 
 ## 五、效果之外：这是一笔「兼容性换性能」的赌注
 
@@ -66,7 +66,9 @@ PPC 由两个组件构成（论文 §3，Fig.2–3）。
 
 这个赌注对不对，取决于场景。如果你控制全栈（自研推理框架 + 自建集群），专门化的加载方案上限更高；如果你是基础设施/OS 团队，要服务千差万别的推理软件栈，PPC 这条「内核机制可编程化」的路线几乎是目前唯一同时满足三约束的选择。
 
-公开版的局限也要说清楚：USENIX 官方 PDF 为 6 页，完整评估（五个模型的完整列表、基线对比细节、开销分析）在正式论文集第 5 节，本文未覆盖；RFS 当前只支持只读场景；MAIO 的模板法依赖「服务模板化预启动」这一 MaaS 前提，I/O 不可复现的场景收益会打折。
+三个评估细节值得单独一看。**生产案例**：Intelligence BooM 上冷启动 DeepSeek-R1-671B（2 NPU、本地 SSD），MAIO 把模型加载从 649 秒压到 452 秒——比权重全驻 DRAM 的 561 秒还快，因为全 DRAM 路径仍有 561 秒的 I/O 竞争与元数据解析开销，而 XPU 亲和加速了主机到卡的传输。**消融**（Fig.11）：可中断预取（Base+P）贡献了内存充足场景 65% 以上的降幅，XPU 亲和（+A）再加 8.5%；阅后即焚（+BAR）在内存充足时几乎无增量——它的战场只在内存受限场景。**模板开销**（Table 3）：662 GB 的 DeepSeek-R1-671B 对应的 I/O 模板只有 545 KB，且不随部署形态（tensor 并行度）变化——「模板法」的存储代价可以忽略。
+
+局限与边界方面：MAIO 强依赖「推理服务模板化预启动」——I/O 模板与服务 ID 绑定，服务规格（模型、TP 大小、PD 分离配置）变化就要重建模板，I/O 不可复现的场景收益会打折；测试床全部是华为栈（Kunpeng + Ascend + vLLM-Ascend + MindSpore），跨硬件口径需自行复核；RFS 当前只支持只读场景；异步 I/O 掩盖窗口不足的服务（框架初始化、元数据解析为主的加载早期）才是它发挥作用的场景。
 
 ## 六、从论文到落地：openEuler 的 ModelFS
 
@@ -86,11 +88,11 @@ PPC 由两个组件构成（论文 §3，Fig.2–3）。
 | Table 1 | FUSE / eBPF / 内核原生 / PPC 四路线对比（非侵入·灵活·轻量） |
 | §3 / Fig.2–3 / Table 2 | RFS 架构与 mount/open/close/read/mmap 实现；CPRT 与策略 API |
 | §4 | MAIO：I/O 模板、可中断预取、XPU 亲和、Burn-after-Reading 淘汰 |
-| §5（正式版） | 完整评估（公开 6 页版未含，本文未覆盖） |
+| §5 / Fig.6–13 / Table 3 | 完整评估：测试床与基线、加载/启动延迟（79%/74%、38%/51%）、带宽利用、PPC 开销（mmap ≤3.7%）、MAIO 消融（Base+P 贡献 65%+）、I/O 模板开销（545 KB/662 GB）、弹性部署吞吐 |
 | openEuler | [gitee.com/openeuler/ModelFS](https://gitee.com/openeuler/ModelFS)；ModelFS-U 四回调接口见 openEuler 24.03 LTS SP4/26.09 文档 |
 
 ## 参考资料
 
-- Yubo Liu et al., *Accelerating Model Loading in LLM Inference by Programmable Page Cache*, FAST '26, Article 8. [USENIX 页面](https://www.usenix.org/conference/fast26/presentation/liu-yubo) · [PDF（6 页公开版）](https://www.usenix.org/system/files/fast26-liu-yubo.pdf)
+- Yubo Liu et al., *Accelerating Model Loading in LLM Inference by Programmable Page Cache*, FAST '26, Article 8, pp. 117–132. [USENIX 页面](https://www.usenix.org/conference/fast26/presentation/liu-yubo) · [PDF 全本](https://www.usenix.org/system/files/fast26-liu-yubo.pdf)
 - openEuler ModelFS：[gitee.com/openeuler/ModelFS](https://gitee.com/openeuler/ModelFS)；特性需求单 [ID5W1P](https://gitee.com/openeuler/release-management/issues/ID5W1P)（24.03 LTS SP3）
 - 对比方案：ServerlessLLM（多级并行加载）、BlitzScale（NVLink/RDMA 模型共享），见论文 §1 引文
