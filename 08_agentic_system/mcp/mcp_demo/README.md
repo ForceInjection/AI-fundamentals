@@ -20,10 +20,13 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
 ├── client_for_k8s.py
 ├── math_server.py
 ├── math_server2.py
+├── parallel_search_client.py
+├── requirements-parallel.txt
 ├── requirements.txt
 ├── setup.sh
 ├── start_client.sh
-└── start_server.sh
+├── start_server.sh
+└── tests/test_parallel_search_client.py
 ```
 
 ### 功能说明
@@ -41,6 +44,44 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
 2. **SSE模式** - 远程`HTTP`通信
    * 基于`Server-Sent Events`的事件流通信
    * 适用于云原生/远程服务场景
+3. **Streamable HTTP 模式** - 远程 MCP 服务
+   * `parallel_search_client.py` 通过 HTTP 接入托管的搜索服务
+
+## 免费网页搜索与内容提取
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) 在
+`https://search.parallel.ai/mcp` 提供匿名网页搜索和内容提取。搜索使用 Fast 模式，
+不需要账号或 API key。免费服务适合探索和轻量使用，有速率限制。
+
+[parallel_search_client.py](parallel_search_client.py) 直接用 MCP Python SDK
+发现并调用 `web_search`、`web_fetch`，输出包含来源 URL 和摘录的 JSON。
+这个命令行示例不调用大模型；上面的 LangChain 智能体示例仍使用各自的模型配置。
+
+在本目录用 Python 3.11 或更高版本创建独立环境：
+
+```bash
+python3 -m venv .venv-parallel
+.venv-parallel/bin/python -m pip install -r requirements-parallel.txt
+.venv-parallel/bin/python parallel_search_client.py tools
+.venv-parallel/bin/python parallel_search_client.py --session-id gpu-research-001 search \
+  --objective '查找 CUDA stream 的同步语义，优先使用 NVIDIA 文档' \
+  --query 'NVIDIA CUDA stream synchronization'
+.venv-parallel/bin/python parallel_search_client.py --session-id gpu-research-001 fetch \
+  https://docs.nvidia.com/cuda/cuda-programming-guide/ \
+  --objective 'CUDA stream 的同步语义'
+```
+
+`search` 的 `--query` 可以重复；`fetch` 每次最多接受 20 个 URL。
+同一次研究的搜索与提取应复用 `--session-id`，新研究换一个 ID；未指定时脚本生成
+UUID 并打印到标准错误。结果输出到标准输出，便于重定向保存。
+请求或工具失败时脚本以非零状态退出，不自动重试；遇到限流时按服务端提示稍后再试。
+每次运行最长 90 秒，HTTP 请求和 MCP 响应等待上限为 60 秒。
+
+运行离线协议测试：
+
+```bash
+.venv-parallel/bin/python -m unittest discover -s tests -v
+```
 
 ## 项目演示
 
