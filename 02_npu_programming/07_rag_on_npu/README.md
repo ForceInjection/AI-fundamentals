@@ -7,3 +7,7 @@
 ## 1. [RAG Pipeline on NPU](01_rag_pipeline_on_npu.md)
 
 从 RAG 的离线索引和在线查询两个阶段入手，覆盖 BGE 模型的 NPU 推理适配、FAISS 向量检索、OpenAI 兼容 API 的 prompt 构建。包含完整的版本兼容性说明和性能对比数据。
+
+## 2. [RAG 评估体系](02_rag_evaluation.md)
+
+从检索质量与生成质量两条线建立 RAG 的可量化评估口径（含 7B 与 0.5B 的对比），配套评估脚本（`rag_eval.py`、`rag_eval_ragas.py`）与测试数据。
