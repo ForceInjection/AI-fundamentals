@@ -1,6 +1,6 @@
 # 当 AI 吃穿存储带宽：华为云把计算网络变成了传输通道
 
-> **元信息**：论文 *Fast Cloud Storage for AI Jobs via Grouped I/O API with Transparent Read/Write Optimizations*，上海交大 IPADS + 华为云（Yingyi Hao、Ting Yao、Xingda Wei 等），FAST '26 正式论文集 pp. 255–270（[USENIX 页面](https://www.usenix.org/conference/fast26/presentation/hao)）。公开 PDF 为 17 页全本，评估数字完整。系统名 AITURBO，已在华为云生产部署（训练作业检查点读写，向推理与 agent 负载扩展中）。精读方式：主会话通读全文 + Agent 精读交叉核对（报告见 [references/aiturbo-report.md](references/aiturbo-report.md)）。阅读日期 2026-10-11。
+> **元信息**：论文 *Fast Cloud Storage for AI Jobs via Grouped I/O API with Transparent Read/Write Optimizations*，上海交大 IPADS + 华为云（Yingyi Hao、Ting Yao、Xingda Wei 等），FAST '26 正式论文集 pp. 255–270（[USENIX 页面](https://www.usenix.org/conference/fast26/presentation/hao)）。系统名 AITURBO，已在华为云生产部署（训练作业检查点读写，向推理与 agent 负载扩展中）。精读方式：主会话通读全文 + Agent 精读交叉核对（报告见 [references/aiturbo-report.md](references/aiturbo-report.md)）。阅读日期 2026-10-11。
 
 AI 负载正在吃穿分离式云存储的带宽。训练侧，周期性 checkpoint 写是数百 GB 级的倾泻；推理侧，弹性扩缩容要读 checkpoint、agent 工作流要读共享前缀的 KVCache。华为云的观察（厂商口径）：AI 任务已占本地数据中心云存储带宽的 10% 以上。
 
@@ -51,7 +51,7 @@ group 读的思路更直接（§4.2）。批量读里重复的块（同模型被
 
 **其三，一个精读中值得标注的发现。** Mooncake 对比实验并未真正使用 group API（论文原话大意：同步运行中的推理实例太困难），只是替换了 cache miss 后的存储读路径——所以推理侧 23% 的 TTFT 改善并非来自组去重本身，引用这个数字时要注意归因。
 
-**其四，大块传输的边界。** 只优化 XPU 间的大块传输，小块 I/O 不受益；按 job 生命周期缓存的写计划，在频繁扩缩容导致组成员变化时是否触发重计划、代价多大，论文未覆盖。
+**其四，大块传输的边界。** 只优化 XPU 间的大块传输，小块 I/O 不受益；按 job 生命周期缓存的写计划，在频繁扩缩容导致组成员变化时是否触发重计划、代价多大，论文未交代。
 
 ## 六、为什么这篇值得单独一篇文章
 

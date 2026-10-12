@@ -1,11 +1,6 @@
 # SolidAttention 精读报告（FAST'26）
 
-> **勘误（2026-10-11，二次修订）**：初判「11 页 PDF 为 USENIX 文件本身缺页」**有误**——实测该文件可读出 p.77–82 全部内容（§8.4.3 收尾、§8.4.4–8.7 消融与敏感性、§9 相关工作、§10 结论），实为 17 页全本；「11 页」是 PDF 页数元数据误报（与同批 CacheSlide/Bidaw 同款）。本报告 §8.1–8.4.2 的评估内容有效；「截断/不可见」标注已失效，相关工作与结论见原文（精读文 solidattention.md 已按全本修订）。
-
-# SolidAttention 精读报告
-
-**论文**：SolidAttention: Low-Latency SSD-based Serving on Memory-Constrained PCs（FAST'26，上海交大 IPADS：Xinrui Zheng, Dongliang Wei, Jianxiang Gao, Yixin Song, Zeyu Mi, Haibo Chen）
-**版本说明**：本 PDF 共 11 页（论文页 67–76），在 §8.4.3 中途截断，Figure 17b 之后内容、相关工作与结论章节**不可见**。
+**论文**：SolidAttention: Low-Latency SSD-based Serving on Memory-Constrained PCs（FAST'26，pp.67–82，上海交大 IPADS：Xinrui Zheng, Dongliang Wei, Jianxiang Gao, Yixin Song, Zeyu Mi, Haibo Chen）
 
 ## 一、问题与动机
 
@@ -32,8 +27,8 @@ AI PC 本地部署 LLM 受内存制约：市售 PC 多为 8–16 GB DRAM + iGPU 
 
 ## 五、局限与适用边界
 
-论文承认：14B 模型 FFN 计算强度高会稀释收益（§8.2）；小 KV 模型（Qwen-2.5-7B）预取收益下降（§8.4.2）；KV 频繁写有写放大（§7）；对比全内存方案有 ≤11% 吞吐损失。精读员注：(1) 论文声称精度与原模型相当，但 Table 1 中 LongBench 单项普遍略降（如 Llama-3.2-3B 40.10→38.25），block-wise 稀疏（每步只算约 1k token）对需全局精确注意力的任务本质上有损；(2) 81% 相似度意味着约 1/5 块仍需补读，若任务的选择模式逐层漂移剧烈，预取会退化；(3) 仅两台笔记本、单一 SSD 型号、batch=1，未覆盖更慢 SSD 与并发场景；(4) 11 页版无相关工作与结论章节，成本/能耗分析论文未覆盖。
+论文承认：14B 模型 FFN 计算强度高会稀释收益（§8.2）；小 KV 模型（Qwen-2.5-7B）预取收益下降（§8.4.2）；KV 频繁写有写放大（§7）；对比全内存方案有 ≤11% 吞吐损失。精读员注：(1) 论文声称精度与原模型相当，但 Table 1 中 LongBench 单项普遍略降（如 Llama-3.2-3B 40.10→38.25），block-wise 稀疏（每步只算约 1k token）对需全局精确注意力的任务本质上有损；(2) 81% 相似度意味着约 1/5 块仍需补读，若任务的选择模式逐层漂移剧烈，预取会退化；(3) 仅两台笔记本、单一 SSD 型号、batch=1，未测更慢 SSD 与并发场景；(4) 成本/能耗账为正：3.68 vs 5.37 J/token（改善 46%）。
 
 ## 六、关联
 
-与 KV 生态（精读员注，11 页版无 related work 章节）：FlexGen/InfLLM 是其直接对照与继承对象——采用 InfLLM 的代表向量块选择与「sink+local」分类（对应 StreamingLLM 的 attention sink）；FlexGen 的吞吐导向 zigzag 思路被论证不适配 batch=1。与 vLLM PagedAttention 同以「块」为管理单位，但目的不同：PagedAttention 解显存碎片，SolidAttention 的块是 SSD 传输粒度。与 Mooncake/LMCache 方向相反：后者面向集群、以吞吐/命中率/复用为目标、依赖请求级并发；SolidAttention 证明低并发端侧必须改走「稀疏算法 × 存储粒度 × 调度时序」协同设计路线，这对端侧 KV 分层存储（如 LMCache 的本地 tier）是有参照价值的设计约束。同目录另有 hao、hu-shipeng、liu-yang 三篇 FAST'26 论文（未读），与本文的关联论文未覆盖。
+与 KV 生态（精读员注）：FlexGen/InfLLM 是其直接对照与继承对象——采用 InfLLM 的代表向量块选择与「sink+local」分类（对应 StreamingLLM 的 attention sink）；FlexGen 的吞吐导向 zigzag 思路被论证不适配 batch=1。与 vLLM PagedAttention 同以「块」为管理单位，但目的不同：PagedAttention 解显存碎片，SolidAttention 的块是 SSD 传输粒度。与 Mooncake/LMCache 方向相反：后者面向集群、以吞吐/命中率/复用为目标、依赖请求级并发；SolidAttention 证明低并发端侧必须改走「稀疏算法 × 存储粒度 × 调度时序」协同设计路线，这对端侧 KV 分层存储（如 LMCache 的本地 tier）是有参照价值的设计约束。同系列另三篇单篇精读（[AITURBO](../aiturbo.md) · [Bidaw](../bidaw.md) · [CacheSlide](../cacheslide.md)）与本文的对照见[系列总纲](../fast26-kv-storage-five-scenarios.md)。

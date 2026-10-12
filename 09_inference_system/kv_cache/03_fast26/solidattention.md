@@ -1,6 +1,6 @@
 # 128k 上下文塞进 16 GB 内存：FAST'26 把 KV Cache 拆碎了放 SSD
 
-> **元信息**：论文 _SolidAttention: Low-Latency SSD-based Serving on Memory-Constrained PCs_，上海交大 IPADS（Xinrui Zheng、Dong Kun Wei、Haibo Chen 等），FAST '26 正式论文集 pp. 67–82。**勘误（2026-10-11，二次）**：PDF 实为 17 页全本（含 §8.4.3–8.7 消融与敏感性、§9 相关工作、§10 结论），初版精读只读到前 11 页系解析器页数元数据误报，本文已按全本补全。精读方式：主会话全文通读 + Agent 精读交叉核对（报告见 [references/solidattention-report.md](references/solidattention-report.md)，其中「截断/不可见」标注已失效）。阅读日期 2026-10-11。
+> **元信息**：论文 _SolidAttention: Low-Latency SSD-based Serving on Memory-Constrained PCs_，上海交大 IPADS（Xinrui Zheng、Dong Kun Wei、Haibo Chen 等），FAST '26 正式论文集 pp. 67–82。精读方式：主会话全文通读 + Agent 精读交叉核对（报告见 [references/solidattention-report.md](references/solidattention-report.md)）。阅读日期 2026-10-11。
 
 在 AI PC（主打本地跑大模型的个人电脑，行业通行写法为分写的 AI PC）上本地跑大模型，最先爆的不是算力，是内存。论文开篇的算术：Llama-3.1-8B 用 INT4 量化，权重只要 8 GB，但 128k 上下文的 KV Cache 要超过 16 GB——是权重的 4 倍多（Figure 1a）。市售这类 PC 的内存是 8–16 GB，连 KV 都装不下。
 

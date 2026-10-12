@@ -1,6 +1,6 @@
 # 当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案
 
-> **元信息**：本文是 FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）「AI and LLMs」两个 session 的系列总纲。五篇 KV Cache × 存储核心论文均有单篇精读：[SolidAttention](solidattention.md) · [CacheSlide](cacheslide.md) · [Bidaw](bidaw.md) · [AITURBO](aiturbo.md) · [PPC/modelFS](../../deployment/fast26-programmable-page-cache.md)（另 2 篇训练检查点、2 篇支撑性工作计入口径，Agent 精读报告见 [references/](references/)）。**版本勘误（2026-10-11）**：初版调研时 PDF 解析器只读出各篇前几页（误判 CacheSlide/Bidaw 为 6 页 short paper），后经全文复核已全部修正——五篇均为完整论文，官方页码范围分别为 pp. 255–270（AITURBO）、117–132（modelFS/PPC）、67–82（SolidAttention）、83–99（CacheSlide）、101–116（Bidaw）。整理日期 2026-10-10，勘误日期 2026-10-11。本文数字均已在全文复核时与论文原文逐条对照。
+> **元信息**：本文是 FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）「AI and LLMs」两个 session 的系列总纲。五篇 KV Cache × 存储核心论文均有单篇精读：[SolidAttention](solidattention.md) · [CacheSlide](cacheslide.md) · [Bidaw](bidaw.md) · [AITURBO](aiturbo.md) · [PPC/modelFS](../../deployment/fast26-programmable-page-cache.md)（另 2 篇训练检查点、2 篇支撑性工作计入口径，Agent 精读报告见 [references/](references/)）。本文数字已与论文原文逐条对照；整理日期 2026-10-10。
 
 FAST '26 的「AI and LLMs」两个 session 共九篇论文，本文只精读其中五篇。筛选标准只有一条：**是否在处理「KV Cache 与存储系统打交道」这个问题**。剩下的四篇不在交点上——GCR 与 AdaCheck 优化的是训练检查点的存取（对象是参数与优化器状态，不是 KV），Seneca 处理训练数据的预处理管道，SYSSPEC（最佳论文）讲的是用 LLM 生成文件系统的方法论。这四篇里 SYSSPEC 值得后续单独写，其余与本系列主题无关，故不展开。
 
@@ -105,6 +105,39 @@ CacheSlide 的做法分三层：**CCPE** 按学习到的任务模式切块，块
 | Bidaw          | [bidaw.md](bidaw.md)                                                          | [references/bidaw-report.md](references/bidaw-report.md)                   | [hu-shipeng](https://www.usenix.org/conference/fast26/presentation/hu-shipeng) |
 | AITURBO        | [aiturbo.md](aiturbo.md)                                                      | [references/aiturbo-report.md](references/aiturbo-report.md)               | [hao](https://www.usenix.org/conference/fast26/presentation/hao)               |
 | PPC / modelFS  | [单篇精读（deployment/）](../../deployment/fast26-programmable-page-cache.md) | —                                                                          | [liu-yubo](https://www.usenix.org/conference/fast26/presentation/liu-yubo)     |
+
+---
+
+## 延伸阅读：本仓其他论文速览（按主题）
+
+> 以下为与本系列互补的既有文章速览；完整映射见 [KV Cache 技术体系门户](../README.md) 与其 §5 核心参考文献。
+
+**基础与注意力机制**：
+
+- FlashAttention（NeurIPS 2022）/ FlashAttention-3 / **PagedAttention**（SOSP 2023）/ GQA（EMNLP 2023）/ **MLA**（DeepSeek-V2）/ RoPE → [KV Cache 原理](../01_concepts/basic/kv_cache_basics.md) · [注意力类型与 KV 形态](../01_concepts/basic/attention_kv_cache_formats.md)
+
+**淘汰与压缩**：
+
+- **StreamingLLM**（ICLR 2024）/ **H₂O**（NeurIPS 2023）/ **SnapKV**（NeurIPS 2024）/ **SamKV**（AAAI 2026）/ KIVI（2bit 量化）→ [淘汰策略：从滑动窗口到精确淘汰](../01_concepts/eviction/attention_sinks_and_eviction.md) · [Key-Key 语义亲和度](../01_concepts/eviction/key_key_semantic_affinity.md) · [量化深度解析](../01_concepts/compression/kv_cache_quantization.md) · [压缩技术详解](../01_concepts/compression/kv_cache_compression.md)
+
+**复用与融合**：
+
+- **CacheBlend**（EuroSys 2025，RAG 非前缀融合）/ **CacheGen**（SIGCOMM 2024，压缩流式传输）→ [CacheBlend 源码剖析](../02_systems/lmcache/cache_blend.md) · [CacheGen](../02_systems/lmcache/cachegen.md)
+
+**系统与分层管理**：
+
+- **Mooncake**（FAST '25，KVCache 中心化分离架构）/ **LMCache**（L1–L4 分层全家桶）/ **KVBM**（NVIDIA Dynamo）/ **Tair KVCache** / **SGLang HiCache** / NIXL 传输库 → [§3 系统与管理系统](../README.md#3-进阶架构与管理系统)（各系统源码分析齐全）
+
+**调度、传输与执行**：
+
+- Chunked Prefill / 投机解码的 KV 交互 / **PD 分离 KV 传输**（三维度对比与 handoff 四轴）/ 层级流水线预取 / CUDA Graph 与动态 block table → [§2.2 调度、传输与执行优化](../README.md#22-调度传输与执行优化)
+
+**跨模型与容量**：
+
+- NVIDIA 跨模型 KV 线性映射（arXiv:2608.03893）→ [跨模型复用的可能与代价](../01_concepts/cross_model/cross_model_kv_transfer.md)
+- HBM KV Pool 三态记账与并发上限 → [L1 KV Pool 才是系统并发的上限](../01_concepts/capacity_planning/hbm_kv_pool_concurrency.md)
+
+---
 
 ## 参考资料
 

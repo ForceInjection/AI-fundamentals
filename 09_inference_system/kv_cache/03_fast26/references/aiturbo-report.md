@@ -1,7 +1,6 @@
-# AITURBO 精读报告(FAST'26)
+# AITURBO 精读报告（FAST'26）
 
-**论文**:Fast Cloud Storage for AI Jobs via Grouped I/O API with Transparent Read/Write Optimizations(上海交大 IPADS + 华为云,Yingyi Hao 等,FAST'26,pp.255–270)
-**版本说明**:实际 PDF 为 17 页全文(正文至 p.267),并非 7 页删节版,评估数字完整可用。系统名 AITURBO。
+**论文**:Fast Cloud Storage for AI Jobs via Grouped I/O API with Transparent Read/Write Optimizations(上海交大 IPADS + 华为云,Yingyi Hao 等,FAST'26,pp.255–270)。系统名 AITURBO。
 
 ## 一、问题与动机
 
@@ -18,6 +17,7 @@ AI 负载正在吃穿分离式云存储的带宽:训练侧是周期性 checkpoin
 ## 四、评估
 
 测试床:Ascend 910B(64 GB HBM)与 A800(80 GB)两集群,至多 64 XPU,每节点 192 核 / 1.5 TB DRAM、1 张 100 Gbps S-NIC,30 Gbps backend 带宽摊到 XPU(§5)。基线:Megatron+SFSTurbo(华为通用云存储,类 3FS)、Megatron+Gemini(闭源,作者在 Megatron commit cac60ce 上复刻其技术)、ServerlessLLM(ckpt 读)、Mooncake(KVCache)。
+
 - **checkpoint 写**(Figure 13,p.264):1.5B/13B/38B × 有无 ZeRo 六种配置,AITURBO 比 Megatron+SFSTurbo 快至多 5×,Gemini 关掉重复写场景下再快至多 5.9×;生产环境口径为比 SFSTurbo 快 3.9–58.8×(§1,p.256,厂商声称)。factor analysis:+Dedup 降 4.3–47.2%,+Write plan 再降至多 76%(p.265)。
 - **checkpoint 读**(Figure 17,p.265):8 XPU、1 GBps 下所有系统读 135 GB 的 Qwen-72B 都要 173 s(存储瓶颈);但一旦单副本进入 DRAM,AITURBO 在 64 XPU 上 2.25 s 完成部署且近乎与 XPU 数无关,ServerlessLLM 需 1,384 s。
 - **KVCache 读**(Figure 18,p.266):Qwen-14B + Qwen-Bailian 真实 trace 重放 30 min,Mean TTFT 0.8 ms → 0.65 ms(降 23%);推理整体口径比 Mooncake 快至多 1.28×(§1)。
@@ -25,7 +25,7 @@ AI 负载正在吃穿分离式云存储的带宽:训练侧是周期性 checkpoin
 
 ## 五、局限与适用边界
 
-论文承认(§1 Discussion,§4.3):只优化 XPU 间大块传输,小块 I/O 不受益;性能隔离仅用硬件 QoS 最低优先级,同 XPU 混部等复杂场景留待未来;BLAKE3 碰撞概率按生日界论证为可忽略;前几迭代优化器状态全零导致假去重,靠 pattern 稳定后缓存 plan 缓解。**精读员注**:① 收益强依赖「compute fabric 有富余 + host DRAM 闲置」的前提,论文自己承认推荐类业务的 DRAM 是满的(p.256);通信密集负载(如大规模 MoE all-to-all)与存储借用竞争时,最低优先级 QoS 下的实际带宽未刻画。② future_0/future_1 语义本质是拿持久性换性能,DRAM 副本全失即丢数据,对通用存储不成立。③ Mooncake 实验里并未真正使用 group API(「同步运行中的推理实例太困难」,p.267),只替换了 miss 后的存储读路径——推理侧 23% 的改善并非来自组去重本身。④ 计划生成按 job 生命周期缓存,弹性训练/频繁扩缩容导致的组成员变化是否触发重计划、代价多大,论文未覆盖。
+论文承认(§1 Discussion,§4.3):只优化 XPU 间大块传输,小块 I/O 不受益;性能隔离仅用硬件 QoS 最低优先级,同 XPU 混部等复杂场景留待未来;BLAKE3 碰撞概率按生日界论证为可忽略;前几迭代优化器状态全零导致假去重,靠 pattern 稳定后缓存 plan 缓解。**精读员注**:① 收益强依赖「compute fabric 有富余 + host DRAM 闲置」的前提,论文自己承认推荐类业务的 DRAM 是满的(p.256);通信密集负载(如大规模 MoE all-to-all)与存储借用竞争时,最低优先级 QoS 下的实际带宽未刻画。② future_0/future_1 语义本质是拿持久性换性能,DRAM 副本全失即丢数据,对通用存储不成立。③ Mooncake 实验里并未真正使用 group API(「同步运行中的推理实例太困难」,p.267),只替换了 miss 后的存储读路径——推理侧 23% 的改善并非来自组去重本身。④ 计划生成按 job 生命周期缓存,弹性训练/频繁扩缩容导致的组成员变化是否触发重计划、代价多大,论文未交代。
 
 ## 六、关联
 

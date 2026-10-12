@@ -1,6 +1,6 @@
 # Agent 的 KV 为什么复用不了：位置一漂移，前缀缓存就失效
 
-> **元信息**：论文 _CacheSlide: Unlocking Cross Position-Aware KV Cache Reuse for Accelerating LLM Serving_，上海交大（Yang Liu、Yunfei Gu 共同一作等）+ 浪潮济南 + 北大 + 华为云，FAST '26 正式论文集 pp. 83–99，带 Artifact Evaluated–Available 徽章，开源于 [github.com/SJTU-Storage-Lab/CacheSlide](https://github.com/SJTU-Storage-Lab/CacheSlide)。**勘误（2026-10-11）**：本篇曾因 PDF 解析器缺陷被误判为「6 页 short paper（止于 §4.1）」，实际为全本（正文至 p.99，§4.2–§7 完整），已按全文重写；旧版中「算法细节与评估未覆盖」的标注作废。精读方式：Agent 精读 + 主会话全文通读交叉核对（报告见 [references/cacheslide-report.md](references/cacheslide-report.md)，其中「论文未覆盖」标注已失效）。阅读日期 2026-10-11。
+> **元信息**：论文 _CacheSlide: Unlocking Cross Position-Aware KV Cache Reuse for Accelerating LLM Serving_，上海交大（Yang Liu、Yunfei Gu 共同一作等）+ 浪潮济南 + 北大 + 华为云，FAST '26 正式论文集 pp. 83–99，带 Artifact Evaluated–Available 徽章，开源于 [github.com/SJTU-Storage-Lab/CacheSlide](https://github.com/SJTU-Storage-Lab/CacheSlide)。精读方式：Agent 精读 + 主会话全文通读交叉核对（报告见 [references/cacheslide-report.md](references/cacheslide-report.md)）。阅读日期 2026-10-11。
 
 智能体工作流正在成为推理负载的新形态，它给 KV Cache 复用出了一道新题。多轮对话里前缀缓存很好使——System prompt 和历史轮次原样重复，前缀匹配命中即可复用。但智能体的 prompt 不是这样长的：每一轮都是「系统提示 + 任务更新 + 阶段产出」的动态拼接，里面有大段**内容相同却位置不同**的文本。前缀缓存对它们无能为力——位置一变，整段 KV 就成了「新的」。
 
@@ -72,6 +72,6 @@ RPDC 的正式定义（§3.3）：一类 KV 复用场景，上下文由多段组
 
 - Yang Liu, Yunfei Gu et al., _CacheSlide: Unlocking Cross Position-Aware KV Cache Reuse for Accelerating LLM Serving_, FAST '26, pp. 83–99. [USENIX 页面](https://www.usenix.org/conference/fast26/presentation/liu-yang)
 - 开源实现：[github.com/SJTU-Storage-Lab/CacheSlide](https://github.com/SJTU-Storage-Lab/CacheSlide)
-- 精读报告（Agent 交叉核对）：[references/cacheslide-report.md](references/cacheslide-report.md)（含删节版时期的勘误说明）
+- 精读报告（Agent 交叉核对）：[references/cacheslide-report.md](references/cacheslide-report.md)
 - 第三方解读（数字与本文互核一致）：[marsggbo 的论文解读](https://marsggbo.github.io/blog/2026/cacheslide/)——其「CoPE 适配器预训练可能损害基础模型泛化」「仅测三个 Agent 系统」两点批评，与本文 §五边界判断相同
 - 系列关联：[五场景总纲](fast26-kv-storage-five-scenarios.md) · [SolidAttention 单篇](solidattention.md) · [Bidaw 单篇](bidaw.md) · [AITURBO 单篇](aiturbo.md)

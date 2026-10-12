@@ -1,6 +1,6 @@
 # 多轮对话的 KV 放上 SSD，延迟为什么反涨 3.8 倍
 
-> **元信息**：论文 _Bidaw: Enhancing Key-Value Caching for Interactive LLM Serving via Bidirectional Computation–Storage Awareness_，清华大学（胡世鹏、张广艳等）+ 中国地质大学(北京) + 中国电信，FAST '26 正式论文集 pp. 101–116（16 页全本）。**勘误（2026-10-11）**：本篇曾因 PDF 解析器缺陷被误判为「6 页 short paper」，实际为全本论文，已按全文重写。精读方式：Agent 精读 + 主会话全文通读交叉核对（报告见 [references/bidaw-report.md](references/bidaw-report.md)，报告中「short paper 未覆盖」相关标注已失效）。阅读日期 2026-10-11。
+> **元信息**：论文 _Bidaw: Enhancing Key-Value Caching for Interactive LLM Serving via Bidirectional Computation–Storage Awareness_，清华大学（胡世鹏、张广艳等）+ 中国地质大学(北京) + 中国电信，FAST '26 正式论文集 pp. 101–116（16 页）。精读方式：Agent 精读 + 主会话全文通读交叉核对（报告见 [references/bidaw-report.md](references/bidaw-report.md)）。阅读日期 2026-10-11。
 
 多轮对话的推理服务有一个绕不开的矛盾：每轮回复都要复用历史轮次的 KV Cache，显存放不下，只能放进「主机内存 + SSD」的两级存储。直觉上这只是加一层盘的事，论文量化的现实是：相比「所有 KV 都驻留内存」的理想设置，响应延迟最高升 3.8 倍、吞吐最低降到一半（摘要、§2.2）。
 
@@ -30,7 +30,7 @@
 
 预测式逐出（§1）：ghost cache 模拟「已知未来的最优逐出」并结合历史 I/O trace，估计各重用距离下的命中概率，逐出估计命中概率最低的 KV。代价是每用户维护回复记录与 ghost 元数据。
 
-选择性缓存历史张量（§1、§3.1）：推理产生的中间张量大小差异大且可互相转换，Bidaw 度量「每单位存储换回多少计算」，只缓存最划算的历史张量。论文称对 MHA 模型通用，并提到「GQA 模型缓存 MHA 形式更合适」——细节论文未覆盖。
+选择性缓存历史张量（§1、§3.1）：推理产生的中间张量大小差异大且可互相转换，Bidaw 度量「每单位存储换回多少计算」，只缓存最划算的历史张量。论文称对 MHA 模型通用，并提到「GQA 模型缓存 MHA 形式更合适」——该机制细节论文未展开。
 
 逐出策略的细节（§3.3）比直觉更讲究。存储侧先在计算引擎里维护「上一轮回复长度」的在线统计——因为它与下一次访问的加权重用距离下界正相关（论文在 12 组不同时段、不同到达率的 trace 上验证，Spearman 秩相关系数 0.94–0.98）。逐出决策分两步：先用 ghost cache 模拟「已知未来的 Belady 最优逐出」得到各重用距离区间的命中率上界，再把重用距离分成小桶（小于性能层容量，命中率 1.0）、若干 promise 桶与 extreme 桶（超出后最优策略命中率也为零），每个桶携带命中率概率；最后按式 2 计算每个用户下次访问的总命中潜力 `Overall_potential = prob_small×1.0 + Σ prob_promising(i)×hit_promising(i) + prob_extreme×0.0`，逐出潜力最低者。这套设计的聪明处在于把「不确定的未来」转化为「带概率的区间估计」，并用回复长度做下界约束剪掉不可行的桶。
 
