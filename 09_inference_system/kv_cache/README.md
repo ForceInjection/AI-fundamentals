@@ -1,6 +1,6 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=8——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 42 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 56 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
 > **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划。每篇文章独立可读，前后交叉引用。
 
@@ -41,6 +41,7 @@
 
 - **[PD 分离架构下的 KV Cache 传输](01_concepts/pd_transfer/01_disaggregated_prefill_kv_transfer.md)**：从 Push/Pull、Eager/Pipelined/Lazy、完整/增量三个维度，对比 vLLM KV Connector V1、LMCache PD Backend 和 Mooncake 的设计选择。
 - **[压缩、重叠、复用、隔离：PD 状态交接优化的四条轴](01_concepts/pd_transfer/02-pd-state-handoff-optimization-map.md)**：PD 状态交接（handoff：数据、时序、状态生效、生命周期四层）优化空间的地图。压缩（线上量化、稀疏感知传输）、重叠（chunk-wise 流水线、元数据先行）、复用（cache-aware 路由、去重、混合路径）、隔离（传输与计算的干扰）四条主轴，加故障恢复兜底轴；逐轴给出业界实践锚点（SGLang 源码、Mooncake 设计文档、llm-d 实测、CacheGen/DualPath 论文）与证据等级表，并标注哪些是业界双空白。
+- **[分卡之后再跨机：DCP 与 PD 分离叠加时的 KV 传输](01_concepts/pd_transfer/03-dcp-pd-transfer.md)**：DCP（decode context parallel，按位置分卡）开启时 PD 分离的 KV 传输怎么变——prefill 侧产完整序列、decode 侧每 rank 只缺自己的 1/c：谁来挑行、按什么顺序发、发到哪一行；前两篇的续篇，基于 SGLang main 源码逐行核对（配两张拓扑图）。
 
 #### 2.2.3 卸载与预取
 
@@ -190,10 +191,23 @@ NIXL 是 NVIDIA 开源的高性能网络传输抽象层，为 LMCache、KVBM 等
 - vLLM Project. <https://github.com/vllm-project/vllm>
 - SGLang Project. <https://github.com/sgl-project/sglang>
 
+---
+
 ## 6. FAST'26 专题：KV Cache × 存储
 
 FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了同一个问题的五个切面：KV Cache 装不进内存、必须和存储打交道时，性能怎么丢、怎么拿回来。五个场景五种打法，没有通吃方案——共同支点是「可复现的 I/O 特征」。
 
 - **[当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案](03_fast26/fast26-kv-storage-five-scenarios.md)**：五象限全景（端侧 batch=1 / 智能体 RPDC 复用 / 多轮对话两级存储 / 分离式数据中心 / MaaS 冷启动），按「数据放不对 / 复用算不对 / 调度看不见」三类矛盾归并拆解，附选型对号表与共同边界（特征不可复现时的退化）。含 1 张手绘全景图
+- 单篇精读：[SolidAttention](03_fast26/solidattention.md) · [CacheSlide](03_fast26/cacheslide.md) · [Bidaw](03_fast26/bidaw.md) · [AITURBO](03_fast26/aiturbo.md)
 - 精读报告（Agent 按统一框架产出，数字标注论文出处，推断标「精读员注」）：[SolidAttention](03_fast26/references/solidattention-report.md) · [CacheSlide](03_fast26/references/cacheslide-report.md) · [Bidaw](03_fast26/references/bidaw-report.md) · [AITURBO](03_fast26/references/aiturbo-report.md)
 - 关联：[可编程页缓存（PPC/modelFS）单篇精读](../deployment/fast26-programmable-page-cache.md)（五象限中的 MaaS 冷启动篇）
+
+---
+
+## 7. 内存层级专题：KV 装不进显存之后
+
+> 从 2026 KV Cache 专题调研的录用论文里选出的首条深读线——把筛选级的 venue 核实升级为逐篇页码级精读（总纲做横向对照，四篇各自附精读报告）。
+
+- **[当 KV 装不进显存：四篇论文给出的四种内存账](04_memory_tiering/memory-tiering-overview.md)**：四篇 2025–2026 正式录用论文的横切总纲——去搬运 / 挪计算 / 并账本 / 重排调度四条路线、按条件选路的对号表，以及四篇的「数字怎么读」口径清单。
+- 单篇精读：[DirectKV](04_memory_tiering/directkv.md)（OSDI '26，零拷贝 offload）· [NEO](04_memory_tiering/neo.md)（MLSys 2025，decoding attention 下移 CPU）· [eLLM](04_memory_tiering/ellm.md)（DAC 2026，弹性内存池）· [Strata](04_memory_tiering/strata.md)（OSDI '26，分层上下文缓存）
+- 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[directkv](04_memory_tiering/references/directkv-report.md) · [neo](04_memory_tiering/references/neo-report.md) · [ellm](04_memory_tiering/references/ellm-report.md) · [strata](04_memory_tiering/references/strata-report.md)；论文原文 PDF 在 `04_memory_tiering/references/papers/`
