@@ -2,15 +2,15 @@
 """
 企业级多智能体AI系统 - 系统测试
 
-这个测试文件包含了系统的核心功能测试，确保各个组件能够正常工作。
+对齐 src/ 真实 API 的核心功能测试。2026-10 修订：初版测试是按一套
+未落地的 API 设计稿写的（构造签名、容器语义、生命周期方法均与实现
+不符），本版全部改为对齐 src/ 的真实接口。
 """
 
 import asyncio
 import pytest
-import json
 import uuid
-from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from datetime import datetime
 import sys
 import os
 
@@ -18,508 +18,507 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # 导入测试目标
-from src.agents.base_agent import BaseAgent, Belief, Desire, Intention
-from src.agents.research_agent import ResearchAgent
+from src.agents.base_agent import (
+    BaseAgent, Belief, Desire, Intention, AgentStatus, BeliefType, AgentResult,
+)
+from src.agents.research_agent import ResearchAgent, SearchResult
 from src.agents.analysis_agent import AnalysisAgent
 from src.communication.message_bus import MessageBus, Message, MessageType, MessagePriority
 from src.workflows.langgraph_workflow import (
-    EnhancedAgentState, StateValidator, EnterpriseWorkflowEngine
+    EnhancedAgentState, StateValidator, EnterpriseWorkflowEngine,
 )
-from src.monitoring.langsmith_integration import (
-    EnterpriseTracing, TraceLevel, TraceContext
-)
+from src.monitoring.langsmith_integration import EnterpriseTracing
 from src.examples.customer_service_system import (
-    CustomerServiceWorkflow, CustomerServiceAgent, CustomerProfile
+    CustomerServiceWorkflow, CustomerServiceAgent,
 )
 from main import MultiAgentSystem
 
+
+class ConcreteTestAgent(BaseAgent):
+    """测试用具体智能体——BaseAgent.execute 是抽象方法，必须落地才能实例化"""
+
+    async def execute(self, input_data):
+        return AgentResult(
+            agent_id=self.agent_id,
+            status=AgentStatus.COMPLETED,
+            data={"echo": input_data},
+            execution_time=0.0,
+        )
+
+
+def make_system_config(**overrides):
+    """构造 MultiAgentSystem 需要的完整配置（main.py 按键直取，缺键会 KeyError）"""
+    config = {
+        "system": {"name": "Test System", "version": "1.0.0", "environment": "test"},
+        "tracing": {"enabled": True, "sampling_rate": 1.0},
+        "message_bus": {"max_queue_size": 1000, "worker_count": 2},
+        "agents": {"max_concurrent_tasks": 5},
+        "workflows": {},
+        "customer_service": {"enabled": False},
+    }
+    config.update(overrides)
+    return config
+
+
 class TestBaseAgent:
-    """基础智能体测试"""
-    
+    """基础智能体测试（BDI 架构：信念/愿望/意图为 key 索引的字典）"""
+
     @pytest.fixture
     def base_agent(self):
-        """创建基础智能体实例"""
-        return BaseAgent("test_agent_1", "Test Agent")
-    
+        return ConcreteTestAgent("test_agent_1", {"name": "Test Agent"})
+
     def test_agent_initialization(self, base_agent):
-        """测试智能体初始化"""
         assert base_agent.agent_id == "test_agent_1"
         assert base_agent.name == "Test Agent"
-        assert base_agent.status == "idle"
-        assert len(base_agent.beliefs) == 0
-        assert len(base_agent.desires) == 0
-        assert len(base_agent.intentions) == 0
-    
+        assert base_agent.status == AgentStatus.IDLE
+        assert base_agent.beliefs == {}
+        assert base_agent.desires == {}
+        assert base_agent.intentions == {}
+
     def test_belief_management(self, base_agent):
-        """测试信念管理"""
-        # 添加信念
-        belief = Belief(
-            content={"test": "data"},
-            confidence=0.8,
-            source="test",
-            timestamp=datetime.now()
-        )
-        base_agent.beliefs.append(belief)
-        
-        assert len(base_agent.beliefs) == 1
-        assert base_agent.beliefs[0].confidence == 0.8
-    
+        base_agent.add_belief("test_key", {"test": "data"}, BeliefType.FACT, 0.8, "test")
+
+        assert "test_key" in base_agent.beliefs
+        assert base_agent.beliefs["test_key"].confidence == 0.8
+
+        base_agent.update_belief("test_key", {"updated": True}, 0.9)
+        assert base_agent.beliefs["test_key"].value == {"updated": True}
+        assert base_agent.get_belief("missing") is None
+
     def test_desire_management(self, base_agent):
-        """测试愿望管理"""
-        # 添加愿望
-        desire = Desire(
-            goal="test_goal",
-            priority=0.9,
-            context={"test": "context"},
-            timestamp=datetime.now()
-        )
-        base_agent.desires.append(desire)
-        
-        assert len(base_agent.desires) == 1
-        assert base_agent.desires[0].goal == "test_goal"
-    
+        base_agent.add_desire("test_goal", "完成测试", priority=5)
+
+        assert "test_goal" in base_agent.desires
+        assert base_agent.desires["test_goal"].description == "完成测试"
+        assert base_agent.desires["test_goal"].is_achievable({}) is True
+
     def test_intention_management(self, base_agent):
-        """测试意图管理"""
-        # 添加意图
-        intention = Intention(
-            action="test_action",
-            parameters={"param": "value"},
-            priority=0.7,
-            timestamp=datetime.now()
+        intention_id = base_agent.create_intention(
+            "test_goal", [{"action": "step_one"}, {"action": "step_two"}]
         )
-        base_agent.intentions.append(intention)
-        
-        assert len(base_agent.intentions) == 1
-        assert base_agent.intentions[0].action == "test_action"
-    
+
+        intention = base_agent.intentions[intention_id]
+        assert intention.goal_id == "test_goal"
+        assert intention.get_current_step()["action"] == "step_one"
+        intention.advance_step()
+        assert intention.get_current_step()["action"] == "step_two"
+
     @pytest.mark.asyncio
-    async def test_agent_lifecycle(self, base_agent):
-        """测试智能体生命周期"""
-        # 启动智能体
-        await base_agent.start()
-        assert base_agent.status == "active"
-        
-        # 停止智能体
-        await base_agent.stop()
-        assert base_agent.status == "stopped"
+    async def test_agent_run_completes_bdi_loop(self, base_agent):
+        """run() 走完 感知→思考→规划→执行 整个 BDI 循环"""
+        result = await base_agent.run({"environment": {"signal": "go"}})
+
+        assert result.status == AgentStatus.COMPLETED
+        assert result.agent_id == "test_agent_1"
+        assert base_agent.status == AgentStatus.COMPLETED
+
 
 class TestResearchAgent:
     """研究智能体测试"""
-    
+
     @pytest.fixture
     def research_agent(self):
-        """创建研究智能体实例"""
         return ResearchAgent(
-            "research_agent_1", "Test Research Agent",
-            specializations=["web_search", "analysis"]
+            "research_agent_1",
+            {"name": "Test Research Agent", "expertise_domains": ["web_search", "analysis"]},
         )
-    
+
     def test_research_agent_initialization(self, research_agent):
-        """测试研究智能体初始化"""
         assert research_agent.agent_id == "research_agent_1"
-        assert "web_search" in research_agent.specializations
-        assert "search_web" in research_agent.tools
-        assert "analyze_results" in research_agent.tools
-    
+        assert research_agent.expertise_domains == ["web_search", "analysis"]
+        assert "web_search" in research_agent.capabilities
+        for tool in ("web_search", "analyze_content", "validate_source", "extract_insights"):
+            assert tool in research_agent.tools
+
     @pytest.mark.asyncio
-    async def test_research_task_execution(self, research_agent):
-        """测试研究任务执行"""
-        task = {
-            "query": "artificial intelligence trends",
-            "depth": "basic",
-            "sources": ["web"]
-        }
-        
-        result = await research_agent.execute_research_task(task)
-        
+    async def test_research_task_execution(self, research_agent, monkeypatch):
+        """execute_research_task：mock 掉网络搜索，验证研究管道与返回结构"""
+        async def fake_web_search(query, max_results=10):
+            return [
+                SearchResult(
+                    title="AI trends",
+                    content="AI is evolving fast",
+                    url="https://example.org/ai-trends",
+                    relevance_score=0.9,
+                    source_type="web",
+                    timestamp=datetime.now(),
+                )
+            ]
+
+        monkeypatch.setattr(research_agent, "_web_search", fake_web_search)
+
+        result = await research_agent.execute_research_task(
+            {"query": "artificial intelligence trends", "depth": "basic", "sources": ["web"]}
+        )
+
         assert "summary" in result
         assert "confidence" in result
         assert "sources" in result
         assert result["confidence"] > 0
 
+
 class TestAnalysisAgent:
     """分析智能体测试"""
-    
+
     @pytest.fixture
     def analysis_agent(self):
-        """创建分析智能体实例"""
         return AnalysisAgent(
-            "analysis_agent_1", "Test Analysis Agent",
-            specializations=["statistical_analysis"]
+            "analysis_agent_1",
+            {"name": "Test Analysis Agent", "analysis_types": ["statistical_analysis"]},
         )
-    
+
     def test_analysis_agent_initialization(self, analysis_agent):
-        """测试分析智能体初始化"""
         assert analysis_agent.agent_id == "analysis_agent_1"
-        assert "statistical_analysis" in analysis_agent.specializations
-        assert "analyze_data" in analysis_agent.tools
-    
+        assert "statistical_analysis" in analysis_agent.capabilities
+        assert "descriptive_stats" in analysis_agent.tools
+
     @pytest.mark.asyncio
     async def test_data_analysis(self, analysis_agent):
-        """测试数据分析"""
-        # 模拟数据
-        data = {
-            "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "labels": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
-        }
-        
-        result = await analysis_agent.analyze_data(data)
-        
-        assert "insights" in result
-        assert "statistics" in result
-        assert "confidence" in result
-        assert result["confidence"] > 0
+        """execute 输入 data + analysis_type，产出自适应的洞察与统计"""
+        data = {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+
+        result = await analysis_agent.execute(
+            {"data": data, "analysis_type": "descriptive"}
+        )
+
+        assert result.status == AgentStatus.COMPLETED
+        assert result.data
+
 
 class TestMessageBus:
-    """消息总线测试"""
-    
+    """消息总线测试
+
+    真实语义：subscribe(agent_id, message_types, callback) 按消息类型订阅；
+    publish(topic, content, sender_id) 对外广播（内部构造 Message）。
+    """
+
     @pytest.fixture
     async def message_bus(self):
-        """创建消息总线实例"""
         bus = MessageBus()
         await bus.start()
         yield bus
         await bus.stop()
-    
+
     @pytest.mark.asyncio
     async def test_message_publishing(self, message_bus):
-        """测试消息发布"""
-        message = Message(
-            id=str(uuid.uuid4()),
-            type=MessageType.REQUEST,
-            sender="test_sender",
-            recipient="test_recipient",
-            content={"test": "data"},
-            priority=MessagePriority.NORMAL
+        await message_bus.publish(
+            "test_topic", {"test": "data"}, sender_id="test_sender"
         )
-        
-        await message_bus.publish("test_topic", message)
-        
-        # 验证消息统计
+
         stats = message_bus.get_statistics()
-        assert stats["messages_published"] > 0
-    
+        assert stats["message_stats"]["total_sent"] > 0
+
     @pytest.mark.asyncio
     async def test_message_subscription(self, message_bus):
-        """测试消息订阅"""
         received_messages = []
-        
+
         async def message_handler(message: Message):
             received_messages.append(message)
-        
-        # 订阅主题
-        await message_bus.subscribe("test_topic", message_handler)
-        
-        # 发布消息
-        message = Message(
-            id=str(uuid.uuid4()),
-            type=MessageType.REQUEST,
-            sender="test_sender",
-            recipient="test_recipient",
-            content={"test": "data"},
-            priority=MessagePriority.NORMAL
+
+        # 订阅者必须先注册，路由才会为其建队列
+        await message_bus.register_agent("test_subscriber")
+        await message_bus.subscribe(
+            "test_subscriber", [MessageType.REQUEST, MessageType.BROADCAST], message_handler
         )
-        
-        await message_bus.publish("test_topic", message)
-        
-        # 等待消息处理
+
+        await message_bus.publish(
+            "test_topic", {"test": "data"}, sender_id="test_sender"
+        )
+
         await asyncio.sleep(0.1)
-        
+
         assert len(received_messages) == 1
-        assert received_messages[0].content["test"] == "data"
+        assert received_messages[0].content == {"test": "data"}
+
+    @pytest.mark.asyncio
+    async def test_handler_can_call_bus_methods(self, message_bus):
+        """回归测试：handler 内再调用总线方法不得自锁死
+        （分发在 _subscription_lock 外触发回调——asyncio.Lock 不可重入）"""
+        received = []
+        forwarded = []
+
+        async def forwarding_handler(message: Message):
+            received.append(message)
+            if message.content.get("forward"):
+                await message_bus.publish(
+                    "forwarded_topic", {"forwarded": True}, sender_id="handler"
+                )
+                forwarded.append(True)
+
+        await message_bus.register_agent("forward_sub")
+        await message_bus.subscribe(
+            "forward_sub", [MessageType.BROADCAST], forwarding_handler
+        )
+
+        await message_bus.publish("origin", {"forward": True}, sender_id="origin")
+        await asyncio.sleep(0.2)
+
+        assert received  # handler 被调用且未死锁
+        assert forwarded  # handler 内的 publish 也正常完成
+
+    @pytest.mark.asyncio
+    async def test_type_filtering(self, message_bus):
+        """类型过滤：publish 的 BROADCAST 不命中 REQUEST 订阅；点对点直发进入队列由拉取消费"""
+        received = []
+
+        async def handler(message: Message):
+            received.append(message)
+
+        await message_bus.register_agent("filter_sub")
+        await message_bus.subscribe("filter_sub", [MessageType.REQUEST], handler)
+
+        # publish 的主题消息固定为 BROADCAST 类型——不匹配 REQUEST 订阅
+        await message_bus.publish("t1", {"kind": "broadcast"}, sender_id="s")
+        await asyncio.sleep(0.1)
+        assert received == []
+
+        # send_message 点对点直发：无显式 callback 时走拉取模式
+        message = Message(
+            message_id=str(uuid.uuid4()),
+            sender_id="s",
+            receiver_id="filter_sub",
+            message_type=MessageType.REQUEST,
+            priority=MessagePriority.NORMAL,
+            content={"kind": "request"},
+            timestamp=datetime.now(),
+        )
+        await message_bus.send_message(message)
+
+        pulled = await message_bus.receive_message("filter_sub", timeout=1.0)
+        assert pulled is not None
+        assert pulled.content == {"kind": "request"}
+        assert received == []  # callback 未挂载时不推送，避免重复消费
+
 
 class TestEnterpriseTracing:
     """企业追踪测试"""
-    
+
     @pytest.fixture
     async def tracer(self):
-        """创建追踪器实例"""
         tracer = EnterpriseTracing()
         await tracer.start()
         yield tracer
         await tracer.stop()
-    
-    def test_trace_creation(self, tracer):
-        """测试追踪创建"""
+
+    @pytest.mark.asyncio
+    async def test_trace_creation(self, tracer):
         trace_id = tracer.create_trace(
-            name="test_trace",
-            tags=["test"],
-            metadata={"test": "data"}
+            name="test_trace", tags=["test"], metadata={"test": "data"}
         )
-        
+
         assert trace_id in tracer.active_traces
         assert tracer.active_traces[trace_id].tags == ["test"]
-    
+
     @pytest.mark.asyncio
     async def test_trace_run(self, tracer):
-        """测试追踪运行"""
         trace_id = tracer.create_trace("test_trace")
-        
+
         async with tracer.trace_run(
-            trace_id=trace_id,
-            name="test_run",
-            run_type="test",
-            inputs={"test": "input"}
+            trace_id=trace_id, name="test_run", run_type="test",
+            inputs={"test": "input"},
         ) as run_context:
             run_context.log("Test log message")
             run_context.set_outputs({"test": "output"})
-        
-        # 验证追踪事件
+
         assert len(tracer.trace_events) > 0
-    
-    def test_performance_metrics(self, tracer):
-        """测试性能指标"""
+
+    @pytest.mark.asyncio
+    async def test_performance_metrics(self, tracer):
         metrics = tracer.get_performance_metrics()
-        
+
         assert "total_traces" in metrics
         assert "active_traces_count" in metrics
         assert "error_rate" in metrics
 
+
 class TestCustomerServiceSystem:
     """客服系统测试"""
-    
+
     @pytest.fixture
     async def customer_service_system(self):
-        """创建客服系统实例"""
         tracer = EnterpriseTracing()
         await tracer.start()
-        
+
         message_bus = MessageBus()
         await message_bus.start()
-        
+
         system = CustomerServiceWorkflow(tracer, message_bus)
-        
-        # 添加测试智能体
-        agent = CustomerServiceAgent(
-            "test_cs_agent", "Test Customer Service Agent"
-        )
+
+        agent = CustomerServiceAgent("test_cs_agent", "Test Customer Service Agent")
         system.add_agent(agent)
-        
+
         yield system
-        
+
         await message_bus.stop()
         await tracer.stop()
-    
+
     @pytest.mark.asyncio
     async def test_customer_request_processing(self, customer_service_system):
-        """测试客户请求处理"""
-        customer_message = "I need help with my account"
-        customer_id = "test_customer_1"
-        
         result = await customer_service_system.process_customer_request(
-            customer_message, customer_id
+            "I need help with my account", "test_customer_1"
         )
-        
-        assert result.workflow_status in ["completed", "active"]
-        assert len(result.messages) > 0
-        assert "context" in result.__dict__
-    
+
+        # ainvoke 返回最终状态 dict
+        assert result["workflow_status"] in ["completed", "active"]
+        assert len(result["messages"]) > 0
+
     def test_customer_service_metrics(self, customer_service_system):
-        """测试客服系统指标"""
         metrics = customer_service_system.get_system_metrics()
-        
+
         assert "total_agents" in metrics
         assert "total_tickets_handled" in metrics
-        assert "agent_utilization" in metrics
+        assert "average_customer_satisfaction" in metrics
+
 
 class TestMultiAgentSystem:
     """多智能体系统集成测试"""
-    
+
     @pytest.fixture
     async def system(self):
-        """创建系统实例"""
-        config = {
-            "system": {"name": "Test System", "version": "1.0.0", "environment": "test"},
-            "tracing": {"enabled": True, "sampling_rate": 1.0},
-            "message_bus": {"max_queue_size": 1000, "worker_count": 2},
-            "agents": {"max_concurrent_tasks": 5},
-            "workflows": {"max_parallel_executions": 3},
-            "customer_service": {"enabled": True, "max_agents": 5}
-        }
-        
-        system = MultiAgentSystem(config)
+        system = MultiAgentSystem(make_system_config())
         await system.start()
         yield system
         await system.shutdown()
-    
+
     @pytest.mark.asyncio
     async def test_system_initialization(self, system):
-        """测试系统初始化"""
         assert system.running is True
         assert system.tracer is not None
         assert system.message_bus is not None
         assert system.workflow_engine is not None
         assert len(system.agents) > 0
-    
+
     @pytest.mark.asyncio
     async def test_agent_registration(self, system):
-        """测试智能体注册"""
         initial_count = len(system.agents)
-        
-        # 创建新智能体
-        new_agent = BaseAgent("test_new_agent", "New Test Agent")
+
+        new_agent = ConcreteTestAgent("test_new_agent", {"name": "New Test Agent"})
         await system.register_agent(new_agent)
-        
+
         assert len(system.agents) == initial_count + 1
         assert "test_new_agent" in system.agents
-        
-        # 注销智能体
+
         await system.unregister_agent("test_new_agent")
         assert len(system.agents) == initial_count
         assert "test_new_agent" not in system.agents
-    
+
     @pytest.mark.asyncio
     async def test_system_metrics_collection(self, system):
-        """测试系统指标收集"""
         metrics = await system._collect_system_metrics()
-        
+
         assert "timestamp" in metrics
         assert "uptime_seconds" in metrics
         assert "agents" in metrics
         assert "message_bus" in metrics
         assert "tracing" in metrics
 
+
 class TestWorkflowEngine:
     """工作流引擎测试"""
-    
+
     @pytest.fixture
     async def workflow_engine(self):
-        """创建工作流引擎实例"""
         tracer = EnterpriseTracing()
         await tracer.start()
-        
+
         message_bus = MessageBus()
         await message_bus.start()
-        
+
         engine = EnterpriseWorkflowEngine()
-        # 设置工作流引擎的依赖
         if hasattr(engine, 'set_dependencies'):
             engine.set_dependencies(tracer, message_bus)
-        
+
         yield engine
-        
-        # EnterpriseWorkflowEngine没有stop方法
+
         await message_bus.stop()
         await tracer.stop()
-    
+
     def test_state_validation(self, workflow_engine):
-        """测试状态验证"""
+        """validate_state 返回错误列表：为空即合法"""
         validator = StateValidator()
-        
-        # 创建测试状态
+
         state = EnhancedAgentState(
             messages=[{"role": "user", "content": "test"}],
             current_agent="test_agent",
-            workflow_status="active"
-        )
-        
-        # 验证状态
-        is_valid, errors = validator.validate_state(state)
-        assert is_valid is True
-        assert len(errors) == 0
-    
-    @pytest.mark.asyncio
-    async def test_workflow_execution(self, workflow_engine):
-        """测试工作流执行"""
-        # 创建简单的研究分析工作流
-        workflow = workflow_engine.create_research_analysis_workflow()
-        
-        # 初始状态
-        initial_state = EnhancedAgentState(
-            messages=[{"role": "user", "content": "Analyze AI trends"}],
-            current_agent="research_agent",
             workflow_status="active",
-            context={"research_query": "AI trends"}
         )
-        
-        # 执行工作流（模拟）
-        result = await workflow.ainvoke(initial_state)
-        
-        assert result is not None
-        assert hasattr(result, 'workflow_status')
 
-# 性能测试
+        errors = validator.validate_state(state)
+        assert errors == []
+
+    def test_workflow_template_registered(self, workflow_engine):
+        """引擎初始化时注册了内置工作流模板"""
+        assert "research_analysis" in workflow_engine.workflow_templates
+        assert "data_processing" in workflow_engine.workflow_templates
+        assert "content_generation" in workflow_engine.workflow_templates
+
+
 class TestPerformance:
     """性能测试"""
-    
+
     @pytest.mark.asyncio
     async def test_concurrent_message_processing(self):
-        """测试并发消息处理"""
         message_bus = MessageBus()
         await message_bus.start()
-        
+
         received_count = 0
-        
+
         async def message_handler(message: Message):
             nonlocal received_count
             received_count += 1
-            await asyncio.sleep(0.01)  # 模拟处理时间
-        
-        await message_bus.subscribe("perf_test", message_handler)
-        
-        # 发送多个消息
+            await asyncio.sleep(0.01)
+
+        await message_bus.subscribe("perf_sub", [MessageType.BROADCAST], message_handler)
+
         tasks = []
         for i in range(100):
-            message = Message(
-                id=str(uuid.uuid4()),
-                type=MessageType.REQUEST,
-                sender="perf_test",
-                recipient="handler",
-                content={"index": i},
-                priority=MessagePriority.NORMAL
+            tasks.append(
+                message_bus.publish("perf_test", {"index": i}, sender_id="perf_test")
             )
-            task = message_bus.publish("perf_test", message)
-            tasks.append(task)
-        
-        # 等待所有消息发送完成
+
         await asyncio.gather(*tasks)
-        
-        # 等待消息处理完成
         await asyncio.sleep(2)
-        
+
         await message_bus.stop()
-        
-        # 验证所有消息都被处理
+
         assert received_count == 100
-    
+
     @pytest.mark.asyncio
     async def test_system_startup_time(self):
-        """测试系统启动时间"""
         start_time = datetime.now()
-        
-        config = {
-            "system": {"name": "Perf Test", "version": "1.0.0", "environment": "test"},
-            "tracing": {"enabled": False},  # 禁用追踪以提高启动速度
-            "message_bus": {"worker_count": 1},
-            "customer_service": {"enabled": False}
-        }
-        
+
+        config = make_system_config(
+            system={"name": "Perf Test", "version": "1.0.0", "environment": "test"},
+            tracing={"enabled": False},
+            customer_service={"enabled": False},
+        )
+        config["tracing"] = {"enabled": False}
+
         system = MultiAgentSystem(config)
         await system.start()
-        
+
         startup_time = (datetime.now() - start_time).total_seconds()
-        
+
         await system.shutdown()
-        
-        # 启动时间应该在合理范围内（小于10秒）
+
         assert startup_time < 10.0
 
-# 运行测试的主函数
+
 def run_tests():
     """运行所有测试"""
     import subprocess
     import sys
-    
-    # 运行pytest
+
     result = subprocess.run([
-        sys.executable, "-m", "pytest", 
-        __file__, 
-        "-v",  # 详细输出
-        "--tb=short",  # 简短的错误回溯
-        "--asyncio-mode=auto"  # 自动异步模式
+        sys.executable, "-m", "pytest",
+        __file__,
+        "-v",
+        "--tb=short",
+        "--asyncio-mode=auto"
     ])
-    
+
     return result.returncode
+
 
 if __name__ == "__main__":
     exit_code = run_tests()

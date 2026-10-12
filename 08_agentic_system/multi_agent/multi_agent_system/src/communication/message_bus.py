@@ -119,17 +119,18 @@ class MessageQueue:
     
     async def put(self, message: Message) -> bool:
         """添加消息到队列"""
+        # _not_empty Condition 复用 _lock（不可重入）——持锁期间直接 notify，
+        # 不能再次 async with self._not_empty，否则自锁死（2026-10 修复）
         async with self._lock:
             if self._size >= self.max_size:
                 # 队列满时，移除最低优先级的旧消息
                 await self._remove_lowest_priority_message()
-            
+
             self._queues[message.priority].append(message)
             self._size += 1
-            
-            async with self._not_empty:
-                self._not_empty.notify()
-            
+
+            self._not_empty.notify()
+
             return True
     
     async def get(self, timeout: Optional[float] = None) -> Optional[Message]:
@@ -339,32 +340,41 @@ class MessageBus:
         """广播消息到所有订阅者"""
         # 添加到全局队列
         await self._global_queue.put(message)
-        
-        # 直接发送给订阅者
+
+        # 锁内只做订阅匹配与副本构造；回调统一在锁外触发——
+        # 用户 handler 可能再调用总线方法，asyncio.Lock 不可重入，
+        # 锁内 await 会自锁死（2026-10 修复）
+        pending = []
         async with self._subscription_lock:
             for agent_id, subscriptions in self._subscriptions.items():
                 for subscription in subscriptions:
                     if subscription.matches(message):
-                        try:
-                            # 创建消息副本
-                            agent_message = Message(
-                                message_id=str(uuid.uuid4()),
-                                sender_id=message.sender_id,
-                                receiver_id=agent_id,
-                                message_type=message.message_type,
-                                priority=message.priority,
-                                content=message.content.copy(),
-                                timestamp=message.timestamp,
-                                expires_at=message.expires_at,
-                                correlation_id=message.correlation_id,
-                                reply_to=message.reply_to,
-                                headers=message.headers.copy()
-                            )
-                            
-                            await self._route_to_agent(agent_message)
-                            
-                        except Exception as e:
-                            self.logger.error(f"Failed to deliver message to subscriber {agent_id}: {str(e)}")
+                        agent_message = Message(
+                            message_id=str(uuid.uuid4()),
+                            sender_id=message.sender_id,
+                            receiver_id=agent_id,
+                            message_type=message.message_type,
+                            priority=message.priority,
+                            content=message.content.copy(),
+                            timestamp=message.timestamp,
+                            expires_at=message.expires_at,
+                            correlation_id=message.correlation_id,
+                            reply_to=message.reply_to,
+                            headers=message.headers.copy()
+                        )
+                        pending.append((subscription.callback, agent_message))
+
+        for callback, agent_message in pending:
+            try:
+                if callback is None:
+                    # 未挂回调的订阅者：消息路由进其队列，供 receive_message 拉取
+                    await self._route_to_agent(agent_message)
+                    continue
+                outcome = callback(agent_message)
+                if asyncio.iscoroutine(outcome):
+                    await outcome
+            except Exception as e:
+                self.logger.error(f"Failed to deliver message to subscriber {agent_id}: {str(e)}")
     
     async def receive_message(self, agent_id: str, timeout: Optional[float] = None) -> Optional[Message]:
         """接收消息"""
