@@ -1,6 +1,6 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 56 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 63 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
 > **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划。每篇文章独立可读，前后交叉引用。
 
@@ -211,3 +211,23 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - **[当 KV 装不进显存：四篇论文给出的四种内存账](04_memory_tiering/memory-tiering-overview.md)**：四篇 2025–2026 正式录用论文的横切总纲——去搬运 / 挪计算 / 并账本 / 重排调度四条路线、按条件选路的对号表，以及四篇的「数字怎么读」口径清单。
 - 单篇精读：[DirectKV](04_memory_tiering/directkv.md)（OSDI '26，零拷贝 offload）· [NEO](04_memory_tiering/neo.md)（MLSys 2025，decoding attention 下移 CPU）· [eLLM](04_memory_tiering/ellm.md)（DAC 2026，弹性内存池）· [Strata](04_memory_tiering/strata.md)（OSDI '26，分层上下文缓存）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[directkv](04_memory_tiering/references/directkv-report.md) · [neo](04_memory_tiering/references/neo-report.md) · [ellm](04_memory_tiering/references/ellm-report.md) · [strata](04_memory_tiering/references/strata-report.md)；论文原文 PDF 在 `04_memory_tiering/references/papers/`
+
+---
+
+## 8. 安全专题：KV Cache 跨过信任边界之后
+
+> 从 2026 KV Cache 专题调研的录用论文里选出的第二条深读线——KV Cache 共享与复用机制的安全面，读行为 / 读数据 / 读时延三种取证位置各自成篇（总纲做横向对照，三篇各自附精读报告）。
+
+- **[当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面](05_kv_security/kv-security-overview.md)**：三篇正式录用论文的横切总纲——读行为 / 读数据 / 读时延三种取证位置、按角色选路的对号表，以及三篇的「数字怎么读」口径清单。
+- 单篇精读：[I Know What You Asked](05_kv_security/i-know-what-you-asked.md)（NDSS '25，PromptPeek 调度行为侧信道）· [Shadow in the Cache](05_kv_security/shadow-in-the-cache.md)（NDSS '26，KV 数据重建 + KV-Cloak 防御）· [Auditing Prompt Caching](05_kv_security/auditing-prompt-caching.md)（ICML '25，商业 API 黑盒审计）
+- 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[PromptPeek](05_kv_security/references/i-know-what-you-asked-report.md) · [Shadow](05_kv_security/references/shadow-in-the-cache-report.md) · [Auditing](05_kv_security/references/auditing-prompt-caching-report.md)；论文原文 PDF 在 `05_kv_security/references/papers/`
+
+---
+
+## 9. 复用专题：跨出同前缀与同模型之后
+
+> 从 2026 KV Cache 专题调研的录用论文里选出的第三条深读线——复用条件的两次放宽：文档级预计算与任意拼接（同模型）、同一基座微调变体的 KV 互借（异权重）。
+
+- **[当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](06_kv_reuse/kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）与 DroidSpeak（NSDI '26）两条路径、按条件选路的对号表，以及两篇的「数字怎么读」口径清单。
+- 单篇精读：[KVLink](06_kv_reuse/kvlink.md)（NeurIPS 2025，文档级预计算 + link token）· [DroidSpeak](06_kv_reuse/droidspeak.md)（NSDI '26，跨微调变体共享 + 关键层重算）
+- 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[KVLink](06_kv_reuse/references/kvlink-report.md) · [DroidSpeak](06_kv_reuse/references/droidspeak-report.md)；论文原文 PDF 在 `06_kv_reuse/references/papers/`

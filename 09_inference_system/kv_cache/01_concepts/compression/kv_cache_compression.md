@@ -122,7 +122,7 @@ PagedAttention [8] 是这一范式的奠基性里程碑。vLLM 团队观察到�
 
 GPU-CPU 协同卸载（Offloading）则将冷热分层的存储理念引入了 KV Cache 管理。2024 年，字节跳动提出的 ShadowKV [9] 采用了巧妙的非对称“影子”机制：将经过低秩压缩后的 Key Cache 保留在高带宽的 GPU HBM 上作为“热数据影子”（Key 在 GPU 侧以低秩近似形式留存）用于快速注意力筛选，而将庞大的、全精度的完整 Value Cache 卸载（Offload）至低成本的 CPU 内存作为“大本营”。在注意力计算时，模型仅按需通过 PCIe 将选出的稀疏 Value 数据传回 GPU 重建。在 A100 GPU 上（针对特定模型与长上下文设置），ShadowKV 实现了高达 6× 的批处理规模扩展和 3.04× 的吞吐量提升，甚至在 RULER 等长文本基准下，其性能表现超越了在同等调度约束下、假设显存无限时的全量缓存批处理基线。
 
-Prefix Caching（前缀缓存）是另一个在系统层被广泛采纳的 I/O 优化策略。由于多轮对话（Multi-turn Chat）、System Prompt 或检索增强生成（RAG）等场景中存在大量重复的前缀输入，系统可以将这部分已计算的 KV Cache 进行哈希签名并跨请求共享。当新请求到来时，若命中缓存，即可直接跳过重复的 Prefill（预填充）计算阶段，显著降低了 Time To First Token（TTFT）。例如 SGLang 的 RadixAttention 就将这一机制做到了极致。此外，如 LMCache 这样的层级缓存管理系统，也为系统维度的缓存调度提供了高性能的解决方案。
+Prefix Caching（前缀缓存）是另一个在系统层被广泛采纳的 I/O 优化策略。由于多轮对话（Multi-turn Chat）、System Prompt 或检索增强生成（RAG）等场景中存在大量重复的前缀输入，系统可以将这部分已计算的 KV Cache 进行哈希签名并跨请求共享。当新请求到来时，若命中缓存，即可直接跳过重复的 Prefill（预填充）计算阶段，显著降低了 Time To First Token（TTFT）。例如 SGLang 的 RadixAttention 就将这一机制做到了极致。此外，如 LMCache 这样的层级缓存管理系统，也为系统维度的缓存调度提供了高性能的解决方案。Prefix Caching 之后的两次复用扩展——文档级拼接（KVLink）与跨微调变体共享（DroidSpeak）——见 [KV Cache 复用系列](../../06_kv_reuse/kv-reuse-overview.md)。
 
 ### 2.6 混合方法
 
