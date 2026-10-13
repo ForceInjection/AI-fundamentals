@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">从隐式共享到可验证的信任契约</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">把「共享给谁」从默认值变成可声明、可验证、可拒绝的档位</text>
+
+  <!-- ==== Band 1: today's defaults ==== -->
+  <rect x="28" y="94" width="904" height="88" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="44" y="116" dominant-baseline="central" font-size="12" font-weight="700" fill="#B91C1C">今天的默认：共享是隐式的，层级是未声明的</text>
+  <rect x="44" y="132" width="206" height="30" rx="6" fill="#FFFFFF" stroke="#FECACA" stroke-width="1"/>
+  <text x="147" y="147" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#B91C1C">共享：默认开着（跨用户复用）</text>
+  <rect x="262" y="132" width="206" height="30" rx="6" fill="#FFFFFF" stroke="#FECACA" stroke-width="1"/>
+  <text x="365" y="147" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#B91C1C">层级：宣布缓存 ≠ 宣布共享层级</text>
+  <rect x="480" y="132" width="206" height="30" rx="6" fill="#FFFFFF" stroke="#FECACA" stroke-width="1"/>
+  <text x="583" y="147" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#B91C1C">数据：明文处理、传输与落盘</text>
+  <rect x="698" y="132" width="218" height="30" rx="6" fill="#FFFFFF" stroke="#FECACA" stroke-width="1"/>
+  <text x="807" y="147" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#B91C1C">观察：一根秒表即可读</text>
+
+  <!-- ==== Band 2: the two pieces ==== -->
+  <rect x="28" y="198" width="440" height="174" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="44" y="222" dominant-baseline="central" font-size="13" font-weight="700" fill="#1D4ED8">（a）共享层级：可声明、可验证</text>
+  <text x="44" y="246" dominant-baseline="central" font-size="10" fill="#374151">三级坐标系是现成的：</text>
+  <rect x="44" y="256" width="128" height="28" rx="6" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="108" y="270" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#065F46">per-user · 最安全</text>
+  <rect x="180" y="256" width="100" height="28" rx="6" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1"/>
+  <text x="230" y="270" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#92400E">per-org</text>
+  <rect x="288" y="256" width="164" height="28" rx="6" fill="#FEE2E2" stroke="#FECACA" stroke-width="1"/>
+  <text x="370" y="270" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#B91C1C">global · 风险最高</text>
+  <text x="44" y="306" dominant-baseline="central" font-size="10" fill="#374151">Auditing 的方法即验证仪器：带假阳性率保证的审计，</text>
+  <text x="44" y="324" dominant-baseline="central" font-size="10" fill="#374151">可做第三方核验——像证书一样：provider 声明、</text>
+  <text x="44" y="342" dominant-baseline="central" font-size="10" fill="#374151">第三方验证、用户按需选择</text>
+  <text x="44" y="362" dominant-baseline="central" font-size="9" fill="#6B7280">现状：用户能控制的，基本只有「开 / 关」一个布尔值</text>
+
+  <rect x="484" y="198" width="448" height="174" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="500" y="222" dominant-baseline="central" font-size="13" font-weight="700" fill="#166534">（b）默认加密：去掉性能借口</text>
+  <text x="500" y="246" dominant-baseline="central" font-size="10" fill="#374151">KV-Cloak 证明：块内自洽的加密不破坏 PagedAttention</text>
+  <rect x="500" y="256" width="208" height="28" rx="6" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="604" y="270" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#065F46">代价 0.45%（15.41 ms/GB）· MMLU 零损失</text>
+  <text x="500" y="306" dominant-baseline="central" font-size="10" fill="#374151">剩余取证面各有低成本旋钮：调度随机化 · M-token</text>
+  <text x="500" y="324" dominant-baseline="central" font-size="10" fill="#374151">门槛 · 时延拉平；HTTPS 先例：加密成本被工程</text>
+  <text x="500" y="342" dominant-baseline="central" font-size="10" fill="#374151">压下去之后，没人再谈判</text>
+  <text x="500" y="362" dominant-baseline="central" font-size="9" fill="#6B7280">剩下的根：密钥托管依赖 TEE（KV-Cloak 仍吊在 TEE 上）</text>
+
+  <!-- ==== Band 3: result + caveat ==== -->
+  <rect x="28" y="388" width="904" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="480" y="408" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1D4ED8">结果：泄露面的默认值被翻转——从「默认敞开」到「默认关闭、按需声明」</text>
+  <text x="480" y="428" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#1D4ED8">共享给谁（层级）· 谁能看见什么（取证面）· 数据在谁的盘上（加密）——各自成为可声明、可拒绝的档位</text>
+
+  <rect x="28" y="452" width="904" height="64" rx="8" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1"/>
+  <text x="44" y="472" dominant-baseline="central" font-size="11" font-weight="700" fill="#92400E">防误读：显式契约 ≠ 泄露消失</text>
+  <text x="44" y="490" dominant-baseline="central" font-size="9.5" fill="#92400E">缓存跨过信任边界，就必须假设对手在读——契约改变的是默认值，不是泄露的物理；</text>
+  <text x="44" y="506" dominant-baseline="central" font-size="9.5" fill="#92400E">缓解清单里也只有 per-user 隔离是完全档，这正是要把「共享给谁」变成可谈判项的原因</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">本图为展望性论述（整合三篇实测与公开背景推演），不是任一论文的主张 · 见诚实声明</text>
+</svg>

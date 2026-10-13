@@ -1,4 +1,4 @@
-# 当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面
+# 当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想
 
 > **元信息**：本文是「KV Cache 安全」系列总纲。系列含三篇单篇精读：[I Know What You Asked](i-know-what-you-asked.md)（NDSS '25，PromptPeek，调度行为侧信道）· [Shadow in the Cache](shadow-in-the-cache.md)（NDSS '26，KV 数据重建 + KV-Cloak 防御）· [Auditing Prompt Caching](auditing-prompt-caching.md)（ICML '25，商业 API 黑盒审计），每篇都附逐条页码核对的精读报告（`references/`），论文原文 PDF 在 `references/papers/`。本文只做横向组织与口径提示，机制细节与数字以单篇为准。整理日期 2026-10-13。
 
@@ -16,7 +16,17 @@
 - **Shadow in the Cache 读的是缓存的数据**：KV 张量接近明文，拿到即重建——三类攻击分别覆盖代数逆推、前向匹配与指令注入，并配套防御 KV-Cloak；
 - **Auditing Prompt Caching 读的是服务的时延**：不碰数据、不碰调度，只用商业 API 的响应时间做统计审计，判断「跨用户共享是否正在发生」。
 
+| 论文（单位） | 场景定位 | 核心矛盾 | 招式 | 代表账本 |
+| --- | --- | --- | --- | --- |
+| PromptPeek（南方科技大学 + 字节跳动） | 多租户推理服务（SGLang 系，共享默认开） | LPM 让「命中者先返回」，共享行为可观测 | dummy 夹心请求图案，把命中与否读成 1 bit 判决器 | 场景 2 平均成功率 99% · 全 prompt 95% · 60 请求复原四占位符 |
+| Shadow in the Cache（浙江大学 + 华为） | 机密计算（TEE）里 KV 外置的 MaaS | KV 明文离开加密边界（架构性交换，非漏洞） | Inversion / Collision / Injection 三类攻击 + KV-Cloak 防御 | 逐字复原 1.000；防御后 ≤0.093 · 延迟 +0.45% |
+| Auditing Prompt Caching（Stanford） | 商业 API 使用 / 采购方（纯黑盒） | 命中更快：TTFT 成为数据依赖量 | 两样本单侧 KS 检验 + 四级递进审计 | 17 家检出 8 家 · 7 家全局共享 |
+
+口径说明：数字均为论文自测或自测量，对照基线各不相同，引用前先过 §六「数字怎么读」。
+
 三种读法的前提强度与场域各不相同：PromptPeek 的攻击者权限最低（普通租户），但实验在本地模拟环境；Shadow 的攻击者前提最强（要拿到明文 KV 数据），但把这条路走到了逐字复原并给出防御；Auditing 的攻击面最真实（真实商业 API），但只证明「可探测」、没能证明「可提取」。三篇合起来恰好回答同一问题的三种问法：缓存的「行为」泄露什么、缓存的「数据」泄露什么、缓存的「服务」暴露什么。
+
+![同一个问题，三种读法：三种取证位置一览](../../assets/kvsec-panorama-three-readings.svg)
 
 ## 二、三种取证位置
 
@@ -30,6 +40,8 @@
 
 **前提**：A100 80G 单卡本地模拟负载（云上 colocation 未验证，p.13）；只覆盖 LPM 调度；请求数只计候选请求、成本实验批=1（p.10）。论文归纳出三个攻击条件——缓存持久性、共享可观测（≥1 bit）、客户端控制力（pp.12–13），并给出皆未实现的缓解方向。
 
+![PromptPeek：dummy 夹心请求与 1-bit 判决器](../../assets/kvsec-promptpeek-scheduler-bit.svg)
+
 ### 2.2 读数据：Shadow in the Cache（NDSS '26）
 
 **起点**：KV Cache 全程明文是性能妥协（全量加密的延迟不可接受，p.1）；在 TEE/机密 MaaS 里，高吞吐架构必须把缓存外置出保护边界，"This architectural design—not a vulnerability—directly exposes the KV-cache to the CSP"（p.2）——对手不需要漏洞，缓存就在他手里。
@@ -39,6 +51,8 @@
 **账本**：Inversion 在 LLaMA-7B 第一层 1.000/1.000（逐字），GQA 的 8B/3B 失效、1B 例外（pp.6–7）；Collision 在 GQA 模型上首层重建最高 0.918，跨架构失配跌回 ≈0.06–0.09、随机水平（pp.6–8）；KV-Cloak 后所有攻击 BERTScore ≤ 0.093、成功率 0%、精度逐项无损失，融合实现延迟 15.41 ms/GB = prefill 的 0.45%（pp.11–13）。
 
 **前提**：攻击者须拿到明文 KV 数据；密钥托管依赖 TEE；量化模型（INT8/INT4）未覆盖；评估是实验室内截获张量后的重建，无真实服务端到端演示（p.13）。
+
+![Shadow in the Cache：三类攻击与 KV-Cloak 防御](../../assets/kvsec-shadow-attacks-cloak.svg)
 
 ### 2.3 读时延：Auditing Prompt Caching（ICML '25）
 
@@ -50,16 +64,22 @@
 
 **边界**：2024 年 9–10 月快照（p.6）；证明的是「可探测」而非「可提取」（§4.4，p.7）；至少 5 家做了修改，但名单未点名（p.9）。
 
+![Auditing Prompt Caching：秒表审计与 KS 检验](../../assets/kvsec-auditing-ks-timer.svg)
+
 ## 三、对号入座：你站在哪里
 
-| 你的位置 | 该看哪篇 | 先决条件与口径提示 |
-| -------- | -------- | ------------------ |
-| 多租户推理平台（vLLM/SGLang，prefix 共享开启） | [PromptPeek](i-know-what-you-asked.md) + [Shadow](shadow-in-the-cache.md) | PromptPeek 的信号条件是 LPM 调度与返回顺序可观测，三个攻击条件可当部署自查清单；三条缓解（LPM 随机化、M-token 门槛、rare-token 混淆）论文未实现未实测。Shadow 的前提是 KV 数据离开信任域（含传输/存储环节），多租户共享本身不是它的前提 |
-| 机密计算 / 云服务商侧（TEE、KV 外置） | [Shadow](shadow-in-the-cache.md) | 威胁模型是「服务商持有数据」的架构性事实，不是漏洞；KV-Cloak 未做 vLLM 集成实测、密钥托管依赖 TEE、INT8/INT4 未覆盖；0.45% 是算子融合后的口径（未融合 b=16 为 +1.53%） |
-| 商业 API 使用者 / 采购方 | [Auditing](auditing-prompt-caching.md) | 2024 年秋快照，当下各家共享层级未核实；per-user 隔离是论文定义的唯一完全防泄露档位；同模型换个 host 结论会翻转（Claude 3 Haiku / GPT-4o mini）——采购时该问的是「共享层级」而不是「有没有缓存」 |
-| 框架 / 缓存系统开发者 | 三篇一起 | 攻击面全部是性能优化的副产品（LPM、radix 共享、prompt caching 皆然）；Auditing 的审计方法（对已知答案校准 + 假阳性率保证）可直接复用；防御侧的空白：PromptPeek 的缓解未实现，KV-Cloak 未集成 |
+| 你的位置                                       | 该看哪篇                                                                  | 先决条件与口径提示 | 开源入口                                                                                                                                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 多租户推理平台（vLLM/SGLang，prefix 共享开启） | [PromptPeek](i-know-what-you-asked.md) + [Shadow](shadow-in-the-cache.md) | PromptPeek 的信号条件是 LPM 调度与返回顺序可观测，三个攻击条件可当部署自查清单；三条缓解（LPM 随机化、M-token 门槛、rare-token 混淆）论文未实现未实测。Shadow 的前提是 KV 数据离开信任域（含传输/存储环节），多租户共享本身不是它的前提 | PromptPeek 未开源；[KV-Cloak](https://github.com/SiO-2/kvcloak)（Apache-2.0） |
+| 机密计算 / 云服务商侧（TEE、KV 外置）          | [Shadow](shadow-in-the-cache.md)                                          | 威胁模型是「服务商持有数据」的架构性事实，不是漏洞；KV-Cloak 未做 vLLM 集成实测、密钥托管依赖 TEE、INT8/INT4 未覆盖；0.45% 是算子融合后的口径（未融合 b=16 为 +1.53%） | [KV-Cloak](https://github.com/SiO-2/kvcloak)（Apache-2.0）                                                                  |
+| 商业 API 使用者 / 采购方                       | [Auditing](auditing-prompt-caching.md)                                    | 2024 年秋快照，当下各家共享层级未核实；per-user 隔离是论文定义的唯一完全防泄露档位；同模型换个 host 结论会翻转（Claude 3 Haiku / GPT-4o mini）——采购时该问的是「共享层级」而不是「有没有缓存」 | [auditing-prompt-caching](https://github.com/chenchenygu/auditing-prompt-caching)（Apache-2.0）                                          |
+| 框架 / 缓存系统开发者                          | 三篇一起                                                                  | 攻击面全部是性能优化的副产品（LPM、radix 共享、prompt caching 皆然）；Auditing 的审计方法（对已知答案校准 + 假阳性率保证）可直接复用；防御侧的空白：PromptPeek 的缓解未实现，KV-Cloak 未集成 | KV-Cloak 与审计工具开源，PromptPeek 未开源                                            |
 
-## 四、三篇共同的边界
+## 四、共同的支点与边界
+
+**共同的支点：先把「共享」量成可测的痕迹，再把痕迹做成判决器。** PromptPeek 量的是返回顺序里那 1 bit（命中与未命中的序位差），Shadow 量的是缓存与候选 token 的距离分布（正确 token 是显著离群点），Auditing 量的是命中与未命中的 TTFT 分布（KS 统计量）。三篇的机制各不相同，方法一致：先证明目标痕迹在某个观测面上可测，再把它做成逐次判决的仪器。方法与 04 系列同源：那边先量缺口再设计搬运，这边先量痕迹再设计取证。
+
+**第二个交叉点：取证距离的成本账。** 三个取证位置对应三档成本，也对应三档信息量，同向递增：一根秒表（Auditing：零权限，只判「共享是否发生」）→ 一个普通租户席位（PromptPeek：请求级成本，复原 prompt 文本）→ 一份明文 KV 张量（Shadow：需要服务商位置或存储/传输失守，逐字复原）。防御的成本也排在相近的轴上：时延拉平（几行代码，丢掉缓存收益）→ 调度随机化与 M-token 门槛（改调度器）→ 块内加密（密钥管理与集成，代价 0.45%）。选防御动作之前，先看自己挡的是哪一档的对手。
 
 **攻击面是性能优化的副产品。** 三项被利用的机制——LPM 调度、明文共享的 KV 复用、prompt caching——各自都是明确的性能优化，且都默认「缓存可以跨用户边界复用」。三篇的差别只在取证点：行为、数据、时延。
 
@@ -69,7 +89,22 @@
 
 **与 04 系列的分工。** [内存层级系列](../04_memory_tiering/memory-tiering-overview.md)算的是「KV 放哪层」的性能账（显存装不下之后，DRAM、互联、调度怎么做交换）；本系列算的是「KV 被谁看见」的安全账。同一个 KV Cache，前一个系列关心它放得对不对、搬得快不快，这个系列关心它落在谁的信任域里。串读顺序：先看层级账（缓存会被外置到哪些层），再看本系列（外置出去的每一层各有什么泄露面）。
 
-## 五、数字怎么读
+## 五、未来方向：从隐式共享到可验证的信任契约
+
+三篇打的是同一件事的三种读数：共享机制的**默认值**。Prefix Caching、APC、prompt caching 上线时，跨用户复用是默认开着的性能优化；Auditing 的动机一句话点破：provider 宣布了缓存功能，却未必宣布共享层级。三篇的取证点（一根秒表 → 一个租户席位 → 一份明文张量）就是「默认敞开的共享」在三个距离上的读数：越近，读到越多。
+
+如果这个默认值本身可以翻转，三篇的泄露面会整体改变。翻转需要两件东西：
+
+- **共享层级，可声明也可验证**：Auditing 已经给出成形的仪器：per-user / per-org / global 三级坐标系，加上带假阳性率保证的审计方法。把它从论文方法变成常规工具，共享层级就能像证书一样成为显式契约：provider 声明、第三方验证、用户按需选择。而如今用户在缓存上能控制的，基本只有「开 / 关」这一个布尔值。
+- **加密，去掉性能借口**：KV-Cloak 已经证明，块内自洽的加密不打破 PagedAttention 与调度语义，代价 0.45%；「明文是性能妥协」这个前提在数据面上已经不成立。剩下两个取证面（返回顺序、时延差）也各有低成本旋钮：调度随机化与 M-token 门槛、时延拉平。
+
+一个历史对照：HTTP 到 HTTPS 的迁移也曾困在「加密是性能代价」的论点上，直到工程把成本压到可以忽略，今天没人再谈判这件事。KV 缓存的加密正在复刻这条曲线：数据面的成本已经落到 0.45%，剩下的是密钥的根（KV-Cloak 仍吊在 TEE 上）与习惯。
+
+需要防的一个误读：显式契约不等于泄露消失。缓存跨过信任边界，就必须假设对手在读；契约改变的是默认值（从「默认敞开」到「默认关闭、按需声明」），不是泄露的物理。缓解清单里也只有 per-user 隔离是完全档，这正是契约要把「共享给谁」变成可声明、可拒绝的原因。
+
+![未来方向：从隐式共享到可验证的信任契约](../../assets/kvsec-future-contract.svg)
+
+## 六、数字怎么读
 
 - **PromptPeek**：95% / 99% / 98% 是「完全 + 部分复原」合并口径、三数据集算术平均（重算 95.9 / 98.9 / 98.2，论文似下取整）；请求数只计候选请求（dummy 不计、成本实验批=1），真实攻击流量高于表中数字；Fig.10–12 的中位数与峰值为读图值；Table II 的 cloze 模板行合计 190 与数据集 180 对不上（论文内部出入，引用保留原样）。
 - **Shadow in the Cache**：0.45%（15.41 ms/GB）是算子融合后的口径，未融合版在 b=16（最常见块大小）是 +1.53%；附录 F 的 7.1% → 0.83% 以「从隐藏态重算同一块」为分母，与 prefill 口径不是同一笔账；DP 的正确读法是「有效隐私预算与可用精度不可兼得」，不是「DP 无效」；Table I 与 Table II 的 Distilled 行有内部出入（以正文/Table I 为准）。
@@ -87,6 +122,20 @@
 - 三篇的数字均为论文自测或自测量，本仓未复现；本文的横向比较跨论文、跨系统、跨时点，除注明外**不可直接互比**。
 - 本文每个数字都取自对应单篇精读；各单篇的「诚实声明」列出了自己的口径限定与未核实项（PromptPeek 的本地模拟环境与读图值、Shadow 的 KV 数据前提与 TEE 密钥依赖、Auditing 的 2024 年秋时点）。
 - 三篇的防御现状与商业 API 共享层级截至各自论文的时点，此后可能已变化。
+- 「未来方向」一节是展望性论述：由三篇的实测经验与公开背景（HTTPS 迁移史、TEE、主流 API 的缓存开关形态）并读推演而来，不是任一论文的主张，其中的产品与硬件侧细节未按本系列的逐条核对标准核验。
+
+## 延伸阅读：本仓相关（按主题）
+
+> 本系列攻的是「共享」这件性能优化本身；共享机制的原理、共享走出的边界、缓存外置的每一层，分别在下面这些文章里。
+
+**共享机制本身**（被攻击的那几套实现）：
+- [Prefix Caching 原理与实现](../01_concepts/prefix_caching/prefix_caching.md) · [RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](../01_concepts/prefix_caching/radix_attention.md) · [Claude 提示词缓存机制与源码实现深度分析](../01_concepts/prefix_caching/claude_prompt_caching.md) · [RoPE 与 Prefix Caching 的互作用](../01_concepts/prefix_caching/rope_and_prefix_caching.md)
+
+**复用的扩展边界**（共享跨出同实例之后）：
+- [当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](../06_kv_reuse/kv-reuse-overview.md) · [把 14B 的 KV 交给 32B：跨模型复用的可能与代价](../01_concepts/cross_model/cross_model_kv_transfer.md)
+
+**缓存外置的层级与存储**（KV 落在谁的地盘）：
+- [当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想](../04_memory_tiering/memory-tiering-overview.md) · [当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案](../03_fast26/fast26-kv-storage-five-scenarios.md) · [SGLang HiCache 深读](../../sglang/hicache_deep_dive.md) · [LMCache 概览](../02_systems/lmcache/lmcache_overview.md)
 
 ## 参考资料
 

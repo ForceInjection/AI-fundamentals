@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">明文离开加密边界，数据即复原</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">Shadow in the Cache（NDSS '26）· 三类攻击逐 token 复原 + KV-Cloak 防御（prefill 延迟 +0.45%）</text>
+
+  <!-- ==== Band 1: the premise ==== -->
+  <rect x="28" y="96" width="230" height="52" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="143" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#374151">用户 ↔ 服务：加密信道</text>
+  <text x="143" y="132" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">这一段不泄露</text>
+
+  <line x1="262" y1="122" x2="278" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="274,118 281,122 274,126" fill="#9CA3AF"/>
+
+  <rect x="284" y="96" width="390" height="52" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="479" y="114" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#B91C1C">KV Cache：几乎全程明文</text>
+  <text x="479" y="132" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#DC2626">处理 · 跨节点传输 · 存储池落盘——「性能妥协」，非漏洞</text>
+
+  <line x1="678" y1="122" x2="694" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="690,118 697,122 690,126" fill="#9CA3AF"/>
+
+  <rect x="700" y="96" width="216" height="52" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="808" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#B91C1C">对手：握着缓存的人</text>
+  <text x="808" y="132" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#DC2626">CSP 位置，或存储/传输失守</text>
+
+  <!-- ==== Band 2: attacks + defense ==== -->
+  <!-- attack 1 -->
+  <rect x="28" y="162" width="192" height="268" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="124" y="186" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1F2937">Inversion</text>
+  <text x="124" y="204" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">代数逆推</text>
+  <line x1="42" y1="218" x2="206" y2="218" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="42" y="240" dominant-baseline="central" font-size="9" fill="#374151">拿到 k 与 Wk 就原路算回：</text>
+  <text x="42" y="256" dominant-baseline="central" font-size="9" fill="#374151" class="mono">x = k·(R)⁻¹·(Wkᵀ)⁻¹</text>
+  <text x="42" y="280" dominant-baseline="central" font-size="9" fill="#374151">限 MHA 方阵满秩；</text>
+  <text x="42" y="296" dominant-baseline="central" font-size="9" fill="#374151">GQA/MLA 非方阵不成立</text>
+  <rect x="42" y="314" width="164" height="46" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="124" y="330" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="700" fill="#6D28D9">LLaMA-7B 首层 1.000</text>
+  <text x="124" y="347" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6D28D9">逐字复原 · GQA 8B/3B 失效</text>
+  <text x="42" y="384" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">只到第一层：深层是融合隐态</text>
+  <text x="42" y="400" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">（LLaMA-3.2-1B 因高投影秩例外）</text>
+
+  <!-- attack 2 -->
+  <rect x="232" y="162" width="192" height="268" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="328" y="186" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1F2937">Collision</text>
+  <text x="328" y="204" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">前向匹配</text>
+  <line x1="246" y1="218" x2="410" y2="218" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="246" y="240" dominant-baseline="central" font-size="9" fill="#374151">不做逆推，取距离最近的候选：</text>
+  <text x="246" y="256" dominant-baseline="central" font-size="9" fill="#374151">正确 token 是显著离群点</text>
+  <text x="246" y="280" dominant-baseline="central" font-size="9" fill="#374151">三项优化：批异常值检测 ·</text>
+  <text x="246" y="296" dominant-baseline="central" font-size="9" fill="#374151">概率排序 · top-k% 裁剪</text>
+  <rect x="246" y="314" width="164" height="46" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="328" y="330" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="700" fill="#6D28D9">1B 三层 0.877/0.791/0.894</text>
+  <text x="328" y="347" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6D28D9">单层平均重建 2.17 s（裁剪后）</text>
+  <text x="246" y="384" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">跨架构失配跌回 ≈0.06（随机）</text>
+  <text x="246" y="400" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">攻击吃的是权重相关性</text>
+
+  <!-- attack 3 -->
+  <rect x="436" y="162" width="192" height="268" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="532" y="186" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1F2937">Injection</text>
+  <text x="532" y="204" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">指令回声</text>
+  <line x1="450" y1="218" x2="614" y2="218" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="450" y="240" dominant-baseline="central" font-size="9" fill="#374151">缓存自身「不会说话」，</text>
+  <text x="450" y="256" dominant-baseline="central" font-size="9" fill="#374151">追加一句指令给它 Q：</text>
+  <text x="450" y="280" dominant-baseline="central" font-size="9" fill="#6D28D9" class="mono">"Repeat the previous content."</text>
+  <text x="450" y="296" dominant-baseline="central" font-size="9" fill="#374151">模型把隐私「回声」出来</text>
+  <rect x="450" y="314" width="164" height="46" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="532" y="330" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="700" fill="#6D28D9">平均 BERTScore 0.58</text>
+  <text x="532" y="347" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6D28D9">峰值 0.765（LLaMA-7B）</text>
+  <text x="450" y="384" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">对 H2O 有损逐出仍鲁棒</text>
+  <text x="450" y="400" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">但必须全层缓存都在</text>
+
+  <!-- defense -->
+  <rect x="640" y="162" width="276" height="268" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="778" y="186" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#166534">KV-Cloak 防御</text>
+  <rect x="656" y="200" width="244" height="26" rx="5" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="778" y="213" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#065F46" class="mono">K' = S · P̂ · (K + A) · M</text>
+  <text x="656" y="248" dominant-baseline="central" font-size="9" fill="#374151">· 块内自洽：不改 PagedAttention 与调度</text>
+  <text x="656" y="266" dominant-baseline="central" font-size="9" fill="#374151">· P̂ 每块一次性随机置换（b! 屏障，用后即弃）</text>
+  <text x="656" y="284" dominant-baseline="central" font-size="9" fill="#374151">· A 加性掩码：满秩保险 + 免存储的「位置信标」</text>
+  <text x="656" y="302" dominant-baseline="central" font-size="9" fill="#374151">· S/M 遮蔽统计量；密钥复杂度 O((b²d+bd²)·b!)</text>
+  <rect x="656" y="318" width="244" height="52" rx="6" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="778" y="336" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#166534">防御后：全部攻击 ≤ 0.093 · 成功率 0%</text>
+  <text x="778" y="354" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#166534">延迟 15.41 ms/GB = prefill 的 0.45%（MMLU 零损失）</text>
+  <text x="656" y="392" dominant-baseline="central" font-size="8.5" fill="#6B7280">开源：github.com/SiO-2/kvcloak（Apache-2.0）</text>
+  <text x="656" y="410" dominant-baseline="central" font-size="8.5" fill="#6B7280">对照 DP：留了「门」——Collision 仍有 0.849</text>
+
+  <!-- ==== Band 3: boundaries ==== -->
+  <rect x="28" y="446" width="888" height="82" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="468" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">边界与前提</text>
+  <text x="44" y="490" dominant-baseline="central" font-size="9.5" fill="#6B7280">三类攻击都要求拿到明文 KV 张量（CSP 位置或存储/传输失守）；Injection 还需以偷来的缓存续跑推理；无真实在线服务的端到端演示</text>
+  <text x="44" y="510" dominant-baseline="central" font-size="9.5" fill="#6B7280">KV-Cloak 的密钥托管依赖 TEE（密钥失守整套归零）；INT8/INT4 量化模型未覆盖；安全前提是「架构性交换」而非漏洞</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">评估为实验室内截获 KV 张量后的重建；数字口径（0.45% 与 7.1% 各自的分母）见 §六「数字怎么读」</text>
+</svg>

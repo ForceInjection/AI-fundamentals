@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">同一个问题，三种读法</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">KV Cache 跨过信任边界之后：三篇论文站在三个距离上取证，越近，读到越多</text>
+
+  <!-- ==== Band 1: the sharing chain, three traces ==== -->
+  <rect x="28" y="98" width="140" height="56" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="98" y="118" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1F2937">KV Cache</text>
+  <text x="98" y="136" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">跨用户共享的那份</text>
+
+  <line x1="168" y1="126" x2="184" y2="126" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="180,122 187,126 180,130" fill="#9CA3AF"/>
+
+  <rect x="188" y="98" width="228" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="302" y="118" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#1D4ED8">① 数据 · 存储与传输</text>
+  <text x="302" y="137" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">落盘 / 跨节点 / 进存储池（明文）</text>
+  <rect x="238" y="164" width="128" height="22" rx="11" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="302" y="175" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#6D28D9">Shadow 读它</text>
+
+  <line x1="416" y1="126" x2="432" y2="126" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="428,122 435,126 428,130" fill="#9CA3AF"/>
+
+  <rect x="436" y="98" width="228" height="56" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="550" y="118" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#166534">② 行为 · 调度与匹配</text>
+  <text x="550" y="137" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">LPM 重排 / 命中者先返回</text>
+  <rect x="486" y="164" width="128" height="22" rx="11" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="550" y="175" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">PromptPeek 读它</text>
+
+  <line x1="664" y1="126" x2="680" y2="126" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="676,122 683,126 676,130" fill="#9CA3AF"/>
+
+  <rect x="684" y="98" width="232" height="56" rx="8" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="800" y="118" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#C2410C">③ 服务 · 返回时延</text>
+  <text x="800" y="137" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">命中更快（TTFT 差）</text>
+  <rect x="736" y="164" width="128" height="22" rx="11" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="800" y="175" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#C2410C">Auditing 读它</text>
+
+  <!-- ==== Three columns ==== -->
+  <!-- Column 1: PromptPeek -->
+  <rect x="28" y="206" width="288" height="352" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="172" y="234" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">PromptPeek</text>
+  <text x="172" y="254" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">南方科技大学 + 字节跳动 · NDSS '25</text>
+  <text x="172" y="278" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="600" fill="#1D4ED8">读的是共享的行为</text>
+  <line x1="44" y1="294" x2="300" y2="294" stroke="#E5E7EB" stroke-width="1"/>
+
+  <text x="44" y="318" dominant-baseline="central" font-size="10" fill="#374151">dummy 夹心请求读出「命中与否」这 1 bit，</text>
+  <text x="44" y="336" dominant-baseline="central" font-size="10" fill="#374151">逐 token 复原他人 prompt——不碰数据、</text>
+  <text x="44" y="354" dominant-baseline="central" font-size="10" fill="#374151">也不测绝对时延，只读一批自造请求的返回顺序</text>
+
+  <text x="44" y="392" dominant-baseline="central" font-size="11" fill="#374151">场景 2 平均成功率 <tspan font-weight="700" fill="#1D4ED8">99%</tspan>（全 prompt 95%）</text>
+  <text x="44" y="412" dominant-baseline="central" font-size="11" fill="#374151"><tspan font-weight="700">60</tspan> 个请求复原四个隐私占位符</text>
+  <text x="44" y="446" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">前提：普通租户权限 · A100 单卡本地模拟</text>
+  <text x="44" y="464" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">只覆盖 SGLang 的 LPM 调度</text>
+  <text x="44" y="494" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">开源：论文未提供公开仓库</text>
+  <text x="172" y="534" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#6B7280">NDSS '25</text>
+
+  <!-- Column 2: Shadow -->
+  <rect x="336" y="206" width="288" height="352" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="480" y="234" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">Shadow in the Cache</text>
+  <text x="480" y="254" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">浙江大学 + 华为 · NDSS '26</text>
+  <text x="480" y="278" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="600" fill="#6D28D9">读的是缓存的数据</text>
+  <line x1="352" y1="294" x2="608" y2="294" stroke="#E5E7EB" stroke-width="1"/>
+
+  <text x="352" y="318" dominant-baseline="central" font-size="10" fill="#374151">KV 明文即原料：代数逆推 / 前向匹配 /</text>
+  <text x="352" y="336" dominant-baseline="central" font-size="10" fill="#374151">指令注入三类攻击逐 token 复原输入，</text>
+  <text x="352" y="354" dominant-baseline="central" font-size="10" fill="#374151">配套 KV-Cloak 防御</text>
+
+  <text x="352" y="392" dominant-baseline="central" font-size="11" fill="#374151">LLaMA-7B 首层 <tspan font-weight="700" fill="#6D28D9">1.000</tspan>（逐字复原）</text>
+  <text x="352" y="412" dominant-baseline="central" font-size="11" fill="#374151">KV-Cloak 后 ≤0.093 · 延迟 <tspan font-weight="700">+0.45%</tspan></text>
+  <text x="352" y="446" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">前提：需拿到明文 KV（CSP 位置，或</text>
+  <text x="352" y="464" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">存储/传输失守）· 密钥依赖 TEE</text>
+  <text x="352" y="494" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">开源：github.com/SiO-2/kvcloak</text>
+  <text x="480" y="534" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#6B7280">NDSS '26</text>
+
+  <!-- Column 3: Auditing -->
+  <rect x="644" y="206" width="288" height="352" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="788" y="234" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">Auditing Prompt Caching</text>
+  <text x="788" y="254" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">Stanford · ICML '25</text>
+  <text x="788" y="278" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="600" fill="#C2410C">读的是服务的时延</text>
+  <line x1="660" y1="294" x2="916" y2="294" stroke="#E5E7EB" stroke-width="1"/>
+
+  <text x="660" y="318" dominant-baseline="central" font-size="10" fill="#374151">命中更快，TTFT 成为数据依赖量；</text>
+  <text x="660" y="336" dominant-baseline="central" font-size="10" fill="#374151">用两样本单侧 KS 检验做带假阳性率</text>
+  <text x="660" y="354" dominant-baseline="central" font-size="10" fill="#374151">保证的审计（不碰数据、不碰调度）</text>
+
+  <text x="660" y="392" dominant-baseline="central" font-size="11" fill="#374151">17 家检出 <tspan font-weight="700" fill="#C2410C">8 家</tspan> · <tspan font-weight="700" fill="#C2410C">7 家</tspan>全局共享</text>
+  <text x="660" y="412" dominant-baseline="central" font-size="11" fill="#374151">多数 provider 1 个受害请求即可检出</text>
+  <text x="660" y="446" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">前提：零权限、一根秒表 · 只证「可探测」</text>
+  <text x="660" y="464" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">未证「可提取」· 2024 年 9–10 月快照</text>
+  <text x="660" y="494" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">开源：chenchenygu/auditing-prompt-caching</text>
+  <text x="788" y="534" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#6B7280">ICML '25</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">三种读法的前提强度与场域各不相同、数字口径各异，横向引用前先过 §六「数字怎么读」</text>
+</svg>

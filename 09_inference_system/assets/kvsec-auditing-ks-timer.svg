@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">一根秒表读出「缓存共享」</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">Auditing Prompt Caching（ICML '25）· 17 家商业 API 检出 8 家、7 家全局共享（2024 年秋快照）</text>
+
+  <!-- ==== Band 1: the triangle ==== -->
+  <rect x="28" y="94" width="213" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="134" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#1D4ED8">① 受害者发 prompt</text>
+  <text x="134" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">被写进缓存</text>
+
+  <line x1="243" y1="122" x2="257" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="253,118 260,122 253,126" fill="#9CA3AF"/>
+
+  <rect x="259" y="94" width="213" height="56" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="365" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#374151">② 攻击者发无关 prompt</text>
+  <text x="365" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">未命中 · 响应慢</text>
+
+  <line x1="474" y1="122" x2="488" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="484,118 491,122 484,126" fill="#9CA3AF"/>
+
+  <rect x="490" y="94" width="213" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="596" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#1D4ED8">③ 发共享前缀 prompt</text>
+  <text x="596" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">命中 · 响应快</text>
+
+  <line x1="705" y1="122" x2="719" y2="122" stroke="#F97316" stroke-width="1.4"/>
+  <polygon points="715,118 722,122 715,126" fill="#F97316"/>
+
+  <rect x="721" y="94" width="195" height="56" rx="8" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="818" y="114" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#C2410C">④ 快慢差 = 命中</text>
+  <text x="818" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#C2410C">说明「别人发过」——1 bit 的 oracle</text>
+
+  <!-- ==== Band 2: KS test + ladder ==== -->
+  <rect x="28" y="172" width="440" height="214" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="194" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151">KS 检验：命中与未命中是两个分布</text>
+  <text x="44" y="212" dominant-baseline="central" font-size="9" fill="#6B7280">两样本单侧 KS · α = 10⁻⁸ · Bonferroni 校正 · 输出带假阳性率保证的 p 值</text>
+
+  <!-- histogram -->
+  <line x1="56" y1="352" x2="440" y2="352" stroke="#9CA3AF" stroke-width="1.2"/>
+  <rect x="72" y="322" width="14" height="30" rx="2" fill="#22C55E"/>
+  <rect x="90" y="306" width="14" height="46" rx="2" fill="#22C55E"/>
+  <rect x="108" y="298" width="14" height="54" rx="2" fill="#22C55E"/>
+  <rect x="126" y="312" width="14" height="40" rx="2" fill="#22C55E"/>
+  <rect x="144" y="330" width="14" height="22" rx="2" fill="#22C55E"/>
+  <text x="115" y="368" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#166534">命中（D_hit）：更快</text>
+
+  <rect x="286" y="286" width="14" height="66" rx="2" fill="#9CA3AF"/>
+  <rect x="304" y="274" width="14" height="78" rx="2" fill="#9CA3AF"/>
+  <rect x="322" y="266" width="14" height="86" rx="2" fill="#9CA3AF"/>
+  <rect x="340" y="280" width="14" height="72" rx="2" fill="#9CA3AF"/>
+  <rect x="358" y="300" width="14" height="52" rx="2" fill="#9CA3AF"/>
+  <text x="329" y="368" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">未命中（D_miss）</text>
+
+  <line x1="180" y1="238" x2="270" y2="238" stroke="#C2410C" stroke-width="1.4"/>
+  <polygon points="186,234 179,238 186,242" fill="#C2410C"/>
+  <polygon points="264,234 271,238 264,242" fill="#C2410C"/>
+  <text x="225" y="228" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#C2410C">最大间距 = 统计量</text>
+  <text x="392" y="344" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">TTFT →</text>
+
+  <rect x="484" y="172" width="448" height="214" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="500" y="194" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151">四级递进：只在上一级显著后才升级</text>
+
+  <rect x="500" y="212" width="416" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="516" y="227" dominant-baseline="central" font-size="10" fill="#374151">1 级 · 同 prompt per-user（粗筛）</text>
+  <rect x="500" y="250" width="416" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="516" y="265" dominant-baseline="central" font-size="10" fill="#374151">2 级 · 同前缀、不同后缀 per-user</text>
+  <rect x="500" y="288" width="416" height="30" rx="6" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="516" y="303" dominant-baseline="central" font-size="10" fill="#C2410C">3 级 · per-org（组织内跨用户）</text>
+  <rect x="500" y="326" width="416" height="30" rx="6" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="516" y="341" dominant-baseline="central" font-size="10" font-weight="600" fill="#C2410C">4 级 · global（跨组织全局共享）</text>
+  <text x="500" y="372" dominant-baseline="central" font-size="9" fill="#9CA3AF">首次显著即停 · 不支持组织的 API 跳过 3 级 · 单次测试约 1.69–8.44 美元</text>
+
+  <!-- ==== Band 3: ledger + mitigations ==== -->
+  <rect x="28" y="400" width="440" height="140" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="422" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151">实测账本（2024 年 9–10 月）</text>
+  <text x="44" y="446" dominant-baseline="central" font-size="9.5" fill="#374151">17 家 → 检出 <tspan font-weight="700" fill="#C2410C">8 家</tspan> · <tspan font-weight="700" fill="#C2410C">7 家</tspan>全局共享（含 OpenAI embedding，已修补）</text>
+  <text x="44" y="466" dominant-baseline="central" font-size="9.5" fill="#374151">多数 provider 只需 1 个受害请求；p 值低至 10⁻¹³⁸–10⁻¹⁵⁰ 量级</text>
+  <text x="44" y="486" dominant-baseline="central" font-size="9.5" fill="#374151">同模型换个 host 结论翻转：Claude 3 Haiku / GPT-4o mini（per-org）</text>
+  <text x="44" y="506" dominant-baseline="central" font-size="9.5" fill="#374151">副产品：推断 text-embedding-3-small 为 decoder-only 架构</text>
+  <text x="44" y="526" dominant-baseline="central" font-size="9" fill="#9CA3AF">命中返回的 embedding 与重算值差 10⁻⁴ 量级（缓存浮点的痕迹）</text>
+
+  <rect x="484" y="400" width="448" height="140" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="500" y="422" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151">缓解四件套（都不动缓存算法）</text>
+  <rect x="500" y="438" width="200" height="30" rx="6" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="600" y="453" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#C2410C">per-user 隔离 · 唯一完全档</text>
+  <rect x="716" y="438" width="200" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="816" y="453" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">披露共享层级</text>
+  <rect x="500" y="476" width="200" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="600" y="491" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">关缓存（对架构泄露最强）</text>
+  <rect x="716" y="476" width="200" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="816" y="491" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">时延拉平（命中装成未命中）</text>
+  <text x="500" y="524" dominant-baseline="central" font-size="9" fill="#9CA3AF">共享层级与这些档位，正是 §五 信任契约的出发点</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">边界：证明「可探测」未证明「可提取」（论文自述提取攻击未能实用化）· 全部数字限 2024 年秋快照，口径见 §六</text>
+</svg>

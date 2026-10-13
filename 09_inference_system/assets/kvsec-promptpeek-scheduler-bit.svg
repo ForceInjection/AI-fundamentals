@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">把调度顺序用成 1-bit 判决器</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">PromptPeek（NDSS '25）· 攻击者是「一个普通用户」· 60 请求复原四个隐私占位符</text>
+
+  <!-- ==== Band 1: the loop ==== -->
+  <rect x="28" y="94" width="210" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="133" y="114" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1D4ED8">① 本地模型给候选</text>
+  <text x="133" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">已复原片段 → 猜下一位</text>
+
+  <line x1="242" y1="122" x2="258" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="254,118 261,122 254,126" fill="#9CA3AF"/>
+
+  <rect x="264" y="94" width="210" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="369" y="114" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1D4ED8">② 三批请求夹心</text>
+  <text x="369" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">dummy 批要超过最大批</text>
+
+  <line x1="478" y1="122" x2="494" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="490,118 497,122 490,126" fill="#9CA3AF"/>
+
+  <rect x="500" y="94" width="210" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="605" y="114" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1D4ED8">③ 读返回顺序</text>
+  <text x="605" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">命中与否按先后判读</text>
+
+  <line x1="714" y1="122" x2="730" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="726,118 733,122 726,126" fill="#9CA3AF"/>
+
+  <rect x="736" y="94" width="196" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="834" y="114" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1D4ED8">④ 命中 = 1 bit</text>
+  <text x="834" y="134" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">固定一位，再猜下一位</text>
+
+  <!-- ==== Band 2: hit vs miss return order ==== -->
+  <rect x="28" y="172" width="904" height="128" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="48" y="194" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#166534">命中：候选被「夹」在两批 dummy 之间</text>
+
+  <rect x="48" y="210" width="190" height="44" rx="6" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="143" y="226" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">pre-dummy 批</text>
+  <text x="143" y="242" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">&gt; 服务端最大批</text>
+
+  <line x1="242" y1="232" x2="256" y2="232" stroke="#22C55E" stroke-width="1.4"/>
+  <polygon points="252,228 259,232 252,236" fill="#22C55E"/>
+
+  <rect x="262" y="210" width="170" height="44" rx="6" fill="#22C55E" stroke="#16A34A" stroke-width="1"/>
+  <text x="347" y="226" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#FFFFFF">候选 ✓ 命中</text>
+  <text x="347" y="242" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#DCFCE7">与 dummy 等长</text>
+
+  <line x1="436" y1="232" x2="450" y2="232" stroke="#22C55E" stroke-width="1.4"/>
+  <polygon points="446,228 453,232 446,236" fill="#22C55E"/>
+
+  <rect x="456" y="210" width="190" height="44" rx="6" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="551" y="226" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">post-dummy 批</text>
+  <text x="551" y="242" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">&gt; 服务端最大批</text>
+
+  <line x1="650" y1="232" x2="664" y2="232" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="660,228 667,232 660,236" fill="#9CA3AF"/>
+
+  <rect x="670" y="210" width="242" height="44" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="791" y="226" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">其余候选（随后处理）</text>
+  <text x="791" y="242" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">等匹配长度保持原序</text>
+
+  <text x="48" y="278" dominant-baseline="central" font-size="9.5" fill="#4B5563">命中候选与两批 dummy 匹配长度相等，按「等长保持原序」恰好插在中间——这个图案就是可读的信号</text>
+
+  <rect x="28" y="312" width="904" height="128" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="48" y="334" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">未命中：候选全被挤到 dummy 之后</text>
+
+  <rect x="48" y="350" width="190" height="44" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="143" y="366" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">pre-dummy 批</text>
+  <text x="143" y="382" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">&gt; 服务端最大批</text>
+
+  <line x1="242" y1="372" x2="256" y2="372" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="252,368 259,372 252,376" fill="#9CA3AF"/>
+
+  <rect x="262" y="350" width="190" height="44" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="357" y="366" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">post-dummy 批</text>
+  <text x="357" y="382" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">&gt; 服务端最大批</text>
+
+  <line x1="456" y1="372" x2="470" y2="372" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="466,368 473,372 466,376" fill="#9CA3AF"/>
+
+  <rect x="476" y="350" width="190" height="44" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="571" y="366" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#6B7280">全部候选</text>
+  <text x="571" y="382" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">排在两批 dummy 之后</text>
+
+  <text x="48" y="418" dominant-baseline="central" font-size="9.5" fill="#6B7280">没有「等长插队」的候选——两种返回序列的差异，就是 1 bit 的读数</text>
+
+  <!-- ==== Band 3: numbers + attack conditions ==== -->
+  <rect x="28" y="456" width="213" height="52" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="134" y="476" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1F2937">99%</text>
+  <text x="134" y="494" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">场景 2 平均成功率（场景 1 为 95%）</text>
+
+  <rect x="253" y="456" width="213" height="52" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="359" y="476" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1F2937">&gt; 90%</text>
+  <text x="359" y="494" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">token 在十次候选以内猜中</text>
+
+  <rect x="478" y="456" width="213" height="52" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="584" y="476" text-anchor="middle" dominant-baseline="central" font-size="11.5" font-weight="700" fill="#1F2937">4,093</text>
+  <text x="584" y="494" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">最难单 token 的请求数</text>
+
+  <rect x="703" y="456" width="229" height="52" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="817" y="476" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#1D4ED8">三个攻击条件（部署自查清单）：</text>
+  <text x="817" y="494" text-anchor="middle" dominant-baseline="central" font-size="8" fill="#1D4ED8">缓存持久 · 共享可观测 ≥1 bit · 客户端可控请求</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">前提：A100 单卡本地模拟负载（云上 colocation 未验证）· 只覆盖 LPM 调度 · 开源：论文未提供公开仓库</text>
+</svg>
