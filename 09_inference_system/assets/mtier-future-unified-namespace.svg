@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">未来方向：统一命名空间与成本旋钮</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">把四篇在应用层手搓的「翻译」收进接口——搬运从「正确性要求」降级为「性能策略」</text>
+
+  <!-- ==== Band 1: current situation ==== -->
+  <rect x="80" y="96" width="250" height="48" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="205" y="114" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="700" fill="#1F2937">GPU HBM</text>
+  <text x="205" y="131" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">带宽 ~4 TB/s · 容量小 · 单价高</text>
+
+  <rect x="630" y="96" width="250" height="48" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="755" y="114" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="700" fill="#1F2937">CPU DRAM</text>
+  <text x="755" y="131" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#6B7280">带宽低 · 延迟高 · 访问方式不同</text>
+
+  <line x1="338" y1="120" x2="622" y2="120" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="348,116 338,120 348,124" fill="#9CA3AF"/>
+  <polygon points="612,116 622,120 612,124" fill="#9CA3AF"/>
+  <text x="480" y="104" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">物理的：带宽 4×–60× · 延迟</text>
+  <text x="480" y="136" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">接口的：访问方式差异 · 成本不可见</text>
+
+  <text x="80" y="166" dominant-baseline="central" font-size="11" fill="#6B7280">两种内存的差，目前全靠应用层手搓的「翻译」消化——</text>
+  <rect x="80" y="176" width="800" height="42" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="94" y="184" width="184" height="26" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="186" y="197" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">DirectKV：零拷贝三招</text>
+  <rect x="290" y="184" width="184" height="26" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="382" y="197" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">NEO：流水线平衡</text>
+  <rect x="486" y="184" width="184" height="26" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="578" y="197" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">eLLM：借调规则</text>
+  <rect x="682" y="184" width="184" height="26" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="774" y="197" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">Strata：调度三件套</text>
+
+  <!-- ==== Band 2: the two missing pieces ==== -->
+  <text x="480" y="238" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#374151">如果硬件补上两件东西，这层翻译整体收敛成一个调度器</text>
+
+  <rect x="80" y="250" width="390" height="112" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="96" y="274" dominant-baseline="central" font-size="13" font-weight="700" fill="#1D4ED8">（a）统一命名空间</text>
+  <text x="96" y="296" dominant-baseline="central" font-size="10" fill="#374151">HBM 与 CPU 内存同一套指针语义，</text>
+  <text x="96" y="312" dominant-baseline="central" font-size="10" fill="#374151">地址段本身即层级标签，策略无需额外元数据。</text>
+  <rect x="96" y="324" width="358" height="22" rx="4" fill="#E5E7EB" stroke="#D1D5DB" stroke-width="1"/>
+  <rect x="97" y="325" width="206" height="20" rx="3" fill="#BFDBFE"/>
+  <text x="200" y="335" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="600" fill="#1D4ED8">HBM 段</text>
+  <text x="372" y="335" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">DRAM 段</text>
+
+  <rect x="490" y="250" width="390" height="112" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="506" y="274" dominant-baseline="central" font-size="13" font-weight="700" fill="#166534">（b）成本旋钮</text>
+  <text x="506" y="296" dominant-baseline="central" font-size="10" fill="#374151">每段空间有确定、可分档、可预测的带宽与延迟档位，</text>
+  <text x="506" y="312" dominant-baseline="central" font-size="10" fill="#374151">供调度器查询与规划（QoS · 显式预取 · 不触发缺页）。</text>
+  <rect x="506" y="324" width="112" height="22" rx="5" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="562" y="335" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#065F46">档 1 · ~4 TB/s</text>
+  <rect x="626" y="324" width="112" height="22" rx="5" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="682" y="335" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#065F46">档 2 · 900 GB/s</text>
+  <rect x="746" y="324" width="118" height="22" rx="5" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="805" y="335" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#065F46">档 3 · 64 GB/s</text>
+
+  <!-- ==== Band 3: what changes, what doesn't ==== -->
+  <rect x="80" y="378" width="390" height="170" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="96" y="402" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">变的是结构：管道代码消失</text>
+
+  <rect x="96" y="414" width="112" height="22" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <line x1="101" y1="425" x2="203" y2="425" stroke="#9CA3AF" stroke-width="1"/>
+  <text x="152" y="425" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF" style="text-decoration: line-through;">staging buffer</text>
+  <rect x="216" y="414" width="90" height="22" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <line x1="221" y1="425" x2="301" y2="425" stroke="#9CA3AF" stroke-width="1"/>
+  <text x="261" y="425" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF" style="text-decoration: line-through;">双缓冲</text>
+  <rect x="314" y="414" width="140" height="22" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <line x1="319" y1="425" x2="449" y2="425" stroke="#9CA3AF" stroke-width="1"/>
+  <text x="384" y="425" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF" style="text-decoration: line-through;">CUDA Graph 重放修复</text>
+
+  <line x1="275" y1="444" x2="275" y2="462" stroke="#3B82F6" stroke-width="1.6"/>
+  <polygon points="271,458 275,465 279,458" fill="#3B82F6"/>
+
+  <rect x="96" y="470" width="358" height="60" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="275" y="490" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#1D4ED8">剩下的是策略：调度 · 预取 · 布局</text>
+  <text x="275" y="510" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">软件不再为了「能读」而搬，只为「够快」而搬</text>
+
+  <rect x="490" y="378" width="390" height="170" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="506" y="402" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">不变的是数学：带宽比还在</text>
+
+  <text x="506" y="428" dominant-baseline="central" font-size="9.5" fill="#374151">· 同速层内几乎免费：eLLM 池内借调 ≈ 20% 吞吐</text>
+  <text x="506" y="450" dominant-baseline="central" font-size="9.5" fill="#374151">· 跨速层仍是策略：GH200 上 DirectKV / Strata</text>
+  <text x="506" y="466" dominant-baseline="central" font-size="9.5" fill="#374151">  依然要自建整套机制</text>
+  <text x="506" y="490" dominant-baseline="central" font-size="9.5" fill="#374151">· 数据库自建 buffer pool、Apple 统一内存只有一层</text>
+  <text x="506" y="506" dominant-baseline="central" font-size="9.5" fill="#374151">  ——统一之利只覆盖同速层</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="580" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">统一命名空间改变的是软件的结构（少写管道），不改变瓶颈的数学（带宽比还在）· 本图为展望性论述（见诚实声明）</text>
+</svg>

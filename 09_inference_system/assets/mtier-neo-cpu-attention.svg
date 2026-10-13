@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">挪计算：把 decoding attention 搬去 CPU</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">NEO（MLSys 2025）· 用「随卡白送」的本地 CPU · 算力差 ~100× vs 带宽差 ~3×</text>
+
+  <!-- ==== Band A: why it works ==== -->
+  <rect x="28" y="94" width="640" height="68" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="44" y="116" dominant-baseline="central" font-size="11.5" font-weight="600" fill="#166534">为什么可以搬：decoding attention 在 GPU 与 CPU 上都是 memory-bandwidth-bound</text>
+  <text x="44" y="142" dominant-baseline="central" font-size="9.5" fill="#4B5563">瓶颈是带宽不是算力；这段计算占整个 Transformer 比例很小、且不需要加载模型权重</text>
+
+  <rect x="690" y="106" width="102" height="44" rx="6" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="741" y="120" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="700" fill="#166534">A10G</text>
+  <text x="741" y="137" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">600 GB/s · 125 TF</text>
+
+  <rect x="806" y="106" width="110" height="44" rx="6" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="861" y="120" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="700" fill="#166534">x86 服务器</text>
+  <text x="861" y="137" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">~200 GB/s · 1.2 TF</text>
+
+  <!-- ==== Band B: side-by-side ==== -->
+  <!-- Left: GPU-only -->
+  <rect x="28" y="180" width="430" height="220" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="202" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">GPU-only 现状：batch 被显存卡死</text>
+
+  <rect x="48" y="222" width="230" height="136" rx="6" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="163" y="234" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#6B7280">GPU</text>
+  <rect x="60" y="244" width="206" height="24" rx="4" fill="#DCEBFD" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="163" y="256" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">权重（全部驻留）</text>
+  <rect x="60" y="274" width="206" height="48" rx="4" fill="#FEE2E2" stroke="#FECACA" stroke-width="1"/>
+  <text x="163" y="289" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#B91C1C">KV cache —— 显存被它吃满</text>
+  <text x="163" y="307" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#DC2626">batch size 上不去</text>
+  <rect x="60" y="328" width="206" height="22" rx="4" fill="#DCEBFD" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="163" y="339" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">activation 预留</text>
+
+  <rect x="298" y="222" width="140" height="136" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="368" y="270" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#6B7280">CPU</text>
+  <text x="368" y="290" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">空转（idle）</text>
+  <text x="368" y="308" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">线性层阶段几乎全闲</text>
+
+  <text x="243" y="382" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">小 batch：GPU 算力闲置，CPU 干等（T4 上 vLLM 的真实处境）</text>
+
+  <!-- Right: NEO -->
+  <rect x="486" y="180" width="430" height="220" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="502" y="202" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">NEO：非对称流水线</text>
+
+  <rect x="502" y="222" width="192" height="136" rx="6" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="598" y="234" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#6B7280">GPU</text>
+  <rect x="514" y="244" width="168" height="24" rx="4" fill="#DCEBFD" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="598" y="256" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">权重</text>
+  <rect x="514" y="274" width="168" height="34" rx="4" fill="#DCEBFD" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="598" y="291" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">线性段（prefill 并入 batch-0）</text>
+  <rect x="514" y="314" width="168" height="34" rx="4" fill="#DCEBFD" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="598" y="331" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">GPU-cache（少量 KV）</text>
+
+  <rect x="706" y="222" width="192" height="136" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="802" y="234" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#6B7280">CPU</text>
+  <rect x="718" y="244" width="168" height="34" rx="4" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="802" y="261" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#065F46">decoding attention（PACPU）</text>
+  <rect x="718" y="284" width="168" height="34" rx="4" fill="#D1FAE5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="802" y="301" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#065F46">CPU-cache（全量 KV）</text>
+  <text x="802" y="334" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">KV 不回传 · layer-wise 收新 KV</text>
+
+  <text x="701" y="382" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">腾出的显存换更大 batch；调度兜底：随时可退回 GPU-only</text>
+
+  <!-- ==== Band C: four design choices ==== -->
+  <rect x="28" y="416" width="216" height="50" rx="6" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="136" y="433" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#166534">partial offloading</text>
+  <text x="136" y="450" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">GPU-cache / CPU-cache 分账</text>
+
+  <rect x="252" y="416" width="216" height="50" rx="6" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="360" y="433" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#166534">prefill 并入 batch-0</text>
+  <text x="360" y="450" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">拉长 GPU 段给 CPU 留重叠窗</text>
+
+  <rect x="476" y="416" width="216" height="50" rx="6" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="584" y="433" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#166534">layer-wise swapping</text>
+  <text x="584" y="450" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">每层 KV 算完即走 PCIe</text>
+
+  <rect x="700" y="416" width="216" height="50" rx="6" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="808" y="433" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#166534">asymmetric batch division</text>
+  <text x="808" y="450" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">batch-0 / batch-1 互补不均分</text>
+
+  <!-- ==== Band D: numbers ==== -->
+  <rect x="28" y="484" width="888" height="64" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="44" y="504" dominant-baseline="central" font-size="10.5" fill="#374151">合成扫描峰值（对 GPU-only）：<tspan font-weight="700" fill="#166534">T4 +750%（7.5×）</tspan> · A10G +26% · H100 +14%</text>
+  <text x="44" y="528" dominant-baseline="central" font-size="10.5" fill="#374151">真实在线（对 vLLM，固定时延点）：H100 +14.3% · A10G +6.40% · <tspan font-weight="700" fill="#166534">T4 +563%（近 6×）</tspan></text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="580" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">前提：大容量本地 CPU 内存 + 权重全驻 GPU · 两组数字口径不同（能力上限 vs 服务真实收益），引用需带基线</text>
+</svg>

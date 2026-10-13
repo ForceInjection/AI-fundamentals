@@ -208,7 +208,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 
 > 从 2026 KV Cache 专题调研的录用论文里选出的首条深读线——把筛选级的 venue 核实升级为逐篇页码级精读（总纲做横向对照，四篇各自附精读报告）。
 
-- **[当 KV 装不进显存：四篇论文给出的四种内存账](04_memory_tiering/memory-tiering-overview.md)**：四篇 2025–2026 正式录用论文的横切总纲——去搬运 / 挪计算 / 并账本 / 重排调度四条路线、按条件选路的对号表，以及四篇的「数字怎么读」口径清单。
+- **[当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想](04_memory_tiering/memory-tiering-overview.md)**：四篇 2025–2026 正式录用论文的横切总纲——去搬运 / 挪计算 / 并账本 / 重排调度四条路线、按条件选路的对号表、四篇的「数字怎么读」口径清单，与一个「统一命名空间 + 成本旋钮」的设想（§五）。
 - 单篇精读：[DirectKV](04_memory_tiering/directkv.md)（OSDI '26，零拷贝 offload）· [NEO](04_memory_tiering/neo.md)（MLSys 2025，decoding attention 下移 CPU）· [eLLM](04_memory_tiering/ellm.md)（DAC 2026，弹性内存池）· [Strata](04_memory_tiering/strata.md)（OSDI '26，分层上下文缓存）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[directkv](04_memory_tiering/references/directkv-report.md) · [neo](04_memory_tiering/references/neo-report.md) · [ellm](04_memory_tiering/references/ellm-report.md) · [strata](04_memory_tiering/references/strata-report.md)；论文原文 PDF 在 `04_memory_tiering/references/papers/`
 

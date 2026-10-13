@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">并账本：Activation 与 KV 池互相借内存</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">eLLM（DAC 2026）· space-wise internal fragmentation · 解码吞吐最高 2.32×</text>
+
+  <!-- ==== Band A: the mismatch ==== -->
+  <rect x="28" y="94" width="888" height="76" rx="8" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="44" y="118" dominant-baseline="central" font-size="11.5" font-weight="600" fill="#5B21B6">预留按最坏情况、使用按典型情况：MTP-30B 的上下文从 2K 调到 200K</text>
+  <text x="44" y="144" dominant-baseline="central" font-size="10" fill="#4B5563">为 activation 预留的显存占比从 0.3% 涨到 30.8%；而 decoding 阶段每步只处理少量 token，激活利用率约 1%</text>
+
+  <rect x="640" y="106" width="126" height="52" rx="6" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="703" y="122" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">200K 时的预留占比</text>
+  <text x="703" y="143" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#6D28D9">30.8%</text>
+
+  <rect x="778" y="106" width="126" height="52" rx="6" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="841" y="122" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">decoding 实际利用</text>
+  <text x="841" y="143" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#9CA3AF">≈ 1%</text>
+
+  <!-- ==== Band B: side-by-side ==== -->
+  <!-- Left: vLLM today -->
+  <rect x="28" y="190" width="430" height="230" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="214" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">vLLM 现状：两套内存抽象，谁也不认谁的账本</text>
+
+  <rect x="48" y="236" width="180" height="92" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="138" y="256" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">Activation 池</text>
+  <text x="138" y="277" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">静态张量分配（PyTorch 式）</text>
+  <text x="138" y="294" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">按最大上下文预留</text>
+  <text x="138" y="314" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#DC2626">常常闲置</text>
+
+  <line x1="240" y1="228" x2="240" y2="336" stroke="#9CA3AF" stroke-width="1.6" stroke-dasharray="5,4"/>
+  <text x="240" y="222" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">隔离</text>
+
+  <rect x="252" y="236" width="180" height="92" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="342" y="256" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">KV 池</text>
+  <text x="342" y="277" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">PagedAttention 页表虚拟化</text>
+  <text x="342" y="294" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">按请求动态发块</text>
+  <text x="342" y="314" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#DC2626">经常爆满</text>
+
+  <text x="243" y="356" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">一边爆满、一边闲置，中间没有通道 → 摘要口径：约 20% 吞吐损失</text>
+  <text x="243" y="388" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">Chunked Prefill / PD 分离各有代价；eLLM 在内存管理层直接消碎片</text>
+
+  <!-- Right: eLLM -->
+  <rect x="486" y="190" width="430" height="230" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="502" y="214" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#374151">eLLM：逻辑分开，物理归一（eTensor 抽象）</text>
+
+  <text x="701" y="234" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">逻辑层：两套定制化管理保留</text>
+  <rect x="506" y="244" width="180" height="30" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="596" y="259" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#5B21B6">activation eTensor</text>
+  <rect x="716" y="244" width="180" height="30" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="806" y="259" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#5B21B6">KV eTensor</text>
+
+  <line x1="596" y1="274" x2="596" y2="292" stroke="#8B5CF6" stroke-width="1.6"/>
+  <polygon points="592,288 596,295 600,288" fill="#8B5CF6"/>
+  <line x1="806" y1="274" x2="806" y2="292" stroke="#8B5CF6" stroke-width="1.6"/>
+  <polygon points="802,288 806,295 810,288" fill="#8B5CF6"/>
+
+  <rect x="506" y="296" width="390" height="34" rx="6" fill="#EDE9FE" stroke="#8B5CF6" stroke-width="1.2"/>
+  <text x="701" y="313" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="#6D28D9">物理层：统一内存池（块随时可互相转手）</text>
+
+  <text x="502" y="352" dominant-baseline="central" font-size="9" fill="#6B7280">inflation 借：轻量 GC 回收 → 只转所有权不搬数据 → 按需重映射</text>
+  <text x="502" y="368" dominant-baseline="central" font-size="9" fill="#6B7280">deflation 惰性归还；CPU DRAM 做二级后备（O(N) 传输藏进 O(N²)）</text>
+  <text x="502" y="388" dominant-baseline="central" font-size="9" fill="#9CA3AF">映射开销藏进计算：投机预映射 + 异步 unmap · SLO 感知调度定"何时借"</text>
+
+  <!-- ==== Band C: numbers and costs ==== -->
+  <rect x="28" y="436" width="888" height="72" rx="8" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="44" y="458" dominant-baseline="central" font-size="10.5" fill="#374151">收益：解码吞吐最高 <tspan font-weight="700" fill="#6D28D9">2.32×</tspan>（128k-4k 离线 · Jamba-Mini）· goodput 最高 <tspan font-weight="700" fill="#6D28D9">2.5×</tspan>（在线）· 弹性互借单独收回约 20% 吞吐</text>
+  <text x="44" y="484" dominant-baseline="central" font-size="10.5" fill="#374151">代价与边界：TPOT 高于 vLLM（换 goodput）· PCIe 带宽是无法完全重叠的天棚 · 未开源（vLLM v0.5.5 上约 4000 行修改）</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="576" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">系列里唯一不碰搬运路径的方案（不动 I/O、不加新层）：只把同一块 HBM 内部的两本账并成一本，与 PD 分离 / Chunked Prefill 正交</text>
+</svg>

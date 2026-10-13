@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">去搬运：把 staging buffer 删掉</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">DirectKV（OSDI '26）· GH200 NVLink-C2C 900 GB/s（PCIe Gen5 的 7×）· no buffer, no bottleneck</text>
+
+  <!-- ==== Band A: the starting measurements (10240² GEMM) ==== -->
+  <rect x="28" y="94" width="288" height="68" rx="8" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="114" dominant-baseline="central" font-size="11" font-weight="600" fill="#6B7280">Swap 缓冲路径（既有 offload）</text>
+  <text x="44" y="140" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">65 ms <tspan font-size="11" font-weight="400" fill="#9CA3AF">PCIe</tspan> · 54 ms <tspan font-size="11" font-weight="400" fill="#9CA3AF">NVLink-C2C</tspan></text>
+
+  <rect x="328" y="94" width="288" height="68" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="344" y="114" dominant-baseline="central" font-size="11" font-weight="600" fill="#B91C1C">朴素零拷贝（同一 GEMM）</text>
+  <text x="344" y="140" dominant-baseline="central" font-size="15" font-weight="700" fill="#B91C1C">1122 ms <tspan font-size="11" font-weight="400" fill="#DC2626">PCIe · 比 swap 慢 17×</tspan></text>
+
+  <rect x="628" y="94" width="288" height="68" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="644" y="114" dominant-baseline="central" font-size="11" font-weight="600" fill="#1D4ED8">DirectKV（CPU-aware tiling 后）</text>
+  <text x="644" y="140" dominant-baseline="central" font-size="15" font-weight="700" fill="#1D4ED8">106 → 54 ms <tspan font-size="11" font-weight="400" fill="#3B82F6">NVLink-C2C</tspan></text>
+
+  <!-- ==== Band B: path comparison ==== -->
+  <text x="28" y="184" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151">搬运路径对照</text>
+
+  <!-- Row 1: traditional offload -->
+  <rect x="28" y="196" width="170" height="44" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="113" y="210" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">CPU DRAM</text>
+  <text x="113" y="226" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">KV cache（pinned）</text>
+
+  <line x1="198" y1="218" x2="248" y2="218" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="244,214 250,218 244,222" fill="#9CA3AF"/>
+  <text x="223" y="204" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">swap</text>
+
+  <rect x="250" y="196" width="190" height="44" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="345" y="210" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">GPU HBM：staging buffer</text>
+  <text x="345" y="226" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">预留 200 MB 盖延迟</text>
+
+  <line x1="440" y1="218" x2="490" y2="218" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="486,214 492,218 486,222" fill="#9CA3AF"/>
+  <text x="465" y="204" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">kernel 读</text>
+
+  <rect x="492" y="196" width="90" height="44" rx="6" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="537" y="218" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">算（attention）</text>
+
+  <text x="600" y="218" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">同一块数据过两道互联 · CUDA Graph 难重放</text>
+
+  <!-- Row 2: DirectKV -->
+  <rect x="28" y="268" width="170" height="44" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="113" y="282" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">CPU DRAM</text>
+  <text x="113" y="298" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">KV cache（pinned）</text>
+
+  <line x1="198" y1="290" x2="480" y2="290" stroke="#3B82F6" stroke-width="3.5"/>
+  <polygon points="474,283 486,290 474,297" fill="#3B82F6"/>
+  <text x="339" y="276" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">attention kernel 直接读（零拷贝 · device-visible pointer）</text>
+
+  <rect x="492" y="268" width="90" height="44" rx="6" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="537" y="290" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">算（attention）</text>
+
+  <text x="600" y="290" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">决定性能的从单次延迟变成持续带宽</text>
+
+  <text x="28" y="334" dominant-baseline="central" font-size="10" fill="#9CA3AF">朴素零拷贝为什么输：B 在 O(n³) 计算里被反复从 CPU 取（带宽缺口全暴露），L2 命中率也掉到 32.3%（对照 77%）——三招就是对这两笔账的针对性修复</text>
+
+  <!-- ==== Band C: three moves ==== -->
+  <rect x="28" y="356" width="288" height="152" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="378" dominant-baseline="central" font-size="12" font-weight="700" fill="#3B82F6">① CPU-aware tiling</text>
+  <text x="44" y="400" dominant-baseline="central" font-size="10" fill="#374151">矩阵乘里"驻留"的操作数对调：</text>
+  <text x="44" y="416" dominant-baseline="central" font-size="10" fill="#374151">B tile（CPU 侧）只取一次、跨 i 复用</text>
+  <text x="44" y="438" dominant-baseline="central" font-size="10" fill="#374151">B 流量 O(n³) → O(n²)</text>
+  <text x="44" y="456" dominant-baseline="central" font-size="10" fill="#374151">CPU→GPU 流量 33.5 GB → 0.4 GB</text>
+  <text x="44" y="478" dominant-baseline="central" font-size="10" fill="#374151">延迟 106 → 54 ms · L2 命中 32.3% → 75.1%</text>
+
+  <rect x="336" y="356" width="288" height="152" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="352" y="378" dominant-baseline="central" font-size="12" font-weight="700" fill="#3B82F6">② warp 级流水</text>
+  <text x="352" y="400" dominant-baseline="central" font-size="10" fill="#374151">producer / consumer / storer</text>
+  <text x="352" y="416" dominant-baseline="central" font-size="10" fill="#374151">三个 warp group 分工</text>
+  <text x="352" y="438" dominant-baseline="central" font-size="10" fill="#374151">consumer 算当前 tile 时</text>
+  <text x="352" y="454" dominant-baseline="central" font-size="10" fill="#374151">producer 预取下一 tile（TMA 帮衬）</text>
+  <text x="352" y="478" dominant-baseline="central" font-size="10" fill="#374151">HBM 吞吐 0.3 → 1.3 TB/s（4.3×）</text>
+
+  <rect x="644" y="356" width="288" height="152" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="660" y="378" dominant-baseline="central" font-size="12" font-weight="700" fill="#3B82F6">③ kernel fusion</text>
+  <text x="660" y="400" dominant-baseline="central" font-size="10" fill="#374151">QKV projection 与 attention</text>
+  <text x="660" y="416" dominant-baseline="central" font-size="10" fill="#374151">合成一次 kernel launch</text>
+  <text x="660" y="438" dominant-baseline="central" font-size="10" fill="#374151">K/V 生成后留 SMEM 直接被消费，</text>
+  <text x="660" y="454" dominant-baseline="central" font-size="10" fill="#374151">不回 CPU 内存兜圈</text>
+  <text x="660" y="478" dominant-baseline="central" font-size="10" fill="#374151">1.9 TB/s · 延迟 85 → 57 ms（49%）</text>
+
+  <!-- ==== Band D: the account ==== -->
+  <rect x="28" y="524" width="888" height="42" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="480" y="545" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#1F2937">GH200 账本：传输量最高 <tspan font-weight="700" fill="#1D4ED8">-50%</tspan>（vs 朴素零拷贝）· 显存 <tspan font-weight="700">47 GB</tspan>（vs offload 均值 82.7，<tspan font-weight="700">-43%</tspan>）· 端到端平均 <tspan font-weight="700">1.2×</tspan> ｜ 前提：NVLink-C2C</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="586" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">PCIe-only 平台只省显存、不保吞吐（论文自划边界）· 50% 与 43% 出自两套基线，口径不可合并（详见单篇「诚实声明」）</text>
+</svg>

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">重排调度：页要小，传输要大</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">Strata（OSDI '26）· 8192 token 的 KV 只吃到 PCIe 5.0 带宽的约 22%（换 NVLink 反而更低，5%）</text>
+
+  <!-- ==== Band A: the tension ==== -->
+  <rect x="28" y="94" width="270" height="92" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="44" y="116" dominant-baseline="central" font-size="11" font-weight="700" fill="#B91C1C">页小（1–32 token）：命中率高</text>
+  <text x="44" y="138" dominant-baseline="central" font-size="9.5" fill="#4B5563">前缀匹配细；但单页只有几十 KB，</text>
+  <text x="44" y="154" dominant-baseline="central" font-size="9.5" fill="#4B5563">喂不饱互联 → 只跑出 22% 带宽</text>
+  <text x="44" y="174" dominant-baseline="central" font-size="9.5" fill="#DC2626">74% 的 prefill 时间在等 KV 传输</text>
+
+  <rect x="310" y="94" width="340" height="92" rx="8" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="480" y="118" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#374151" class="mono">Little's Law  X = C · S / L</text>
+  <text x="480" y="142" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#4B5563">要吃满 PCIe 5.0：单次传输 S 需到 1–2 MB 量级</text>
+  <text x="480" y="162" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">并发 C 数十 vs 数千 · 延迟 L —— 瓶颈在 S</text>
+
+  <rect x="662" y="94" width="254" height="92" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+  <text x="678" y="116" dominant-baseline="central" font-size="11" font-weight="700" fill="#B91C1C">页放大到 512：喂饱了</text>
+  <text x="678" y="138" dominant-baseline="central" font-size="9.5" fill="#4B5563">但命中率下滑，平均 TTFT 最高 2×</text>
+  <text x="678" y="158" dominant-baseline="central" font-size="9.5" fill="#4B5563">P90 TTFT 最高 2.9×（H200）</text>
+  <text x="678" y="176" dominant-baseline="central" font-size="9.5" fill="#DC2626">两边都不可取 → 换 I/O 机制</text>
+
+  <!-- ==== Band B: two lines ==== -->
+  <!-- Left: I/O line -->
+  <rect x="28" y="202" width="430" height="268" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="44" y="226" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#C2410C">搬运线：GPU-assisted I/O</text>
+
+  <rect x="48" y="242" width="176" height="24" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="136" y="254" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF" style="text-decoration: line-through;">cudaMemcpyAsync 小块（DMA）</text>
+  <line x1="230" y1="254" x2="252" y2="254" stroke="#F97316" stroke-width="1.6"/>
+  <polygon points="248,250 254,254 248,258" fill="#F97316"/>
+  <rect x="258" y="242" width="184" height="24" rx="5" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="350" y="254" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#C2410C">launch kernel：数千线程直读源、写目标</text>
+
+  <text x="48" y="288" dominant-baseline="central" font-size="9.5" fill="#374151">· 高效粒度只要 <tspan font-weight="700">128 B</tspan>——不必为效率放大页</text>
+  <text x="48" y="308" dominant-baseline="central" font-size="9.5" fill="#374151">· 2 block × 1024 线程 = <tspan font-weight="700">48 GB/s</tspan>，prefill 干扰 &lt; 5%</text>
+  <text x="48" y="328" dominant-baseline="central" font-size="9.5" fill="#374151">· 少量大 block 把 I/O 挤进极少数 SM（as few as 1）</text>
+  <text x="48" y="348" dominant-baseline="central" font-size="9.5" fill="#374151">· 顺带完成布局转换：layer-first ↔ page-first</text>
+  <text x="48" y="368" dominant-baseline="central" font-size="9" fill="#9CA3AF">（计算目的地址时多做一次算术，negligible overhead）</text>
+
+  <rect x="48" y="386" width="394" height="64" rx="6" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="62" y="404" dominant-baseline="central" font-size="9.5" fill="#C2410C">实测收益（8×H20 + DeepSeek-V3 · 磁盘场景）</text>
+  <text x="62" y="422" dominant-baseline="central" font-size="9.5" fill="#374151">仅把磁盘布局换成 page-first：平均 TTFT 5.03 → 2.42 s</text>
+  <text x="62" y="440" dominant-baseline="central" font-size="9.5" fill="#374151">生成吞吐 27.43 → 36.41 token/s（1.3×）</text>
+
+  <!-- Right: scheduling line -->
+  <rect x="486" y="202" width="430" height="268" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="502" y="226" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#C2410C">调度线：cache-aware 三件套</text>
+
+  <rect x="502" y="240" width="398" height="60" rx="6" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="514" y="252" width="36" height="20" rx="4" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="532" y="262" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#C2410C">①</text>
+  <text x="560" y="262" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">delay hit 规避（transient node）</text>
+  <text x="514" y="284" dominant-baseline="central" font-size="9" fill="#6B7280">撞在计算中的重复 miss 推迟到队首，直接吃即将变热的缓存（阈值 100 token）</text>
+
+  <rect x="502" y="308" width="398" height="60" rx="6" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="514" y="320" width="36" height="20" rx="4" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="532" y="330" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#C2410C">②</text>
+  <text x="560" y="330" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">均衡批（load / compute 比）</text>
+  <text x="514" y="352" dominant-baseline="central" font-size="9" fill="#6B7280">越过 loading_bound（默认 100）就移出；bundle hit 请求同批执行</text>
+
+  <rect x="502" y="376" width="398" height="60" rx="6" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="514" y="388" width="36" height="20" rx="4" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="532" y="398" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="#C2410C">③</text>
+  <text x="560" y="398" dominant-baseline="central" font-size="10" font-weight="600" fill="#374151">气泡填充</text>
+  <text x="514" y="420" dominant-baseline="central" font-size="9" fill="#6B7280">用 decoding 批去填加载空档：解码吃 HBM 带宽、加载吃 PCIe，资源面错开</text>
+
+  <text x="502" y="456" dominant-baseline="central" font-size="9" fill="#9CA3AF">delay hit 为何常见：Mooncake agent trace 中 38% 的请求在 1 秒窗口内共享 ≥6k token 前缀</text>
+
+  <!-- ==== Band C: numbers ==== -->
+  <rect x="28" y="486" width="888" height="64" rx="8" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="44" y="506" dominant-baseline="central" font-size="10.5" fill="#374151">同 TTFT 峰值吞吐：Llama-70B <tspan font-weight="700" fill="#C2410C">5×</tspan>（对 vLLM-LMCache）/ 3.75×（对 TRT-LLM）· 多轮负载 ReviewMT 收敛到 1.7× / 2.3×</text>
+  <text x="44" y="530" dominant-baseline="central" font-size="10.5" fill="#374151">GH200：持续传输带宽 40.30 → <tspan font-weight="700" fill="#C2410C">150.50 GB/s</tspan>（SGLang-HiCache 仅 19.43 GB/s）</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="580" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">前提：单实例、大 host DRAM、SGLang 系生态 · 主力基线 SGLang-HiCache 为作者自实现版（口径见单篇「诚实声明」）</text>
+</svg>

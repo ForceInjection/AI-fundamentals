@@ -26,6 +26,8 @@
 
 eLLM 的抽象叫 **eTensor**：KV cache 和 activation 在逻辑层是两个独立实体，各自保留定制化管理；物理层共享一个统一内存池，池内块可以互相转手（Figure 3，p.3）。
 
+![eLLM：eTensor 统一内存池与 inflation / deflation](../../assets/mtier-ellm-elastic-pool.svg)
+
 ### 2.1 两类张量，两套虚拟化
 
 **KV eTensor** 面对的是大而规整、增长可预测、访问频度低、全程驻留的张量。它的虚拟地址空间按每个请求的**最大上下文长度**一次性预留（保证逻辑连续，顺序访问和索引计算都简单），物理块则按实际写入 on-demand 分配，虚拟预留不花物理钱。**activation eTensor** 是另一头：小块、生命周期短、访问频度高，用变长虚拟地址段、细粒度管理。两类张量的虚拟地址段（tensor slots）都严格按物理块粒度对齐，论文的说法是在访问效率和碎片控制之间取平衡（p.3）。
@@ -111,7 +113,7 @@ eLLM 的收益不是免费的，论文把这些账目也列了出来。
 
 ## 与系列其他篇目
 
-eLLM 是「KV Cache 内存层级」系列的**抽象虚拟化**路线：不动搬运路径、不加新硬件层，只在同一块 HBM 内部把 activation 与 KV cache 两套账本并成一本，靠 inflation/deflation 动态调额度。同系列的 [DirectKV](directkv.md)（OSDI '26）走**零拷贝去搬运**：在 GH200/GB200 的 NVLink-C2C 上把 staging buffer 干掉，正好是 eLLM 仍要付 PCIe 账单的那部分成本；[NEO](neo.md)（MLSys 2025）走**计算下移**：把 attention 连同 KV 一起沉到 CPU 侧，让 KV 不必回传，与 eLLM「搬回 GPU、用 O(N) 传输藏 O(N²) 计算」的选择正面对照；[Strata](strata.md)（OSDI '26）走**分层调度**：在 GPU/CPU/SSD 的层与层之间做缓存感知调度，与 eLLM 的池内弹性正交、可叠加。四条路线的横向对照与数字口径注解见总纲《[当 KV 装不进显存：四篇论文给出的四种内存账](memory-tiering-overview.md)》。
+eLLM 是「KV Cache 内存层级」系列的**抽象虚拟化**路线：不动搬运路径、不加新硬件层，只在同一块 HBM 内部把 activation 与 KV cache 两套账本并成一本，靠 inflation/deflation 动态调额度。同系列的 [DirectKV](directkv.md)（OSDI '26）走**零拷贝去搬运**：在 GH200/GB200 的 NVLink-C2C 上把 staging buffer 干掉，正好是 eLLM 仍要付 PCIe 账单的那部分成本；[NEO](neo.md)（MLSys 2025）走**计算下移**：把 attention 连同 KV 一起沉到 CPU 侧，让 KV 不必回传，与 eLLM「搬回 GPU、用 O(N) 传输藏 O(N²) 计算」的选择正面对照；[Strata](strata.md)（OSDI '26）走**分层调度**：在 GPU/CPU/SSD 的层与层之间做缓存感知调度，与 eLLM 的池内弹性正交、可叠加。四条路线的横向对照与数字口径注解见总纲《[当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想](memory-tiering-overview.md)》。
 
 ## 诚实声明
 

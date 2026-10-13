@@ -20,6 +20,8 @@ NEO 的做法是把 decoding attention 的计算连同它的 KV cache 一起下�
 
 ## 二、非对称流水线：不让任何一侧干等
 
+![NEO：decoding attention 下移与非对称流水线](../../assets/mtier-neo-cpu-attention.svg)
+
 ### 2.1 两个被否掉的方案
 
 论文先用两个 strawman 划掉错误答案（§3.1，Figure 3/4，p.4）。
@@ -155,7 +157,7 @@ GPU 侧做了一件跟内存无关但很关键的事：Python 的 GIL 让数据�
 
 ## 与系列其他篇目
 
-四篇是对同一块 CPU 内存的四种花法：NEO 挪计算（decoding attention 连同 KV 下移）、[DirectKV](directkv.md) 去搬运（零拷贝直接寻址）、[eLLM](ellm.md) 并账本（activation 与 KV 池内弹性互借）、[Strata](strata.md) 重排调度（分层缓存的 I/O 路径与调度重做）。四篇并排看，覆盖「数据怎么搬、内存怎么管、层怎么排、算力放哪」四个正交问题；横向组织与口径提示见总纲[《当 KV 装不进显存：四篇论文给出的四种内存账》](memory-tiering-overview.md)。
+四篇是对同一块 CPU 内存的四种花法：NEO 挪计算（decoding attention 连同 KV 下移）、[DirectKV](directkv.md) 去搬运（零拷贝直接寻址）、[eLLM](ellm.md) 并账本（activation 与 KV 池内弹性互借）、[Strata](strata.md) 重排调度（分层缓存的 I/O 路径与调度重做）。四篇并排看，覆盖「数据怎么搬、内存怎么管、层怎么排、算力放哪」四个正交问题；横向组织与口径提示见总纲[《当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想》](memory-tiering-overview.md)。
 
 ## 诚实声明
 

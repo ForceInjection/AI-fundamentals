@@ -22,6 +22,8 @@ OSDI '26 的 DirectKV 从这个反直觉的起点出发，最后给出的账本�
 
 论文的核心判断只有一句："By tiling through SMEM, we shift bandwidth pressure from the CPU–GPU interconnect to HBM, fully exploiting NVLink-C2C while maintaining GPU compute efficiency"（p.40）。围绕这一句，落成三件事。
 
+![DirectKV：删掉 staging buffer 的零拷贝路径](../../assets/mtier-directkv-zerocopy.svg)
+
 ### 2.1 CPU-memory-aware tiling：换掉矩阵乘里"驻留"的那个操作数
 
 常规 tiling 里，C 驻留在寄存器/SMEM 反复累加，A、B tile 从 HBM 反复取（Algorithm 1 的 `NativeTiling`，p.45）。DirectKV 把角色对调：B tile（也就是 CPU 内存里的那部分）只取一次、跨所有 i 复用，A 与 C 改从 HBM 取（`CpuAwareTiling`，p.45）。B 的流量从 O(n³) 降到 O(n²)，代价是 C 每步都要从 HBM 读回累加、流量从 2·O(n³) 涨到 3·O(n³)（p.45）。

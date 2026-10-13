@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'Courier New','SF Mono','Menlo',monospace; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <!-- ==== Title ==== -->
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">同一个问题，四个拆法</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">KV 按序列长度线性增长、HBM 装不下之后：四篇论文在四个位置动手，每个方案都在拿带宽 / 延迟 / 容量做交换</text>
+
+  <!-- ==== Top band: the shared problem ==== -->
+  <rect x="150" y="100" width="250" height="56" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="275" y="120" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">GPU HBM</text>
+  <text x="275" y="140" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#6B7280">算力的家 · 装不下 KV</text>
+
+  <rect x="560" y="100" width="250" height="56" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="685" y="120" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">CPU DRAM</text>
+  <text x="685" y="140" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#6B7280">容量的家 · 养着冷 KV</text>
+
+  <!-- bidirectional arrow -->
+  <line x1="406" y1="122" x2="554" y2="122" stroke="#9CA3AF" stroke-width="1.4"/>
+  <polygon points="416,118 406,122 416,126" fill="#9CA3AF"/>
+  <polygon points="544,118 554,122 544,126" fill="#9CA3AF"/>
+  <text x="480" y="110" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#6B7280">搬运</text>
+  <text x="480" y="142" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">互联带宽 · 延迟 · 容量</text>
+
+  <!-- ==== Four columns ==== -->
+
+  <!-- ===== Column 1: DirectKV ===== -->
+  <rect x="28" y="184" width="216" height="368" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="136" y="212" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">DirectKV</text>
+  <text x="136" y="234" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#3B82F6">动「搬运」这个动作</text>
+  <line x1="44" y1="250" x2="228" y2="250" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- mini: row1 traditional -->
+  <rect x="44" y="264" width="40" height="22" rx="5" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="64" y="275" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">KV</text>
+  <line x1="84" y1="275" x2="100" y2="275" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="96,272 100,275 96,278" fill="#9CA3AF"/>
+  <rect x="100" y="264" width="66" height="22" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="133" y="275" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">staging ✗</text>
+  <line x1="166" y1="275" x2="182" y2="275" stroke="#9CA3AF" stroke-width="1.2"/>
+  <polygon points="178,272 182,275 178,278" fill="#9CA3AF"/>
+  <rect x="182" y="264" width="30" height="22" rx="5" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="197" y="275" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">算</text>
+  <text x="44" y="304" dominant-baseline="central" font-size="9" fill="#9CA3AF">既有 offload：两道互联 + 预留大缓冲</text>
+
+  <!-- mini: row2 directkv -->
+  <rect x="44" y="320" width="40" height="22" rx="5" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="64" y="331" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">KV</text>
+  <line x1="84" y1="331" x2="168" y2="331" stroke="#3B82F6" stroke-width="3"/>
+  <polygon points="162,325 172,331 162,337" fill="#3B82F6"/>
+  <text x="126" y="321" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#3B82F6">kernel 直读</text>
+  <rect x="172" y="320" width="40" height="22" rx="5" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="192" y="331" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#374151">算</text>
+  <text x="44" y="360" dominant-baseline="central" font-size="9" fill="#9CA3AF">DirectKV：零拷贝，SMEM tiling 换走压力</text>
+
+  <!-- account -->
+  <text x="44" y="396" dominant-baseline="central" font-size="11" fill="#374151">传输量最高 <tspan font-weight="700" fill="#3B82F6">-50%</tspan>（vs 朴素零拷贝）</text>
+  <text x="44" y="414" dominant-baseline="central" font-size="11" fill="#374151">显存 <tspan font-weight="700">47 GB</tspan>（<tspan font-weight="700" fill="#22C55E">-43%</tspan>）· 端到端 1.2×</text>
+  <text x="44" y="444" dominant-baseline="central" font-size="10" fill="#9CA3AF">前提：NVLink-C2C 900 GB/s</text>
+  <text x="44" y="462" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">（PCIe 平台只省显存）</text>
+  <text x="44" y="486" dominant-baseline="central" font-size="10" fill="#9CA3AF">OSDI '26</text>
+
+  <!-- ===== Column 2: NEO ===== -->
+  <rect x="252" y="184" width="216" height="368" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="360" y="212" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">NEO</text>
+  <text x="360" y="234" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#22C55E">动「被搬的对象」</text>
+  <line x1="268" y1="250" x2="452" y2="250" stroke="#E5E7EB" stroke-width="1"/>
+
+  <rect x="268" y="264" width="86" height="42" rx="6" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="311" y="279" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#1F2937">GPU</text>
+  <text x="311" y="294" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">权重 · 线性段 · prefill</text>
+  <rect x="366" y="264" width="86" height="42" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="409" y="279" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="#1F2937">CPU</text>
+  <text x="409" y="294" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#6B7280">decoding attn · KV</text>
+  <text x="360" y="322" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#22C55E">KV 留在 CPU · 不回传</text>
+  <text x="268" y="348" dominant-baseline="central" font-size="9" fill="#9CA3AF">decoding attention 在两侧都是</text>
+  <text x="268" y="362" dominant-baseline="central" font-size="9" fill="#9CA3AF">memory-bound：带宽差 ~3×，算力差 ~100×</text>
+
+  <text x="268" y="396" dominant-baseline="central" font-size="11" fill="#374151">合成扫描峰值 <tspan font-weight="700" fill="#22C55E">T4 +750%</tspan></text>
+  <text x="268" y="414" dominant-baseline="central" font-size="11" fill="#374151">A10G +26% · H100 +14%</text>
+  <text x="268" y="430" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">（对 GPU-only SwiftLLM）</text>
+  <text x="268" y="450" dominant-baseline="central" font-size="11" fill="#374151">真实在线最高 <tspan font-weight="700" fill="#22C55E">+563%</tspan>（对 vLLM）</text>
+  <text x="268" y="470" dominant-baseline="central" font-size="10" fill="#9CA3AF">前提：大本地 CPU 内存 · 权重全驻 GPU</text>
+  <text x="268" y="490" dominant-baseline="central" font-size="10" fill="#9CA3AF">MLSys 2025</text>
+
+  <!-- ===== Column 3: eLLM ===== -->
+  <rect x="476" y="184" width="216" height="368" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="584" y="212" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">eLLM</text>
+  <text x="584" y="234" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#8B5CF6">动「账本」的边界</text>
+  <line x1="492" y1="250" x2="676" y2="250" stroke="#E5E7EB" stroke-width="1"/>
+
+  <rect x="492" y="264" width="84" height="26" rx="5" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="534" y="277" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#374151">activation 池</text>
+  <rect x="588" y="264" width="84" height="26" rx="5" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="630" y="277" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#374151">KV 池</text>
+  <text x="582" y="302" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#9CA3AF">两套抽象 · 互不认识</text>
+  <line x1="534" y1="312" x2="534" y2="326" stroke="#8B5CF6" stroke-width="1.4"/>
+  <polygon points="530,322 534,328 538,322" fill="#8B5CF6"/>
+  <line x1="630" y1="312" x2="630" y2="326" stroke="#8B5CF6" stroke-width="1.4"/>
+  <polygon points="626,322 630,328 634,322" fill="#8B5CF6"/>
+  <rect x="492" y="328" width="180" height="30" rx="6" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="1.2"/>
+  <text x="582" y="343" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#6D28D9">统一物理池 · 池内互借</text>
+  <text x="492" y="374" dominant-baseline="central" font-size="9" fill="#9CA3AF">inflation 借（只转所有权、不搬数据）</text>
+  <text x="492" y="388" dominant-baseline="central" font-size="9" fill="#9CA3AF">deflation 惰性归还 · CPU DRAM 二级后备</text>
+
+  <text x="492" y="414" dominant-baseline="central" font-size="11" fill="#374151">解码吞吐最高 <tspan font-weight="700" fill="#8B5CF6">2.32×</tspan> · goodput 2.5×</text>
+  <text x="492" y="432" dominant-baseline="central" font-size="11" fill="#374151">（128k-4k 离线最优配置）</text>
+  <text x="492" y="460" dominant-baseline="central" font-size="10" fill="#9CA3AF">代价：TPOT 让步 · 未开源</text>
+  <text x="492" y="480" dominant-baseline="central" font-size="10" fill="#9CA3AF">DAC 2026</text>
+
+  <!-- ===== Column 4: Strata ===== -->
+  <rect x="700" y="184" width="216" height="368" rx="10" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="808" y="212" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" fill="#1F2937">Strata</text>
+  <text x="808" y="234" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#F97316">动「搬运路径与调度」</text>
+  <line x1="716" y1="250" x2="900" y2="250" stroke="#E5E7EB" stroke-width="1"/>
+
+  <rect x="716" y="264" width="150" height="22" rx="5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>
+  <line x1="722" y1="275" x2="860" y2="275" stroke="#9CA3AF" stroke-width="1"/>
+  <text x="791" y="275" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF" style="text-decoration: line-through;">cudaMemcpyAsync 小块</text>
+  <rect x="716" y="294" width="150" height="22" rx="5" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="791" y="305" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#C2410C">GPU 数千线程直读 · 128 B 即可</text>
+  <rect x="716" y="326" width="56" height="20" rx="5" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="744" y="336" text-anchor="middle" dominant-baseline="central" font-size="8" fill="#C2410C">delay-hit</text>
+  <rect x="780" y="326" width="44" height="20" rx="5" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="802" y="336" text-anchor="middle" dominant-baseline="central" font-size="8" fill="#C2410C">均衡批</text>
+  <rect x="832" y="326" width="56" height="20" rx="5" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1"/>
+  <text x="860" y="336" text-anchor="middle" dominant-baseline="central" font-size="8" fill="#C2410C">气泡填充</text>
+  <text x="716" y="366" dominant-baseline="central" font-size="9" fill="#9CA3AF">小页喂不饱互联（22%）· 页大命中率塌</text>
+
+  <text x="716" y="396" dominant-baseline="central" font-size="11" fill="#374151">同 TTFT 峰值吞吐最高 <tspan font-weight="700" fill="#F97316">5×</tspan></text>
+  <text x="716" y="414" dominant-baseline="central" font-size="11" fill="#374151">（对 vLLM-LMCache）</text>
+  <text x="716" y="430" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">多轮负载 ReviewMT 收敛到 1.7×</text>
+  <text x="716" y="450" dominant-baseline="central" font-size="11" fill="#374151">GH200 带宽 40.3 → <tspan font-weight="700">150.5 GB/s</tspan></text>
+  <text x="716" y="470" dominant-baseline="central" font-size="10" fill="#9CA3AF">前提：单实例 + 大 host DRAM</text>
+  <text x="716" y="490" dominant-baseline="central" font-size="10" fill="#9CA3AF">OSDI '26</text>
+
+  <!-- ==== Footer ==== -->
+  <text x="480" y="576" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#9CA3AF">四条路线互不排斥、可组合；各篇数字的对照基线不同，跨篇引用前见总纲「数字怎么读」</text>
+</svg>

@@ -22,6 +22,8 @@ Strata 要回答的就是这批数字：长上下文服务的 prefill，一大�
 
 ## 三、搬运：GPU-assisted I/O 与布局解耦
 
+![Strata：GPU-assisted I/O 与 cache-aware 调度三件套](../../assets/mtier-strata-io-schedule.svg)
+
 ### 3.1 用 GPU 的几千个线程搬 KB 级数据
 
 Strata 的第一板斧把搬运的活从 DMA 引擎换到计算侧：不再反复调用 cudaMemcpyAsync 传小块，而是 launch 一个 CUDA kernel、起数千线程，每个线程把一小块数据从源（GPU 全局显存或注册过的 CPU pinned memory）读进寄存器，再写到对端（p.5）。
