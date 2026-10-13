@@ -152,6 +152,8 @@ vLLM 当前对此的处理方式是：**在同一 vLLM 实例内，所有请求�
 
 如果你追求极致压缩，且运行在 Blackwell（B200）上，**NVFP4 提供了 4× 的压缩比**——但 4-bit 的精度损失不可忽视，可以与淘汰策略（如丢弃低重要性 token）配合使用——淘汰策略移除不重要但可能成为量化 outlier 的 token，从而间接改善剩余关键 token 的量化精度。如果你没有 B200，目前最务实的方案是在 FP8 Per-Token-Head 的基础上，结合 Attention Sinks 和 Heavy Hitter 淘汰策略，通过减少 token 数量来间接弥补量化压缩率的天花板。
 
+在粒度选择之外，把量化与稀疏、重建联合设计是另一条正在展开的路线：Self-Indexing KVCache 让低比特量化码兼任稀疏检索索引，SALS 在低秩潜空间里选 token 后再重建，EchoKV 丢弃部分维度后由轻量网络补回——逐篇精读与横向对照见 [KV Cache 压缩系列](../../07_kv_compression/kv-compression-overview.md)。
+
 ### 5.2 一句话总结
 
 **KV Cache 量化的核心矛盾不是"能不能压"，而是"scale 该有多细"——Per-Tensor 一个 scale 管全张量，实现简单但 outlier 敏感；Per-Token-Head 把 scale 下放到每个 token 每个 head，精度高但引入微小的 scale 存储开销；NVFP4 是硬件的未来，但当前仅在 B200 上可用。** FP8 Per-Token-Head 在精度与复杂度之间取得了最佳平衡，是当前生产环境中最值得推荐的配置——除非你在 Blackwell 上，那就直接 NVFP4。

@@ -1,6 +1,6 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 63 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 67 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
 > **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划。每篇文章独立可读，前后交叉引用。
 
@@ -231,3 +231,13 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - **[当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](06_kv_reuse/kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）与 DroidSpeak（NSDI '26）两条路径、按条件选路的对号表，以及两篇的「数字怎么读」口径清单。
 - 单篇精读：[KVLink](06_kv_reuse/kvlink.md)（NeurIPS 2025，文档级预计算 + link token）· [DroidSpeak](06_kv_reuse/droidspeak.md)（NSDI '26，跨微调变体共享 + 关键层重算）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[KVLink](06_kv_reuse/references/kvlink-report.md) · [DroidSpeak](06_kv_reuse/references/droidspeak-report.md)；论文原文 PDF 在 `06_kv_reuse/references/papers/`
+
+---
+
+## 10. 压缩专题：在压缩表示上做二次决策
+
+> 从 2026 KV Cache 专题调研的录用论文里选出的第四条深读线——三篇正式录用论文分别把「压缩后的表示」继续用作检索索引（该读谁）、token 选择场（该算谁）与重建素材（丢了怎么办）：压缩不只是把存储账做小，压缩产物本身成为后续决策的输入（总纲做横向对照，三篇各自附精读报告）。
+
+- **[当压缩表示被继续使用：三篇论文给出的三种二次决策](07_kv_compression/kv-compression-overview.md)**：三篇正式录用论文的横切总纲——Self-Indexing KVCache（AAAI '26）、SALS（NeurIPS 2025）与 EchoKV（NeurIPS 2026）三种压缩表示用法、按条件选路的对号表，以及三篇的「数字怎么读」口径清单。
+- 单篇精读：[Self-Indexing KVCache](07_kv_compression/self-indexing.md)（AAAI '26，压缩码兼任稀疏检索索引）· [SALS](07_kv_compression/sals.md)（NeurIPS 2025，pre-RoPE 潜空间选 token）· [EchoKV](07_kv_compression/echokv.md)（NeurIPS 2026，丢弃维度 + 轻量重建）
+- 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[Self-Indexing](07_kv_compression/references/self-indexing-report.md) · [SALS](07_kv_compression/references/sals-report.md) · [EchoKV](07_kv_compression/references/echokv-report.md)；论文原文 PDF 在 `07_kv_compression/references/papers/`
