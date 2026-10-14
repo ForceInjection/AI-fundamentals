@@ -2,23 +2,23 @@
 
 一个 70B 模型在 H100 上跑 128K 上下文的推理——KV Cache 吃掉 320 GB 显存，attention kernel 的 GPU 利用率不到 25%，Prefill 的一次长 prompt 能把 Decode 阻塞数秒。**推理系统优化的本质，就是解决这三个数字背后的核心矛盾：显存不够、算力空转、延迟抖动。**
 
-本目录从底层机制到上层系统，覆盖 LLM 推理优化的完整纵深。建议按 §1→§4 顺序阅读——每章建立在前一章的基础之上，最后以成本分析和工程实践收尾。
+本目录从底层机制到上层系统，覆盖 LLM 推理优化的完整纵深。建议按 §1→§6 顺序阅读——每章建立在前一章的基础之上，最后以成本分析和工程实践收尾。
 
 ---
 
 > **KV 压缩推到极限**：DeepSeek-V4 与 Kimi K3 从架构层面重写了 attention，1M 上下文下 KV 从 250GB 量级降到个位数 GB，旧叙事随之作废；一个月后 V4.1-Flash 又把全局 KV 压到 V4-Flash 的 1/4，并推翻前篇三处判断。但压缩只是把问题换了位置：单层的绝对量小到极点之后，杠杆从「每层压多少」转向「几层共用一份」，而一个 token 的状态不再是连续张量，变成了一组异构池，其中还混着不是 KV 的压缩器状态。系列入口：**[KV 压缩推到极限：从架构改造到分层缓存](kv_compression/README.md)**（体积账 → 报告精读 → 分层缓存三篇深挖；核对口径各不相同：源码验证、报告章节与 `config.json` 对照、`文件:行号` 逐条复验）。
 >
-> **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。详见 **[当 Agent 流量成为推理系统的主要负载](agent_serving/agent-workload-serving.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
+> **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。系列入口：**[Agent 推理服务](agent_serving/README.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
 >
 > **输出合法性税**：同系列姊妹篇——[约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](agent_serving/constrained-decoding-engines.md)，编译/每步/交互三笔账单 + 双引擎逐项对照 + jump-forward 重分词差异。
 >
 > **线性注意力**：没有 KV Cache 的模型来了——delta-rule 一脉（KDA/Gated DeltaNet，Qwen3-Next 与 Kimi K3 都在其中）落地后，prefill 串行化、前缀缓存重写为状态检查点、状态池成硬并发上限。系列入口：[线性注意力与推理系统](linear_attention/README.md)（总览 + 机制/调度/状态语义三篇深挖）。
 >
-> **内存介质**：算法把每步读取压下去之后，介质本身成了下一个变量。Hot Chips 2026 上 OXMIQ 用一套 (β, α) 坐标系和一行 `max()` 公式回答「HBF 是不是便宜的 HBM」——容量便宜 8–16 倍，但单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，结论是它只在一个很窄的低带宽区间里划算。详见 **[HBF 是 HBM 的替代吗：单位存储便宜了，Token 成本却可能更高](hbf-vs-hbm.md)**（22 页幻灯片逐页核对 + 独立报道交叉验证，含一份 2026-08 的反方实测）。
+> **内存介质**：算法把每步读取压下去之后，介质本身成了下一个变量。Hot Chips 2026 上 OXMIQ 用一套 (β, α) 坐标系和一行 `max()` 公式回答「HBF 是不是便宜的 HBM」——容量便宜 8–16 倍，但单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，结论是它只在一个很窄的低带宽区间里划算。详见 **[HBF 是 HBM 的替代吗？单位存储便宜了，Token 成本却可能更高](hbf-vs-hbm.md)**（22 页幻灯片逐页核对 + 独立报道交叉验证，含一份 2026-08 的反方实测）。
 >
 > **条件记忆**：稀疏有了第二根轴——V4.1-Flash 把 196B 参数从 HBM 搬进主机内存（LPDDR），靠 O(1) 查表替代多层对静态知识的重建。系列入口：**[Engram：条件记忆与主机内存参数](engram/README.md)**（首篇源码深读：官方 demo + SGLang 巨页手术，LPDDR 的优势与代价逐项算账）。
 >
-> **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 把家底搬上了昇腾：六个组件、三种双端模式与一份 950 微架构报告](deepseek_ascend/deepseek-ascend-open-source.md)**（三种双端模式 + 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
+> **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 昇腾开源栈](deepseek_ascend/README.md)**（六个组件、三种双端模式与 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
 
 ---
 
@@ -26,16 +26,16 @@
 
 在讨论任何优化之前，先理解推理的两阶段（Prefill/Decode）、KV Cache 为什么存在、以及并行策略如何把大模型塞进多张 GPU。
 
-- **[KV Cache 技术体系](kv_cache/README.md)** — 从 KV Cache 基础到分布式管理的完整导航；含 FAST'26「KV Cache × 存储」专题（五场景精读）。
+- **[KV Cache 技术体系](kv_cache/README.md)** — 从 KV Cache 基础到分布式管理的完整导航；含五个专题精读：FAST'26「KV Cache × 存储」（五场景）、内存层级（四种内存账）、安全（三种泄露面）、复用（两条扩展路径）、压缩（三种二次决策）。
   - 基础：KV Cache 原理、PagedAttention、五种注意力存储格式
   - 优化：Prefix Caching、跨模型复用、压缩量化、淘汰策略、Chunked Prefill、PD 分离传输、Prefetching、CUDA Graph
   - 系统：LMCache、Mooncake、KVBM、HiCache、Tair KVCache
-  - 容量：GLM-5 推演、ROI 评估
-- **[Prefill 与 Decode 深度拆解](prefill_decode/prefill_decode_qkv_calculation.md)**（[交互可视化](prefill_decode/prefill_decode_visual.html) · [校验脚本](prefill_decode/prefill_decode_validate.py)） — 从一个具体例子出发，标注每一步的矩阵形状与计算量，从 compute-bound vs memory-bound 的根本差异推导出所有优化方向的必然性。
+  - 容量：KV Pool 并发上限、GLM-5 推演、ROI 评估
+- **[Prefill 与 Decode：两阶段的推理机制](prefill_decode/README.md)**（[交互可视化](prefill_decode/prefill_decode_visual.html) · [校验脚本](prefill_decode/prefill_decode_validate.py)） — 从一个具体例子出发，标注每一步的矩阵形状与计算量，从 compute-bound vs memory-bound 的根本差异推导出所有优化方向的必然性。
 - **[Continuous Batching 深度解析](prefill_decode/continuous_batching.md)** — 将 batch 从请求级"静态容器"变为迭代级"动态流体"的核心技术。从静态 batching 的三重浪费出发，深入 vLLM V1 的 token-level 统一调度与 SGLang 的 prefill-first 主动驱逐，对比两种调度哲学的 TTFT/TPOT 权衡。
 - **[大模型推理并行策略](parallelism/README.md)**（[交互可视化](parallelism/parallelism_visual.html)） — DP、TP、PP、EP、SP 五种策略的维度拆解与混合部署案例。
   - 入门：[并行策略总览](parallelism/parallelism_strategies.md)
-  - 深度：[专家并行（EP）深度解析](parallelism/expert_parallelism_deep_dive.md)
+  - 深度：[专家并行（EP）深度解析](parallelism/expert_parallelism_deep_dive.md)、[dp-attention 与 DCP](sglang/sglang-dp-attention-dcp.md)
 
 ---
 
@@ -46,19 +46,25 @@
 ### 2.1 vLLM
 
 - **[vLLM 推理系统](vllm/README.md)** — 模块分析、路由调度、硬件优化的完整导航。
-  - 注意力架构：MHA→MLA→NSA 演进、DeepSeek V4 支持、MLA→CSA/HCA 进化、[DeepSeek-V3 / V4 端到端 Pipeline 走读](vllm/module_analysis/deepseek_v3_inference_pipeline.md)
-  - 系统机制：CUDA Graph、Hybrid KV Cache Manager、投机解码方法全景、原生 KV Offloading
-  - 路由：Router 架构、Semantic Router
-  - 硬件：WideEP、Blackwell/GB200 优化
+  - 注意力架构：[MHA→MLA→NSA 演进](vllm/module_analysis/attention_mha_mla_nsa.md)、[DeepSeek V4 支持](vllm/module_analysis/deepseek_v4_attention_support.md)、[MLA→CSA/HCA 进化](vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)、[FlashAttention 深度解析](vllm/module_analysis/flashattention_deep_dive.md)、[Kimi K3 混合注意力](vllm/module_analysis/kimi_k3_attention.md)
+  - 系统机制：[CUDA Graph](vllm/module_analysis/cuda_graph_deep_dive.md)、[Hybrid KV Cache Manager](vllm/module_analysis/hybrid_kv_cache_manager_deep_dive.md)、[投机解码方法全景](vllm/module_analysis/speculative_decoding_landscape.md)、[原生 KV Offloading](vllm/module_analysis/native_kv_offloading.md)、[PagedAttention 退役](vllm/module_analysis/pagedattention_retirement.md)、[gpu-memory-utilization 谢幕](vllm/module_analysis/gpu-memory-utilization-retirement.md)、[MLA 的 TP 切分](vllm/module_analysis/mla_tp_kv_redundancy.md)
+  - 端到端走读：[DeepSeek-V3](vllm/module_analysis/deepseek_v3_inference_pipeline.md) / [DeepSeek-V4](vllm/module_analysis/deepseek_v4_inference_pipeline.md)
+  - 路由：[Router 架构](vllm/routing/router.md)、[Semantic Router](vllm/routing/semantic_router_deep_dive.md)
+  - 硬件：[WideEP](vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)、[Blackwell 扩展性](vllm/hardware_optimization/scaling_deepseek_blackwell.pptx)、[GB200 优化](vllm/hardware_optimization/gb200_optimization.pptx)
 
 ### 2.2 SGLang
 
-- **[SGLang 推理引擎](sglang/README.md)** — RadixAttention 前缀缓存与 HiCache 分层存储。
+- **[SGLang 推理引擎](sglang/README.md)** — 前缀缓存（统一 RadixTree）、HiCache 分层存储与调度器的源码级导航。
+  - [UnifiedRadixTree](sglang/sglang-unified-radix-tree.md)：统一索引 + FULL/MAMBA/SWA 独立 LRU 与可插拔缓存语义（0.5.16 起默认）
+  - [分叉点缓存](sglang/sglang-swa-branching-point-cache.md)：混合注意力下 Full/SWA 两个缓存边界的分叉点计算与窗口插入改写（命中率 43.8% → 60.8%）
   - [HiCache 深入详解](sglang/hicache_deep_dive.md)：L1–L3 三级缓存架构、HiRadixTree 元数据拓扑、预取与写回策略
   - [KV Pool 管理](sglang/sglang-kv-pool-management.md)：物理存储、Radix Tree 索引与请求视图，lock_ref 正确性保证、Pool/Allocator 类型体系
+    - [KV Cache L1↔L2 数据流深度分析](sglang/sglang-kv-cache-dataflow-analysis.md)：write_backup / eviction / load_back 的逐操作代码路径
   - [调度器](sglang/sglang-scheduler.md)：Prefill > Decode 优先级、PrefillAdder 准入预算、retract_decode 内存保护、TTFT 时序拆解
   - [Overlap Scheduling](sglang/sglang-overlap-scheduling.md)：CPU-GPU 双流水线，将上轮 CPU 处理与本轮 GPU forward 并行执行
   - [Chunked Prefill 原理与实现](sglang/chunked_prefill.md)：长 prompt 切分为 chunk 与 decode 交替调度的源码级分析
+  - [dp-attention 与 DCP](sglang/sglang-dp-attention-dcp.md)：MoE 切请求、长上下文切序列位置的两条并行轴与叠加条件
+  - [SGLang 0.5.16 解读](sglang/sglang-0.5.16-release.md)：574 个 PR、DSpark 置信度驱动投机解码、统一 RadixTree 落地与 12 项破坏性变更
   - [超大规模推理调优案例](sglang/sglang-scaling-case-study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
   - [HiSparse 深度解析](sglang/hisparse_deep_dive.md)：DSA 稀疏选择从 attention kernel 提升到系统 coordinator，page 级选择性加载
   - 可视化：[推理流水线](sglang/assets/inference-pipeline.html)、[调度器](sglang/assets/scheduler-visual.html)、[KV Pool 三层关系](sglang/assets/sglang-kv-pool-three-relation.html)
@@ -69,6 +75,7 @@
 
 推理引擎提供了执行框架，模型层面的优化则进一步压缩算力和显存开销。
 
+- **[模型优化技术](model_optimization/README.md)** — 从模型下手（量化压缩）与从解码协议下手（投机解码）两条路径的技术导航。
 - **[推理量化技术基础](model_optimization/inference_quantization.md)** — FP8 格式（E4M3 vs E5M2）、四种量化粒度、权重 vs 激活 vs KV Cache 的量化差异、SmoothQuant / AWQ / GPTQ 三种权重量化算法对比。
 - **[图解投机解码](model_optimization/illustrated-speculative-decoding.md)** — draft model 草拟 K 个候选、target model 批量验证，"猜和验"的核心机制。
 - **[MTP 深度解析](model_optimization/mtp-multi-token-prediction.md)** — 训练时植入多 token 预测能力，推理时以 self-speculation 消除独立 draft forward，与投机解码并行的另一条加速路径。
@@ -92,7 +99,7 @@
 
 企业级落地需要参考架构与运维方案。
 
-- **[推理优化参考设计](reference_design/README.md)** — 14 篇系列文章：背景目标、集群规模分类、技术选型、架构设计、性能评估、实施检查清单。
+- **[推理优化参考设计](reference_design/README.md)** — 15 篇系列文章：背景目标、集群规模分类、技术选型、架构设计、性能评估、实施检查清单。
 - **[模型部署](deployment/README.md)** — DeepSeek-V3 H20、Qwen2-VL 昇腾、B300 部署配方与 KV Cache 实践三套方案，基于 logprobs 的输出精度判别与排错方法论，以及 FAST'26 可编程页缓存论文精读（模型加载延迟 −79%）。
 
 ---
@@ -101,6 +108,7 @@
 
 所有优化的最终落脚点。API 按量计费与 Coding Plan 订阅的双线分析。
 
+- **[推理成本分析](cost_analysis/README.md)** — 成本测算框架总览与按用户画像的口径选择指南。
 - **[API 定价分析](cost_analysis/llm_api_pricing_analysis.md)** — 基于 OpenRouter 的多模型成本测算，配套 [抓取脚本](cost_analysis/fetch_pricing.py)。
 - **[Coding Plan 对比](cost_analysis/coding_plan/coding_plan_report.md)** — 11 款 AI 编程工具订阅成本与隐藏条款解析。
 

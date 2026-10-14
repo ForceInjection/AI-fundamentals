@@ -365,11 +365,19 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 
 - [Mooncake 架构详解：以 KV Cache 为中心的高效 LLM 推理系统设计](09_inference_system/kv_cache/02_systems/mooncake/mooncake_architecture.md) - 新一代推理系统的架构创新与性能优化策略
 - [当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案](09_inference_system/kv_cache/03_fast26/fast26-kv-storage-five-scenarios.md) - FAST'26「AI and LLMs」九篇论文中五篇精读的五象限汇总：端侧/智能体/对话/数据中心/冷启动各自的核心矛盾、招式与数字，共同支点是可复现的 I/O 特征；附 4 篇 Agent 精读报告
+- [当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想](09_inference_system/kv_cache/04_memory_tiering/memory-tiering-overview.md) - DirectKV / NEO / eLLM / Strata 四篇论文内存层级路线的横切总纲：去搬运 / 挪计算 / 并账本 / 重排调度，附按条件选路的对号表与「数字怎么读」口径清单
+- [当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想](09_inference_system/kv_cache/05_kv_security/kv-security-overview.md) - 读行为 / 读数据 / 读时延三种取证位置：PromptPeek / Shadow in the Cache / Auditing Prompt Caching，附按角色选路的对号表，以及取证距离与防御动作同轴的成本账
+- [当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](09_inference_system/kv_cache/06_kv_reuse/kv-reuse-overview.md) - KVLink（文档级预计算 + link token）与 DroidSpeak（跨微调变体共享 + 关键层重算）两条路径与「数字怎么读」口径清单
+- [当压缩表示被继续使用：三篇论文给出的三种二次决策](09_inference_system/kv_cache/07_kv_compression/kv-compression-overview.md) - Self-Indexing KVCache / SALS / EchoKV 把压缩产物继续用作检索索引、token 选择场与重建素材
 - [当 Agent 流量成为推理系统的主要负载](09_inference_system/agent_serving/agent-workload-serving.md) - KV 生命周期错配、调度语义失真、会话粘性与容量公式失效：Agent 负载下的四连锁问题与两引擎源码级现状
 - [约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](09_inference_system/agent_serving/constrained-decoding-engines.md) - 结构化输出的编译账/每步账/交互账：双引擎实现逐项对照与 jump-forward 差异
 - [线性注意力与推理系统](09_inference_system/linear_attention/README.md) - delta-rule 一脉（KDA/Gated DeltaNet）落地后的系统挑战：prefill 串行化、状态检查点缓存、状态语义深水区——总览 + 机制/调度/状态语义四篇
-- [HBF 是 HBM 的替代吗：单位存储便宜了，Token 成本却可能更高](09_inference_system/hbf-vs-hbm.md) - Hot Chips 2026 的 (β, α) 坐标系与 $/token 公式：单位容量便宜 8–16 倍、单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，HBF 只在一个很窄的低带宽区间里划算
+- [HBF 是 HBM 的替代吗？单位存储便宜了，Token 成本却可能更高](09_inference_system/hbf-vs-hbm.md) - Hot Chips 2026 的 (β, α) 坐标系与 $/token 公式：单位容量便宜 8–16 倍、单位容量带宽只有 HBM 的 1/25，折算成带宽单价反而贵 1.7 倍，HBF 只在一个很窄的低带宽区间里划算
+- [Engram：条件记忆与主机内存参数](09_inference_system/engram/README.md) - DeepSeek 条件记忆（N-gram Embedding）首篇源码深读：官方 422 行 demo + SGLang 巨页手术，LPDDR 换 HBM 的优势与代价逐项算账
 - [DeepSeek 把家底搬上了昇腾：六个组件、三种双端模式与一份 950 微架构报告](09_inference_system/deepseek_ascend/deepseek-ascend-open-source.md) - 逐仓拆解 TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect 的昇腾版：三种双端模式、950 微架构要点与诚实缺口清单
+- [KV 压缩推到极限：从架构改造到分层缓存](09_inference_system/kv_compression/README.md) - V4 与 K3 架构重写后的 KV 体积账（1M 上下文 250GB 量级 → 个位数 GB）、V4.1-Flash 技术报告精读（CED / CSA2 / FP4 KV）与 HiCache 七池八池的系统后果，三篇互为时间线
+- [Prefill 与 Decode：两阶段的推理机制](09_inference_system/prefill_decode/README.md)（[交互可视化](09_inference_system/prefill_decode/prefill_decode_visual.html) · [校验脚本](09_inference_system/prefill_decode/prefill_decode_validate.py)） - 逐步标注每步矩阵形状与计算量，从 compute-bound vs memory-bound 推导 GQA、量化、PagedAttention、Offloading、PD 分离的必然性
+  - [Continuous Batching 深度解析](09_inference_system/prefill_decode/continuous_batching.md) - 静态批处理的三重浪费、vLLM V1 的 token-level 统一调度与 SGLang prefill-first 主动驱逐
 - [大模型推理并行策略](09_inference_system/parallelism/parallelism_strategies.md)（[交互可视化](09_inference_system/parallelism/parallelism_visual.html)） - DP、TP、PP、EP、SP 五种策略的统一拆解与混合部署案例
   - [专家并行（EP）深度解析](09_inference_system/parallelism/expert_parallelism_deep_dive.md) - EP 独立深度文章：DP/TP/PP 为什么解决不了 MoE、All-to-All 通信模式、EP+DP 耦合、DeepEP 低延迟后端、EPLB 负载均衡、选型决策
 
@@ -439,7 +447,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 
 - [SGLang 内容索引](09_inference_system/sglang/README.md) - 源码分析、案例研究与可视化演示导航
 - [SGLang UnifiedRadixTree：一棵树，四种注意力](09_inference_system/sglang/sglang-unified-radix-tree.md) - 0.5.16 默认化的统一 Radix Tree：FULL/MAMBA/SWA 统一索引与可插拔缓存语义
-- [SGLang 0.5.16 发布解读](09_inference_system/sglang/sglang-0.5.16-release.md) - 574 个 PR 的重大版本：DSpark 置信度驱动投机解码与 Inkling 975B Day-0 支持，含破坏性变更清单
+- [SGLang 0.5.16 解读：一棵 Radix Tree 统一四种 Attention，DSpark 让投机解码不再一刀切](09_inference_system/sglang/sglang-0.5.16-release.md) - 574 个 PR 的重大版本：DSpark 置信度驱动投机解码与 Inkling 975B Day-0 支持，含破坏性变更清单
 - [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构（L1/L2/L3）与 HiRadixTree 源码分析
 - [SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](09_inference_system/sglang/sglang-kv-pool-management.md) - KV Pool/Radix Tree/ReqToTokenPool 三层结构与 L1→L2→L3 多级逐出
   - [KV Cache L1↔L2 数据流深度分析](09_inference_system/sglang/sglang-kv-cache-dataflow-analysis.md) - write_backup/eviction/load_back 逐操作代码路径与 CXL 场景适配
@@ -513,7 +521,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 
 - [实施建议与最佳实践](09_inference_system/reference_design/07-实施建议与最佳实践.md) - 落地实施的指导建议
 - [实施检查清单](09_inference_system/reference_design/13-实施检查清单.md) - 推理系统上线检查清单
-- [场景问题解答](09_inference_system/reference_design/12-场景问题解答.md) - 常见问题与解决方案
+- [常见问题解答（FAQ）](09_inference_system/reference_design/12-常见问题解答.md) - 常见问题与解决方案
 - [参考资料与延伸阅读](09_inference_system/reference_design/08-参考资料与延伸阅读.md) - 推荐阅读与延伸资料
 - [总结与展望](09_inference_system/reference_design/14-总结与展望.md) - 推理优化技术发展趋势
 

@@ -4,7 +4,7 @@
 > 这不是性能优化，而是架构简化——把三棵各自为政的缓存树合并为一棵树 + 可插拔组件。
 > 四种注意力对应三个组件 + 一个组合：FULL / MAMBA / SWA 是独立组件，DSA 是 FULL + SWA 的组合（§4.4）。
 >
-> 相关文章：[SGLang 0.5.16 发布解读](sglang-0.5.16-release.md) ｜ [SGLang KV Pool 管理](sglang-kv-pool-management.md)
+> 相关文章：[SGLang 0.5.16 解读](sglang-0.5.16-release.md) ｜ [SGLang KV Pool 管理](sglang-kv-pool-management.md)
 
 ---
 
@@ -245,4 +245,4 @@ SGLang 的顺序是先统一抽象（0.5.16 默认化），再推进实现优化
 - [unified_radix_cache.py 实现（v0.5.16）](https://github.com/sgl-project/sglang/blob/v0.5.16/python/sglang/srt/mem_cache/unified_radix_cache.py)
 - [SGLang v0.5.16 Release Notes](https://github.com/sgl-project/sglang/releases/tag/v0.5.16)
 - [SGLang KV Pool 管理：Radix Tree 索引与请求视图](sglang-kv-pool-management.md)
-- [SGLang 0.5.16 发布解读](sglang-0.5.16-release.md)
+- [SGLang 0.5.16 解读](sglang-0.5.16-release.md)

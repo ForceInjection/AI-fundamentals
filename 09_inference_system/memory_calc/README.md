@@ -12,7 +12,7 @@
 脚本均为零依赖的独立 Python 文件，输出显存总量、按组件拆解的占比、以及不同并发 × 序列长度下的敏感性表格。
 
 - **[`calculate_qwen3_memory.py`](calculate_qwen3_memory.py)**：Qwen3-0.6B 级别通用 MHA/GQA 模型的显存估算器（适用多数开源 Dense 模型）
-- **[`qwen3_06b_config.json`](qwen3_06b_config.json)**：Qwen3-0.6B 的 HuggingFace `config.json` 样例，供脚本读取
+- **[`qwen3_06b_config.json`](qwen3_06b_config.json)**：Qwen3-0.6B 的 HuggingFace `config.json` 样例，与 qwen 脚本的内置参数一一对应，供核对与改参
 - **[`calculate_deepseek_v4_memory.py`](calculate_deepseek_v4_memory.py)**：**DeepSeek V4 专用估算器**——处理 K=V 共享（无 2×）+ 反向 RoPE、异构层（30 层 c4a + 31 层 c128a）、Indexer Cache、MoE（384 routed + 1 shared，top-6）、FP8 / FP4 混合精度等特殊结构
 - **[`deepseek_v4_pro_config.json`](deepseek_v4_pro_config.json)**：DeepSeek V4 Pro 的配置样例，与脚本的 `--config` 参数对接
 
@@ -21,6 +21,6 @@
 ## 3. 使用流程
 
 1. **选择脚本**：通用 Dense / GQA 模型 → `calculate_qwen3_memory.py`；DeepSeek V4 系列 → `calculate_deepseek_v4_memory.py`
-2. **准备 config**：从 HuggingFace 模型仓库下载目标模型的 `config.json`，或复用目录中的样例
-3. **运行估算**：`python calculate_<model>_memory.py --config path/to/config.json [--seq-len N --batch-size B]`
+2. **准备 config（DeepSeek V4 脚本）**：`--config` 指向从 HuggingFace 下载的目标模型 `config.json`；不指定时自动加载目录中的 `deepseek_v4_pro_config.json` 样例，样例缺失则回退在线拉取
+3. **运行估算**：通用 Dense 模型 `python calculate_qwen3_memory.py [--gpu-mem-gib 40] [--scenarios 512 4096 32768]`；DeepSeek V4 `python calculate_deepseek_v4_memory.py [--config path/to/config.json] [--gpu-mem-gib 80] [--num-gpus 8]`
 4. **规划部署**：结合 [KV Cache 容量规划](../kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) 与 [性能评估指标体系](../reference_design/05-性能评估指标体系.md) 转化为并行策略与硬件清单
