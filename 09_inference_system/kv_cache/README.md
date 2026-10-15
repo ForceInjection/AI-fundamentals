@@ -218,7 +218,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 
 > 从 2026 KV Cache 专题调研的录用论文里选出的第二条深读线——KV Cache 共享与复用机制的安全面，读行为 / 读数据 / 读时延三种取证位置各自成篇（总纲做横向对照，三篇各自附精读报告）。
 
-- **[当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想](05_kv_security/kv-security-overview.md)**：三篇正式录用论文的横切总纲——读行为 / 读数据 / 读时延三种取证位置、按角色选路的对号表、三篇的「数字怎么读」口径清单，与一个「共享层级 + 默认加密」的设想（§五）。
+- **[当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想](05_kv_security/kv-security-overview.md)**：三篇正式录用论文的横切总纲——读行为 / 读数据 / 读时延三种取证位置、按角色选路的对号表、三篇的「数字怎么读」口径清单，与一个「共享层级 + 默认加密」的设想（§六）。
 - 单篇精读：[I Know What You Asked](05_kv_security/i-know-what-you-asked.md)（NDSS '25，PromptPeek 调度行为侧信道）· [Shadow in the Cache](05_kv_security/shadow-in-the-cache.md)（NDSS '26，KV 数据重建 + KV-Cloak 防御）· [Auditing Prompt Caching](05_kv_security/auditing-prompt-caching.md)（ICML '25，商业 API 黑盒审计）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[PromptPeek](05_kv_security/references/i-know-what-you-asked-report.md) · [Shadow](05_kv_security/references/shadow-in-the-cache-report.md) · [Auditing](05_kv_security/references/auditing-prompt-caching-report.md)；论文原文 PDF 在 `05_kv_security/references/papers/`
 

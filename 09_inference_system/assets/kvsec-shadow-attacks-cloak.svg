@@ -103,5 +103,5 @@
   <text x="44" y="510" dominant-baseline="central" font-size="9.5" fill="#6B7280">KV-Cloak 的密钥托管依赖 TEE（密钥失守整套归零）；INT8/INT4 量化模型未覆盖；安全前提是「架构性交换」而非漏洞</text>
 
   <!-- ==== Footer ==== -->
-  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">评估为实验室内截获 KV 张量后的重建；数字口径（0.45% 与 7.1% 各自的分母）见 §六「数字怎么读」</text>
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">评估为实验室内截获 KV 张量后的重建；数字口径（0.45% 与 7.1% 各自的分母）见 §七「数字怎么读」</text>
 </svg>

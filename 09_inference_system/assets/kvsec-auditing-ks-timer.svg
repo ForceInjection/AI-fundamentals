@@ -101,8 +101,8 @@
   <text x="600" y="491" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">关缓存（对架构泄露最强）</text>
   <rect x="716" y="476" width="200" height="30" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
   <text x="816" y="491" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">时延拉平（命中装成未命中）</text>
-  <text x="500" y="524" dominant-baseline="central" font-size="9" fill="#9CA3AF">共享层级与这些档位，正是 §五 信任契约的出发点</text>
+  <text x="500" y="524" dominant-baseline="central" font-size="9" fill="#9CA3AF">共享层级与这些档位，正是 §六 信任契约的出发点</text>
 
   <!-- ==== Footer ==== -->
-  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">边界：证明「可探测」未证明「可提取」（论文自述提取攻击未能实用化）· 全部数字限 2024 年秋快照，口径见 §六</text>
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#9CA3AF">边界：证明「可探测」未证明「可提取」（论文自述提取攻击未能实用化）· 全部数字限 2024 年秋快照，口径见 §七</text>
 </svg>
