@@ -1,4 +1,4 @@
-# 402MB 的证据、21KB 的答案：REA 拆解 Codex.app 实战
+# 用 agent 逆向一个 agent：REA 拆解 Codex.app 实战
 
 > 2026-10-16 | 实践记录。基于 `rea-agents` 6.5.0（npm，当日经 npx 安装）在 macOS arm64（Node 26.11.1，16GB 内存）上的本机实测；分析目标为 ollama 0.40.3 与 Codex.app 26.611.62324（app.asar sha256 `5bda30b0…`）。星标、fork 数为 2026-10-16 GitHub API 快照。文中全部数字与错误原文来自本机原始输出；未实测的能力（Ghidra 深反编译、MCP 注册路径等）在第九节明确标注。
 

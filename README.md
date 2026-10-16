@@ -613,7 +613,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 **工具及协议**：
 
 - [Model Context Protocol (MCP)](08_agentic_system/mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md) - MCP 原理与实战，探讨 AI 工具链的未来
-  - [REA 逆向工程 MCP 实战](08_agentic_system/mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP 本机实测：fail-closed 三道闸门、预算对照实验与视图投影阶梯，附手绘图
+  - [用 agent 逆向一个 agent：REA 拆解 Codex.app 实战](08_agentic_system/mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP 本机实测：fail-closed 三道闸门、预算对照实验与视图投影阶梯，附手绘图
 
 **Agent Skill**：
 

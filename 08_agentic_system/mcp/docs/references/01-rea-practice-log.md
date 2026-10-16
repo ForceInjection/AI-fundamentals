@@ -1,6 +1,6 @@
 # REA 实践日志（文章事实底稿）
 
-《[402MB 的证据、21KB 的答案：REA 拆解 Codex.app 实战](../02_reverse_engineer_anything_in_practice.md)》的原始记录。2026-10-16 于 macOS arm64（Darwin 25.6.0，16GB 内存，Node 26.11.1，npm 11.20.0）实测，工具为 `rea-agents` 6.5.0（当日经 npx 安装）。原始输出（303MB / 402MB 证据文件、3.9MB 清单等）留存在本机工作目录，未入库。
+《[用 agent 逆向一个 agent：REA 拆解 Codex.app 实战](../02_reverse_engineer_anything_in_practice.md)》的原始记录。2026-10-16 于 macOS arm64（Darwin 25.6.0，16GB 内存，Node 26.11.1，npm 11.20.0）实测，工具为 `rea-agents` 6.5.0（当日经 npx 安装）。原始输出（303MB / 402MB 证据文件、3.9MB 清单等）留存在本机工作目录，未入库。
 
 ## 0. 环境与就绪检查
 

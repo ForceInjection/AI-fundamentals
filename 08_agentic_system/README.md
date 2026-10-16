@@ -79,7 +79,7 @@
 Agent 的能力边界很大程度上由它能调用哪些工具决定。以 MCP 为代表的跨平台协议、以 Claude Skills 为代表的工具封装规范，正在把分散的集成方式统一成可互操作的标准。
 
 - [深度解析 MCP 与 AI 工具化的未来](./mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md) - Anthropic 推出的 Model Context Protocol (MCP) 原理与实战，探讨 AI 工具链的未来。
-- [402MB 的证据、21KB 的答案：REA 拆解 Codex.app 实战](./mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP（REA）本机实测：用 ollama 与 Codex.app 三层目标走通 fail-closed 三道闸门、预算对照实验与视图投影阶梯，提炼可迁移的六条 agent 工具设计纪律。配三张手绘图。
+- [用 agent 逆向一个 agent：REA 拆解 Codex.app 实战](./mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP（REA）本机实测：用 ollama 与 Codex.app 三层目标走通 fail-closed 三道闸门、预算对照实验与视图投影阶梯，提炼可迁移的六条 agent 工具设计纪律。配三张手绘图。
 - [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](./agent_skills/docs/claude_skills_guide.md) - 扩展智能体能力的工具定义规范、调试方法与最佳实践。
 - [Claude Skills 构建完整指南 (PDF)](./agent_skills/docs/the_complete_guide_to_building_skill_for_claude.pdf) - 官方提供的高阶指导手册，详细说明如何为 Claude 扩展自定义技能。
 
