@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'SF Mono','Menlo','Courier New',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">把复用单元从「前缀」换成「一篇文档」</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">文档独立预计算、推理时任意拼接——位置用全局旋转补，跨文档用 link token 缝</text>
+
+  <!-- Standard flow -->
+  <rect x="28" y="94" width="904" height="122" rx="10" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="48" y="116" dominant-baseline="central" font-size="12" font-weight="700" fill="#991B1B">标准流程：同一篇文档被不同查询各编码一遍</text>
+
+  <text x="48" y="146" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">q1 检索 →</text>
+  <rect x="140" y="130" width="150" height="32" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="215" y="146" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#374151">Doc A</text>
+  <rect x="300" y="130" width="150" height="32" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="375" y="146" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#374151">Doc B</text>
+  <rect x="460" y="130" width="150" height="32" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="535" y="146" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#374151">Doc C</text>
+  <text x="630" y="146" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">全量 prefill</text>
+
+  <text x="48" y="188" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#374151">q2 检索 →</text>
+  <rect x="140" y="172" width="150" height="32" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="215" y="188" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#991B1B">Doc B（重复编码）</text>
+  <rect x="300" y="172" width="150" height="32" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="375" y="188" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#991B1B">Doc A（重复编码）</text>
+  <text x="470" y="188" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">又一遍全量 prefill——前缀变了，缓存接不上</text>
+
+  <!-- KVLink flow -->
+  <rect x="28" y="232" width="904" height="248" rx="10" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="48" y="254" dominant-baseline="central" font-size="12" font-weight="700" fill="#1D4ED8">KVLink：每篇文档预计算一次（离线），拼接即复用（在线）</text>
+
+  <text x="48" y="288" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#6B7280">离线</text>
+  <rect x="110" y="272" width="70" height="32" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="145" y="288" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">Doc A</text>
+  <line x1="182" y1="288" x2="204" y2="288" stroke="#9CA3AF" stroke-width="1.3"/>
+  <polygon points="200,284 208,288 200,292" fill="#9CA3AF"/>
+  <circle cx="228" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="240" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="252" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="264" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="276" cy="280" r="3.4" fill="#8B5CF6"/>
+  <rect x="218" y="288" width="68" height="36" rx="6" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="1"/>
+  <text x="252" y="306" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">KV_A</text>
+  <text x="300" y="288" dominant-baseline="central" font-size="9" fill="#6B7280">KV + link token ×5</text>
+
+  <rect x="470" y="272" width="70" height="32" rx="6" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1"/>
+  <text x="505" y="288" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">Doc B</text>
+  <line x1="542" y1="288" x2="564" y2="288" stroke="#9CA3AF" stroke-width="1.3"/>
+  <polygon points="560,284 568,288 560,292" fill="#9CA3AF"/>
+  <circle cx="588" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="600" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="612" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="624" cy="280" r="3.4" fill="#8B5CF6"/><circle cx="636" cy="280" r="3.4" fill="#8B5CF6"/>
+  <rect x="578" y="288" width="68" height="36" rx="6" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="1"/>
+  <text x="612" y="306" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">KV_B</text>
+
+  <text x="700" y="288" dominant-baseline="central" font-size="9" fill="#6B7280">按自身文本预计算——与位置、与邻里无关</text>
+
+  <line x1="48" y1="336" x2="912" y2="336" stroke="#BFDBFE" stroke-width="1"/>
+
+  <text x="48" y="366" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#6B7280">在线</text>
+  <rect x="110" y="350" width="68" height="36" rx="6" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="1"/>
+  <text x="144" y="368" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">KV_B</text>
+  <rect x="184" y="350" width="68" height="36" rx="6" fill="#BFDBFE" stroke="#1D4ED8" stroke-width="1"/>
+  <text x="218" y="368" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#1D4ED8">KV_A</text>
+
+  <line x1="262" y1="368" x2="290" y2="368" stroke="#9CA3AF" stroke-width="1.3"/>
+  <polygon points="286,364 294,368 286,372" fill="#9CA3AF"/>
+  <text x="296" y="356" dominant-baseline="central" font-size="9" fill="#6B7280">任意顺序拼接</text>
+
+  <rect x="380" y="348" width="196" height="40" rx="6" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="478" y="362" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">全局旋转（位置重编码）</text>
+  <text x="478" y="377" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">修位置错位——非本文首创</text>
+
+  <line x1="576" y1="368" x2="604" y2="368" stroke="#9CA3AF" stroke-width="1.3"/>
+  <polygon points="600,364 608,368 600,372" fill="#9CA3AF"/>
+
+  <rect x="610" y="348" width="152" height="40" rx="6" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="686" y="362" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">link token 小 forward</text>
+  <text x="686" y="377" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#9CA3AF">缝跨文档失联</text>
+
+  <line x1="762" y1="368" x2="790" y2="368" stroke="#9CA3AF" stroke-width="1.3"/>
+  <polygon points="786,364 794,368 786,372" fill="#9CA3AF"/>
+
+  <rect x="796" y="348" width="116" height="40" rx="6" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="854" y="362" text-anchor="middle" dominant-baseline="central" font-size="9.5" font-weight="600" fill="#166534">输出</text>
+  <text x="854" y="377" text-anchor="middle" dominant-baseline="central" font-size="8.5" fill="#166534">几乎零 prefill</text>
+
+  <text x="480" y="420" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">代价：link token 与模型联合微调（训练耦合）· 存储形态是论文自认的待解项（1,000 token：文本约 5 KB vs KV cache 131 MB）</text>
+  <text x="480" y="446" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">账本：TTFT 相对标准解码降 85%–96%——5,000 token 时 0.885 s → 0.032 s（读图值）</text>
+
+  <text x="480" y="522" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">KVLink（NeurIPS 2025，arXiv:2502.16002）· 前提：必须微调；单请求 TTFT，无 batching / serving 集成；上下文 ≤5,000 token</text>
+  <text x="480" y="552" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">口径见总纲 §七「数字怎么读」· 机制细节与行号以单篇精读为准</text>
+</svg>

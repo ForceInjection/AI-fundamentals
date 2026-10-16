@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'SF Mono','Menlo','Courier New',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">两条硬条件，两次放宽，两种账单</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">前缀缓存的两条硬条件各断一次——复用范围每放宽一步，都带着一份对齐代价</text>
+
+  <!-- Baseline box -->
+  <rect x="290" y="96" width="380" height="60" rx="8" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="1.5"/>
+  <text x="480" y="117" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#374151">前缀复用（Prefix Caching / APC）</text>
+  <text x="480" y="138" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#6B7280">同模型 + 从第 0 个 token 起前缀一致</text>
+
+  <!-- Break labels on arrows -->
+  <line x1="392" y1="156" x2="252" y2="200" stroke="#9CA3AF" stroke-width="1.5"/>
+  <polygon points="250,193 244,204 256,202" fill="#9CA3AF"/>
+  <line x1="568" y1="156" x2="708" y2="200" stroke="#9CA3AF" stroke-width="1.5"/>
+  <polygon points="704,202 716,204 710,193" fill="#9CA3AF"/>
+
+  <!-- Left path: KVLink -->
+  <rect x="28" y="206" width="440" height="212" rx="10" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="248" y="234" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#DC2626">断口①：RAG 文档顺序不可控</text>
+  <text x="248" y="254" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">检索集合与顺序因查询而异，「前缀一致」接不上</text>
+  <line x1="48" y1="270" x2="448" y2="270" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="248" y="294" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#1D4ED8">KVLink 放松「前缀一致」</text>
+  <text x="248" y="316" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151">文档独立预计算 + 任意拼接</text>
+  <text x="248" y="334" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151">位置重编码 + link token（K=5）</text>
+  <text x="248" y="362" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#92400E">对齐代价：联合微调（训练时付）</text>
+  <text x="248" y="392" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">账本：TTFT 相对标准解码降 85%–96%（读图值）</text>
+
+  <!-- Right path: DroidSpeak -->
+  <rect x="492" y="206" width="440" height="212" rx="10" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5"/>
+  <text x="712" y="234" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="#DC2626">断口②：权重更替，整段借来掉一半精度</text>
+  <text x="712" y="254" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#6B7280">同一段历史在多模型 / 多智能体编排里跨权重流转</text>
+  <line x1="512" y1="270" x2="912" y2="270" stroke="#FDE68A" stroke-width="1"/>
+  <text x="712" y="294" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#B45309">DroidSpeak 放松「同一模型」</text>
+  <text x="712" y="316" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151">同基座微调变体互借：只重算一小撮敏感层</text>
+  <text x="712" y="334" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151">跨模型对平均约 11%，且须选连续层组</text>
+  <text x="712" y="362" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="600" fill="#92400E">对齐代价：离线 profile（每对 0.375–3.6 小时）</text>
+  <text x="712" y="392" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#9CA3AF">账本：预填充延迟降 1.7–3.1×（对照 full prefill）</text>
+
+  <!-- Axis banner -->
+  <rect x="28" y="436" width="904" height="56" rx="10" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1.5"/>
+  <text x="480" y="456" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#92400E">复用的范围 × 对齐代价——三条路线没有免费档</text>
+  <text x="480" y="478" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#92400E">前缀缓存零训练、零校准，代价留在运行时：匹配失败即全额重算</text>
+
+  <!-- Payment timeline -->
+  <rect x="28" y="508" width="288" height="54" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="172" y="528" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="700" fill="#374151">Prefix Caching｜支付时点：运行时</text>
+  <text x="172" y="548" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">匹配失败 → 全额重算</text>
+
+  <rect x="336" y="508" width="288" height="54" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="480" y="528" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="700" fill="#1D4ED8">KVLink｜支付时点：训练时</text>
+  <text x="480" y="548" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1E40AF">一次联合微调换任意拼接</text>
+
+  <rect x="644" y="508" width="288" height="54" rx="8" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1"/>
+  <text x="788" y="528" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="700" fill="#B45309">DroidSpeak｜支付时点：离线 + 运行时</text>
+  <text x="788" y="548" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#92400E">profile + 约一成层重算</text>
+
+  <text x="480" y="588" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">KVLink（NeurIPS 2025，arXiv:2502.16002）· DroidSpeak（NSDI '26，pp.319–338）· 口径见总纲 §七「数字怎么读」</text>
+</svg>

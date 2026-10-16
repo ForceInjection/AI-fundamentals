@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="960" height="620">
+  <defs>
+    <filter id="card-shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: 'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif; }
+      .mono { font-family: 'SF Mono','Menlo','Courier New',monospace; }
+    </style>
+  </defs>
+
+  <rect x="16" y="12" width="928" height="596" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+  <text x="480" y="46" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="700" fill="#1F2937">从「同条件才能借」到「带说明书的复用」</text>
+  <text x="480" y="74" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#6B7280">复用条件目前散落在训练里与 profile 文件里——一份随缓存携带的说明书，能把「试错」变成「决策」</text>
+
+  <!-- KV block -->
+  <rect x="48" y="120" width="170" height="152" rx="8" fill="#EBF3FE" stroke="#BFDBFE" stroke-width="1.5"/>
+  <text x="133" y="146" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#1D4ED8">KV 缓存块</text>
+  <line x1="64" y1="164" x2="202" y2="164" stroke="#BFDBFE" stroke-width="1"/>
+  <line x1="64" y1="192" x2="202" y2="192" stroke="#BFDBFE" stroke-width="1"/>
+  <line x1="64" y1="220" x2="202" y2="220" stroke="#BFDBFE" stroke-width="1"/>
+  <line x1="64" y1="248" x2="202" y2="248" stroke="#BFDBFE" stroke-width="1"/>
+  <text x="133" y="262" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">谁生成的？什么状态？</text>
+
+  <!-- spec card -->
+  <rect x="268" y="104" width="380" height="184" rx="10" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1.5"/>
+  <text x="458" y="130" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" fill="#6D28D9">兼容性说明书（方向）</text>
+  <line x1="284" y1="146" x2="632" y2="146" stroke="#DDD6FE" stroke-width="1"/>
+  <text x="284" y="170" dominant-baseline="central" font-size="10.5" fill="#374151"><tspan font-weight="700" fill="#6D28D9">出处</tspan>　权重指纹 · 位置编码状态 · 生成层</text>
+  <text x="284" y="204" dominant-baseline="central" font-size="10.5" fill="#374151"><tspan font-weight="700" fill="#6D28D9">对齐代价</tspan>　需重算哪些层 · 精度差 · 耗时</text>
+  <text x="284" y="238" dominant-baseline="central" font-size="10.5" fill="#374151"><tspan font-weight="700" fill="#6D28D9">容差</tspan>　可接受的质量损失</text>
+  <text x="284" y="268" dominant-baseline="central" font-size="9" fill="#9CA3AF">雏形已经出现：KVLink 的位置重编码（位置可后补）·</text>
+  <text x="284" y="282" dominant-baseline="central" font-size="9" fill="#9CA3AF">DroidSpeak 的层敏感度 profile（哪些层可信，可测）</text>
+
+  <!-- pin arrow -->
+  <line x1="218" y1="196" x2="268" y2="196" stroke="#8B5CF6" stroke-width="1.5"/>
+  <polygon points="260,191 272,196 260,201" fill="#8B5CF6"/>
+
+  <!-- borrower -->
+  <rect x="682" y="132" width="250" height="128" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.5"/>
+  <text x="807" y="158" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#166534">借用方</text>
+  <text x="807" y="178" text-anchor="middle" dominant-baseline="central" font-size="9.5" fill="#374151">另一组权重 / 另一个位置</text>
+  <text x="807" y="206" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#166534">读说明书 → 决策：</text>
+  <text x="807" y="224" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#166534">借哪些层、重算哪些、要不要借</text>
+
+  <line x1="648" y1="196" x2="682" y2="196" stroke="#9CA3AF" stroke-width="1.5"/>
+  <polygon points="674,191 686,196 674,201" fill="#9CA3AF"/>
+  <text x="665" y="180" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#6B7280">先看账单</text>
+
+  <!-- status quo / direction -->
+  <rect x="28" y="316" width="904" height="56" rx="8" fill="#FAFBFC" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="480" y="344" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151"><tspan font-weight="700" fill="#991B1B">现状：条件是点对点的</tspan>——刻在训练里（KVLink）或存在 profile 文件里（DroidSpeak），换一个借用方、换一组权重，从头再来</text>
+
+  <rect x="28" y="388" width="904" height="56" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+  <text x="480" y="416" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#374151"><tspan font-weight="700" fill="#166534">方向：说明书随缓存走</tspan>——出处、对齐代价、容差成为缓存自带的字段，复用的「借」从试错变成带账本的决策</text>
+
+  <!-- banner -->
+  <rect x="28" y="460" width="904" height="84" rx="10" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1.5"/>
+  <text x="480" y="484" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#92400E">说明书不消除对齐成本——KVLink 该训还是要训，DroidSpeak 该 profile 还是要 profile</text>
+  <text x="480" y="510" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#92400E">历史对照：动态链接的符号版本化把「能不能链接」变成可声明的接口——KV 复用缺的正是这一层</text>
+  <text x="480" y="532" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#92400E">变化的只是：借用方终于能在借<tspan font-weight="700">之前</tspan>看清账单，而不是借完之后才发现精度塌了</text>
+
+  <text x="480" y="584" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#9CA3AF">未来方向的推演——由两篇的实测经验并读而来，不是任一论文的主张（见总纲「诚实声明」）</text>
+</svg>
