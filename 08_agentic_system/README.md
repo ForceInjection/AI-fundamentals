@@ -16,7 +16,7 @@
 
 - [多智能体AI系统基础：理论与框架](./multi_agent/docs/part1_multi_agent_ai_fundamentals.md) - 深入解析多智能体系统的核心理论，包括 BDI 架构、多 Agent 协作与通信机制，以及 LangGraph 框架的底层原理。
 - [企业级多智能体 AI 系统构建实战](./multi_agent/docs/part2_enterprise_multi_agent_system_implementation.md) - 基于 LangGraph 的架构设计与企业级代码落地，涵盖状态管理、消息总线设计以及系统监控等生产级需求。
-- [评审、修改、测试、裁决：Claude Code 多会话协作实践手册](./multi_agent/docs/claude-code-multi-session-playbook.md) - Claude Code 原生多会话协作的操作手册：从上下文隔离与多视角评审出发，覆盖跨窗口消息、Agent Teams 编队与 Dynamic Workflow 三条路线，附消息模板、审批规则、故障排查与评判者（judge）设计。配三张手绘图；其 skill 化与端到端实测见[《从手册到 Skill》](./agent_skills/docs/from-playbook-to-skill.md)。
+- [评审、修改、测试、裁决：Claude Code 多会话协作实践手册](./multi_agent/docs/claude-code-multi-session-playbook.md) - Claude Code 原生多会话协作的操作手册：从上下文隔离与多视角评审出发，覆盖跨窗口消息、Agent Teams 编队与 Dynamic Workflow 三条路线，附消息模板、审批规则、故障排查与评判者（judge）设计。配三张手绘图；其 skill 化与端到端实测见[《一个人调度四个角色》](./agent_skills/docs/multi-role-agent-skill.md)。
 
 ### 1.2 智能体设计模式 (Agent Design Patterns)
 
@@ -82,7 +82,7 @@ Agent 的能力边界很大程度上由它能调用哪些工具决定。以 MCP 
 - [深度解析 MCP 与 AI 工具化的未来](./mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md) - Anthropic 推出的 Model Context Protocol (MCP) 原理与实战，探讨 AI 工具链的未来。
 - [用 agent 逆向一个 agent：REA 拆解 Codex.app 实战](./mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP（REA）本机实测：用 ollama 与 Codex.app 三层目标走通 fail-closed 三道闸门、预算对照实验与视图投影阶梯，提炼可迁移的六条 agent 工具设计纪律。配三张手绘图。
 - [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](./agent_skills/docs/claude_skills_guide.md) - 扩展智能体能力的工具定义规范、调试方法与最佳实践。
-- [从手册到 Skill：把多会话协作交给 Agent 执行](./agent_skills/docs/from-playbook-to-skill.md) - 《[评审、修改、测试、裁决](./multi_agent/docs/claude-code-multi-session-playbook.md)》的制品面：把手册做成用户级 skill 的实践，含三层结构、端到端实测闭环、四个缺口与设计边界。配三张手绘图。
+- [一个人调度四个角色：多会话协作 Skill 的实测与边界](./agent_skills/docs/multi-role-agent-skill.md) - 把《[评审、修改、测试、裁决](./multi_agent/docs/claude-code-multi-session-playbook.md)》装进一个用户级 skill：四个角色各开一个会话、一个人调度与拍板的实践，含三层结构、端到端实测、四个缺口与设计边界。配三张手绘图。
 - [Claude Skills 构建完整指南 (PDF)](./agent_skills/docs/the_complete_guide_to_building_skill_for_claude.pdf) - 官方提供的高阶指导手册，详细说明如何为 Claude 扩展自定义技能。
 
 ### 2.4 基础设施 (Agent Infrastructure)

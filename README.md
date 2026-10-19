@@ -620,7 +620,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 
 - [Claude Skills 开发指南](08_agentic_system/agent_skills/docs/claude_skills_guide.md) - 扩展智能体能力的工具定义规范与最佳实践
   - [构建完整指南 (PDF)](08_agentic_system/agent_skills/docs/the_complete_guide_to_building_skill_for_claude.pdf)
-  - [从手册到 Skill：多会话协作的可执行化实践](08_agentic_system/agent_skills/docs/from-playbook-to-skill.md) - 三层结构 + 端到端实测闭环
+  - [一个人调度四个角色：多会话协作 Skill 的实测与边界](08_agentic_system/agent_skills/docs/multi-role-agent-skill.md) - 四个角色各开一个会话：三层结构 + 端到端实测与边界
 - [Agent Skill 开发指南](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)）- 由原力注入博主维护的优秀认知技能（Agent Skill）合集，包含深度代码阅读、架构分析、文档评审等自动化工作流。
 - [CUDA Code Skill](https://github.com/ForceInjection/cuda-code-skill) - 面向 AI IDE（Claude Code、Trae 等）的 CUDA 知识增强代码生成与性能分析技能库。
 - [mmx-cli](https://github.com/MiniMax-AI/cli) - MiniMax AI 平台的 CLI 技能，支持文本、图片、视频、语音、音乐生成与 Web 搜索，遵循 agentskills.io 标准。

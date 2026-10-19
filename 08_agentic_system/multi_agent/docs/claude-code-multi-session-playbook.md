@@ -1,8 +1,8 @@
 # 评审、修改、测试、裁决：Claude Code 多会话协作实践手册
 
 > 2026-10-18 | 实践手册。能力与参数对照 Claude Code 官方文档（code.claude.com，2026-10-18 核对）：跨会话消息需 v2.1.224+（macOS / Linux / WSL 2）或 v2.1.234+（原生 Windows），Agent Teams 为实验特性。文中的会话发现部分来自本机 `ListAgents` 实测；送达语义、审批规则与限制来自官方文档，未做跨会话收发演练（避免打扰本机既有会话），读者可按第三、四章自测。
-
-> 配套实践：本手册的操作流程已封装为 skill `multi-session-collab`（仓库副本在 `08_agentic_system/agent_skills/multi-session-collab/`，复制到 `~/.claude/skills/` 即可使用）；从手册到 skill 的设计、三层结构与一次端到端实测（评审→测试→裁决→修改→复测），见《[从手册到 Skill：把多会话协作交给 Agent 执行](../../agent_skills/docs/from-playbook-to-skill.md)》。
+>
+> 配套实践：本手册的操作流程已封装为 skill `multi-session-collab`（仓库副本在 `08_agentic_system/agent_skills/multi-session-collab/`，复制到 `~/.claude/skills/` 即可使用）；从手册到 skill 的设计、三层结构与一次端到端实测（评审→测试→裁决→修改→复测），见《[一个人调度四个角色：多会话协作 Skill 的实测与边界](../../agent_skills/docs/multi-role-agent-skill.md)》。
 
 从一个具体需求开始：系统要上一个复杂功能，横跨数据模型、接口和后端逻辑，改动面大，评审、修改、测试都得排上。手边最顺手的做法是开四个 Claude Code 窗口，各管一摊，需要传话时人肉复制粘贴。
 
@@ -24,12 +24,12 @@
 
 ### 1.2 四条路线一张表
 
-| 路线 | 组织形式 | 成熟度（2026-10） | 适合 |
-| --- | --- | --- | --- |
-| 跨会话消息 | 多个独立窗口，按名字互发消息 | 正式功能，零配置 | 保留现有窗口、人工盯盘、角色间低耦合 |
-| Agent Teams | 一个窗口当 lead，带 2–5 个 teammate | 实验，需环境开关 | 交互式多角色协作，lead 即裁决者 |
-| Dynamic Workflow | JS 脚本编排多 agent 流水线 | 正式（付费计划、API 等） | 可重复的评审闸门（如每次 PR） |
-| Agent SDK | 代码托管并发会话 | 正式 | 产品化、批量执行、自建裁决 |
+| 路线             | 组织形式                            | 成熟度（2026-10）        | 适合                                 |
+| ---------------- | ----------------------------------- | ------------------------ | ------------------------------------ |
+| 跨会话消息       | 多个独立窗口，按名字互发消息        | 正式功能，零配置         | 保留现有窗口、人工盯盘、角色间低耦合 |
+| Agent Teams      | 一个窗口当 lead，带 2–5 个 teammate | 实验，需环境开关         | 交互式多角色协作，lead 即裁决者      |
+| Dynamic Workflow | JS 脚本编排多 agent 流水线          | 正式（付费计划、API 等） | 可重复的评审闸门（如每次 PR）        |
+| Agent SDK        | 代码托管并发会话                    | 正式                     | 产品化、批量执行、自建裁决           |
 
 回到开头那个需求：四个角色、一个裁决者。落到选型上就是三个问题：要保留多个窗口？走跨会话消息。能接受合并成一个窗口？走 Agent Teams。同一个流程要反复跑？走 Dynamic Workflow。要做成工具给别人用，再看 SDK。
 
@@ -55,13 +55,13 @@ claude --name reviewer     # 启动时命名
 
 ### 2.2 送达语义
 
-| 情形 | 行为 |
-| --- | --- |
-| 接收方忙（回合进行中） | 在两次工具调用之间读取，不打断正在跑的工具 |
-| 接收方空闲 | 直接开一个新回合处理消息 |
-| 消息内容 | 纯文本，不带发送方的对话历史与文件；`@` 文件引用在接收侧只是字面文本 |
-| 体积与频率 | 超过约 100 万字符拒发；突发超过限额在发送侧被拒；接收侧对同一发送方限流、短窗口内去重、最多排队 50 条 |
-| 空闲通知 | `notify_when_idle` 可订阅对方下一次空闲或退出的一次性通知，12 小时过期，仅主会话、仅同机 |
+| 情形                   | 行为                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| 接收方忙（回合进行中） | 在两次工具调用之间读取，不打断正在跑的工具                                                            |
+| 接收方空闲             | 直接开一个新回合处理消息                                                                              |
+| 消息内容               | 纯文本，不带发送方的对话历史与文件；`@` 文件引用在接收侧只是字面文本                                  |
+| 体积与频率             | 超过约 100 万字符拒发；突发超过限额在发送侧被拒；接收侧对同一发送方限流、短窗口内去重、最多排队 50 条 |
+| 空闲通知               | `notify_when_idle` 可订阅对方下一次空闲或退出的一次性通知，12 小时过期，仅主会话、仅同机              |
 
 ### 2.3 本机实测记录
 
@@ -103,12 +103,12 @@ modifier 与 tester 会写文件、跑命令，建议给它们单独的工作目
 
 跨会话消息能不能进来，由接收方的 `crossSessionInbound`（`accept` / `hold` / `refuse`）决定，也可以在 `/config` 的「Messages from your other sessions」里改。未显式设置时，按双方权限模式推导：
 
-| 接收方 | 发送方 | 结果 |
-| --- | --- | --- |
-| 会弹权限（默认、`acceptEdits`、`auto`、`dontAsk`） | 非 bypass | 直接送达 |
-| 会弹权限 | bypass（交互式终端里的 plan 也算 bypass） | 扣留待批准 |
-| bypass | bypass | 直接送达 |
-| bypass | 非 bypass | 扣留待批准 |
+| 接收方                                             | 发送方                                    | 结果       |
+| -------------------------------------------------- | ----------------------------------------- | ---------- |
+| 会弹权限（默认、`acceptEdits`、`auto`、`dontAsk`） | 非 bypass                                 | 直接送达   |
+| 会弹权限                                           | bypass（交互式终端里的 plan 也算 bypass） | 扣留待批准 |
+| bypass                                             | bypass                                    | 直接送达   |
+| bypass                                             | 非 bypass                                 | 扣留待批准 |
 
 被扣留的消息会弹审批框，显示发送方与预览，默认 5 分钟过期（`dialogExpiry` 可调，支持 `"never"`）。`-p` 会话没有审批框，默认扣留的消息到期即丢；无人值守的 worker 要在 `--settings` 里设 `crossSessionInbound: "accept"`，否则消息进不来。跨机发送想加一道人工确认，设 `isolatePeerMachines: true`（同机消息不受影响）。
 
@@ -135,13 +135,13 @@ worker 回报时，judge 收到的消息带 `from` 字段，回信直接按发�
 
 ### 3.5 故障排查
 
-| 现象 | 原因 | 处置 |
-| --- | --- | --- |
-| 对方不在 `/list-agents` | bare 模式无收件 socket；容器与宿主互不可达；WSL 2 与原生 Windows 互不可达；旧版本未启用 | 用普通交互模式重启；跨边界场景改用同容器会话 |
-| 消息一直不到 | 权限模式导致扣留 | 到接收会话处理审批框，或调整 `crossSessionInbound` |
-| 消息 5 分钟后消失 | 审批框到期 | 调大 `dialogExpiry` 或设 `"never"`；`-p` worker 改设 `accept` |
-| 找不到名字或投递到错窗口 | 同名会话 | 使用列表里的短标识寻址，或 `/rename` 改名 |
-| 云会话没有回信 | 云会话当前可收不可回 | 让云会话把结果写进文件，或经 Remote Control 接手 |
+| 现象                     | 原因                                                                                    | 处置                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 对方不在 `/list-agents`  | bare 模式无收件 socket；容器与宿主互不可达；WSL 2 与原生 Windows 互不可达；旧版本未启用 | 用普通交互模式重启；跨边界场景改用同容器会话                  |
+| 消息一直不到             | 权限模式导致扣留                                                                        | 到接收会话处理审批框，或调整 `crossSessionInbound`            |
+| 消息 5 分钟后消失        | 审批框到期                                                                              | 调大 `dialogExpiry` 或设 `"never"`；`-p` worker 改设 `accept` |
+| 找不到名字或投递到错窗口 | 同名会话                                                                                | 使用列表里的短标识寻址，或 `/rename` 改名                     |
+| 云会话没有回信           | 云会话当前可收不可回                                                                    | 让云会话把结果写进文件，或经 Remote Control 接手              |
 
 ## 四、路线二：Agent Teams，单窗口编队（实验）
 
@@ -157,12 +157,12 @@ worker 回报时，judge 收到的消息带 `from` 字段，回信直接按发�
 
 用自然语言描述任务和队友即可，例如「组一个评审队：一个查安全、一个查性能、一个补测试覆盖」。底层是 Agent 工具带 `name` 启动 teammate，结构化能力来自各自的 subagent 定义。四张角色卡可以这样配：
 
-| 角色 | 工具面 | 职责 |
-| --- | --- | --- |
-| reviewer | 只读（Read / Grep / Glob，Bash 限查询） | 按 checklist 出 findings，不改代码 |
-| modifier | 读 + Edit / Write | 只按裁决单修改，不自行扩大范围 |
-| tester | 读 + Bash | 跑测试与复现，产出证据 |
-| lead（judge） | 全部，但自身不改代码 | 派活、汇总、裁决、升级人工 |
+| 角色          | 工具面                                  | 职责                               |
+| ------------- | --------------------------------------- | ---------------------------------- |
+| reviewer      | 只读（Read / Grep / Glob，Bash 限查询） | 按 checklist 出 findings，不改代码 |
+| modifier      | 读 + Edit / Write                       | 只按裁决单修改，不自行扩大范围     |
+| tester        | 读 + Bash                               | 跑测试与复现，产出证据             |
+| lead（judge） | 全部，但自身不改代码                    | 派活、汇总、裁决、升级人工         |
 
 teammate 有没有独立上下文？有，每个都是独立的 Claude 实例与上下文窗口。团队结构固定为：lead、teammates、共享任务列表、mailbox。mailbox 是 JSON 文件（`~/.claude/teams/{team-name}/inboxes/`），任务列表在 `~/.claude/tasks/{team-name}/`，团队名是 `session-` 加会话 ID 前八位。
 
@@ -192,25 +192,41 @@ teammate 完成任务时，会**自动把最终答案发给 lead**；任何成�
 
 ```js
 export const meta = {
-  name: 'review-gate',
-  description: '评审→对抗核验→裁决的流水线',
-  phases: [{ title: '评审' }, { title: '核验' }],
+  name: "review-gate",
+  description: "评审→对抗核验→裁决的流水线",
+  phases: [{ title: "评审" }, { title: "核验" }],
 };
 
 const dims = [
-  { key: 'correctness', prompt: '逐文件检查正确性问题，给出 file:line 证据' },
-  { key: 'risk', prompt: '检查改动面与回归风险，给出证据' },
+  { key: "correctness", prompt: "逐文件检查正确性问题，给出 file:line 证据" },
+  { key: "risk", prompt: "检查改动面与回归风险，给出证据" },
 ];
 
 // 多维度并行评审，结构化输出
-const reviews = await parallel(dims.map(d => () =>
-  agent(d.prompt, { label: `review:${d.key}`, phase: '评审', schema: FINDINGS })));
+const reviews = await parallel(
+  dims.map(
+    (d) => () =>
+      agent(d.prompt, {
+        label: `review:${d.key}`,
+        phase: "评审",
+        schema: FINDINGS,
+      }),
+  ),
+);
 
 // 逐条做对抗核验，只留经得起反驳的 findings
-const verified = await parallel(reviews.flat().map(f => () =>
-  agent(`对抗性核验：${f.title}`, { label: `verify:${f.file}`, phase: '核验', schema: VERDICT })));
+const verified = await parallel(
+  reviews.flat().map(
+    (f) => () =>
+      agent(`对抗性核验：${f.title}`, {
+        label: `verify:${f.file}`,
+        phase: "核验",
+        schema: VERDICT,
+      }),
+  ),
+);
 
-return { confirmed: verified.filter(v => v.is_real) };
+return { confirmed: verified.filter((v) => v.is_real) };
 ```
 
 上面是结构示意，字段以官方文档为准。这个「先分维度评审、再逐条对抗核验、最后合并裁决」的写法就是文档自带的模式，内置的 `/deep-research` 也是这么干的：对每条主张投票，没通过交叉核验的过滤掉，无法核实的标记为未核实而不是判负。
@@ -252,12 +268,12 @@ judge 要能比较，worker 的回报就必须同构。建议的 findings schema
 
 ### 6.2 Rubric 模板
 
-| 维度 | 问题 | 通过阈值 |
-| --- | --- | --- |
-| 正确性 | 结论能否被证据复现？ | 每条 finding 带 file:line |
-| 完整性 | 声明的范围都检查了吗？ | 覆盖清单无缺口，缺口写进 unknowns |
-| 风险 | 修改面是否超出裁决单？ | 只动授权文件 |
-| 成本 | 重跑一次的 token 与时间？ | 在预算内（人定） |
+| 维度   | 问题                      | 通过阈值                          |
+| ------ | ------------------------- | --------------------------------- |
+| 正确性 | 结论能否被证据复现？      | 每条 finding 带 file:line         |
+| 完整性 | 声明的范围都检查了吗？    | 覆盖清单无缺口，缺口写进 unknowns |
+| 风险   | 修改面是否超出裁决单？    | 只动授权文件                      |
+| 成本   | 重跑一次的 token 与时间？ | 在预算内（人定）                  |
 
 judge 的输出也只给三档：通过、打回（附整改单，具体到行与验收标准）、升级人工。打回必须附可检查的验收条件，否则下一轮修改没有终点。
 
@@ -291,34 +307,34 @@ judge 的输出也只给三档：通过、打回（附整改单，具体到行�
 
 ## 附录：速查卡
 
-**命令**
+**命令**：
 
-| 命令 | 用途 |
-| --- | --- |
-| `claude --name <name>` | 启动时给会话命名 |
-| `/rename <name>` | 会话内改名 |
-| `/list-agents`（`/peers`） | 列出可达会话，首行是本会话名 |
-| `@<name>` | 输入框里定向提及会话（v2.1.232+） |
-| `/status` | 查看本会话 `Peer address` |
-| `/config` | 改 inbound 策略（Messages from your other sessions） |
-| `claude agents` | 本地后台会话总览（研究预览） |
-| `claude --bg "<prompt>"` | 后台会话 |
-| `claude remote-control --capacity 32` | 多会话远程托管 |
-| `/workflows` | 查看 workflow 运行，`s` 保存为命令 |
+| 命令                                  | 用途                                                 |
+| ------------------------------------- | ---------------------------------------------------- |
+| `claude --name <name>`                | 启动时给会话命名                                     |
+| `/rename <name>`                      | 会话内改名                                           |
+| `/list-agents`（`/peers`）            | 列出可达会话，首行是本会话名                         |
+| `@<name>`                             | 输入框里定向提及会话（v2.1.232+）                    |
+| `/status`                             | 查看本会话 `Peer address`                            |
+| `/config`                             | 改 inbound 策略（Messages from your other sessions） |
+| `claude agents`                       | 本地后台会话总览（研究预览）                         |
+| `claude --bg "<prompt>"`              | 后台会话                                             |
+| `claude remote-control --capacity 32` | 多会话远程托管                                       |
+| `/workflows`                          | 查看 workflow 运行，`s` 保存为命令                   |
 
-**设置**
+**设置**：
 
-| 设置 | 作用 |
-| --- | --- |
-| `crossSessionInbound` | accept / hold / refuse；`-p` worker 设 accept |
-| `dialogExpiry` | 审批框有效期，默认 5 分钟，可设 `"never"` |
-| `isolatePeerMachines` | 跨机发送需人工批准 |
-| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | 开启 Agent Teams（实验） |
-| `teammateMode` | auto / tmux / iterm2 / in-process |
-| `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | 子 agent 并发上限，默认 20 |
-| `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | 子 agent 嵌套深度，默认 3 |
-| `subagentPromptCacheTtl` | teammate 缓存 TTL，可设 `"1h"` |
-| `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` | workflow 并发，默认 16 |
+| 设置                                         | 作用                                          |
+| -------------------------------------------- | --------------------------------------------- |
+| `crossSessionInbound`                        | accept / hold / refuse；`-p` worker 设 accept |
+| `dialogExpiry`                               | 审批框有效期，默认 5 分钟，可设 `"never"`     |
+| `isolatePeerMachines`                        | 跨机发送需人工批准                            |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`     | 开启 Agent Teams（实验）                      |
+| `teammateMode`                               | auto / tmux / iterm2 / in-process             |
+| `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`       | 子 agent 并发上限，默认 20                    |
+| `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`       | 子 agent 嵌套深度，默认 3                     |
+| `subagentPromptCacheTtl`                     | teammate 缓存 TTL，可设 `"1h"`                |
+| `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` | workflow 并发，默认 16                        |
 
 **官方文档**：
 

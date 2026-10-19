@@ -18,4 +18,4 @@ cp -R 08_agentic_system/agent_skills/multi-session-collab ~/.claude/skills/
 ## 配套阅读
 
 - 操作手册：[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../../multi_agent/docs/claude-code-multi-session-playbook.md)
-- 设计说明与实测：[从手册到 Skill：把多会话协作交给 Agent 执行](../docs/from-playbook-to-skill.md)
+- 设计说明与实测：[一个人调度四个角色：多会话协作 Skill 的实测与边界](../docs/multi-role-agent-skill.md)
