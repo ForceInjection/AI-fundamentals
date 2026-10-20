@@ -561,6 +561,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 - [vLLM WideEP 架构](09_inference_system/vllm/hardware_optimization/deepseek_blackwell_wide_ep.md) - vLLM 宽端点 (Wide Endpoint) 架构解析
 - [Scaling DeepSeek on Blackwell](09_inference_system/vllm/hardware_optimization/scaling_deepseek_blackwell.pptx) - DeepSeek 在 Blackwell 平台上的扩展性优化
 - [从 MLA 到 CSA + HCA：DeepSeek 注意力架构的进化之路](09_inference_system/vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) - 结合 vLLM 推理引擎源码，深度解析 DeepSeek 注意力机制演进
+- [DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半](09_inference_system/deepinfer/deepinfer-source-deep-dive.md) - DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断与 Wide-EP；引擎核心在仓库里，3FS KV 存储、Entrypoint 前缀匹配、请求级 LB 不在
 
 ---
 

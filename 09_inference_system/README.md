@@ -41,7 +41,7 @@
 
 ## 2. 推理引擎
 
-理解了 KV Cache 和并行策略之后，看两个主流引擎如何将这些概念落地为工程实现。
+理解了 KV Cache 和并行策略之后，看主流引擎与 DeepSeek 自研引擎如何将这些概念落地为工程实现。
 
 ### 2.1 vLLM
 
@@ -68,6 +68,10 @@
   - [超大规模推理调优案例](sglang/sglang-scaling-case-study.md)：PD 分离架构下的 KV Cache 竞态与时序缺陷定位
   - [HiSparse 深度解析](sglang/hisparse_deep_dive.md)：DSA 稀疏选择从 attention kernel 提升到系统 coordinator，page 级选择性加载
   - 可视化：[推理流水线](sglang/assets/inference-pipeline.html)、[调度器](sglang/assets/scheduler-visual.html)、[KV Pool 三层关系](sglang/assets/sglang-kv-pool-three-relation.html)
+
+### 2.3 DeepInfer
+
+- **[DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半](deepinfer/deepinfer-source-deep-dive.md)** — DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断、Wide-EP 与 EPLB；附开源边界与缺口清单。
 
 ---
 
