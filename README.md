@@ -490,6 +490,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [NVIDIA 模型优化器](09_inference_system/model_optimization/nvidia_model_optimizer.md) - NVIDIA 模型优化工具链详解
 - [图解投机解码](09_inference_system/model_optimization/illustrated-speculative-decoding.md) - Speculative Decoding 的核心思想、系统实现与工程调优要点
 - [一次前向，白赚 4 个 token：DFlash 2 块扩散投机解码技术详解](09_inference_system/model_optimization/dflash-block-diffusion-speculative-decoding.md) - 块扩散式的投机解码架构与实现深度解析
+- [draft 不再重建历史：DLite 的 history-free 投机解码](09_inference_system/model_optimization/dlite-history-free-speculative-decoding.md) - Agent 负载下把历史建模留给 target 的投机解码：2.07–2.74× 加速、两阶段训练与工程边界
 - [vLLM GB200 优化](09_inference_system/vllm/hardware_optimization/gb200_optimization.pptx) - vLLM 在 GB200 硬件上的性能优化策略
 
 ### 9.5 推理优化参考设计

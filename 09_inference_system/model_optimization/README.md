@@ -24,6 +24,12 @@
 
 - **[一次前向，白赚 4 个 token：DFlash 2 块扩散投机解码技术详解](dflash-block-diffusion-speculative-decoding.md)**：DFlash 1 的块扩散架构（噪声嵌入 + 上下文注入 + 块内因果注意力）与两个结构性缺口（选择余量、块尾衰减），DFlash 2 的路径选择器（低秩双线性打分 + 完全并行游走）与双抽头动态深度卷积，基于官方仓库源码的行号级分析，含四引擎（SGLang / vLLM / TensorRT-LLM / llama.cpp）接入配置与吞吐实测
 
+### 1.3 无历史投机解码：DLite
+
+Agent 负载的上下文持续增长，draft 模型自己维护历史既拖低接受长度，又增加 KV cache 开销。DLite 把历史建模留给 target，draft 只消费 target hidden states 做局部预测；draft 侧不保留历史 KV cache。
+
+- **[draft 不再重建历史：DLite 的 history-free 投机解码](dlite-history-free-speculative-decoding.md)**：Agent 负载下投机解码的失效机制（接受长度掉约 80%、KV cache 占 10–20% 延迟）、history-free 并行 backbone + 低秩顺序头、两阶段 teacher 训练，以及 Table 1–5 的实测与设计边界。
+
 ## 2. 量化基础：格式、粒度与算法
 
 量化是"最便宜的优化"——不改结构、不需重训，只降位宽。但 FP8 格式本身怎么设计、量化的粒度如何影响精度、权重量化和 KV Cache 量化为何难度不同——是选型前必须理解的基础。
