@@ -107,11 +107,12 @@
 
 ## 6. 推理成本分析
 
-所有优化的最终落脚点。API 按量计费与 Coding Plan 订阅的双线分析。
+所有优化的最终落脚点。API 按量计费、Coding Plan 订阅与单卡生产经济学的三线分析。
 
 - **[推理成本分析](cost_analysis/README.md)** — 成本测算框架总览与按用户画像的口径选择指南。
 - **[API 定价分析](cost_analysis/llm_api_pricing_analysis.md)** — 基于 OpenRouter 的多模型成本测算，配套 [抓取脚本](cost_analysis/fetch_pricing.py)。
 - **[Coding Plan 对比](cost_analysis/coding_plan/coding_plan_report.md)** — 11 款 AI 编程工具订阅成本与隐藏条款解析。
+- **[DeepSeek 推理集群单卡经济学](cost_analysis/deepseek_inference_cluster_unit_economics.md)** — 用官方生产参数反推单卡账本：155 万亿 tokens/天、96% 缓存命中、38 美元/卡时，单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性。
 
 ---
 

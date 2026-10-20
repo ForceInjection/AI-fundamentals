@@ -528,10 +528,11 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 
 ### 9.6 推理成本与容量规划
 
-大模型推理成本的定量分析与容量规划决策，涵盖 API 按量计费与 Coding Plan 包月订阅的定价数据建模，以及基于业务前缀复用率的 KV Cache 各级存储（HBM/DRAM/NVMe）容量推演。
+大模型推理成本的定量分析与容量规划决策，涵盖 API 按量计费、Coding Plan 包月订阅的定价数据建模、DeepSeek 推理集群的单卡生产经济学，以及基于业务前缀复用率的 KV Cache 各级存储（HBM/DRAM/NVMe）容量推演。
 
 - [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
+- [DeepSeek 推理集群单卡经济学](09_inference_system/cost_analysis/deepseek_inference_cluster_unit_economics.md) — 155 万亿 tokens/天、96% 缓存命中、38 美元/卡时：单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性
 - **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料）见 [项目 README](99_misc/token_factory_talk/README.md)
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
