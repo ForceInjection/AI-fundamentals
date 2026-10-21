@@ -12,6 +12,7 @@
 - **[位置编码](llm_basic_concepts/positional_encoding/positional_encoding.md)** — 从 Sinusoidal 到 RoPE 的演进，RoPE 的旋转数学原理与 NTK/YaRN 外推技术。
 - **[LLM 架构演进史](llm_basic_concepts/architecture_evolution/llm_architecture_evolution.md)** — GPT-1 到 DeepSeek-V3：Decoder-only 如何胜出、标准配方如何形成、MoE 与推理 Scaling 的新方向。
 - **[从 GPT-2 到 Kimi K3：注意力机制的演进史](llm_basic_concepts/architecture_evolution/from_gpt2_to_kimi_k3_attention_evolution.md)** — 基于 Baseten 博客深度注释，从 softmax 注意力到 KDA 的完整技术演进线，每步配 PyTorch 示例代码。
+- **[当记忆成为模型状态：MemT-1.0 的架构、训练与边界](llm_basic_concepts/memory_native/memt_1_0_memory_native.md)** — 把记忆做成模型内部固定大小状态：local/hyper memory、GDN-2、34B token 训练、11 项记忆基准与 SWE-bench 证据，附源码核对、许可与部署边界。
 - **[思维链 (CoT)](llm_basic_concepts/cot/chain_of_thought_cot_intro.md)** — 通过显式推理步骤提升复杂问题求解能力，是多跳推理与工具调用的前置条件。
 - **[嵌入 (Embedding)](llm_basic_concepts/embedding/README.md)** — 从 Bag-of-Words / TF-IDF 到 Transformer 句向量的演进，覆盖距离度量、降维可视化与 RAG/聚类/分类等下游用法。
 - **[混合专家 (MoE)](llm_basic_concepts/moe/mixture_of_experts_moe_visual_guide.zh-CN.md)** — 稀疏激活架构如何在不线性放大推理成本的前提下扩展参数规模。

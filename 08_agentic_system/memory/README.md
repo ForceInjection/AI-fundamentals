@@ -61,6 +61,13 @@
 
 ## 2. 主流记忆系统横向对比
 
+记忆有两条路线，本目录主要覆盖 Agent 侧。
+
+| 路线 | 记忆的位置 | 入口 |
+| --- | --- | --- |
+| 模型侧 | 模型内部固定状态 | [当记忆成为模型状态：MemT-1.0 的架构、训练与边界](../../06_llm_theory_and_fundamentals/llm_basic_concepts/memory_native/memt_1_0_memory_native.md) |
+| Agent 侧 | 外部存储与检索 | 本目录 |
+
 多维度对比 MemoryOS、Mem0 和 LangChain Memory 三种主流记忆系统框架，旨在为开发者在不同业务场景下的技术选型提供量化依据。
 
 ### 2.1 架构与特性对比
