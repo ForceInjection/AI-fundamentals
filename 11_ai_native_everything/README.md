@@ -90,6 +90,7 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
   - 源笔记：[腾讯研究院《FDE模式行业观察与实践》](fde/references/01-腾讯研究院-FDE模式行业观察与实践.md) · [范冰《前线部署工程师（FDE）》](fde/references/02-范冰-FDE开源手册.md) · [Jove Zhong《我在 AI 异世界重生为 FDE》](fde/references/03-Jove-北美AI-Agent公司一线实录.md)
   - 导读：[《FDE：AI落地实战指南》](fde/fde-ai-landing-guide.md)——樊中恺（百度主任架构师、文心应用技术负责人）著，人民邮电出版社 2026 年 10 月出版；七篇三十章的骨架、五种死法/访谈法/工作化石三处要点与第 22 章的按周复盘
   - 实证：[24 个企业 AI 落地案例读完：最难的不是模型](fde/fde-100-cases-analysis.md)——Datawhale《FDE 案例 100》（246 页）精读后的交叉分析：80/95/99 规律的 24 个实证切片、技术选型的克制、效果账与 FDE 角色的三层动作清单
+- **[FDE 落地最大的难点：有结果责任，没有组织权力](fde/fde-result-responsibility-without-authority.md)** — 把五种死法、24 个案例与 80/95/99 归结为责任、权力、激励三个错位；提出责任、权限、能力、知识四次移交，并给出合同、效果基线与产品化闸门的落地做法。
 
 ---
 
