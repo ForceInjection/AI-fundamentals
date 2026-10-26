@@ -18,15 +18,19 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
 ├── client.py
 ├── client2.py
 ├── client_for_k8s.py
+├── deed_page_client.py
 ├── math_server.py
 ├── math_server2.py
 ├── parallel_search_client.py
+├── requirements-deed-page.txt
 ├── requirements-parallel.txt
 ├── requirements.txt
 ├── setup.sh
 ├── start_client.sh
 ├── start_server.sh
-└── tests/test_parallel_search_client.py
+└── tests/
+    ├── test_deed_page_client.py
+    └── test_parallel_search_client.py
 ```
 
 ### 功能说明
@@ -46,6 +50,7 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
    * 适用于云原生/远程服务场景
 3. **Streamable HTTP 模式** - 远程 MCP 服务
    * `parallel_search_client.py` 通过 HTTP 接入托管的搜索服务
+   * `deed_page_client.py` 通过 HTTP 接入托管的网页发布服务
 
 ## 免费网页搜索与内容提取
 
@@ -81,6 +86,37 @@ UUID 并打印到标准错误。结果输出到标准输出，便于重定向保
 
 ```bash
 .venv-parallel/bin/python -m unittest discover -s tests -v
+```
+
+## 把 HTML 报告发布成公开网页
+
+[deed.page](https://deed.page) 在 `https://deed.page/mcp` 提供匿名的网页发布 MCP 服务，
+不需要账号或 API key：把 HTML 发布到 `https://{slug}.deed.page/`，之后可以更新或删除。
+首次发布会返回一个页面令牌（`deed_tok_...`），更新或删除这个页面时需要它。
+发布的页面任何拿到链接的人都能访问，不要发布密钥、内部数据或未经允许的内容。
+
+[deed_page_client.py](deed_page_client.py) 同样直接用 MCP Python SDK 和 Streamable HTTP，
+发现工具后调用 `publish_site` 或 `delete_site`，不调用大模型。适合把智能体生成的报告、
+实验记录等单个 HTML 文件分享出去。
+
+```bash
+python3 -m venv .venv-deed-page
+.venv-deed-page/bin/python -m pip install -r requirements-deed-page.txt
+.venv-deed-page/bin/python deed_page_client.py tools
+.venv-deed-page/bin/python deed_page_client.py publish report.html --ttl 3600
+DEED_PAGE_TOKEN=deed_tok_... .venv-deed-page/bin/python deed_page_client.py delete <slug>
+```
+
+`publish` 把文件作为 `index.html` 发布，默认 3600 秒后自动过期；`--ttl 0` 表示不过期，
+`--slug` 可指定子域名。结果（`url`、`slug`，首次发布还有 `token`）以 JSON 输出到标准输出。
+`delete` 从环境变量 `DEED_PAGE_TOKEN` 读取令牌，未设置时直接报错退出。
+请求或工具失败时脚本以非零状态退出，不自动重试。更多工具和限制见
+[deed.page 文档](https://deed.page/docs)。
+
+离线协议测试同样用 `unittest` 运行：
+
+```bash
+.venv-deed-page/bin/python -m unittest discover -s tests -v
 ```
 
 ## 项目演示
