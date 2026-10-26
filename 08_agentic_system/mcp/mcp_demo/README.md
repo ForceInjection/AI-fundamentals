@@ -104,12 +104,12 @@ python3 -m venv .venv-deed-page
 .venv-deed-page/bin/python -m pip install -r requirements-deed-page.txt
 .venv-deed-page/bin/python deed_page_client.py tools
 .venv-deed-page/bin/python deed_page_client.py publish report.html --ttl 3600
-DEED_PAGE_TOKEN=deed_tok_... .venv-deed-page/bin/python deed_page_client.py delete <slug>
+DEEDPAGE_TOKEN=deed_tok_... .venv-deed-page/bin/python deed_page_client.py delete <slug>
 ```
 
 `publish` 把文件作为 `index.html` 发布，默认 3600 秒后自动过期；`--ttl 0` 表示不过期，
 `--slug` 可指定子域名。结果（`url`、`slug`，首次发布还有 `token`）以 JSON 输出到标准输出。
-`delete` 从环境变量 `DEED_PAGE_TOKEN` 读取令牌，未设置时直接报错退出。
+`delete` 从环境变量 `DEEDPAGE_TOKEN` 读取令牌，未设置时直接报错退出。
 请求或工具失败时脚本以非零状态退出，不自动重试。更多工具和限制见
 [deed.page 文档](https://deed.page/docs)。
 

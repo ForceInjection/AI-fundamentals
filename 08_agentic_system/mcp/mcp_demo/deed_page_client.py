@@ -15,7 +15,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 SERVER_URL = "https://deed.page/mcp"
 USER_AGENT = "AI-fundamentals/deed-page-demo"
-TOKEN_ENV = "DEED_PAGE_TOKEN"
+TOKEN_ENV = "DEEDPAGE_TOKEN"
 MAX_HTML_BYTES = 1_000_000
 
 
