@@ -18,15 +18,19 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
 ├── client.py
 ├── client2.py
 ├── client_for_k8s.py
+├── deed_page_client.py
 ├── math_server.py
 ├── math_server2.py
 ├── parallel_search_client.py
+├── requirements-deed-page.txt
 ├── requirements-parallel.txt
 ├── requirements.txt
 ├── setup.sh
 ├── start_client.sh
 ├── start_server.sh
-└── tests/test_parallel_search_client.py
+└── tests/
+    ├── test_deed_page_client.py
+    └── test_parallel_search_client.py
 ```
 
 ### 功能说明
@@ -46,6 +50,7 @@ Model Context Protocol（MCP）把「大模型 ↔ 外部工具 / 数据源」�
    * 适用于云原生/远程服务场景
 3. **Streamable HTTP 模式** - 远程 MCP 服务
    * `parallel_search_client.py` 通过 HTTP 接入托管的搜索服务
+   * `deed_page_client.py` 通过 HTTP 接入第三方网页发布服务（见文末「第三方 MCP 服务示例」）
 
 ## 免费网页搜索与内容提取
 
@@ -201,3 +206,60 @@ Then, \\(8 \\times 12 = 96\\).
 
 So, the correct answer is **96**.', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 45, 'prompt_tokens': 276, 'total_tokens': 321, 'completion_tokens_details': None, 'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 256}, 'prompt_cache_hit_tokens': 256, 'prompt_cache_miss_tokens': 20}, 'model_name': 'deepseek-chat', 'system_fingerprint': 'fp_3d5141a69a_prod0225', 'id': '1e6cd941-a5f8-45a9-a6d9-cad3e9236ef6', 'finish_reason': 'stop', 'logprobs': None}, id='run-dc5f9eac-a886-4a3d-977f-9d2bf9b699fc-0', usage_metadata={'input_tokens': 276, 'output_tokens': 45, 'total_tokens': 321, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}})]}
 ```
+
+## 第三方 MCP 服务示例
+
+以下示例由第三方服务方贡献，用于演示如何用 MCP Python SDK 接入托管服务。
+**本仓库不运营这些服务，也不对其可用性、隐私或内容政策作担保。**
+
+### deed.page：把 HTML 报告发布成公开网页
+
+> **免责声明**：本示例由 deed.page 团队（Avatar 8 LLC）贡献。本仓库不运营 deed.page 服务，
+> 也不对其可用性、隐私或内容政策作担保。使用前请自行阅读对方的条款与文档。
+
+[deed.page](https://deed.page) 在 `https://deed.page/mcp` 提供网页发布 MCP 服务：
+把 HTML 发布到 `https://{slug}.deed.page/`，之后可以更新或删除。
+首次发布可不注册账号；响应会返回页面令牌（`deed_tok_...`），更新或删除该页面时需要它。
+
+**额度、限流与付费档**（2026-10-27 根据 [定价页](https://deed.page/pricing) 与
+[llms.txt](https://deed.page/llms.txt) 核验；以对方最新页面为准）：
+
+| 方案 | 价格 | 站点数 | 单站大小 | 每小时发布次数 |
+| --- | --- | --- | --- | --- |
+| Free | $0（无需注册） | 25 | 25 MB | 60 |
+| Hobby | $3/月 | 250 | 100 MB | 300 |
+| Pro | $15/月 | 2,500 | 500 MB | 1,200 |
+
+更多限制与升级方式见 [定价页](https://deed.page/pricing)。
+条款：[服务条款](https://deed.page/terms) · [隐私政策](https://deed.page/privacy) ·
+[文档](https://deed.page/docs)。联系：ops@avatar33.com。
+
+> **警告：发布内容默认公开。** 任何拿到链接的人都能访问。
+> `--ttl 0` 表示页面**永久公开**（脚本不会向服务端传 `ttl_seconds`，站点不会自动过期）。
+> **切勿发布密钥、内部数据或未授权内容。**
+
+[deed_page_client.py](deed_page_client.py) 直接用 MCP Python SDK 和 Streamable HTTP，
+发现工具后调用 `publish_site` 或 `delete_site`，不调用大模型。适合把智能体生成的报告、
+实验记录等单个 HTML 文件分享出去。需要 **Python 3.11+**。
+
+```bash
+python3 -m venv .venv-deed-page
+.venv-deed-page/bin/python -m pip install -r requirements-deed-page.txt
+.venv-deed-page/bin/python deed_page_client.py tools
+.venv-deed-page/bin/python deed_page_client.py publish report.html --ttl 3600
+DEEDPAGE_TOKEN=deed_tok_... .venv-deed-page/bin/python deed_page_client.py delete <slug>
+```
+
+`publish` 把文件作为 `index.html` 发布，默认 3600 秒后自动过期；`--ttl 0` 表示永久公开，
+`--slug` 可指定子域名。结果（`url`、`slug`，首次发布还有 `token`）以 JSON 输出到标准输出。
+`delete` 从环境变量 `DEEDPAGE_TOKEN` 读取令牌，未设置时直接报错退出。
+请求或工具失败时脚本以非零状态退出，不自动重试。
+
+离线协议测试同样用 `unittest` 运行：
+
+```bash
+.venv-deed-page/bin/python -m unittest discover -s tests -v
+```
+
+本段事实核验日期：2026-10-27。
+
