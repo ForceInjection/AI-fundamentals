@@ -214,12 +214,11 @@ So, the correct answer is **96**.', additional_kwargs={'refusal': None}, respons
 
 ### deed.page：把 HTML 报告发布成公开网页
 
-> **免责声明**：本示例由 deed.page 团队（Avatar 8 LLC）贡献。本仓库不运营 deed.page 服务，
-> 也不对其可用性、隐私或内容政策作担保。使用前请自行阅读对方的条款与文档。
+> **贡献方**：deed.page 团队（Avatar 8 LLC）。使用前请自行阅读对方的条款与文档。
 
 [deed.page](https://deed.page) 在 `https://deed.page/mcp` 提供网页发布 MCP 服务：
 把 HTML 发布到 `https://{slug}.deed.page/`，之后可以更新或删除。
-首次发布可不注册账号；响应会返回页面令牌（`deed_tok_...`），更新或删除该页面时需要它。
+首次发布无需注册账号；响应会返回页面令牌（`deed_tok_...`），更新或删除该页面时需要它。
 
 **额度、限流与付费档**（2026-10-27 根据 [定价页](https://deed.page/pricing) 与
 [llms.txt](https://deed.page/llms.txt) 核验；以对方最新页面为准）：
