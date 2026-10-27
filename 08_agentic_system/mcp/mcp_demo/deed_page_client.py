@@ -61,7 +61,7 @@ def parse_args(argv=None):
     publish.add_argument("file", type=Path, help="本地 HTML 文件")
     publish.add_argument("--slug", help="可选的子域名，例如 mcp-demo-report")
     publish.add_argument(
-        "--ttl", type=int, default=3600, help="多少秒后自动过期，默认 3600；0 表示不过期"
+        "--ttl", type=int, default=3600, help="多少秒后自动过期，默认 3600；0 表示永久公开（不过期）"
     )
     delete = commands.add_parser("delete", help=f"用 {TOKEN_ENV} 中的令牌删除页面")
     delete.add_argument("slug", help="要删除的页面 slug")
