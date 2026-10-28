@@ -453,6 +453,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [HiCache 深入详解](09_inference_system/sglang/hicache_deep_dive.md) - SGLang 分层 KV Cache 架构（L1/L2/L3）与 HiRadixTree 源码分析
 - [SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图](09_inference_system/sglang/sglang-kv-pool-management.md) - KV Pool/Radix Tree/ReqToTokenPool 三层结构与 L1→L2→L3 多级逐出
   - [KV Cache L1↔L2 数据流深度分析](09_inference_system/sglang/sglang-kv-cache-dataflow-analysis.md) - write_backup/eviction/load_back 逐操作代码路径与 CXL 场景适配
+- [三本账：图解 GLM-5.3-Flash 的 KV Cache 布局](09_inference_system/sglang/glm53-flash-kv-layout.md) - 按一个 token、一个 request、HBM KV Pool + RadixTree、DRAM 四个问题拆 45 层里的三本账：11 层 MLA latent KV、11 层 DSA indexer、34 层 KDA state；含 7.26 KB/token 边界（KDA 默认 fp32、按 5 个 state slot/request 另算）、indexer page 布局、`value` / `host_value` 与 HiCache 覆盖范围（只换出 KV + KDA，indexer 和 compress tail 没有 HiCache 副本），配五张手绘图
 - [SGLang 调度器](09_inference_system/sglang/sglang-scheduler.md) - Prefill > Decode 优先级决策、PrefillAdder 五种准入预算与 retract_decode 内存压力保护
 - [SGLang Overlap Scheduling 深度解析](09_inference_system/sglang/sglang-overlap-scheduling.md) - CPU-GPU 双流水线：result_queue 打破串行依赖与 FutureMap relay 输入
 - [SGLang HiSparse 深度解析](09_inference_system/sglang/hisparse_deep_dive.md) - 将 DSA 稀疏选择提升到系统 coordinator 层：page 级选择性加载与双模式索引转换
