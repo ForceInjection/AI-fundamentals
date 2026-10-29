@@ -726,7 +726,7 @@ RAG 技术全景演进导航，对比不同检索架构优劣势，系统评估�
 
 ## 12. 课程体系与学习路径
 
-系统化学习路径与进阶指南集合，包含 ZOMI 酱 AI System 全栈硬件架构、大模型底层原理与演进基础、Trae AI 辅助编程实战，以及基于 LangGraph 的企业级多智能体系统培训资源。
+系统化学习路径与进阶指南集合，包含 ZOMI 酱 AI System 全栈硬件架构、大模型底层原理与演进基础、Trae AI 辅助编程实战、KV Cache 专题课，以及基于 LangGraph 的企业级多智能体系统培训资源。
 
 ### 12.1 AI System 全栈课程（ZOMI 酱）
 
@@ -775,7 +775,15 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 
 - [多智能体 AI 系统培训材料](10_ai_related_course/multi_agent_system/multi_agent_training/README.md)：涵盖 LangGraph 框架深度解析、LangSmith 监控集成及企业级架构设计。
 
-### 12.5 微软 AI Agents for Beginners 课程
+### 12.5 KV Cache 八讲
+
+从 token 账本、page/slot 口径到 nano-vllm / vLLM / SGLang 源码，再到 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的容量分析。详见 [KV Cache 八讲](10_ai_related_course/kv_cache_course/README.md)。
+
+- **课程结构**：8 讲 × 120 分钟；前四讲公式、分页与引擎，第五讲复用与分层，第六、七讲模型源码，第八讲容量规划与选型。
+- **课程产出**：token/state 容量表、源码映射、Agent 长会话选型备忘。
+- **术语与实验**：[术语表](10_ai_related_course/kv_cache_course/glossary.md)、[实验环境](10_ai_related_course/kv_cache_course/lab-environment.md)。
+
+### 12.6 微软 AI Agents for Beginners 课程
 
 由微软提供的初学者课程，旨在帮助学习者全面了解 AI Agent 的构建与应用。
 

@@ -4,12 +4,13 @@ AI Fundamentals 课程资源库汇集了人工智能领域的系统性课程、�
 
 ## 1. 课程模块概览
 
-以下四大核心模块梳理了 AI 学习的基础设施与实战应用，为学习者构建了清晰的知识导航体系。
+以下五大核心模块梳理了 AI 学习的基础设施与实战应用，为学习者构建了清晰的知识导航体系。
 
 - **[AI 编程入门](ai_coding/README.md)**：包含 AI 辅助编程的基础概念与实战演示课件。
 - **[Token Factory 讲座](ai_infra_lecture/入门级/README.md)**：AI 推理成本革命——四层杠杆（模型架构/硬件/推理引擎/基础设施与生态）如何让每 token 成本四年下降 100 倍。
 - **[多智能体系统](multi_agent_system/multi_agent_training/README.md)**：深入讲解多智能体架构设计、LangGraph 框架应用及企业级落地实践。
 - **[Trae 编程实战](trae/README.md)**：围绕 Trae 智能 IDE 展开的从基础到高级的全流程实战开发教程。
+- **[KV Cache 八讲](kv_cache_course/README.md)**：从 token 账本、page/slot 到 nano-vllm / vLLM / SGLang 源码，再到 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的容量分析。
 
 ## 2. 核心课程详情
 
@@ -46,7 +47,15 @@ Trae 智能编程实战教程采用循序渐进的五阶结构，系统讲解从
 - **团队协作**：探讨代码质量管理、项目协作与 DevOps 云原生实践。
 - **综合项目**：从架构设计到核心功能开发，再到最终的部署运维全流程演示。
 
-### 2.5 独立学习资料
+### 2.5 KV Cache 八讲
+
+八讲 × 120 分钟的 KV Cache 专题课，主线是“token 账 → page/slot 口径 → request/state 账”。前四讲建立公式、分页和引擎实现，第五讲进入前缀复用与分层，第六、七讲分别读 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的 KV 相关源码，第八讲做容量规划与引擎选型。详见 [kv_cache_course/README.md](kv_cache_course/README.md)。
+
+- **实践载体**：本地 nano-vllm `b9dd55a`、vLLM `8b365ff949`、SGLang `f4de6abee6`。
+- **前置材料**：`ai-infra-course` 模块 5/6；课程不重复 vLLM 入门，只做 KV Cache 纵深。
+- **产出**：token/state 容量表、源码映射、Agent 长会话选型备忘；术语见 [术语表](kv_cache_course/glossary.md)。
+
+### 2.6 独立学习资料
 
 独立的技术专题文档提供了特定领域的知识纵深，为完整的课程体系补充了具备商业实战价值的延展阅读材料。
 
