@@ -29,6 +29,15 @@
 
 结论请落到源码：至少引用 `sched/scheduler.py:1539` 的 `_preempt_request`，以及 `vllm/config/cache.py:256` 和 `vllm/config/vllm.py:1123` 的 offload 配置入口。
 
+## 巩固题
+
+1. `max_cache_hit_length = request.num_tokens - 1` 保证了什么？如果 prompt 长度刚好是 `block_size` 的整数倍，命中长度和实际重算长度会差多少？
+2. `SingleTypeKVCacheManager.free` 为什么用 `reversed(...)` 归还块？如果改成顺序归还，BlockPool 的 FIFO/LIFO 行为会怎样变化？
+3. `BlockPool.touch` 和 `unpin_blocks` 分别在什么场景使用？如果把 `unpin_blocks` 当成请求生命周期的通用 pin 接口，会漏掉什么引用？
+4. Worker 侧 `get_numpy_array()` 的未使用列是什么值？0 号块表示什么？怎样从 `num_blocks_per_row` 取出有效块号？
+5. `make_prefix_cache_stats()` 返回哪些字段？为什么 `disable_log_stats=True` 时返回 `None`？连续调用两次会发生什么？
+6. `allocate_slots()` 返回 `None` 后，Scheduler 的默认 FCFS 策略会抢占谁？如果被抢占请求的块不能被立即释放，调度器会怎么处理？
+
 ## 提交
 
 源码笔记不超过两页，所有代码引用带 `file:line`。

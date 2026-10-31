@@ -1,12 +1,12 @@
 # 第 2 讲：课后作业
 
-## 基础题
+## 作业：画出一个请求的 block table
 
 先写清本讲的两个公式：
 
 `block_bytes = 2 × b_kv × L × block_size × H_kv × D`
 
-`num_blocks = available_kv_bytes // block_bytes`
+`request_blocks = ceil(T_total / block_size)`
 
 玩具模型：2 层，`H_kv=2`，`D=128`，KV 按 FP16 存（`b_kv=2`），`block_size=4`。
 
@@ -17,6 +17,13 @@
 
 核对：第 3 题只共享 block 0（0-based index 0–3，共 4 个 token），block 0 的 `ref_count=2`；block 1 覆盖 0-based index 4–7，第 7 个 token（index 6）不同，整块不能共享。第 4 题共享 block 0 和 block 1；第一个请求的 block 2 只有 2 个 token（index 8–9），未填满，不参与共享。
 
+## 巩固题
+
+1. 写出 nano-vllm 和 vLLM FlashAttention 后端的 KV 池形状，说明层维度分别在哪里。
+2. 固定 block 池的外部碎片为什么按构造为 0？连续分配 `max_model_len` 时，external fragmentation 又从哪里来？
+3. 如果 `block_size` 从 4 改成 256，内部碎片和 block table 大小各会怎么变？
+4. 为什么 `slot_mapping` 的长度等于本步 token 数，而不是整个序列长度？
+
 ## 源码题
 
 读 `~/Project/study/nano-vllm` 的 `BlockManager`：
@@ -24,12 +31,6 @@
 - 找出分配 block 的函数；
 - 找出计算 block 哈希的函数；
 - 说明“最后一个未填满的 block 为什么通常不参与前缀复用”。
-
-## 巩固题
-
-1. 写出 nano-vllm 和 vLLM FlashAttention 后端的 KV 池形状，说明层维度分别在哪里。
-2. 固定 block 池的外部碎片为什么按构造为 0？连续分配 `max_model_len` 时，external fragmentation 又从哪里来？
-3. 如果 `block_size` 从 4 改成 256，内部碎片和 block table 大小各会怎么变？
 
 ## 关于 block_size
 

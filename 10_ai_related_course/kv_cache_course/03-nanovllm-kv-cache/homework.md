@@ -21,6 +21,10 @@
 2. RECOMPUTE 与 SWAP 各自在什么负载下更划算？
 3. 如果前缀哈希只按 block 内容计算，不做碰撞保护，可能出现什么问题？
 4. `step()` 为什么必须保持 `swap_out → swap_in → run` 的顺序？把 `swap_in` 提前会破坏哪一步？
+5. `block_size=4`，prompt 有 5 个 token（索引 0–4）。prefill 后采样出索引 5 的 token，使 `len(seq)=6`。之后 decode 到 `len(seq)=9` 时，下一步才需要新 block；用 `len(seq) % block_size` 解释为什么不是 `len=8`。
+6. `can_allocate()` 为什么只扫描 `num_blocks - 1` 个块？如果把它改成扫描全部块，满的末块会发生什么？
+7. `swap_in()` 为什么要按 `num_cached_tokens // block_size` 重建哈希链？如果不重建，前缀缓存和后续块的哈希会受什么影响？
+8. `can_swap_out()` 为什么拒绝包含共享块的序列？如果强行把一个 `ref_count > 1` 的块换出，另一个请求会看到什么？
 
 ## 提交
 

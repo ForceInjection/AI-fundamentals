@@ -66,6 +66,18 @@
 | 难点 | V1 抢占 | 只讲 recompute，不编造 swap；offload 单独作为 connector 讲 |
 | 难点 | 末块差异 | nano-vllm 连满的末块也不复用；vLLM 保留最后 token 重算，可能整块重算 |
 
+## 本讲边界
+
+| 边界 | 代码位置 | 说明 |
+| --- | --- | --- |
+| V1 抢占只有 recompute | `sched/scheduler.py:1539` | 释放块、置 `PREEMPTED`、`num_computed_tokens=0`、回 waiting；没有 swapped 队列 |
+| offload 不是抢占 | `config/cache.py:256`、`config/vllm.py:1123` | `kv_offloading_size` 开启的是 KV transfer connector，不改变请求状态 |
+| 最后 token 必重算 | `kv_cache_manager.py:295` | `max_cache_hit_length = request.num_tokens - 1`；块对齐后可能整块重算 |
+| BlockPool 复用顺序 | `block_pool.py:776` | 非缓存块前插（LIFO），缓存块后插（FIFO/LRU） |
+| 没有通用 pin API | `block_pool.py:710` | `unpin_blocks` 只服务外部读取者，不是请求生命周期的常规接口 |
+| Worker block table 的 0 | `vllm/v1/worker/block_table.py:277` | 0 是 null block；有效长度看 `num_blocks_per_row` |
+| prefix 统计会重置 | `kv_cache_manager.py:236` | `make_prefix_cache_stats()` 读取并重置；`log_stats=False` 时返回 `None` |
+
 ## 本讲产出
 
 一张按生命周期成对写的映射表。下表由学员填写；第一行和最后一行给出示例与关键差异，中间三行待填。

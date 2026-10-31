@@ -12,6 +12,7 @@
 3. A/B 碎片对照：连续分配 max_model_len vs 固定 block 池。
 
 用法：
+    python3 block_table_demo.py --self-check
     python3 block_table_demo.py
     python3 block_table_demo.py --block-size 4 --seq-len 10 --prefix-tokens 6
 """
@@ -199,10 +200,21 @@ def print_fragmentation_ab(
     print()
 
 
+def self_check() -> None:
+    assert blocks_needed(10, 4) == 3
+    assert blocks_needed(4, 4) == 1
+    assert blocks_needed(5, 4) == 2
+    print("self-check passed:")
+    print("  blocks_needed(10, 4) = 3")
+    print("  blocks_needed(4, 4)  = 1")
+    print("  blocks_needed(5, 4)  = 2")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="block table、slot、内部/外部碎片演示（纯标准库）",
     )
+    parser.add_argument("--self-check", action="store_true", help="核对 block 数计算")
     parser.add_argument("--block-size", type=int, default=4, help="每个 block 的 token 数")
     parser.add_argument("--seq-len", type=int, default=10, help="单请求 token 数")
     parser.add_argument("--prefix-tokens", type=int, default=6, help="两个请求相同的 token 数")
@@ -223,6 +235,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.self_check:
+        self_check()
+        return
 
     if args.block_size <= 0:
         parser.error("--block-size 必须大于 0")

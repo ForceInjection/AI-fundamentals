@@ -45,6 +45,8 @@
 
 `ref_count` 和 `ref_cnt` 数的是“谁持有这个 block”，`lock_ref` 数的是“这条路径上有多少活跃请求”。三套字段不能互相替代，读代码时先看它挂在哪一层。
 
+`lock_ref` 的累加方式按组件不同：FULL 是 path-lock，从节点走到根；SWA 是 segment-lock，只锁到滑动窗口边界；Mamba 是单节点锁，只锁注册的叶子。第 5 讲以 FULL 为主，第 6 讲再展开混合模型。
+
 ## 默认实现与源码锚点
 
 HEAD 默认走 `UnifiedRadixCache` / `UnifiedTreeCore`。`registry.py:80` 的 `default_radix_cache_factory` 在常规路径最后返回 `create_unified_radix_cache`。经典 `RadixCache` 主要出现在三处：`PureSWARadixCache` 和 `FlexKVRadixCache` 继承它，单测直接构造它。课堂上用它建立树结构直觉，主线代码读 unified。
@@ -54,7 +56,7 @@ HEAD 默认走 `UnifiedRadixCache` / `UnifiedTreeCore`。`registry.py:80` 的 `d
 | unified（默认） | `unified_cache/unified_tree_core.py` | `UnifiedTreeCore.match_prefix`（`:812`）、`_split_node`（`:1390`）、`evict_device_leaf`（`:1610`）、`demote`（`:1864`） |
 | 经典（直觉与单测） | `radix_cache.py` | `RadixCache.match_prefix`（`:354`）、`_split_node`（`:665`）、`evict`（`:553`）、`inc_lock_ref`（`:583`）、`dec_lock_ref`（`:598`） |
 
-两套实现的节点字段不同：unified 的 `UnifiedTreeNode.component_data` 是按组件索引的列表，经典 `TreeNode` 只有单个 `value` 和 `lock_ref`。读行号时先确认自己打开的是哪个文件。
+两套实现的节点字段不同：unified 的 `UnifiedTreeNode.component_data` 是按组件索引的列表，经典 `TreeNode` 用单个 `value` 和 `lock_ref` 表示 KV 与锁。读行号时先确认自己打开的是哪个文件。
 
 ## 四状态模型
 
@@ -88,17 +90,17 @@ ABCD 四步：
 一条请求要命中前缀，需要同时满足：
 
 1. 从第 0 个 token 起逐 token 相同。
-2. `extra_key` 相同。LoRA / adapter 会拼进这个字段，调用方也可以自定义命名空间。
+2. `extra_key` 相同。它是调用方定义的请求分类键，可用于把不同 LoRA / adapter 或业务命名空间隔开。
 3. `cache_salt` 相同，用于租户或请求隔离。
 4. 匹配长度按 `page_size` 向下对齐。
 
-反例：两条请求的 prompt 一模一样，一条带 LoRA A，一条带 LoRA B。`extra_key` 不同，`RadixKey.child_key` 生成的字典键不同，两条 prompt 落在不同子树，命中长度为 0。换 `cache_salt` 同理。`page_size=16` 时，60 token 的共享前缀只能命中 48，尾部 12 token 重算。
+反例：两条请求的 prompt 一模一样，一条带 LoRA A，一条带 LoRA B。调用方给它们设了不同的 `extra_key`，`RadixKey.child_key` 生成的字典键不同，两条 prompt 落在不同子树，命中长度为 0。换 `cache_salt` 同理。`page_size=16` 时，60 token 的共享前缀只能命中 48，尾部 12 token 重算。
 
 ## 驱逐
 
 策略是启动参数 `--radix-eviction-policy`，可选 `lru`、`lfu`、`slru`、`priority`、`tlru`。策略只决定候选之间的先后，不改变候选集合。
 
-候选集合只有 evictable leaves。一个叶被删掉后，父节点若满足条件才加入候选，这个从叶向根的回退遍历就是平时说的“分支”。它不是一个策略，也不与会话保护并列。`session_ref` 是 `UnifiedRadixCache` 在 `--enable-session-radix-cache` 下给会话打的软保护，会推迟驱逐，但不等同于 `lock_ref` 的硬锁。
+候选集合只有 evictable leaves。一个叶被删掉后，父节点若满足条件才加入候选；这个从叶向根的回退是树结构维护的一部分，不是一种驱逐策略，也不与会话保护并列。`session_ref` 是 `UnifiedRadixCache` 在 `--enable-session-radix-cache` 下给会话打的软保护，会推迟驱逐，但不等同于 `lock_ref` 的硬锁。
 
 ## 收益与代价
 
@@ -126,7 +128,7 @@ ABCD 四步：
 | storage hit | Storage→H→D | 否 | 先 prefetch 到 host，再 loadback |
 | backup | D→H | 否 | 拷贝一份到 host pool，device 仍保留 |
 | demote | D 释放，节点保留 | 是 | 有 host 副本的节点只释放 device 部分 |
-| evict | 删节点或释放 host | 是 | write_through 下没有副本的叶直接删除 |
+| evict | 删节点或释放 host | 是 | write_through / write_through_selective 下没有副本的叶直接删除 |
 | write policy | 触发时机 | 不适用 | write_through 插入即备份；write_through_selective 只备份热点；write_back 驱逐时才备份 |
 | L3 prefetch | Storage→H | 否 | 按 `--hicache-storage-prefetch-policy` 决定等多少 |
 

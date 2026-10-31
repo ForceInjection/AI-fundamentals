@@ -62,7 +62,7 @@ PYTHONPATH=. python docs/llm-inference-visual/scripts/L03_scheduler.py "$NANOVLL
 | 第 1 讲 | `01-kv-cache-basics/code/kv_estimator.py`                   | 正确的 Qwen3-0.6B / Qwen2.5-7B / Qwen2.5-72B KV 估算 |
 | 第 2 讲 | `02-kv-cache-layout/code/block_table_demo.py`               | token → block → slot、内部碎片、共享前缀             |
 | 第 5 讲 | `05-kv-cache-reuse/code/prefix_cache_sim.py`                | 共享前缀命中、lock_ref、驱逐的纯 Python 模拟         |
-| 第 8 讲 | `08-kv-capacity-planning/code/capacity_plan.py`（如已提供） | 三本账的算例表                                       |
+| 第 8 讲 | `08-kv-capacity-planning/code/capacity_plan.py`             | 容量规划算例（GLM / DeepSeek / nano-vllm 三条轨）    |
 
 ## GPU 轨
 

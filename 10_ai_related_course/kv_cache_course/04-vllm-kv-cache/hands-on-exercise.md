@@ -1,36 +1,63 @@
 # 第 4 讲：对照 vLLM 的 KV 生命周期
 
-30 分钟，目标是把 nano-vllm 的一条路径按生命周期映射到 vLLM V1，并读懂一次 block table 和 prefix cache 统计。
+30 分钟（5 分钟准备 + 25 分钟任务）。目标是把 nano-vllm 的一条路径按生命周期映射到 vLLM V1，并读懂一次 block table 和 prefix cache 统计。
 
 本讲大部分任务读源码即可完成；跑小模型是可选项，需要 GPU。没有 GPU 时使用 [code/README.md](code/README.md) 里的示例日志和字段表。
 
-## 准备
+## 任务 0：准备（5 min）
 
 - vLLM 本地 checkout，HEAD `8b365ff949`，只读，不复制源码到课程仓库；
-- 可选 GPU 路径：按 vLLM 官方说明安装，记录实际版本；
-- 可选 GPU 路径需要一个小模型和一块显卡；CPU 路径只需要文本编辑器。
+- 先读 [code/README.md](code/README.md) 的字段表和 instrumentation 片段；
+- 选择一条轨道：
+  - CPU / 只读源码：文本编辑器 + Python 3.10+（可选，用于跑日志解析）；
+  - GPU / 跑小模型：CUDA、vLLM 环境、一个小模型。
 
-## 步骤
+## 任务 1：对象图与 `allocate_slots`（8 min）
 
-1. 按对象图读一遍入口，不按整文件读：
+按对象图读入口，不按整文件读：
 
-   - `KVCacheManager.get_computed_blocks`（`vllm/v1/core/kv_cache_manager.py:264`）
-   - `KVCacheManager.allocate_slots`（同文件 L371）
-   - `KVCacheCoordinator.get_num_blocks_to_allocate`（`kv_cache_coordinator.py:169`）
-   - `KVCacheCoordinator.allocate_new_computed_blocks`（同文件 L231）
-   - `KVCacheCoordinator.allocate_new_blocks`（同文件 L277）
-   - `SingleTypeKVCacheManager.allocate_new_blocks`（`single_type_kv_cache_manager.py:366`）
-   - `BlockPool.get_new_blocks` / `free_blocks`（`block_pool.py:668` / L776）
+- `KVCacheManager.get_computed_blocks`（`vllm/v1/core/kv_cache_manager.py:264`）
+- `KVCacheManager.allocate_slots`（同文件 L371）
+- `KVCacheCoordinator.get_num_blocks_to_allocate`（`kv_cache_coordinator.py:169`）
+- `KVCacheCoordinator.allocate_new_computed_blocks`（同文件 L231）
+- `KVCacheCoordinator.allocate_new_blocks`（同文件 L277）
+- `SingleTypeKVCacheManager.allocate_new_blocks`（`single_type_kv_cache_manager.py:366`）
+- `BlockPool.get_new_blocks` / `free_blocks`（`block_pool.py:668` / L776）
 
-2. 跟一次 prefill/admission：从 `get_computed_blocks` 到 `allocate_slots`，记下命中块怎样加引用、新块从哪个队列取、失败时返回什么。
+写下 prefill/admission 的调用顺序，并标出哪一步可能返回 `None`。
 
-3. 跟一次 decode：确认 `allocate_slots(num_new_tokens=1)` 只在跨块边界时真正取新块，并找到 `SingleTypeKVCacheManager.req_to_blocks` 里对应的那一条。
+## 任务 2：prefix 命中与 BlockPool（7 min）
 
-4. 可选 GPU：用 [code/README.md](code/README.md) 的 instrumentation 片段打印 `input_batch.block_table[0].get_numpy_array()`（MultiGroup 取第 0 组）和 `kv_cache_manager.make_prefix_cache_stats()`。短请求设 `VLLM_LOG_STATS_INTERVAL=1`，让日志按秒输出。
+读下面几处，回答三个问题：
 
-5. 没有 GPU：直接读 [code/README.md](code/README.md) 的示例日志，按字段表解释每一列。
+- `get_computed_blocks` 里的 `max_cache_hit_length` 为什么是 `request.num_tokens - 1`？
+- `find_longest_cache_hit` 命中后，`add_local_computed_blocks` 为什么先 touch 命中块？
+- `free_blocks` 为什么把非缓存块前插、缓存块后插？
 
-6. 填下面的映射表和记录表。
+把 BlockPool 的三种状态填进下表：
+
+| 状态 | 判据 | 空闲队列位置 | 分配/回收行为 |
+| --- | --- | --- | --- |
+| 请求持有 |  |  |  |
+| 缓存可驱逐 |  |  |  |
+| 未缓存空闲 |  |  |  |
+
+## 任务 3：block table 与日志（5 min）
+
+无 GPU 时先跑解析脚本：
+
+```bash
+cd 10_ai_related_course/kv_cache_course/04-vllm-kv-cache
+python3 code/parse_stats_log.py --demo
+```
+
+应看到三行示例记录：两行 Engine 统计和一行 `[prefix]` 统计。解释 `requests / queries / hits` 和命中率。
+
+可选 GPU 路径按 [code/README.md](code/README.md) 第二节打印 `input_batch.block_table[0].get_numpy_array()`，并记录有效列和 0 填充。
+
+## 任务 4：映射表与结论（5 min）
+
+填完下面的映射表，并写一句“两套实现最大的差异”。
 
 ## 映射表
 
@@ -54,6 +81,14 @@
 | prefix cache 统计 | 例如 `requests=2, queries=64, hits=48` | `hits / queries` 是命中率；只在 `log_stats` 打开时有值 |
 | prefill 到 decode 的块增长 | 待填 | 待填 |
 | 请求结束后的块状态 | 待填 | 待填 |
+
+## 常见失败
+
+- `make_prefix_cache_stats()` 返回 `None`：`LLM` 入口默认关闭统计，需要 `LLM(..., disable_log_stats=False)`。
+- 把 block table 里的 0 当成有效块：0 是 null block，有效长度看 `num_blocks_per_row`。
+- 单 group 模型只打印 `block_table[0]`；混合模型要逐 group 打印。
+- 连续调用两次 `make_prefix_cache_stats()`：第一次读取并重置，第二次可能为空。
+- 没有 GPU 却把示例日志当成实测：示例只用于理解字段，结论要标明来源。
 
 ## 产出
 

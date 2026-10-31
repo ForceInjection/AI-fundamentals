@@ -1,0 +1,6 @@
+# 课程 PPT 为本地课件，不入库
+*.ppt
+*.pptx
+
+# PowerPoint 临时锁文件
+~$*

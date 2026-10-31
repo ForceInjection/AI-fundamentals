@@ -28,4 +28,15 @@ export VLLM_LOG_STATS_INTERVAL=1
 # llm = LLM(model="...", enforce_eager=True, disable_log_stats=False)
 ```
 
-`disable_log_stats` 默认是 `True`，不打开时 `make_prefix_cache_stats()` 返回 `None`。
+`LLM` 入口在调用方没有显式传 `disable_log_stats` 时会把它设为 `True`，此时 `make_prefix_cache_stats()` 返回 `None`；需要 `LLM(..., disable_log_stats=False)`。`EngineArgs` 本身的字段默认是 `False`，不要把这个默认值套到 `LLM` 入口上。
+
+## CPU-only 自检
+
+不装 vLLM 也能先验证日志解析脚本：
+
+```bash
+cd 10_ai_related_course/kv_cache_course/04-vllm-kv-cache
+python3 code/parse_stats_log.py --demo
+```
+
+它会解析两行 Engine 统计和一行 `[prefix]` 统计；如果三行都能输出，说明本地 Python 环境和字段解析没问题。

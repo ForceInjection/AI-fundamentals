@@ -55,7 +55,7 @@
   ```
 
 - 训练时整段并行；推理 decode 时逐 token 串行
-- **一句话**：decode 的成本不在“再算一个 token”，而在“不要重算历史”
+- **一句话**：decode 的成本大头不在“再算一个 token”，而在“不要重算历史”
 
 ### 第 4 页：Q/K/V 是三个投影
 
@@ -112,7 +112,7 @@
 - 输入：整段 prompt 的 `T_prompt` 个 token
 - 计算形态：矩阵 × 矩阵（GEMM），可以并行
 - 长 prompt 下通常 compute-bound；短 prompt、小 batch 时要看权重加载和 kernel 启动开销
-- KV Cache 在 prefill 阶段写入；chunked prefill 时逐块写入，降低单步 activation 峰值，不减少 KV 总量
+- KV Cache 在 prefill 阶段写入；chunked prefill 时逐块写入，降低 activation 峰值，总 KV 不变
 - TTFT 包含：排队 + prefill + 首 token 采样（第 14 页展开）
 
   ```text
@@ -298,7 +298,7 @@ per_token_bytes = b_kv × L × (kv_lora_rank + qk_rope_head_dim)
 
 | 模型 | L | H_kv | D | 精度 | T | batch | 每 token KV | 总 KV | 权重（FP16） | KV 与权重谁更大 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Qwen3-0.6B | 28 | 8 | 128 | FP16 | 4096 | 8 | 114,688 B（112 KiB） | 3.5 GiB | 1.12 GiB | KV |
+| Qwen3-0.6B | 28 | 8 | 128 | FP16 | 4096 | 8 | 112 KiB | 3.5 GiB | 1.12 GiB | KV |
 |  |  |  |  |  |  |  |  |  |  |  |
 
 - 72B 单卡 40 GiB：脚本并发列显示“—”，预算状态显示“权重（超出预算）”；只记录每 token KV，不写负并发

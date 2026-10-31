@@ -44,7 +44,7 @@ schedule() → swap_out() → swap_in() → run() → postprocess()
 
 `add_request()` 在 `step()` 之外，只把 `Sequence` 放进 `waiting`。`swap_out → swap_in → run` 不可重排：换出源块可能在本步被换入目标或 `run()` 复用。
 
-`Scheduler.schedule()` 内部按 `waiting`（prefill）→ `swapped`（swap-in）→ `running`（decode）的顺序推进。decode 阶段对每个序列调用 `BlockManager.can_append(seq)`；返回 False 时，抢占 `running` 队尾的序列再重试；若 `running` 已空，则抢占当前序列自身。
+`Scheduler.schedule()` 内部按 `waiting`（prefill）→ `swapped`（swap-in）→ `running`（decode）的顺序推进。decode 阶段对每个序列调用 `BlockManager.can_append(seq)`；返回 False 时，抢占 `running` 队尾的序列再重试。若 `running` 已空，会抢占当前序列自身；但真实 Scheduler 随后会在 `assert scheduled_seqs` 处失败，这是 nano-vllm 的边界。L03 的模拟分支只用于展示抢占逻辑，不代表真实引擎能继续跑。
 
 ## 抢占的三条分支
 
@@ -54,9 +54,19 @@ schedule() → swap_out() → swap_in() → run() → postprocess()
 2. 否则调用 `BlockManager.can_swap_out(seq)`：CPU 空闲块足够，且序列所有块的 `ref_count == 1`，执行 SWAP。
 3. 否则 RECOMPUTE：`_recompute()` 把状态置回 WAITING，`deallocate()` 释放块，序列放回 `waiting` 队首。
 
+## 本讲边界
+
+| 边界 | 代码位置 | 说明 |
+| --- | --- | --- |
+| 满的末块不复用 | `block_manager.py:66` | `can_allocate` 只扫描 `num_blocks - 1` 个块 |
+| 无 LRU | `block_manager.py:47-55` | `free_block_ids` 用 `popleft` 分配，没有更复杂的驱逐策略 |
+| CPU 块不参与前缀哈希 | `block_manager.py:34-37` | CPU 块只是 swap 的停放区，没有自己的哈希表 |
+| 自身抢占可能空批 | `scheduler.py:82-93` | `preempt(seq)` 后本轮没有可调度序列，`assert scheduled_seqs` 会失败 |
+| swap 同步拷贝 | `kv_swap.py:13-14` | `copy_` 执行期间整个 step 停住，没有和计算重叠 |
+
 ## 本讲产出
 
-一张时序表，至少标出：
+一张时序表，加一张 E/E2 对照表，至少标出：
 
 - 请求状态（WAITING / RUNNING / SWAPPED / FINISHED）；
 - 每一步的 block 操作（`allocate` / `may_append` / `swap_out` / `swap_in` / `deallocate`）；
@@ -71,11 +81,14 @@ schedule() → swap_out() → swap_in() → run() → postprocess()
 | 下一次 decode 调度 | 待填 | 待填 | 待填 | 待填 |
 | A 命中 EOS 后 | 待填 | 待填 | 待填 | 待填 |
 
+E/E2 对照表见[课堂实验](hands-on-exercise.md)的任务 2。
+
 ## 参考材料
 
 - [nano-vllm](https://github.com/ForceInjection/nano-vllm)
 - `~/Project/study/nano-vllm/nanovllm/engine/block_manager.py`：`_allocate_block` L47、`_deallocate_block` L57、`can_allocate` L62、`allocate` L79、`deallocate` L98、`can_append` L107、`may_append` L110、`hash_blocks` L114、`can_swap_out` L135、`swap_out` L142、`swap_in` L161
 - `~/Project/study/nano-vllm/nanovllm/engine/scheduler.py`：`schedule` L33、`preempt` L97、`_recompute` L118、`postprocess` L125
 - `~/Project/study/nano-vllm/nanovllm/engine/model_runner.py`：`allocate_kv_cache` L104、`swap_out` L132、`swap_in` L136
+- `~/Project/study/nano-vllm/nanovllm/engine/kv_swap.py`：`swap_blocks` L1–14，整块切片拷贝
 - `~/Project/study/nano-vllm/docs/llm-inference-visual/scripts/L03_scheduler.py`：本讲主实验
 - `ai-infra-course/05-vllm-inference/code/trace_nanovllm.py`：pre-swap 参考，不跟踪 `swap_out/swap_in`，不作为主实验

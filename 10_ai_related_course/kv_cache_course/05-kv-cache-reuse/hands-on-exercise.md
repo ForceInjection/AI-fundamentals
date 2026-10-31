@@ -47,7 +47,7 @@ python -m sglang.launch_server \
 
 参数含义：`--hicache-ratio 2` 让 host pool 是 device pool 的两倍；`write_through` 在插入时就做 D→H 备份；`--page-size 1` 让命中长度不被 page 对齐截断。把 `--page-size` 改成 16 再做一次，对比命中长度。
 
-发三条请求：冷启动、同 prompt 重放、同 prompt 换 `cache_salt`。下面的客户端用流式读取，把第一个 chunk 的到达时间记为 TTFT。
+发四条请求：R1 冷启动、R2 同 prompt 重放、S1 换 `cache_salt`、E1 换 `extra_key`。R1 / R2 用来观察 device 命中，S1 / E1 是负例；host 与 storage 命中在后面的重放步骤观察，分别记为 R3 / R4。下面的客户端用流式读取，把第一个 chunk 的到达时间记为 TTFT。
 
 ```bash
 python3 - <<'PY'
@@ -99,8 +99,8 @@ def ask(tag, question, salt=None, extra=None):
 
 ask("R1 冷启动", "第一问")
 ask("R2 同 prompt 重放", "第一问")
-ask("R3 换 salt", "第一问", salt="tenant-2")
-ask("R4 换 extra_key", "第一问", extra="lora-b")
+ask("S1 换 salt", "第一问", salt="tenant-2")
+ask("E1 换 extra_key", "第一问", extra="lora-b")
 PY
 ```
 
@@ -119,11 +119,11 @@ curl -s http://127.0.0.1:30000/metrics | grep -E \
 | `sglang:load_back_duration_seconds` | 回载耗时直方图 | 用 `_sum / _count` 算平均，和 TTFT 比量级 |
 | `sglang:hicache_host_used_tokens` | host pool 已用 token | 接近 host 容量时会出现 host 驱逐 |
 
-要看到 host 命中，需要先让 device 上的副本被驱逐或降级。继续用不同 prompt 把 `--max-total-tokens` 填满，再重放 R1，观察 `host` 从 0 变成非 0，`load_back_tokens_total` 随之增长。要看到 storage 命中，停掉 server，用同一个 `SGLANG_HICACHE_FILE_BACKEND_STORAGE_DIR` 重启，再发 R1。L3 查找按请求 token 的 hash 链进行，不依赖内存里的树是否还在。
+要看到 host 命中，需要先让 device 上的副本被驱逐或降级。继续用不同 prompt 把 `--max-total-tokens` 填满，再重放 R1，把这次记作 R3，观察 `host` 从 0 变成非 0，`load_back_tokens_total` 随之增长。要看到 storage 命中，停掉 server，用同一个 `SGLANG_HICACHE_FILE_BACKEND_STORAGE_DIR` 重启，再发 R1，把这次记作 R4。L3 查找按请求 token 的 hash 链进行，不依赖内存里的树是否还在。
 
 ## (c) 强制驱逐
 
-CLI 路线：把 `--max-total-tokens` 压到 4096，重跑 (b) 的 R1 到 R4，观察 `evicted` 和命中层级的变化。
+CLI 路线：把 `--max-total-tokens` 压到 4096，重跑 (b) 的 R1、R2 与 R3/R4 两次重放，观察 `evicted` 和命中层级的变化。
 
 如果已经在 SGLang 的测试环境里拿到 `tree_cache` 对象，可以直接调驱逐接口：
 

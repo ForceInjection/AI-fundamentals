@@ -49,7 +49,7 @@ Trae 智能编程实战教程采用循序渐进的五阶结构，系统讲解从
 
 ### 2.5 KV Cache 八讲
 
-八讲 × 120 分钟的 KV Cache 专题课，主线是“token 账 → page/slot 口径 → request/state 账”。前四讲建立公式、分页和引擎实现，第五讲进入前缀复用与分层，第六、七讲分别读 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的 KV 相关源码，第八讲做容量规划与引擎选型。详见 [kv_cache_course/README.md](kv_cache_course/README.md)。
+八讲 × 120 分钟的 KV Cache 专题课，主线是“token 账 → page/slot 口径 → request/state 账”。前四讲建立公式、分页和引擎实现，第五讲从 block 级复用走到 radix tree 与 HiCache 三层，第六、七讲分别读 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的 KV 相关源码，第八讲做容量规划与引擎选型。详见 [kv_cache_course/README.md](kv_cache_course/README.md)。
 
 - **实践载体**：本地 nano-vllm `b9dd55a`、vLLM `8b365ff949`、SGLang `f4de6abee6`。
 - **前置材料**：`ai-infra-course` 模块 5/6；课程不重复 vLLM 入门，只做 KV Cache 纵深。
