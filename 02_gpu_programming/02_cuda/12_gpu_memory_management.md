@@ -6,6 +6,8 @@
 
 本文就是这个翻译层。每一节从一个你在部署中实际遇到的困惑出发，先用 Linux 的对应概念建立直觉，再展开 GPU 侧的原理，最后回到"这对我意味着什么"。建议按顺序阅读——后面章节的概念建立在前面的基础上，但也可以直接跳到感兴趣的问题。
 
+机制层的五种 Linux 映射（MMU、IOMMU、MMIO、mmap、ioremap）见 [GPU 访问系统内存](19_gpu_system_memory_access.md)；本文侧重这些机制在部署和调优里的表现。
+
 > 不需要 CUDA 编程背景。只要你理解 Linux 的基本概念（虚拟内存、`malloc`、`/proc`），就能跟上。
 >
 > **可交互概念图**：本文配有可交互的 SVG 概念图，覆盖 6 个图层（物理拓扑 / 内存层级 / DMA 路径 / MMU 页表 / 碎片化 / 跨进程共享），建议在阅读对应章节时打开对照查看：[gpu-memory-visual.html](gpu-memory-visual.html)。
@@ -204,9 +206,9 @@ cudaMemcpy(dst_gpu_ptr, cpu_buf, size, cudaMemcpyHostToDevice);
 
 ### 4.1 进程隔离：谁也看不见谁
 
-和 CPU 一样，每个 CUDA context 有独立的虚拟地址空间。实例 A 的 `cudaMalloc` 返回 `0x7f000000`，实例 B 的同一地址指的不是同一块物理 HBM。这就是为什么 LMCache 用**磁盘**（不是显存）做跨实例共享——每个实例独立读写同一个文件，互不干扰。
+不同进程的 CUDA 地址空间是隔离的。实例 A 的 `cudaMalloc` 返回 `0x7f000000`，实例 B 的同一地址指的不是同一块物理 HBM。这就是为什么 LMCache 用**磁盘**（不是显存）做跨实例共享——每个实例独立读写同一个文件，互不干扰。
 
-那么 CUDA 的 Unified Memory（`cudaMallocManaged`）呢？它号称可以让多个 GPU 访问同一块内存。要理解它的工作原理——以及为什么它也无法胜任 LLM 推理——必须先理解**缺页中断**。
+那么 CUDA 的 Unified Memory（`cudaMallocManaged`）呢？它可以让同一个进程里的 CPU 和多个 GPU 访问同一块地址范围。要理解它的工作原理，以及它在 LLM 推理里为什么常常不合适，必须先理解**缺页中断**。
 
 ```text
 实例 A (pid=1234)                  实例 B (pid=5678)
@@ -218,36 +220,31 @@ cudaMemcpy(dst_gpu_ptr, cpu_buf, size, cudaMemcpyHostToDevice);
 
 ### 4.2 先理解"缺页"：当程序访问一块还不存在的内存时
 
-无论是 CPU 还是 GPU，程序访问一个虚拟地址时，MMU 查页表——如果发现这个地址还没有对应的物理页，就会触发一个**缺页中断**（page fault）。操作系统（或 GPU 驱动）的 page fault handler 被唤醒，分配一块物理内存，更新页表，然后程序继续执行——就像什么都没发生过。
+无论是 CPU 的 MMU 还是 GPU 的页表，程序访问一个虚拟地址时，如果发现这个地址还没有对应的物理页，就会触发一个**缺页中断**（page fault）。操作系统（或 GPU 驱动）的 page fault handler 被唤醒，建立或更新映射，必要时分配或迁移物理页，然后程序继续执行。
 
-这个过程对程序透明，但**不是免费的**：CPU 缺页处理大约 1-2μs，GPU 缺页处理（Unified Memory 场景）约 10μs。单次看起来不多，但累计起来——尤其是 LLM 推理中对延迟极其敏感——就是致命的。
+这个过程对程序透明，但**不是免费的**：CPU 缺页通常在微秒量级，GPU 缺页还可能涉及页表更新和整页迁移。官方文档只把这种迁移描述为“expensive”，没有给固定的微秒数；具体代价取决于页大小、迁移量和拓扑。
 
-### 4.3 Unified Memory：共享的幻觉
+### 4.3 Unified Memory：按需迁移
 
-CUDA 确实提供了跨进程共享显存的机制——`cudaMallocManaged`。它的底层原理就是**缺页驱动的按需迁移**。但它的工作方式和很多人的直觉相反。
+`cudaMallocManaged` 分配的是受管理的地址范围，不是跨进程共享机制。它可以在同一个进程的 CPU 和多个 GPU 之间按需迁移：分配时不一定建立物理页，第一次访问才填充；显存不够时，驱动可以把页换出到 host。
 
 ```cuda
-// 实例 A 和 B 都可以访问这个指针
 float *shared;
 cudaMallocManaged(&shared, N * sizeof(float));
 
-// 实例 A 写入，GPU 0 的 page fault handler 把页面迁移到 GPU 0
-kernel_A<<<...>>>(shared);
-
-// 实例 B 读取——page fault！页面从 GPU 0 迁移到 GPU B
-// 延迟: ~10 μs per page × (N / 64KB pages)
-kernel_B<<<...>>>(shared);
+kernel_A<<<...>>>(shared); // GPU 0 访问，页迁到 GPU 0
+kernel_B<<<...>>>(shared); // GPU 1 访问，缺页后页迁到 GPU 1
 ```
 
-每 64KB 一页，每页迁移延迟 ~10μs。如果 N=4GB，那是 **65,536 次 page fault**，总延迟 **655ms**。对于需要 sub-100ms TTFT 的 LLM 推理来说，这是不可接受的。
+每次缺页的代价取决于页大小和迁移量。GPU 常驻页常见 2MB，CPU 页常见 4KB 或 64KB；页越大，缺页次数越少，单次迁移越贵。对大块、延迟敏感的 KV cache，这种迁移模型通常不合适；它更适合原型、易用性优先，或者硬件一致平台上的共享页表访问。
 
-CPU 类比：`mmap` 的文件映射也是 page fault 驱动的——第一次读文件时缺页中断把磁盘数据读入 page cache。64KB GPU 页 ≈ Linux 的 THP (2MB pages)，都是为了减少 TLB 压力和 fault 次数。
+CPU 类比：`mmap` 的文件映射也依赖缺页，但 mmap 的页来自 page cache，UM 的页来自 host/device 之间的迁移，两者不是同一件事。
 
-**为什么 LMCache 用磁盘而不是 UM**：Unified Memory 跨实例共享在理论上是可行的——两个 CUDA context 可以通过 IPC (`cudaIpcGetMemHandle`) 共享同一个 `cudaMallocManaged` 区域。但 page fault 的延迟对于 LLM 推理是致命的——KV cache 的每个 256-token chunk 约 14MB，跨 GPU 迁移需要 ~210 次 page fault，2ms 延迟。而 LMCache 的 L3 磁盘方案（GDS DMA）也差不多是这个量级——**但不需要 GPU 间协调**，每个实例独立读磁盘。
+**LMCache 为什么用磁盘而不是 UM**：主要看生命周期和故障隔离。UM 的迁移发生在同一个进程的地址空间里；跨实例共享要么走 IPC，要么走存储，而 IPC 又不支持 `cudaMallocManaged`。磁盘方案让每个实例独立读写文件，一个实例崩溃不影响其他实例。
 
 ### 4.4 CUDA IPC：显式的跨进程共享
 
-除了 UM，CUDA 还有一套专门的跨进程共享 API——`cudaIpcGetMemHandle` / `cudaIpcOpenMemHandle`。它可以让进程 A 分配一块显存，导出为一个不透明的 handle，进程 B 通过 handle 打开并直接访问同一块物理 HBM。
+除了 UM 的迁移路径，CUDA 还有一套专门的跨进程共享 API：`cudaIpcGetMemHandle` / `cudaIpcOpenMemHandle`。它可以让进程 A 分配一块显存，导出为一个不透明的 handle，进程 B 通过 handle 打开并直接访问同一块物理 HBM。CUDA 文档明确说明，IPC API 不支持 `cudaMallocManaged` 分配；它适用于 `cudaMalloc` 等设备内存。
 
 ```cuda
 // 进程 A：导出
