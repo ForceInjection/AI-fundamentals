@@ -102,7 +102,13 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 6. 按角色推荐阅读路径
+## 6. 手册精读：AI Native 的瓶颈在代码之外
+
+- **[代码只占三成：AI Native 的瓶颈为什么在代码之外](ai_native_handbook/ai-native-handbook-reading.md)** — 读阿里《AI Native 研发范式实践手册》的图文解读：三个实践案例、五个共性挑战、企业级 Agent 基础设施（Harness / 知识库 / 工具 / Sandbox / Identity / Guardrail / 可观测），并与本仓库的 Vibe Coding → AI Native DevOps → AI Native Architecture 三层框架、Tool / Skill / Agent 成本金字塔对照。含 10 张手绘图，案例数据标注自报口径与折扣清单。
+
+---
+
+## 7. 按角色推荐阅读路径
 
 | 角色             | 推荐入口                                                           |
 | ---------------- | ------------------------------------------------------------------ |
@@ -114,7 +120,7 @@ CloudPilot 是一个云管理平台 MVP，验证三层框架的协同效应。�
 
 ---
 
-## 7. 关联模块与参考
+## 8. 关联模块与参考
 
 - **[08_agentic_system](../08_agentic_system/README.md)** — Agent 系统全栈工程，补充单 Agent 内部机制与基础设施
 - **[04_cloud_native_ai_platform](../04_cloud_native_ai_platform/README.md)** — Tool 层（MCP 暴露）与 DevOps 实践所需的集群底座
