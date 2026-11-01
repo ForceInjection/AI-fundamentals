@@ -1,6 +1,6 @@
 # CUDA 编程 (CUDA Programming)
 
-这个目录覆盖了从零开始系统学习 CUDA 编程的完整路径：执行模型 → 核心架构 → 异步流 → 编程范式 → 内存管理 → 性能调优 → 调试。19 篇文章外加 12 个可运行 benchmark，大部分配有 A100 实测验证。
+这个目录覆盖了从零开始系统学习 CUDA 编程的完整路径：执行模型 → 核心架构 → 异步流 → 编程范式 → 内存管理 → 性能调优 → 调试。20 篇文章外加 12 个可运行 benchmark，大部分配有 A100 实测验证。
 
 ## 1. [GPU 编程导论](01_gpu_programming_introduction.md)
 
@@ -125,6 +125,14 @@ _GPU Architecture and Programming — An Introduction_：
 - 再映射到 GPU：GPU 页表 / GMMU、系统 IOMMU、BAR0 / BAR1、CUDA VMM、驱动 ioremap；区分数据面和控制面。
 - 用五条端到端路径串起来：pageable copy、pinned copy、zero-copy、managed memory、peer / coherent。
 - 含 4 张手绘图，以及 Linux 源码、CUDA 文档和 NVIDIA 开源内核模块的源文件索引。
+
+## 20. [GPU 如何访问另一块 GPU 的显存——同进程 P2P、跨进程 IPC 与 VMM Fabric](20_gpu_peer_memory_access.md)
+
+- 区分拷贝、映射和 kernel 直接解引用：`cudaMemcpyPeerAsync` 不会让远端指针变成本地可解引用，`cudaIpcOpenMemHandle` 也不会自动搬数据。
+- 同进程走 UVA 和 peer access；跨进程走 `cudaIpc` 或 VMM POSIX FD；跨节点同一 NVLink 域走 VMM FABRIC + IMEX。
+- 说明 P2P 的顺序、IOMMU/ACS、带宽口径，以及 SGLang Engram `peer_read` 与 KV Cache 分片聚合的区别。
+- 从 FlashAttention 的 tiling 和 paged KV 看 kernel 为什么默认 K/V 在本地 HBM，以及远端 K/V 会改变哪些假设。
+- 含 5 张手绘图，以及 CUDA Runtime / Driver API、PTX 内存模型和 SGLang 上游源码索引。
 
 ## 参考资料
 
