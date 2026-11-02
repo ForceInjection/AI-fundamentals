@@ -111,11 +111,11 @@
 
 ## 4. 底层计算与异构编程
 
-系统级 AI 底层编程路径，剖析 GPU 并行架构、CUDA 线程/网格与流处理机制、SIMT 与 Tile-Based (TileLang) 编程模型对比，以及基于 DOCA 框架的数据处理单元 (DPU) 核心编程范式。
+系统级 AI 底层编程路径，剖析 GPU 并行架构、CUDA 线程/网格与流处理机制、SIMT 与 Tile-Based (TileLang) 编程模型对比、DPU/DOCA 编程，以及华为 Ascend NPU/CANN 编程。
 
 ### 4.1 GPU 与 CUDA 编程
 
-涵盖 NVIDIA 容器镜像构建、CUDA 线程块/网格与流并发机制、SIMT 与 Tile-Based 编程模型对比、TileLang 算子开发，以及 nvbandwidth 显存与 PCIe 带宽调优实战，并链接 200+ Tensor Core/CUDA Core 优化内核的进阶学习资源。详细内容请访问：[GPU 编程基础](02_gpu_programming/README.md)。
+涵盖 NVIDIA 容器镜像构建、CUDA 线程块/网格与流并发、SIMT 与 Tile-Based 编程模型、TileLang 算子开发、显存与 PCIe 带宽调优，以及 GPU 访问系统内存、跨 GPU 显存互访和多卡通信；并链接 200+ Tensor Core/CUDA Core 优化内核的进阶学习资源。详细内容请访问：[GPU 编程基础](02_gpu_programming/README.md)。
 
 **开发环境配置**：
 
@@ -128,6 +128,13 @@
 - [CUDA 核心概念详解](./02_gpu_programming/02_cuda/02_cuda_cores.md)：线程块、网格等基础概念的深度解析
 - [CUDA 流详解](./02_gpu_programming/02_cuda/03_cuda_streams.md)：CUDA 并发编程之流处理机制
 - [SIMT vs Tile-Based 编程模型对比](./02_gpu_programming/02_cuda/04_simt_vs_tile_based.md)：架构差异与演进分析
+
+**多卡与显存访问**：
+
+- [GPU 内存管理：从推理工程师的日常问题出发](./02_gpu_programming/02_cuda/12_gpu_memory_management.md)：虚拟内存、碎片化、DMA、UVM、拓扑与跨进程共享
+- [GPU 访问系统内存：MMU、IOMMU、MMIO、mmap、ioremap 五种机制对照](./02_gpu_programming/02_cuda/19_gpu_system_memory_access.md)：GPU 页表、IOMMU、BAR、CUDA VMM 与 zero-copy / managed memory 的机制对照
+- [GPU 显存互访：同进程 P2P、跨进程 IPC 与 VMM Fabric](./02_gpu_programming/02_cuda/20_gpu_peer_memory_access.md)：跨 GPU 访问的地址机制、性能边界，以及 FlashAttention 与 SGLang KV Cache 的选择
+- [Multi-GPU CUDA 编程：从 P2P 到 NCCL](./02_gpu_programming/02_cuda/15_multi_gpu_programming.md)：Peer Access、P2P 带宽、跨 GPU 同步与 NCCL 集合通信
 
 **Tile-Based 编程**：
 
@@ -564,7 +571,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 - [vLLM WideEP 架构](09_inference_system/vllm/hardware_optimization/deepseek_blackwell_wide_ep.md) - vLLM 宽端点 (Wide Endpoint) 架构解析
 - [Scaling DeepSeek on Blackwell](09_inference_system/vllm/hardware_optimization/scaling_deepseek_blackwell.pptx) - DeepSeek 在 Blackwell 平台上的扩展性优化
 - [从 MLA 到 CSA + HCA：DeepSeek 注意力架构的进化之路](09_inference_system/vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) - 结合 vLLM 推理引擎源码，深度解析 DeepSeek 注意力机制演进
-- [DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半](09_inference_system/deepinfer/deepinfer-source-deep-dive.md) - DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断与 Wide-EP；引擎核心在仓库里，3FS KV 存储、Entrypoint 前缀匹配、请求级 LB 不在
+- [155 万亿 tokens/天背后的引擎：DeepInfer 源码拆解](09_inference_system/deepinfer/deepinfer-source-deep-dive.md) - DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断与 Wide-EP；引擎核心在仓库里，3FS KV 存储、Entrypoint 前缀匹配、请求级 LB 不在
 
 ---
 

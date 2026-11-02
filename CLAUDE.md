@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository overview
 
-AI Fundamentals is a Chinese-language knowledge repository covering the full AI infrastructure stack: GPU architecture, CUDA programming, LLM theory, inference systems, cloud-native AI platforms, agentic systems, RAG, and more. All content is Markdown.
+AI Fundamentals is a Chinese-language knowledge repository covering the full AI infrastructure stack: GPU architecture, CUDA programming, LLM theory, inference systems, cloud-native AI platforms, agentic systems, RAG, and more. Content is Markdown-first; interactive HTML, PDF/PPTX decks, images, and notebooks live alongside the articles.
 
 - **License**: Apache 2.0
 - **Structure**: semantically numbered top-level directories (`01_hardware_architecture/` … `11_ai_native_everything/`, plus `98_llm_programming/` and `99_misc/`), each with its own `README.md` portal. `02_dpu_programming/`, `02_gpu_programming/`, `02_npu_programming/` share the `02_` prefix — all three are sub-modules under "底层计算与异构编程".
 - **`99_misc/`** hosts standalone project folders (e.g., `token_factory_talk/`: outline + illustrated article + PPTX + `img/` + `references/`). This "project folder" pattern is reusable for any new talk or long-form deliverable.
-- **Directory map**: `01_hardware_architecture` 硬件架构与互联(GPUDirect/PCIe/NVLink) · `02_dpu_programming` DPU/DOCA 编程 · `02_gpu_programming` GPU 编程基础(CUDA 范式与调优) · `03_ai_cluster_ops` 集群运维与通信(IB 网络/NCCL/GPU 运维) · `04_cloud_native_ai_platform` 云原生 AI(K8s/GPU 池化 HAMi/调度) · `05_model_training_and_fine_tuning` 训练与微调(SFT 实践) · `06_llm_theory_and_fundamentals` LLM 理论(量化/MoE/Embedding) · `07_rag_and_tools` RAG 与工具(KG/GraphRAG/PDF 解析/分块) · `08_agentic_system` 智能体(多 Agent/记忆/MCP/上下文工程) · `09_inference_system` 推理系统(KV Cache/LMCache/vLLM) · `10_ai_related_course` 课程课件与讲稿 · `11_ai_native_everything` AI Native 工程实践(FDE 案例) · `98_llm_programming` LLM 编程(LangGraph/Spring AI/Harness) · `99_misc` 独立项目与杂项
+- **Directory map**: `01_hardware_architecture` 硬件架构与互联(GPUDirect/PCIe/NVLink) · `02_dpu_programming` DPU/DOCA 编程 · `02_gpu_programming` GPU 编程基础(CUDA 范式、显存/跨卡访问与调优) · `02_npu_programming` 华为 NPU/CANN 编程 · `03_ai_cluster_ops` 集群运维与通信(IB 网络/NCCL/GPU 运维) · `04_cloud_native_ai_platform` 云原生 AI(K8s/GPU 池化 HAMi/调度) · `05_model_training_and_fine_tuning` 训练与微调(SFT 实践) · `06_llm_theory_and_fundamentals` LLM 理论(量化/MoE/Embedding) · `07_rag_and_tools` RAG 与工具(KG/GraphRAG/PDF 解析/分块) · `08_agentic_system` 智能体(多 Agent/记忆/MCP/上下文工程) · `09_inference_system` 推理系统(KV Cache/LMCache/vLLM) · `10_ai_related_course` 课程课件与讲稿 · `11_ai_native_everything` AI Native 工程实践(FDE 案例) · `98_llm_programming` LLM 编程(LangGraph/Spring AI/Harness) · `99_misc` 独立项目与杂项
 - **`AGENTS.md`** is a stable one-line pointer to this file — Copilot/Trae/Qoder auto-read it, so don't grow it; edit here instead.
 
 ## Commit conventions

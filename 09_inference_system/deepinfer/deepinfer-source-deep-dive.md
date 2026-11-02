@@ -1,4 +1,4 @@
-# DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半
+# 155 万亿 tokens/天背后的引擎：DeepInfer 源码拆解
 
 > 2026-10-20 | 源码深读。基于 [deepseek-ai/DeepInfer](https://github.com/deepseek-ai/DeepInfer) HEAD `774ce24`（2026-10-20）的 README、`doc/inference_deployment_qa.md` 与源码；未在 SM100 / Ascend 950 上实测，性能数字除注明外均为官方口径。以下路径均相对 DeepInfer 仓库根目录。
 
@@ -16,13 +16,13 @@ README 第 38–42 行列了三项缺口：KV cache system、VE/Prefill/Decode d
 
 **图 1**｜左边是仓库里的代码，右边是 README 明确未包含的完整服务组件。
 
-| 层 | 仓库里有 | 仓库里没有 |
-| --- | --- | --- |
-| 模型 | V4.1-Flash 完整实现；权重在 Hugging Face | 内部更新的 draft model |
-| 引擎 | `LLMEngine`、C++ scheduler、ZOS、DSpark、YOCO、EPLB | 在线 Entrypoint、请求级 LB、autoscaling |
-| KV cache | 本地 paged block、`StateBlock`、SWA/compressed cache | 3FS KV store、前缀匹配、GDR swap-in |
-| P/D | `PROMPT`/`COMPLETION` 引擎模式、state 序列化 helper | 跨机 KV 传输、编排、端到端 P/D |
-| API | 离线 `LLM.generate` | HTTP/streaming、OpenAI 协议（Recipe 是独立仓库） |
+| 层       | 仓库里有                                             | 仓库里没有                                       |
+| -------- | ---------------------------------------------------- | ------------------------------------------------ |
+| 模型     | V4.1-Flash 完整实现；权重在 Hugging Face             | 内部更新的 draft model                           |
+| 引擎     | `LLMEngine`、C++ scheduler、ZOS、DSpark、YOCO、EPLB  | 在线 Entrypoint、请求级 LB、autoscaling          |
+| KV cache | 本地 paged block、`StateBlock`、SWA/compressed cache | 3FS KV store、前缀匹配、GDR swap-in              |
+| P/D      | `PROMPT`/`COMPLETION` 引擎模式、state 序列化 helper  | 跨机 KV 传输、编排、端到端 P/D                   |
+| API      | 离线 `LLM.generate`                                  | HTTP/streaming、OpenAI 协议（Recipe 是独立仓库） |
 
 P/D 的代码只到骨架。`EngineType.PROMPT` / `COMPLETION` 在，C++ scheduler 在 PROMPT 下只做 prefill、在 COMPLETION 下只做 decode（`csrc/engine/scheduler.hpp:288-295`）；`fork_seq` 能接收外部 block 列表（`csrc/engine/scheduler.hpp:1061-1122`）；`cache_engine.py:766-848` 有 `TO_CE` 的 state 截取和装载，专门为 prefill→completion 搬运准备。
 
@@ -165,25 +165,25 @@ README 第 38 行列了三项缺失：KV cache system、VE/Prefill/Decode disagg
 
 以下路径均相对 DeepInfer 仓库根目录。
 
-| 文件 | 关键内容 | 引用点 |
-| --- | --- | --- |
-| `README.md` | 发布定位、支持特性、缺失组件、确定性采样条件 | 3, 38–42, 28 |
-| `doc/inference_deployment_qa.md` | 生产架构、EP 配置、SWA、DSpark、ZOS、SO | 17–21, 47–49, 183–187, 244–274 |
-| `deepinfer/entrypoints/llm.py` | 离线 `LLM.generate`、请求入队、结果回收 | 23, 90–195 |
-| `deepinfer/engine/llm_engine.py` | 引擎初始化、`add_request`、`step`、PD 虚函数 | 200–275, 471–631, 800–858 |
-| `deepinfer/worker/worker.py` | `execute_model_step`、ZOS 延迟 post-process、长度修正 | 96–245 |
-| `deepinfer/worker/cache_engine.py` | 本地 KV/state 布局、`TO_CE` 截取与装载 | 205–306, 708–849 |
-| `deepinfer/config.py` | ZOS 额外 KV 开销、并行维度 | 13–16, 151–183 |
-| `csrc/engine/scheduler.hpp` | C++ 调度、P/D 模式、fork、prefix 分支 | 275–345, 373–451, 1061–1122 |
-| `csrc/engine/zos.cpp` | ZOS remap 与 metadata 修正 | 142–305 |
-| `csrc/engine/mtp_varlen.hpp` | MTP 变长验证预算与性能曲线 | 133–267 |
-| `deepinfer/model_executor/models/mtp/dflash.py` | confidence head、draft 采样 | 46–79, 279–345 |
-| `deepinfer/model_executor/layers/tilelang_ops/schedule_mtp_varlen.py` | GPU 侧全局预算分配 | 11–100 |
-| `deepinfer/model_executor/models/v4_modules/yoco.py` | YOCO consumer 边界 | 19–21 |
-| `deepinfer/model_executor/models/v4_modules/attn.py` | 全量 KV 写入、SWA 可见域 | 672–721 |
-| `deepinfer/model_executor/eplb/policy.py` | EPLB 副本放置与 rank 装箱 | 73–140 |
-| `deepinfer/worker/runtime_config.py` | batch invariant 的 kernel 配置 | 61–69 |
-| `tests/models/test_batch_invariant.py` | 逐位一致性测试 | 99–105 |
+| 文件                                                                  | 关键内容                                              | 引用点                         |
+| --------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------ |
+| `README.md`                                                           | 发布定位、支持特性、缺失组件、确定性采样条件          | 3, 38–42, 28                   |
+| `doc/inference_deployment_qa.md`                                      | 生产架构、EP 配置、SWA、DSpark、ZOS、SO               | 17–21, 47–49, 183–187, 244–274 |
+| `deepinfer/entrypoints/llm.py`                                        | 离线 `LLM.generate`、请求入队、结果回收               | 23, 90–195                     |
+| `deepinfer/engine/llm_engine.py`                                      | 引擎初始化、`add_request`、`step`、PD 虚函数          | 200–275, 471–631, 800–858      |
+| `deepinfer/worker/worker.py`                                          | `execute_model_step`、ZOS 延迟 post-process、长度修正 | 96–245                         |
+| `deepinfer/worker/cache_engine.py`                                    | 本地 KV/state 布局、`TO_CE` 截取与装载                | 205–306, 708–849               |
+| `deepinfer/config.py`                                                 | ZOS 额外 KV 开销、并行维度                            | 13–16, 151–183                 |
+| `csrc/engine/scheduler.hpp`                                           | C++ 调度、P/D 模式、fork、prefix 分支                 | 275–345, 373–451, 1061–1122    |
+| `csrc/engine/zos.cpp`                                                 | ZOS remap 与 metadata 修正                            | 142–305                        |
+| `csrc/engine/mtp_varlen.hpp`                                          | MTP 变长验证预算与性能曲线                            | 133–267                        |
+| `deepinfer/model_executor/models/mtp/dflash.py`                       | confidence head、draft 采样                           | 46–79, 279–345                 |
+| `deepinfer/model_executor/layers/tilelang_ops/schedule_mtp_varlen.py` | GPU 侧全局预算分配                                    | 11–100                         |
+| `deepinfer/model_executor/models/v4_modules/yoco.py`                  | YOCO consumer 边界                                    | 19–21                          |
+| `deepinfer/model_executor/models/v4_modules/attn.py`                  | 全量 KV 写入、SWA 可见域                              | 672–721                        |
+| `deepinfer/model_executor/eplb/policy.py`                             | EPLB 副本放置与 rank 装箱                             | 73–140                         |
+| `deepinfer/worker/runtime_config.py`                                  | batch invariant 的 kernel 配置                        | 61–69                          |
+| `tests/models/test_batch_invariant.py`                                | 逐位一致性测试                                        | 99–105                         |
 
 ## 参考资料
 

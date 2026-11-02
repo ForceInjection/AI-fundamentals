@@ -4,7 +4,7 @@ DeepSeek V4.1-Flash 的生产推理引擎，2026-10-20 开源（Apache-2.0）。
 
 ## 文章
 
-- **[DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半](deepinfer-source-deep-dive.md)** — 按代码路径拆 ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断与 Wide-EP；同时标出开源边界：引擎核心在仓库里，3FS KV 存储、Entrypoint 前缀匹配、请求级 LB 不在。
+- **[155 万亿 tokens/天背后的引擎：DeepInfer 源码拆解](deepinfer-source-deep-dive.md)** — 按代码路径拆 ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断与 Wide-EP；同时标出开源边界：引擎核心在仓库里，3FS KV 存储、Entrypoint 前缀匹配、请求级 LB 不在。
 
 ## 相关
 

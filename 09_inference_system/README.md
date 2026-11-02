@@ -71,7 +71,7 @@
 
 ### 2.3 DeepInfer
 
-- **[DeepInfer 源码拆解：155 万亿 tokens/天背后的引擎，开源了哪一半](deepinfer/deepinfer-source-deep-dive.md)** — DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断、Wide-EP 与 EPLB；附开源边界与缺口清单。
+- **[155 万亿 tokens/天背后的引擎：DeepInfer 源码拆解](deepinfer/deepinfer-source-deep-dive.md)** — DeepSeek V4.1-Flash 生产推理引擎的源码级拆解：ZOS 异步流水线、DSpark 变长验证、YOCO/SWA 截断、Wide-EP 与 EPLB；附开源边界与缺口清单。
 
 ---
 
