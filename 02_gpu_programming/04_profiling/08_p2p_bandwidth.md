@@ -129,11 +129,11 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 | 方法                                     | 64 MB 带宽               | 解释                                       |
 | ---------------------------------------- | ------------------------ | ------------------------------------------ |
-| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink）  | **239.28 GB/s**          | 直接 D2D，走 NVLink                        |
-| `cudaMemcpy`（GPU0 → GPU1，启用 P2P 后） | 与 `cudaMemcpyPeer` 相同 | 启用 P2P 后，普通 `cudaMemcpy` 也走 NVLink |
+| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink）  | **239.28 GB/s**          | 直接 D2D，通常经 copy engine/NVLink        |
+| `cudaMemcpy`（GPU0 → GPU1，启用 P2P 后） | 与 `cudaMemcpyPeer` 接近 | 可利用直接 P2P 路径，具体路径由拓扑/驱动决定 |
 | `cudaMemcpy`（Host → GPU）               | ~28 GB/s (Gen 4)         | 经过 PCIe                                  |
 
-**编程要点**：一旦通过 `cudaDeviceEnablePeerAccess` 启用了 P2P，CUDA runtime 会自动将 `cudaMemcpy` 和 UVA (Unified Virtual Addressing) 的访问路径优化为 NVLink。
+**编程要点**：启用 peer access 后，CUDA runtime 不再需要把 P2P 拷贝 staged through host，通常会利用 copy engine 和 NVLink。但 API 文档没有承诺每一笔 `cudaMemcpy` 都走某一条固定硬件路径，实际路径仍要结合拓扑和驱动确认。
 
 ---
 

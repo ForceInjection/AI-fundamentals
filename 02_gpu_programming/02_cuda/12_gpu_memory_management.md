@@ -81,11 +81,11 @@ malloc(20GB) → OK                     的分配。cudaMalloc(20GB) → OOM
 
 把数据从 CPU 内存搬到 GPU 显存，最原始的办法是 CPU 逐字节读、逐字节写——但没人这么做，因为太慢了。实际上用的是 **DMA**（Direct Memory Access，直接内存访问）：一个专门的硬件引擎（GPU 的 copy engine）自己从系统内存读取数据，自己写到 GPU 显存，**CPU 全程不参与数据搬运**。
 
-但这带来了一个问题：DMA 引擎是硬件，它不经过 MMU，不懂虚拟地址。它只认**物理地址**。
+但这带来了一个问题：DMA 引擎不跑 CPU 的 MMU，不能直接使用 CPU 虚拟地址。它使用 DMA/bus address；这个地址可能由系统 IOMMU 或设备页表翻译到物理内存。驱动通过 DMA API 建立映射，CPU 侧的地址翻译和设备侧的地址翻译是两套机制。
 
 ### 2.2 CPU 不知道自己分配的物理内存在哪
 
-当你调用 `malloc` 时，内核给你的是**虚拟地址**。背后的物理页可能在 swap 里，可能在 NUMA node 1 上，可能被压缩过。CPU MMU 处理这些细节，但 GPU DMA 引擎**不走 MMU**——它需要一个可以直接使用的物理地址。
+当你调用 `malloc` 时，内核给你的是**虚拟地址**。背后的物理页可能在 swap 里，可能在 NUMA node 1 上，可能被压缩过。CPU MMU 处理这些细节，但 GPU DMA 引擎不会拿 CPU 虚拟地址直接使用；驱动要先锁定页面并建立 DMA 映射，或者把数据 staging 到 pinned buffer。
 
 ```text
 pageable 带宽 = 传输量 / (DMA 时间 + CPU 锁定+页表遍历时间)

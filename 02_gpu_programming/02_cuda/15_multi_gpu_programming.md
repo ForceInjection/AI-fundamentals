@@ -95,9 +95,9 @@ if (canAccess10) {
 
 启用是**幂等的、低开销的**——多次调用不会重复初始化。通常在程序初始化时全部开启。
 
-### 2.3 为什么这很重要：静默降级
+### 2.3 为什么这很重要：未启用 peer access 的回退
 
-如果你做了 `cudaMemcpyPeer` 而没有启用 Peer Access，**CUDA runtime 不会报错**——它会静默地将数据通过 CPU 中转：
+如果你做了 `cudaMemcpyPeer` 而没有启用 Peer Access，拷贝仍可能完成，但会失去直接 P2P 路径，通常经 host staging：
 
 ```text
 期望（P2P 启用）:
@@ -107,7 +107,7 @@ if (canAccess10) {
   GPU 0 HBM → CPU → GPU 1 HBM                    (~13 GB/s Gen4)
 ```
 
-你写的是同一行 `cudaMemcpyPeer`，带宽差了 **35 倍**。没有 warning、没有 error——只有在 `nvidia-smi dmon -s pucv` 上看到 PCIe 吞吐飙升时才意识到。**始终在程序启动时检查 `canAccessPeer` + `enablePeerAccess` 的结果**，或者更好的做法是打印拓扑确认信息到日志。
+`cudaMemcpyPeer` 不保证在未启用 peer access 时返回错误，不能靠返回值发现回退。你写的是同一行 `cudaMemcpyPeer`，带宽可能差一个数量级；在 `nvidia-smi dmon -s pucv` 上看到 PCIe 吞吐上升时，要怀疑它走了 host staging。**始终在程序启动时检查 `canAccessPeer` + `enablePeerAccess` 的结果**，或者打印拓扑确认信息到日志。
 
 ---
 
@@ -122,23 +122,23 @@ cudaMemcpyPeer(d_dst, 1,    // dst ptr + dst device
                N * sizeof(float));
 ```
 
-这与 `cudaMemcpy` 的核心区别：**src 和 dst 都是 device pointer，不需要经过 host**。
+这与 `cudaMemcpy` 的核心区别：**src 和 dst 都是 device pointer，API 不要求先把数据放到 host buffer**。能否直接走 P2P，取决于 peer access 和拓扑。
 
-### 3.2 `cudaMemcpyPeerAsync`：与 Stream 配合
+### 3.2 `cudaMemcpyPeerAsync`：用 Stream/Event 建依赖
 
 ```cuda
-cudaStream_t s1;
 cudaSetDevice(1);
+cudaStream_t s1;
 cudaStreamCreate(&s1);
 
-// 异步 P2P，GPU 0→1 的传输与 GPU 1 的 stream 绑定
+// stream 作为拷贝的排序/完成句柄；不要把它的设备归属当成 API 语义
 cudaMemcpyPeerAsync(d_dst, 1, d_src, 0, N * sizeof(float), s1);
 
-// 传输完成后立即执行 kernel
+// 同一 stream 上的后续 kernel 仍按 stream 语义排序
 my_kernel<<<grid, block, 0, s1>>>(d_dst, N);
 ```
 
-`cudaMemcpyPeerAsync` 将 P2P 传输与目标 GPU 的 stream 关联——数据到达后，同一 stream 上的后续 kernel 自动开始执行，不需要额外的同步。
+`cudaMemcpyPeerAsync` 只有一个 stream 参数，官方没有定义这个 stream 属于源 GPU 还是目标 GPU，也没有说它同时给两个设备排序。不要依赖“目标 GPU 的 stream 自动完成”这类说法；跨设备生产/消费要用 event 显式建立依赖。
 
 ### 3.3 性能实测：NVLink P2P vs PCIe P2P vs CPU 中转
 
@@ -167,11 +167,10 @@ int main() {
     cudaDeviceEnablePeerAccess(0, 0);
 
     // --- Test 1: P2P Direct ---
+    cudaSetDevice(0);
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-
-    cudaSetDevice(0);
     cudaEventRecord(start);
     for (int i = 0; i < 100; i++)
         cudaMemcpyPeer(d1, 1, d0, 0, N * sizeof(float));
@@ -194,11 +193,11 @@ BENCH
 
 在 8×A100-SXM4 服务器上的实测（配套 Benchmark，64 MB × 200 次传输）：
 
-| 路径                            | 实测带宽     | 加速比 | 说明                        |
-| ------------------------------- | ------------ | ------ | --------------------------- |
-| NVLink P2P (GPU 0→1)            | **269 GB/s** | 20.7×  | A100 NVLink 3.0, 12 条 link |
-| CPU 中转 (GPU 0→CPU→GPU 1)      | 13.0 GB/s    | —      | DMA 两次串行 (Gen4 ×16)     |
-| P2P 未启用却调用 cudaMemcpyPeer | ~13 GB/s     | —      | **静默降级，无 error！**    |
+| 路径                            | 实测带宽     | 加速比 | 说明                                |
+| ------------------------------- | ------------ | ------ | ----------------------------------- |
+| NVLink P2P (GPU 0→1)            | **269 GB/s** | 20.7×  | A100 NVLink 3.0, 12 条 link         |
+| CPU 中转 (GPU 0→CPU→GPU 1)      | 13.0 GB/s    | —      | DMA 两次串行 (Gen4 ×16)             |
+| P2P 未启用却调用 cudaMemcpyPeer | ~13 GB/s     | —      | 可能回退 host staging；不要假设会报错 |
 
 > **验证**：`nvidia-smi topo -m` 确认连接类型。A100-SXM4 的 NVLink 对等带宽约 300 GB/s 单向（12 条 NVLink 3.0 link），实测 269 GB/s 达到了 ~90% 的理论值。H100 升级到 NVLink 4.0（18 条 link），理论 ~450 GB/s 单向。
 
@@ -216,26 +215,31 @@ BENCH
 
 解决的核心问题：GPU 0 算完了结果并 P2P 传到 GPU 1——GPU 1 怎么知道数据已经到了？
 
-**方案**：在 GPU 0 上 record 一个 event，让 GPU 1 上某个 stream waiting on 那个 event：
+**方案**：在生产者 GPU 的 stream 上 record，在拷贝/消费者 GPU 的 stream 上 wait。下面把生产、拷贝、消费拆开：
 
 ```cuda
 cudaSetDevice(0);
-cudaEvent_t e0;
-cudaEventCreate(&e0);
-
-// GPU 0: 执行 kernel + P2P 传输
+cudaStream_t s0;
+cudaStreamCreate(&s0);
+cudaEvent_t prod_done;
+cudaEventCreate(&prod_done);
 compute_kernel<<<grid, block, 0, s0>>>(d0, N);
-cudaMemcpyPeerAsync(d1, 1, d0, 0, N * sizeof(float), s1);  // 从 s0 依赖?
-cudaEventRecord(e0, s1);  // s1 完成时 e0 被标记
-// 注意: P2P 操作仍然在 src device 的 stream 上提交
+cudaEventRecord(prod_done, s0);  // event 和 s0 同属 GPU 0
 
-// GPU 1: 等待 GPU 0 的 event
 cudaSetDevice(1);
-cudaStreamWaitEvent(s1_consumer, e0, 0);  // s1_consumer 在 e0 完成前被阻塞
-consume_kernel<<<grid, block, 0, s1_consumer>>>(d1, N);
+cudaStream_t s_copy, s_consumer;
+cudaStreamCreate(&s_copy);
+cudaStreamCreate(&s_consumer);
+cudaEvent_t copy_done;
+cudaEventCreate(&copy_done);
+cudaStreamWaitEvent(s_copy, prod_done, 0);  // 等 GPU 0 的生产完成
+cudaMemcpyPeerAsync(d1, 1, d0, 0, N * sizeof(float), s_copy);
+cudaEventRecord(copy_done, s_copy);  // event 和 s_copy 同属 GPU 1
+cudaStreamWaitEvent(s_consumer, copy_done, 0);
+consume_kernel<<<grid, block, 0, s_consumer>>>(d1, N);
 ```
 
-**关键细节**：`cudaMemcpyPeerAsync` 在**源 GPU** 的 stream 中排队，在**目标 GPU** 的 stream 中完成。你只需要在源 GPU 的 stream 上 record event，然后在目标 GPU 的 stream 上 wait 那个 event。
+**关键细节**：`cudaMemcpyPeerAsync` 只有一个 stream 参数，官方没有定义它属于源 GPU 还是目标 GPU，也没有说它同时给两个设备排序。跨设备依赖要像上面这样用 event 显式建立：`cudaEventRecord` 的 event 和 stream 必须属于同一 device，`cudaStreamWaitEvent` 可以跨 device。
 
 ### 4.2 跨 Device Event 的约束
 
