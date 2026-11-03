@@ -9,6 +9,7 @@
 > | `ascend/`      | 华为昇腾 950 微架构、DSA 稀疏注意力算子优化             | Cube + Vector, FixPipe       | §2.4               |
 > | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER                  | Gen3–Gen6, Root Complex      | §3.1               |
 > | `nvlink/`      | NVLink / NVSwitch 高速互连                              | 1.8 TB/s, GPU-to-GPU         | §3.2               |
+> | `dma/`         | DMA engine、copy engine、设备直连 DMA                   | Descriptor, Doorbell         | §3.3               |
 > | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)                    | Zero-copy, Bounce Buffer     | §4.1 / §4.2 / §4.3 |
 > | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构                      | Chip-to-Chip, Rack-Scale     | §5.1               |
 > | `performance/` | NUMA 亲和性、延迟金字塔、带宽速查表、AMX vs Tensor Core | Latency Hierarchy, Bandwidth | §2.3 / §5.2 / §5.3 |
@@ -103,6 +104,12 @@ NVLink 是 NVIDIA 专为 GPU 间通信设计的私有链路，Gen5 单卡聚合 
 
 - **[NVLink 技术入门](nvlink/nvlink_intro.md)**：突破 PCIe 带宽瓶颈的专有高速 GPU 互连方案，含消费级 GPU 不支持 NVLink 的说明。
 - **[NVLink 诊断与实操](nvlink/nvlink_diagnostics.md)**：`nvidia-smi nvlink` 命令集、拓扑解读、错误检测，含 A100 实测与 GPU 7 NVLink 故障案例。
+
+### 3.3 DMA engine
+
+DMA engine 是设备侧的数据搬运执行单元：CPU/驱动准备 descriptor，写 doorbell 启动，engine 读写目标内存并报告完成。GPU 的 copy engine、NIC、NVMe 和 DPU 都通过各自的 DMA engine 搬运数据；kernel load/store 是另一条不经 copy engine 的路径。descriptor 格式、地址翻译和完成语义因设备而异。
+
+- **[DMA engine：从描述符到完成，一次搬运发生了什么](dma/01_dma_engine.md)**：从传输生命周期出发，比较 copy engine、P2P、GPUDirect RDMA、GDS、DOCA DMA 与 CXL 共享内存的路径和边界。
 
 ---
 

@@ -16,7 +16,7 @@
 
 ## 1. 硬件架构与互连技术
 
-涵盖单机基础计算芯片（GPU、TPU）设计原理，PCIe、NVLink 高速互连总线协议，GPUDirect 跨节点直通技术，以及 NVIDIA GB300 NVL72 等异构融合超级芯片的系统级架构与延迟金字塔模型。详细内容请访问：**[硬件架构与互连技术](01_hardware_architecture/README.md)**。
+涵盖单机基础计算芯片（GPU、TPU）设计原理，PCIe、NVLink 高速互连总线协议，GPUDirect 跨节点直通技术，GPU/NIC/NVMe/DPU/CXL 的 DMA engine 路径，以及 NVIDIA GB300 NVL72 等异构融合超级芯片的系统级架构与延迟金字塔模型。详细内容请访问：**[硬件架构与互连技术](01_hardware_architecture/README.md)**。
 
 - **基础计算芯片架构**
   - [深入理解 GPU 架构](./01_hardware_architecture/nvidia/understand_gpu_architecture/README.md)
@@ -31,6 +31,7 @@
   - [NVLink 技术入门](./01_hardware_architecture/nvlink/nvlink_intro.md)
   - [NVIDIA GPUDirect P2P 技术详解：节点内 GPU 高速互联](./01_hardware_architecture/gpudirect/02_gpudirect_p2p.md)
   - [NVIDIA GPUDirect RDMA 与 Storage 技术详解](./01_hardware_architecture/gpudirect/01_gpudirect_technology.md)
+  - [DMA engine：从描述符到完成，一次搬运发生了什么](./01_hardware_architecture/dma/01_dma_engine.md)
 - **异构融合架构与系统性能评估**
   - [NVLink-C2C：芯片级高速互连技术详解](./01_hardware_architecture/superchips/nvlink_c2c.md)
   - [NVIDIA GB300 NVL72：机架级计算系统架构解析](./01_hardware_architecture/superchips/nvidia_gb300.md)
