@@ -14,7 +14,7 @@ GPUDirect P2P 的核心在于绕过 CPU 和系统内存，利用 PCIe 总线的 
 
 ### 2.1 数据路径与延迟模型
 
-通过对比传统的数据回弹（Bounce Buffer）路径与 GPUDirect P2P 的直接传输路径，我们可以清晰地看到延迟与带宽利用率的差异。
+先对比传统的数据回弹（Bounce Buffer）路径与 GPUDirect P2P 的直接传输路径，差异集中在延迟与带宽利用率上。
 
 ```mermaid
 graph TD
@@ -91,7 +91,7 @@ NVLink 是 NVIDIA 专有的互连协议，专为多 GPU 通信优化。
 
 ## 3. 核心优势与性能对比
 
-GPUDirect P2P 不仅是对传输路径的物理缩短，更是对计算系统 IO 模型的根本性优化。通过消除 Host 端的内存拷贝和 CPU 干预，它将 GPU 互联从“以 CPU 为中心”的星型拓扑转变为“以 GPU 为中心”的网状拓扑。
+GPUDirect P2P 把 GPU 间传输从“两跳经系统内存”缩短为“一跳直达”。收益落在三个维度：带宽、延迟、CPU 占用。
 
 ### 3.1 性能对比表
 
@@ -103,24 +103,22 @@ GPUDirect P2P 不仅是对传输路径的物理缩短，更是对计算系统 IO
 | **延迟**       | 高 (PCIe 往返 + 系统内存开销)          | 低 (直接通过 PCIe Switch 或 NVLink)         |
 | **带宽瓶颈**   | 受限于 PCIe 带宽及系统内存带宽         | 受限于 PCIe 或 NVLink (NVLink 可达 900GB/s) |
 
-### 3.2 核心优势详情
+### 3.2 收益从哪来
 
-GPUDirect P2P 在带宽、延迟、CPU 效率以及开发体验上都带来了显著的提升，以下是具体的优势分析：
+#### 3.2.1 带宽
 
-#### 3.2.1 突破性的带宽提升
-
-传统的 PCIe 路径受限于 PCIe 总线带宽（例如 PCIe Gen5 x16 双向约为 128 GB/s）。而 GPUDirect P2P 结合 **NVLink** 技术，可以提供数量级提升的互联带宽。
+PCIe 路径受限于总线带宽（例如 PCIe Gen5 x16 双向约为 128 GB/s）；NVLink 把互联带宽提到另一个量级。
 
 **NVLink 优势**：在 NVIDIA H100 GPU 上，NVLink 4.0 提供高达 **900 GB/s** 的双向聚合带宽，是 PCIe Gen5 的约 7 倍。这对于参数量巨大的大模型训练（如 Transformer 架构）至关重要，因为 `AllReduce` 等集合通信操作是带宽敏感型的。
 
-#### 3.2.2 极致的低延迟体验
+#### 3.2.2 延迟
 
 通过消除 **Bounce Buffer**（系统内存中转），P2P 显著降低了端到端延迟。
 
 - **物理路径缩短**：在同一 PCIe Switch（PIX）下，数据不再需要经过 Root Complex 和 CPU 内存控制器，减少了物理链路长度。
 - **协议开销降低**：省去了 CPU 端的内存分配、锁页（Pinning）以及两次 DMA 描述符的建立过程。对于小包通信（Latency-sensitive），这种延迟优化尤为明显。
 
-#### 3.2.3 CPU 算力解放 (CPU Offloading)
+#### 3.2.3 CPU 卸载
 
 在传统模式下，CPU 需要花费大量周期来管理 DMA 缓冲区和设置描述符。开启 P2P 后：
 
@@ -293,15 +291,9 @@ PCIe 和 NVLink 对原子操作的支持存在本质差异：
 
 ## 6. 总结
 
-GPUDirect P2P 不仅仅是一项数据传输技术，更是现代高性能计算和深度学习系统的**节点内通信基石**。通过构建 GPU 间的直连高速公路（PCIe/NVLink），它彻底打破了传统以 CPU 中转系统内存为瓶颈的通信模型，实现了计算与通信的深度融合。
+GPUDirect P2P 的价值可以归结为一条：GPU 间的数据不再落在系统内存。要拿到这条路径的性能，三件事要同时成立：`cudaDeviceCanAccessPeer` 返回 1、拓扑在 PIX/PXB/NV# 级别、ACS 与 IOMMU 没有把流量重定向回 Root Complex。任何一件不满足，都会退回 CPU 中转或共享带宽的路径。
 
-- **核心价值**：
-  - **零拷贝与低延迟**：消除 Host 内存中转，显著降低通信开销。
-  - **硬件协同**：充分利用 NVLink 的高带宽（900 GB/s）和原子操作特性，支撑大模型张量并行（Tensor Parallelism）。
-  - **编程范式革新**：支持 Unified Memory 和直接指针访问，简化了多卡编程复杂度。
-- **扩展路径**：
-  - **节点内**：P2P 结合 NVSwitch 构建了单机超级计算机（如 DGX/HGX 系统）。
-  - **节点间**：当通信跨越服务器边界时，GPUDirect P2P 的理念通过 [GPUDirect RDMA](./01_gpudirect_technology.md#2-gpudirect-rdma-技术) 延伸至网络，实现跨节点的零拷贝通信。
+节点内的这条路径在跨节点场景由 [GPUDirect RDMA](./01_gpudirect_technology.md#2-gpudirect-rdma-技术) 延续：NIC 直接读写远端 GPU 显存，CPU 中转同样被移出数据路径。
 
 ---
 
@@ -309,6 +301,8 @@ GPUDirect P2P 不仅仅是一项数据传输技术，更是现代高性能计算
 
 - **CUDA C++ Programming Guide**: [Peer Device Memory Access](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#peer-device-memory-access)  
   官方编程指南，详细解释了 UVA、P2P 寻址和内存一致性模型。
+- **官方 Sample**: [simpleP2P](https://github.com/NVIDIA/cuda-samples/tree/master/cpp/0_Introduction/simpleP2P)  
+  可编译运行的 P2P 带宽验证程序，输出 `cudaDeviceCanAccessPeer` 结果与双向带宽，本文 API 流程的官方对照实现。
 - **CUDA Runtime API Reference**: [Peer Device Memory Access](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__PEER.html)  
   API 文档，包含 `cudaDeviceEnablePeerAccess` 和 `cudaMemcpyPeer` 的详细参数说明。
 - **NVIDIA Developer Blog**: [Peer-to-Peer & Unified Virtual Addressing](https://developer.nvidia.com/blog/cuda-pro-tip-always-set-current-device-avoid-multithreading-bugs/)  

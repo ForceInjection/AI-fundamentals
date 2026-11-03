@@ -2,9 +2,9 @@
 
 ## 1. 引言
 
-在现代高性能计算 (HPC) 和人工智能 (AI) 领域，随着数据量的爆炸式增长和模型复杂度的提升，数据传输的效率成为了系统性能的关键瓶颈。传统的计算机架构中，GPU 与其他设备（如网卡、存储设备）之间的数据交互往往需要 CPU 作为中转站，这不仅增加了延迟，还占用了宝贵的 CPU 资源。
+GPU 和网卡、存储设备之间交换数据，默认路径要经过 CPU 内存：发送前先从显存搬到系统内存，接收后还要再搬一次。这段中转消耗 PCIe 带宽和 CPU 内存带宽，也让 CPU 被迫参与数据搬运。
 
-为了解决这一问题，NVIDIA 推出了 **GPUDirect** 系列技术。这是一组旨在加速 GPU 与其他设备（如网络接口卡 NIC、存储设备、其他 GPU）之间数据通信的技术集合。本文将重点介绍其中两个关键技术：**GPUDirect RDMA** 和 **GPUDirect Storage (GDS)**。
+GPUDirect 系列技术做的事情，就是把 CPU 从数据路径上拿掉：节点内 GPU 之间走 [GPUDirect P2P](02_gpudirect_p2p.md)，跨节点 GPU 与网卡走 **GPUDirect RDMA**，GPU 与 NVMe 存储走 **GPUDirect Storage (GDS)**。本文讲后两个的机制、部署前提和边界；P2P 的原理与代码见 GPUDirect P2P 篇。
 
 ## 2. GPUDirect RDMA 技术
 
@@ -36,7 +36,9 @@ GPUDirect RDMA 利用了标准 PCIe 总线的功能，使第三方设备能够�
 
 #### 2.2.1 核心机制
 
-当两个 PCIe 设备（例如 GPU 和 NIC）共享同一个上游 Root Complex 时，它们可以通过物理地址直接通信。
+当两个 PCIe 设备（例如 GPU 和 NIC）共享同一个上游 Root Complex 时，它们可以通过物理地址直接通信。路径质量取决于中间经过什么：路径上只有 PCIe Switch 时最优；经过单个 CPU/IOH 时可用，但部分处理器平台的 P2P 读带宽严重受限；跨 QPI/HT（跨 CPU Socket）路径可能严重受限甚至不可靠。
+
+IOMMU 是硬性前提：GPUDirect RDMA 假设所有 PCI 设备看到同一套物理地址，所以开启地址翻译的 IOMMU 必须关闭或配置成 1:1 passthrough。ACS 重定向也会影响 P2P 流量的走向，配置细节见 [Linux PCIe P2PDMA 技术介绍](../pcie/02_p2pdma_technology.md)。
 
 - **PCI BARs 映射**：GPU 将其显存的一定区域通过 BARs 暴露在物理地址空间中。
 - **P2P Direct Access**：NIC 可以像访问系统内存一样，直接向这些 GPU BAR 地址发起 PCIe Read/Write 事务。
@@ -50,16 +52,18 @@ GPUDirect RDMA 的实现依赖于 NVIDIA Kernel Driver 和用户态 CUDA 库 (Us
 1. **地址区分**：用户态 CUDA 库提供 API 帮助通信库（如 MPI, NCCL）区分指针是指向 CPU 内存还是 GPU 显存。
 2. **Pinning GPU Memory (页面锁定)**：
    - 对于 CPU 内存，Linux 内核使用 `get_user_pages()` 进行 Pinning。
-   - 对于 GPU 显存，NVIDIA Kernel Driver 提供了专用的内核 API 来锁定 GPU 页面，并将其物理地址列表返回给 NIC 驱动。
-   - NIC 驱动使用这些物理地址编程 DMA 引擎，从而建立直接的数据传输通道。
+   - 对于 GPU 显存，NVIDIA Kernel Driver 提供了专用的内核 API（`nvidia_p2p_get_pages` 等）来锁定 GPU 页面，并将其总线地址（bus address）列表返回给 NIC 驱动。
+   - NIC 驱动用这些总线地址编程 DMA 引擎，从而建立直接的数据传输通道。
 
 ### 2.3 性能优势
 
-GPUDirect RDMA 通过在 GPU 和第三方设备之间建立直接的数据传输通道，消除了不必要的系统内存拷贝和 CPU 介入，从而实现了极致的通信性能。
+GPUDirect RDMA 在 GPU 和第三方设备之间建立直接的数据传输通道，消除了系统内存拷贝和 CPU 介入。
 
 - **Zero-Copy (零拷贝)**：完全消除了 GPU 显存到系统内存的缓冲拷贝。
-- **降低延迟**：数据直接在设备间传输，端到端延迟通常可降低至原来的 1/10 甚至更低。
+- **降低延迟**：数据直接在设备间传输，少一次 PCIe 穿越和系统内存中转。
 - **完全卸载**：CPU 仅需负责建立连接和控制流，数据路径完全旁路 CPU。
+
+还有一个容易忽略的正确性问题：NIC 的 DMA 写完 GPU 显存，不等于 GPU 上后续 kernel 已经能看到新数据。官方只承诺 CUDA synchronization 与 work submission API 提供内存序，通信库仍要遵守 stream/event 顺序，不能只看 RDMA 完成中断就认为数据可见。
 
 ### 2.4 开发者视角：代码与 API
 
@@ -93,7 +97,11 @@ if (!mr) {
 ibv_post_send(qp, &wr, &bad_wr);
 ```
 
-**注意**：要启用此功能，系统通常需要加载 `nvidia-peermem` (或旧版的 `nv_peer_mem`) 内核模块，该模块充当 NVIDIA 驱动与 InfiniBand 核心驱动之间的桥梁。
+**注意**：要启用此功能，系统需要加载 `nvidia-peermem` 内核模块，该模块充当 NVIDIA 驱动与 InfiniBand 核心驱动之间的桥梁。它要求内核带 RDMA peer memory 支持（上游内核或 MLNX_OFED 提供），NIC 侧 ConnectX-3 VPI 及更新版本可用，InfiniBand 和 RoCE 都支持。旧版 `nv_peer_mem` 与 `nvidia-peermem` 只能加载一个，启用前先卸载旧模块。
+
+内存类型也有边界：GPUDirect RDMA 只作用于 `cudaMalloc()` 分配的 GPU 页；Unified Memory 没有被官方支持，注册后可能读到旧数据甚至丢数据。BAR1 页 pinning 是毫秒级开销，驱动靠延迟解映射来摊薄，频繁注册/注销小块显存会放大这个成本。
+
+节点内的实际验证流程和实测数字见 [GPUDirect RDMA 跨节点验证](04_gpudirect_rdma_verification.md)；从 DMA engine 视角看描述符、地址映射和完成语义，见 [DMA engine：从描述符到完成，一次搬运发生了什么](../dma/01_dma_engine.md)。
 
 ---
 
@@ -163,74 +171,13 @@ GDS 的 I/O 流程并非简单的“把 GPU 地址给硬盘”，而是一个复
 
 GDS 通过构建存储到 GPU 的直通高速公路，打破了传统 I/O 的带宽和延迟瓶颈，并彻底解放了 CPU 算力。
 
-- **带宽倍增**：直接利用 PCIe P2P 特性，吞吐量可接近存储设备或 PCIe 总线的物理极限。根据官方数据，GDS 带宽可达传统 I/O 的 2-8 倍。
+- **带宽提升**：直接利用 PCIe P2P 特性，吞吐量可接近存储设备或 PCIe 总线的物理极限。官方口径是绕开 CPU 的直达路径"峰值带宽至少是经过 CPU 路径的两倍"；这是对硬件路径的判断，不是对所有配置都成立的通用加速倍数。
 - **延迟最小化**：消除了中间的内存拷贝步骤，I/O 延迟显著降低。
 - **CPU 卸载 (CPU Offloading)**：CPU 仅需处理控制流，不再参与繁重的数据搬运，从而释放 CPU 算力用于预处理或其他逻辑。
 
-### 3.4 性能对比数据参考
+### 3.4 部署与上手
 
-下表从数据路径、资源消耗等维度，直观展示了 GDS 相比传统 I/O 模式的代际性能提升。
-
-| 指标             | 传统 IO (Buffered IO)                          | 传统 Direct IO (O_DIRECT)     | GPUDirect Storage (GDS) |
-| :--------------- | :--------------------------------------------- | :---------------------------- | :---------------------- |
-| **数据路径**     | Storage -> Kernel Buffer -> User Buffer -> GPU | Storage -> User Buffer -> GPU | Storage -> GPU          |
-| **数据搬运次数** | 2 次 (DMA + CPU memcpy)                        | 1 次 (DMA only)               | 0 次                    |
-| **CPU 参与度**   | 高 (CPU memcpy + DMA 控制)                     | 中 (DMA 控制，无 memcpy)      | 低 (仅控制)             |
-| **带宽利用率**   | 受限于 CPU 内存带宽和拷贝速度                  | 受限于 CPU 内存带宽和拷贝速度 | 接近 PCIe/NVMe 极限     |
-| **延迟**         | 高                                             | 中                            | 低                      |
-
-### 3.5 代码示例 (cuFile API)
-
-使用 GDS 需要包含 `<cufile.h>` 头文件，并链接 `libcufile.so`。以下是一个简化的 GDS 读取流程：
-
-```cpp
-#include <fcntl.h>
-#include <unistd.h>
-#include <cuda_runtime.h>
-#include "cufile.h"
-
-int main() {
-    const char* filename = "test_data.bin";
-    size_t size = 1024 * 1024 * 1024; // 1GB
-    void* d_buffer;
-
-    // 1. 初始化 cuFile 驱动
-    // 这会加载必要的 GDS 驱动并检查硬件兼容性
-    cuFileDriverOpen();
-
-    // 2. 分配 GPU 显存
-    cudaMalloc(&d_buffer, size);
-
-    // 3. 打开文件
-    // 必须使用 O_DIRECT 标志，这是 GDS 的前提条件，以绕过操作系统 Page Cache
-    int fd = open(filename, O_RDONLY | O_DIRECT);
-
-    // 4. 注册 cuFile 句柄
-    // 这一步将文件描述符与 GDS 上下文绑定
-    CUfileDescr_t cf_descr;
-    memset(&cf_descr, 0, sizeof(CUfileDescr_t));
-    cf_descr.handle.fd = fd;
-    cf_descr.type = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
-
-    CUfileHandle_t cf_handle;
-    cuFileHandleRegister(&cf_handle, &cf_descr);
-
-    // 5. 直接读取数据到 GPU 显存 (GDS Read)
-    // 此时数据直接从 NVMe 流向 GPU，不经过 CPU 内存
-    // 参数：handle, devPtr, size, file_offset, devPtr_offset
-    cuFileRead(cf_handle, d_buffer, size, 0, 0);
-
-    // ... 进行 GPU 计算 ...
-
-    // 6. 清理资源
-    cuFileHandleDeregister(cf_handle);
-    close(fd);
-    cudaFree(d_buffer);
-    cuFileDriverClose();
-
-    return 0;
-}
-```
+GDS 的部署前提已在 3.2.3 覆盖（ACS、IOMMU、O_DIRECT）。cuFile API 的完整调用流程（包括缓冲注册 `cuFileBufRegister`）、环境检查脚本与前置条件核对，见 [GPU Direct Storage 基础](03_gds_basics.md)；该文基于 RTX 5090 + CUDA 12.8 (GDS 1.13.1) 环境，可直接照做。
 
 ## 4. GPUDirect 生态系统支持
 
@@ -238,67 +185,21 @@ GPUDirect 技术（涵盖 RDMA 和 Storage）已经建立了庞大的软硬件�
 
 ### 4.1 GPUDirect RDMA 生态
 
-GPUDirect RDMA 是构建高性能分布式 GPU 集群的基石，主要支持来自于高性能网络厂商和并行计算库。
-
-- **网络硬件 (NICs)**：
-  - **NVIDIA Mellanox ConnectX 系列**：ConnectX-5/6/7 等 InfiniBand 和 Ethernet 网卡对 GPUDirect RDMA 有着最完善的原生支持。
-  - **AWS EFA (Elastic Fabric Adapter)**：在 AWS 云环境中支持 GPUDirect RDMA，加速云上 HPC 和 AI 负载。
-  - **Broadcom / Chelsio**：部分高性能网卡也提供驱动级支持。
-- **通信库 (Communication Libraries)**：
-  - **NVIDIA NCCL**：深度学习事实上的标准通信库，利用 GPUDirect RDMA 实现高效的 AllReduce, AllGather 等集合通信操作。
-  - **MPI (Message Passing Interface)**：主流 MPI 实现（如 **OpenMPI**, **MVAPICH2**）均支持 CUDA-aware MPI，底层自动调用 GPUDirect RDMA。
-  - **NVSHMEM**：提供基于 OpenSHMEM 标准的单边通信 (One-Sided Communication) 能力，利用 RDMA 实现 GPU 全局地址空间访问。
-  - **UCX (Unified Communication X)**：作为底层通信框架，为 MPI 和 PGAS 语言提供 GPUDirect RDMA 加速支持。
+- **网络硬件**：NVIDIA Mellanox ConnectX 系列（`nvidia-peermem` 从 ConnectX-3 VPI 起支持，5/6/7 代最完善）、AWS EFA、Broadcom/Chelsio 的部分网卡。
+- **通信库**：NCCL 的集合通信、CUDA-aware MPI（OpenMPI/MVAPICH2）、NVSHMEM 的单边通信、UCX 框架，都在检测到可用拓扑后自动走 GPUDirect RDMA，应用层通常无感。
 
 ### 4.2 GPUDirect Storage (GDS) 生态
 
-GDS 聚焦于存储 I/O 加速，得到了存储业界和文件系统厂商的广泛集成。
+本地文件系统 ext4、xfs 原生支持；Lustre、IBM Spectrum Scale、WekaFS、VAST、BeeGFS 等并行/分布式文件系统经各自集成支持 GDS；NetApp、Dell PowerScale、Pure FlashBlade 等存储阵列也在产品层面做了集成。版本与功能的支持矩阵以 [NVIDIA GDS Release Notes](https://docs.nvidia.com/gpudirect-storage/release-notes/index.html) 为准。
 
-#### 4.2.1 支持的文件系统 (File Systems)
+### 4.3 上层框架集成
 
-- **本地文件系统**：
-  - **ext4**：Linux 标准文件系统，GDS 驱动 (`nvidia-fs`) 对其有原生支持（需在 ordered mode 下）。
-  - **xfs**：高性能日志文件系统，同样被 `nvidia-fs` 原生支持。
-- **并行/分布式文件系统**：
-  - **DDN EXAScaler (Lustre)**：基于 Lustre 的高性能文件系统，广泛用于超算中心。
-  - **IBM Spectrum Scale (GPFS)**：企业级并行文件系统，支持 GDS 以加速 AI 工作负载。
-  - **WekaFS**：专为 AI 和 HPC 设计的高性能文件系统，提供极低的延迟。
-  - **VAST Data NFS**：通过 NFS over RDMA 支持 GDS。
-  - **BeeGFS**：轻量级并行文件系统，支持通过 RDMA 直接写入 GPU。
-  - **Amazon FSx for Lustre**：AWS 上的托管 Lustre 服务，支持在 EC2 实例上使用 GDS。
-
-#### 4.2.2 存储解决方案合作伙伴
-
-多家存储硬件厂商已在其产品中集成了对 GDS 的支持：
-
-- **NetApp ONTAP**：提供基于 AI 优化的全闪存存储阵列。
-- **Dell EMC Isilon / PowerScale**：横向扩展 NAS 存储。
-- **Pure Storage FlashBlade**：专为非结构化数据设计的高性能全闪存。
-- **Hitachi Vantara** / **Micron** / **Excelero** 等。
-
-### 4.3 上层 AI 框架集成
-
-为了让开发者无感使用底层加速技术，主流 AI 框架和数据加载库都进行了深度集成：
-
-- **NVIDIA DALI (Data Loading Library)**：深度学习数据加载库，原生支持 GDS，可显著加速图像/视频数据的预处理流水线，解决 GPU 饥饿问题。
-- **PyTorch**：通过插件或与 DALI 集成支持 GDS；其分布式训练模块（DistributedDataParallel）底层依赖 NCCL 使用 GPUDirect RDMA。
-- **RAPIDS cuDF**：GPU 数据帧库，支持使用 GDS 加速大规模 Parquet/CSV/ORC 数据的读取（实验性）。
-- **TensorFlow**：通过集成 NCCL 和相关 I/O 插件获得加速能力。
-
-> **注意**：具体的支持版本和配置要求（如内核版本、OFED 版本）请务必参考各厂商的官方文档以及 [NVIDIA GDS Support Matrix](https://docs.nvidia.com/gpudirect-storage/release-notes/index.html#support-matrix)。
+DALI 原生支持 GDS 加速数据预处理流水线；PyTorch 经 DALI 插件使用 GDS，分布式训练经 NCCL 走 GPUDirect RDMA；RAPIDS cuDF 用 GDS 读取 Parquet/CSV/ORC；TensorFlow 经 NCCL 和 I/O 插件获得同样的加速能力。具体版本与配置要求（内核、OFED）见各厂商文档与上面的支持矩阵。
 
 ---
 
 ## 5. 总结
 
-GPUDirect 系列技术（RDMA 与 Storage）是 NVIDIA 针对现代高性能计算和 AI 负载中“数据搬运瓶颈”提出的核心解决方案。它们共同的目标是消除 CPU 在数据路径中的介入，实现设备间的**直接内存访问 (DMA)**。
+RDMA 和 GDS 是同一个思想在两个方向上的应用：数据面绕开 CPU 内存，控制面留在 CPU。RDMA 管跨节点的梯度与 KV cache 传输，GDS 管存储到显存的数据加载，两者在一个大规模训练集群里通常同时存在。
 
-1. **核心价值**：
-   - **GPUDirect RDMA**：打破了**计算节点间**的通信壁垒。它允许 GPU 直接通过网卡与其他节点的 GPU 交换数据，消除了 PCIe 总线上的冗余拷贝。这对于**分布式训练（Model/Data Parallelism）**至关重要，能够显著提升多机多卡环境下的扩展效率。
-   - **GPUDirect Storage (GDS)**：打破了**计算与存储间**的 I/O 壁垒。它允许 GPU 直接从 NVMe 存储设备读取数据，绕过 CPU 内存和 Page Cache。这对于**大数据集训练、推理和实时数据分析**至关重要，解决了 GPU 因等待数据而空转的问题（GPU Starvation）。
-
-2. **协同效应**：
-   在构建如 NVIDIA DGX SuperPOD 这样的大规模 AI 集群时，这两项技术通常是**互补且共存**的。GDS 负责将海量数据高速“喂”入 GPU，而 GPUDirect RDMA 负责在 GPU 集群内部高速同步梯度和模型参数。
-
-3. **架构演进**：
-   GPUDirect 技术的普及标志着计算架构从“以 CPU 为中心”向“以数据为中心”的转变。在这种新架构下，CPU 退居为控制平面的指挥者，而繁重的数据流动则在 GPU、网卡和存储设备之间通过 PCIe/NVLink 高速通道直接完成，从而释放了系统的全部潜能。
+决定能不能用、快多少的不是 API，而是三件事：设备的相对位置（是否同一 root complex、是否经 PCIe Switch）、地址翻译的配置（IOMMU 关闭或 1:1、ACS、BAR1）、以及内存类型是否在支持范围内（`cudaMalloc` 显存、对齐的 buffer）。部署前核对这三件事，验证流程见 [RDMA 跨节点验证](04_gpudirect_rdma_verification.md) 与 [GDS 基础](03_gds_basics.md)；把搬运放回完整 DMA 模型，见 [DMA engine](../dma/01_dma_engine.md)。
