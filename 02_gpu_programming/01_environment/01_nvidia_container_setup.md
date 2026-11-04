@@ -1,12 +1,14 @@
 # NVIDIA GPU 容器环境：原理与构建指南
 
+> 基于 CUDA 12.1 时代的 nvidia/cuda 镜像与 nvidia-container-toolkit v1.11+ 编写（2026-11 复核）。版本演进较快，flag 与镜像 tag 以官方文档为准。
+
 ## 1. 总体原则
 
-在 GPU 容器化环境中，核心原则是职责分离：**宿主机 (Host) 负责“驱动与设备管理”，容器 (Container) 负责“运行时库与应用本身”**。两者通过 NVIDIA Container Toolkit 进行解耦与衔接。
+在 GPU 容器化环境中，核心原则是职责分离：宿主机负责驱动与设备管理，容器负责运行时库与应用本身。两者通过 NVIDIA Container Toolkit 进行解耦与衔接。
 
 ---
 
-## 2. 宿主机组件安装
+## 2. 宿主机组件
 
 宿主机是 GPU 资源的物理载体，必须安装用于管理硬件的基础软件。
 
@@ -56,13 +58,13 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 3. **nvidia-ctk**: (v1.11.0+ 引入) 新一代命令行工具，用于配置生成和 CDI (Container Device Interface) 规范管理，逐步取代部分旧组件功能。
 4. **libnvidia-container / nvidia-container-cli**: 核心执行组件。它负责与操作系统内核交互，执行具体的设备挂载和库文件注入。
 
-**NVIDIA Container Runtime 的具体职责（Under the Hood）：**
+**NVIDIA Container Runtime 的内部机制：**
 
 当你在 Docker 中执行命令启动 GPU 容器时，Runtime 实际上在幕后完成了以下动作：
 
 1. **拦截启动**：`nvidia-container-runtime` 拦截 runC 的启动指令。
 2. **注入 Hook**：在 OCI 规范的 `prestart` 阶段注入 `nvidia-container-toolkit` 钩子。
-3. **设备挂载 (Mount Devices)**：解析 `--gpus` 参数，找到对应的 GPU 设备节点（如 `/dev/nvidia0`, `/dev/nvidiactl`），并将其挂载到容器内的 `/dev/` 目录。
+3. **设备挂载 (Mount Devices)**：读取容器配置中的 `NVIDIA_VISIBLE_DEVICES`（由 Docker 从 `--gpus` 参数翻译而来），找到对应的 GPU 设备节点（如 `/dev/nvidia0`, `/dev/nvidiactl`），并将其挂载到容器内的 `/dev/` 目录。
 4. **库注入 (Inject Libraries)**：将宿主机上的驱动库（如 `libcuda.so`, `libnvidia-ml.so`）挂载到容器内，通常通过 `ld.so.conf` 机制确保容器内应用能加载到这些库。
 5. **Cgroups 配置**：配置设备控制组（Device Cgroup），确保容器内进程只能访问被允许的 GPU 设备，实现资源隔离。
 
@@ -106,11 +108,13 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 
 **Variant 版本选择指南：**
 
-| Variant     | 包含内容                             | 典型使用场景                   |
-| :---------- | :----------------------------------- | :----------------------------- |
-| **base**    | `libcudart` (CUDA Runtime API)       | 仅运行已编译好的二进制程序     |
-| **runtime** | `base` + `cuBLAS`, `cuDNN` 等数学库  | 深度学习推理、训练任务         |
-| **devel**   | `runtime` + `nvcc`, 头文件, 开发工具 | 编译 CUDA 程序、构建自定义算子 |
+| Variant     | 包含内容                                        | 典型使用场景                   |
+| :---------- | :---------------------------------------------- | :----------------------------- |
+| **base**    | CUDA Runtime API（libcudart）                   | 跑静态链接好的二进制，或自行补齐运行库 |
+| **runtime** | base + cuBLAS/cuFFT/cuSPARSE 等数学库 + NCCL    | 深度学习推理、训练任务         |
+| **devel**   | runtime + nvcc、头文件、开发工具                | 编译 CUDA 程序、构建自定义算子 |
+
+> 注意：三个官方变体都**不含 cuDNN**——它随 NGC 框架镜像（如 PyTorch/TensorFlow 官方镜像）分发，或在容器内单独安装。
 
 ### 3.2 深度学习框架与上层库（按需）
 
@@ -141,10 +145,10 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 
 以下组件**严禁**安装在容器镜像中，它们应由宿主机通过 NVIDIA Container Runtime 动态注入：
 
-- ❌ **NVIDIA Driver** (包括 `.run` 安装包)
-- ❌ **内核模块** (`nvidia.ko` 等)
-- ❌ **DKMS**
-- ❌ **libcuda.so** (特定于驱动版本的库，动态注入的目标是 `libcuda.so.1` 及其软链)
+- NVIDIA Driver（包括 `.run` 安装包）
+- 内核模块（`nvidia.ko` 等）
+- DKMS
+- `libcuda.so`：镜像不应自带这个驱动版本的库；运行时注入的是 `libcuda.so.1` 及其软链
 
 ---
 
@@ -171,7 +175,7 @@ docker run --rm --gpus all nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
 docker run --rm --gpus '"device=0,2"' nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
 ```
 
-### 4.3 环境变量控制 (推荐调试用)
+### 4.3 环境变量控制（推荐调试用）
 
 除了 `--gpus` 参数，也可以通过环境变量 `NVIDIA_VISIBLE_DEVICES` 控制（需配合 `--runtime=nvidia` 或默认配置）。
 
@@ -180,28 +184,31 @@ docker run --rm --gpus '"device=0,2"' nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia
 docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=0 nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
 ```
 
-### 4.4 检查驱动能力 (Capabilities)
+### 4.4 检查驱动能力（Capabilities）
 
 有些场景（如只需图形渲染或只需计算）可以指定驱动能力，减少注入的内容。
 
 ```bash
 # 仅注入计算和工具相关的库（通常用于 AI 任务）
 docker run --rm --gpus 'all,"capabilities=compute,utility"' nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
+
+# 等价的环境变量写法
+docker run --rm -e NVIDIA_VISIBLE_DEVICES=all \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+  nvidia/cuda:12.1.1-base-ubuntu22.04 nvidia-smi
 ```
 
 ---
 
 ## 5. 职责边界与调用链
 
-为了深入理解容器化 GPU 的工作原理，我们需要清晰地划分宿主机与容器的职责边界，并掌握从应用层到硬件层的完整调用链路。
-
 ### 5.1 职责边界对照表
 
 | 组件              | 宿主机 (Host) | 容器 (Container) | 备注                                                  |
 | :---------------- | :-----------: | :--------------: | :---------------------------------------------------- |
 | **NVIDIA Driver** |      ✅       |        ❌        | 驱动必须与内核匹配                                    |
-| **nvidia-smi**    |      ✅       |        ❌        | 容器内可用，但由宿主机注入                            |
-| **libcuda.so**    |      ✅       |        ❌        | 容器内可用，但由宿主机注入（通常映射为 libcuda.so.1） |
+| **nvidia-smi**    |      ✅       |  运行时注入 ✅   | 镜像内不自带，容器启动时由宿主机注入                  |
+| **libcuda.so**    |      ✅       |  运行时注入 ✅   | 镜像内不自带；注入的是 libcuda.so.1 及其软链          |
 | **CUDA Runtime**  |      ❌       |        ✅        | 应用依赖，必须在镜像中                                |
 | **CUDA Toolkit**  |      ❌       |        ✅        | 编译依赖，按需安装                                    |
 | **cuDNN / NCCL**  |      ❌       |        ✅        | 框架依赖，必须在镜像中                                |
@@ -209,8 +216,6 @@ docker run --rm --gpus 'all,"capabilities=compute,utility"' nvidia/cuda:12.1.1-b
 | **应用程序**      |      ❌       |        ✅        | 业务逻辑                                              |
 
 ### 5.2 运行时调用链
-
-掌握从容器启动配置到运行时应用调用的完整链路，是深入理解 GPU 容器化工作机制的关键：
 
 ```mermaid
 graph LR
@@ -251,4 +256,4 @@ graph LR
 
 ## 6. 总结
 
-构建稳定高效的 GPU 容器环境，关键在于明确 **“宿主机管理硬件，容器管理应用”** 的分界线。宿主机只需保证驱动和容器运行时的就绪，而容器镜像则应专注于应用运行所需的 CUDA 运行时环境和依赖库。这种架构不仅保证了环境的隔离性，也最大化了镜像的可移植性。
+构建稳定高效的 GPU 容器环境，关键在于明确「宿主机管理硬件，容器管理应用」的分界线。宿主机只需保证驱动和容器运行时就绪，容器镜像专注应用运行所需的 CUDA 运行时环境和依赖库。宿主机驱动版本满足要求时，同一镜像可以跨宿主机复用。
