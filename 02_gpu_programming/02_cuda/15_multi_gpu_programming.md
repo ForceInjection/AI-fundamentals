@@ -1,8 +1,8 @@
 # Multi-GPU CUDA 编程——从 P2P 到 NCCL 的多卡协作
 
-你在 8×A100 上跑 TP=4 推理。GPU 0 算完一个 layer，需要把结果传给 GPU 1。你知道机器有 NVLink——但怎么让两个 GPU 直接通信？`cudaMemcpy` 从一个 device pointer 到另一个 device pointer 会不会静默走 CPU？NCCL 是不是比自己手写快？
+在 8×A100 上跑 TP=4 推理：GPU 0 算完一个 layer，需要把结果传给 GPU 1。机器明明有 NVLink，但 `cudaMemcpy` 从一个 device pointer 到另一个 device pointer 未必走 NVLink——它可能静默退回 CPU 中转，NCCL 与手写 P2P 的差别也不直观。
 
-这些问题有一个共同点：**CUDA 的默认编程模型是单 GPU 的**。当你 `cudaMalloc` 一个指针，它只对当前 `cudaSetDevice` 选中的 GPU 有效。让两个 GPU 共享数据，需要从 device 管理、peer access、P2P 传输、跨 GPU 同步四个层面逐一打通。
+根源在于：**CUDA 的默认编程模型是单 GPU 的**。`cudaMalloc` 返回的指针只对当前 `cudaSetDevice` 选中的 GPU 有效。让两个 GPU 共享数据，需要依次解决 device 管理、peer access、P2P 传输、跨 GPU 同步四个层面。
 
 本文按这个顺序展开：多 device 管理 → Peer Access → P2P Memcpy → 跨 GPU 同步 → NCCL → 拓扑感知。建议按顺序阅读——后面章节的 API 建立在前面的 context 管理基础上。
 
@@ -12,13 +12,13 @@
 
 ---
 
-## 1. 多 Device 管理——"为什么 GPU 0 的指针在 GPU 1 上不能用"
+## 1. 多 Device 管理——「为什么 GPU 0 的指针在 GPU 1 上不能用」
 
 ### 1.1 Per-device Context：每个 GPU 有独立的虚拟地址空间
 
 CUDA 为每个 GPU 维护一个独立的 **primary context**——包含独立的虚拟地址空间、独立的 `cudaMalloc` 堆、独立的 stream/event 池。这意味着：
 
-```cuda
+```c
 cudaSetDevice(0);
 float *d0;
 cudaMalloc(&d0, N * sizeof(float));   // d0 在 GPU 0 的地址空间中
@@ -27,16 +27,16 @@ cudaSetDevice(1);
 my_kernel<<<grid, block>>>(d0);        // ← 非法！d0 对 GPU 1 无意义
 ```
 
-CPU 类比：两个进程各有独立的虚拟地址空间——进程 A 的 `malloc` 返回的指针在进程 B 中不可用。多 GPU 编程同理，只是"进程"变成了"device context"。
+CPU 类比：两个进程各有独立的虚拟地址空间——进程 A 的 `malloc` 返回的指针在进程 B 中不可用。多 GPU 编程同理，只是「进程」变成了「device context」。
 
 ### 1.2 `cudaSetDevice` 影响所有后续 API
 
-`cudaSetDevice` 切换的是**调用线程的当前 device**。它不是简单地选择一个物理 GPU——它改变了后续所有 CUDA API 的语义：
+`cudaSetDevice` 切换的是**调用线程的当前 device**，改变后续所有 CUDA API 的默认 device：
 
-```cuda
+```c
 cudaSetDevice(0);  // 从此，这个线程的：
 cudaMalloc(...);   //   分配在 GPU 0 的 HBM 上
-cudaStreamCreate(…); // stream 在 GPU 0 上
+cudaStreamCreate(...); // stream 在 GPU 0 上
 my_kernel<<<...>>>(); // kernel 在 GPU 0 上执行
 cudaMemcpy(dst, src, ..., cudaMemcpyDefault);  // 默认为 GPU 0 ↔ Host
 ```
@@ -50,7 +50,7 @@ cudaMemcpy(dst, src, ..., cudaMemcpyDefault);  // 默认为 GPU 0 ↔ Host
 
 ### 1.3 查询 GPU 数量与属性
 
-```cuda
+```c
 int deviceCount;
 cudaGetDeviceCount(&deviceCount);
 
@@ -66,13 +66,13 @@ for (int i = 0; i < deviceCount; i++) {
 
 ---
 
-## 2. Peer Access——"P2P 通信的前提条件"
+## 2. Peer Access——「P2P 通信的前提条件」
 
 ### 2.1 `cudaDeviceCanAccessPeer`：不是所有 GPU 对都支持
 
 两个 GPU 能否直接访问对方的显存，取决于硬件拓扑和驱动配置。你必须**在运行时查询**，不能假设 NVLink 存在或者 P2P 一定可用：
 
-```cuda
+```c
 int canAccess01, canAccess10;
 cudaDeviceCanAccessPeer(&canAccess01, 0, 1);  // GPU 0 → GPU 1？
 cudaDeviceCanAccessPeer(&canAccess10, 1, 0);  // GPU 1 → GPU 0？
@@ -82,7 +82,7 @@ cudaDeviceCanAccessPeer(&canAccess10, 1, 0);  // GPU 1 → GPU 0？
 
 ### 2.2 `cudaDeviceEnablePeerAccess`：一次性启用
 
-```cuda
+```c
 cudaSetDevice(0);
 if (canAccess01) {
     cudaDeviceEnablePeerAccess(1, 0);  // enable GPU 0 → GPU 1 access
@@ -93,7 +93,7 @@ if (canAccess10) {
 }
 ```
 
-启用是**幂等的、低开销的**——多次调用不会重复初始化。通常在程序初始化时全部开启。
+启用是低开销的，状态上幂等，但**重复启用会返回 `cudaErrorPeerAccessAlreadyEnabled`**——要按可容忍错误处理。通常在程序初始化时对需要的 GPU 对全部开启一次。
 
 ### 2.3 为什么这很重要：未启用 peer access 的回退
 
@@ -111,11 +111,11 @@ if (canAccess10) {
 
 ---
 
-## 3. P2P Memcpy——"怎么让 NVLink 跑满"
+## 3. P2P Memcpy——「怎么让 NVLink 跑满」
 
 ### 3.1 `cudaMemcpyPeer`：直接的 GPU→GPU 传输
 
-```cuda
+```c
 // 将 GPU 0 上的 d_src 传输到 GPU 1 上的 d_dst
 cudaMemcpyPeer(d_dst, 1,    // dst ptr + dst device
                d_src, 0,    // src ptr + src device
@@ -124,9 +124,9 @@ cudaMemcpyPeer(d_dst, 1,    // dst ptr + dst device
 
 这与 `cudaMemcpy` 的核心区别：**src 和 dst 都是 device pointer，API 不要求先把数据放到 host buffer**。能否直接走 P2P，取决于 peer access 和拓扑。
 
-### 3.2 `cudaMemcpyPeerAsync`：用 Stream/Event 建依赖
+### 3.2 `cudaMemcpyPeerAsync`：与 Stream 配合
 
-```cuda
+```c
 cudaSetDevice(1);
 cudaStream_t s1;
 cudaStreamCreate(&s1);
@@ -138,60 +138,26 @@ cudaMemcpyPeerAsync(d_dst, 1, d_src, 0, N * sizeof(float), s1);
 my_kernel<<<grid, block, 0, s1>>>(d_dst, N);
 ```
 
-`cudaMemcpyPeerAsync` 只有一个 stream 参数，官方没有定义这个 stream 属于源 GPU 还是目标 GPU，也没有说它同时给两个设备排序。不要依赖“目标 GPU 的 stream 自动完成”这类说法；跨设备生产/消费要用 event 显式建立依赖。
+stream 归属的注意事项与正确用法见第 4.1 节的 event 依赖示例。
 
 ### 3.3 性能实测：NVLink P2P vs PCIe P2P vs CPU 中转
 
+测量方法（三条路径，各 64 MB × 200 次取均值）：
+
 ```bash
-# 测试程序
-cat > p2p_bw.cu << 'BENCH'
-#include <cuda_runtime.h>
-#include <stdio.h>
+# Test 1: P2P Direct —— 启用 peer access 后 cudaMemcpyPeer 直传
+cudaSetDevice(0); cudaSetDevice(1);          # 双向 enablePeerAccess 后
+cudaMemcpyPeer(d1, 1, d0, 0, N * sizeof(float));
 
-#define N (256 * 1024 * 1024 / sizeof(float))  // 256 MB
+# Test 2: CPU-mediated —— cudaDeviceDisablePeerAccess 后再 cudaMemcpyPeer
+#                          （回退 host staging）
 
-int main() {
-    int count;
-    cudaGetDeviceCount(&count);
-    printf("Found %d GPUs\n", count);
-
-    // 只用 GPU 0 和 GPU 1
-    cudaSetDevice(0);
-    float *d0;
-    cudaMalloc(&d0, N * sizeof(float));
-    cudaDeviceEnablePeerAccess(1, 0);
-
-    cudaSetDevice(1);
-    float *d1;
-    cudaMalloc(&d1, N * sizeof(float));
-    cudaDeviceEnablePeerAccess(0, 0);
-
-    // --- Test 1: P2P Direct ---
-    cudaSetDevice(0);
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
-    for (int i = 0; i < 100; i++)
-        cudaMemcpyPeer(d1, 1, d0, 0, N * sizeof(float));
-    cudaEventRecord(stop);
-    cudaDeviceSynchronize();
-    // ...
-
-    // --- Test 2: CPU-mediated (disable peer access first) ---
-    // (需要先 cudaDeviceDisablePeerAccess)
-    // ...
-
-    // --- Test 3: Staged via CPU ---
-    float *h_buf;
-    cudaMallocHost(&h_buf, N * sizeof(float));
-    // GPU 0 → CPU → GPU 1
-    // ...
-}
-BENCH
+# Test 3: Staged via CPU —— 显式两跳
+cudaMemcpy(h_buf, d0, size, cudaMemcpyDeviceToHost);
+cudaMemcpy(d1, h_buf, size, cudaMemcpyHostToDevice);
 ```
 
-在 8×A100-SXM4 服务器上的实测（配套 Benchmark，64 MB × 200 次传输）：
+完整可编译版本见配套 benchmark。在 8×A100-SXM4 服务器上的实测（64 MB × 200 次传输）：
 
 | 路径                            | 实测带宽     | 加速比 | 说明                                |
 | ------------------------------- | ------------ | ------ | ----------------------------------- |
@@ -203,13 +169,13 @@ BENCH
 
 ### 3.4 Unified Memory 在多 GPU 下的陷阱
 
-在 [GPU 内存管理](12_gpu_memory_management.md) 第 4 节讨论过 UM 的 page fault 问题。多 GPU 场景中更严重：`cudaMallocManaged` 分配的页面在两个 GPU 之间迁移时，触发 **device-to-device page fault**——延迟 ~10 μs/page。
+在 [GPU 内存管理](12_gpu_memory_management.md) 第 4 节讨论过 UM 的 page fault 问题。多 GPU 场景中更严重：`cudaMallocManaged` 分配的页面在两个 GPU 之间迁移时，触发 **device-to-device page fault**——单次迁移的代价远高于本地缺页（NVIDIA 只把它描述为 expensive，没有给出固定微秒数），以页为粒度逐次触发对逐 token 的延迟敏感路径不可接受。
 
 对于 LLM 推理的 KV cache 大小（~14 MB / 256-token chunk），跨 GPU page fault 的总延迟是致命的。这就是为什么 vLLM 用 NCCL 做 TP（显式的 peer-to-peer 传输 + 计算重叠），而不是 Unified Memory。
 
 ---
 
-## 4. 跨 GPU 同步——"怎么确保 GPU 1 的数据已经就绪"
+## 4. 跨 GPU 同步——「怎么确保 GPU 1 的数据已经就绪」
 
 ### 4.1 `cudaStreamWaitEvent`：让一个 GPU 等待另一个 GPU 的事件
 
@@ -217,7 +183,7 @@ BENCH
 
 **方案**：在生产者 GPU 的 stream 上 record，在拷贝/消费者 GPU 的 stream 上 wait。下面把生产、拷贝、消费拆开：
 
-```cuda
+```c
 cudaSetDevice(0);
 cudaStream_t s0;
 cudaStreamCreate(&s0);
@@ -254,15 +220,15 @@ TP=4, 每个 GPU 算 1/4 layer
 
 时间线:
   GPU 0: [Layer N] ──P2P──→ GPU 1: [Layer N] ──P2P──→ GPU 2: [Layer N]
-      │  ← cudaStreamWaitEvent(e1)              │
-      └─ [Layer N+1] 在收到 GPU 3 的结果后开始    └─ [Layer N+1]
+      │  ← cudaStreamWaitEvent(前级 event)      │
+      └─ [Layer N+1] 等前级 event 后开始          └─ [Layer N+1]
 ```
 
-TP 推理中每个 GPU 需要 all_reduce——等价于每个 GPU 将自己的 1/4 结果广播给其他 3 个 GPU。用 P2P + event 可以手写一个 ring-based all_reduce，但 NCCL 已经做了这件事（而且比你手写的好）。这就引出了下一节。
+TP 推理中每个 GPU 需要 all_reduce——等价于每个 GPU 将自己的 1/4 结果广播给其他 3 个 GPU。用 P2P + event 可以手写一个 ring-based all_reduce，但 NCCL 已经做了这件事，而且做得更好，下一节展开。
 
 ---
 
-## 5. NCCL——"手写 P2P 的尽头"
+## 5. NCCL——「手写 P2P 的尽头」
 
 ### 5.1 为什么需要 NCCL
 
@@ -313,8 +279,8 @@ ncclCommInitRank(&comm, world_size, id, rank);
 
 上面的 `ncclCommInitRank` 示例假定每个 rank 是一个独立的进程/线程，通过 `ncclUniqueId` 来协商建立通信组。在生产环境中，这对应两种常见模式：
 
-- **单进程多线程**：`main()` 中 spawn N 个线程（如 8 个），每个线程 `cudaSetDevice(i)` + `ncclCommInitRank`。这是 `torchrun --nproc_per_node=8` 的本质。
-- **多进程**：`mpirun -np 8` 或者 `torchrun`，每个进程独占一个 GPU。`ncclUniqueId` 通过 MPI 广播或共享文件协调。
+- **单进程多线程**：`main()` 中 spawn N 个线程（如 8 个），每个线程 `cudaSetDevice(i)` + `ncclCommInitRank`。常见于自研 benchmark 与嵌入式推理框架。
+- **多进程**：`mpirun -np 8` 或 `torchrun --nproc_per_node=8`，每个 rank 一个进程、独占一个 GPU。`ncclUniqueId` 通过 MPI 广播、TCP 或共享文件协调。
 
 单机多卡的单进程多线程模式不需要 MPI——`ncclUniqueId` 可以通过 rank 0 生成后，以 shared memory / condition_variable 的方式交给其他线程。这也是本文配套 benchmark 采用的方式。
 
@@ -383,7 +349,7 @@ if (asyncErr != ncclSuccess) {
 
 ---
 
-## 6. 拓扑感知——"nvidia-smi topo -m 告诉你的事"
+## 6. 拓扑感知——「nvidia-smi topo -m 告诉你的事」
 
 ### 6.1 拓扑矩阵解读
 
@@ -407,7 +373,7 @@ nvidia-smi topo -m
 
 #### 6.1.1 `nvidia-smi topo -p2p r`：P2P 可用性矩阵
 
-`-m` 给你的是拓扑类型的"上限"（NVLink 存在），但**不保证 P2P 已启用**。用 `-p2p r` 查看实际的 P2P 状态：
+`-m` 给你的是拓扑类型的「上限」（NVLink 存在），但**不保证 P2P 已启用**。用 `-p2p r` 查看实际的 P2P 状态：
 
 ```bash
 nvidia-smi topo -p2p r
@@ -422,24 +388,31 @@ nvidia-smi topo -p2p r
 
 `OK` = P2P 实际可用，`NS` = Not Supported（或者被 ACS 禁用）。这个矩阵是 `cudaDeviceCanAccessPeer` 的 `nvidia-smi` 版本——两者应该一致。
 
-### 6.2 NVSwitch 域——A100/H100 的拓扑关键
+### 6.2 NVSwitch——A100/H100 的单一全互联 fabric
 
-8×A100-SXM4 的典型拓扑：
+8×A100-SXM4（HGX/DGX A100）的拓扑是**单一 NVSwitch fabric**：8 张 GPU 全部连到 6 颗 NVSwitch，任意两卡之间都是 NV12（12 条 NVLink 3.0），`nvidia-smi topo -m` 的全矩阵都是 NV12——不存在「两个 domain 各 4 卡」的结构（那是 DGX-1/V100 时代的多 domain 布局）。NVIDIA Fabric Manager 文档对 HGX A100 的定义就是 8 GPU + 6 NVSwitch 的单 baseboard 全互联：
 
 ```text
-NVSwitch Domain 0           NVSwitch Domain 1
-┌─────────────────────┐    ┌─────────────────────┐
-│ GPU0  GPU1  GPU2  GPU3│  │ GPU4  GPU5  GPU6  GPU7│
-│  └──4×NVSwitch 全互联──┘  │  └──4×NVSwitch 全互联──┘
-└─────────────────────┘    └─────────────────────┘
-         │                          │
-         └──── PCIe x16 ────────────┘
-               跨 domain: SYS
+8×A100 + 6×NVSwitch（单一 fabric）
+┌──────────────────────────────────────────┐
+│ GPU0 ──NV12──┐  ┌──NV12── GPU4          │
+│ GPU1 ──NV12──┼──┼──NV12── GPU5          │
+│ GPU2 ──NV12──┤  ├──NV12── GPU6          │
+│ GPU3 ──NV12──┘  └──NV12── GPU7          │
+│        全部经过 NVSwitch 全互联          │
+└──────────────────────────────────────────┘
+
+- 任意两卡：NVLink 3.0 全互联，~300 GB/s 单向，实测 ~269 GB/s
+- 跨卡通信不经过 CPU；CPU/UPI 只承载 host 内存路径
 ```
 
-- **Domain 内**：任意两个 GPU 通过 NVSwitch 以 NVLink 全互联，P2P 带宽约 300 GB/s 单向（A100 NVLink 3.0），实测 ~269 GB/s
-- **跨 Domain**：必须经过 CPU（SYS），带宽骤降 35×
-- **TP 分配原则**：TP 组内的 GPU 必须在同一个 NVSwitch domain 内——否则每个 token 的 all_reduce 都是瓶颈
+- **域内即全局**：任意 GPU 对都是 NV12，P2P 走 NVSwitch fabric
+- **跨 CPU 的 SYS 路径**只在无 NVLink 的系统（消费级卡、双基板 PCIe 系统）上出现
+- **TP 分配原则**：优先把 TP 组放在同一 NVSwitch fabric 内（8 卡 A100 天然满足）；在无 NVLink 的机器上，用 `nvidia-smi topo -m` 确认 TP 组内至少是 PIX/PHB，避免 SYS
+
+![HGX A100 拓扑](assets/multigpu-01-nvswitch.png)
+
+_图 1：HGX/DGX A100 的单一 NVSwitch fabric——8 卡全互联，GPU 间通信不经过 CPU。_
 
 ### 6.3 `nvidia-smi topo -c`：查看各 GPU 的 CPU 亲和性
 
@@ -486,7 +459,7 @@ GPU4    24-47,120-143
 
 ### 7.2 什么时候不能依赖 P2P
 
-- **跨 NUMA node 的 GPU**：即使在单台 8×A100 中，NVSwitch domain 0↔1 之间仍然需要走 CPU
+- **无 NVLink 的跨 NUMA 部署**：消费级卡或 PCIe 服务器上，跨 NUMA node 的 GPU 对可能是 SYS——走 CPU 中转
 - **消费级 GPU**：RTX 系列不支持 P2P（`cudaDeviceCanAccessPeer` 返回 0），必须 CPU 中转
 - **虚拟化环境**：GPU 被切分为 MIG 实例后，不同实例之间 P2P 被禁用
 - **容器内的 ACS 限制**：即使硬件支持，容器的 PCIe ACS 策略可能阻止 P2P
@@ -509,13 +482,13 @@ GPU4    24-47,120-143
 
 ### 8.2 A100 关键指标速查
 
-| 路径                  | 有效带宽 (单向) | 适用                 |
-| --------------------- | --------------- | -------------------- |
-| NVLink 4.0 ×18 (H100) | ~450 GB/s       | 同一 NVSwitch domain |
-| NVLink 3.0 ×12 (A100) | ~300 GB/s       | 同一 NVSwitch domain |
-| PCIe Gen4 P2P         | ~32 GB/s        | 跨 PCIe switch       |
-| CPU 中转 (Gen4)       | ~13 GB/s        | 最后手段             |
-| CPU 中转 (Gen5)       | ~27 GB/s        | 最后手段             |
+| 路径                  | 有效带宽 (单向) | 适用                          |
+| --------------------- | --------------- | ----------------------------- |
+| NVLink 4.0 ×18 (H100) | ~450 GB/s       | NVSwitch fabric 内任意 GPU 对 |
+| NVLink 3.0 ×12 (A100) | ~300 GB/s       | NVSwitch fabric 内任意 GPU 对 |
+| PCIe Gen4 P2P         | ~32 GB/s        | 跨 PCIe switch                |
+| CPU 中转 (Gen4)       | ~13 GB/s        | 最后手段                      |
+| CPU 中转 (Gen5)       | ~27 GB/s        | 最后手段                      |
 
 ### 8.3 与其他文章的衔接
 

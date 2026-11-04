@@ -11,17 +11,17 @@
 [`08_kernel_launch_latency.md`](08_kernel_launch_latency.md) 的实测结论：每个 CUDA kernel launch 有 ~2.6 μs（RTX 5090）/ ~2.3 μs（A100）的固定开销。当你的程序需要 launch 数千次小 kernel 时，launch 开销本身可能超过计算时间：
 
 ```text
-1000 次空 kernel launch:  1000 × 2.6 μs = 2.6 ms   ← 纯开销
-1000 次 1 MB H2D 传输:    1000 × 11 μs  = 11.0 ms   ← 纯开销
+1000 次空 kernel launch:  1000 × 2.6 μs = 2.6 ms   ← 提交开销
+1000 次 1 MB H2D 传输:    1000 × 11 μs  = 11.0 ms   ← 大头是 DMA 传输本身，graph 省不掉
 ```
 
-CUDA Graph 的核心思路：**录制一次，重放多次**。将整个 kernel 调用序列预录制为一个 graph，之后每次 launch 只需要一次 CPU→GPU 提交。
+CUDA Graph 的思路是录制一次、重放多次：把整个 kernel 调用序列预录制为一个 graph，之后每次 launch 只需要一次 CPU→GPU 提交。
 
-| 方式        | 1000 次调用的提交开销         | 开销来源                      |
-| ----------- | ----------------------------- | ----------------------------- |
-| 传统 launch | ~2.6 ms                       | 每个 kernel 一次 CPU→GPU 往返 |
-| CUDA Graph  | ~0 ms（复用已实例化的 graph） | 录制和实例化只在首次发生      |
-| + Update    | ~数 μs                        | 仅替换参数，无需重新录制      |
+| 方式        | 1000 次调用的提交开销              | 开销来源                      |
+| ----------- | ----------------------------------- | ----------------------------- |
+| 传统 launch | ~2.6 ms                             | 每个 kernel 一次 CPU→GPU 往返 |
+| CUDA Graph  | ~2-3 μs（复用已实例化的 graph）     | 录制和实例化只在首次发生      |
+| + Update    | ~数 μs                              | 仅替换参数，无需重新录制      |
 
 适用场景：
 
@@ -52,9 +52,13 @@ CUDA Graph 的核心思路：**录制一次，重放多次**。将整个 kernel 
 
 **录制阶段**：graph 记录的是操作描述（kernel name + params + dependencies），不执行任何计算。
 
-**实例化阶段**：驱动验证 graph 合法性，并做硬件级优化（如合并相邻的 memcpy nodes、预分配资源）。实例化是最贵的操作（~30-40 μs），但只做一次。
+**实例化阶段**：驱动验证 graph 合法性、预分配执行资源。实例化是最贵的操作（~30-40 μs），但只做一次。
 
 **启动阶段**：`cudaGraphLaunch` 一次性下发整个 graph。后续启动几乎零 overhead。
+
+![CUDA Graph 生命周期](assets/graph-01-lifecycle.png)
+
+_图 1：Capture → Instantiate → Launch 的生命周期与各阶段开销；参数变化走 Update 而非重新实例化。_
 
 时间线对比：
 
@@ -90,17 +94,17 @@ cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 cudaStreamEndCapture(stream, &graph);
 
 // 实例化 → 启动（可多次）
-cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+cudaGraphInstantiate(&instance, graph, 0);
 cudaGraphLaunch(instance, stream);
 cudaStreamSynchronize(stream);
 ```
 
 **限制**：
 
-- 必须在单一 stream 上录制（可录制多个 stream 的 graph 需要 `cudaStreamCaptureModeRelaxed`，但推荐单 stream）
+- 跨 stream 录制是标准用法：capture 中用 `cudaEventRecord` + `cudaStreamWaitEvent` 建立跨 stream 依赖，全部录进同一个 graph。`cudaStreamCaptureMode*` 参数控制的是 capture 期间对"潜在不安全 API 调用"（如 `cudaMalloc`）的处理严格程度，与能否多 stream 无关
 - 录制期间不能调用 `cudaStreamSynchronize`、`cudaDeviceSynchronize`
-- 不能创建/销毁 CUDA events
-- 不能使用 dynamic parallelism（子 kernel launch）
+- 对录制中的 event 不能 Query/Synchronize/Destroy（`cudaEventRecord` + `cudaStreamWaitEvent` 用于跨 stream 依赖是合法且必需的）
+- stream capture 无法录制 device 侧发起的子 kernel launch（CDP）；host 发起的 kernel 不受影响
 
 ### 3.2 Manual API
 
@@ -130,7 +134,7 @@ cudaGraphAddMemcpyNode(&mNode, graph, NULL, 0, &mp);
 cudaGraphAddDependencies(graph, &kNode, &mNode, 1);
 
 // 实例化 + 启动
-cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+cudaGraphInstantiate(&instance, graph, 0);
 cudaGraphLaunch(instance, stream);
 ```
 
@@ -153,11 +157,15 @@ cudaGraphLaunch(instance, stream);
 
 ```c
 // 首次：用 placeholder 参数录制 + 实例化
-cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+cudaGraphInstantiate(&instance, graph, 0);
 
 // 每次请求：更新参数 → launch（比重新 instantiate 快 10-100×）
+// 方式一：逐 node 更新（少量参数变化）
 cudaGraphExecKernelNodeSetParams(instance, kNode, &newKernelParams);
+
+// 方式二：改源 graph 后整体更新（大量参数或结构变化）
 cudaGraphExecUpdate(instance, graph, &errorLog);
+
 cudaGraphLaunch(instance, stream);
 ```
 
@@ -228,7 +236,7 @@ A100 实测输出（CSV 首行解析）：
 | Instantiation          | **33.07 μs** | 驱动验证 + 优化，最贵的单次操作          |
 | First Launch (API)     | 8.95 μs      | 首次 launch 含附加初始化                 |
 | First Launch (Total)   | 37.28 μs     | API + device 侧全部完成                  |
-| Repeat Launch (API)    | **2.27 μs**  | 后续 launch —— 这就是 graph 消除后的开销 |
+| Repeat Launch (API)    | **2.27 μs**  | 后续 launch，一次 API 提交全部 nodes     |
 | Repeat Launch (Total)  | 26.63 μs     | API + device                             |
 | First Launch (Device)  | 26.88 μs     | GPU 侧首次执行                           |
 | Repeat Launch (Device) | **24.48 μs** | GPU 侧重复执行（比传统 launch 稳定得多） |
@@ -251,7 +259,7 @@ A100 实测输出（CSV 首行解析）：
 | Capture 期间创建/销毁 events           | graph 被 invalidated                     | 用 graph nodes 的 event-like 机制替代                                        |
 | 忘记 `cudaGraphInstantiate`            | `cudaErrorInvalidValue`                  | graph 只是蓝图，必须实例化才能执行                                           |
 | Memory allocation 在 capture 内        | `cudaMalloc` 在 captured stream 中不支持 | 用 `cudaGraphAddMemAllocNode`（Manual API）或预先分配好再 capture            |
-| Debug 信息不直观                       | `cudaGraphLaunch` 的错误不指向具体 node  | `cudaGraphInstantiate` 时打开 `cudaGraphInstantiateFlagUseNodePriority` 调试 |
+| Debug 信息不直观                       | `cudaGraphLaunch` 的错误不指向具体 node  | 用 `cudaGraphDebugDotPrint` 输出 graph 结构图辅助排查                        |
 
 ---
 
@@ -268,24 +276,24 @@ A100 实测输出（CSV 首行解析）：
 
 ---
 
-## 8. 端到端实测 — 配套 Demo
+## 8. 端到端收益估算
 
-使用配套 Demo（2 个 kernel 的 graph，10000 次迭代）在 A100 上的简化对比：
+以"每 iter 串 2 个 kernel"的循环为例，graph 的收益来自把每 iter 的 2 次 launch 压缩为 1 次 graph launch：
 
-| 模式                | 耗时/iter | 说明                                    |
-| ------------------- | --------- | --------------------------------------- |
-| 传统 stream launch  | 6.8 μs    | 每次 2 个 kernel，各需一次 CPU→GPU 往返 |
-| Graph instantiation | 202 μs    | **一次性**                              |
-| Graph re-launch     | 0.02 μs   | 复用已实例化 graph，10000 次仅需 0.2 ms |
+```text
+传统：   每 iter 2 × ~2.3 μs launch ≈ 4.6 μs 提交开销（A100）
+Graph：  每 iter 1 × ~2.3 μs（cudaGraphsPerfScaling 的 Repeat Launch API 口径）
+         外加一次性 instantiate ~33 μs
+```
 
-端到端加速比：**~355x**。实际场景中差距小一些——传统 launch 的 6.8 μs 包含 kernel 执行（两个 64K-element 轻量 kernel），而 graph re-launch 的 0.02 μs 是纯提交开销。但核心结论成立：**graph 将提交开销压缩到接近于零**。
+提交开销约省一半；循环内的 kernel/node 数量越多省得越多。推理服务里几十上百个 node 的固定 pipeline 正是收益最大的场景。配套 Demo（[09_cuda_graphs_demo.cu](code/09_cuda_graphs_demo.cu)）可以复现这一对比；计时时要区分"提交开销"与"kernel 执行时间"——两者混在一个计时窗口里会高估 graph 的收益。
 
-> **易错点**：capture 和 launch 必须使用**不同的 stream**。在 capture stream 上执行 `cudaGraphLaunch` 会返回 "device not ready" 错误。
+> **易错点**：capture 与 launch 不能同时进行。`cudaStreamEndCapture` 之后才能 launch（同一 stream 或其他 stream 均可）；Begin/End 之间的 capture 进行中不能 launch 或同步，否则 capture 失败。
 
 ## 9. 相关文档
 
 - [`08_kernel_launch_latency.md`](08_kernel_launch_latency.md)：2.6 μs 的 launch 开销是本文的起点
-- [`07_cuda_streams_concurrency.md`](07_cuda_streams_concurrency.md)：graph 与 stream 可以组合——在多个 stream 上 launch 同一 graph instance
+- [`07_cuda_streams_concurrency.md`](07_cuda_streams_concurrency.md)：graph 与 stream 可以组合，同一实例的多次 launch 之间串行排队
 - [`06_nsight_compute_cli.md`](../04_profiling/06_nsight_compute_cli.md)：用 `ncu` profile graph 中的单个 kernel，不影响 graph 结构
 - [`simpleCudaGraphs`](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/3_CUDA_Features/simpleCudaGraphs) / [`cudaGraphsPerfScaling`](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/6_Performance/cudaGraphsPerfScaling)：本文使用的官方示例
 

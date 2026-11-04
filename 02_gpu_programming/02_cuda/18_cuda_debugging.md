@@ -1,6 +1,6 @@
 # CUDA 调试实战——从 cuda-gdb 到 compute-sanitizer
 
-你已经写了 17 篇 CUDA 代码——但总有那么一刻：kernel 跑完了，结果全 NaN。没有 error code，没有 crash，只有一片安静的 `nan`。或者更糟：有时正确有时错误，多跑几次才复现——典型的 race condition。
+总有那么一刻：kernel 跑完了，结果全 NaN。没有 error code，没有 crash，只有一片安静的 `nan`。或者更糟：有时正确有时错误，多跑几次才复现——典型的 race condition。
 
 CUDA 的调试工具链不像 CPU 侧那么成熟——没有 `printf` 那么方便的断点内省（实际上有 `printf` 但 thread 间输出乱序）、没有 IDE 一键 debug。但一旦掌握 `cuda-gdb` + `compute-sanitizer` + 正确的错误处理模式，定位 GPU Bug 的效率不输 CPU。
 
@@ -46,8 +46,8 @@ cuda-gdb ./my_program
 # 查看寄存器
 (cuda-gdb) info registers
 
-# 查看 Shared Memory
-(cuda-gdb) info cuda sharedmem
+# 查看 Shared Memory 变量——直接按变量名 print
+(cuda-gdb) print sdata@32      # 打印 sdata 的前 32 个元素
 
 # 查看 Global Memory 中的变量
 (cuda-gdb) p d_array[0]@16  # 打印 d_array 的前 16 个 float
@@ -59,10 +59,10 @@ cuda-gdb ./my_program
 
 ### 1.2 关键限制
 
-- **`-G` 关闭了编译器优化**——debug 模式下代码行为可能与 release 不同（时序变化可能让 race condition 消失）
-- **单步是 warp-level 的**——`stepi` 推进整个 warp 的 PC，而不是一个线程
-- **不能单步切换线程**——断点触发时，warp 内所有活跃线程停在同一位置
-- **调试信息有代价**——debug build 比 release 慢 10-100×
+- `-G` 关闭了编译器优化：debug 模式下代码行为可能与 release 不同（时序变化可能让 race condition 消失）
+- 单步是 warp-level 的：`stepi` 推进整个 warp 的 PC，而不是一个线程
+- 不能单步切换线程：断点触发时，warp 内所有活跃线程停在同一位置
+- 调试信息有代价：debug build 比 release 慢 10-100×
 
 ### 1.3 典型场景：NaN 定位
 
@@ -96,8 +96,10 @@ cuda-gdb ./my_program
 ```gdb
 (cuda-gdb) break my_kernel
 (cuda-gdb) run
-(cuda-gdb) info cuda sharedmem
-# 打印当前 block 的 Shared Memory 内容（十六进制 + float 解释）
+(cuda-gdb) print sdata@32
+# 按变量名直接打印 Shared Memory 数组内容
+(cuda-gdb) info cuda threads
+# 查看各 warp/thread 的执行状态（cuda-gdb 的 cuda 子命令可用 info cuda 查看）
 ```
 
 尤其在 Bank Conflict 排查时有用——可以看到 Shared Memory 中数据的实际布局。
@@ -106,27 +108,28 @@ cuda-gdb ./my_program
 
 ## 2. `compute-sanitizer`——自动检测越界、Race、未初始化
 
-`compute-sanitizer` 是 NVIDIA 的 GPU 内存错误检测工具——相当于 CPU 上的 Valgrind / AddressSanitizer。它不需要重新编译（!），支持 `-lineinfo` 的 release build 即可。
+`compute-sanitizer` 是 NVIDIA 的 GPU 内存错误检测工具——相当于 CPU 上的 Valgrind / AddressSanitizer。无需重编即可运行，带 `-lineinfo` 的 release build 即可拿到源码级回溯。
 
-### 2.1 四种检测模式
+### 2.1 四个检测工具
 
 ```bash
-# 模式 1: 越界（Out-of-bounds）—— 默认模式
-compute-sanitizer ./my_program
+# 工具 1: memcheck —— 内存错误（越界/非法地址/对齐），默认工具
+compute-sanitizer ./my_program                 # 不带 --tool 即 memcheck
+compute-sanitizer --tool memcheck --leak-check full ./my_program
 
-# 模式 2: Race condition
+# 工具 2: racecheck —— Shared Memory race condition
 compute-sanitizer --tool racecheck ./my_program
 
-# 模式 3: 未初始化访问
+# 工具 3: initcheck —— 未初始化读
 compute-sanitizer --tool initcheck ./my_program
 
-# 模式 4: 内存泄漏
-compute-sanitizer --tool memcheck ./my_program
+# 工具 4: synccheck —— CUDA API 同步用法错误
+compute-sanitizer --tool synccheck ./my_program
 ```
 
-### 2.2 越界检测（默认）
+### 2.2 越界检测（memcheck，默认）
 
-最常用的模式。A100 (CUDA 12.8) 实测：默认模式**能检测 Global Memory 非法地址（如 Null Pointer deref），但对 Shared Memory 越界和 Global Memory 轻微越界的检测能力有限**。
+最常用的工具。A100 (CUDA 12.8) 实测：能检测 Global Memory 非法地址（如 Null Pointer deref）。
 
 ```bash
 nvcc -lineinfo -o my_program my_kernel.cu  # release + line info
@@ -148,16 +151,16 @@ A100 实测输出（Null Pointer deref）：
 =========     cudaDeviceSynchronize.
 ```
 
-> **重要发现**：A100 实测中，`compute-sanitizer` 默认模式**不会**报告 Shared Memory 的轻微越界（如 `sdata[62]` 在只分配 32 个元素的数组上）。这是因为 GPU 的 Shared Memory 没有 MMU 保护——越界写入会悄悄覆盖相邻内存（可能是其他 Shared Memory 变量或未使用区域），不触发硬件异常。因此**不能仅靠 compute-sanitizer 来保证 Shared Memory 越界安全**——代码审查和静态分析（检查所有 `threadIdx.x * stride + offset` 的上限）仍然必要。
+> **边界条件**：memcheck 对 Shared Memory 的标准报错是 "Invalid __shared__ write ... out of bounds"，检测的是访问**越过 kernel 的 Shared Memory 分配窗口**的情况。实测中 `sdata[62]`（数组声明 32 个元素，但 kernel 的动态 SMEM 窗口更大）这类仍在分配窗口内的数组级越界可能不报——越界覆盖的是本 kernel 自己的其他 SMEM 空间。所以 Shared Memory 的数组级越界要靠代码审查（检查所有 `threadIdx.x * stride + offset` 的上限），不能只靠 sanitizer。
 
-Global Memory 越界同理——写到一个合法但非预期的地址（如 `d[tid + N]` 越过分配边界但仍在 GPU 可寻址范围内）可能不被报告。
+Global Memory 越界同理——越出分配且落在未映射地址会被报；写进恰好合法的其他分配则很难区分。
 
 排查 SOP：
 
-1. `compute-sanitizer` 跑一次（默认模式）——能抓到非法地址和 severe OOB
+1. `compute-sanitizer` 跑一次（默认 memcheck）——能抓到非法地址和越过分配窗口的 OOB
 2. 但不能 100% 依赖它——逐行检查所有 `threadIdx.x` 相关的索引计算，确认 `tid * stride + offset < ARRAY_SIZE`
 3. 特别注意 `tid + s` 模式中的 `s` 最大值（Reduction kernel 中的常见 bug）
-4. 怀疑 SMEM 越界时——在 cuda-gdb 中用 `info cuda sharedmem` 检查实际数据
+4. 怀疑 SMEM 越界时——在 cuda-gdb 中 `print sdata@N` 检查实际数据
 
 ### 2.3 Race Condition 检测
 
@@ -201,16 +204,16 @@ float x = sdata[(tid + 1) % 32];  // ← RACE: 线程 0 读 sdata[1] 可能还�
 compute-sanitizer --tool initcheck ./my_program
 ```
 
-检测任何对未初始化 Shared Memory 或 Local Memory 的读操作。这在高 Occupancy 场景下特别隐蔽——Shared Memory 可能残留前一个 block 的数据（不是清零的）。
+检测对未初始化 device（global）内存的读。注意 Shared Memory 不在 initcheck 的覆盖范围内——SMEM 残留前一个 block 数据的问题要靠显式初始化解决。
 
 ### 2.5 性能代价
 
-| 工具                             | 速度下降 | 何时用                                   |
-| -------------------------------- | -------- | ---------------------------------------- |
-| `compute-sanitizer` (默认，越界) | ~2-5×    | 每次提 PR 前跑一次                       |
-| `--tool racecheck`               | ~5-20×   | 怀疑有 race 时、Shared Memory 代码变更后 |
-| `--tool initcheck`               | ~10-50×  | 出现随机正确/错误时                      |
-| `cuda-gdb` (-G debug build)      | ~10-100× | 精确定位 NaN、单步排查逻辑               |
+| 工具                             | 速度下降（经验值，随驱动/负载浮动） | 何时用                                   |
+| -------------------------------- | ------------------------------------ | ---------------------------------------- |
+| memcheck（默认）                 | ~2-5×                                | 每次提 PR 前跑一次                       |
+| `--tool racecheck`               | ~5-20×                               | 怀疑有 race 时、Shared Memory 代码变更后 |
+| `--tool initcheck`               | ~10-50×                              | 出现随机正确/错误时                      |
+| `cuda-gdb` (-G debug build)      | ~10-100×                             | 精确定位 NaN、单步排查逻辑               |
 
 ---
 
@@ -264,10 +267,10 @@ err = cudaGetLastError();  // ← 现在才能捕获 kernel 内部错误
 | -------------------------------- | ------------------------- | --------------------------------- |
 | `cudaErrorInvalidConfiguration`  | 非法 grid/block 配置      | 每维线程数超过 maxThreadsPerBlock |
 | `cudaErrorMemoryAllocation`      | OOM                       | 显存不足                          |
-| `cudaErrorLaunchFailure`         | kernel 执行异常           | 除零、越界、非法指令              |
-| `cudaErrorIllegalAddress`        | 非法内存地址              | 解引用 null 或越界 device pointer |
-| `cudaErrorAssert`                | kernel 内 `assert()` 触发 | 调试模式下的断言失败              |
-| `cudaErrorPeerAccessUnsupported` | P2P 不支持                | 未启用 peer access 或硬件不支持   |
+| `cudaErrorLaunchFailure`         | kernel 执行异常           | 整型除零、非法地址、非法指令（浮点除零得 inf/NaN，不报错） |
+| `cudaErrorIllegalAddress`        | 非法内存地址              | 解引用 null 或越界 device pointer                          |
+| `cudaErrorAssert`                | kernel 内 `assert()` 触发 | 调试模式下的断言失败                                       |
+| `cudaErrorPeerAccessUnsupported` | 硬件不支持 P2P            | 在不支持 P2P 的硬件上调 enable；未启用 peer access 的拷贝不返回此码（回退 host staging，见 [#15](15_multi_gpu_programming.md)） |
 
 ---
 
@@ -311,7 +314,7 @@ Step 2: 如果 racecheck 没找到，手动检查:
   └─ Atomic 操作是否正确使用?
 Step 3: 如果只在 release 模式下出现(-O3):
   → 编译器的 aggressive 优化改变了指令顺序
-  → 用 nvcc --ptx 对比 -G 和 -O3 的 PTX 差异
+  → 用 cuobjdump -sass 对比 -G 与 -O3 的 SASS 差异更直接（-G 主要关后端优化）
 ```
 
 ### 4.4 内存泄漏
@@ -326,18 +329,18 @@ CUDA 内存泄漏与 CPU 内存泄漏行为相同——`cudaMalloc` 后没有配
 
 ## 5. 总结——诊断工具速查
 
-| 我想做什么             | 工具                                             | 命令                          |
-| ---------------------- | ------------------------------------------------ | ----------------------------- |
-| 断点进 kernel 查看变量 | `cuda-gdb`                                       | `nvcc -G -g`，然后 `cuda-gdb` |
-| 检测越界访问           | `compute-sanitizer`                              | `compute-sanitizer ./prog`    |
-| 检测 race condition    | `compute-sanitizer --tool racecheck`             |                               |
-| 检测未初始化访问       | `compute-sanitizer --tool initcheck`             |                               |
-| 检查 launch 参数错误   | `cudaGetLastError()` after launch                |                               |
-| 捕获 kernel 内部错误   | `cudaDeviceSynchronize()` + `cudaGetLastError()` |                               |
-| 查看时间线（宏观瓶颈） | `nsys` (Nsight Systems)                          | `nsys profile ./prog`         |
-| 查看单 kernel 微观测   | `ncu` (Nsight Compute)                           | `ncu --section ...`           |
+| 我想做什么             | 工具                                             | 命令                                   |
+| ---------------------- | ------------------------------------------------ | -------------------------------------- |
+| 断点进 kernel 查看变量 | `cuda-gdb`                                       | `nvcc -G -g`，然后 `cuda-gdb`          |
+| 检测越界访问           | memcheck（默认）                                 | `compute-sanitizer ./prog`             |
+| 检测 race condition    | `compute-sanitizer --tool racecheck`             | `compute-sanitizer --tool racecheck .` |
+| 检测未初始化访问       | `compute-sanitizer --tool initcheck`             | `compute-sanitizer --tool initcheck .` |
+| 检查 launch 参数错误   | `cudaGetLastError()` after launch                | 见 §3.1                                |
+| 捕获 kernel 内部错误   | `cudaDeviceSynchronize()` + `cudaGetLastError()` | 见 §3.1                                |
+| 查看时间线（宏观瓶颈） | `nsys` (Nsight Systems)                          | `nsys profile ./prog`                  |
+| 查看单 kernel 微观测   | `ncu` (Nsight Compute)                           | `ncu --section ...`                    |
 
-> `nsys` 是系统级分析工具，用于宏观时间线（CPU-GPU 交互、是否真的并发），`ncu` 是 `compute-sanitizer` 的兄弟工具——两者互补。前述系列文章中的"用 ncu 检查"参考 [#17 性能调优方法论](17_roofline_optimization.md) §2。
+> `nsys`/`ncu` 管性能，`compute-sanitizer` 管正确性，三类工具互补。前述系列文章中的「用 ncu 检查」参考 [#17 性能调优方法论](17_roofline_optimization.md) §2。
 
 ### 与其他文章的衔接
 

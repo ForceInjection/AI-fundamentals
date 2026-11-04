@@ -8,15 +8,15 @@
 
 ## 1. `cudaDeviceGetAttribute` 概述
 
-`cudaDeviceProp` 结构体只暴露了最常用的属性（SM 数量、显存大小、时钟频率等）。`cudaDeviceGetAttribute` 能查询更底层的硬件能力——这些属性不是简单的数字，而是**硬件特性的布尔开关或枚举值**，直接决定某些 CUDA API 是否可用。
+`cudaDeviceProp` 结构体只暴露了最常用的属性（SM 数量、显存大小、时钟频率等）。`cudaDeviceGetAttribute` 能查询更底层的硬件能力：能力类属性多为 0/1 开关，规格类属性是数值，它们直接决定某些 CUDA API 是否可用。
 
-为什么这很重要？很多 CUDA 高级功能在不同 GPU 上的支持状态不同：
+CUDA 高级功能在不同 GPU 上的支持状态不同：
 
-- **GPU Direct P2P**：依赖 `HostNativeAtomicSupported`——如果为 0，无法用 GPU atomic 直接操作 Host 内存
+- **GPU atomic 直写 Host 内存**：依赖 `HostNativeAtomicSupported`——文档定义是「设备与主机之间的链路支持原生原子操作」，为 0 时不能用 GPU atomic 直接操作 Host 内存
 - **Unified Memory**：`ConcurrentManagedAccess` 决定 Host 和 GPU 能否同时访问同一块 managed memory
 - **Cooperative Launch**：`CooperativeLaunch` 决定能否使用 CUDA Cooperative Groups
 
-这个 API 的正确使用模式是**运行时能力检查 + 优雅降级**——不是在文档上假设某个功能存在，而是每次运行前去查询，并准备 fallback 路径。
+正确使用模式是**运行时能力检查 + 优雅降级**：每次运行前查询，并准备好降级路径，不靠文档假设。
 
 ```c
 int value;
@@ -29,7 +29,7 @@ cudaError_t err = cudaDeviceGetAttribute(&value, cudaDevAttrXxx, device_id);
 
 ### 2.1 什么是 PCIe Atomic
 
-PCIe 原子操作允许 GPU 通过 PCIe 总线对 Host 内存执行不可分割的读写操作（无需锁总线），对 RDMA 和 GPUDirect 场景至关重要。
+PCIe 原子操作允许 GPU 通过 PCIe 总线对 Host 内存执行单事务原子读写（无需软件加锁）。RDMA 和 GPUDirect 场景依赖这条路径。
 
 ### 2.2 查询原子操作支持
 
@@ -145,15 +145,15 @@ GPU 0: NVIDIA A100-SXM4-80GB (CC 8.0)
 
 | 属性                                | RTX 5090 | A100    | 数据中心 GPU    | 影响                                   |
 | ----------------------------------- | -------- | ------- | --------------- | -------------------------------------- |
-| `HostNativeAtomicSupported`         | 0 ❌     | 0 ❌    | 1 ✅            | 无法用 GPU atomic 直接操作 Host 内存   |
+| `HostNativeAtomicSupported`         | 0 ❌     | 0 ❌    | 1 ✅            | GPU atomic 无法直接操作 Host 内存      |
 | `CanUseHostPointerForRegisteredMem` | 1 ✅     | 1 ✅    | 1 ✅            | 可以使用 registered host memory        |
-| `PageableMemoryAccess`              | 0 ❌     | 0 ❌    | 1 ✅ (H100+)    | 不支持 pageable memory 的 GPU 直接访问 |
-| `DirectManagedMemAccessFromHost`    | 0 ❌     | 0 ❌    | 1 ✅ (GH200)    | Host 无法直接访问 managed memory       |
+| `PageableMemoryAccess`              | 0 ❌     | 0 ❌    | 1 ✅ (H100+)    | 为 0 时设备不能直接访问 pageable 内存  |
+| `DirectManagedMemAccessFromHost`    | 0 ❌     | 0 ❌    | 1 ✅ (GH200)    | 为 0 时 Host 访问 managed 页需迁移     |
 | `ConcurrentManagedAccess`           | 1 ✅     | 1 ✅    | 1 ✅            | 支持 Host+GPU 同时访问 managed memory  |
-| `CooperativeMultiDeviceLaunch`      | 1 ✅     | 1 ✅    | 1 ✅            | 支持 cooperative groups 跨设备         |
-| `SingleToDoublePrecisionPerfRatio`  | 64:1     | **2:1** | 2:1 (A100/H100) | 消费级 GPU 双精度性能严重受限          |
+| `CooperativeMultiDeviceLaunch`      | 1 ✅     | 未采样  | —               | 配套脚本会打印，表中以待运行实测为准   |
+| `SingleToDoublePrecisionPerfRatio`  | 64:1     | 2:1     | 2:1 (A100/H100) | 消费级 GPU 双精度性能严重受限          |
 
-> **注意**：A100 上 `HostNativeAtomicSupported` 和 `PageableMemoryAccess` 均为 0（与某些资料中"数据中心 GPU = 1"的预期不一致）。这说明这两个能力并非由"数据中心 vs 消费级"决定，而是特定型号（H100+）的硬件特性。在代码实践中应始终使用 `cudaDeviceGetAttribute` 做**运行时能力检查**而非查表假设。
+> **注意**：A100 上 `HostNativeAtomicSupported` 和 `PageableMemoryAccess` 均为 0（与某些资料中「数据中心 GPU = 1」的预期不一致）。这说明这两个能力并非由「数据中心 vs 消费级」决定，而是特定型号的硬件特性。代码实践中始终用 `cudaDeviceGetAttribute` 做运行时能力检查，不查表假设。
 
 ---
 
@@ -172,8 +172,8 @@ Atomic Caps Outbound    : N/A
 Atomic Caps Inbound     : FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64
 ```
 
-- **Inbound**：GPU 接受来自 PCIe 的 atomic 请求 → 支持 FetchAdd/Swap/CAS 32/64
-- **Outbound**：GPU 向 Host 发起 atomic 请求 → N/A（消费级 GPU 不支持）
+- Inbound：GPU 接受来自 PCIe 的 atomic 请求，此处支持 FetchAdd/Swap/CAS 32/64
+- Outbound：GPU 向 Host 发起 atomic 请求，此处 N/A（消费级 GPU 不支持）
 
 ---
 
@@ -183,7 +183,7 @@ Atomic Caps Inbound     : FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64
 
 | 属性                                      | 说明                   | RTX 5090 |
 | ----------------------------------------- | ---------------------- | -------- |
-| `cudaDevAttrMaxSharedMemoryPerBlockOptin` | 可选最大 shared memory | 查询中   |
+| `cudaDevAttrMaxSharedMemoryPerBlockOptin` | 可选最大 shared memory | 待实测（运行配套脚本可得） |
 | `cudaDevAttrMemoryPoolsSupported`         | 内存池支持             | 支持     |
 | `cudaDevAttrUnifiedAddressing`            | 统一寻址               | 支持     |
 
@@ -198,11 +198,11 @@ Atomic Caps Inbound     : FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64
 
 ### 4.3 流与并发
 
-| 属性                                   | RTX 5090 | A100  | 说明                        |
-| -------------------------------------- | -------- | ----- | --------------------------- |
-| `cudaDevAttrAsyncEngineCount`          | 2        | **3** | 异步 copy engine 数量       |
-| `cudaDevAttrConcurrentKernels` (prop)  | 1        | 1     | 支持 concurrent kernel 执行 |
-| `cudaDevAttrMaxSurface1DLayeredLayers` | ...      | —     | 3D surface 层数上限         |
+| 属性                                   | RTX 5090 | A100  | 说明                                     |
+| -------------------------------------- | -------- | ----- | ---------------------------------------- |
+| `cudaDevAttrAsyncEngineCount`          | 2        | **3** | 异步引擎数量（通常即 copy engine）       |
+| `cudaDevAttrConcurrentKernels` (prop)  | 1        | 1     | 支持 concurrent kernel 执行              |
+| `cudaDevAttrMaxSurface1DLayeredLayers` | 待实测   | 待实测 | 1D 分层 surface 的层数上限               |
 
 ---
 

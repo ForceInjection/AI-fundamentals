@@ -4,7 +4,7 @@
 
 Explore Kernel Grids, Blocks, Warps, and Threads to Accelerate Your Code
 
-探索内核网格、块、Warps 和线程以加速我们的代码
+探索内核网格、块、warp 和线程以加速你的代码
 
 ![gpu execution hierarchical](assets/gpu_threads.jpeg)
 
@@ -26,7 +26,7 @@ In this section, we explore the architecture of a typical GPU. While each GPU ge
 
 At the core level, each **_thread_** operates on individual scalar values with private registers. While running thousands of threads simultaneously is impractical, individual threads are not efficient on their own either. Instead, threads are organized into small groups called **_warps or wavefronts_**, typically consisting of 32 threads. Each warp executes a single instruction across 32 data points. For example, in matrix multiplication, a warp might process a row and column from two matrices, performing multiplication and accumulation to generate results as shown in the figure below.
 
-在核心层面，每个 **_thread_** 使用私有寄存器对单个标量值进行操作。虽然同时运行数千个线程是不切实际的，但单个线程本身也效率不高。相反，线程被组织成称为 **_warps 或 wavefronts_** 的小组，通常由 32 个线程组成。每个 warp 跨 32 个数据点执行单个指令。例如，在矩阵乘法中，warp 可能会处理两个矩阵的行和列，执行乘法和累加以生成结果，如下图所示。
+在核心层面，每个 **_thread_** 使用私有寄存器对单个标量值进行操作。虽然同时运行数千个线程是不切实际的，但单个线程本身也效率不高。相反，线程被组织成称为 **_warps 或 wavefronts_** 的小组（NVIDIA warp 为 32 线程；AMD 的 wavefront 通常为 64）。每个 warp 跨 32 个数据点执行单个指令。例如，在矩阵乘法中，warp 可能会处理两个矩阵的行和列，执行乘法和累加以生成结果，如下图所示。
 
 ![thread warp](assets/thread_warp.png)
 
@@ -38,7 +38,7 @@ A four thread warp performing matrix multiplication. The warp first performs ind
 
 When operations exceed the warp size of 32 threads, GPUs use tiling to manage larger dimensions. This involves dividing the input into chunks or tiles that fit the warp size, processing these chunks, and then combining the results from all warps. To accumulate partial results, a placeholder is needed, which is where **_thread blocks_** come in. A thread block groups multiple warps, allowing them to share memory and synchronize their execution, as illustrated in the figure below.
 
-当操作超过 32 个线程的 Warp 大小时，GPU 会使用平铺来管理更大的维度。这涉及将输入分成适合 Warp 大小的块或平铺，处理这些块，然后合并所有 Warp 的结果。要累积部分结果，需要一个占位符，这就是 **_thread block_** 的作用所在。线程块将多个 Warp 分组，使它们能够共享内存并同步执行，如下图所示。
+当操作超过 32 个线程的 warp 大小时，GPU 会使用分块（tiling）来管理更大的维度。这涉及将输入分成适合 warp 大小的块，处理这些块，然后合并所有 warp 的结果。要累积部分结果，需要一个占位符，这就是 **_thread block_** 的作用所在。线程块将多个 warp 分组，使它们能够共享内存并同步执行，如下图所示。
 
 ![thread block](assets/thread_block.png)
 
@@ -50,7 +50,7 @@ A thread block comprising of two warps computing matrix multiplication. All the 
 
 The hierarchy from warps to blocks is repeated one more level: if the matrix is larger than what a single thread block can handle, we use a **_grid_** of thread blocks that share global memory. The grid enables the GPU to process large datasets by distributing the workload across multiple thread blocks.
 
-从 warp 到 block 的层次结构又重复了一层：如果矩阵大于单个线程块可以处理的范围，我们将使用共享全局内存的线程块 **_grid_**。网格使 GPU 能够通过将工作负载分布在多个线程块上来处理大型数据集。
+从 warp 到 block 的层次结构又重复了一层：如果矩阵大于单个线程块可以处理的范围，我们将使用由线程块组成的 **_grid_**（网格），这些线程块共享全局内存。网格使 GPU 能够通过将工作负载分布在多个线程块上来处理大型数据集。
 
 All GPU programs, known as **_kernels_**, are executed within this grid structure. When you launch a kernel, you specify both the grid size (the number of thread blocks) and the block size (the number of threads per block). This hierarchical approach ensures efficient computation and data management, allowing the GPU to handle extensive and complex tasks effectively.
 
@@ -60,7 +60,7 @@ All GPU programs, known as **_kernels_**, are executed within this grid structur
 
 Following the structure of the computations, memory is organized into a hierarchy starting from the small and fast registers with ultra low latency and a few kilobytes in size. Registers are private to threads. Next, warps within a thread block share state using **_shared memory_** comprising several hundred kilobytes. Finally, global memory is accessible across the device and provides large capacity on the order of tens of gigabytes with high throughput approaching a terabyte per second. Global memory has higher latency and thus caching is used to reduce latency. The figure below shows the relative scope of each memory type.
 
-根据计算结构，内存被组织成一个层次结构，从具有超低延迟和几千字节大小的小型快速寄存器开始。寄存器是线程私有的。接下来，线程块内的 warp 使用包含数百千字节的 **_shared memory_** 共享状态。最后，全局内存可在整个设备中访问，并提供数十 GB 级的大容量，高吞吐量接近每秒 1 TB。全局内存具有更高的延迟，因此使用缓存来减少延迟。下图显示了每种内存类型的相对范围。
+根据计算结构，内存被组织成一个层次结构，从具有超低延迟和几千字节大小的小型快速寄存器开始。寄存器是线程私有的。接下来，线程块内的 warp 使用 **_shared memory_** 共享状态（几十到两百多 KB，依架构而定）。最后，全局内存可在整个设备中访问，并提供数十 GB 级的大容量，高吞吐量接近每秒 1 TB。全局内存具有更高的延迟，因此使用缓存来减少延迟。下图显示了每种内存类型的相对范围。
 
 ![Memory Hierarchy](assets/memory_hierarchy.png)
 
@@ -78,7 +78,7 @@ In this section we will briefly show how to run a hello world program on multipl
 
 ### 2.1 Hello World
 
-The entry point of a GPU program is called a kernel. The global ID of a thread can be calculated using three compiler intrinsics — _blockIdx, blockDim, and threadIdx,_ representing the id of the block, the total number of threads in a block, and the thread id within the thread block, respectively. A kernel is defined by the \_\_global\_\_ qualifier as shown in the listing below. To launch a kernel the _<<<numBlocks, blockSize>>>_ is used. The kernel is executed asynchronously, i.e., the host code will continue to run right after making the kernel call. To sync memory between the host and the GPU device the _cudaDeviceSynchronize_ function is called, which blocks the execution on the host until the kernel finishes its work.
+The entry point of a GPU program is called a kernel. The global ID of a thread can be calculated using three built-in variables — _blockIdx, blockDim, and threadIdx,_ representing the id of the block, the total number of threads in a block, and the thread id within the thread block, respectively. A kernel is defined by the `__global__` qualifier as shown in the listing below. To launch a kernel the `<<<numBlocks, blockSize>>>` syntax is used. The kernel is executed asynchronously, i.e., the host code will continue to run right after making the kernel call. To sync memory between the host and the GPU device the _cudaDeviceSynchronize_ function is called, which blocks the execution on the host until the kernel finishes its work.
 
 GPU 程序的入口点称为内核。可以使用三个编译器内部函数（_blockIdx、blockDim 和 threadIdx_）计算线程的全局 ID，它们分别表示块的 ID、块中的线程总数以及线程块内的线程 ID。内核由 \_\_global\_\_ 限定符定义，如下面的列表所示。要启动内核，请使用 _<<<numBlocks, blockSize>>>_。内核是异步执行的，即主机代码将在进行内核调用后继续运行。要同步主机和 GPU 设备之间的内存，请调用 _cudaDeviceSynchronize_ 函数，该函数会阻止主机上的执行，直到内核完成其工作。
 
@@ -87,7 +87,7 @@ GPU 程序的入口点称为内核。可以使用三个编译器内部函数（_
 #include <iostream>
 
 __global__ void helloFromGPU() {
-    printf("Hello World from Thread %d, Block %d, BlockDim %d\\n",
+    printf("Hello World from Thread %d, Block %d, BlockDim %d\n",
             threadIdx.x, blockIdx.x, blockDim.x);
 }
 
@@ -117,6 +117,8 @@ Hello World from Thread 2, Block 1, BlockDim 4
 Hello World from Thread 3, Block 1, BlockDim 4
 ```
 
+（输出按 block/thread 排列只是示意——CUDA 不保证 block 的执行顺序，实际输出顺序可能不同。）
+
 ### 2.2 矩阵乘法 (Matrix Multiplication)
 
 Now that we know the basic structure of a CUDA program, let’s look at a more involved example of matrix multiplication. The CUDA kernel for matrix multiplication is given in the listing below. CUDA provides block IDs and thread IDs in three dimensions. In our case, since we’re dealing with matrices, we use only two dimensions: x and y for the row and column indices.
@@ -144,8 +146,6 @@ __global__ void matrixMul(const float* A, const float* B, float* C, int n) {
 
 While this example provides a straightforward implementation of matrix multiplication, it is not optimized for performance. In real-world applications, achieving efficient computation requires careful consideration of memory access patterns and cache utilization. Techniques such as tiling and shared memory usage can significantly enhance performance by reducing memory access latency and improving data locality. Proper cache planning and optimization strategies are essential for scaling these algorithms to handle larger datasets and more complex computations efficiently.
 
----
+虽然此示例提供了矩阵乘法的直接实现，但它并未针对性能进行优化。在实际应用中，实现高效计算需要仔细考虑内存访问模式和缓存利用率。分块（tiling）和共享内存使用等技术可以通过减少内存访问延迟和改善数据局部性来显著提高性能。适当的缓存规划和优化策略对于扩展这些算法以有效处理更大的数据集和更复杂的计算至关重要。
 
-虽然此示例提供了矩阵乘法的直接实现，但它并未针对性能进行优化。在实际应用中，实现高效计算需要仔细考虑内存访问模式和缓存利用率。平铺（Tiling）和共享内存使用等技术可以通过减少内存访问延迟和改善数据局部性来显著提高性能。适当的缓存规划和优化策略对于扩展这些算法以有效处理更大的数据集和更复杂的计算至关重要。
-
-> **👉 进阶阅读**：如果您想了解如何通过 Tiling（分块）技术来深度优化矩阵乘法性能，以及从传统 SIMT 到 Tile-Based 编程范式的演进，请参阅 [SIMT vs Tile-Based：CUDA 编程范式的演进与对比](04_simt_vs_tile_based.md)。
+> 进阶阅读：如何通过分块（tiling）技术深度优化矩阵乘法、从传统 SIMT 到 Tile-Based 编程范式的演进，见 [SIMT vs Tile-Based：CUDA 编程范式的演进与对比](04_simt_vs_tile_based.md)。

@@ -8,9 +8,9 @@
 - 在 `if (tid < 32)` 这样的 divergent 路径上调用 shuffle 安全吗？如果不安全，`__activemask()` 能救吗？
 - A100 号称有硬件 `__reduce_add_sync`——它和手写 shuffle 哪个更快？
 
-这些问题的共同点：它们都围绕一个 CUDA 编程中最底层的执行单元——**Warp**。32 个线程共享一个 PC（Program Counter），每个 cycle 执行同一条指令。在这 32 个线程之间，**寄存器是互通的**——通过一组名为 Warp Primitives 的指令，数据可以在 1 个 cycle 内完成线程间交换，不需要 Shared Memory、不需要 `__syncthreads()`。
+这些问题的共同点：它们都围绕 CUDA 编程中最底层的执行单元——Warp。Warp 内的寄存器是互通的：通过一组名为 Warp Primitives 的指令，数据可以在 1 个 cycle 内完成线程间交换，不需要 Shared Memory、不需要 `__syncthreads()`。
 
-本文将系统讲解这组指令：Shuffle → Vote → Match → Cooperative Groups → A100 硬件加速。每一节从一个你会遇到的实际场景出发，先建立直觉，再给出代码，最后回到"什么时候用这个、什么时候不适用"。
+本文按 Shuffle → Vote → Match → Cooperative Groups → 硬件 Reduce 的顺序讲解这组指令，每个 API 都给出适用场景与不适用时的替代方案。
 
 > **前置要求**：你已经理解 Thread/Warp/Block 执行模型（见 [GPU 编程导论](01_gpu_programming_introduction.md)），用过 Shared Memory 并理解 `__syncthreads` 的作用（见 [Shared Memory 与 Bank Conflict](13_shared_memory_bank_conflict.md)），知道 Reduction 的基本概念（见 [Reduction](10_reduction.md)）。
 >
@@ -22,28 +22,33 @@
 
 在学 API 之前，必须先理解 Warp 的硬件行为。这是后续所有讨论的基础。
 
-### 1.1 SIMT 与 Lockstep：32 线程共享一个 PC
+### 1.1 SIMT 执行模型与收敛
 
-GPU 的 SIMT（Single Instruction, Multiple Threads）模型的核心约束：**一个 Warp 内的 32 个线程共享同一个 Program Counter**。这意味着它们在每个时钟周期执行**完全相同的指令**，只是操作的数据不同。
+GPU 的 SIMT（Single Instruction, Multiple Threads）模型：一个 Warp 执行一条共同指令，线程各自持有自己的寄存器值。分支行为分两个时代：
+
+- **Volta 之前**：整个 Warp 共享一个 Program Counter（lockstep），32 个线程在每条指令上严格同步前进。
+- **Volta (CC 7.0) 起**：Independent Thread Scheduling（ITS）为每个线程维护独立的 PC 与调用栈，线程可以在 sub-warp 粒度分叉、重新收敛（见 PTX Machine Model §3.2）。
 
 ```text
-Warp（32 threads, 共享 1 个 PC）
-  │
-  ├── thread 0:  r0 = r1 + r2   ← 对 r1[0]、r2[0] 操作
-  ├── thread 1:  r0 = r1 + r2   ← 对 r1[1]、r2[1] 操作
-  ├── ...
-  └── thread 31: r0 = r1 + r2   ← 对 r1[31]、r2[31] 操作
+同一 Warp 的执行（Volta 后）：
+  SIMT 单元在每次发射时，把当前"活跃且路径一致"的线程分组执行；
+  分叉的线程各自走自己的路径，之后在同步点重新收敛。
 
-  所有 32 线程同时执行 "r0 = r1 + r2"，只是各自的寄存器值不同。
+  → 任何"假设 Warp 内天然同步"的旧代码（无同步的 warp 内归约等）
+    在 Volta 后都必须重新审视。
 ```
 
-正是这个 lockstep 特性，使得 Warp 内的数据交换不需要任何同步原语——因为你知道所有 32 个线程一定在同一个 cycle 到达同一行代码。Shuffle 指令利用这一点，直接在寄存器文件内完成数据交换。
+Shuffle 这类原语不依赖 lockstep：`_sync` 版本用显式 mask 声明"哪些线程参与这次通信"，参与线程集体等待，语义与调度方式解耦。真正的约束是参与集合的一致性，见 1.2 与 1.3 节。
 
-CPU 类比：SIMD（如 AVX-512）在一个 core 上操作 512-bit 寄存器（16 个 float）。GPU 的 Warp 可以看作把 32 个 scalar 线程映射到一个 SIMD 单元的 32 条 lane 上。
+![Warp 执行模型](assets/warp-01-execution-model.png)
+
+_图 1：Volta 前后 Warp 执行模型的差异，以及 `_sync` mask 的参与集合约定。_
+
+CPU 类比：SIMD（如 AVX-512）在一个 core 上操作 512-bit 寄存器（16 个 float）。GPU 的 Warp 可以看作把 32 个 scalar 线程映射到一个 SIMD 单元的 32 条 lane 上，只是 GPU 的分支模型更灵活。
 
 ### 1.2 Active Mask 与 Divergence
 
-当 Warp 遇到 `if-else` 分支时，不同线程可能走不同路径。但由于 lockstep 约束，GPU **串行执行两个分支**，只激活对应路径上的线程：
+当 Warp 遇到 `if-else` 分支时，不同线程可能走不同路径。Warp 在任一时刻只执行一条共同指令，所以 GPU 会**串行执行两条分支路径**，只激活对应路径上的线程：
 
 ```cuda
 if (tid < 16) {
@@ -57,7 +62,7 @@ if (tid < 16) {
 
 硬件维护一个 **Active Mask**——一个 32-bit 的位掩码，bit i = 1 表示 thread i 当前活跃。Divergent 路径上的指令只对 active 线程产生效果。
 
-**关键约束**：在 divergent 路径上调用 Warp 原语（shuffle、vote 等）是未定义行为——因为原语假定所有 32 个线程都参与。这就是 `_sync` 后缀的作用：你必须显式告诉硬件**哪 32 个线程应该参与这次通信**。
+**关键约束**：在 divergent 路径上调用带全 mask 的 Warp 原语（shuffle、vote 等）是未定义行为——mask 声明的参与集合必须与实际执行的线程集合一致。这就是 `_sync` 后缀的作用：显式告诉硬件**哪些线程应该参与这次通信**。
 
 ### 1.3 `_sync` 后缀与 Mask 参数
 
@@ -76,8 +81,9 @@ int val = __shfl_down_sync(0xffffffff, val, offset);
 `0xffffffff` = 全部 32 线程参与。如果你在 divergent 路径上，mask 必须匹配当前活跃的线程集合——**少一个线程都会导致 UB**。
 
 ```cuda
-// 安全：在已知全部活跃的路径上用全 mask
-if (lane_id < 32) {  // 整个 warp 在这里通常是统一的
+// 安全：分支条件对全 warp 一致（每个线程算出同一个值），全 32 线程一起进入
+bool uniform = (blockIdx.x == 0);
+if (uniform) {
     val = __shfl_down_sync(0xffffffff, val, 8);
 }
 
@@ -87,7 +93,7 @@ if (lane_id % 2 == 0) {
 }
 ```
 
-后面 5.3 节会讲如何用 `__activemask()` 处理这种情况。
+后面第 5 节会讲 divergent 路径上的正确处理方式。
 
 ### 1.4 Warp vs Block：通信边界
 
@@ -95,7 +101,7 @@ if (lane_id % 2 == 0) {
 | -------- | ---------------------- | ------------------ |
 | 通信方式 | Shuffle / Vote / Match | Shared Memory      |
 | 延迟     | ~1 cycle               | ~20-30 cycles      |
-| 同步需要 | 不需要（lockstep）     | `__syncthreads()`  |
+| 同步需要 | 不需要（mask 声明参与集合） | `__syncthreads()`  |
 | 线程数   | ≤ 32                   | ≤ 1024             |
 
 **Warp Shuffle 不能替代 Shared Memory**：跨 Warp 的数据交换必须回到 Shared Memory。Shuffle 的优势仅在 Warp 内部——对于许多算法（Reduction、Scan、Filter），Warp 内的操作可以完全在寄存器中完成。
@@ -205,7 +211,7 @@ for (int mask = 16; mask > 0; mask >>= 1) {
 | Shared Memory (无 conflict)     | ~20-30 cycles | Block 内任意线程间 |
 | Shared Memory (32-way conflict) | ~600+ cycles  | 需要优化（见 #13） |
 
-> **关键结论**：如果你需要的数据只在 Warp 内，**永远优先用 Shuffle 而不是 Shared Memory**。
+> Warp 内的数据交换优先用 Shuffle；Shared Memory 的价值在跨 Warp 场景。
 
 ---
 
@@ -272,17 +278,17 @@ bool needs_refine = __any_sync(0xffffffff, found_better);
 利用 ballot + popc 的组合实现零 Shared Memory 的 warp 内 filter：
 
 ```cuda
-// 保留 warp 内 > 0 的元素，紧凑排列
+// 保留 warp 内 > 0 的元素，紧凑写入 output 的前部（示意：output 指向本 warp 的私有区段）
 __device__ int warpCompact(float *output, float val) {
     unsigned keep = __ballot_sync(0xffffffff, val > 0.0f);
 
-    // 当前线程在 keep 线程中的 rank
+    // 当前线程在 keep 线程中的 rank（排在前面的 keep 线程数）
     int local_rank = __popc(keep & ((1u << lane_id) - 1));
 
-    // keep 线程将自己的值写到正确位置（Warp 内 Shuffle）
-    // 注意：存回 Shared Memory 的代码已在 warp 外处理
+    if (val > 0.0f)
+        output[local_rank] = val;   // keep 线程把自己的值写到紧凑位置
 
-    return __popc(keep);  // 返回 keep 的总数
+    return __popc(keep);            // keep 的总数（= 写入的元素数）
 }
 ```
 
@@ -312,11 +318,11 @@ unsigned mask = __match_any_sync(0xffffffff, key);
 ### 4.2 `__match_all_sync`：检查全 warp 的值是否一致
 
 ```cuda
-// 返回 {mask, predicate}
-// mask: 如果所有线程值相同则 = 0xffffffff，否则每个线程的 mask 不定
-// pred: 所有线程值相同 → 1，否则 → 0
-unsigned mask;
-int all_same = __match_all_sync(0xffffffff, key, &mask);
+// 返回值是 mask，第三个参数接收 pred（int*）
+// 所有线程值相同 → mask = 0xffffffff、pred = 1
+// 存在不同值     → mask = 0、pred = 0
+int pred;
+unsigned mask = __match_all_sync(0xffffffff, key, &pred);
 ```
 
 ### 4.3 实战：Warp 内去重 (Dedup)
@@ -343,40 +349,43 @@ if ((same_key & ((1u << lane_id) - 1)) == 0)  // 我是第一个
 
 ---
 
-## 5. `__activemask()` —— 运行时探测 Divergence
+## 5. Divergent 路径上的正确写法
 
-### 5.1 它返回什么
+### 5.1 `__activemask()` 返回什么
 
 ```cuda
 unsigned active = __activemask();
 ```
 
-返回当前 cycle 的 active mask——也就是硬件此刻真正在执行的那些线程的位掩码。这和在 CPU 上读取当前 PID 类似——它是运行时状态。
+返回调用瞬间 Warp 内活跃线程的位掩码，一个运行时状态查询，类似 CPU 上读当前 PID。
 
-### 5.2 用途：Divergent 路径上安全做 Partial Warp Reduction
+### 5.2 为什么不能用 `__activemask()` 当 shuffle 的 mask
 
-当你在一个 `if` 分支内（只有部分线程活跃），仍需要在这些活跃线程之间做 reduction：
+直觉上"在 if 分支里用 `__activemask()` 做 mask"最保险，但官方文档明确不推荐：
+
+- 返回值只保证在**调用瞬间**有效。Volta 之后的硬件可以在指令边界重新收敛线程，几行代码之后，实际活跃集合可能已经和快照不同。
+- `_sync` 原语要求**mask 里的所有线程执行同一条原语、传同一个 mask**。快照里的线程如果已经走到别处，这条指令永远等不到它们——未定义行为。
+
+### 5.3 官方推荐的三种模式
 
 ```cuda
-if (complex_condition) {
-    // 只有部分线程在这里
-    unsigned active = __activemask();
-    float partial = __shfl_down_sync(active, my_val, 16);
-    // 只在 active 线程之间做 shuffle
+// 模式一：分支条件对全 warp 一致，从源头避免 divergence
+bool uniform = (blockIdx.x == 0);
+if (uniform) {
+    val = __shfl_down_sync(0xffffffff, val, 16);
 }
+
+// 模式二：coalesced_group，参与集合由 cooperative groups 保证一致
+if (complex_condition) {
+    auto g = cg::coalesced_threads();   // 此刻活跃线程构成的组
+    float partial = g.shfl_down(my_val, 16);
+}
+
+// 模式三：参与集合固定时，用 tiled_partition 显式声明
+auto tile8 = cg::tiled_partition<8>(this_thread_block());
 ```
 
-**关键约束**：`__shfl_down_sync` 的 mask 必须只包含**当前活跃的线程**。用 `__activemask()` 作为 mask 参数是实现这一点的唯一安全方式。
-
-### 5.3 陷阱——activemask 是瞬时快照
-
-```cuda
-unsigned active = __activemask();  // 快照: active = 0x0000FFFF
-// ... 几行代码（不改变控制流） ...
-// active 可能已经过时！中间可能有隐式的收敛（reconvergence）
-```
-
-`__activemask()` 返回的是**调用瞬间**的值。不要在几行代码之后再使用——它已经过期了。始终在同一个表达式或下一行就使用。
+原则：mask 必须来自你能**推理出参与集合**的结构（全 warp、固定 tile、coalesced group），而不是运行时快照。
 
 ---
 
@@ -419,7 +428,7 @@ float res = tile32.shfl_down(val, offset);    // ← mask 自动推导，永远�
 
 ### 6.3 CG vs 原语的性能差距
 
-**零。** Cooperative Groups 的 `tiled_partition` 在编译期完全展开为原始 PTX 指令——模板参数 `<32>` 是编译期常量，所有 shuffle/vote 调用在 SASS 层面与原语完全相同。代价是代码中多了一行 `tiled_partition` 构造，以及需要 `#include <cooperative_groups.h>`。
+零差距：Cooperative Groups 的 `tiled_partition` 在编译期完全展开为原始 PTX 指令，模板参数 `<32>` 是编译期常量，所有 shuffle/vote 调用在 SASS 层面与原语完全相同。代价是多一行 `tiled_partition` 构造和 `#include <cooperative_groups.h>`。
 
 ### 6.4 灵活 Tile 大小
 
@@ -442,51 +451,56 @@ float res = tile16.shfl_down(val, 8);
 
 ### 7.1 硬件 Reduce 指令 (SM 8.0+)
 
-A100 的 SM 8.0 引入了硬件 Warp Reduce 指令（PTX: `red.sync`），整个 32 线程的 reduce 在**一条指令**内完成：
+SM 8.0 引入了硬件 Warp Reduce 指令（PTX: `redux.sync`），整个 32 线程的 reduce 在**一条指令**内完成：
 
 ```cuda
-// 手写 shuffle reduce: 5 条指令 + 5 个 cycle
+// 手写 shuffle reduce：对 int/float 都适用
 float sum = warpReduceSum(my_val);  // 见 2.2 节
 
-// A100 硬件 reduce: 1 条指令，~1 cycle
-float sum = __reduce_add_sync(0xffffffff, my_val);
+// SM 8.0 硬件 reduce：1 条 redux.sync 指令，~1 cycle
+// 注意：add 只支持整型（int/unsigned）
+int sum_i = __reduce_add_sync(0xffffffff, my_int);
 ```
 
 支持的硬件 reduce 操作：
 
-| 指令                           | 操作     |
-| ------------------------------ | -------- |
-| `__reduce_add_sync(mask, val)` | 求和     |
-| `__reduce_min_sync(mask, val)` | 最小值   |
-| `__reduce_max_sync(mask, val)` | 最大值   |
-| `__reduce_and_sync(mask, val)` | 按位与   |
-| `__reduce_or_sync(mask, val)`  | 按位或   |
-| `__reduce_xor_sync(mask, val)` | 按位异或 |
+| 指令                           | 操作     | 支持类型                       |
+| ------------------------------ | -------- | ------------------------------ |
+| `__reduce_add_sync(mask, val)` | 求和     | `int` / `unsigned`             |
+| `__reduce_min_sync(mask, val)` | 最小值   | `int` / `unsigned`（PTX 另有 `.f32` 形式，需内联 PTX） |
+| `__reduce_max_sync(mask, val)` | 最大值   | 同 min                         |
+| `__reduce_and_sync(mask, val)` | 按位与   | `unsigned`                     |
+| `__reduce_or_sync(mask, val)`  | 按位或   | `unsigned`                     |
+| `__reduce_xor_sync(mask, val)` | 按位异或 | `unsigned`                     |
+
+PTX `redux.sync.add` 只有 `.u32/.s32` 类型（`.f32` 仅用于 `.min/.max`），所以求 float 的和没有硬件指令，只能手写 shuffle 循环。
 
 ### 7.2 性能差异
 
 ```text
-Warp Reduce 32 floats (A100):
+Warp Reduce 32 ints (A100):
 
   Shuffle loop (__shfl_down_sync):    ~5 cycles  (5 次 shuffle)
-  Hardware reduce (__reduce_add_sync): ~1 cycle   (1 条 red.sync 指令)
+  Hardware reduce (__reduce_add_sync): ~1 cycle   (1 条 redux.sync 指令)
 
   差异: 5x，但绝对值仅 4 cycles → 对于大 kernel，差距可忽略
 ```
 
 ### 7.3 局限
 
-1. **仅 32 线程**：不能做 16/8/4 线程的 partial reduce
+1. **仅整型**：float 求和无硬件指令（min/max 可走 PTX `.f32` 形式）
 2. **仅固定操作**：不能做自定义 combiner（如 `fmaxf(fabs(x), fabs(y))`）
 3. **仅 CC ≥ 8.0**：V100 (CC 7.0) 不可用
+4. **按全 warp 使用**：PTX 语义按 membermask 定义，子集 mask 理论可行，但官方示例与常见实现都以全 warp 为前提，依赖子集行为前先实测
 
 ### 7.4 何时用 shuffle vs 硬件 reduce
 
 ```text
 需要 Warp Reduce？
-  ├─ 操作是 add/min/max → 用 __reduce_add_sync (CC 8.0+)
+  ├─ int 求和/求最值 → __reduce_add_sync / min / max (CC 8.0+)
+  ├─ float 求和 → 手写 shuffle loop
   ├─ 自定义 combiner → 必须手写 shuffle loop
-  └─ 需要 < 32 线程 partial reduce → 必须手写 shuffle loop
+  └─ 需要 < 32 线程 partial reduce → 手写 shuffle loop 或 CG tile
 ```
 
 ---
@@ -499,7 +513,7 @@ Warp Reduce 32 floats (A100):
 数据在 Warp 内通信？
   ├─ 是 → 优先用 Shuffle
   │   ├─ 全 32 线程 → __shfl_down_sync / CG tiled_partition<32>
-  │   └─ 部分线程 → __activemask() + shuffle
+  │   └─ divergent 路径 → cg::coalesced_threads()（不要用 __activemask() 当 mask）
   └─ 否 → 必须用 Shared Memory
       ├─ Warp 间通信 → sdata + __syncthreads
       └─ Block 间通信 → Global Memory + atomic / cooperative groups
@@ -508,14 +522,17 @@ Warp Reduce 32 floats (A100):
 ### 8.2 Divergent 路径上的安全法则
 
 ```cuda
-// 法则：如果这段代码在 if/else 里，必须用 mask = __activemask()
+// 错误：__activemask() 快照不保证后续仍收敛，官方明确不推荐
+// float res = __shfl_down_sync(__activemask(), val, offset);
+
+// 正确：coalesced_threads 让 CG 保证参与集合一致
 if (some_condition) {
-    unsigned active = __activemask();
-    float res = __shfl_down_sync(active, val, offset);  // ← 用 active，不是 0xffffffff
+    auto g = cg::coalesced_threads();
+    float res = g.shfl(val, 0);  // g 内任意线程的值
 }
 ```
 
-**忘了这条法则 → UB → 随机正确或随机错误 → 最难查的 Bug。**
+mask 与实际参与集合不一致是未定义行为，症状是"有时对有时错"，很难排查。判断标准只有一条：你能不能在编译期（或通过 CG 类型）说出哪些线程参与。
 
 ### 8.3 Cooperative Groups 的取舍
 
@@ -527,7 +544,7 @@ if (some_condition) {
 | 灵活 tile 大小 | 不支持            | 支持任意 2 的幂次        |
 | 性能           | 完全一样          | 完全一样                 |
 
-**建议**：新代码用 CG。只有当你需要支持 CC < 7.0（非常旧的 GPU）时才用原始 `_sync` 原语。
+**建议**：新代码用 CG。只有面向 CC < 7.0 的旧 GPU 时才用不带 `_sync` 的原始原语（`__shfl_down` 等）；`_sync` 版本本身就要求 CC ≥ 7.0。
 
 ---
 
@@ -544,7 +561,7 @@ if (some_condition) {
 | 收集所有满足条件的线程 mask | `__ballot_sync`                            | Filter / Compact / 条件路由 |
 | 检查全 warp 条件            | `__all_sync` / `__any_sync`                | 收敛检测                    |
 | 查找相同 key 的线程         | `__match_any_sync`                         | 去重 / 哈希表探测           |
-| Divergent 路径安全 shuffle  | `__activemask()` + `__shfl_down_sync`      | 分支内 partial reduce       |
+| Divergent 路径安全 shuffle  | `cg::coalesced_threads()` + `.shfl_down()` | 分支内 partial reduce       |
 | 现代抽象（推荐）            | `cg::tiled_partition<32>` + `.shfl_down()` | 以上全部                    |
 
 ### 9.2 与其他文章的衔接
@@ -581,7 +598,7 @@ int      __any_sync(unsigned mask, int predicate);
 
 ```cuda
 unsigned __match_any_sync(unsigned mask, int value);
-unsigned __match_all_sync(unsigned mask, int value, unsigned *pred_mask);
+unsigned __match_all_sync(unsigned mask, int value, int *pred);  // pred: 全部相同为 1，否则 0
 ```
 
 ### D. Active Mask

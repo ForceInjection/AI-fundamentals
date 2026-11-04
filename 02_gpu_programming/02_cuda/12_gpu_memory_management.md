@@ -32,15 +32,13 @@ MMU:   查页表 → 0x7f000000 映射到物理地址 0x12345000
 
 ## 1. 加载模型——"70GB 的模型怎么放进一张卡？"
 
-你在 8×H100 上跑 vLLM，模型权重 70GB。启动后，`RuntimeError: CUDA out of memory`——但 `nvidia-smi` 的 `memory.free` 明明还有 10GB。
-
-为什么？
+你在 8×H100 上跑 vLLM，模型权重 70GB。启动后，`RuntimeError: CUDA out of memory`——但 `nvidia-smi` 的 `memory.free` 明明还有 10GB。为什么？
 
 ### 1.1 GPU 显存不是一整块连续区域
 
 CPU 程序调用 `malloc(20GB)` 时，内核只需要在虚拟地址空间中找到一段 20GB 的空闲范围，然后按需分配物理页——**物理上可以不连续**（一个 4KB 的页可能在物理地址 0x1000，下一个页在 0xFFFF000，MMU 负责把它们拼接成程序看到的连续空间）。这就是虚拟内存的精髓：程序看到的是连续的，物理上可以是碎片化的。
 
-GPU 同样有 MMU 和页表。但 `cudaMalloc` 在处理大块分配时，需要建立**连续**的虚拟地址映射，而虚拟地址空间也可能被碎片化——先分配 50GB、再分配 1GB、再释放 1GB、再分配 20GB——这个 20GB 的分配请求可能在虚拟地址空间中找不到连续的 20GB 区域，尽管物理显存还有空闲。`cudaMalloc` 返回的不是简单的指针偏移——CUDA 驱动维护一个虚拟地址空间映射表，每次分配需要在 GPU MMU（Memory Management Unit）中建立页表条目。大块分配成功后，小块释放产生的孔洞无法被后续大块分配复用。
+GPU 同样有 MMU 和页表，`cudaMalloc` 也不要求物理页连续。它的失败原因在物理侧：CUDA 驱动按 chunk（常见 2MB 粒度）向设备要物理页来支撑这次分配，当显存被先分配、后释放的格局打散成许多非连续的空闲 chunk 时，一次大块分配凑不齐所需 chunk 池，就会 OOM——即使空闲字节总数看起来够。大块分配成功后，小块释放产生的孔洞也无法被后续大块分配复用。
 
 ```bash
 # CPU 端——查看进程真实内存占用
@@ -54,19 +52,18 @@ CPU 类比：Linux 的 buddy allocator 也有碎片化问题，但可以通过 `
 
 **你可以做什么**：
 
-- `cudaMemGetInfo(&free, &total)` 拿到的 `free` 是**所有空闲字节的总和**——不代表有一块这么大的连续区域
+- `cudaMemGetInfo(&free, &total)` 拿到的 `free` 是**所有空闲字节的总和**——不代表有一块这么大的连续可用区域
 - 分配 70GB 模型时，先 `cudaMalloc` 最大的权重 tensor，而不是先分配小 buffer——好的内存布局减少碎片
-- GPU_MEM_UTIL 设得越低，vLLM 留给 KV cache 的空间越小，但也越容易出现碎片导致的 OOM
+- `gpu_memory_utilization` 设得越高，vLLM 预分配越满，留给碎片和突发的余量越小，越容易出现碎片或负载尖峰导致的 OOM；设得低则余量大，但 KV cache 可用空间变小
 
 ```text
 CPU 空闲                             GPU "空闲"（碎片化后）
-┌──────────────────────┐              ┌──────────┬───────┬──────────────┐
-│                      │              │ 已用 20GB │ 10GB  │  已用 50GB   │
-│   全部空闲 30GB       │              │          │ 空闲  │              │
-│                      │              └──────────┴───────┴──────────────┘
-└──────────────────────┘              这 10GB 被夹在两个块中间，无法做 20GB
-malloc(20GB) → OK                     的分配。cudaMalloc(20GB) → OOM
-                                      尽管 cudaMemGetInfo 报告 free=10GB
+┌──────────────────────┐              ┌─────────┬───────┬─────────┬───────┐
+│                      │              │ 已用 20GB│ 空闲10G│ 已用 20GB│ 空闲10G│
+│   全部空闲 30GB       │              └─────────┴───────┴─────────┴───────┘
+│                      │              空闲合计 20GB，被夹成两段，
+malloc(20GB) → OK                     cudaMalloc(20GB) → OOM
+                                      尽管 cudaMemGetInfo 报告 free=20GB
 ```
 
 ---
@@ -85,7 +82,7 @@ malloc(20GB) → OK                     的分配。cudaMalloc(20GB) → OOM
 
 ### 2.2 CPU 不知道自己分配的物理内存在哪
 
-当你调用 `malloc` 时，内核给你的是**虚拟地址**。背后的物理页可能在 swap 里，可能在 NUMA node 1 上，可能被压缩过。CPU MMU 处理这些细节，但 GPU DMA 引擎不会拿 CPU 虚拟地址直接使用；驱动要先锁定页面并建立 DMA 映射，或者把数据 staging 到 pinned buffer。
+当你调用 `malloc` 时，内核给你的是**虚拟地址**。背后的物理页可能被换出到 swap，可能在 NUMA node 1 上，可能被压缩过。CPU MMU 处理这些细节，但 GPU DMA 引擎不会拿 CPU 虚拟地址直接使用；驱动要先锁定页面并建立 DMA 映射，或者把数据 staging 到 pinned buffer。
 
 ```text
 pageable 带宽 = 传输量 / (DMA 时间 + CPU 锁定+页表遍历时间)
@@ -141,22 +138,22 @@ nvidia-smi topo -m     # 看 GPU 间连接类型
 nvidia-smi topo -p2p r # 看 P2P 是否可用
 ```
 
-输出示例：
+输出示例（标准 HGX H100，8 卡全互联）：
 
 ```text
         GPU0    GPU1    GPU2    GPU3    GPU4    GPU5    GPU6    GPU7
- GPU0    X      NV18    NV18    NV18    NV18    SYS     SYS     SYS
- GPU1   NV18     X      NV18    NV18    NV18    SYS     SYS     SYS
- GPU2   NV18    NV18     X      NV18    SYS     NV18    SYS     SYS
- GPU3   NV18    NV18    NV18     X      SYS     SYS     NV18    SYS
- GPU4   NV18    NV18    SYS     SYS      X      NV18    NV18    NV18
- GPU5   SYS     SYS     NV18    SYS     NV18     X      NV18    NV18
- GPU6   SYS     SYS     SYS     NV18    NV18    NV18     X      NV18
- GPU7   SYS     SYS     SYS     SYS     NV18    NV18    NV18     X
+ GPU0    X      NV18    NV18    NV18    NV18    NV18    NV18    NV18
+ GPU1   NV18     X      NV18    NV18    NV18    NV18    NV18    NV18
+ GPU2   NV18    NV18     X      NV18    NV18    NV18    NV18    NV18
+ GPU3   NV18    NV18    NV18     X      NV18    NV18    NV18    NV18
+ GPU4   NV18    NV18    NV18    NV18     X      NV18    NV18    NV18
+ GPU5   NV18    NV18    NV18    NV18    NV18     X      NV18    NV18
+ GPU6   NV18    NV18    NV18    NV18    NV18    NV18     X      NV18
+ GPU7   NV18    NV18    NV18    NV18    NV18    NV18    NV18     X
 ```
 
-- `NV18`：NVLink 直连——H100 有 **18 条 NVLink 4.0 link**（每条 link = 4 对差分信号 × 双向，50 GB/s 双向），**900 GB/s 双向总量（单向 450 GB/s）**。H100 配 4 个第三代 NVSwitch，GPU 0-3 在一个 NVSwitch 域内全互联，GPU 4-7 在另一个
-- `SYS`：需经过 CPU 中转——GPU→CPU→GPU 两次 DMA 串行，端到端有效带宽 ~13 GB/s (Gen4) / ~27 GB/s (Gen5)
+- `NV18`：NVLink 直连——H100 有 **18 条 NVLink 4.0 link**，**900 GB/s 双向总量（单向 450 GB/s）**。HGX H100 配 4 颗 NVSwitch，8 卡单一 fabric 全互联：任意两卡之间都是 NV18，通信不经过 CPU
+- `SYS`：需经过 CPU 中转——GPU→CPU→GPU 两次 DMA 串行，端到端有效带宽 ~13 GB/s (Gen4) / ~27 GB/s (Gen5)。SYS 只在无 NVLink/NVSwitch 的系统上出现（PCIe-only 卡、消费级卡），标准 HGX 矩阵里不会出现
 
 CPU 类比：这和 NUMA 拓扑完全对应。Linux 用 `numactl --hardware` 查看 CPU socket 间的互联，GPU 用 `nvidia-smi topo -m`。
 
@@ -194,9 +191,9 @@ cudaMemcpy(dst_gpu_ptr, cpu_buf, size, cudaMemcpyHostToDevice);
 | 两跳串行理论最大 |           16 GB/s |           32 GB/s |
 | 两跳串行实测     | **13 GB/s** (81%) | **27 GB/s** (84%) |
 
-两次 DMA 的 PCIe 协议开销叠加，实际效率约为单跳效率的平方（81%² ≈ 66%，86%² ≈ 74%），与实测吻合。
+两跳是同一段链路的两次串行穿越，单跳效率保持（81%~84%），但带宽按次数折半——这就是表中两跳数字的来源。
 
-在生产环境中：TP 组内的 GPU 必须 NVLink 直连。如果 TP=4 且 4 个 GPU 不在同一个 NVSwitch 域内，vLLM 会在 `initialize_from_config` 时检测到拓扑不匹配并告警。
+在生产环境中：TP 组内的 GPU 必须 NVLink 直连。部署前用 `nvidia-smi topo -m` 核对 TP 组内的拓扑，不要假设调度器一定把 TP 组放进了同一个 NVSwitch fabric。
 
 ---
 
@@ -263,10 +260,10 @@ cudaIpcOpenMemHandle(&remote_ptr, handle, cudaIpcMemLazyEnablePeerAccess);
 
 ### 4.5 GPU Memory Pool：预分配 + Sub-allocation
 
-vLLM 实际管理 KV cache 时，并不是每次都调用 `cudaMalloc`。它使用 CUDA Memory Pool（`cudaMemPool`）——预分配一大块显存，然后自己做 sub-allocation：
+vLLM 管理 KV cache 的方式是一次性分配一大块显存（`gpu_memory_utilization` 控制比例），再在自己的 block 表上做 sub-allocation——它并不逐块调用 `cudaMalloc`。CUDA 侧对应的机制是 Memory Pool（`cudaMemPool`）：
 
 ```cuda
-// 创建 pool，预分配 40GB
+// 创建 pool
 cudaMemPoolProps props = {.allocType = cudaMemAllocationTypePinned};
 cudaMemPool_t pool;
 cudaMemPoolCreate(&pool, &props);
@@ -277,11 +274,11 @@ void *kv_block;
 cudaMallocFromPoolAsync(&kv_block, block_size, pool, stream);
 ```
 
-好处：
+两者解决同一个问题：
 
-- **无碎片**：pool 内部的分配由应用程序控制，不会出现全局显存级别的碎片
-- **快**：不需要走 CUDA 驱动的全局分配器
-- **可预测**：KV cache 的 block 大小固定（vLLM 中默认 16 tokens × KV 维度），天然适合 pool 管理
+- **无碎片**：pool/大块内的分配由应用层控制，不会产生全局显存级别的碎片
+- **快**：不需要反复走 CUDA 驱动的全局分配器
+- **可预测**：KV cache 的 block 大小固定（vLLM 默认 16 tokens × KV 维度），天然适合 pool 管理
 
 CPU 类比：`jemalloc` 或 `tcmalloc`——替代系统的 `malloc`，通过预分配 arena 和线程本地缓存减少锁竞争和碎片。
 
@@ -327,8 +324,9 @@ NVMe 控制器 ──PCIe── PCIe Switch ──PCIe── GPU
 /usr/local/cuda/gds/tools/gdscheck -p  # 平台检查
 /usr/local/cuda/gds/tools/gdscheck -f /mnt/nvme/test  # 文件注册测试
 
-# 实时查看 DMA 吞吐
-nvidia-smi dmon -s pucv  # PCIe + NVLink utilization
+# 实时查看 PCIe 吞吐（p=PCIe, u=util, c=cpu, v=显存）
+nvidia-smi dmon -s pucv
+# NVLink 吞吐用 nvidia-smi nvlink stats 或 DCGM 查看
 ```
 
 CPU 类比：`sendfile()` 系统调用——数据从磁盘文件描述符直接传到 socket 文件描述符，不经过用户态缓冲区。GDS 是 GPU 版本的 `sendfile`。
@@ -363,7 +361,7 @@ GPU DMA 引擎发起传输时，内核必须锁定所有涉及的物理页面（
 
 这个遍历发生在**每次 `cudaMemcpy` 调用**——除非你用了 pinned memory（`cudaMallocHost`），内核只需要在分配时 pin 一次，后续传输直接用。
 
-GPU 本身也有大页概念——CUDA 的 Unified Memory 使用 64KB 页面粒度，不是标准的 4KB。这是 CUDA 驱动层面的优化，对用户透明。
+GPU 侧也有页粒度概念：Managed Memory 常驻 GPU 时，驱动倾向使用大页（如 2MB）以减少缺页次数——具体粒度随架构与驱动变化，对用户透明。
 
 ```bash
 # CPU 端：查看大页配置
@@ -422,15 +420,16 @@ mmap(NULL, size, PROT_READ|PROT_WRITE,
 | GPU 利用率   | —                            | `nvidia-smi dmon -s u`                            |
 
 ```bash
-# 一行实时监控：显存 + 利用率 + PCIe/NVLink 吞吐
+# 一行实时监控：显存 + 利用率 + PCIe 吞吐
 nvidia-smi dmon -s mucp -d 2
 
-# 输出列：
-#  sm   mem   enc   dec    pci_rx    pci_tx   nv_rx   nv_tx
-#  65   45G     0     0     1024     2048     18000   18000
-#  ↑    ↑                     ↑                 ↑
-#  SM   显存                  PCIe RX/TX       NVLink RX/TX
-#  利用率 用量                 (MB/s)           (MB/s)
+# 输出列（mucp 组合）：
+#  sm   mem   enc   dec    pci_rx    pci_tx
+#  65   45G     0     0     1024     2048
+#  ↑    ↑                     ↑
+#  SM   显存                  PCIe RX/TX (MB/s)
+#  利用率 用量
+# NVLink 吞吐不在 dmon 输出里，用 nvidia-smi nvlink stats 或 DCGM 查看
 ```
 
 **典型故障模式**：

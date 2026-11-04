@@ -1,6 +1,6 @@
 # CUDA Streams 介绍
 
-CUDA 内核非常强大，因为它可以利用 GPU 上大量的 CUDA 核心帮助我们异步解决可分解问题。在这里，我们使用“线程”的概念来异步执行内核。实际上，除了内核执行之外，我们还有两个额外的步骤来解决整个问题。这两个步骤是从主机到设备的内存复制和从设备到主机的内存复制。直观地说，我们首先将输入内存从主机复制到设备，然后执行内核来计算输出，最后将输出内存从设备复制回主机。但是，这种串行方法可能不是最佳的，因为我们可以通过同时执行从主机到设备的内存复制、内核执行和从设备到主机的内存复制来进一步提高性能。要做到这一点，我们需要理解“流”的概念。
+一个 CUDA 程序的完整流程包含三步：H2D 内存复制、内核执行、D2H 内存复制。按"复制 → 计算 → 复制"的顺序串行执行最直观，但三个阶段并不必须互斥——用流（stream）把这三步组织成流水线，可以让 H2D、内核、D2H 重叠起来进一步提高性能。
 
 ## 1. 示例模型
 
@@ -26,27 +26,25 @@ CUDA 内核非常强大，因为它可以利用 GPU 上大量的 CUDA 核心帮�
 
 ### 2.2 并发模型
 
-在并发模型中，我们使从主机到设备的内存复制、内核执行以及从设备到主机的内存复制异步化。我们将内存分成 `N` 个块（trunk）。在上面的特定示例中，我们设置 `N = 4`。完成将第一个块从主机复制到设备后，我们启动较小的内核执行来处理第一个块。与此同时，主机到设备 (H2D) 引擎变为可用，并继续将第二个块从主机复制到设备。一旦内核处理了第一个块，就会使用设备到主机引擎 (D2H) 引擎将输出内存从设备复制到主机。与此同时，主机到设备 (H2D) 引擎和内核引擎变为可用，它们继续将第三个块从主机复制到设备并分别处理第二个块。
+在并发模型中，我们把内存分成 `N` 个块（chunk），三步异步化。在上面的示例中 `N = 4`：第一个块 H2D 完成后，内核立即开始处理它，同时 H2D 引擎腾出手继续搬第二个块；第一个块算完后，D2H 引擎把结果搬回主机，此时 H2D 引擎和内核又已在处理第三个、第二个块。流水线上每个硬件引擎（H2D 引擎、SM、D2H 引擎）都保持忙碌。
 
-从上图中我们可以看出并发模型只需要串行模型的一半的时间。那么现在问题就变成了如何编写 CUDA 程序，以便每个块的命令按顺序执行，并且不同的块可以同时执行。答案是使用 CUDA 流。
+从上图中可以看出，并发模型只需要串行模型约一半的时间。接下来的问题是如何编写 CUDA 程序：每个块的命令按顺序执行，不同块之间并发。答案是 CUDA 流。
 
 ## 3. CUDA 流
 
 ### 3.1 定义
 
-根据[《CUDA 编程指南》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams)，流是按顺序执行的一系列命令（可能由不同的主机线程发出）。另一方面，不同的流可能会彼此无序地或以并发方式执行命令。
-
-这正是我们想要为我们的 CUDA 程序实现的并发模型。
+根据[《CUDA 编程指南》](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams)，流是按顺序执行的一系列命令（可能由不同的主机线程发出）；不同流之间的命令可以并发或乱序执行——这正是并发模型需要的性质。
 
 ### 3.2 默认流
 
-根据 CUDA 编程指南，内核启动、主机到设备内存复制以及未指定任何流参数（或将流参数设置为零）的设备到主机内存复制均发送到默认流。它也被称为`null`流或流 `0`。本质上，当我们调用 `cudaMemcpy` 或不指定流调用 `streamcudaMemcpyAsync` 时，我们就是在使用默认流。
+根据 CUDA 编程指南，内核启动、主机到设备内存复制以及未指定任何流参数（或将流参数设置为零）的设备到主机内存复制均发送到默认流。它也被称为`null`流或流 `0`。本质上，调用 `cudaMemcpy`、或给 `cudaMemcpyAsync` 的 stream 参数传 0，用的都是默认流。
 
 随着新 CUDA 版本中的新功能，默认流的行为现在取决于编译标志。在传统模式下，默认流是与设备上的操作同步的流：在设备上的任何流中所有先前发出的操作完成之前，默认流中的任何操作都不会开始，并且默认流中的操作必须在任何其他操作（在设备上的任何流中）开始之前完成。因此，在传统模式下，默认流似乎对并发模型不友好，我们应该改用非默认流。
 
 ### 3.3 非默认流
 
-必须声明、创建并最终销毁非默认 CUDA 流。
+非默认流需要声明、创建，用完销毁：
 
 ```cpp
 cudaStream_t stream[nStreams];
@@ -54,13 +52,14 @@ for (int i = 0; i < nStreams; i ++)
 {
     checkCuda(cudaStreamCreate(&stream[i]));
 }
+// ... 在这些 stream 上提交 H2D / kernel / D2H ...
 for (int i = 0; i < nStreams; i ++)
 {
     checkCuda(cudaStreamDestroy(stream[i]));
 }
 ```
 
-为了实现并发模型，我们不再调用 `cudaMemcpy`，而是调用 `cudaMemcpyAsync` 并使用指定的 `stream` 启动内核，以便它们在调用后立即返回到主机线程。
+要实现并发模型，把同步的 `cudaMemcpy` 换成 `cudaMemcpyAsync` 并指定 `stream`，内核也放到同一个 stream 上。两个前提：缓冲区必须用 pinned memory（`cudaMallocHost`）——pageable 源的 async 拷贝会被 staging 阻塞，重叠不成立；调用返回只表示命令已入队，结果要等 stream 同步或 event 通知。
 
 ```cpp
 for (int i = 0; i < nStreams; i ++)
@@ -70,9 +69,12 @@ for (int i = 0; i < nStreams; i ++)
     kernel<<<streamSize/blockSize, blockSize, 0, stream[i]>>>(d_a, offset);
     checkCuda(cudaMemcpyAsync(&a[offset], &d_a[offset], streamBytes, cudaMemcpyDeviceToHost, stream[i]));
 }
+// 全部提交完，等待所有 stream 完成
+for (int i = 0; i < nStreams; i ++)
+    checkCuda(cudaStreamSynchronize(stream[i]));
 ```
 
-更多示例，请查看 [**Mark Harris** 的示例代码](https://github.com/NVIDIA-developer-blog/code-samples/blob/master/series/cuda-cpp/overlap-data-transfers/async.cu)。
+更多示例请查看 [Mark Harris 的示例代码](https://github.com/NVIDIA-developer-blog/code-samples/blob/master/series/cuda-cpp/overlap-data-transfers/async.cu)。
 
 ## 4. 带有 CUDA 流的示例模型
 
@@ -94,4 +96,4 @@ CUDA Stream：串行模型与并发模型
 
 ### 5.1 内核并发执行
 
-只要计算资源充足，不同 CUDA 流上的内核执行可以同时运行。上面给出的模型图展示了一个理想模型，其中从主机到设备的内存复制时间、内核执行和从设备到主机的内存复制时间相同，因此可以使用最佳计算资源并实现最低延迟。不同 CUDA 流上的内核执行看起来是互斥的，但事实并非如此。实际上，不同 CUDA 流上的内核执行可能会有重叠。
+只要计算资源充足，不同 CUDA 流上的内核执行可以同时运行。上面的模型图展示的是理想情形——H2D、内核、D2H 三段时间相同，资源利用率最高。不同流上的内核在时间线上可能交错重叠，并不互斥；实际能否重叠取决于 SM 资源余量。

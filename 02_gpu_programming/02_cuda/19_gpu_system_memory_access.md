@@ -23,7 +23,7 @@ kernel<<<blocks, threads>>>(p);
 
 A 能跑，是因为驱动会先把 pageable 数据变成 DMA 能访问的形式：常见做法是 stage 到 pinned 缓冲，或者临时 pin 相关页；B 能跑，是因为 host 页被映射进了 GPU 的地址空间；C 能跑，是因为 GPU 缺页后驱动迁移页面，或者在硬件一致的平台上直接共享页表。
 
-三种写法都叫“GPU 访问系统内存”，但地址经过的翻译层、映射层和同步层并不一样。这篇文章不教 API 调参，而是把 Linux 的五个内存机制当作五面镜子，照出 GPU 侧的对应结构。读完你应该能回答：一个地址从 CPU 或 GPU 发出，到最终落到物理内存，中间经过了谁。
+三种写法都叫“GPU 访问系统内存”，但地址经过的翻译层、映射层和同步层并不一样。本文不覆盖 API 调参，聚焦 Linux 五个内存机制与 GPU 侧的对应结构。读完你应该能回答：一个地址从 CPU 或 GPU 发出，到最终落到物理内存，中间经过了谁。
 
 ## 一、五个词不在一个层次
 
@@ -63,7 +63,7 @@ CPU 有 MMU，设备不跑 CPU 的 MMU。设备发起 DMA 时，它拿到的是�
 
 Linux 的 IOMMU 支持覆盖 Intel VT-d、AMD-Vi 和 ARM SMMU。隔离不是“有 IOMMU 就自动成立”：它按 IOMMU group 和 domain 组织，PCIe 拓扑、ACS 配置、桥设备都会影响隔离粒度。一个 group 里的设备，可能无法单独分配给不同的虚拟机。
 
-`iommu.passthrough=1` 会把 DMA 做成 1:1 映射，也就是 IOVA 基本等于物理地址。这样开销最低，但设备失去了翻译层的保护。老的 x86 参数 `iommu=pt` 是它的历史写法，新内核更推荐通用参数 `iommu.passthrough=1`。
+`iommu.passthrough=1` 会把 DMA 做成 1:1 映射，也就是 IOVA 基本等于物理地址。这样开销最低，但设备失去了翻译层的保护。x86 的老参数 `iommu=pt` 效果接近（按需直通），两者并存，新内核更推荐通用参数 `iommu.passthrough=1`。
 
 这里有一个和 GPU 直接相关的边界：普通 GPU DMA 可以经过 IOMMU 翻译；GPUDirect RDMA 这类 peer 访问不行。NVIDIA 的文档写得很直接：GPUDirect RDMA 假设所有 PCIe 设备看到的物理地址相同，所以 IOMMU 必须关闭，或者配置成 1:1 passthrough。
 
@@ -133,7 +133,7 @@ _图 2：硬件一致平台共享页表；软件一致平台各有一张页表�
 1. GPU 页表把 GPU 虚拟地址翻译成 GPU 物理地址或系统内存窗口。
 2. 系统 IOMMU 把总线地址翻译成 host 物理地址。
 
-方向反过来时，两层仍然存在，但谁先谁后取决于访问的是源还是目标。普通 GPU DMA 可以走 IOMMU。这样驱动只需要给设备一个 IOVA，IOMMU 负责落到物理页，同时提供隔离。虚拟机直通和 VFIO 依赖这一层；容器是否使用 IOMMU，取决于运行时和设备插件。
+无论读写方向，地址都先由发起方（GPU）的页表翻译，再经 IOMMU 落到物理地址。普通 GPU DMA 可以走 IOMMU：驱动只需要给设备一个 IOVA，IOMMU 负责落到物理页，同时提供隔离。虚拟机直通和 VFIO 依赖这一层；容器是否使用 IOMMU，取决于运行时和设备插件。
 
 GPUDirect RDMA 是例外。它的数据路径是 NIC 直接读写 GPU 的 BAR 地址，NIC 和 GPU 都假设彼此看到的物理地址一致。NVIDIA 文档要求 IOMMU 关闭或 1:1 passthrough；否则地址翻译会让 peer 访问落到错误的位置。`iommu.passthrough=1` 是满足这个要求的常见配置，但不是唯一写法。
 
@@ -213,11 +213,11 @@ _图 4：五条路径的发起者、数据流向和典型 API。_
 
 pinned 不等于物理连续。它只保证页面不会被换出或移动，DMA 引擎仍然通过 scatter-gather list（或 IOMMU 映射）访问分散的物理页。把 pinned 理解成“物理连续的大块内存”，会在排查 IOMMU、NUMA 和 BAR 问题时得出错误结论。
 
-pinned 的代价是占用系统 RAM，分配太多会让其他进程可用内存变少，内核开始回收或换出。经验上常把 pinned 控制在总内存的 10%–20%，并尽量在 GPU 所在的 NUMA 节点上分配。`cudaMemcpyAsync()` 配合 pinned 内存，可以把 H2D 拷贝和 kernel 执行重叠起来。
+pinned 的代价是占用系统 RAM，分配太多会让其他进程可用内存变少，内核开始回收或换出。经验口径是 pinned 控制在总内存的 10%–20% 以内（按内存压力调整），并尽量在 GPU 所在的 NUMA 节点上分配。`cudaMemcpyAsync()` 配合 pinned 内存，可以把 H2D 拷贝和 kernel 执行重叠起来。
 
 ### 4.3 zero-copy mapped：kernel 直接读 host 内存
 
-`cudaHostAllocMapped` 或 `cudaHostRegisterMapped` 把 host 内存映射进 GPU 地址空间。64 位 UVA 下，`cudaHostAlloc()` 返回的指针可以直接在 kernel 里解引用；`cudaHostRegister()` 注册的内存则需要 `cudaHostGetDevicePointer()` 拿设备指针。
+`cudaHostAllocMapped` 或 `cudaHostRegisterMapped` 把 host 内存映射进 GPU 地址空间。64 位 UVA 下，`cudaHostAlloc()` 返回的指针可以直接在 kernel 里解引用；`cudaHostRegister()` 注册的内存一般也如此，除非设备不支持（用 `cudaDevAttrCanUseHostPointerForRegisteredMem` 查询），此时用 `cudaHostGetDevicePointer()` 拿设备指针。
 
 zero-copy 没有显式的 `cudaMemcpy`，但每次访问都要穿过 PCIe。CUDA 文档明确说，kernel 直接访问 host memory 的带宽不如 device memory；它适合小数据、偶尔访问、或者需要 CPU 和 GPU 同时看到同一块数据的场景。它不适合大块流式数据。
 
@@ -314,9 +314,7 @@ lspci -vv -s <bdf>
 
 ## 七、结语
 
-GPU 访问系统内存的复杂度，藏在地址经过的几次翻译、几次映射、几次同步里。
-
-MMU 和 IOMMU 管翻译，MMIO 管 CPU 访问设备窗口，mmap 和 ioremap 管软件映射。GPU 侧对应的是 GPU 页表、系统 IOMMU、BAR0/BAR1、CUDA VMM 和驱动 ioremap。五条端到端路径，是这些层在不同组合下的结果。
+GPU 访问系统内存的复杂度集中在地址经过的翻译、映射和同步上：MMU 和 IOMMU 管翻译，MMIO 管 CPU 访问设备窗口，mmap 和 ioremap 管软件映射。GPU 侧对应的是 GPU 页表、系统 IOMMU、BAR0/BAR1、CUDA VMM 和驱动 ioremap。五条端到端路径，是这些层在不同组合下的结果。
 
 如果要把这些机制落到调优，下一篇可以接着读[《GPU 内存管理》](12_gpu_memory_management.md)；BAR1 和 ReBAR 的实测细节在[《GPU BAR1 内存映射机制》](../../01_hardware_architecture/pcie/05_bar1_memory_mapping.md)；P2P、GPUDirect 和 GDS 的路径分别在[PCIe P2PDMA](../../01_hardware_architecture/pcie/02_p2pdma_technology.md)和[GPUDirect](../../01_hardware_architecture/gpudirect/01_gpudirect_technology.md)里展开。
 

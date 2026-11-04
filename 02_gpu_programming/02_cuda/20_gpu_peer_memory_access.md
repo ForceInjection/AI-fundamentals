@@ -10,7 +10,7 @@
 
 ## 一、先分清：拷贝、映射和直接解引用
 
-“GPU 访问另一块 GPU 的显存”常被说成一个动作，实际至少有三层。
+“GPU 访问另一块 GPU 的显存”常被说成一个动作，实际是三类动作（映射有两种句柄来源）。
 
 | 操作       | 典型 API                                                     | 发生了什么                                             |
 | ---------- | ------------------------------------------------------------ | ------------------------------------------------------ |
@@ -19,7 +19,7 @@
 | 映射（VMM） | `cuMemImportFromShareableHandle` → `cuMemMap`                | 导入 allocation handle，映射后才有 VA                  |
 | 解引用     | kernel 里的普通 load/store                                   | 当前 GPU 的地址翻译把这个虚拟地址指到 peer 显存        |
 
-拷贝不改变指针可见性，映射不搬数据，解引用要求映射和访问权限都已就绪。三种动作的失败方式不同：拷贝是 API 错误，映射是句柄或权限问题，解引用是地址在当前 context 里无效。
+拷贝不改变指针可见性，映射不搬数据，解引用要求映射和访问权限都已就绪。三类动作的失败方式不同：拷贝是 API 错误，映射是句柄或权限问题，解引用是地址在当前 context 里无效。
 
 ![三条边界](assets/gpu-peer-01-boundaries.png)
 
@@ -113,7 +113,7 @@ cudaIpcCloseMemHandle(remote);
 
 它适合同一台机器上的多进程推理、前后端分离、共享一块固定的权重或缓存。它的 API 少，路径短，但分配来源被限制在 `cudaMalloc`，生命周期也要由应用自己协调。
 
-如果分配来自 CUDA VMM 或新的 allocator，`cudaIpc` 不一定能覆盖。这时要看下一节的 shareable handle。
+如果分配来自 CUDA VMM 或新的 allocator（`cuMemCreate` 家族），`cudaIpcGetMemHandle` 会直接失败——这类分配要用下一节的 shareable handle。
 
 ![跨进程句柄](assets/gpu-peer-03-handles.png)
 
@@ -199,7 +199,7 @@ VMM 的 host allocation 不支持 IPC。`CU_MEM_LOCATION_TYPE_HOST` 的 allocati
 
 ### 5.1 分块计算把中间矩阵留在 SRAM
 
-FlashAttention 的 forward 没有改 attention 公式，改的是计算顺序。Q 按块进入 SRAM（CUDA 的共享内存，SMEM），K/V 也按块加载。每个 `(Q_i, K_j)` 的分数、online softmax 和输出累加都在 SRAM 完成，中间矩阵不写回 HBM，最后只写归一化的 O。`flashattention_deep_dive.md:85-103` 的算法流程和 `:17-20` 的 HBM/SRAM 层级关系说明了这条路径。
+FlashAttention 的 forward 没有改 attention 公式，改的是计算顺序。Q 按块进入 SRAM（CUDA 的共享内存，SMEM），K/V 也按块加载。每个 `(Q_i, K_j)` 的分数、online softmax 和输出累加都在 SRAM 完成，中间矩阵不写回 HBM，最后只写归一化的 O。算法流程与 HBM/SRAM 层级关系见文末参考的 [FlashAttention 深度解析](../../09_inference_system/vllm/module_analysis/flashattention_deep_dive.md)。
 
 K/V tile 从 HBM 读入 SRAM，Tensor Core 和 softmax 在片上消费。HBM 流量与序列长度、head 维度、SRAM 大小有关。decode、长上下文里的小 batch 场景，attention 经常先撞 HBM 带宽，而不是 Tensor Core 算力。
 
@@ -278,7 +278,7 @@ MNNVL 是另一条边界。GB200 NVL72、GB300 NVL72 这类系统把 NVLink 域�
 | direct peer read     | 64 MB，单向，20 次       | 323.6 GB/s；memcpyPeer 346.6 GB/s；0.93× |
 | direct peer read     | 256 MB，单向，20 次      | 338.4 GB/s；memcpyPeer 365.1 GB/s；0.93× |
 
-表中的 P2P copy 是往返测试的每方向等效速率，不是单向峰值。CPU relay 只有 25.6 GB/s，和 P2P 差约 14 倍。direct peer kernel 在一张 GPU 上直接读另一张 GPU 的指针，sentinel 和 checksum 都通过；direct read 比 copy 路径慢约 7%。
+表中的 P2P copy（357.3）与 direct read（323.6/338.4、memcpyPeer 346.6/365.1）都是**双方向合计**口径：往返测试把两个方向的传输量相加除以总时间，因此数字可以超过单向上限（A100 NVLink 3.0 单向 ~300 GB/s），换算到单方向约为表值的一半。CPU relay 25.6 GB/s 与 P2P 差约 14 倍。direct peer kernel 在一张 GPU 上直接读另一张 GPU 的指针，sentinel 和 checksum 都通过；direct read 比 copy 路径慢约 7%。
 
 `cudaIpc` 用例用 64 MB：进程 B 读到进程 A 的 `0x5A`，写入 `0xA5`，A 校验通过；close 在 free 之前。VMM POSIX FD 用例用 16 MB：A 导出 fd，B 导入、map、set access，B 的 kernel 读 `0x5A`、写 `0xA5`，A 校验通过；B 先 unmap/release，A 后 release。
 

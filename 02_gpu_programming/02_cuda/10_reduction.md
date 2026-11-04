@@ -1,6 +1,6 @@
 # Reduction：从朴素实现到 Warp Shuffle
 
-> 基于 A100-SXM4-80GB (CC 8.0) + CUDA 13.1 实测。Reduction 是 GPU 并行编程中最经典的教学案例——它简单到能看懂，复杂到能展示几乎所有 GPU 优化技巧。本文沿 NVIDIA 官方 cuda-samples 的 8 个 kernel 变体，展示从 0.048 ms 到 0.022 ms 的逐级优化过程。
+> 基于 A100-SXM4-80GB (CC 8.0) + CUDA 13.1 实测。Reduction 是 GPU 并行编程的经典教学案例：几行核心逻辑，能依次触发 coalescing、shared memory、divergence、shuffle 等几乎所有优化点。本文沿 NVIDIA 官方 cuda-samples 的 7 个 kernel 变体，展示从 0.048 ms 到 0.022 ms 的逐级优化过程。
 >
 > **验证代码**：本文所有实测数据来自配套 Benchmark：[10_reduction_bench.cu](code/10_reduction_bench.cu)（包含 K0-K6 共 7 个 kernel 变体）。
 
@@ -26,7 +26,7 @@ Reduction 将数组中所有元素通过二元结合操作合并为单个值：
 
 **为什么 Reduction 是经典教学案例**：
 
-Reduction 只有几行核心逻辑，但每改一行就能触及一个硬件特性：global memory coalescing → shared memory → bank conflict → warp divergence → warp shuffle → template unroll → Cooperative Groups。搞懂这 7 个优化，你就能回答"我的 kernel 为什么慢"中的 80% 的场景。
+Reduction 只有几行核心逻辑，但每改一行就能触及一个硬件特性：global memory coalescing → shared memory → warp divergence → warp shuffle → template unroll → Cooperative Groups。搞懂这 7 个优化，就掌握了"我的 kernel 为什么慢"的绝大多数场景。
 
 ---
 
@@ -47,14 +47,7 @@ for (unsigned int s = 1; s < blockDim.x; s *= 2) {
 
 1. **Warp Divergence**：当 `s=1` 时只有偶数线程活跃（50%），`s=2` 时只有 4 的倍数活跃（25%），`s=4` 时仅 12.5%... 在 warp 级别（32 线程），divergence 让 SIMT 执行效率不断降低。
 
-2. **Shared Memory Bank Conflict**：interleaved addressing 每次访问的地址间隔为 `s`，当 `s` 是 2 的幂次时，大量线程落在同一个 bank 上 → bank conflict。
-
-```text
-s=1: thread 0 → bank[0], thread 1 → bank[0+1]  ← 连续，无 conflict
-s=2: thread 0 → bank[0], thread 2 → bank[2]     ← 部分 conflict
-s=4: thread 0 → bank[0], thread 4 → bank[4]     ← 更严重
-s=32: thread 0 → bank[0], thread 32 → bank[0]   ← 完全同 bank！
-```
+2. **无效工作**：随 `s` 增大，绝大多数线程被 mask 掉（`s=16` 时仅 6% 的线程活跃），SIMT 单元仍要为这些 warp 发射指令和同步；`%` 取模本身也是额外指令。（注：这里的寻址是加法 `tid + s`，Bank 分布只是轮转，**不会**产生 Bank Conflict——"stride 是 2 的幂就冲突"是乘法寻址（`tid * s`）才有的问题，常见误解，见 [#13](13_shared_memory_bank_conflict.md) 第 6.3 节。）
 
 ---
 
@@ -92,7 +85,7 @@ for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
 s=128: thread 0-127 活跃 (连续) ← 128 个连续线程，4 个完整 warp
 s=64:  thread 0-63  活跃 (连续) ← 2 个完整 warp
 s=32:  thread 0-31  活跃         ← 1 个完整 warp，完全无 divergence！
-s=16:  thread 0-15  活跃         ← 半个 warp（divergence 不可避免，但 < warpSize 之后走不同路径）
+s=16:  thread 0-15  活跃         ← 半个 warp（s<32 后活跃线程不足一个 warp，divergence 无法避免）
 ```
 
 **收益**：warp 内部的活跃线程始终连续 → divergence 只在最后 5 次迭代（s < 32）出现，之前的迭代完全无 divergence。
@@ -103,13 +96,16 @@ s=16:  thread 0-15  活跃         ← 半个 warp（divergence 不可避免，�
 
 ```c
 // 手动展开最后 5 次迭代 (s=16,8,4,2,1)
+// 注意 volatile：最后这几层没有 __syncthreads 保护，编译器可能把共享内存读写
+// 重排/缓存进寄存器，官方 reduce3 正是用 volatile 防住这一点
 if (tid < 32) {
-    sdata[tid] += sdata[tid + 32];  // 附加的 2nd warp 合并
-    sdata[tid] += sdata[tid + 16];
-    sdata[tid] += sdata[tid + 8];
-    sdata[tid] += sdata[tid + 4];
-    sdata[tid] += sdata[tid + 2];
-    sdata[tid] += sdata[tid + 1];
+    volatile float* smem = sdata;   // T 为 int 时用 volatile int*
+    smem[tid] += smem[tid + 32];    // 先把 2nd warp 的部分和并进来
+    smem[tid] += smem[tid + 16];
+    smem[tid] += smem[tid + 8];
+    smem[tid] += smem[tid + 4];
+    smem[tid] += smem[tid + 2];
+    smem[tid] += smem[tid + 1];
 }
 ```
 
@@ -136,7 +132,7 @@ if (cta.thread_rank() < 32) {
 }
 ```
 
-**为什么 shuffle 更快**：shared memory ~100 cycles/access，shuffle 是单指令寄存器交换（~1 cycle）。512 线程 block 中最后 6 层迭代从 ~600 cycles 直接降到 ~6 cycles。
+**为什么 shuffle 更快**：shared memory 一次访问 ~20-30 cycles 且每层迭代要付一次 `__syncthreads()`，shuffle 是单指令寄存器交换（~1 cycle、无 sync）。最后 6 层迭代的开销差一个数量级以上。
 
 ### Kernel 5：Template 编译期展开
 
@@ -175,16 +171,11 @@ __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n) {
 
 **关键思想**：让每个线程处理多个元素，减少需要的 block 数量 → 减少 block 之间的 `__syncthreads` 开销。
 
-### Kernel 7：单 Kernel 多 Block（Cooperative Groups）
+### 关于"单 Kernel 全局归约"
 
-Kernel 0-6 都需要两阶段：Kernel 将数组 reduce 为 per-block 结果 → CPU 或第二个 kernel 做最终 reduce。Kernel 7 用 Cooperative Groups 的 `grid_group` 和 `cg::reduce` 在单个 kernel 内完成全部 reduction——利用了 CC 8.0 (A100) 的 `__reduce_add_sync` 硬件加速指令：
+Kernel 0-6 都需要两阶段：kernel 把数组归约为 per-block 结果，再由第二个 kernel（或 CPU）做最终归约。要在单个 kernel 内跨 block 归约，需要 Cooperative Groups 的 grid sync（`cg::this_grid().sync()`，要求 cooperative launch），或改用原子操作的 single-pass 方案——两者都不在官方 reduction sample 与配套 bench 的 K0-K6 之列，本文不给未实测的数字。
 
-```c
-// A100 (SM 8.0+) 硬件加速 warp reduce
-int warpReduceSum(int mySum) {
-    return __reduce_add_sync(0xffffffff, mySum);  // 单指令完成！
-}
-```
+顺带说明：A100 的硬件归约指令 `__reduce_add_sync` 只支持整型（见 [#14](14_warp_level_programming.md) 第 7 节）。上面各 kernel 是 float 数据，warp 内归约用 shuffle 循环实现。
 
 ---
 
@@ -196,19 +187,19 @@ nvcc -arch=sm_80 -I../../../Common -o reduction reduction.cpp reduction_kernel.c
 ./reduction --shmoo
 ```
 
-`--shmoo` 输出表（int 类型，1M - 16M elements 关键切片，时间单位 ms）：
+`--shmoo` 输出表（int 类型，128K - 8M elements 关键切片，时间单位 ms）：
 
-| Elements  | K0 (interleaved) | K1 (div fix) | K2 (seq) | K3 (unroll) | K4 (shuffle) | K5 (tmpl) | K6 (CG+grid) | K7 (single-pass) |
-| --------- | ---------------- | ------------ | -------- | ----------- | ------------ | --------- | ------------ | ---------------- |
-| 131,072   | 0.029            | 0.028        | 0.026    | 0.020       | 0.016        | 0.020     | **0.017**    | 0.017            |
-| 262,144   | 0.032            | 0.028        | 0.028    | 0.020       | 0.019        | 0.016     | **0.018**    | 0.018            |
-| 524,288   | 0.037            | 0.032        | 0.030    | 0.027       | 0.023        | **0.023** | **0.019**    | **0.019**        |
-| 1,048,576 | 0.048            | 0.038        | 0.035    | 0.030       | 0.024        | **0.023** | **0.022**    | **0.022**        |
-| 2,097,152 | 0.070            | 0.051        | 0.045    | 0.034       | 0.026        | **0.026** | **0.028**    | 0.029            |
-| 4,194,304 | 0.112            | 0.077        | 0.063    | 0.096       | 0.031        | **0.031** | **0.041**    | **0.041**        |
-| 8,388,608 | 0.199            | 0.130        | 0.109    | 0.065       | 0.046        | **0.045** | 0.141        | 0.139            |
+| Elements  | K0 (interleaved) | K1 (div fix) | K2 (seq) | K3 (unroll) | K4 (shuffle) | K5 (tmpl) | K6 (CG+grid) |
+| --------- | ---------------- | ------------ | -------- | ----------- | ------------ | --------- | ------------ |
+| 131,072   | 0.029            | 0.028        | 0.026    | 0.020       | 0.016        | 0.020     | **0.017**    |
+| 262,144   | 0.032            | 0.028        | 0.028    | 0.020       | 0.019        | 0.016     | **0.018**    |
+| 524,288   | 0.037            | 0.032        | 0.030    | 0.027       | 0.023        | **0.023** | **0.019**    |
+| 1,048,576 | 0.048            | 0.038        | 0.035    | 0.030       | 0.024        | **0.023** | **0.022**    |
+| 2,097,152 | 0.070            | 0.051        | 0.045    | 0.034       | 0.026        | **0.026** | **0.028**    |
+| 4,194,304 | 0.112            | 0.077        | 0.063    | 0.096       | 0.031        | **0.031** | **0.041**    |
+| 8,388,608 | 0.199            | 0.130        | 0.109    | 0.065       | 0.046        | **0.045** | 0.141        |
 
-> K0-K2 在 16M elements 返回 -1（kernel 执行超时被 kill），因为这些 kernel 的 block 数量无法支撑大规模数据。
+> K0-K2 在 16M elements 时返回 -1——这是 sample 自身的时间上限约定（这些 kernel 的 block 数量无法支撑大规模数据），不是硬件 watchdog 触发。
 
 **1M elements 加速比**：
 
@@ -220,7 +211,6 @@ K3 (unroll warp):  0.030 ms  █████████████████
 K4 (warp shuffle): 0.024 ms  ████████████████▊                     2.00x
 K5 (template):     0.023 ms  ███████████████▋                      2.09x
 K6 (CG+grid):      0.022 ms  ██████████████▊                       2.18x  ← 最优
-K7 (single-pass):  0.022 ms  ██████████████▊                       2.18x
 ```
 
 **关键发现**：
@@ -228,7 +218,7 @@ K7 (single-pass):  0.022 ms  ██████████████▊      
 - K0→K2 (addressing 优化)：+37%，改的只是索引计算方式
 - K2→K4 (warp shuffle)：+46%，这是单次改动中收益最大的
 - K4→K6 (template + grid loop)：+9%，接近零开销的工程完善
-- **总计 K0→K6：2.18×**——没有任何算法改变，纯工程优化
+- 总计 K0→K6：2.18×，没有任何算法层面的改变，全部是工程优化
 
 ---
 
@@ -271,17 +261,16 @@ offset=1:  t0←t0+t1
 ─────────────────────────────────────────────────
 global mem  coalesced access              所有 kernel
 shared mem  sequential addressing          block 内数据复用
-warp        ── 之上的都不需要 sync ──
-warp        __shfl_down_sync              warp 内 reduce/scan
+warp        shuffle（寄存器内完成，无需 block 级 sync）   warp 内 reduce/scan
 instruction template unroll                固定大小 block
-hardware    __reduce_add_sync (A100+)      求和 reduce
+hardware    __reduce_add_sync (A100+, 整型)  求和 reduce
 ```
 
-- **先消除 global memory 瓶颈**（coalesced access），再优化 shared memory（sequential addressing）
-- **warp shuffle 是 free lunch**：一行代码替换 5+ 层循环 + sync
-- **template block size** 让编译器替你 unroll——编译期常量是 CUDA 性能的关键
-- **不要过早优化**：先写对的（K0），再写快的（K6）。K0 的代码 20 行就能读懂；K6 的优化版 80 行但读者理解 K0 后才能看懂
-- **Reduction 是基础原语**：softmax、layer norm、attention score 归一化、所有 `all_reduce` 都依赖它
+- 先消除 global memory 瓶颈（coalesced access），再优化 shared memory（sequential addressing）
+- warp shuffle 用一行代码替换 5+ 层循环 + sync
+- template block size 让编译器替你 unroll——编译期常量是 CUDA 性能的关键
+- 不要过早优化：先写对的（K0），再写快的（K6）。K0 的代码 20 行就能读懂；K6 的优化版 80 行，但要读懂 K0 才能看懂
+- Reduction 是基础原语：softmax、layer norm、attention score 归一化、所有 `all_reduce` 都依赖它
 
 ---
 

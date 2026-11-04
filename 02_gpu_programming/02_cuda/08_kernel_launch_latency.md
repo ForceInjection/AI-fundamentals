@@ -14,7 +14,7 @@
 CPU 提交命令 → CUDA Driver 处理 → GPU 调度 → 执行 → 完成通知
 ```
 
-如果 kernel 计算量 < launch 开销，GPU 加速反而变成减速。阈值通常在 **10-50 μs** 量级，但不同 GPU 差异显著。
+如果 kernel 计算量 < launch 开销，GPU 加速反而变成减速。本文实测单次 launch ~2.6 μs；加上一次 PCIe H2D/D2H 往返（~10 μs），一次小操作的固定开销 ~13 μs 起步，跨配置可到几十 μs。
 
 ---
 
@@ -57,14 +57,14 @@ int main() {
     for (int i = 0; i < 10000; i++)
         empty<<<1, 1>>>();
     CHECK(cudaEventRecord(e, 0));
-    CHECK(cudaDeviceSynchronize(e));
+    CHECK(cudaDeviceSynchronize());
     CHECK(cudaEventElapsedTime(&t, s, e));
 
     printf("Average (10k iters): %.3f us\n", t * 1000 / 10000);
 
     // === Different block counts ===
     int blocks[] = {1, 32, 256, 1024, 4096, 16384};
-    printf("\n%-8s | %-15s\n", "Blocks", "Time (us)");
+    printf("\n%-8s | %-22s\n", "Blocks", "Time (ms, 1000 launches)");
     printf("---------|----------------\n");
     for (int i = 0; i < 6; i++) {
         CHECK(cudaDeviceSynchronize());
@@ -91,37 +91,39 @@ nvcc -o launch_lat launch_lat.cu
 
 ## 3. RTX 5090 实测
 
+> 数据出自内联脚本 `launch_lat.cu`（blocks × 256 线程）；§3.1 的 A100 表出自配套 `08_kernel_launch_latency.cu`（7 组 blocks×threads 配置）。两套程序配置集不同，数字不能逐行互换。
+
 ```text
 Empty kernel (1 thread): 14363.71 us     ← 首次 launch，含 driver 初始化
-Average (10k iters):     2.647 us       ← 稳定后每次 launch 开销
+Average (10k iters):     2.647 us        ← 稳定后每次 launch 开销
 
-Blocks   | Time (us)
----------|----------------
-1        | 2.34           ← 1000 次 empty kernel 总时间
+Blocks   | Time (ms, 1000 launches)   ← 每行 = 1000 次 launch 的总毫秒数
+---------|----------------------------
+1        | 2.34                        ← 每次 ~2.34 μs
 32       | 2.35
 256      | 2.36
 1024     | 2.38
 4096     | 2.40
-16384    | 8.24           ← 16k blocks 触发额外调度开销
+16384    | 8.24                        ← 每次 ~8.2 μs，16k blocks 触发额外调度开销
 ```
 
 ### 3.1 A100 实测（配套 Benchmark）
 
-同样空 kernel 代码在 A100 上重复测试：
+配套 `08_kernel_launch_latency.cu` 在 A100 上的结果（每次 launch 均摊，μs）：
 
 ```text
-Blocks  | Threads | A100 (μs) | RTX 5090 (μs)
---------|---------|-----------|---------------
-1       | 1       | 2.33      | 2.34
-1       | 32      | 2.33      | 2.35
-1       | 128     | 2.34      | —
-1       | 512     | 2.36      | —
-1       | 1024    | 2.34      | 2.38
-10      | 256     | 2.33      | —
-100     | 256     | 2.31      | 2.36
+Blocks  | Threads | A100 (μs)
+--------|---------|----------
+1       | 1       | 2.33
+1       | 32      | 2.33
+1       | 128     | 2.34
+1       | 512     | 2.36
+1       | 1024    | 2.34
+10      | 256     | 2.33
+100     | 256     | 2.31
 ```
 
-A100 稳定 launch 开销约 **2.33 μs**，略低于 RTX 5090 的 2.6 μs。两台 GPU 的 launch 开销在同一数量级——block/thread 数的差异对 launch 延迟影响极小（< 0.05 μs），这说明 launch 开销主要来自 CPU→GPU 的命令提交路径，而非 GPU 端的调度。
+A100 稳定 launch 开销约 **2.33 μs**，与 RTX 5090 的 ~2.6 μs 同一量级。两组实测中 blocks/threads 配置的差异对 launch 延迟的影响都小于事件计时的分辨率（约 0.5 μs）——launch 开销主要来自 CPU→GPU 的命令提交路径，而非 GPU 端调度。
 
 ### 3.2 关键解读
 
@@ -129,8 +131,8 @@ A100 稳定 launch 开销约 **2.33 μs**，略低于 RTX 5090 的 2.6 μs。两
 | ------------- | ----------- | ---------- | ----------------------------------- |
 | 首次 launch   | **14.4 ms** | —          | 含 CUDA driver 初始化、context 建立 |
 | 稳定 launch   | **2.6 μs**  | **2.3 μs** | 正常 kernel 提交延迟                |
-| block 数 < 4k | ~2.4 μs     | ~2.3 μs    | 调度负载可忽略                      |
-| block 数 16k  | ~8.2 μs     | —          | 大量 block 的硬件调度队列开销       |
+| block 数 < 4k | 每次 ~2.4 μs | 每次 ~2.3 μs | 调度负载可忽略                   |
+| block 数 16k  | 每次 ~8.2 μs | —          | 大量 block 的硬件调度队列开销       |
 
 ---
 
@@ -148,13 +150,13 @@ A100 稳定 launch 开销约 **2.33 μs**，略低于 RTX 5090 的 2.6 μs。两
   算数密度 1000 ops/el → GPU 胜出 > 200 元素 (矩阵乘法等)
 ```
 
-| 场景               | 数据量 | 推荐 | 原因                 |
-| ------------------ | ------ | ---- | -------------------- |
-| 逐元素 ReLU        | < 100K | CPU  | launch + PCIe > 计算 |
-| 向量内积           | > 10K  | GPU  | 计算开始主导         |
-| 矩阵乘法 1024×1024 | 任何   | GPU  | 计算时间远大于开销   |
+| 场景                    | 数据量 | 推荐 | 原因                        |
+| ----------------------- | ------ | ---- | --------------------------- |
+| 逐元素 ReLU (1 op/el)   | < 200K | CPU  | launch + PCIe > 计算        |
+| 向量内积 (2 ops/el)     | > 100K | GPU  | 临界值约为 ReLU 场景的一半  |
+| 矩阵乘法 1024×1024      | 任何   | GPU  | 计算时间远大于开销          |
 
-**经验法则**：GPU kernel 总时间 < **20 μs** 则 CPU 可能更快；**批量处理**是 GPU 高效的关键——一次传输 100K 元素比 100 次 1K 传输高效 100×。
+**经验法则**：GPU kernel 总时间 < **20 μs** 则 CPU 可能更快；批量处理摊薄 13 μs 的固定开销——一次传输 100K 元素只付一次往返延迟，100 次 1K 传输要付 100 次。
 
 ---
 
@@ -183,7 +185,7 @@ for (int i = 0; i < 1000; i++)
 cudaStreamEndCapture(stream, &graph);
 
 // 实例化
-cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+cudaGraphInstantiate(&instance, graph, 0);
 
 // 执行（一次 launch 替代 1000 次）
 cudaGraphLaunch(instance, stream);
@@ -195,14 +197,14 @@ cudaGraphLaunch(instance, stream);
 
 总 GPU 操作延迟 ≈ Launch 开销 + PCIe 传输时间：
 
-| 操作                    | 延迟                                  |
-| ----------------------- | ------------------------------------- |
-| Kernel launch           | **2.6 μs**                            |
-| PCIe H2D (1 KB)         | **11.1 μs** (含 ~10 μs PCIe TLP 往返) |
-| PCIe D2H (1 KB)         | **10-12 μs**                          |
-| nvbandwidth Host↔Device | **621 ns** (纯 PCIe 链路延迟)         |
+| 操作                    | 延迟                                        |
+| ----------------------- | ------------------------------------------- |
+| Kernel launch           | **2.6 μs**                                  |
+| PCIe H2D (1 KB)         | **11.1 μs**（含 ~10 μs 链路往返固定延迟）   |
+| PCIe D2H (1 KB)         | **10-12 μs**                                |
+| nvbandwidth latency 用例 | **621 ns**（纯 PCIe 链路往返口径，不含 launch 与驱动提交路径） |
 
-> PCIe 有一次性的 ~10 μs 往返开销（TLP 打包/解包），之后每字节传输接近线速。这是为什么**批量传输比逐次小传输高效几个数量级**。
+> 每次 H2D/D2H 往返都有 ~10 μs 的固定延迟（驱动提交路径 + 链路往返），之后每字节传输接近线速。这是批量传输比逐次小传输高效几个数量级的原因。
 
 ---
 

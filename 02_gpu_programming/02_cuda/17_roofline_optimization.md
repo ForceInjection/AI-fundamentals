@@ -2,7 +2,7 @@
 
 你已经读完了 01 到 16——知道如何分配 Shared Memory（[#13](13_shared_memory_bank_conflict.md)），怎样用 Warp Shuffle 替代 `__syncthreads()`（[#14](14_warp_level_programming.md)），何时上 `cp.async` + pipeline（[#16](16_async_copy_pipeline.md)），以及如何用 NCCL 做多 GPU 通信（[#15](15_multi_gpu_programming.md)）。
 
-但现在你面对一个新的 kernel——它慢了，你不知道为什么。你的第一反应可能是："加 Shared Memory？""改 block size？""上 Warp Shuffle？"——但这些都是**手段**，不是**诊断**。Roofline Model 给你的是"天花板在哪里"——在动任何一行代码之前，先知道最多能快多少、瓶颈在算力还是带宽。
+但现在你面对一个新的 kernel——它慢了，你不知道为什么。加 Shared Memory、改 block size、上 Warp Shuffle 都是手段；诊断要先知道天花板在哪里。Roofline Model 给的就是这个：在动任何一行代码之前，先知道最多能快多少、瓶颈在算力还是带宽。
 
 本文提供一个分级诊断框架。第一层：Roofline Model（确定天花板）。第二层：ncu 关键指标（定位瓶颈）。第三层：逐级优化 checklist（从 occupancy 到 arithmetic intensity，6 级递进）。最后用一个朴素 kernel 从头到尾走一遍完整调优。
 
@@ -148,7 +148,7 @@ FLOP / (bytes_read + bytes_write) = 实测算术强度
 
 ## 3. 逐级优化 Checklist——6 级递进
 
-从"最粗"到"最细"——每一级的收益通常比下一级大一个数量级。**不要跳级**。
+从"最粗"到"最细"逐级排查，每一级的收益通常比下一级大一个数量级，不要跳级。
 
 ### Level 0: 确认 GPU 在做事
 
@@ -190,7 +190,7 @@ float x = g_data[tid * N];  // stride = N → 32 次 4B transaction → 32× 延
 float x = g_data[tid];      // 32 线程读 [0..31] → 1 次 128B transaction
 ```
 
-详见 [#12 GPU 内存管理](12_gpu_memory_management.md) 第 1 节。
+详见 [#13 Shared Memory](13_shared_memory_bank_conflict.md)（内存层级）与 [#12 GPU 内存管理](12_gpu_memory_management.md)（分配与传输）。
 
 ### Level 3: Shared Memory——"把复用的数据搬进来"
 
@@ -254,7 +254,7 @@ __global__ void gemm_naive(float *C, const float *A, const float *B, int N) {
 ```
 
 ```bash
-ncu --section SpeedOfLight py ./gemm_naive N=1024
+ncu --section SpeedOfLight ./gemm_naive N=1024
 ```
 
 假设 ncu 输出：
@@ -265,9 +265,7 @@ dram_throughput:  ~15%    ← 也低
 occupancy:        ~50%    ← 尚可
 ```
 
-**诊断**：算术强度 = 2 FLOP / (4+4+4 bytes) = 0.17 FLOP/Byte（极低，因为完全无数据复用）→ Memory-Bound，但带宽也只有 15%——原因是 Global Memory 访问没有 coalesced？
-
-**问题**：`B[k * N + col]`——col 是 `blockIdx.x * TILE + threadIdx.x`，所以同一 warp 内的线程的 col 是**相邻的**。`A[row * N + k]`——同一个 warp 内 row 相同，k 也相同，所以 32 个线程读**同一个地址**！这反而是 broadcast——但不是 coalesced（32 次访问同一地址，L1 命中但没有合并）。
+**诊断**：算术强度 = 2 FLOP / (4+4+4 bytes) = 0.17 FLOP/Byte（极低，因为完全无数据复用）→ Memory-Bound。带宽却只有 15%：问题不是"没有 coalesced"——同 warp 读同一地址的 A 是 broadcast（1 个事务，本就高效），B 是连续合并访问。真正的答案是数据没有复用，算术强度太低，且 barrier 多。
 
 ### 4.2 Level 2-3 fix：Shared Memory + Coalescing
 
@@ -343,10 +341,10 @@ Level 2-3 (tiled SMEM)  | ~8×     | Memory-Bound    | coalesced + data reuse
 Level 5 (double buffer) | ~10×    | Memory→Compute  | Load/Compute overlap
 Level 6 (FP16+TC)       | ~80×    | Compute-Bound   | Tensor Core FP16
 
-从 Level 0 到 Level 6: ~80× 加速。其中:
-  Level 0→2-3 (数据复用):   ~8×   ← 最大单级收益
-  Level 2-3→6 (Tensor Core): ~10×  ← 第二级
-  Level 3→5 (latency hiding): ~1.25× ← 精细化收益
+从 Level 0 到 Level 6: ~80× 加速，来源分解：
+  数据复用 (L0→L2-3):        ~8×   ← 最大单级收益
+  latency hiding (L2-3→L5): ~1.25×
+  精度/算力天花板 (L5→L6):   ~8×（FP32→FP16 + Tensor Core）
 ```
 
 > 注意：以上加速比为基于理论估算的相对值，实际绝对值取决于矩阵大小和 GPU 型号。`ncu` 实测数据因环境而异，建议在自己的 GPU 上使用配套 benchmark 复现。
@@ -429,11 +427,11 @@ Step 4: 对标
 | 优化 Level                | 技术                                      | 详见                                                          |
 | ------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
 | Level 1 (Occupancy)       | `__launch_bounds__`、SMEM/Register budget | [#13 Shared Memory](13_shared_memory_bank_conflict.md) §7.2   |
-| Level 2 (Coalescing)      | Global Memory 访问模式                    | [#12 GPU 内存管理](12_gpu_memory_management.md) §1            |
+| Level 2 (Coalescing)      | Global Memory 访问模式                    | [#13 Shared Memory](13_shared_memory_bank_conflict.md) §1     |
 | Level 3 (SMEM)            | Shared Memory tile、`__syncthreads`       | [#13 Shared Memory](13_shared_memory_bank_conflict.md)        |
 | Level 4 (Bank Conflict)   | Padding / Swizzle / Reorder               | [#13 Shared Memory](13_shared_memory_bank_conflict.md) §4-5   |
 | Level 5a (Warp Shuffle)   | `__shfl_down_sync` 等                     | [#14 Warp-level Programming](14_warp_level_programming.md) §2 |
 | Level 5b (Pipeline)       | `cp.async`、`cuda::memcpy_async`          | [#16 Async Copy & Pipeline](16_async_copy_pipeline.md)        |
 | Level 5c (CUDA Graphs)    | Graph Capture + Re-launch                 | [#09 CUDA Graphs](09_cuda_graphs.md)                          |
-| Level 6 (Arith Intensity) | FP16/BF16、Tensor Core、Kernel 融合       | [#11 Tensor Core GEMM](11_tensor_core_gemm.md)                |
+| Level 6 (算力天花板)      | FP16/BF16、Tensor Core、Kernel 融合       | [#11 Tensor Core GEMM](11_tensor_core_gemm.md)                |
 | Multi-GPU                 | NCCL AllReduce、P2P                       | [#15 Multi-GPU](15_multi_gpu_programming.md)                  |

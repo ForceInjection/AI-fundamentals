@@ -4,11 +4,9 @@
 
 你用 `ncu` 跑了一遍，报告说 Shared Memory 带宽只有 6TB/s——不是理论峰值的 19TB/s。**少了的那 13TB/s 去哪了？**
 
-答案是一行你每天都在写、但很少有人真正理解的代码：`sdata[tid * STRIDE]`。那个 `STRIDE`，如果恰好是 2 的幂次，你的 32 个线程可能全部撞在同一个 Bank 上——32 个请求被串行化为 32 次，带宽直接降到 1/32。
+答案是一行你每天都在写、但很少有人真正理解的代码：`sdata[tid * STRIDE]`。那个 `STRIDE`，如果恰好是 2 的幂次，你的 32 个线程可能全部撞在同一个 Bank 上——32 个请求被串行化为 32 次，带宽直接降到 1/32。而编译器不会警告，profiler 默认也不标红。
 
-Bank Conflict 是 CUDA 编程中最隐蔽的性能杀手。编译器不会警告你，profiler 默认不标红，你甚至不需要写错什么——只要 stride 碰巧取了一个 2 的幂，它就在那里。
-
-本文将给你一个完整的武器库来对付它：理解 Bank 的硬件结构 → 识别冲突模式 → 用 Padding/Swizzle/Reorder 三种方法消除 → 做出"修还是不修"的正确工程决策。
+本文按四步展开：理解 Bank 的硬件结构 → 识别冲突模式 → 用 Padding/Swizzle/Reorder 三种方法消除 → 做出"修还是不修"的工程决策。
 
 > **前置要求**：你已经了解 CUDA 的 Thread/Warp/Block 执行模型（见 [GPU 编程导论](01_gpu_programming_introduction.md)）以及 `cudaMalloc` 分配的是 Global Memory（见 [GPU 内存管理](12_gpu_memory_management.md) 第 7 节"内存层级"）。本文假定你写过最简单的 `__shared__` kernel。
 >
@@ -46,7 +44,7 @@ int a = array[i];  ← 硬件自动缓存      __shared__ float tile[128];
 | L2 Cache            | 芯片上 | ~200 ns | ~4 TB/s     | 40MB                 | 透明             |
 | Global Memory (HBM) | 芯片外 | ~400 ns | ~2 TB/s     | 80GB                 | 所有线程         |
 
-数字很直观：Shared Memory 的延迟是 Global Memory 的 **1/80**，带宽是 Global Memory 的 **~10 倍**。
+数字很直观：Shared Memory 的延迟是 Global Memory 的 **1/80**，带宽是 Global Memory 的 **~10 倍**。注意 L1 与 Shared Memory 共享同一块 SRAM（A100 上总量 192KB），164KB 是 Shared Memory 可配置的上限，两者此消彼长。
 
 ### 1.3 典型使用模式
 
@@ -145,7 +143,7 @@ float x = sdata[tid * 32];  // tid=0→Bank0, tid=1→Bank0(偏移32), tid=2→B
                              // 32 个不同地址，全在 Bank 0 → 串行化 → 32 cycles
 ```
 
-**记忆口诀**：同 Bank **同地址** → 广播，快；同 Bank **不同地址** → 冲突，慢。
+口诀：同 Bank **同地址** → 广播，快；同 Bank **不同地址** → 冲突，慢。
 
 ---
 
@@ -237,29 +235,25 @@ stride = 8:  gcd(8, 32) = 8   → 使用 4 个 Bank  → 8-way
 stride = 32: gcd(32, 32) = 32 → 使用 1 个 Bank  → 32-way
 ```
 
-**关键洞察**：stride = 3 这样的奇数 stride 反而天然无冲突——这反直觉，但数学上就是这么干净。有冲突的 stride 不是"比较大的数"，而是**恰好和 32 共享因子的数**——以及所有 2 的幂次。
+反直觉的一点：stride = 3 这样的奇数 stride 天然无冲突。有冲突的 stride 不是"比较大的数"，而是**和 32 共享因子的数**——包括所有 2 的幂次。
 
-### 3.3 场景二：列优先访问矩阵
+### 3.3 场景二：矩阵的行列访问
 
-矩阵在 C 语言中是行优先存储（Row-Major）。沿着行读（`sdata[row][col]`）是连续的；沿着列读（`sdata[row][col]`，row 为变量）是 stride = N 的访问。
+矩阵在 Shared Memory 里按行优先存储。判断冲突只看一件事：**同一时刻 Warp 内 32 个线程的地址落在哪些 Bank 上**。以 `__shared__ float tile[32][32]`、Warp 内 `threadIdx.x = 0..31` 为例：
 
 ```cuda
-__shared__ float tile[32][32];
+// 模式 A：同一行、不同列（地址连续）——无冲突
+// 线程 x 读 tile[k][x]：地址 = k*32 + x，Bank = x → 32 线程落进 32 个 Bank
+float a = tile[5][threadIdx.x];
 
-// Row access（沿行读）：连续 → 无冲突
-for (int k = 0; k < 32; k++)
-    sum += tile[threadIdx.x][k];  // 线程 x 访问 [x][0],[x][1],...,[x][31]
-                                    // Bank = ((x * 32 + k)) % 32 = k → 连续！
-
-// Column access（沿列读）：stride = 32 → 32-way conflict！
-for (int k = 0; k < 32; k++)
-    sum += tile[k][threadIdx.x];  // 线程 x 访问 [0][x],[1][x],...,[31][x]
-                                    // Bank = ((k * 32 + x)) % 32 = x → 所有 k 同一个 Bank！
-                                    // 未展开时，32 线程同时访问 tile[0][x] → 无冲突（不同列=不同Bank）
-                                    // 但在循环内，线程 x 访问 tile[k][x] 是一个序列操作 → 没问题
+// 模式 B：同一列、不同行（地址差 = 行宽 32 float）——32-way conflict
+// 线程 x 读 tile[x][k]：地址 = x*32 + k，Bank = (x*32 + k) % 32 = k → 全部落进 Bank k
+float b = tile[threadIdx.x][5];
 ```
 
-等等——上面的分析其实指出一个要点：**列优先访问在单次 load 时没有 conflict**（因为 32 个线程 load 同一行不同列 = 不同 Bank）。真正出 transpose 问题的是 **store**：
+模式 B 是"每行 32 个 float 正好绕回同一批 Bank"的直接后果：行宽等于 Bank 数时，换一行等于 Bank 不变。
+
+Transpose 是两个模式的相遇：读全局按行（连续），写 Shared Memory 按列（模式 B）：
 
 ```cuda
 // Transpose: 读行、写列
@@ -267,27 +261,31 @@ __shared__ float tile[32][32];
 int x = threadIdx.x, y = threadIdx.y;
 
 float val = g_in[y * N + x];        // 读 Global Memory（连续）
-tile[x][y] = val;                    // 写 Shared Memory（stride = 32！）
+tile[x][y] = val;                    // 写 Shared Memory —— 模式 B！
 __syncthreads();
-float out = tile[y][x];             // 读 Shared Memory（连续 = 无冲突）
+float out = tile[y][x];             // 读 Shared Memory —— 模式 A，无冲突
 g_out[x * N + y] = out;             // 写 Global Memory（stride = N）
 ```
 
-`tile[x][y]` 这一行：线程 (x, y) 写 `tile[x][y]`。对于同一 Warp 讲，如果 Warp 包含 (`threadIdx.x` = 0..31, `threadIdx.y` = 0)，那么：
+`tile[x][y]` 这一步：对 Warp（`threadIdx.x` = 0..31，`threadIdx.y` 固定）：
 
-- 线程 0 写 `tile[0][0]` → Bank 0
-- 线程 1 写 `tile[1][0]` → Bank (1 × 32 + 0) % 32 = Bank 0 ← 撞！
-- 线程 2 写 `tile[2][0]` → Bank (2 × 32 + 0) % 32 = Bank 0 ← 撞！
+- 线程 0 写 `tile[0][y]` → Bank y
+- 线程 1 写 `tile[1][y]` → Bank (1 × 32 + y) % 32 = Bank y ← 撞！
+- 线程 2 写 `tile[2][y]` → Bank y ← 撞！
 - ...
 
-全部 32 线程的地址 mod 32 全都等于 `y`——如果它们共享同一个 y 值，就全部撞在 Bank y 上。**32-way conflict**。
+32 个线程的地址 mod 32 全都等于 `y`——**32-way conflict**。而读回那一步 `tile[y][x]` 是模式 A，无冲突。问题出在 store。
+
+![Bank Conflict 两种模式](assets/bankconflict-01-two-modes.png)
+
+_图 1：同一行不同列（模式 A，无冲突）与同一列不同行（模式 B，32-way conflict）的对比。_
 
 ### 3.4 为什么 Bank Conflict 容易被忽视
 
 1. **编译器不报 Warning**。Bank Conflict 是行为正确但性能差——NVCC 没有任何 flag 能标出来。
 2. **ncu 默认报告不标红**。`ncu` 的默认 summary 不显示 Bank Conflict。你需要手动加 `--section MemoryWorkloadAnalysis_Tables`。
 3. **小 kernel 不明显**。Shared Memory 用量不到几十 KB 时，Bank Conflict 的绝对耗时可能被 launch overhead 掩盖。问题在 kernel 变大（tile 更大、数据更多）时才暴露。
-4. **在不同 GPU 上表现不同**。V100 和 A100 的 Bank 位宽不同，FP16 和 FP32 的 Bank 判定也不同。在开发机（RTX 4090）上无冲突，上到 A100 集群可能就有。
+4. **换架构、换数据类型后表现不同**。主流架构的 Bank 位宽都是 4B，但 FP16（2B 元素）的冲突判定与 FP32 不同（第 7 节展开）。开发机上无冲突的 kernel，换数据类型或架构后要重新验证。
 
 ---
 
@@ -371,7 +369,7 @@ stride=32: 1 banks used, max 32-way conflict   ← 最坏情况
 stride=33: 32 banks used, max 1-way conflict   ← 无冲突！（33 % 32 = 1）
 ```
 
-这个脚本比读 ncu 快 10 倍——在写代码之前跑一次，就能避免 90% 的 Bank Conflict。
+这个脚本几秒就能跑完——写代码之前先跑一次，把冲突消灭在动手之前。
 
 ### 4.3 编译器标志能告诉我们什么
 
@@ -485,62 +483,53 @@ __global__ void transpose_padded(float *odata, float *idata, int N) {
 
 ### 5.2 Swizzle：地址变换消冲突
 
-**原理**：不改变数据**在** Shared Memory 中的物理布局，而是在访问时对地址做 XOR 变换，将冲突模式"打散"。核心思想：**把导致冲突的规律性从地址中抹掉**。
+**原理**：不改物理布局、不加 Padding，而是在算下标时把行号混进 Bank 位（低 5 位），让"同一列"的地址散开到不同 Bank。核心要求：**读写两侧必须用同一个变换**（XOR 自身是逆变换，同一函数应用两次即还原）。
 
-最基本的 XOR Swizzle：
+先看错误示范——把行号 XOR 进地址高位是无效的：
 
 ```cuda
-// 原始地址（有冲突）：
-// addr = row * 32 + col
-// Bank = (row * 32 + col) % 32 = col  ← 只取决于 col
-
-// XOR Swizzle：
-// swizzled_addr = addr ^ ((addr / 32) * 32)
-//               = (row * 32 + col) ^ (row * 32)
-
-// 展开（32 = 2^5，所以 row*32 只影响 bit[5:]）：
-// = col ^ (row * 32)  （在 col 的有效位上，低 5 位 = col_row 混合后的结果）
-
-// Bank = swizzled_addr % 32 = (col ^ (row * 32)) % 32
-//                              = col ^ (row * 32)  （取低 5 位）
+// 错误：width=32 时 (row & 0x1F) << 5 与 linear 的高位完全相同，XOR 后高位互相抵消，
+// 结果只剩 col → 同列元素全部写到同一个下标，数据被破坏
+int linear = row * 32 + col;
+int bad = linear ^ ((row & 0x1F) << 5);   // = col，错！
 ```
 
-效果：当 `col = threadIdx.x` 和 `row = threadIdx.y` 时，Bank ID 不再是纯 `col`（导致同列冲突），而是 `col ^ (row * 32)`——将 row 信息混入了 Bank ID，打破了同列同 Bank 的模式。
-
-**代码实现**：
+XOR 的对象必须是 **Bank 位本身**（低 5 位）：
 
 ```cuda
-// XOR Swizzle 的宏
-#define SWIZZLE(addr) ((addr) ^ (((addr) & 0x7C0) >> 1))
-
-// 或更直观的写法：
+// 正确：把 row 的低 5 位 XOR 进 col（Bank 位）
 __device__ inline int swizzle(int row, int col, int width) {
-    int linear = row * width + col;
-    // 将 row 部分（bit[5:]）XOR 进 col 部分（bit[4:0]）
-    return linear ^ ((row & 0x1F) << 5);
+    return row * width + (col ^ (row & 0x1F));
 }
+// width=32 时，存储地址 = row*32 + (col ^ row)
+// Bank = (col ^ row) % 32：col 固定、row 变化 → 32 个不同 Bank → 列访问无冲突
+```
 
-// 使用 Swizzle 的 Transpose
+**用 Swizzle 修 Transpose**：
+
+```cuda
 __global__ void transpose_swizzled(float *odata, float *idata, int N) {
-    __shared__ float tile[32 * 32];  // 注意：现在用 1D 数组
+    __shared__ float tile[32 * 32];   // 1D 数组，下标经 swizzle 计算
     int x = blockIdx.x * 32 + threadIdx.x;
     int y = blockIdx.y * 32 + threadIdx.y;
 
-    int sidx = swizzle(threadIdx.x, threadIdx.y, 32);  // XOR 变换后的地址
-    tile[sidx] = idata[y * N + x];                      // ← 无冲突！
+    // 写：threadIdx.x 作 row、threadIdx.y 作 col（对应 3.3 节的冲突方向）
+    tile[swizzle(threadIdx.x, threadIdx.y, 32)] = idata[y * N + x];
     __syncthreads();
 
-    // 读时同样用 Swizzle
-    int sidy = swizzle(threadIdx.y, threadIdx.x, 32);
-    odata[x * N + y] = tile[sidy];
+    // 读：想要 tile[y][x]，就用同一函数计算 (y, x) 的 swizzled 下标
+    odata[x * N + y] = tile[swizzle(threadIdx.y, threadIdx.x, 32)];
 }
 ```
+
+正确性：写入方 (ty, tx) 与读取方查的是同一个下标函数，XOR 自逆，读回的必然是刚写入的元素。冲突性：写 Warp（tx 变、ty 定）的 Bank = tx ^ ty，互不相同；读 Warp（tx 变、ty 定）的 Bank = tx ^ ty 同样互不相同——两个阶段都无冲突。
 
 **GEMM 中常用的交替 Swizzle**：
 
 ```cuda
 // 更复杂的 Swizzle 模式——GEMM 的 B tile 使用
-// 核心思想：奇偶行交换，打散同列的 Bank 对齐
+// 核心思想：奇偶行配对，奇数行偏移到 Bank 后半段
+// 前提：ld ≥ 2 × 实际使用列数，否则偶数行 [0,16) 与奇数行 [16,32) 的地址区间重叠
 __device__ inline int gemm_swizzle(int row, int col, int ld) {
     if (row % 2 == 0)
         return (row / 2) * ld + col;
@@ -563,45 +552,31 @@ __device__ inline int gemm_swizzle(int row, int col, int ld) {
 
 ### 5.3 Reorder：从源头设计无冲突的访问模式
 
-**原理**：不修修补补（Padding）也不变换地址（Swizzle），而是**在设计访问模式时就确保无冲突**。这是最根本的解决方案，但需要从算法层面重构。
+**原理**：不用 Padding，也不用 Swizzle，而是在设计算法时就选择天然无冲突的访问模式。这是最根本的方案，但需要从算法层面重构。
 
-**经典案例——Reduction 的 Sequential Addressing**：
+**经典案例——Reduction 的两种寻址**：
 
-回顾 [Reduction](10_reduction.md) 一文中展示的 Optimized Kernel：
+回顾 [Reduction](10_reduction.md) 一文中的两个 kernel：
 
 ```cuda
-// Interleaved Addressing — 有 Bank Conflict
+// Interleaved Addressing
 for (unsigned int s = 1; s < blockDim.x; s *= 2) {
     if (tid % (2 * s) == 0)
-        sdata[tid] += sdata[tid + s];   // sdata[tid * 1] 和 sdata[tid * 1 + s]
-    __syncthreads();                      // stride = s — 当 s 是 2 的幂次 → conflict!
+        sdata[tid] += sdata[tid + s];
+    __syncthreads();
 }
 
-// Sequential Addressing — 无 Bank Conflict
+// Sequential Addressing
 for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
     if (tid < s)
-        sdata[tid] += sdata[tid + s];   // 连续访问前半段，sdata[tid] + sdata[tid + s]
-    __syncthreads();                      // 相邻线程访问相邻地址 → 连续 → 无冲突
+        sdata[tid] += sdata[tid + s];
+    __syncthreads();
 }
 ```
 
-两种写法的本质区别：
+一个容易想错的地方：这两种写法用的都是 `tid + s`（加法），按第 6.3 节的推导，它们在任意 s 下都**没有 Bank Conflict**——加法寻址只是把 0..31 的 Bank 排列轮转一下，32 个地址仍落在 32 个不同的 Bank。Interleaved 版真正的代价是 **Warp Divergence**（每步只有一半线程活跃）和 `%` 取模运算。Sequential 版同时解决了这两个问题。
 
-```text
-Interleaved (stride 递增):
-  s=1:  访问 sdata[0], sdata[2], sdata[4], ...  ← 连续，无冲突
-  s=2:  访问 sdata[0], sdata[4], sdata[8], ...  ← stride=2, 2-way
-  s=16: 访问 sdata[0], sdata[32], ...            ← stride=32, 32-way!
-  → 越往后越冲突
-
-Sequential (stride 递减):
-  s=64:  访问 sdata[0..31], sdata[64..95]        ← 全是连续的，无冲突
-  s=32:  访问 sdata[0..31], sdata[32..63]        ← 连续
-  ...
-  → 全程无冲突！
-```
-
-**Reorder 不是简单地交换代码顺序**—它需要你在设计算法时就考虑访问模式。在 Reduction 的例子中，"从 ID0 的 stride 开始递增"到"从 N/2 开始递减"的转变，不仅消除了 Bank Conflict，还解决了 Warp Divergence——一举两得。
+那 Reorder 对 Bank Conflict 的价值在哪里？在于**设计时的方向选择**：3.3 节的 transpose，冲突来自"把列方向安排给了 Shared Memory 的 store"。把哪一维映射给 store、哪一维映射给 load，布局时选对了，冲突根本不会出现；选错了才需要回过头来 Padding 或 Swizzle。Reorder 排在最前，因为它决定你后面要不要用另外两种工具。
 
 **方法总结**：
 
@@ -617,7 +592,7 @@ Sequential (stride 递减):
 
 ### 6.1 GEMM 的 Shared Memory Tile 为什么选 128
 
-在 GEMM 实现中（见 [Tensor Core GEMM](11_tensor_core_gemm.md)），tile 大小通常选 128×128 或 256×128。这里有 Bank Conflict 的深刻原因。
+在 GEMM 实现中（见 [Tensor Core GEMM](11_tensor_core_gemm.md)），tile 大小通常选 128×128 或 256×128。这正好和 Bank 结构有关。
 
 ```cuda
 __shared__ float As[128][128];   // 128×128 float = 64KB
@@ -675,34 +650,25 @@ __device__ inline int fa_swizzle(int row, int col) {
 }
 ```
 
-如果没有 Swizzle，在做 K tile 的列方向访问时，Bank Conflict 会降低 ~20-30% 的有效带宽。加上 Swizzle 后，冲突基本消除。FlashAttention 之所以能做到比标准 Attention 快 5-7x，Swizzle 是其中一环——虽然不是最大的那一环（算法级别的 I/O 节省是主要贡献），但它是确保 Shared Memory 阶段不拖后腿的关键优化。
+没有 Swizzle 时，K tile 的列方向访问会集中到同一批 Bank，Shared Memory 阶段的吞吐明显下降。FlashAttention 的整体加速主要来自算法层级的 I/O 节省；Swizzle 的作用是确保 Shared Memory 阶段不拖后腿。
 
 ### 6.3 Reduction 的"天然无冲突"设计
 
-回顾第 3.2 节的公式：`gcd(stride, 32)` 决定冲突级别。Interleaved Addressing 的 `sdata[tid] += sdata[tid + s]`——这里有两个访问：`sdata[tid]`（连续）和 `sdata[tid + s]`（注意，不是 `tid * s`，而是 `tid + s`）。
-
-关键区别：
+5.3 节已经解释了加法寻址（`tid + s`）在模 32 下只是轮转 Bank 排列、天然无冲突的原因，这里补上它与乘法寻址的对照：
 
 ```text
-tid * s:  Bank = (tid * s) % 32       → d-way conflict when gcd(s,32) = d
-tid + s:  Bank = (tid + s) % 32       → 所有 Bank 被使用，无冲突！
+tid * s:  Bank = (tid * s) % 32   → gcd(s, 32) = d 时 d-way conflict（第 3.2 节公式）
+tid + s:  Bank = (tid + s) % 32   → 32 个地址轮转排列，始终无冲突
 ```
-
-为什么 `tid + s` 无冲突？因为它是**加法**而非**乘法**：
-
-- `tid` 从 0 到 31，`B1 = (tid + s) % 32` 的值是连续的 32 个不同的数——只是被 `s` 循环移位了
-- 一个数加上 `s`，在模 32 下只是把 0..31 的排列轮转了一下——仍然是 32 个不同的值 → 32 个不同的 Bank
-
-这就是为什么 Sequential Addressing 天然无冲突。**这是 Reorder 方法的最佳示范：通过改变访问模式的逻辑（从 `tid * s` 到 `tid + s`），Bank Conflict 在算法层面被消除了，无需 Padding、无需 Swizzle。**
 
 **A100 实测**（`reduce_interleaved` vs `reduce_sequential`，5000 次迭代，2048 元素）：
 
-| 寻址方式                  | 每次 Reduction 耗时 | 加速比    |
-| ------------------------- | ------------------- | --------- |
-| Interleaved (有 conflict) | 0.0039 ms           | —         |
-| Sequential (无 conflict)  | 0.0032 ms           | **1.24x** |
+| 寻址方式     | 每次 Reduction 耗时 | 加速比    |
+| ------------ | ------------------- | --------- |
+| Interleaved  | 0.0039 ms           | —         |
+| Sequential   | 0.0032 ms           | **1.24x** |
 
-> 1.24x 的加速看似不大，但考虑到 Interleaved 的 conflict 只在循环后期（s≥16）才严重，而 Sequential 还在 Warp Divergence 上也有优势（详见 [Reduction](10_reduction.md)），整体收益是 Bank Conflict 消除 + Divergence 消除的叠加。
+> 1.24x 的收益主要来自 Warp Divergence 的消除（Interleaved 每步只有一半线程活跃），而不是 Bank Conflict——两种写法都没有冲突。这也印证第 8 节的分级结论：小 kernel 里 divergence 的影响比想象中大。
 >
 > 完整可运行代码见 [reduce_interleaved / reduce_sequential](code/13_bank_conflict_bench.cu)（Test 3）。
 
@@ -710,41 +676,23 @@ tid + s:  Bank = (tid + s) % 32       → 所有 Bank 被使用，无冲突！
 
 ## 7. 进阶——跨架构迁移与 Bank 宽度演进
 
-### 7.1 Bank 宽度的"4B vs 8B"——FP16 时代的新问题
+### 7.1 FP16 时代：Bank 判定随元素宽度变化
 
-前面所有讨论基于 `Bank 宽度 = 4 字节` + `float = 4 字节` 的假设。但对于 FP16/BF16（2 字节）元素：
+前面所有讨论基于 `Bank 宽度 = 4 字节` + `float = 4 字节` 的假设。主流架构（V100/A100/H100）的 Bank 位宽都是 4B，但当元素是 FP16/BF16（2 字节）时，判定方式变化：
 
 ```text
-CC < 8.0（Volta、Turing）: Bank 宽度 = 4B
-  → FP16 (2B): 每个 Bank 存储 2 个 FP16
-  → Bank ID = (字节地址 / 4) % 32
-  → 相邻的 2 个 FP16 属于同一个 Bank（不同 2B 子位置）
+每个 4B 的 Bank 字里放得下 2 个 FP16：
+  → 地址相邻的两个 half 属于同一个 Bank
+  → FP32 下无冲突的访问模式，换成 half 可能产生冲突
 
-CC ≥ 8.0（Ampere、Hopper）: Bank 宽度 = 4B（对 FP32）
-  → 但 FP16 场景下，Bank 可视为有两个 2B 的"通道"
-  → 同一 Bank 的两个 2B 字可以被同时访问（不同通道）
-  → 所以 FP16 的 Bank Conflict 判定更复杂
+例：
+  __shared__ half sdata[64];        // 128 字节 = 32 Bank × 4B
+  // 线程 x 读 sdata[2*x]：字节偏移 4*x，Bank = x → 无冲突
+  // 线程 x 读 sdata[x]  ：字节偏移 2*x，Bank = (2*x)/4 % 32 = x/2
+  //   → x 与 x+1 共享一个 Bank → 2-way conflict
 ```
 
-实际影响：用 `half` 类型时，同一个 `float` 下无冲突的代码可能产生冲突。
-
-```cuda
-// 全部用 half（2 字节）
-__shared__ half sdata[64];  // 128 字节 = 32 Bank × 4B
-half x = sdata[tid * 2];     // stride = 2
-
-// 字节: tid=0→0, tid=1→4, tid=2→8, ...
-// Bank:
-//   tid=0: addr=0  → Bank (0/4)%32  = 0
-//   tid=1: addr=4  → Bank (4/4)%32  = 1
-//   tid=16: addr=32 → Bank (32/4)%32 = 8
-//   等等... — 无冲突（!!）
-//
-// 但放在 CC 8.0+ 的"双通道 2B"视角下：
-//   需要检查 2B 子 Bank 的冲突，规则不同
-```
-
-**实践中最重要的结论**：在 A100/H100 上用 FP16 写 kernel 时，不能直接搬运 V100 上 FP32 的 Shared Memory 优化。要重新用 `ncu` 验证 Bank Conflict。
+**实践中最重要的结论**：在 A100/H100 上用 FP16 写 kernel 时，不能直接照搬 FP32 时代的 Shared Memory 优化结论，要用 `ncu` 重新验证 Bank Conflict。
 
 ### 7.2 不同 GPU 架构的 Shared Memory 参数
 
@@ -753,13 +701,10 @@ half x = sdata[tid * 2];     // stride = 2
 | SMEM per SM             | 96KB (可配)   | 164KB (可配)  | 228KB (可配)  |
 | Bank 数量               | 32            | 32            | 32            |
 | Bank 宽度 (FP32)        | 4B            | 4B            | 4B            |
-| 128B/transaction (load) | ✗             | ✓             | ✓             |
 | `cp.async` 支持         | ✗             | ✓             | ✓             |
 | Max SMEM per Block      | 48KB (默认)   | 163KB         | 227KB         |
 
 > A100 的 SMEM 总量 164KB 与每 Block 最大 163KB 之间有 1KB 的差值——这 1KB 被保留用于架构开销（如栈指针、barrier 等），不可被应用程序分配。这是正常的硬件设计，不是 Bug。
-
-值得注意的是 128B/transaction：SM80+ 的 Shared Memory read 可以在一次 128 字节的合并读中服务整个 Warp——前提是 32 线程的地址落在一个 128 字节对齐的段内。这一特性**不能消除 Bank Conflict**（同一个 Bank 被多次命中的冲突依然存在），但它改变了"什么情况算 good case"的定义。
 
 ---
 

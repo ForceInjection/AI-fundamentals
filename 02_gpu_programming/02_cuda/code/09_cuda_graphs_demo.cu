@@ -99,7 +99,7 @@ int main() {
 
     cudaGraphExec_t instance;
     checkCuda(cudaEventRecord(start));
-    checkCuda(cudaGraphInstantiate(&instance, graph, NULL, NULL, 0));
+    checkCuda(cudaGraphInstantiate(&instance, graph, 0));
     checkCuda(cudaEventRecord(stop));
     checkCuda(cudaEventSynchronize(stop));
 

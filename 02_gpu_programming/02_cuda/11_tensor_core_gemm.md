@@ -2,7 +2,7 @@
 
 > 基于 A100-SXM4-80GB (CC 8.0, Gen3 Tensor Core) 实测。运行官方 `cudaTensorCoreGemm` / `bf16TensorCoreGemm` samples，测量 FP16 (52.5 TFLOPS) 与 BF16 (90.9 TFLOPS) 的真实矩阵乘法性能，并与理论峰值和 HBM 带宽上限形成三角对标。
 >
-> **验证代码**：本文所有实测数据来自配套 Benchmark：[11_tensor_core_gemm_bench.cu](code/11_tensor_core_gemm_bench.cu)（WMMA API, FP16 accumulator）。
+> **验证代码**：本文所有实测数据来自配套 Benchmark：[11_tensor_core_gemm_bench.cu](code/11_tensor_core_gemm_bench.cu)（WMMA API, FP32 accumulator）。
 
 ---
 
@@ -24,9 +24,9 @@ Tensor Core 的性能受三个硬件上限约束：
    └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
-> **实际 TFLOPS = min(计算上限, 带宽能喂饱的数据量 × 每字节算数密度)**
+> **实际 TFLOPS = min(计算上限, 带宽能喂饱的数据量 × 每字节算术强度)**
 
-对矩阵乘法（GEMM）：每从 HBM 读取 1 字节数据，可以做 O(N) 次乘加 → 算术密度极高 → 瓶颈在 Tensor Core 算力本身，不在带宽。
+对矩阵乘法（GEMM）：每从 HBM 读取 1 字节数据，可以做 O(N) 次乘加 → 算术强度极高 → 瓶颈在 Tensor Core 算力本身，不在带宽。
 
 > 前置阅读：[HBM 显存带宽测试](../04_profiling/03_hbm_bandwidth_test.md)、[NVIDIA A100 架构详解](../../01_hardware_architecture/nvidia/understand_gpu_architecture/07_a100_architecture.md)
 
@@ -34,25 +34,30 @@ Tensor Core 的性能受三个硬件上限约束：
 
 ## 2. 理论峰值速查
 
-A100 (GA100, CC 8.0) 的 Tensor Core 规格：
+A100 (GA100, CC 8.0) 的 Tensor Core 规格（A100 白皮书口径，dense = 无稀疏）：
 
-| 精度 | 稠密 TFLOPS | 稀疏 (2:4) TFLOPS | FMA/TC/clock |
-| ---- | ----------- | ----------------- | ------------ |
-| FP64 | 9.7         | —                 | —            |
-| TF32 | **156**     | 312               | 256          |
-| FP16 | **156**     | 312               | 256          |
-| BF16 | **156**     | 312               | 256          |
-| INT8 | 312         | 624               | 512          |
-| INT4 | 624         | 1248              | 1024         |
+| 精度 | 原生累加 (dense) | FP32 累加 (dense) | 稀疏 (2:4) | FMA/TC/clock |
+| ---- | ---------------- | ----------------- | ---------- | ------------ |
+| FP64 | 19.5             | —                 | 39.1       | —            |
+| TF32 | 156（本身即 FP32 累加） | —          | 312        | 128          |
+| FP16 | **312**          | 156               | 624        | 256          |
+| BF16 | **312**          | 156               | 624        | 256          |
+| INT8 | 624 TOPS         | —                 | 1248       | 512          |
+| INT4 | 1248 TOPS        | —                 | 2496       | 1024         |
+
+> FP64 一行是 Tensor Core 口径；CUDA core 的 FP64 是 9.7 TFLOPS。WMMA API 的 accumulator 是 float，对应 FP32 累加列的 156 TFLOPS 基准。
 
 **公式**：
 
 ```text
-峰值 TFLOPS = 108 SM × 4 TC/SM × FMA率/TC × 1.41 GHz × 2 (FMA=2 ops)
-           = 108 × 4 × 256 × 1.41 × 2 / 1000 = 156 TFLOPS (BF16/FP16/TF32 dense)
+峰值 TFLOPS = 108 SM × 4 TC/SM × FMA数/TC/clock × 1.41 GHz × 2 ops/FMA / 1000
+
+FP16/BF16 原生累加:  108 × 4 × 256 × 1.41 × 2 / 1000 ≈ 312 TFLOPS
+FP32 累加 / TF32:    108 × 4 × 128 × 1.41 × 2 / 1000 ≈ 156 TFLOPS
+INT8:                108 × 4 × 512 × 1.41 × 2 / 1000 ≈ 624 TOPS
 ```
 
-> 对比 RTX 5090 (GDDR7, 无 NVLink)：虽然算力更高（~105 TFLOPS FP16 dense），但多卡时完全依赖 PCIe。
+> 对比 RTX 5090 (GDDR7, 无 NVLink)：算力更高（~105 TFLOPS，FP32 累加口径），但多卡时完全依赖 PCIe。
 
 ---
 
@@ -60,7 +65,7 @@ A100 (GA100, CC 8.0) 的 Tensor Core 规格：
 
 ### 3.1 FP16 Tensor Core GEMM
 
-使用官方 `cudaTensorCoreGemm` sample（4096³ 矩阵，Tile Size 256×128×32）：
+使用官方 `cudaTensorCoreGemm` sample（4096³ 矩阵，每 CTA 计算 128×128 tile，沿 K 按 16×16×16 分片）：
 
 ```bash
 cd cuda-samples/Samples/3_CUDA_Features/cudaTensorCoreGemm
@@ -104,29 +109,29 @@ TFLOPS: 90.86
 
 ### 3.3 结果对标
 
-| 精度                  | 矩阵尺寸 | 实测 TFLOPS    | vs 稠密峰值 (156 TFLOPS) | 瓶颈分析                                         |
-| --------------------- | -------- | -------------- | ------------------------ | ------------------------------------------------ |
-| FP16                  | 4096³    | **52.5**       | 33.7%                    | 矩阵偏小，SM 未充分利用                          |
-| BF16                  | 8192³    | **90.9**       | 58.3%                    | 接近实际可用上限（~60% 峰值是良好结果）          |
-| — (FP32 cuBLAS 参考)  | —        | ~15-19 (非 TC) | —                        | 无 Tensor Core 的 FP32 累积路径                  |
-| **WMMA API (教学版)** | 4096³    | **18.8**       | 6.0%                     | 配套 Benchmark——仅 WMMA 最简调用，未做 tile 调优 |
-| **WMMA API (教学版)** | 8192³    | **17.2**       | 5.5%                     | 同上                                             |
+| 精度                  | 矩阵尺寸 | 实测 TFLOPS    | vs 稠密峰值 (156, FP32 累加) | 瓶颈分析                                         |
+| --------------------- | -------- | -------------- | ----------------------------- | ------------------------------------------------ |
+| FP16                  | 4096³    | **52.5**       | 33.7%                         | 矩阵偏小，SM 未充分利用                          |
+| BF16                  | 8192³    | **90.9**       | 58.3%                         | 接近实际可用上限（~60% 峰值是良好结果）          |
+| — (FP32 cuBLAS 参考)  | —        | ~15-19 (非 TC) | —                             | 无 Tensor Core 的 FP32 累积路径                  |
+| **WMMA API (教学版)** | 4096³    | **18.8**       | 12.0%                         | 配套 Benchmark——仅 WMMA 最简调用，未做 tile 调优 |
+| **WMMA API (教学版)** | 8192³    | **17.2**       | 11.0%                         | 同上                                             |
 
-> WMMA API 的简化调用只能达到 ~6% 峰值——这说明 API 本身只解决了 Tensor Core 的**可用性**，距性能上限还有 10-15x 的距离。cuBLAS 通过 CuTe/MMA PTX 级别的调优（shared memory swizzle、double buffering、async copy、寄存器复用）达到了 ~58% 峰值。**WMMA 是教学和快速原型的工具，不是性能的终点。**
+> WMMA API 的简化调用只能达到 ~12% 峰值：API 本身解决的是 Tensor Core 的可用性，性能要靠后面的工程。cuBLAS 这类生产级库通过 shared memory swizzle、double buffering、async copy、寄存器复用等手段达到 ~58% 峰值（其 MMA 级调优不公开）。WMMA 适合教学与快速原型，性能上距生产实现还有数倍差距。
 
 **为什么 8192³ 比 4096³ 利用率高？**
 
 ```text
 4096³ 矩阵:
   └── 每个 SM 分到的 tiles 较少 → Waves/SM 低
-  └── Shared memory tile 需要 64 KB → 每个 SM 最多 2.6 个 blocks
+  └── Shared memory tile 需要 64 KB → 每个 SM 驻留 2 个 blocks（164/64 = 2.56，向下取整）
 
 8192³ 矩阵:
   └── 每个 SM 分到更多 tiles → Waves/SM 高 → Occupancy 更高
   └── cp.async 流水线充分运转 → HBM 延迟被完全隐藏
 ```
 
-**58% 的峰值利用率是正常的**。Tensor Core 在实际 GEMM 中能达到 50-70% 的稠密峰值即是优秀结果——剩余损耗来自 tile 边缘效应、shared memory 同步、以及 pipeline 启动/排空开销。
+58% 左右的峰值利用率是正常的。Tensor Core 在实际 GEMM 中能达到 50-70% 的稠密峰值即是优秀结果——剩余损耗来自 tile 边缘效应、shared memory 同步、以及 pipeline 启动/排空开销。
 
 ---
 
@@ -154,13 +159,17 @@ for (int k = 0; k < K; k += 16) {
 nvcuda::wmma::store_matrix_sync(C_tile, acc_frag, ldc, nvcuda::wmma::mem_row_major);
 ```
 
-**WMMA (Warp Matrix Multiply-Accumulate)** 是 CUDA 提供的 Tensor Core 高级 API——无需手写 MMA PTX 指令。`nvcuda::wmma::mma_sync` 一行代码即触发 16³ Tensor Core 操作（A100 上：1024 FP16 FMA/tile）。
+**WMMA (Warp Matrix Multiply-Accumulate)** 是 CUDA 提供的 Tensor Core 高级 API——无需手写 MMA PTX 指令。`nvcuda::wmma::mma_sync` 一行代码即完成一次 16×16×16 的矩阵乘累加（4096 次 FMA；作为对照，A100 全部 SM 每周期合计执行 1024 次 FP16 FMA）。
 
-> 对于追求极致性能的场景，BF16 sample 使用的 `cp.async` + 手动 Shared Memory 管理可以提供更好的流水线效果——这就是 `bf16TensorCoreGemm` 能达到 90.9 TFLOPS 的原因。
+![一次 mma_sync](assets/tensorcore-01-tile.png)
+
+_图 1：一次 mma_sync 的 16×16×16 矩阵乘累加，以及 A100 的 Tensor Core 算力口径。_
+
+> 追求极致性能时，BF16 sample 使用的 `cp.async` + 手动 Shared Memory 管理提供更好的流水线效果，这是它达到 90.9 TFLOPS 的原因之一。
 
 ---
 
-## 5. TFLOPS / 带宽 / 算数密度三角
+## 5. TFLOPS / 带宽 / 算术强度三角
 
 把 GEMM 的算力数据与带宽数据放在一起：
 
@@ -178,13 +187,13 @@ nvcuda::wmma::store_matrix_sync(C_tile, acc_frag, ldc, nvcuda::wmma::mem_row_maj
 8192³ BF16 GEMM:
   数据读取: 3 × 8192² × 2 bytes = 402 MB (A, B, partial C)
   计算量:   2 × 8192³ = 1.1T FLOPs
-  算数密度: 1.1T / 402 MB ≈ 2740 FLOP/byte
+  算术强度: 1.1T / 402 MB ≈ 2740 FLOP/byte
 
   HBM 带宽 (2039 GB/s) 能支撑: 2039 × 2740 = 5587 TFLOPS >> 156 TFLOPS
   → 算力瓶颈，带宽绰绰有余
 ```
 
-对比：Attention 机制的算数密度仅 ~1-10 FLOP/byte → **带宽瓶颈**。这就是为什么 GEMM 优化关注 SM 利用率和 Tensor Core 指令效率，而 Attention 优化关注 KV Cache 带宽压缩。
+对比：Attention 机制的算术强度仅 ~1-10 FLOP/byte → **带宽瓶颈**。这就是为什么 GEMM 优化关注 SM 利用率和 Tensor Core 指令效率，而 Attention 优化关注 KV Cache 带宽压缩。
 
 ---
 

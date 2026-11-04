@@ -10,7 +10,7 @@
 
 ### 1.1 NUMA 架构简述
 
-在双路 CPU 系统中，每个 CPU socket 拥有自己的内存控制器和本地 DDR5 内存。访问本地内存快（~70 ns），跨 socket 访问远端内存慢（~140 ns）。这种架构称为 **NUMA (Non-Uniform Memory Access)**——"非统一"指的是访问延迟因地址而异：
+在双路 CPU 系统中，每个 CPU socket 拥有自己的内存控制器和本地 DDR5 内存。访问本地内存快（~70 ns），跨 socket 访问远端内存慢（~140 ns）。这种架构称为 **NUMA (Non-Uniform Memory Access)**——「非统一」指的是访问延迟因地址而异：
 
 ```text
 Socket 0 (NUMA node 0)               Socket 1 (NUMA node 1)
@@ -27,11 +27,11 @@ Socket 0 (NUMA node 0)               Socket 1 (NUMA node 1)
 
 GPU 通过 PCIe 连接到特定 NUMA 节点（本例为 node 1）。当 CUDA 程序：
 
-1. 调用 `cudaMallocHost` 分配 pinned memory——内存从**当前线程所在的 NUMA 节点**分配
+1. 调用 `cudaMallocHost` 分配 pinned memory——落在哪个 NUMA 由 Linux 的 first-touch 页分配策略决定，通常就是调用线程所在节点（CUDA 文档不承诺 NUMA 行为）
 2. 如果线程运行在远端 NUMA (node 0)，H2D/D2H 需经过 UPI（Ultra Path Interconnect，Intel 双路 CPU 间的点对点互连总线）跨 socket 传输
-3. NUMA distance 为 21 vs 10，约 2.1× 延迟惩罚
+3. 实测本地 ~70 ns、跨 socket ~140 ns，约 2 倍惩罚
 
-**关键洞察**：`cudaMallocHost` 不关心 GPU 在哪个 NUMA——它只关心调用线程在哪个 CPU。如果线程在 node 0 上调用 `cudaMallocHost`，分配的 pinned memory 就在 node 0 的 DDR5 上，而 GPU 在 node 1——每次 DMA 都必须穿过 UPI。这就是为什么理解并控制 NUMA 亲和性至关重要的原因。
+要点：`cudaMallocHost` 不关心 GPU 在哪个 NUMA——分配位置跟着调用线程走。线程在 node 0 上分配，而 GPU 在 node 1，每次 DMA 都要穿过 UPI。所以要主动控制线程亲和性。
 
 ---
 
@@ -45,13 +45,15 @@ float *h_buf;
 cudaMallocHost(&h_buf, size);  // NUMA 亲和性取决于线程位置
 ```
 
-### 2.2 使用 `cudaHostAlloc` 指定 NUMA 策略
+### 2.2 `cudaHostAlloc` 的常用 flag
+
+注意：`cudaHostAlloc` 本身**不提供 NUMA 指定能力**——它的 flag 解决的是另外两件事：
 
 ```c
-// 可移植——允许从任意 NUMA 分配（降低性能但灵活）
+// Portable——所有 CUDA context 都视其为 pinned memory（多 GPU 场景）
 cudaHostAlloc(&h_buf, size, cudaHostAllocPortable);
 
-// 写入合并——优化 H2D 但牺牲随机读性能
+// 写入合并——PCIe 写更快，CPU 侧读取低效
 cudaHostAlloc(&h_buf, size, cudaHostAllocWriteCombined);
 
 // 组合使用
@@ -59,11 +61,13 @@ cudaHostAlloc(&h_buf, size,
     cudaHostAllocPortable | cudaHostAllocWriteCombined);
 ```
 
-| Flag                         | 效果               | 适用场景              |
-| ---------------------------- | ------------------ | --------------------- |
-| 默认                         | 线程所在 NUMA 分配 | 线程已绑定到 GPU NUMA |
-| `cudaHostAllocPortable`      | 跨 NUMA 可映射     | 多 GPU 位于不同 NUMA  |
-| `cudaHostAllocWriteCombined` | 绕过 L1/L2 cache   | 纯 H2D 传输（不读回） |
+| Flag                         | 效果                                    | 适用场景                    |
+| ---------------------------- | --------------------------------------- | --------------------------- |
+| 默认                         | 按 first-touch 落在调用线程所在 NUMA    | 线程已绑定到 GPU NUMA       |
+| `cudaHostAllocPortable`      | 所有 CUDA context 均按 pinned 处理（与 NUMA 无关） | 多 GPU 多 context 共享同一块 pinned 内存 |
+| `cudaHostAllocWriteCombined` | write-combined：PCIe 写更快，CPU 读取低效 | 纯 H2D 传输（CPU 不读回）   |
+
+NUMA 粒度的放置控制要靠操作系统层（`numactl --membind`、线程绑定），或者第 4 节 Managed Memory 的 advice。
 
 ---
 
@@ -124,7 +128,7 @@ cudaMallocManaged(&data, size);
 // 告知驱动：这块内存主要在 GPU 0 上被访问
 cudaMemAdvise(data, size, cudaMemAdviseSetPreferredLocation, 0);
 
-// 告知驱动：这块内存会被 CPU 读取（只读）
+// 告知驱动：这块内存以读为主（任一处理器读时建只读副本；location 参数被忽略）
 cudaMemAdvise(data, size, cudaMemAdviseSetReadMostly, cudaCpuDeviceId);
 ```
 
@@ -139,6 +143,8 @@ cudaMemPrefetchAsync(data, size, 0, stream);
 // 预取回 CPU（GPU 处理完毕后）
 cudaMemPrefetchAsync(data, size, cudaCpuDeviceId, stream);
 ```
+
+> CUDA 13.x 起 `cudaMemAdvise` / `cudaMemPrefetchAsync` 新增了 `cudaMemLocation` 形式的签名，可以显式指定 host NUMA 节点（`cudaMemLocationTypeHostNuma`）——NUMA 粒度的精细控制正是本文主题，旧的 int device 签名仍然可用。
 
 ### 4.3 完整示例
 
@@ -189,13 +195,14 @@ RTX 5090 在统一内存方面的能力：
 
 ```c
 cudaDeviceGetAttribute(&v, cudaDevAttrConcurrentManagedAccess, 0);
-// = 1 → 支持 concurrent managed access (Hopper+)
+// = 1 → 支持 concurrent managed access（CPU 与 GPU 并发一致访问；取决于平台）
 
 cudaDeviceGetAttribute(&v, cudaDevAttrPageableMemoryAccess, 0);
-// = 0 → 不支持 pageable memory access (仅数据中心 GPU 支持)
+// 设备能否直接访问 host 的 pageable memory（取决于平台/驱动的 ATS/HMM，不按 GPU 档位划分）
 
 cudaDeviceGetAttribute(&v, cudaDevAttrDirectManagedMemAccessFromHost, 0);
-// = 0 → 不支持从 Host 直接访问 managed memory
+// = 1 → Host 可免迁移直接访问驻留在设备上的 managed memory
+// = 0 → Host 访问前需要把页迁到 host
 ```
 
 ---
@@ -206,7 +213,7 @@ cudaDeviceGetAttribute(&v, cudaDevAttrDirectManagedMemAccessFromHost, 0);
 | ------------------ | ------------------------------------------------- |
 | 单 GPU + H2D 为主  | `cudaHostAlloc(WriteCombined)` + `taskset` 绑核   |
 | 单 GPU + D2H 频繁  | 默认 `cudaMallocHost` + 确保线程在 GPU NUMA       |
-| 多 GPU 不同 NUMA   | `cudaHostAlloc(Portable)` + `cudaSetDevice` 切换  |
+| 多 GPU 共享 pinned | `cudaHostAlloc(Portable)`（多 context 按 pinned 处理）；NUMA 放置仍靠 numactl/线程绑定 |
 | Managed Memory     | `cudaMemAdvise` + `cudaMemPrefetchAsync` 主动放置 |
 | 仅需知道 NUMA 信息 | `cat /sys/bus/pci/devices/<bdf>/numa_node`        |
 
