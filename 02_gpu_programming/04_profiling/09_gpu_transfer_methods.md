@@ -1,10 +1,10 @@
-# GPU 间数据传输方法实测——从 P2P 到 Unified Memory 的 100 倍差距
+# GPU 间数据传输方法实测：从 P2P 到 Unified Memory 的 119 倍差距
 
 你在 8×A100 上做 TP=4 推理。GPU 0 算完一个 layer，要把结果传给 GPU 1、2、3。你知道机器有 NVLink，随手写了行 `cudaMemcpy(dst, src, size, cudaMemcpyDeviceToDevice)`——代码能跑，但实际走的是 CPU 中转（~12 GB/s）而非 NVLink（~249 GB/s）。没有 error、没有 warning——带宽差了 **21 倍**，你直到看 `nvidia-smi dmon` 才发现 PCIe 吞吐爆了。
 
 GPU 间数据传输不是 API 调用的问题——是**三条物理路径 × 四种编程方法 × 拓扑前提条件**的组合选择。选错路径的代价从 21× 到 119× 不等。
 
-本文将四种方法按带宽分为三层：Tier 1（NVLink P2P，~249 GB/s）→ Tier 2（CPU relay，~12 GB/s）→ Tier 3（Zero-Copy/Unified Memory，~2-3 GB/s）。Tier 1 有两种 API 等效写法（`cudaMemcpyPeer` 和 `cudaMemcpy D2D`），性能相同。P2P 和 CPU relay 为往返测试（A→B→A 串行）中的每方向等效速率；Zero-Copy 和 UM 为单向速率。
+本文将四种方法按带宽分为三层：Tier 1（NVLink P2P，~249 GB/s）→ Tier 2（CPU relay，~12 GB/s）→ Tier 3（Zero-Copy/Unified Memory，~2-3 GB/s）。Tier 1 有两种 API 写法（`cudaMemcpyPeer` 和 `cudaMemcpy D2D`），在这组 A100 测试里性能相同。P2P 和 CPU relay 为往返测试（A→B→A 串行）中的每方向等效速率；Zero-Copy 和 UM 为单向速率。
 
 - **可交互概念图**：本文配有可交互的概念图，覆盖 3 个图层（物理拓扑 / 测试场景 / 实测结果），建议在阅读对应章节时打开对照查看：[gpu-transfer-methods-visual.html](gpu-transfer-methods-visual.html)。
 - **验证代码**：[09_gpu_transfer_methods.cu](code/09_gpu_transfer_methods.cu) — 四种方法一次测完。`CUDA_VISIBLE_DEVICES=0,1` 选择 NVLink 直连的 GPU 对即可。
@@ -31,7 +31,7 @@ GPU 间数据搬运在物理上有三条路可走。CUDA 提供了多种 API 覆
   GPU 0 ──PCIe──→ CPU DRAM ──PCIe──→ GPU 1   ← 最慢: ~12 GB/s, 两次 DMA 穿越
 ```
 
-NVLink 是 NVIDIA 专用互连，仅在数据中心 GPU（A100/H100）上可用。PCIe P2P 允许同一 PCIe Switch 下的 GPU 直接通信（不经 CPU 内存）。CPU 中转是所有 GPU 都支持的兜底方案——兼容性最好，带宽最差。
+NVLink 是 NVIDIA 专用互连，本文聚焦的数据中心 GPU（A100/H100）均配备；部分消费级卡（如 RTX 3090）也支持。PCIe P2P 允许设备间直接通信（通常在同一 PCIe Switch 下，多根复合体平台上跨 root complex 也可能可用，以实测为准），不经 CPU 内存。CPU 中转是所有 GPU 都支持的兜底方案——兼容性最好，带宽最差。
 
 ### 1.2 四方法 ↔ 三路径的映射
 
@@ -76,7 +76,7 @@ printf("P2P: %s\n", canPeer ? "YES" : "NO — 未启用 peer access，可能回�
 
 `cudaMallocManaged` 是最省心的 API——分配后 CPU 和 GPU 都能直接访问同一个指针。但 128 MB 数据量下带宽仅 2.10 GB/s——比 P2P 慢 119 倍。
 
-原因：Unified Memory 依赖**缺页中断**（page fault）驱动的按需迁移。每 64 KB 一页，每页迁移延迟约 10 μs。128 MB = **2048 次 page fault**，累计延迟 ≈ 20 ms——每次访问都触发一次 PCIe 往返。
+原因：Unified Memory 依赖**按需迁移**，大块搬运的耗时主要来自页面级的数据移动。迁移粒度不固定（可为 64 KB 小页或 2 MB 大页，视驱动与访问模式）；本文测试走的是 `cudaMemPrefetchAsync` 批量迁移，与访问触发的 page-fault 迁移是两种机制，按 64 KB×10 μs 的缺页算术外推会与本节实测（128 MB 单向 ≈ 61 ms，2.10 GB/s）对不上——量级结论一致：页粒度迁移让大块 UM 搬运比显式拷贝慢一个数量级以上。
 
 > Unified Memory 的正确用法是**细粒度、频繁访问的小数据**（如 CPU→GPU 的参数同步），不是大块数据搬运。
 
@@ -88,7 +88,7 @@ printf("P2P: %s\n", canPeer ? "YES" : "NO — 未启用 peer access，可能回�
 实际带宽:   2 GB/s     3 GB/s     249 GB/s     249 GB/s
 ```
 
-最简单的 API（Unified Memory）反而是最慢的。最复杂的（cudaMemcpyPeer）是最快的。GPU 编程中，**便利性与性能成反比**——这是与 CPU 编程最大的不同。
+最简单的 API（Unified Memory）反而是最慢的。最复杂的（cudaMemcpyPeer）是最快的。就本组四种方法而言，便利性与性能大体成反比——这不是普遍规律（`cudaMemcpy` 与 `cudaMemcpyPeer` 性能就几乎相同），但提醒我们：省心的抽象往往把成本藏在了看不见的地方。
 
 ---
 
@@ -127,7 +127,7 @@ cudaMemcpy(dst, src, size, cudaMemcpyDeviceToDevice);  // 使用直接 P2P 路�
 
 P2P 开启后，普通的 `cudaMemcpy` 不再需要 host staging，通常会利用 copy engine/NVLink；这组 A100 测试里性能与 `cudaMemcpyPeer` 接近，但不能保证所有平台、所有拓扑完全相同。**这是 TP 推理中常见的模式**。
 
-> **易错点**：`cudaDeviceEnablePeerAccess(1, 0)` 必须在正确的 device context 下调用。先 `cudaSetDevice(0)` 再 `enablePeerAccess(1, 0)`——如果 device context 搞反，调用会静默失败。
+> **易错点**：`cudaDeviceEnablePeerAccess(1, 0)` 启用的是「当前 device → 参数 device」方向。先 `cudaSetDevice(0)` 再 `enablePeerAccess(1, 0)` 启用的是 0→1；如果方向搞反（如在 device 1 上调 `enablePeerAccess(1, 0)`，实际启用 1→0），调用不报错但方向不符，后续传输可能仍走 host staging。
 
 **前提条件**：
 
@@ -135,7 +135,7 @@ P2P 开启后，普通的 `cudaMemcpy` 不再需要 host staging，通常会利�
 - 物理拓扑为 NVLink 或 PIX（`nvidia-smi topo -m` 确认）
 - 必须先 `cudaDeviceEnablePeerAccess`
 
-**PCIe P2P 变体**：同样的 API 在 PIX 拓扑（同 PCIe Switch）下可用，但带宽约 28 GB/s 单向（受限于 PCIe Gen4 x16 链路）。关于 PCIe P2P 的详细分析见 [PCIe 带宽实测](02_pcie_bandwidth_measurement.md)。vLLM 在生产环境中实测 NCCL P2P 可达 ~16 GB/s（含 NCCL 协议开销和真实模型权重的多 tensor 启动损耗）。
+**PCIe P2P 变体**：同样的 API 在 PIX 拓扑（同 PCIe Switch）下可用，但带宽约 28 GB/s 单向（受限于 PCIe Gen4 x16 链路）。关于 PCIe P2P 的详细分析见 [PCIe 带宽实测](02_pcie_bandwidth_measurement.md)。vLLM 在生产环境中的经验值：NCCL P2P 约 16 GB/s（含 NCCL 协议开销和真实模型权重的多 tensor 启动损耗；经验口径，未经本文复测）。
 
 ### 3.2 Tier 2: CPU relay（11.8 GB/s）
 
@@ -263,7 +263,7 @@ CUDA 驱动自动管理页面迁移。添加 `cudaMemPrefetchAsync` 可以提前
 ### 4.3 核心教训
 
 1. **P2P 不是默认的**——必须显式 `cudaDeviceEnablePeerAccess`，否则可能回退到 host staging，性能会大幅下降
-2. **API 复杂度与性能成反比**——最简单的 UM 是最慢的（2.1 GB/s），最复杂的 cudaMemcpyPeer 是最快的（249 GB/s），差距 119 倍
+2. **省心的 API 未必快**——本组测试中最简单的 UM 最慢（2.1 GB/s），显式指定设备的 cudaMemcpyPeer 最快（249 GB/s），差距 119 倍
 3. **Unified Memory 是大块搬运的反模式**——page fault 机制决定了它适合细粒度、频繁访问场景
 4. **SHM 的带宽不优于 pinned memory**——它的价值在跨进程零拷贝，不在带宽
 

@@ -6,11 +6,11 @@
 
 ## 1. 为什么关注功耗
 
-GPU 功耗直接影响三个维度：
+GPU 功耗管理影响三件事：
 
 - **性能天花板**：功耗上限决定 Boost 时钟能跑多高。GPU 的 Boost 算法会持续推高频率直到触及功耗、温度或电压上限中的任意一个。如果功耗上限被卡住，即使温度和电压有余量，时钟也不会再升。
-- **散热与稳定性**：575W 的 RTX 5090 在满负载下会产出巨大的热量。如果散热不足，GPU 会因温度墙（~83-85°C）而强制降频，功耗限制在这里反而起到了保护作用。
-- **成本**：在电费敏感的机房或长期运行的训练任务中，适当降低功耗上限（如 575W → 450W）可以节省 20% 电力，而性能损失通常远小于 20%（因为电压-频率曲线在高端是非线性的——最后 100W 只换来 5-10% 的性能提升）。
+- **散热与稳定性**：575W 的 RTX 5090 满载需要按这个热设计功率配置散热。散热不足时 GPU 会因温度墙（~83-85°C）强制降频，功耗限制在这里反而起到保护作用。
+- **成本**：在电费敏感的机房或长期运行的训练任务中，适当降低功耗上限（如 575W → 450W）可省 20% 电力，性能损失通常远小于 20%——电压-频率曲线在高端是非线性的（本机实测口径：最后 ~100W 大约只换来 5-10% 性能）。
 
 GPU 的功耗管理基于 **P-State**（Performance State），从 P0（最高性能）到 P8（最低功耗）。GPU 根据负载自动切换 P-State：
 
@@ -34,13 +34,13 @@ nvidia-smi --query-gpu=power.draw,power.limit,power.default_limit --format=csv
 | 默认功耗上限    | 575 W                            |
 | 可设置范围      | 400 - 575 W                      |
 | 空闲功耗        | ~11 W (P8 状态)                  |
-| 最大 Boost 时钟 | 3090 MHz (GPU), 14001 MHz (显存) |
+| 最大 Boost 时钟 | 3090 MHz (NVML 报告的支持时钟上限；厂商标称 Boost 为 2407 MHz), 14001 MHz (显存) |
 
 ---
 
 ## 3. 功耗限制设置
 
-降低功耗上限是最直接的控制手段。设置后会立即生效——GPU 硬件会将 Boost 时钟限制在不超过新功耗上限的范围内。`persistence mode` 必须启用，否则 GPU 在无进程使用时会被释放。
+降低功耗上限是最直接的控制手段。设置后立即生效：GPU 硬件将 Boost 时钟限制在不超过新功耗上限的范围内。`persistence mode` 必须启用——驱动卸载时，功耗上限等设置会随之丢失。
 
 ### 3.1 条件要求
 
@@ -57,7 +57,7 @@ nvidia-smi -pl 575 -i 0
 
 ### 3.2 云环境限制
 
-在 Seetacloud 等云环境中，即使以 root 身份，`-pl` 可能返回 `Insufficient Permissions`。这是因为：
+在 Seetacloud 等云环境中，即使以 root 身份，`-pl` 可能返回 `Insufficient Permissions`。可能的原因（本文环境未逐一验证）：
 
 - 底层 Hypervisor 锁定了功耗管理
 - GPU 驱动配置中禁用了 power management 接口
@@ -129,7 +129,7 @@ nvidia-smi -rmc
 
 ## 5. Power Smoothing
 
-`power-smoothing` 是 v595 新增功能，允许预设功耗 ramp 策略。
+`power-smoothing` 子命令允许预设功耗 ramp 策略（本文在 595 驱动上实测可用；该功能的引入版本未查到官方出处，存疑）。
 
 ```bash
 # 查看帮助
@@ -173,7 +173,7 @@ Power Profiles 仅数据中心 GPU 支持。
 | Power Smoothing (`power-smoothing`) | ⚠️ 受限   | ✅        | 数据中心完整支持          |
 | Power Profiles (`power-profiles`)   | ❌        | ✅        | 消费级不支持              |
 | GPM (`gpm`)                         | ✅        | ✅        | GPU 性能监控              |
-| DCGM                                | ⚠️ 部分   | ✅        | 需 datacenter-gpu-manager |
+| DCGM                                | ❌ 消费级不支持 | ✅   | 需 datacenter-gpu-manager（官方仅支持数据中心 GPU） |
 
 ---
 
@@ -190,7 +190,7 @@ nvidia-smi --query-gpu=timestamp,power.draw,temperature.gpu,clocks.current.sm \
 ### 8.2 CUDA 侧查询功耗
 
 ```c
-// 通过 NVML (libnvidia-ml)
+// 通过 NVML (libnvidia-ml)；示例省略了返回值检查，生产代码应检查每个 nvmlReturn_t
 #include <nvml.h>
 nvmlInit();
 nvmlDevice_t dev;

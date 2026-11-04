@@ -43,7 +43,7 @@ ncu --set basic ./my_kernel
 # 详细集：basic + ComputeWorkload + MemoryWorkload + Source + Tile + Roofline
 ncu --set detailed ./my_kernel
 
-# 全集：所有 section，~7300 metrics，输出可达数百行，适合离线分析
+# 全集：所有 section（数千个 metrics，随版本变化，以 --list-sections 为准），输出可达数百行，适合离线分析
 ncu --set full -o report ./my_kernel
 
 # 只 profile 特定的 kernel 函数
@@ -64,8 +64,8 @@ ncu --list-rules       # 查看自动瓶颈检测规则 (Occupancy/Memory/Comput
 ### 2.4 编译与运行注意事项
 
 - **编译时加 `-lineinfo`**：让 `ncu` 能将指标映射到源代码行
-- **首次 launch 跳过去**：首次 CUDA kernel launch 包含 context 初始化（~10-15ms），Profiling 结果失真。用 `--kernel-name` 指定非首次调用的 kernel 或先 warmup
-- **Passes 含义**：`ncu` 默认每个 kernel profile 10 passes，取统计值。kernel 必须被多次 launch 才能完成所有 passes——如果 kernel 只跑一次，收集的指标会不完整
+- **首次调用跳过去**：首个 CUDA 调用（含 context/module 初始化，约 10-15 ms）会让首次 launch 的 Profiling 结果失真。用 `--kernel-name` 指定非首次调用的 kernel 或先 warmup
+- **Passes 含义**：`ncu` 的 kernel replay 是为了凑齐不同计数器组——一个 kernel 会被重复执行多轮，每轮收集一组指标，而不是同一指标重复采样取平均。pass 数取决于所选 section/metrics（basic 集实测约 10 passes，`--set full` 可达数十轮）；kernel 内部状态在轮间会被还原，但依赖外部状态的 kernel 会失真
 - **性能影响**：profiling 会显著拖慢执行（尤其是 `--set full`），不要在生产环境运行
 
 ---
@@ -78,7 +78,7 @@ ncu --list-rules       # 查看自动瓶颈检测规则 (Occupancy/Memory/Comput
 
 ```bash
 cd cuda-samples/Samples/0_Introduction/vectorAdd
-nvcc -arch=sm_80 -lineinfo -I../../../Common -o vectorAdd vectorAdd.cu -lcudart
+nvcc -arch=sm_80 -lineinfo -I../../../Common -o vectorAdd vectorAdd.cu
 ncu --set basic --kernel-name vectorAdd ./vectorAdd
 ```
 
@@ -174,7 +174,7 @@ Test PASSED
 
 ### 3.3 Section 1: GPU Speed Of Light Throughput
 
-这是最高层级的"体检摘要"——用百分比告诉你离硬件峰值的距离：
+这是最高层级的"体检摘要"：用百分比告诉你离硬件峰值的距离。
 
 | 指标                    | 值        | 含义                                                    |
 | ----------------------- | --------- | ------------------------------------------------------- |
@@ -195,22 +195,29 @@ Test PASSED
 | Threads      | 50,176     | 每个线程处理 ~1 个元素 |
 | Waves Per SM | **0.23**   | 这是关键瓶颈           |
 
-**Waves Per SM** 是理解 GPU 利用率的核心概念。A100 有 108 个 SM，单次"wave"需要 108 个 block 才能填满所有 SM。196 个 block 在 108 个 SM 上只能跑 ~1.8 轮（每个 SM 分不到 2 个 block），所以 `Waves Per SM = 0.23` 意味着绝大多数 SM 只有 **不到 1/4 的时间在工作**。
+**Waves Per SM** 是理解 GPU 利用率的核心概念。定义：Grid Size ÷ (SM 数 × 每 SM 可同时驻留的 block 数)。本例 A100 有 108 个 SM，该 kernel 每 SM 最多驻留 8 个 block（见 §3.5 的 Block Limit Warps = 8），所以一个"满波" = 108 × 8 = 864 blocks；196 blocks ÷ 864 ≈ 0.23——连一个满波的四分之一都不到。
 
-**理想值**：每个 SM 至少 2-4 个 block，即 Grid Size >= 108 × 2 = 216 blocks（本 kernel 的 196 刚好差一点）。
+它的含义不是"SM 只有 1/4 时间在工作"：196 个 block 轮询分发后每个 SM 都分到 1-2 个（88 个 SM 分 2 个、20 个分 1 个），没有任何 SM 完全空闲——真正的表现是驻留不满：每 SM 只用了 8 个驻留槽中的约 2 个（对应 Achieved Occupancy 20.84%），SM 满速跑完仅有的 block 后即转入空闲。Waves < 1 的真正教训是：**提交的并行度不足以填满 SM 的驻留槽位**，扩大 Grid 才是第一杠杆。
 
-| Grid Size | Waves Per SM | 效果                                                                             |
-| --------- | ------------ | -------------------------------------------------------------------------------- |
-| < 108     | < 1.0        | SMs 跑不满                                                                       |
-| 108-432   | 1.0-4.0      | 良好                                                                             |
-| > 432     | > 4.0        | 可容忍高 Occupancy（即使有 `__syncthreads` 阻塞也能通过其他 block 保持 SM 忙碌） |
+**理想值**：Waves ≥ 2（让尾部效应可被其他 block 掩盖），即 Grid ≥ 108 × 8 × 2 = 1728 blocks（本 kernel 的 196 差了一个数量级）。对于依赖 `__syncthreads` 的 kernel，更常用的下限是每 SM ≥ 2 block（Grid ≥ 216）——按驻留上限换算即可。
+
+| Grid Size（本例，驻留上限 8/SM） | Waves Per SM | 效果                                                        |
+| -------------------------------- | ------------ | ----------------------------------------------------------- |
+| < 108                            | < 0.125      | 部分 SM 完全分不到 block                                    |
+| 108-864                          | 0.125-1.0    | 所有 SM 有活但驻留不满（<8/8），跑完即闲，尾部效应明显      |
+| 864-1728                         | 1.0-2.0      | 基本填满，尾部可接受                                        |
+| > 1728                           | > 2.0        | 尾部效应被掩盖（`__syncthreads` 阻塞也能被其他 block 补位） |
+
+![Waves Per SM](assets/waves-01-per-sm.png)
+
+_图 1：Waves Per SM 的计算与本例 0.23 的含义——并行度不足，而非「SM 只有 1/4 时间在工作」。_
 
 ### 3.5 Section 3: Occupancy
 
 | 指标                         | 值         | 含义                                                                                                                                      |
 | ---------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Theoretical Occupancy        | **100%**   | 从资源角度看，每个 SM 最多 32 blocks（受限于 registers: 65536/(16×256)=16 blocks 或 shared mem: 167936/(1024+0)≈164 blocks，取最小值 16） |
-| Achieved Occupancy           | **20.84%** | 实际只有 20.8% —— workload 不足以填满 SM                                                                                                  |
+| Theoretical Occupancy        | **100%**   | 每 SM 硬件上限 32 blocks；本例实际限制取三者最小值：寄存器 16 blocks、warp 8 blocks、硬件 32 → 8 blocks |
+| Achieved Occupancy           | **20.84%** | 实际只有 20.8%：workload 不足以填满 SM                                                                   |
 | Achieved Active Warps Per SM | 13.34 / 64 | 每个 SM 理论上可跑 64 warps，实际只活跃了 ~13                                                                                             |
 
 **三个 Limiters 的含义**：
@@ -258,7 +265,7 @@ ncu --set detailed --kernel-name myKernel ./my_app
 
 ### 4.3 深入 Compute → `--set full`
 
-全员出击：所有 sections 全部开启（~7300 metrics）。包括指令统计（Instruction Statistics）、Scheduler Statistics（看 issue slot 利用率）、Warp State Statistics（看 warp 为什么 stall），以及完整的 Hierarchical Roofline。
+全员出击：所有 sections 全部开启。包括指令统计（Instruction Statistics）、Scheduler Statistics（看 issue slot 利用率）、Warp State Statistics（看 warp 为什么 stall），以及完整的 Hierarchical Roofline。
 
 ```bash
 ncu --set full -o my_report ./my_app
@@ -266,7 +273,7 @@ ncu --set full -o my_report ./my_app
 
 > `--set full` 输出非常详细，建议配合 `-o` 导出后在 GUI 中交互分析。
 
-### 4.4 Roofline 分析 → `--set roofline`
+### 4.4 Roofline 分析 → `--set roofline`（预定义 set 以 `--list-sets` 输出为准）
 
 直接将你的 kernel 标在 HBM/Shared/L1/Tensor Core 不同层级的 roofline 图中：
 
@@ -274,12 +281,12 @@ ncu --set full -o my_report ./my_app
 ncu --set roofline --kernel-name myKernel ./my_app
 ```
 
-| Roofline 层级 | 峰值 (A100, GB/s)  | 适用场景                  |
-| ------------- | ------------------ | ------------------------- |
-| DRAM          | ~1600              | 常规 global memory access |
-| L2            | ~4000              | 高 L2 命中率              |
-| L1/Shared     | ~12000             | Shared memory 密集型      |
-| Tensor Core   | ~312 TFLOPS (BF16) | MMA 指令                  |
+| Roofline 层级 | 峰值 (A100, GB/s)        | 适用场景                  |
+| ------------- | ------------------------ | ------------------------- |
+| DRAM          | ~1600                    | 常规 global memory access |
+| L2            | ~4000                    | 高 L2 命中率              |
+| L1/Shared     | ~12000（单 SM 口径约 12 TB/s 量级，随版本口径变化） | Shared memory 密集型      |
+| Tensor Core   | ~312 TFLOPS (BF16, 原生累加) | MMA 指令                  |
 
 ### 4.5 单指标快速验证 → `--metrics`
 
@@ -302,7 +309,7 @@ ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,dram__throughput.
 
 - **HBM 带宽测试 (`03_hbm_bandwidth_test.md`)**：transpose 示例中 naive 实现只有 215 GB/s、optimized 达到 1168 GB/s。用 `ncu --set basic` 分别 profile 两个版本，Speed Of Light 的 Memory Throughput 差异直接量化了优化效果
 - **Streams 并发 (`07_cuda_streams_concurrency.md`)**：当 stream 重叠没有产生预期的加速时，用 `ncu` 确认 kernel 的内部执行时间是否长于传输时间——这是判断"该优化 kernel 还是优化重叠策略"的关键
-- **工作流公式**：`nvbandwidth` 建立硬件基线 → `ncu` 定位单 kernel 瓶颈 → `nsys` 确认多 kernel 协同效率
+- **工作流公式**：`nvbandwidth` 建立硬件基线 → `nsys` 全局定位慢在哪个环节 → `ncu` 深挖具体 kernel（与 07 文 §5 的推荐顺序一致）
 
 ---
 
@@ -317,7 +324,7 @@ ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,dram__throughput.
 | Instruction Statistics   | 哪种指令在消耗执行时间？IPC 是多少？                   | full           |
 | Scheduler Statistics     | Issue slot 利用率、哪条 pipe 在限速？                  | full           |
 | Warp State Statistics    | Warp 为什么 stall？(memory、sync、math...)             | full           |
-| Roofline Chart           | 我的 AI 打到硬件 roofline 的什么位置？                 | roofline       |
+| Roofline Chart           | 算术强度（AI）打到硬件 roofline 的什么位置？           | roofline       |
 | Source Counters          | 哪一行源代码消耗了最多时间？                           | detailed       |
 
 ---

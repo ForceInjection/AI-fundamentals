@@ -1,6 +1,6 @@
 # GPU 显存带宽测试：片内 vs 片外
 
-> 基于 A100-SXM4-80GB (HBM2e) 实测。本文测量 device-to-device 内部带宽并与 PCIe 传输形成完整对比。
+> 基于 RTX 5090 (GDDR7) 与 A100-SXM4-80GB (HBM2e) 双平台实测。本文测量 device-to-device 内部带宽并与 PCIe 传输形成完整对比。
 >
 > **验证代码**：[03_hbm_bandwidth_bench.cu](code/03_hbm_bandwidth_bench.cu)——两种测试：cudaMemcpy D2D（Copy Engine ~40% 峰值）vs Kernel Read+Write（SM 驱动 ~71% 峰值）。揭示"为什么 cudaMemcpy 跑不满 HBM 带宽"。
 
@@ -15,7 +15,7 @@ A100-SXM4:  HBM2e, 5120-bit, 2039 GB/s  vs  PCIe Gen 4, ~28 GB/s  →  差距 ~7
 RTX 5090:   GDDR7,  512-bit, 1792 GB/s  vs  PCIe Gen 5, ~53 GB/s  →  差距 ~34 倍
 ```
 
-这个数十倍的差距决定了深度学习系统的几乎所有设计选择：
+这个数十倍的差距直接决定了训练数据放置策略：
 
 - **训练**：必须把所有参数、梯度、优化器状态放在 GPU 显存中。一次 PCIe 往返就可能让训练吞吐腰斩。
 - **推理**：KV Cache 必须留在显存或通过高速方案（NVLink/NVSwitch/LMCache）在 GPU 间搬运——卸到 CPU 内存是下下策。
@@ -158,7 +158,7 @@ Size         | D2D (GB/s)     | % of peak
 ### 4.2 为什么达不到理论值
 
 - **cudaMemcpy D2D 瓶颈**：`cudaMemcpy` 走的是 copy engine 路径，不是 SM 的 load/store，受限于内存控制器的实际带宽
-- **L2 Cache 效应**：64 MB 时数据部分命中 L2 (96 MB)，带宽最高 (1341 GB/s)；256 MB+ 完全 miss，降到 ~750 GB/s
+- **L2 Cache 效应**：64 MB 时数据部分命中 L2 (96 MB)，带宽最高 (1341 GB/s)；256 MB+ 完全 miss，降到 ~750 GB/s。注意 1341（约 74% 峰值）与「CE ~40% 峰值」并不矛盾：40% 上限针对 DRAM 驻留的大块数据（256 MB+ 档的 39.5-43.5% 正好吻合），64 MB 档受 L2 驻留抬升
 - **DRAM 时序开销**：行激活、预充电等开销占理论峰值的 20-30%
 
 ### 4.3 A100-SXM4-80GB 实测（官方 transpose sample）
@@ -188,7 +188,7 @@ transpose diagonal          , Throughput = 1135.33 GB/s
 **关键观察**：
 
 - 4 MB 矩阵完全容纳在 A100 的 40 MB L2 cache 中，因此所有实现都受益于 cache 命中
-- Simple copy 和 optimized 达到 ~1188 GB/s (~58% 理论峰值)，主要受限于 `cudaMemcpy` 的 copy engine 路径而非 SM load/store
+- Simple copy 和 optimized 是 SM 上运行的 copy kernel，~1188 GB/s（~58% 理论峰值）——低于大矩阵 SM 路径的 ~1453 GB/s，差距来自 4 MB 小尺寸下的测量条件（L2 命中但 kernel 启动与尾部开销占比高），不是 copy engine 限制
 - 与 RTX 5090 比较：5120-bit HBM2e (A100) vs 512-bit GDDR7 (RTX 5090)，位宽 10 倍差距但 A100 时钟低约 9 倍，最终理论带宽差距仅 ~14%
 - A100 的 D2D 带宽优势主要在大矩阵 (> 40 MB) 场景——更宽的位宽意味着更平稳的 DRAM page miss 处理
 
@@ -200,13 +200,13 @@ transpose diagonal          , Throughput = 1135.33 GB/s
 
 ## 5. 与 PCIe 带宽的完整对比
 
-| 传输方向     | 工具           | 1 MB       | 64 MB    | 1 GB          |
-| ------------ | -------------- | ---------- | -------- | ------------- |
-| **H2D**      | nvbandwidth CE | —          | —        | **56.3 GB/s** |
-| **D2H**      | nvbandwidth CE | —          | —        | **56.8 GB/s** |
-| **D2D**      | cudaMemcpy     | 33.7       | **1341** | 707.9         |
-| **D2D**      | nvbandwidth    | —          | —        | **762.3**     |
-| **D2D A100** | transpose (SM) | 1188 (4MB) | —        | —             |
+| 传输方向     | 工具           | 平台      | 1 MB       | 64 MB    | 1 GB          |
+| ------------ | -------------- | --------- | ---------- | -------- | ------------- |
+| H2D          | nvbandwidth CE | RTX 5090  | —          | —        | **56.3 GB/s** |
+| D2H          | nvbandwidth CE | RTX 5090  | —          | —        | **56.8 GB/s** |
+| D2D          | cudaMemcpy     | RTX 5090  | 33.7       | **1341** | 707.9         |
+| D2D          | nvbandwidth    | RTX 5090  | —          | —        | **762.3**     |
+| D2D          | transpose (SM) | A100      | 1188 (4MB) | —        | —             |
 
 **关键数字**：
 
@@ -217,13 +217,11 @@ transpose diagonal          , Throughput = 1135.33 GB/s
 
 ## 6. 编程启示
 
-```text
-✅ 尽量把数据和计算留在 GPU 显存
-✅ 避免训练循环中的 H2D/D2H（A100: ~28 GB/s vs 内部 ~1188 GB/s, 差距 42×）
-✅ A100 的宽位宽 HBM2e 对大数据集更友好（5120-bit vs 512-bit GDDR7）
-✅ 使用 cudaMallocManaged + cudaMemPrefetchAsync 做隐式数据迁移
-✅ 用 nvbandwidth 做权威基准测试，cudaMemcpy 测趋势即可
-```
+- 尽量把数据和计算留在 GPU 显存
+- 避免训练循环中的 H2D/D2H（A100: ~28 GB/s vs 片内 ~1188 GB/s，差距约 42 倍）
+- A100 的宽位宽 HBM2e 对大数据集更友好（5120-bit vs 512-bit GDDR7）
+- 用 `cudaMallocManaged` + `cudaMemPrefetchAsync` 做隐式数据迁移
+- 用 nvbandwidth 做权威基准测试，cudaMemcpy 测趋势即可
 
 ---
 

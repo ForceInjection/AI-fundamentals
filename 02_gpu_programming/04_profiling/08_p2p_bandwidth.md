@@ -32,19 +32,20 @@ nvidia-smi topo -m
 ```
 
 ```text
+（节选，完整矩阵为 8×8 对称）
         GPU0  GPU1  GPU2  GPU3  GPU4  GPU5  GPU6  GPU7
 GPU0     X    NV12  NV12  NV12  NV12  NV12  NV12  NV12
-GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  NV12
+GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  SYS
 GPU7    SYS   SYS   SYS   SYS   NODE  NODE  PXB    X
 ```
 
-| GPU 对        | 连接类型 | 物理路径                        | P2P 支持 | 期望带宽          |
-| ------------- | -------- | ------------------------------- | -------- | ----------------- |
-| GPU 0 ↔ GPU 3 | **NV12** | NVLink 3.0 (12 links × 25 GB/s) | ✅       | ~240-300 GB/s     |
-| GPU 3 ↔ GPU 7 | **SYS**  | QPI/UPI + PCIe Gen 4            | ❌       | N/A（不支持 P2P） |
-| GPU 3 ↔ GPU 6 | **NV12** | NVLink 3.0                      | ✅       | ~240 GB/s         |
+| GPU 对        | 连接类型 | 物理路径                        | P2P 支持       | 期望带宽          |
+| ------------- | -------- | ------------------------------- | -------------- | ----------------- |
+| GPU 0 ↔ GPU 3 | **NV12** | NVLink 3.0 (12 links × 25 GB/s) | ✅             | ~240-300 GB/s     |
+| GPU 3 ↔ GPU 7 | **SYS**  | QPI/UPI + PCIe Gen 4            | ❌             | N/A（不支持 P2P） |
+| GPU 6 ↔ GPU 7 | **PXB**  | 同一 PCIe 域内经 Bridge/Switch  | ⚠️ 视 ACS 而定 | 受限于 PCIe       |
 
-> **关键洞察**：NV12 意味着 12 条 NVLink 全通 → P2P 可用且高速。SYS/NODE/PXB 意味着通信必须经过 CPU → P2P **不可用**。我们在 [NVLink 诊断与实操](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md) 中详细分析了 GPU 7 的异常。
+> **要点**：NV12 意味着 12 条 NVLink 全通 → P2P 可用且高速。SYS（跨 NUMA/CPU 互连）通信必须经过 CPU → P2P 不可用。PXB 只过 Bridge/Switch、不穿越 host bridge，ACS 关闭时 P2P 通常可用——实际以 `cudaDeviceCanAccessPeer` 实测为准。我们在 [NVLink 诊断与实操](../../01_hardware_architecture/nvlink/nvlink_diagnostics.md) 中详细分析了 GPU 7 的异常。
 
 ---
 
@@ -107,7 +108,7 @@ Test passed
 CUDA_VISIBLE_DEVICES=3,7 ./simpleP2P
 ```
 
-结果：`cudaDeviceCanAccessPeer` 返回 `No`，sample 退出。
+结果：`cudaDeviceCanAccessPeer` 返回 `No`，sample 打印 "Two or more GPUs with Peer-to-Peer access capability are required..." 后退出。
 
 **为什么 SYS 连接不支持 P2P？**
 
@@ -119,7 +120,7 @@ P2P 要求 GPU 能直接通过 DMA 访问对方显存，这需要：
 
 SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P DMA 无法穿越 CPU 间的 SMP 互连。
 
-**NCCL 的 fallback 行为**：NCCL 检测到 SYS 连接后会自动降级为通过 CPU 中转的数据传输（GPU A → CPU pinned memory → GPU B），造成约 2-3 倍的带宽损失和额外的延迟。训练吞吐可能腰斩。
+**NCCL 的 fallback 行为**：NCCL 检测到 SYS 连接后会自动降级为通过 CPU 中转的数据传输（GPU A → CPU pinned memory → GPU B），带宽相比 NVLink 下降一个数量级以上（本文口径：~12 vs ~249 GB/s）。
 
 ---
 
@@ -127,11 +128,11 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 `simpleP2P` 同时对比了两种方法：
 
-| 方法                                     | 64 MB 带宽               | 解释                                       |
-| ---------------------------------------- | ------------------------ | ------------------------------------------ |
-| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink）  | **239.28 GB/s**          | 直接 D2D，通常经 copy engine/NVLink        |
+| 方法                                     | 64 MB 带宽               | 解释                                         |
+| ---------------------------------------- | ------------------------ | -------------------------------------------- |
+| `cudaMemcpyPeer`（GPU0 → GPU1，NVLink）  | **239.28 GB/s**          | 直接 D2D，通常经 copy engine/NVLink          |
 | `cudaMemcpy`（GPU0 → GPU1，启用 P2P 后） | 与 `cudaMemcpyPeer` 接近 | 可利用直接 P2P 路径，具体路径由拓扑/驱动决定 |
-| `cudaMemcpy`（Host → GPU）               | ~28 GB/s (Gen 4)         | 经过 PCIe                                  |
+| `cudaMemcpy`（Host → GPU）               | ~28 GB/s (Gen 4)         | 经过 PCIe                                    |
 
 **编程要点**：启用 peer access 后，CUDA runtime 不再需要把 P2P 拷贝 staged through host，通常会利用 copy engine 和 NVLink。但 API 文档没有承诺每一笔 `cudaMemcpy` 都走某一条固定硬件路径，实际路径仍要结合拓扑和驱动确认。
 
@@ -139,15 +140,9 @@ SYS 连接跨越了两个 NUMA node 之间的 QPI/UPI 链路——PCIe 的 P2P D
 
 ## 6. 拓扑对训练策略的影响
 
-```text
-                     GPU 0-6 (NV12)              GPU 7 (No NVLink)
-                     ┌─────────────────┐         ┌───────────────┐
- TP 可行             │ 可高效 All-Reduce │         │ 不可放入 TP 组 │
- DP 正常             │ 梯度同步 OK       │         │ 梯度同步 OK    │
- NCCL 路径           │ NVLink 直连      │         │ CPU 中转       │
- 推荐用法             │ 主力计算 + TP    │          │ 独立推理/小训练.│
-                     └─────────────────┘         └───────────────┘
-```
+![拓扑对训练策略的影响](assets/p2p-01-topology-impact.png)
+
+_图 1：7+1 混合服务器的两条路径——TP 组只放在 NVLink fabric 内，无 NVLink 的卡独立使用。_
 
 **生产建议**：
 

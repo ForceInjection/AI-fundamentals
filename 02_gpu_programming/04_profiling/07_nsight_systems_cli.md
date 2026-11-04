@@ -55,7 +55,7 @@ nsys stats my_report.nsys-rep
 
 ### 2.3 默认报告类型
 
-`nsys` 默认生成 6 个统计报告（即使不使用 `--stats=true`，`nsys stats` 也会输出它们）：
+`nsys stats` 对一个 report 文件默认执行一组统计报告（默认集随版本变化，本文环境 2025.x 实测约 8 个；完整列表用 `nsys stats --help-reports` 查看）。`--stats=true` 是 profile 时顺带执行统计，`nsys stats` 是事后生成，两者产出一致：
 
 | 报告                      | 文件                    | 回答的问题                                      |
 | ------------------------- | ----------------------- | ----------------------------------------------- |
@@ -103,7 +103,7 @@ nsys profile --stats=true -o vectorAdd_report ./vectorAdd
     100.0            3,040          1   3,040.0  vectorAdd(...)
 ```
 
-vectorAdd kernel 在 GPU 上仅执行了 **3.04 μs**。对比前面 `cudaLaunchKernel` 的 75.7 μs，launch 开销是 kernel 执行时间的 25 倍——这就是为什么小 kernel 应该用 CUDA Graph（见 [`09_cuda_graphs.md`](../02_cuda/09_cuda_graphs.md)）。
+vectorAdd kernel 在 GPU 上仅执行了 **3.04 μs**。对比 `cudaLaunchKernel` 的 75.7 μs：注意该 API 只被调用了 1 次，75.7 μs 里含首次启动的一次性开销（模块加载等），不能当作稳态 launch 开销（稳态约 2-3 μs，见 [08 号文](../02_cuda/08_kernel_launch_latency.md)）。但结论方向一致：小 kernel 反复 launch 时提交开销占比过高，适合用 CUDA Graph（见 [`09_cuda_graphs.md`](../02_cuda/09_cuda_graphs.md)）。
 
 ### 3.3 GPU Memory Time Summary — H2D/D2H 时间线
 
@@ -139,11 +139,11 @@ vectorAdd kernel 在 GPU 上仅执行了 **3.04 μs**。对比前面 `cudaLaunch
 
 **解读**：
 
-- `poll`（65.3%, 689 ms）——程序在等 GPU 完成（`cudaDeviceSynchronize` 或隐式同步），这是正常的
-- `ioctl`（33.9%, 358 ms）——CUDA driver 通信开销，1089 次 ioctl 调用均值 328 μs，中位数 28 μs，说明大部分很快但少数很大
-- `mmap64` / `fopen`（< 0.5%）——程序加载和数据文件 I/O
+- `poll`（65.3%, 689 ms）：程序在等 GPU 完成（`cudaDeviceSynchronize` 或隐式同步），这是正常的
+- `ioctl`（33.9%, 358 ms）：CUDA driver 通信开销，1089 次 ioctl 调用均值 328 μs——大部分调用很快，少数大数值拉高了均值
+- `mmap64` 等（< 0.5%）：程序加载和数据文件 I/O
 
-> **经验法则**：如果 `poll` 占比 > 50%，说明程序是 GPU-bound（CPU 在等 GPU）。如果 `ioctl` 占比高且次数多，考虑 CUDA Graph 减少 driver 往返。
+> **经验法则**：`poll` 占比 > 50% 通常说明 CPU 在等 GPU（结合 kernel 时间占比确认，poll 也可能发生在非 GPU 的 fd 上）。如果 `ioctl` 占比高且次数多，考虑 CUDA Graph 减少 driver 往返。
 
 ---
 
@@ -155,11 +155,13 @@ vectorAdd kernel 在 GPU 上仅执行了 **3.04 μs**。对比前面 `cudaLaunch
 # 采集时间线
 nsys profile --trace=cuda -o timeline ./stream_overlap
 
-# CLI 无法直接看 Gantt 图，但可以从 kernel 时间戳推断
-nsys stats --report cuda_gpu_kern_sum timeline.nsys-rep
+# CLI 无法直接看 Gantt 图，但可以取每个 kernel 的起止时间戳
+nsys stats --report cuda_gpu_trace timeline.nsys-rep
+# 或导出 sqlite 后查询 CUPTI_ACTIVITY_KIND_KERNEL 的 start/end 列
+nsys export --type sqlite -o timeline.sqlite timeline.nsys-rep
 ```
 
-**CLI 的局限**：时间线图需要 GUI。但通过对比 `cuda_gpu_kern_sum` 中各 kernel 的总执行时间和 wall-clock 时间，可以推断重叠效果。
+**CLI 的局限**：时间线图需要 GUI。但 `cuda_gpu_trace` 给出逐次 kernel 的起止时间，对比各 kernel 区间与 wall-clock 即可量化重叠效果（`cuda_gpu_kern_sum` 只有聚合摘要，拿不到时间戳）。
 
 ### 4.2 找启动瓶颈
 
@@ -168,7 +170,7 @@ nsys profile --stats=true -o startup ./my_app
 # 重点看 cuda_api_sum 的第一个 cudaMalloc 时间
 ```
 
-首次 `cudaMalloc` 超 100ms → CUDA context 初始化。解决方案：预先 warmup 或使用 `cuInit` 提前初始化。
+首次 `cudaMalloc` 超 100ms → CUDA context 初始化。缓解方法：启动后先做 warmup（把初始化成本挪到服务就绪前）。注意显式调 `cuInit` 消不掉这部分——context 是在首个 runtime API 调用时创建的。
 
 ### 4.3 批量分析多个程序的对比
 

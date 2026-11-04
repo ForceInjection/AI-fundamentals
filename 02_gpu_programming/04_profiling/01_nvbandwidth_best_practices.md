@@ -1,10 +1,10 @@
-# nvbandwidth 深度解析：NVIDIA GPU 带宽测量工具全指南
+# nvbandwidth：用法、原理与测试项详解
 
 ## 1. 工具概述
 
 ### 1.1 什么是 nvbandwidth？
 
-nvbandwidth 是 NVIDIA 官方开发的一款专门用于测量 GPU 内存带宽的高性能工具。简单来说，它把“带宽到底跑到多少”这件事讲清楚，也让不同传输路径的性能差异一目了然。它能够精确量化各种数据传输场景下的带宽表现，包括：
+nvbandwidth 是 NVIDIA 官方的 GPU 内存带宽测量工具，覆盖以下传输场景：
 
 - **PCIe 带宽**：CPU 与 GPU 之间的数据传输
 - **NVLink 带宽**：GPU 与 GPU 之间的高速互联
@@ -19,7 +19,7 @@ nvbandwidth 是 NVIDIA 官方开发的一款专门用于测量 GPU 内存带宽�
 | 多节点能力 | 基于 MPI + IMEX 服务的跨节点 GPU 内存带宽测量                       |
 | 精确测量   | Spin Kernel 排除调度开销，CUDA Events 计时，结果取中位数            |
 
-**当前版本**：v0.8（基于 version.h）
+**当前版本**：本文主体基于 v0.8（2026-11 核对时最新 tag 已到 v0.10.0；v0.10 起换用 argparse、移除 Boost 依赖并新增 -P/-H/-F/--pair 参数，CLI 有变，以官方 README 为准）。
 
 ---
 
@@ -757,7 +757,7 @@ memcpy CE CPU(row) <-> GPU(column) bandwidth (GB/s)
 - PCIe 3.0 x16 理论峰值约 16 GB/s，PCIe 4.0 x16 约 32 GB/s，PCIe 5.0 x16 约 64 GB/s
 - 上述示例约 56-57 GB/s，表明使用 PCIe 5.0 x16 接口
 
-说明：示例输出为实际运行结果（RTX 6000D，PCIe 5.0 x16，驱动 570.x）。实际数值因系统配置而异。
+说明：示例输出为实际运行结果（RTX 6000D，PCIe 5.0 x16，驱动 570.x，2025 年采集）。实际数值因系统配置而异。
 
 ### 5.2 案例二：检测 NVLink 拓扑
 
@@ -788,11 +788,10 @@ memcpy CE GPU(row) <- GPU(column) bandwidth (GB/s)
 
 **矩阵解读**：
 
-- 行索引：源 GPU（执行读取/写入操作的 GPU）
-- 列索引：目标 GPU
+- write_ce 测试：行 GPU 写入列 GPU（行=源、列=目标）；注意 read_ce 的方向相反——行 GPU 从列 GPU 读取（数据流向列→行），两表不要按同一方向解读
 - 对角线为 0.00：GPU 不与自身通信
 - 非对角线值：GPU 间互联带宽（GB/s）
-- NVLink 3.0 单链路约 25 GB/s，多链路聚合可达更高带宽
+- NVLink 3.0 单链路单向 25 GB/s（双向 50）；12 条链路聚合后实测 ~276 GB/s 单向
 
 **无 NVLink 系统的情况**：
 
@@ -944,17 +943,7 @@ nvbandwidth 默认会自动设置 CPU 亲和性，确保 Host 内存分配在与
 
 ## 7. 总结
 
-nvbandwidth 是一款功能强大的 GPU 带宽测量工具，其核心优势在于：
-
-1. **精确性**：Spin Kernel 机制排除调度开销，CUDA Events 精确计时
-2. **全面性**：覆盖 CE/SM、单向/双向、单节点/多节点各种场景
-3. **专业性**：针对 NVIDIA GPU 架构深度优化，支持 NVLink、PCIe、IMEX 等多种互联
-
-通过深入理解其源码实现，我们可以更好地：
-
-- 诊断系统性能瓶颈
-- 验证硬件配置是否正确
-- 优化 GPU 应用程序性能
+nvbandwidth 用 Spin Kernel 排除调度开销、CUDA Events 计时、结果取中位数，覆盖 CE/SM 路径、单向/双向、单节点/多节点场景，支持 NVLink、PCIe、IMEX 互联。读懂它的源码机制后，可以用它做三件事：诊断带宽瓶颈、验证硬件配置、为 GPU 应用建立带宽基线。
 
 **扩展阅读**：
 
@@ -966,7 +955,7 @@ nvbandwidth 是一款功能强大的 GPU 带宽测量工具，其核心优势在
 
 ## 8. RTX 5090 实测数据
 
-以下数据来自 Ubuntu 22.04 + RTX 5090 (Blackwell, CC 12.0) + CUDA 12.8 + 驱动 595.58.03，nvbandwidth v0.9。
+以下数据来自 Ubuntu 22.04 + RTX 5090 (Blackwell, CC 12.0) 环境（2025 年采集），nvbandwidth v0.9、驱动 595.58.03（预发布分支）。输出中 `CUDA Runtime Version: 13020` 即 CUDA 13.2——nvbandwidth 报告的是其链接的 CUDA 运行时版本，与编译所用 CUDA 12.8 toolkit 是两回事。
 
 ### 8.1 基本环境
 
@@ -975,7 +964,6 @@ nvbandwidth Version: v0.9
 CUDA Runtime Version: 13020
 CUDA Driver Version: 13020
 Device 0: NVIDIA GeForce RTX 5090 (00000000:98:00)
-Auto detection of gpu-archs: 120
 ```
 
 ### 8.2 Copy Engine (CE) 测试
@@ -1011,7 +999,7 @@ Auto detection of gpu-archs: 120
 ### 8.6 解读
 
 - **CE vs SM**：Copy Engine 比 SM 路径快约 10%（56.3 vs 51.4 GB/s），因为 CE 是专用 DMA 硬件
-- **Bidirectional**：双向带宽 ~50 GB/s 低于单向 ~56 GB/s，体现 PCIe 半双工特性和内部竞争
+- **Bidirectional**：双向带宽 ~50 GB/s 低于单向 ~56 GB/s——PCIe 本身是全双工链路，下降来自主机侧 Root Complex/内存控制器与 TLP 处理的竞争，不是链路方向的限制
 - **Device local**：762 GB/s 是 `cudaMemcpyDeviceToDevice` 的实测带宽，约为理论峰值 (1792 GB/s) 的 43%
 - **自动 arch 检测**：CMake 的 `CMAKE_CUDA_ARCHITECTURES` 自动检测为 120（RTX 5090 的 compute capability 12.0），编译无需手动指定 `-arch`
 - **Waived 测试**：所有多 GPU 测试 (device*to_device_memcpy*, bidirectional 等) 因单卡环境自动跳过

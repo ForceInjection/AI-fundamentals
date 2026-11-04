@@ -1,6 +1,6 @@
 # PCIe 链路状态与主机-设备带宽实测
 
-> 基于 A100-SXM4-80GB (PCIe Gen 4 x16) 实测。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
+> 基于 RTX 5090 (PCIe Gen 5 x16) 实测（2026-11 核对）；A100 Gen 4 一节为按规格推导的对照，非本文实测。本文提供一个零依赖 CUDA 程序，测量 Host↔Device 传输带宽，并分析 PCIe 链路状态在空闲/负载下的切换。
 >
 > **验证代码**：[02_pcie_bandwidth_bench.cu](code/02_pcie_bandwidth_bench.cu)——零依赖，直接编译运行即可测量 H2D/D2H 带宽。
 
@@ -8,10 +8,9 @@
 
 ## 1. 为什么 PCIe 带宽测试不同于 nvbandwidth
 
-`nvbandwidth` 功能强大但需要编译安装（依赖 Boost、CMake、GDS 等）。以下情况可能更适合本文的零依赖方案：
+`nvbandwidth` 覆盖面广但需要编译安装（依赖 CUDA、Boost program_options、CMake，多节点加 MPI）。以下情况可能更适合本文的零依赖方案：
 
 - 快速验证 GPU 是否插在正确的 PCIe 槽上
-- 没有 root 权限编译 nvbandwidth
 - 只需要 H2D/D2H 基础数据
 
 nvbandwidth 的详细用法见 [nvbandwidth 深度解析](01_nvbandwidth_best_practices.md)。
@@ -26,7 +25,7 @@ nvidia-smi --query-gpu=pcie.link.gen.current,pcie.link.width.current --format=cs
 # 输出: 1, 16
 ```
 
-RTX 5090 最大支持 PCIe Gen 5 x16，但空闲时运行在 Gen 1。这是 **ASPM (Active State Power Management)** 机制：GPU 无负载时降级链路省电，一旦有数据传输，自动恢复到最高速率。
+RTX 5090 最大支持 PCIe Gen 5 x16，但空闲时运行在 Gen 1。这是 PCIe 链路电源管理：GPU 无负载时降级链路速率省电，一旦有数据传输，自动恢复到最高速率（严格意义的 ASPM 指 L0s/L1 链路电源状态，速率下调是驱动/硬件层面的另一机制，效果类似）。
 
 ### 通过 sysfs 查看
 
@@ -159,23 +158,22 @@ Size         | H2D (GB/s)      | D2H (GB/s)
 
 | 传输大小 | 现象                   | 原因                                            |
 | -------- | ---------------------- | ----------------------------------------------- |
-| 1 MB     | 带宽低 (18-32 GB/s)    | CUDA kernel launch 开销 + 链路 ramp-up 延迟主导 |
+| 1 MB     | 带宽低 (18-32 GB/s)    | 驱动/DMA 启动延迟 + 链路 ramp-up 主导           |
 | 16 MB+   | 带宽稳定 (~52-53 GB/s) | 传输时间主导，链路已恢复到 Gen 5                |
 
 ### 4.2 与理论值对比
 
 PCIe Gen 5 x16 理论单向带宽：32.0 GT/s × 16 lanes × 128b/130b 编码 = **~63.0 GB/s**。
 
-实测 ~52.5 GB/s，效率约 **83%**。损耗来自：
+实测 ~52.5 GB/s，效率约 **83%**（相对理论值；饱和后数值稳定，波动 < 5%）。损耗来自：
 
-- 128b/130b 编码开销（已计入理论值）
 - PCIe TLP header 开销
 - CUDA driver 和 runtime 开销
 - Host 端内存控制器带宽限制
 
 ### 4.3 D2H vs H2D
 
-D2H 略快于 H2D (~53.3 vs ~52.5 GB/s)。这是因为 GPU 是 DMA 发起方，D2H 时 GPU 直接 push 数据，而 H2D 时需要 GPU 主动 pull。
+D2H 略快于 H2D (~53.3 vs ~52.5 GB/s)，差异在测量波动范围边缘；两方向均由 GPU 作为 DMA 发起方执行，机制对称。
 
 ### 4.4 A100-SXM4-80GB 对比
 
@@ -189,9 +187,9 @@ A100-SXM4-80GB 使用 **PCIe Gen 4 x16**，与 RTX 5090 的 Gen 5 x16 形成代�
 | 实测 H2D 期望  | ~25-28 GB/s             | ~52.5 GB/s                 |
 | 效率           | ~80-89%                 | ~83%                       |
 | `nvidia-smi`   | `pcie.link.gen.max = 4` | `pcie.link.gen.max = 5`    |
-| ASPM 空闲状态  | Gen 1 (2.5 GT/s)        | Gen 1 (2.5 GT/s)           |
+| 空闲链路状态   | Gen 1 (2.5 GT/s)        | Gen 1 (2.5 GT/s)           |
 
-> **注意**：A100-SXM4 的 GPU 间互联通过 NVLink（NV12, 600 GB/s），但 Host↔Device 仍走 PCIe Gen 4。数据加载路径中 PCIe 是瓶颈：显存带宽 2039 GB/s vs PCIe ~28 GB/s，差距约 **73 倍**（RTX 5090 约 32 倍，因 GDDR7 带宽更低但 PCIe 更快）。
+> **注意**：A100-SXM4 的 GPU 间互联通过 NVLink（NV12, 600 GB/s），但 Host↔Device 仍走 PCIe Gen 4。数据加载路径中 PCIe 是瓶颈：显存带宽 2039 GB/s vs PCIe ~28 GB/s，理论差距约 73 倍（RTX 5090 约 34 倍，1792/52.5——GDDR7 带宽更低但 PCIe 更快）。
 
 ---
 
@@ -215,7 +213,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/max_link_speed
 | ------------------------- | -------------------------------------------- | ---------------------------------------- |
 | max 显示 Gen 3            | `nvidia-smi --query-gpu=pcie.link.gen.max`   | 主板/CPU 不支持更高，或插在低代槽位      |
 | width 显示 x8             | `nvidia-smi --query-gpu=pcie.link.width.max` | 插槽物理宽度不足，或 lane 被其他设备共享 |
-| 带宽远低于预期 (> Gen 4)  | 运行本文测试 + 检查 Gen                      | 若 ~25 GB/s 可能是 Gen 4 正常值          |
+| Gen 5 平台实测仅 ~25 GB/s | 运行本文测试 + 检查 Gen                      | ~25 GB/s 是 Gen 4 的正常水平，Gen 5 应 ~52 GB/s |
 | 带宽异常低 (< 5 GB/s)     | 检查 Gen+Width + 测小包                      | 可能在 Gen 1 x1 或其他异常状态           |
 
 ### 5.3 PCIe 错误计数器
