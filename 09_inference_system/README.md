@@ -1,8 +1,8 @@
 # 推理系统技术体系
 
-一个 70B 模型在 H100 上跑 128K 上下文的推理——KV Cache 吃掉 320 GB 显存，attention kernel 的 GPU 利用率不到 25%，Prefill 的一次长 prompt 能把 Decode 阻塞数秒。**推理系统优化的本质，就是解决这三个数字背后的核心矛盾：显存不够、算力空转、延迟抖动。**
+一个 70B 模型在 H100 上跑 128K 上下文的推理——KV Cache 大约要吃掉 42 GB 显存（GQA-8 口径；若为 MHA-64 头则约 320 GB），attention kernel 的 GPU 利用率不到 25%，Prefill 的一次长 prompt 能把 Decode 阻塞数秒。**推理系统优化的本质，就是解决这三个数字背后的核心矛盾：显存不够、算力空转、延迟抖动。**
 
-本目录从底层机制到上层系统，覆盖 LLM 推理优化的完整纵深。建议按 §1→§6 顺序阅读——每章建立在前一章的基础之上，最后以成本分析和工程实践收尾。
+本目录从底层机制到上层系统，覆盖 LLM 推理优化的完整纵深。建议按 §1→§7 顺序阅读——每章建立在前一章的基础之上，最后以成本分析和工程实践收尾。
 
 ---
 
@@ -116,6 +116,7 @@
 - **[推理成本分析](cost_analysis/README.md)** — 成本测算框架总览与按用户画像的口径选择指南。
 - **[API 定价分析](cost_analysis/llm_api_pricing_analysis.md)** — 基于 OpenRouter 的多模型成本测算，配套 [抓取脚本](cost_analysis/fetch_pricing.py)。
 - **[Coding Plan 对比](cost_analysis/coding_plan/coding_plan_report.md)** — 11 款 AI 编程工具订阅成本与隐藏条款解析。
+- **[Coding Plan 定价总表](cost_analysis/coding_plan/data/pricing_table.md)** — 各家套餐月费、额度、限制条款与官方来源链接的结构化数据表（2026-04 采集口径）。
 - **[DeepSeek 推理集群单卡经济学](cost_analysis/deepseek_inference_cluster_unit_economics.md)** — 用官方生产参数反推单卡账本：155 万亿 tokens/天、96% 缓存命中、38 美元/卡时，单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性。
 
 ---

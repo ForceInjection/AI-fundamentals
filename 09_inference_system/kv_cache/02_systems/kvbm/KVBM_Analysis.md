@@ -1,5 +1,7 @@
 # KV Block Manager (KVBM) 深度解析
 
+> 核对基线：NVIDIA Dynamo（HEAD d688aa6，2026-03-03）；本文核对日期 2026-11-05
+
 KV Block Manager (KVBM) 是 NVIDIA Dynamo 项目中的核心组件，负责在大语言模型（LLM）推理任务中高效管理 Key-Value (KV) Cache。本文将深入分析 KVBM 的功能特性、架构设计及核心源码实现。
 
 ## 1. 功能概述
@@ -190,7 +192,7 @@ pub struct ManagedBlockPool<S: Storage, L: LocalityProvider, M: BlockMetadata> {
 `OffloadManager` 维护了针对不同目标的优先级队列（`device_offload_tx`、`host_offload_tx`、`device_to_disk_offload_tx`），确保关键路径的数据迁移（如 GPU 显存释放）能够被优先处理。底层通过 `LocalTransferManager` 调用 NIXL Agent 执行实际的数据拷贝操作。
 
 ```rust
-// lib/src/block_manager/offload.rs/llm
+// lib/llm/src/block_manager/offload.rs
 
 pub struct OffloadManager<Locality: LocalityProvider, Metadata: BlockMetadata> {
     // 持有各层级 Pool 的引用，以便在迁移完成后更新 Block 状态
@@ -399,6 +401,7 @@ KVBM 和 LMCache 在 Dynamo 的 vLLM 后端中通过统一的连接器框架进�
 - **独立使用**: KVBM 和 LMCache 可以作为独立的 KV Cache 管理后端，通过 `--kv-transfer-config` 参数选择，**但同一 vLLM 实例只能激活一个主要的 KV 管理后端**：
   - KVBM: `{"kv_connector":"DynamoConnector","kv_role":"kv_both"}`
   - LMCache: `{"kv_connector":"LMCacheConnectorV1","kv_role":"kv_both"}`
+  - FlexKV: `{"kv_connector":"FlexKVConnectorV1","kv_role":"kv_both"}`（Dynamo 同样支持 FlexKV 作为本地 KV 管理后端，与 KVBM/LMCache 同属"第一个连接器"候选）
 
   **注意**: 在独立使用模式下，KVBM 和 LMCache 是互斥的，不能同时激活。用户必须在启动时选择一个作为主要的后端。
 
@@ -421,7 +424,7 @@ KVBM 和 LMCache 在 Dynamo 的 vLLM 后端中通过统一的连接器框架进�
   在这种模式下，第一个连接器（KVBM 或 LMCache）负责本地的 KV 缓存管理，第二个连接器（NIXL）负责在 Prefill 和 Decode 节点之间传输 KV 数据。
 
   **PdConnector 工作机制**：
-  - **严格顺序要求**: PdConnector 要求恰好配置两个连接器，第一个必须是 KVBM 或 LMCache，第二个必须是 NIXL
+  - **严格顺序要求**: PdConnector 要求恰好配置两个连接器，第一个必须是 KVBM、LMCache 或 FlexKV（本地 KV 管理后端），第二个必须是 NIXL
   - **角色分工**: Prefill 工作节点使用第一个连接器进行 KV 缓存的卸载和加载，Decode 工作节点使用第二个连接器从 Prefill 节点获取 KV 数据
   - **生命周期管理**: 每个连接器独立管理自己的 KV 块生命周期，通过统一的接口协调工作
 

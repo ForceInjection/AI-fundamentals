@@ -1,6 +1,6 @@
 # 155 万亿 tokens/天背后的引擎：DeepInfer 源码拆解
 
-> 2026-10-20 | 源码深读。基于 [deepseek-ai/DeepInfer](https://github.com/deepseek-ai/DeepInfer) HEAD `774ce24`（2026-10-20）的 README、`doc/inference_deployment_qa.md` 与源码；未在 SM100 / Ascend 950 上实测，性能数字除注明外均为官方口径。以下路径均相对 DeepInfer 仓库根目录。
+> 2026-10-20 | 源码深读。基于 [deepseek-ai/DeepInfer](https://github.com/deepseek-ai/DeepInfer) HEAD `774ce24`（2026-10-20）的 README、`doc/inference_deployment_qa.md` 与源码；未在 SM100 / Ascend 950 上实测，性能数字除注明外均为官方口径。以下路径均相对 DeepInfer 仓库根目录。文中 **ZOS** 是本文对 zero-overhead batch scheduler 的简称；**Wide-EP** 对应官方的 MoE EP + EPLB。
 
 155 万亿 tokens/天、38 美元/卡时、96% 输入缓存命中。DeepSeek 在 2026-10-20 把 DeepInfer 和这组生产数字一起放了出来。仓库 4 天拿到约 9k stars。clone 下来，README 第一行写的是 offline inference，入口是 `LLM.generate`，没有 HTTP 服务。
 
@@ -115,7 +115,7 @@ V4.1 的层分两种注意力。`compress_ratios` 为 0 的层是纯 SWA；从�
 
 SWA state 的存储也很省：20 层 × 134 token × 528 B ≈ 1.4 MB/序列，按 128 token 粒度落盘，ring buffer 多留 6 个位置吸收越界（Q&A 的 KV cache storage 一节）。官方说 decoder 层的 bounded replay 能让总 prefill 计算量接近减半。它依赖 V4.1 的 CED/YOCO 结构，不能直接搬到其他模型。
 
-对 77K 平均输入、96% 缓存命中的生产负载，这个优化的意义很直接：命中前缀的 block KV 可以直接复用，SWA 只补末尾一小段；如果没有 bounded replay，重建 decoder SWA 要把最后 2,560 个 token 跑过 20 层 decoder，缓存命中省下的 prefill 会被吃掉。
+对 77K 平均输入、96% 缓存命中的生产负载，这个优化的意义很直接：命中前缀的 block KV 可以直接复用，SWA 只补末尾一小段；如果没有 bounded replay，重建 decoder SWA 要把最后 128 个 token 重新跑过 20 层 decoder——合计 128 × 20 = 2,560 token-layer 的计算，缓存命中省下的 prefill 会被吃掉。
 
 `mask` 模式只改 SWA 可见域，query 数不变，适合做数值等价验证；`compact` 才真正减少 consumer 层 query。`examples/yoco/README.md` 的 `yoco_equiv.py` 就是在两种模式之间做逐元素 logprob/top-K 对比。
 

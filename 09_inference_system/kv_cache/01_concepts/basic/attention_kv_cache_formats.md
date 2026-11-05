@@ -138,7 +138,8 @@ DeepSeek V4 在 MLA 的基础上引入了一个更激进的思路：**不仅压�
 
 c4a 压缩后（每 8 个 token → 1 个压缩 token，步长 4，有重叠）:
   [t0-t7]  [t4-t11]  [t8-t15]  [t12-t19] ...
-  每个压缩 token 存一份 KV → KV 数量 ≈ 原始的 1/2（步长 4 导致 2× 冗余）
+  每个压缩 token 存一份 KV → KV 数量 ≈ 原始的 1/4（窗口 8、步长 4，有效 4:1；
+  相邻窗口重叠使每个原始 token 被覆盖 2 次，是信息冗余而非存储翻倍）
 
 c128a 压缩后（每 128 个 token → 1 个压缩 token，无重叠）:
   [t0-t127]  [t128-t255]  [t256-t383] ...
@@ -179,10 +180,12 @@ vLLM 通过 `KVCacheGroupSpec` 为每种压缩类型创建独立的 KV block 池
 关键启动参数：
 
 ```bash
---block-size 256 \                          # 压缩 token 场景下大 block 更高效
---kv-cache-dtype fp8 \                      # attention cache 使用 FP8
---attention_config.use_fp4_indexer_cache=True  # indexer cache 使用 FP4
+--block-size 256 \                    # 压缩 token 场景下大 block 更高效
+--kv-cache-dtype fp8 \                # attention cache 使用 FP8
+--attention-config '{"indexer_kv_dtype": "mxfp4"}'   # indexer cache 使用 FP4
 ```
+
+indexer cache 的 FP4 存储通过 attention-config 参数组的 `indexer_kv_dtype="mxfp4"` 指定（`vllm/config/attention.py:83`，可选值 `auto`/`bf16`/`fp8`/`mxfp4`/`nvfp4`），需要 B200（SM100 级）的 indexer kernel 支持。
 
 ![CSA/HCA token 维压缩](img/format-csa-hca.svg)
 

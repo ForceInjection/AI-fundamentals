@@ -14,7 +14,7 @@
 
 投机解码依赖外部 draft model 提供候选 token。MTP（Multi-Token Prediction）走了一条不同的路——在训练阶段就为模型植入预测未来 N 个 token 的能力，推理时用内置预测头替代独立 draft model，在单次 forward 中同时完成草拟与验证。
 
-- **[MTP 深度解析：把投机能力训进模型里](mtp-multi-token-prediction.md)**：训练架构（MTP 模块的级联设计、loss 等权求和、14B 参数代价）、推理机制（self-speculation、与因果注意力的兼容、接受率影响因素）、与投机解码的多维对比（forward 次数、灵活性、适用场景）、vLLM 工程实现（`deepseek_mtp` 专用方法与 V4 架构细节）
+- **[MTP 深度解析：把投机能力训进模型里](mtp-multi-token-prediction.md)**：训练架构（MTP 模块的级联设计、loss 单独权重 λ=0.3→0.1、11-14B 参数代价）、推理机制（self-speculation、与因果注意力的兼容、接受率影响因素）、与投机解码的多维对比（forward 次数、灵活性、适用场景）、vLLM 工程实现（`deepseek_mtp` 专用方法与 V4 架构细节）
 
 **选型速记**：模型发布者（训练了模型）→ MTP；推理服务方（使用他人模型）→ 投机解码。
 
@@ -22,7 +22,7 @@
 
 投机解码的剩余瓶颈在草稿侧——草稿模型本身仍是自回归串行。DFlash 用"块扩散"把草稿也并行化：块内位置以 mask token 占位、一次前向预测整块，再注入目标模型中间表示做条件，配合 rejection sampling 保持无损。
 
-- **[一次前向，白赚 4 个 token：DFlash 2 块扩散投机解码技术详解](dflash-block-diffusion-speculative-decoding.md)**：DFlash 1 的块扩散架构（噪声嵌入 + 上下文注入 + 块内因果注意力）与两个结构性缺口（选择余量、块尾衰减），DFlash 2 的路径选择器（低秩双线性打分 + 完全并行游走）与双抽头动态深度卷积，基于官方仓库源码的行号级分析，含四引擎（SGLang / vLLM / TensorRT-LLM / llama.cpp）接入配置与吞吐实测
+- **[DFlash 2 块扩散投机解码技术详解](dflash-block-diffusion-speculative-decoding.md)**：DFlash 1 的块扩散架构（噪声嵌入 + 上下文注入 + 块内因果注意力）与两个结构性缺口（选择余量、块尾衰减），DFlash 2 的路径选择器（低秩双线性打分 + 完全并行游走）与双抽头动态深度卷积，基于官方仓库源码的行号级分析，含四引擎（SGLang / vLLM / TensorRT-LLM / llama.cpp）接入配置与吞吐实测
 
 ### 1.3 无历史投机解码：DLite
 

@@ -247,4 +247,4 @@ PagedAttention 回答了一个简单但影响深远的问题：**KV Cache 到底
 - [Prefix Caching 原理分析](../prefix_caching/prefix_caching.md) — PagedAttention 之上的 block 级复用
 - [KV Cache Offloading 分析](../offloading/01_kv_offloading.md) — block 粒度的存储层次迁移
 - [vLLM 论文: Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) — 原始论文
-- [vLLM v1 架构: KVCacheGroupSpec](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/utils.py) — 多注意力类型 block 池的源码实现
+- [vLLM v1 架构: KVCacheGroupSpec](https://github.com/vllm-project/vllm/blob/main/vllm/v1/kv_cache_interface.py) — 多注意力类型 block 池的源码实现（`KVCacheGroupSpec` 数据类定义在 `kv_cache_interface.py:1410` 附近）

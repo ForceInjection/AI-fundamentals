@@ -449,7 +449,7 @@ class DeepseekV4MultiHeadLatentAttentionWrapper(PluggableLayer):
         )
 ```
 
-**`DeepseekCompressor`** 的工作流程（[deepseek_compressor.py](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_compressor.py#L178)）：
+**`DeepseekCompressor`** 的工作流程（[compressor.py](https://github.com/vllm-project/vllm/blob/main/vllm/models/deepseek_v4/compressor.py)，V4 文件已由 PR #43004 迁移至 `vllm/models/deepseek_v4/`）：
 
 ```python
 class DeepseekCompressor(nn.Module):
@@ -717,9 +717,11 @@ Qwen 的 SSM + Attention 混合路线（类似 Mamba-2 + Attention 交替层）�
 | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | -------- |
 | V2/V3    | MLA         | [`mla_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/attention/mla_attention.py), [`mla.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mla.py)                                                                                                                                                       | ~1.15 KB (BF16)       | 8K-128K  |
 | V3.2     | MLA + NSA   | [`sparse_attn_indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/sparse_attn_indexer.py), [`indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/indexer.py)                                                                                                                                         | ~1.15 KB + FP8 索引 K | 128K+    |
-| V4       | CSA+HCA+SWA | [`deepseek_v4_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_v4_attention.py), [`deepseek_compressor.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_compressor.py), [`sparse_swa.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/sparse_swa.py) | FP8 SWA (584B) + 压缩 | 1M       |
+| V4       | CSA+HCA+SWA | [`attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/models/deepseek_v4/attention.py), [`compressor.py`](https://github.com/vllm-project/vllm/blob/main/vllm/models/deepseek_v4/compressor.py), [`sparse_swa.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/sparse_swa.py)（V4 前两者已由 PR #43004 迁移至 `vllm/models/deepseek_v4/`） | FP8 SWA (584B) + 压缩 | 1M       |
 
 ### A.2 关键源码文件索引
+
+> 路径与行数核对自 vLLM 8b365ff949（2026-09-25）。DeepSeek V4 相关文件已由 PR [#43004](https://github.com/vllm-project/vllm/pull/43004)（[Model Refactoring] Migrate DeepSeek V4 to vllm/models/）迁移至 `vllm/models/deepseek_v4/`。
 
 **MLA 相关：**
 
@@ -735,17 +737,17 @@ Qwen 的 SSM + Attention 混合路线（类似 Mamba-2 + Attention 交替层）�
 - 索引器层：[`vllm/model_executor/layers/sparse_attn_indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/sparse_attn_indexer.py)
 - 后端管理：[`vllm/v1/attention/backends/mla/indexer.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/indexer.py)
 - 稀疏后端：[`vllm/v1/attention/backends/mla/flashmla_sparse.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/flashmla_sparse.py)
-- TopK Kernel：[`csrc/topk.cu`](https://github.com/vllm-project/vllm/blob/main/csrc/topk.cu)
+- TopK Kernel：[`csrc/libtorch_stable/topk.cu`](https://github.com/vllm-project/vllm/blob/main/csrc/libtorch_stable/topk.cu)
 
-**V4 相关：**
+**V4 相关（PR #43004 迁移后路径）：**
 
-- 注意力层：[`vllm/model_executor/layers/deepseek_v4_attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_v4_attention.py) (1076 行)
-- 压缩器：[`vllm/model_executor/layers/deepseek_compressor.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/deepseek_compressor.py)
+- 注意力层：[`vllm/models/deepseek_v4/attention.py`](https://github.com/vllm-project/vllm/blob/main/vllm/models/deepseek_v4/attention.py) (1138 行，8b365ff949)
+- 压缩器：[`vllm/models/deepseek_v4/compressor.py`](https://github.com/vllm-project/vllm/blob/main/vllm/models/deepseek_v4/compressor.py)
 - SWA Cache：[`vllm/v1/attention/backends/mla/sparse_swa.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/sparse_swa.py)
 - 压缩工具：[`vllm/v1/attention/backends/mla/compressor_utils.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/mla/compressor_utils.py)
-- 融合算子：[`csrc/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu`](https://github.com/vllm-project/vllm/blob/main/csrc/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu) (477 行)
-- V4 Ops：[`vllm/v1/attention/ops/deepseek_v4_ops/`](https://github.com/vllm-project/vllm/tree/main/vllm/v1/attention/ops/deepseek_v4_ops) (5 个 Triton 文件)
-- 模型定义：[`vllm/model_executor/models/deepseek_v4.py`](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/deepseek_v4.py) (1437 行)
+- 融合算子：[`csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu`](https://github.com/vllm-project/vllm/blob/main/csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu)
+- V4 Ops：[`vllm/models/deepseek_v4/common/ops/`](https://github.com/vllm-project/vllm/tree/main/vllm/models/deepseek_v4/common/ops) (融合压缩/量化/RoPE 等 Triton 算子)
+- 模型定义：[`vllm/models/deepseek_v4/`](https://github.com/vllm-project/vllm/tree/main/vllm/models/deepseek_v4) (按平台拆分：`nvidia/`、`amd/`、`cpu/`、`xpu/` 各含 `model.py`)
 
 ### A.3 DeepSeek V3 的 MLA 关键参数
 

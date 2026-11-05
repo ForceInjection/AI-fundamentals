@@ -18,9 +18,9 @@ AI 负载正在吃穿分离式云存储的带宽:训练侧是周期性 checkpoin
 
 测试床:Ascend 910B(64 GB HBM)与 A800(80 GB)两集群,至多 64 XPU,每节点 192 核 / 1.5 TB DRAM、1 张 100 Gbps S-NIC,30 Gbps backend 带宽摊到 XPU(§5)。基线:Megatron+SFSTurbo(华为通用云存储,类 3FS)、Megatron+Gemini(闭源,作者在 Megatron commit cac60ce 上复刻其技术)、ServerlessLLM(ckpt 读)、Mooncake(KVCache)。
 
-- **checkpoint 写**(Figure 13,p.264):1.5B/13B/38B × 有无 ZeRo 六种配置,AITURBO 比 Megatron+SFSTurbo 快至多 5×,Gemini 关掉重复写场景下再快至多 5.9×;生产环境口径为比 SFSTurbo 快 3.9–58.8×(§1,p.256,厂商声称)。factor analysis:+Dedup 降 4.3–47.2%,+Write plan 再降至多 76%(p.265)。
+- **checkpoint 写**(Figure 13,p.264):1.5B/13B/38B × 有无 ZeRO 六种配置,ZeRO 关闭(跨节点重复写)场景下较 Gemini 再快至多 5.9×;较 SFSTurbo 的总口径为论文摘要/测试床口径的 3.9–58.8×(§1,p.256,厂商声称)。factor analysis:+Dedup 降 4.3–47.2%,+Write plan 再降至多 76%(p.265)。
 - **checkpoint 读**(Figure 17,p.265):8 XPU、1 GBps 下所有系统读 135 GB 的 Qwen-72B 都要 173 s(存储瓶颈);但一旦单副本进入 DRAM,AITURBO 在 64 XPU 上 2.25 s 完成部署且近乎与 XPU 数无关,ServerlessLLM 需 1,384 s。
-- **KVCache 读**(Figure 18,p.266):Qwen-14B + Qwen-Bailian 真实 trace 重放 30 min,Mean TTFT 0.8 ms → 0.65 ms(降 23%);推理整体口径比 Mooncake 快至多 1.28×(§1)。
+- **KVCache 读**(Figure 18,p.266):Qwen-14B + Qwen-Bailian 真实 trace 重放 30 min,Mean TTFT 0.85 s → 0.65 s(降 23%);推理整体口径比 Mooncake 快至多 1.28×(§1)。
 - **工程量**(Table 2,p.266):Megatron 自研 checkpoint 优化 2,228 行,换 AITURBO 只改 286 行;Mooncake 仅改 44 行;group 协调开销 64 XPU 最大 45 ms(Figure 20)。
 
 ## 五、局限与适用边界
@@ -29,4 +29,4 @@ AI 负载正在吃穿分离式云存储的带宽:训练侧是周期性 checkpoin
 
 ## 六、关联
 
-与 **Mooncake**(FAST'25)是分层互补而非竞争:Mooncake 用 compute fabric 建分布式内存 KVCache,AITURBO 位于其下的存储层,接管 cache miss 后的存储读,故能直接叠加(44 行改动)。与 **Gemini**(SOSP'23)同为 DRAM staging + 多副本容错,但 Gemini 不做去重与写计划优化;与 **ByteCheckpoint**(NSDI'25)对比,后者需改框架,AITURBO 主张优化下沉存储层。**JuiceFS/GooseFS 论文中未出现**(精读员注):二者是对象存储上的 POSIX/缓存型文件系统,本质差异在于 AITURBO 的 group 语义把跨客户端 I/O 模式暴露给存储层、并把计算网络与闲置 DRAM 当作传输介质——这两点是通用云 FS 缓存层目前不具备的,也是本文最可迁移的思想。「已在华为云生产部署」(§1、§7)意味着: separating 设计经受真实多租户与故障率(1 XPU/小时的失败率假设来自生产集群)检验,3.9–58.8× 是生产数字;但同时也意味着结论绑定华为云硬件口径(Ascend/A800、RoCE、SFSTurbo),迁移到其他厂商 fabric 需自行复核。
+与 **Mooncake**(FAST'25)是分层互补而非竞争:Mooncake 用 compute fabric 建分布式内存 KVCache,AITURBO 位于其下的存储层,接管 cache miss 后的存储读,故能直接叠加(44 行改动)。与 **Gemini**(SOSP'23)同为 DRAM staging + 多副本容错,但 Gemini 不做去重与写计划优化;与 **ByteCheckpoint**(NSDI'25)对比,后者需改框架,AITURBO 主张优化下沉存储层。**JuiceFS/GooseFS 论文中未出现**(精读员注):二者是对象存储上的 POSIX/缓存型文件系统,本质差异在于 AITURBO 的 group 语义把跨客户端 I/O 模式暴露给存储层、并把计算网络与闲置 DRAM 当作传输介质——这两点是通用云 FS 缓存层目前不具备的,也是本文最可迁移的思想。「已在华为云生产部署」(§1、§7)意味着: separating 设计经受真实多租户与故障率(1 XPU/小时的失败率假设来自生产集群)检验,3.9–58.8× 是论文摘要/测试床口径数字;但同时也意味着结论绑定华为云硬件口径(Ascend/A800、RoCE、SFSTurbo),迁移到其他厂商 fabric 需自行复核。

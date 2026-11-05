@@ -2,6 +2,8 @@
 
 [< 返回架构概览](./lmcache_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 **LMCacheConnector** 是 LMCache 架构中负责与 vLLM 计算引擎深度集成的核心适配层。它作为 vLLM 的 `KVConnectorBase_V1` 接口实现，驻留在 vLLM 的进程空间内，充当了 vLLM **基于 Block 的物理内存视图**与 LMCache **基于 Token 的逻辑存储视图**之间的智能转换器与调度器。
 
 本文档深入剖析 `LMCacheConnector` 的设计原理与实现细节。作为连接计算与存储的枢纽，它不仅负责基础的数据转换，还通过**层级流水线 (Layerwise Pipelining)**、**异步 I/O 编排**和**混合加载 (Blending)** 等高级机制，实现了 KV Cache 的零开销存取，确保了推理性能不受存储延迟的影响。
@@ -17,37 +19,50 @@
 
 ## 1. 连接器架构与初始化
 
-代码主要位于 [lmcache/integration/vllm/vllm_v1_adapter.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)。本章介绍连接器的核心组件构成及其初始化流程。
+代码主要位于 [lmcache/integration/vllm/lmcache_connector_v1.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/lmcache_connector_v1.py)（入口类）与 [lmcache/integration/vllm/vllm_v1_adapter.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)（核心实现），组件生命周期由 [lmcache/v1/manager.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/manager.py) 的 `LMCacheManager` 统一管理。本章介绍连接器的核心组件构成及其初始化流程。
 
 ### 1.1 核心组件
 
 连接器由以下几个核心类协同工作，共同完成 vLLM 与 LMCache 之间的数据桥接：
 
-- **LMCacheConnectorV1Impl**: 核心实现类，实现了 vLLM 的 `KVConnectorBase_V1` 接口，负责具体的加载与存储逻辑调度。
+- **LMCacheConnectorV1Dynamic**: 注册给 vLLM 的入口类（实现 `KVConnectorBase_V1` 接口），本身是一层薄壳，全部工作委托给内部持有 `LMCacheConnectorV1Impl`。
+- **LMCacheConnectorV1Impl**: 核心实现类，负责具体的加载与存储逻辑调度。
 - **RequestTracker**: 负责跟踪每个请求的动态状态（如 Token ID 列表、分配的物理 Block ID、已持久化的 Token 数量等）。
 - **ReqMeta**: 静态的请求元数据快照，包含核心的 `slot_mapping`，定义了逻辑 Token ID 与 vLLM 物理内存 Block 之间的映射关系。
-- **LMCBlender**: 混合器组件，用于处理多源 KV Cache 的混合（Blending），目前主要用于特定的生成场景。
+- **LMCacheManager**: 组件生命周期管理器，统一创建/启动引擎、Lookup 服务、运行时插件、健康监控等（见 §1.2）。
+- **LMCBlender**: 混合器组件，用于处理多源 KV Cache 的混合（Blending），仅在 `enable_blending` 开启时由 `LMCBlenderBuilder.get_or_create` 创建。
 
 ### 1.2 初始化与配置
 
-初始化过程由 `LMCacheConnectorV1Impl.__init__` 和辅助函数 `_init_lmcache_engine` 完成。
+初始化链路是 `LMCacheConnectorV1Dynamic.__init__` → `LMCacheConnectorV1Impl.__init__` → `LMCacheManager`。核心步骤：
 
-- **引擎初始化**: `_init_lmcache_engine` 负责创建 `LMCacheEngine` 单例。它会自动检测硬件环境（CUDA/XPU）并配置合适的 GPU 连接器。对于 **MLA (Multi-Level Attention)** 模型，它会强制开启 `save_unfull_chunk` 以确保数据的完整性。
-- **插件加载**: 如果配置了插件，`RuntimePluginLauncher` 会在 Worker 0 上启动运行时插件。
+- **配置装载**: `lmcache_get_or_create_config()` 加载 LMCache 配置，`_apply_extra_config` 把 vLLM 侧 `kv_connector_extra_config` 中带 `lmcache.` 前缀的键回灌到 LMCache 配置。
+- **配置自动修正**: 开启 `enable_blending` 时，配置校验层会自动把 `save_unfull_chunk` 置 `True`（`lmcache/v1/config.py` 校验逻辑，保证 Blender 有完整的末块可用）；MLA（Multi-head Latent Attention）模型则影响 worker 侧的选择策略——默认只在 worker 0 上启动 LMCache worker（`_get_lmcache_worker_ids`，同文件）。
+- **组件编排**: `VllmServiceFactory` 按角色（scheduler/worker）决定创建哪些组件，`LMCacheManager`（`lmcache/v1/manager.py`）统一创建并持有：`LMCacheEngine`、LookupClient/LookupServer、OffloadServer、InternalAPIServer、`RuntimePluginLauncher`（运行时插件）、`HealthMonitor`。任一组件初始化失败会记入 degraded 模式（退化为重计算），不直接崩溃。
 - **可观测性**: 初始化 `LMCStatsMonitor` 和 `PrometheusLogger`，用于采集连接器级别的指标（如 `connector_load_specs_count`）。
 
 ```python
-# lmcache/integration/vllm/vllm_v1_adapter.py
-
-def _init_lmcache_engine(lmcache_config, vllm_config, role):
-    # ...
-    # 自动检测 MLA 并调整配置
-    if use_mla and not lmcache_config.save_unfull_chunk:
-        lmcache_config.save_unfull_chunk = True
-
-    # 自动检测设备 (CUDA/XPU)
-    if current_platform.is_cuda_alike():
+# lmcache/integration/vllm/lmcache_connector_v1.py
+class LMCacheConnectorV1Dynamic(KVConnectorBase_V1):
+    def __init__(self, vllm_config, role, kv_cache_config=None):
         # ...
+        self._lmcache_engine = LMCacheConnectorV1Impl(vllm_config, role, self)
+
+# lmcache/integration/vllm/vllm_v1_adapter.py (节选)
+class LMCacheConnectorV1Impl:
+    def __init__(self, vllm_config, role, parent):
+        # 1. 加载 LMCache 配置 + 回灌 vLLM extra config
+        config = lmcache_get_or_create_config()
+        self._apply_extra_config(config, vllm_config)
+
+        # 2. 经 ServiceFactory + LMCacheManager 统一创建组件
+        service_factory = VllmServiceFactory(config, vllm_config, role.name.lower())
+        self._manager = LMCacheManager(config, service_factory, connector=self)
+        self._manager.start_services()
+
+        # 3. 连接器自有状态 (统计监控 / Blender / RequestTracker 表)
+        self._init_connector_state(role, vllm_config, config)
+        self._setup_metrics()
 ```
 
 ---
@@ -508,7 +523,7 @@ def save_kv_layer(self, layer_name, kv_layer, ...):
                 mask=store_mask,
                 kvcaches=kvcaches,
                 slot_mapping=slot_mapping,
-         发      sync=is_first,  # 仅首个请求需同步
+                sync=is_first,  # 仅首个请求需同步
                 req_id=request.req_id,
                 ...
             )
@@ -516,7 +531,7 @@ def save_kv_layer(self, layer_name, kv_layer, ...):
             is_first = False
 
     # 2. 推进所有存储生成器到下一层
-    # 这会触当前前层的 D2H 拷贝 (通过 gpu_connector.batched_from_gpu)
+    # 这会触发当前层的 D2H 拷贝 (通过 gpu_connector.batched_from_gpu)
     # 并提交上一层数据的存储任务
     for layerwise_storer in self.layerwise_storers:
         next(layerwise_storer)

@@ -73,7 +73,7 @@ vLLM 通过 **多尺寸预录制** 来应对 batch size 变化：预先为常见
   req 5-7: padding（slot_mapping 指向 dummy block，attention 结果被忽略）
 ```
 
-padding 引入了一定的计算浪费（~40% 在上例中），但换来了 CPU launch 开销的消除。`cudagraph_capture_sizes` 的默认集合为 `[1, 2, 4] + list(range(8, 256, 8))`，覆盖了从单请求到大批量的常见场景[^1]。
+padding 引入了一定的计算浪费（~40% 在上例中），但换来了 CPU launch 开销的消除。`cudagraph_capture_sizes` 的默认集合为 `[1, 2, 4] + list(range(8, 256, 8)) + list(range(256, max_size + 1, 16))`，其中 `max_size` 默认 512（数据中心版 Blackwell GPU 为 1024），覆盖了从单请求到大批量的常见场景[^1]。
 
 ### 2.3 触发 Re-capture 的条件
 
@@ -132,11 +132,11 @@ KV Connector 实现者可以通过 `requires_piecewise_for_cudagraph` 属性告�
 | **FULL_AND_PIECEWISE**（默认） |        自适应切换         |       最优（自动化）        |                 仅 Full 部分                  | 所有生产场景                  |
 | **NONE**                       |             —             |            最低             |                       —                       | Debug / 兼容性                |
 
-### 4.2 Padding 的显存代价
+### 4.2 Padding 的代价：计算而非显存
 
-Full CUDA Graph 的 padding 不仅浪费计算，还占用 KV Cache 空间——padding 请求的 slot_mapping 指向专用的 dummy block，这些 block 虽然不存储有效数据，但仍占据物理页。在 `cudagraph_capture_sizes` 包含 256 的大尺寸时，padding 的块浪费在极端情况下（当前 batch 仅 1 个请求，但使用 capture_size=256 的图）可达 ~255 个 dummy block。vLLM 通过 `cudagraph_capture_sizes` 的细粒度配置（`[1, 2, 4, 8, 16, ...]`）来限制 padding 的最大浪费不超过 ~50%（最差情况下上一个 capture_size 翻倍前的间隙）。
+Full CUDA Graph 的 padding 只浪费计算，不占 KV Cache 空间——padding 槽位的 slot_mapping 统一指向一个共享的 null block（vLLM V1 初始化 block 池时预留的占位块，`vllm/v1/core/block_pool.py:186-187`），所有 padding 请求复用同一个 block_id=0，不额外占用物理页。真正的代价在计算侧：重放一张 capture_size 更大的图，多出来的槽位会执行一遍"无效"的 attention 计算。浪费上限由相邻两档 capture_size 的间隙决定：默认档位在 8 之后以 +8 为步长，最差情况是实际 batch 刚超过某一档一位——例如 batch=9 落到 capture_size=16 的图，7 个 padding 槽位相当于上一档尺寸的 7/8≈87.5%；若按整张图的计算量衡量，这次重放约 7/16≈44% 的算力花在 padding 上。
 
-### 4.3 一句话总结
+### 4.3 小结
 
 **CUDA Graph 让 GPU 不再每次等 CPU launch kernel，代价是要求计算图静态不变。KV Cache 的 block table 每步都可能变——Piecewise 把 block table 相关的操作留在图外解决静态性约束，Full 把 block table 作为图的输入参数绕过录制固化，FULL_AND_PIECEWISE 在两者之间自适应切换。** 理解这个"静态图 + 动态数据"的调和机制，是理解推理引擎底层执行模型如何与 KV Cache 管理交互的关键。
 
@@ -149,6 +149,6 @@ Full CUDA Graph 的 padding 不仅浪费计算，还占用 KV Cache 空间——
 - [KV Cache Prefetching](../offloading/03_kv_cache_prefetching.md) — `requires_piecewise_for_cudagraph` 与异步 KV 加载的交互
 - [vLLM CUDA Graph 深度解析](../../../vllm/module_analysis/cuda_graph_deep_dive.md) — 从模型执行视角的完整 CUDA Graph 分析
 
-[^1]: vLLM 编译配置 [`vllm/config/compilation.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/compilation.py) — `CUDAGraphMode` 枚举定义 `NONE`/`PIECEWISE`/`FULL`/`FULL_DECODE_ONLY`/`FULL_AND_PIECEWISE` 五种模式；`cudagraph_capture_sizes` 默认 `[1, 2, 4] + list(range(8, 256, 8))`；`FULL_AND_PIECEWISE` 为 V1 默认。
+[^1]: vLLM 配置源码 [`vllm/config/compilation.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/compilation.py) 与 [`vllm/config/vllm.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/vllm.py) — `CUDAGraphMode` 枚举定义 `NONE`/`PIECEWISE`/`FULL`/`FULL_DECODE_ONLY`/`FULL_AND_PIECEWISE` 五种模式；`cudagraph_capture_sizes` 的默认集合由 `VllmConfig._set_cudagraph_sizes` 计算：`[1, 2, 4] + list(range(8, 256, 8)) + list(range(256, max_size + 1, 16))`，`max_size` 默认 512、数据中心版 Blackwell GPU 为 1024；`FULL_AND_PIECEWISE` 为 V1 默认。
 
 [^2]: vLLM V1 KV Connector API [`vllm/distributed/kv_transfer/kv_connector/v1/base.py`](https://github.com/vllm-project/vllm/blob/main/vllm/distributed/kv_transfer/kv_connector/v1/base.py) — `requires_piecewise_for_cudagraph` 属性允许 connector 实现者告知 vLLM 必须使用 Piecewise 模式；当 connector 的异步操作无法被 CUDA Graph 捕获时返回 `True`。

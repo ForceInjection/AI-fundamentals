@@ -11,6 +11,7 @@
 | **【NVIDIA】** | NVIDIA model card、官方博客或 MIG 产品页                           |
 | **【源码】**   | 对本地 vLLM/SGLang 检出逐行核对                                    |
 | **【实测】**   | 有测量数据的第三方结果                                             |
+| **【llm-d】**  | llm-d 项目官方博客与文档（llm-d.ai）                               |
 
 ---
 
@@ -60,7 +61,7 @@ vLLM 提供 `-O0` 到 `-O3` 四档，用启动时间换稳态性能【vLLM】：
 **三个官方给的启动加速手段**：
 
 1. **复用编译缓存**：`torch.compile` 产物存在 `VLLM_CACHE_ROOT`（默认 `~/.cache/vllm`），可跨机器拷贝、也可烤进镜像。设 `VLLM_FORCE_AOT_LOAD=1` 让缓存未命中时显式报错，而不是静默重编
-2. **`--kv-cache-memory` 跳过显存 profiling**：启动日志会打印能复现当前分配的精确值，下次启动传回去即可跳过测量与 CUDA graph 估算。该值只在同卡、同初始空闲显存下有效
+2. **`--kv-cache-memory-bytes` 跳过显存 profiling**：启动日志会打印能复现当前分配的精确值，下次启动传回去即可跳过测量与 CUDA graph 估算。该值只在同卡、同初始空闲显存下有效
 3. **`--enforce-eager` 跳过 CUDA graph**：启动最快，代价是稳态 decode 性能
 
 ### 1.4 按模型给配方
@@ -595,7 +596,7 @@ const dp = n / 8;
 
 ### 3.2 权重：唯一随 n 缩小的轴
 
-K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` 等多处硬编码），routed expert 走 latent 3584（`kimi_k3.py:661-663`），896 routed expert + 1 shared，top-k = 16。checkpoint 是 MXFP4，**约 1.5 TB**（`test_kimi_k3_eval_mi35x.py:19-21`）。
+K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` 等多处硬编码），routed expert 走 latent 3584（`kimi_k3.py:661-663`），896 routed expert + 1 shared，top-k = 16。checkpoint 是 MXFP4，**约 1.5 TB**（`test/registered/amd/accuracy/mi35x/test_kimi_k3_eval_mi35x.py:19-21`）。
 
 按逐投影形状累加，attention + embedding 部分约 **16.3 GB**（非官方数字，估算），剩下 ≈ 1.474 TB 全是专家。**专家按 EP = n 切，非专家按 attnTP = 8 切**：
 
@@ -606,7 +607,7 @@ K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` �
 | 32   | 28       | 46.1 GB  | 2.0 GB     | **48.1 GB**  |
 | 64   | 14       | 23.0 GB  | 2.0 GB     | **25.1 GB**  |
 
-n=8 那一行可以校验：AMD 的 perf 测试注释写 `roughly 192 GB of the 288 GB on each of the 8 GPUs`（`test_kimi_k3_eval_mi35x.py:19-21`），模型算出 186.2 GB，差 3%。
+n=8 那一行可以校验：AMD 的 perf 测试注释写 `roughly 192 GB of the 288 GB on each of the 8 GPUs`（`test/registered/amd/accuracy/mi35x/test_kimi_k3_eval_mi35x.py:19-21`），模型算出 186.2 GB，差 3%。
 
 **非专家那 2.0 GB 是地板**：再扩副本也压不掉，因为它只切 8 份。16 卡时它占权重的 2%，64 卡时占 8%。
 
@@ -644,7 +645,7 @@ mamba_budget = total_rest_memory × r / (1 + r)      # r = --mamba-full-memory-r
 
 按计算器默认 L = 11264 算，Peak Throughput 的 r ≈ 0.75（state 拿 43%，KV 拿 57%）。
 
-**开不开 DCP 只动 KV 那一半。** Peak Throughput 不开 DCP，于是这 432 MiB 在 attnTP 组内**被复制 8 份**：一个 32K 请求在集群里实占 **4.2 GiB**。Peak Capacity 的 `--dcp-size 8` 把这 8 份去重，state 的 110.8 MiB/卡一分不动。所以那一档的收益（官方口径：**同等引擎吞吐下并发 +72%，代价 ITL 约 1.8×**）全部来自 KV 去重，而 state 池仍是并发天花板——cookbook 的原话是 `The KDA state pool is the concurrency ceiling`（`Kimi-K3.mdx:391`）。
+**开不开 DCP 只动 KV 那一半。** Peak Throughput 不开 DCP，于是这 432 MiB 在 attnTP 组内**被复制 8 份**；KDA state 按头分片、不复制。一个 32K 请求的集群实占 = MLA KV 432 MiB × 8 份 + KDA state 110.8 MiB/卡 × 8 卡 ≈ **4.2 GiB**（4,342 MiB）。Peak Capacity 的 `--dcp-size 8` 把这 8 份去重，state 的 110.8 MiB/卡一分不动。所以那一档的收益（官方口径：**同等引擎吞吐下并发 +72%，代价 ITL 约 1.8×**）全部来自 KV 去重，而 state 池仍是并发天花板——cookbook 的原话是 `The KDA state pool is the concurrency ceiling`（`Kimi-K3.mdx:391`）。
 
 ### 3.4 通信：唯一变贵的轴
 
@@ -765,7 +766,7 @@ vLLM V1 **默认开启** chunked prefill。官方给的调参方向【vLLM】：
 
 1. **KV 量化只到 FP8。** `fp8_e4m3` 是 SGLang 官方明写的推荐值；FP4 KV 官方标为实验性，且 aime25 上有 0.75 → 0.35 的实测反例。
 2. **MLA 模型上用 DP，不用 TP。** 两家官方都写明 TP > 1 时 MLA KV 被复制；SGLang 的 Deep PP 实测差距达 2.75 倍。
-3. **第一杠杆是模型选型。** MLA 与 Qwen3-235B 的 GQA 差近 5 倍 per-token KV（40 KB vs 188 KB），量级大于任何量化手段。
+3. **第一杠杆是模型选型。** MLA 与 Qwen3-235B 的 GQA 在同精度（BF16）下 per-token KV 差约 2.8 倍（68.6 KB vs 188 KB）；若 MLA 按 FP8 打包（约 40 KB）计，差距拉大到近 5 倍——量级大于任何量化手段。
 
 ---
 

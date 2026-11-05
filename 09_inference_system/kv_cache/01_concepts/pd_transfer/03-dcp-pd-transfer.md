@@ -36,7 +36,7 @@ DCP 开启时，PD 分离的两端各有一组 (dcp_size, dcp_rank)。`requires_
 
 ## 三、接收侧：零解包
 
-收到数据后，decode 侧没有任何「解开重排」的代码——`decode.py` 全文没有一处 DCP 引用。原因在目的地址的算法里：发送侧算出的目的地址就是 decode 池的最终物理行 `p // c`（`utils.py:186-190`），RDMA 直接写到位于；decode 侧唯一的配合是上送自己池的页号列表（`mooncake/conn.py:2178-2181` 里 DCP 分支下 `dst_kv_indices` 整段使用、不做 chunk 切片）。
+收到数据后，decode 侧没有任何「解开重排」的代码——`decode.py` 全文没有一处 DCP 引用。原因在目的地址的算法里：发送侧算出的目的地址就是 decode 池的最终物理行 `p // c`（`utils.py:186-190`），RDMA 直接按该目的地址写入，无需 decode 侧参与重排；decode 侧唯一的配合是上送自己池的页号列表（`mooncake/conn.py:2178-2181` 里 DCP 分支下 `dst_kv_indices` 整段使用、不做 chunk 切片）。
 
 这套「直接写最终行」能成立，是因为发送侧与 decode 本地写走的是**同一条 owner rule**：decode 池自己的写入也是「widened loc 选属主、塌缩到 p // c 行」（`mem_cache/memory_pool.py:4537-4557`、`mla_buffer.py:250-268`）。两边对同一张虚拟地址表的解释完全一致，传输就只是把行送到该在的地方。
 

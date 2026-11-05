@@ -71,7 +71,7 @@ Gemma-3-27B 有 52 个 Sliding Window 层和 10 个 Full Attention 层，比例�
 - Group 1~5：各 10 个 Sliding Window 层
 - Group 6：2 个 Sliding Window 层 + **8 个 padding 层**（为对齐 Group Size 填充，存在内存浪费）
 
-这个启发式算法在大多数场景下效果良好。此外，当各类型的层数差异较小时（`max_num_layers < min_num_layers * 1.25`），算法会使用最大层数而非最小层数作为 group size，以减少 padding 层的数量。对于极端比例的模型可能需要进一步调整。
+这个启发式算法在大多数场景下效果良好。此外，当各类型的层数差异较小时（`max_num_layers < min_num_layers * 1.5`，早期版本阈值为 1.25，后经 PR #36684 调整），算法会使用最大层数而非最小层数作为 group size，以减少 padding 层的数量。对于极端比例的模型可能需要进一步调整。
 
 #### Case 4：不同 kv_hidden_size（Mamba 混合模型）
 
@@ -139,7 +139,7 @@ cached_block_hash_to_block: BlockHashToBlockMap = BlockHashToBlockMap()
 2. 再对 X group 从右到左，在 `[0, L_full]` 范围内找最长命中 `L_x`；
 3. 取 `min(L_full, L_x)` 作为最终前缀命中长度。
 
-> 当前限制：`HybridKVCacheCoordinator` 只支持**恰好两种注意力类型**（1 Full + 1 X）。超过两种类型的模型（如 Full + SW + Mamba）需要关闭 Prefix Caching 使用 `KVCacheCoordinatorNoPrefixCache`。
+> 早期限制（已解除）：`HybridKVCacheCoordinator` 原先只支持**恰好两种注意力类型**（1 Full + 1 X），超过两种类型的模型（如 Full + SW + Mamba）需要关闭 Prefix Caching 使用 `KVCacheCoordinatorNoPrefixCache`。PR #31707 落地后已支持任意多组：Coordinator 按 `(spec, manager, block_pool)` 把各 KV Cache Group 归并为 `SpecGroup` 批处理（`vllm/v1/core/kv_cache_coordinator.py:594`），再用迭代不动点算法求跨组最长前缀命中（`find_longest_cache_hit`）。截至核对基线 vLLM 8b365ff949（2026-09-25），多组路径已可用。
 
 代码实现见 [vllm/v1/core/kv_cache_coordinator.py](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_coordinator.py)。
 
@@ -155,7 +155,7 @@ KVCacheManager                 ← 调度器与 KV Cache 系统的接口
     └── KVCacheCoordinator     ← 跨 group 协调，选择以下三种之一：
             ├── KVCacheCoordinatorNoPrefixCache   (无 prefix cache)
             ├── UnitaryKVCacheCoordinator         (单 group，简化逻辑)
-            └── HybridKVCacheCoordinator          (Full + X，两 group)
+            └── HybridKVCacheCoordinator          (多 group，按注意力类型归并 SpecGroup)
                     │
                     └── SingleTypeKVCacheManager  ← 每个 group 一个实例
                             ├── FullAttentionManager
@@ -198,7 +198,7 @@ if hma_enabled and not supports_hma(connector_cls):
     )
 ```
 
-LMCache 的 `LMCacheConnectorV1` 仅继承自 `KVConnectorBase_V1`，未实现 `SupportsHMA`，因此直接报错拒绝启动。
+（写作时点）vLLM 内置的 `LMCacheConnectorV1` 仅继承自 `KVConnectorBase_V1`，未实现 `SupportsHMA`，因此直接报错拒绝启动。后续 LMCache 仓库的多进程 connector `LMCacheMPConnector` 已实现 `SupportsHMA`，混合模型改走该 connector 即可联用（现状见 §6.2 更新说明）。
 
 **场景 2：按提示关闭 HMA（`--disable-hybrid-kv-cache-manager`）**
 
@@ -232,7 +232,9 @@ unfolded_block_ids = new_request.block_ids[0].copy()
 
 而 Hybrid KV Cache Manager 下一个请求会持有**多个 group 的 block_ids**（`block_ids` 是一个 tuple，每个元素对应一个 group）。LMCache 当前只读取第一个 group 的 block，无法感知其他 group 的存在，导致 KV Transfer 的数据不完整或错误。
 
-> LMCache 官方文档也明确要求使用 `--disable-hybrid-kv-cache-manager` 标志启动 vLLM，并标注为 **mandatory**（强制）。
+> LMCache 官方文档也明确要求使用 `--disable-hybrid-kv-cache-manager` 标志启动 vLLM，并标注为 **mandatory**（强制）。（这是旧版 `LMCacheConnectorV1` 时点的要求。）
+
+> **更新（核对基线 vLLM 8b365ff949，2026-09-25；LMCache 979719d7）**：LMCache 侧的适配已落地——独立发布的多进程 connector `LMCacheMPConnector` 已继承并实现 `SupportsHMA`（LMCache 仓库 `lmcache/integration/vllm/lmcache_mp_connector.py:512`），混合模型 + KV Transfer + HMA 可通过该 connector 组合使用。本节描述的「单 group 假设 / `block_ids[0]`」问题针对的是 vLLM 内置的旧版 `LMCacheConnectorV1`，该 connector 至今未实现 `SupportsHMA`，Mamba 混合模型走旧版 connector 仍然无法启动。
 
 ### 6.3 HMA 关闭后的降级行为
 
@@ -289,7 +291,7 @@ if not isinstance(self.connector, SupportsHMA):
     assert len(self.kv_cache_config.kv_cache_groups) == 1
 ```
 
-> vLLM 仓库的 PR #25712（_\[Core\]\[Hybrid allocator + kv connector 1/n\] Enable hybrid allocator + KV cache connector_）已于 2025 年 10 月合并，移除了 vLLM 侧对 HMA + Connector 的显式限制。然而，LMCache connector 本身尚未完全实现 `SupportsHMA` 接口（commit `919fe9b` 标注为 "remove hma support from LMCache for now"）。因此，在当前状态下开启 `--kv-transfer-config` 仍会自动关闭 HMA，导致 Mamba 混合模型（如 Qwen 3.5 MoE）依然无法使用。完整的 HMA + LMCache 支持仍需等待 LMCache connector 实现多 group 的 block_ids 处理逻辑。
+> vLLM 仓库的 PR #25712（_\[Core\]\[Hybrid allocator + kv connector 1/n\] Enable hybrid allocator + KV cache connector_）已于 2025 年 10 月合并，移除了 vLLM 侧对 HMA + Connector 的显式限制。当时 LMCache connector 本身尚未实现 `SupportsHMA` 接口（commit `919fe9b` 标注为 "remove hma support from LMCache for now"）。截至核对基线（vLLM 8b365ff949，2026-09-25）：LMCache 的多进程 connector `LMCacheMPConnector` 已实现 `SupportsHMA`（见 §6.2 更新说明），混合模型走该 connector 可联用 HMA；vLLM 内置的旧版 `LMCacheConnectorV1` 仍未实现，走该 connector 时开启 `--kv-transfer-config` 仍会自动关闭 HMA，Mamba 混合模型（如 Qwen 3.5 MoE）依然无法使用。
 
 ---
 
@@ -299,13 +301,13 @@ if not isinstance(self.connector, SupportsHMA):
 
 | 限制                                           | 说明                                                                                                           |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| HybridKVCacheCoordinator 只支持 2 种注意力类型 | Full + X，不支持 Full + SW + Mamba 等三类混合                                                                  |
+| ~~HybridKVCacheCoordinator 只支持 2 种注意力类型~~ | **已解除**（PR #31707）：支持任意多组，按注意力类型归并 SpecGroup 批处理，迭代求跨组最长命中                   |
 | Mamba block_size 可能过大                      | Case 4 的 padding 策略可导致 block_size > 400，内存调度粗粒度                                                  |
 | Chunked Local Attention + Eagle 不支持         | Llama 4 + Eagle 组合时 HMA 被强制关闭                                                                          |
 | Chunked Local Attention 存在延迟回归           | 默认通过 `VLLM_ALLOW_CHUNKED_LOCAL_ATTN_WITH_HYBRID_KV_CACHE=1` 手动开启                                       |
-| ~~KV Transfer 与 HMA 互斥~~                    | **部分解决**（PR #25712，2025 年 10 月）vLLM 侧限制已移除，但 LMCache connector 尚未完全实现 `SupportsHMA`     |
-| Mamba 混合模型 + KV Transfer 死局              | **仍然存在**LMCache connector 未实现多 group block_ids 处理逻辑                                                |
-| Native KV Offloading 不支持 HMA                | vLLM 原生的 KV Cache Offloading（`--kv-offloading-size`）假设所有层共享同一 block table，无法处理多 group 场景 |
+| ~~KV Transfer 与 HMA 互斥~~                    | **已解决（分 connector）**（PR #25712 + LMCache 适配）：`OffloadingConnector` 已实现 `SupportsHMA`；LMCache 走 `LMCacheMPConnector` 已实现；vLLM 内置旧版 `LMCacheConnectorV1` 仍未实现 |
+| Mamba 混合模型 + KV Transfer 死局              | 走旧版 `LMCacheConnectorV1` **仍然存在**（未实现多 group block_ids 处理）；改用 `LMCacheMPConnector` 可解       |
+| ~~Native KV Offloading 不支持 HMA~~            | **已支持**（核对基线 8b365ff949）：`OffloadingConnector` 已实现 `SupportsHMA`；早期版本假设所有层共享同一 block table，无法处理多 group 场景 |
 | LRU 全局共享                                   | 所有 KV Cache Group 共享同一个 LRU 逐出队列，无法按类型差异化逐出                                              |
 
 ---
@@ -333,9 +335,9 @@ if not isinstance(self.connector, SupportsHMA):
 
 Hybrid KV Cache Manager 是 vLLM V1 为混合注意力模型专门设计的显存优化机制。它通过 **KV Cache Group 分组 + 差异化 block 分配 + 跨 group Prefix Caching 交集算法**，避免了为 Sliding Window、Mamba、Local Chunked 等高效注意力层过度分配显存，可显著降低这类模型的 KV Cache 占用。
 
-然而，由于 KV Transfer（尤其是 LMCache）的 connector 当前只支持单个 KV Cache Group，**混合注意力模型无法同时开启 KV Transfer 和 HMA**。对于 Sliding Window + Full 模型（Gemma-3 等），关闭 HMA 可以降级运行但浪费显存；而对于 **Mamba + Full 模型（Qwen 3.5 MoE、Jamba 等），则完全无法启动**——这是当前最严重的兼容性死局。要解决这一问题，需要 connector 开发者实现 `SupportsHMA` 接口，处理多 group 场景下的 block_ids 传递与生命周期管理。
+然而，HMA 与 KV Transfer 能否联用取决于 connector 是否实现 `SupportsHMA`。截至核对基线（vLLM 8b365ff949，2026-09-25）：`OffloadingConnector` 与 LMCache 的 `LMCacheMPConnector` 均已实现该接口，混合注意力模型可以同时开启 KV Transfer 和 HMA；vLLM 内置的旧版 `LMCacheConnectorV1` 只支持单个 KV Cache Group、仍未实现——走该 connector 的模型，Sliding Window + Full（Gemma-3 等）可以关闭 HMA 降级运行但浪费显存，而 **Mamba + Full 模型（Qwen 3.5 MoE、Jamba 等）则完全无法启动**。
 
-尽管 vLLM 引擎侧已解除了对 HMA 与 Connector 联用的限制（PR #25712），但主流 Connector（如 LMCache）尚未完成适配。因此，目前混合注意力模型仍无法同时开启 KV Transfer 和 HMA，Mamba 混合模型的兼容性问题仍待 Connector 侧升级解决。
+vLLM 引擎侧对 HMA 与 Connector 联用的显式限制早已由 PR #25712 解除；connector 侧的适配也在推进（`OffloadingConnector`、`LMCacheMPConnector` 已就位）。残余问题集中在旧版 connector：混合模型若必须使用 `LMCacheConnectorV1`，Mamba 混合模型的兼容性死局仍然存在，需要升级到支持多 group 的 connector。
 
 ---
 

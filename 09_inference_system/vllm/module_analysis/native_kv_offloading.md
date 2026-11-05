@@ -34,13 +34,13 @@ Native Offloading 的核心代码分布在以下文件中：
 
 | 文件                                                                                                                                           | 职责                                          |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| [vllm/v1/kv_cache_interface/abstract.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/abstract.py)             | `OffloadingManager` 抽象基类定义              |
-| [vllm/v1/kv_cache_interface/arc_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/arc_manager.py)       | ARC (Adaptive Replacement Cache) 淘汰策略实现 |
-| [vllm/v1/kv_cache_interface/lru_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/lru_manager.py)       | LRU 淘汰策略实现                              |
-| [vllm/v1/kv_cache_interface/backends/cpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/backends/cpu.py)     | CPU 后端存储管理                              |
-| [vllm/v1/kv_cache_interface/worker/cpu_gpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/worker/cpu_gpu.py) | GPU-CPU 数据传输处理器                        |
-| [vllm/v1/kv_cache_interface/spec.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/spec.py)                     | Offloading 配置规范                           |
-| [vllm/v1/kv_cache_interface/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/mediums.py)               | `BlockIDsLoadStoreSpec` 及子类定义            |
+| [vllm/v1/kv_offload/abstract.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/abstract.py)             | `OffloadingManager` 抽象基类定义              |
+| [vllm/v1/kv_offload/arc_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/arc_manager.py)       | ARC (Adaptive Replacement Cache) 淘汰策略实现 |
+| [vllm/v1/kv_offload/lru_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/lru_manager.py)       | LRU 淘汰策略实现                              |
+| [vllm/v1/kv_offload/backends/cpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/backends/cpu.py)     | CPU 后端存储管理                              |
+| [vllm/v1/kv_offload/worker/cpu_gpu.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/worker/cpu_gpu.py) | GPU-CPU 数据传输处理器                        |
+| [vllm/v1/kv_offload/spec.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/spec.py)                     | Offloading 配置规范                           |
+| [vllm/v1/kv_offload/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/mediums.py)               | `BlockIDsLoadStoreSpec` 及子类定义            |
 | [vllm/config/cache.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/config/cache.py)                                                 | `CacheConfig` 中的 offloading 配置项          |
 
 ---
@@ -88,7 +88,8 @@ vllm serve google/gemma-3b \
     --kv-offloading-size 10 \
     --kv-offloading-backend native
 
-# 配合混合模型使用（需要关闭 HMA）
+# 配合混合模型使用（仅 v0.18.0 时需要关闭 Hybrid KV Cache Manager；
+# 后续版本 OffloadingConnector 已实现 SupportsHMA，无需再加该参数）
 vllm serve google/gemma-3-27b-it \
     --kv-offloading-size 20 \
     --kv-offloading-backend native \
@@ -211,19 +212,21 @@ class ARCOffloadingManager:
 
 ## 6. 与 Hybrid KV Cache Manager 的关系
 
-本章讨论 Native Offloading 与 Hybrid KV Cache Manager 之间的兼容性限制及其原因。
+本章讨论 Native Offloading 与 Hybrid KV Cache Manager 之间的兼容性限制及其原因（以 v0.18.0 时点为准；现状见 §6.1 末尾更新说明）。
 
-### 6.1 当前限制
+### 6.1 v0.18.0 时的限制
 
-**Native Offloading 目前不支持 Hybrid KV Cache Manager**。原因：
+**v0.18.0 时，Native Offloading 不支持 Hybrid KV Cache Manager**（当时 `OffloadingConnector` 尚未实现 `SupportsHMA` 接口）。原因：
 
 1. OffloadingManager 假设所有 layer 共享同一个 block table
 2. Hybrid 模型有多个 KV Cache Group，每个 group 有不同的 block allocation
 3. 当前的 `BlockIDsLoadStoreSpec` 只支持单个 `block_ids` 数组
 
+> **更新（核对基线 vLLM 8b365ff949，2026-09-25）**：这一限制已解除——`OffloadingConnector` 已实现 `SupportsHMA` 接口（`vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py:52`），混合模型配合 Hybrid KV Cache Manager 使用 native offloading 不再需要关闭 HMA。
+
 ### 6.2 代码证据
 
-在 [vllm/v1/kv_cache_interface/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_cache_interface/mediums.py) 中，`CPULoadStoreSpec` 继承自 `BlockIDsLoadStoreSpec`，仅支持单个 `block_ids` 列表：
+在 [vllm/v1/kv_offload/mediums.py](https://github.com/vllm-project/vllm/blob/v0.18.0/vllm/v1/kv_offload/mediums.py) 中，`CPULoadStoreSpec` 继承自 `BlockIDsLoadStoreSpec`，仅支持单个 `block_ids` 列表：
 
 ```python
 class BlockIDsLoadStoreSpec(LoadStoreSpec, ABC):
@@ -260,7 +263,7 @@ Native Offloading 的测试覆盖了单元测试和端到端两个层面。
 
 ### 7.1 基础功能测试
 
-文件：[tests/v1/kv_cache_interface/test_cpu_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_cache_interface/test_cpu_manager.py)
+文件：[tests/v1/kv_offload/test_cpu_manager.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_offload/test_cpu_manager.py)
 
 ```python
 def test_cpu_manager():
@@ -281,7 +284,7 @@ def test_cpu_manager():
 
 ### 7.2 端到端测试
 
-文件：[tests/v1/kv_cache_interface/test_cpu_offloading.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_cache_interface/test_cpu_offloading.py)
+文件：[tests/v1/kv_offload/test_cpu_offloading.py](https://github.com/vllm-project/vllm/blob/v0.18.0/tests/v1/kv_offload/test_cpu_offloading.py)
 
 ```python
 def test_cpu_offloading(cpu_block_size, attn_backend):
@@ -348,9 +351,9 @@ class SingleDirectionOffloadingHandler:
 
 stream 在传输完成后会自动回收到 pool 中，实现按需创建 + 复用的策略。
 
-### 8.3 避免与 PagedAttention 冲突
+### 8.3 与 paged KV cache 管理的配合
 
-Native offloading 使用 `ops.swap_blocks`，与 PagedAttention 的 block table 机制兼容。但要确保：
+Native offloading 使用 `ops.swap_blocks`，与 paged KV cache 管理的 block table 机制兼容。但要确保：
 
 1. CPU block size 是 GPU block size 的整数倍
 2. offloading 不影响 GPU prefix caching 的 hash 计算
@@ -368,7 +371,7 @@ Native Offloading 与 LMCache Connector 在存储后端、缓存策略、适用�
 | **地址空间**    | Block ID（物理地址） | Token Hash（逻辑地址）         |
 | **多机支持**    | 不支持（单机）       | 支持（集群）                   |
 | **内容感知**    | 无去重               | 全局去重                       |
-| **Hybrid 支持** | 不支持               | 部分支持（需实现 SupportsHMA） |
+| **Hybrid 支持** | v0.18.0 不支持，现已支持（OffloadingConnector 已实现 SupportsHMA） | 部分支持（LMCacheMPConnector 已实现 SupportsHMA，旧版 connector 未实现） |
 | **配置复杂度**  | 低（单参数）         | 高（需配置 backend）           |
 
 ---
@@ -377,9 +380,11 @@ Native Offloading 与 LMCache Connector 在存储后端、缓存策略、适用�
 
 Native Offloading 未来有以下几个主要的发展方向。
 
-### 10.1 Hybrid KV Cache Manager 支持
+### 10.1 Hybrid KV Cache Manager 支持（历史注记）
 
-需要修改：
+> 本节写作于 v0.18.0 时点，当时 Hybrid 支持尚未落地，以下是当时设想的改造方向。现 `OffloadingConnector` 已实现 `SupportsHMA`（见 §6.1 更新说明），混合模型可直接使用 native offloading，以下内容仅作设计过程留档。
+
+v0.18.0 时需要修改：
 
 1. `BlockIDsLoadStoreSpec` 支持多 group 的 `block_ids: tuple[np.ndarray, ...]`
 2. `OffloadingManager` 感知不同 attention type 的 eviction 策略
@@ -411,13 +416,13 @@ Disk / Remote (冷数据，LMCache)
 vLLM 的 **Native KV Cache Offloading** 是一个轻量级、高性能的 CPU offloading 解决方案：
 
 - **简单易用**：单参数 `--kv-offloading-size` 即可启用
-- **零侵入**：与现有 PagedAttention、Prefix Caching 完全兼容
+- **零侵入**：与现有 paged KV cache 管理、Prefix Caching 完全兼容
 - **灵活策略**：支持 LRU / ARC 两种缓存淘汰算法
 - **异步传输**：多 CUDA stream 并行，隐藏 PCIe 传输延迟
 
 **主要限制**：
 
-- 暂不支持 Hybrid KV Cache Manager（Gemma-3、Qwen 3.5 MoE 等模型无法使用）
+- v0.18.0 时不支持 Hybrid KV Cache Manager（Gemma-3、Qwen 3.5 MoE 等混合模型当时无法使用）；现已支持（`OffloadingConnector` 已实现 `SupportsHMA`）
 - 仅支持 CPU 内存，不支持 Disk / 远程存储
 - 无内容感知去重，可能浪费存储空间
 

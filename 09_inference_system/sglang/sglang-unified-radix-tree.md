@@ -120,7 +120,7 @@ COMPONENT_REGISTRY = {
 }
 ```
 
-`ComponentType` 枚举（FULL / MAMBA / SWA）是节点的"状态维度"。**新增注意力类型 = 实现一个组件接口 + 注册**——树的 match/insert/evict 一行不用改。三个组件的实现在独立的 `unified_cache/components/` 子目录（`full.py` / `mamba.py` / `swa.py`）——树核心、注册表、组件实现三层分离。
+`ComponentType` 枚举（FULL / MAMBA / SWA）是节点的"状态维度"。**新增注意力类型 = 实现一个组件接口 + 注册**——树的 match/insert/evict 一行不用改。三个组件的实现在独立的 `unified_cache_components/` 子目录（`full_component.py` / `mamba_component.py` / `swa_component.py`）——树核心、注册表、组件实现三层分离。
 
 ### 3.3 节点结构
 
@@ -154,7 +154,7 @@ class UnifiedTreeNode:
 
 ### 4.2 SWA：tombstone + in-window recovery
 
-滑动窗口的缓存语义是"窗口内的有效，窗口外的失效"。SWAComponent 用 **tombstone（墓碑）标记**处理失效：窗口滚动导致 KV 索引失效时，节点标记为 tombstone（代码注释的原话：`swa_tombstone is used to indicate the kv indices have been freed for swa layers`），失效的索引可被复用，节点也不再参与 SWA LRU 的正常逐出。
+滑动窗口的缓存语义是"窗口内的有效，窗口外的失效"。SWAComponent 用 **tombstone（墓碑）标记**处理失效：窗口滚动导致 KV 索引失效时，节点标记为 tombstone（`swa_tombstone is used to indicate the kv indices have been freed for swa layers`——注释原话出自旧版 `swa_radix_cache.py:68`，v0.5.16 全仓唯一出处；v0.5.20 重构后这一机制移入统一树的组件实现），失效的索引可被复用，节点也不再参与 SWA LRU 的正常逐出。
 
 窗口之后滑回时，分两种情况：失效的 KV 未被其他请求占用，索引直接复用；已被占用，则重新计算。tombstone 的价值是让"失效"成为节点的显式状态，避免在每次窗口滑动时做激进的索引回收。
 

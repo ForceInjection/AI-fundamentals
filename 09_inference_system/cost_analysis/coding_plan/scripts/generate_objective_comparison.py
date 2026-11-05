@@ -22,7 +22,8 @@ def get_tier(plan_name):
     return "高级"
 
 def main():
-    base_dir = "/Users/wangtianqing/Project/study/AI-fundamentals/09_inference_system/cost_analysis/coding_plan"
+    # 以脚本自身位置定位 coding_plan 目录（scripts/ 的上一级），避免硬编码绝对路径
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     json_path = os.path.join(base_dir, "data/pricing_normalized.json")
     output_path = os.path.join(base_dir, "objective_pricing_comparison.md")
     
@@ -48,7 +49,7 @@ def main():
         header = "| 厂商 | 产品 | 套餐 | 分类 | 月费 | 用量限制 | 限制条款 |\n| --- | --- | --- | --- | --- | --- | --- |\n"
         rows = []
         for i in items:
-            price = f"{currency_symbol}{i['price_monthly']}" if i['price_monthly'] is not None else "按需 / 未公开"
+            price = f"{currency_symbol}{float(i['price_monthly']):g}" if i['price_monthly'] is not None else "按需 / 未公开"
             tier = get_tier(i['plan_name'])
             row = f"| {escape_md(i['vendor'])} | {escape_md(i['product'])} | {escape_md(i['plan_name'])} | **{tier}** | {price} | {escape_md(i['quota'])} | {escape_md(i['restrictions'])} |"
             rows.append(row)
@@ -135,7 +136,7 @@ def main():
 
     md_content = f"""# 附录：2026 年国内外主流 Coding Plan 真实数据看板
 
-作为《每月花多少才不冤？2026 年国内外 11 款 Coding Plan 深度对比与避坑指南》的配套数据附录，本文档直接提取归一化后的厂商定价源数据，通过结构化表格与分组柱状图，直观呈现各家工具的费用阶梯与核心用量限制，为您提供纯粹的数据查阅参考。
+作为《每月花多少才不冤？2026 年国内外 11 款 Coding Plan 深度对比与避坑指南》的配套数据附录，本文档直接提取归一化后的厂商定价源数据，通过结构化表格与分组柱状图，直观呈现各家工具的费用阶梯与核心用量限制，为你提供纯粹的数据查阅参考。
 
 ## 1 海外套餐数据看板
 

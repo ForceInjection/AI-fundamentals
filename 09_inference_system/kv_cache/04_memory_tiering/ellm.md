@@ -87,7 +87,7 @@ eLLM 的收益不是免费的，论文把这些账目也列了出来。
 
 **TPOT 要还账。** §4.2 原文：「because eLLM and vLLM-CP have more available KV Cache space for decoding, their TPOT is higher than vLLM.」（p.5）eLLM 用 TTFT/TPOT 上的让步，换来更高的 SLO 达成率与 goodput。§2.2.2 里也承认 CPU buffer 会引入 prefill-preference（p.4）。
 
-**PCIe 带宽是天花板。** 消融显示两种弹性组合后，吞吐有时反而低于只用 intra-GPU 弹性，原因是 decoding 阶段的 PCIe 传输无法完全重叠（p.6）。反过来只开 intra-GPU 弹性也不行：高负载下 prefill 阶段的瓶颈挡不住，goodput 会退化（p.6）。eLLM 的对策是让双机制按负载动态编排，平衡「GPU 内互借」的收益与「CPU 后备」的成本。
+**PCIe 带宽是上限。** 消融显示两种弹性组合后，吞吐有时反而低于只用 intra-GPU 弹性，原因是 decoding 阶段的 PCIe 传输无法完全重叠（p.6）。反过来只开 intra-GPU 弹性也不行：高负载下 prefill 阶段的瓶颈挡不住，goodput 会退化（p.6）。eLLM 的对策是让双机制按负载动态编排，平衡「GPU 内互借」的收益与「CPU 后备」的成本。
 
 **前提条件。** GPU-CPU 弹性依赖 CPU DRAM 容量（测试台给了 1TB）与 PCIe 带宽；「传输开销完全隐藏」的结论也是 A100 + LLaMA-3-8B 这一组负载下的实测（p.4）。换更慢的互连或更大的模型，账要重算。
 
@@ -124,7 +124,7 @@ eLLM 是「KV Cache 内存层级」系列的**抽象虚拟化**路线：不动�
 
 ## 参考资料
 
-- Jiale Xu, Yi Xiong, Rui Zhang, et al. _eLLM: Elastic Memory Management Framework for Efficient LLM Serving_. DAC '26, Long Beach, CA. DOI: 10.1145/3770743.3804144。[arXiv:2506.15155](https://arxiv.org/abs/2506.15155) · 本地 PDF：[references/papers/ellm-arxiv-2506.15155.pdf](references/papers/ellm-arxiv-2506.15155.pdf)
+- Jiale Xu, Yi Xiong, Rui Zhang, et al. _eLLM: Elastic Memory Management Framework for Efficient LLM Serving_. DAC '26, Long Beach, CA. DOI: 10.1145/3770743.3804144（doi.org 暂未激活）。[arXiv:2506.15155](https://arxiv.org/abs/2506.15155) · 本地 PDF：[references/papers/ellm-arxiv-2506.15155.pdf](references/papers/ellm-arxiv-2506.15155.pdf)
 - 背景对照：Woosuk Kwon et al., _PagedAttention_, SOSP '23（eLLM 直面的前一站）· Yinmin Zhong et al., _DistServe_, OSDI '24（多卡对照基线）· Ramya Prabhu et al., _vAttention_, [arXiv:2405.04437](https://arxiv.org/abs/2405.04437)（同时期另一条不依赖 PagedAttention 的动态内存管理路线）
 - 同组前期工作：Cong Guo et al., _GMLake: Efficient and Transparent GPU Memory Defragmentation_, ASPLOS '24（虚拟内存拼接修 BFC 碎片，eLLM 的 activation 侧直接沿用 BFC）
 - 精读报告（Agent 精读核对版）：[references/ellm-report.md](references/ellm-report.md)

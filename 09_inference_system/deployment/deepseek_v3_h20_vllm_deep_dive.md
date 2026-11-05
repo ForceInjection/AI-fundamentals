@@ -112,7 +112,7 @@ vllm serve deepseek-ai/DeepSeek-V3 \
     "kv_rank":1,"kv_parallel_size":1,"kv_ip":"0.0.0.0","kv_port":14580}'
 ```
 
-Prefill 用 TP=8 加速 compute-bound 的首 token 计算，Decode 用 DP=16 + EP=16 增大 batch size 摊薄访存。KV cache 通过 NIXL RDMA 从 Prefill 零拷贝传输到 Decode。
+Decode 节点中 `kv_rank`/`kv_parallel_size` 的取值未在本地版本核实合法性。Prefill 用 TP=8 加速 compute-bound 的首 token 计算，Decode 用 DP=16 + EP=16 增大 batch size 摊薄访存。KV cache 通过 NIXL RDMA 从 Prefill 零拷贝传输到 Decode。
 
 ---
 
@@ -238,14 +238,12 @@ round_robin 的收益在于：当 batch 中 tokens 均匀分布时，每个 GPU 
 ```bash
 --enable-expert-parallel          # 开启 EP 模式
 --enable-eplb                     # 开启 EPLB 动态负载均衡
---eplb-window-size 1000           # 负载统计窗口大小（步数）
---eplb-step-interval 3000         # 重排间隔（步数），每 3000 步重新平衡
---num-redundant-experts 32        # 冗余专家数（256 逻辑 + 32 冗余 = 288 物理）
---eplb-log-balancedness           # 输出负载均衡度日志
+--eplb-config '{"window_size":1000,"step_interval":3000,
+  "num_redundant_experts":32,"log_balancedness":true}'
 --expert-placement-strategy linear  # linear 或 round_robin
 ```
 
-`window_size=1000` 和 `step_interval=3000` 的含义是：每 3000 步触发一次重排，重排决策基于最近 1000 步的负载统计。`num_redundant_experts=32` 表示在 256 个逻辑专家基础上创建 32 个物理副本——这些副本分配给负载最重的专家，增加热点专家的路由容量。
+EPLB 参数不是独立 flag，统一走 `--eplb-config` JSON 字段（`EPLBConfig`）；未启用 EPLB 时设置 `num_redundant_experts` 会直接 raise（`vllm/config/parallel.py:556-562`）。`window_size=1000` 和 `step_interval=3000` 的含义是：每 3000 步触发一次重排，重排决策基于最近 1000 步的负载统计。`num_redundant_experts=32` 表示在 256 个逻辑专家基础上创建 32 个物理副本——这些副本分配给负载最重的专家，增加热点专家的路由容量。
 
 ---
 
@@ -434,12 +432,13 @@ vLLM 对 DeepSeek MLA 架构的 KV Cache FP8 有专门优化。`vllm/v1/kv_cache
 | DeepSeek-V4   | 584B           | 448B NoPE + 128B RoPE + 8B scale          |
 | DeepSeek V3.2 | 656B           | 512B kv_lora + 64B rope + 80B scale/extra |
 
-与 BF16 相比，FP8 KV Cache 将每 token 的显存占用减半。对于 DeepSeek-V3（d_c=512, 61 层）：
+MLA 的 KV Cache 每 token 只有一条压缩 latent（512 kv_lora + 64 RoPE），K/V 不再各存一份。对于 DeepSeek-V3（61 层）：
 
-- BF16 KV Cache：`512 × 61 × 2(K+V) × 2 字节 = 124,928 字节/token ≈ 122 KB/token`
-- FP8 KV Cache：约 61 KB/token，减半
+- BF16 KV Cache：`(512 + 64) × 2 字节 × 61 = 70,272 字节/token ≈ 68.6 KB/token`
+- FP8 朴素量化：`(512 + 64) × 1 字节 × 61 = 35,136 字节/token ≈ 34 KB/token`
+- `fp8_ds_mla` 打包布局：`656 字节 × 61 = 40,016 字节/token ≈ 39.1 KB/token`（与上表 V3.2 的 656B 口径一致）
 
-32K 上下文 × 200 并发下，BF16 需要约 800GB，FP8 只需约 400GB——在 32×96GB（3072GB）的集群上，FP8 可将有效并发容量翻倍。
+32K 上下文 × 200 并发下，BF16 约需 460GB，`fp8_ds_mla` 打包约 262GB——在 32×96GB（3072GB）的集群上，KV Cache 显存约省四成。
 
 ### 5.2 模型权重 FP8
 
@@ -505,15 +504,15 @@ vllm serve deepseek-ai/DeepSeek-V3 \
   --data-parallel-size 24 \
   --enable-expert-parallel \
   --enable-eplb \
-  --eplb-window-size 1000 \
-  --eplb-step-interval 3000 \
-  --num-redundant-experts 24 \
-  --eplb-log-balancedness \
+  --eplb-config '{"window_size":1000,"step_interval":3000,
+    "num_redundant_experts":24,"log_balancedness":true}' \
   --kv-transfer-config '{"kv_connector":"NixlConnector","kv_role":"kv_consumer",
     "kv_rank":1,"kv_parallel_size":1,"kv_ip":"0.0.0.0","kv_port":14580}' \
   --max-model-len 32768 \
   --gpu-memory-utilization 0.90
 ```
+
+EPLB 参数统一走 `--eplb-config` JSON（`EPLBConfig`），没有独立的 `--eplb-window-size`/`--num-redundant-experts` 等 flag；未启用 EPLB 时设置 `num_redundant_experts` 会 raise（`vllm/config/parallel.py:556-562`）。256 + 24 = 280 个物理专家不被 24 整除——EPLB 的均衡打包允许各卡 11-12 个，余数摊到部分卡。
 
 **非 PD 分离模式**（简配方案，单组 32 GPU）：
 
@@ -523,10 +522,8 @@ vllm serve deepseek-ai/DeepSeek-V3 \
   --data-parallel-size 32 \
   --enable-expert-parallel \
   --enable-eplb \
-  --eplb-window-size 1000 \
-  --eplb-step-interval 3000 \
-  --num-redundant-experts 32 \
-  --eplb-log-balancedness \
+  --eplb-config '{"window_size":1000,"step_interval":3000,
+    "num_redundant_experts":32,"log_balancedness":true}' \
   --max-model-len 32768 \
   --max-num-seqs 200 \
   --gpu-memory-utilization 0.90

@@ -6,6 +6,8 @@
 
 本文从 SGLang 源码出发，覆盖 Chunked Prefill 的完整链路：
 
+> 2026-11-05 | 基于 SGLang v0.5.12 源码分析——正文行号与源码链接均按该版本校准；个别文件在 v0.5.13 重构后迁移，文中随文标注。
+
 ## 目录
 
 - [SGLang Chunked Prefill — 原理与代码实现](#sglang-chunked-prefill--原理与代码实现)
@@ -127,7 +129,7 @@ flowchart TD
 
 ## 三、关键状态字段
 
-定义在 [`schedule_batch.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_batch.py) 的 `Req` 类：
+定义在 [`schedule_batch.py`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_batch.py) 的 `Req` 类：
 
 | 字段               | 类型        | 说明                                                                                                |
 | ------------------ | ----------- | --------------------------------------------------------------------------------------------------- |
@@ -162,7 +164,7 @@ chunked_prefill_size = 8192，截断后:
 
 ## 四、调度循环：Prefill 优先于 Decode
 
-`get_next_batch_to_run()` 是每步调度的入口（[`scheduler.py:2486`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py#L2486)）：
+`get_next_batch_to_run()` 是每步调度的入口（[`scheduler.py:2485`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/scheduler.py#L2485)）：
 
 ```python
 def get_next_batch_to_run():
@@ -202,7 +204,7 @@ def get_next_batch_to_run():
 
 **具体例子**：假设有 3 个请求同时到达，chunk_size=8192：
 
-````text
+```text
 Req A: prompt 25K tokens (需要 4 个 chunk)  ─┐
 Req B: prompt 6K tokens  (1 个 chunk 就够)    ├─ 同时在 waiting_queue
 Req C: prompt 2K tokens  (1 个 chunk 就够)   ─┘
@@ -226,6 +228,7 @@ Req C: prompt 2K tokens  (1 个 chunk 就够)   ─┘
 A 的 chunk2-4 跑完共 ~300ms，B/C 的 decode 被推迟了 300ms。
 没有 chunked prefill：B/C 要等 A 的 25K prefill 全部完成（~2s）。
 效果：decode 延迟从 2s 降到 300ms。
+```
 
 **更重要的场景**：假设请求 D 在 Step 2 开始前到达 waiting_queue：
 
@@ -235,7 +238,7 @@ A 的 chunk2-4 跑完共 ~300ms，B/C 的 decode 被推迟了 300ms。
   Step 3 [PREFILL] A(chunk3 8K)
   Step 4 [PREFILL] A(chunk4 1K) 完成！
   Step 5 [DECODE]   A, B, C, D 一起 decode
-````
+```
 
 没有 chunked prefill：D 在 Step 1 执行期间到达，但 Step 1 被 A 的 25K prefill 霸占 ~2s。D 等到 Step 2 才能 prefill。有 chunked prefill：D 在 Step 2 就被打包进 A 的 chunk2 batch，基本不用等。**batch 越短，新请求等入队的延迟越低。**
 
@@ -243,7 +246,7 @@ A 的 chunk2-4 跑完共 ~300ms，B/C 的 decode 被推迟了 300ms。
 
 ## 五、PrefillAdder：chunk 截断的决策者
 
-定义在 [`schedule_policy.py:407`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L407)。
+定义在 [`schedule_policy.py:407`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_policy.py#L407)。
 
 ### 构造函数参数
 
@@ -254,9 +257,9 @@ class PrefillAdder:
                             # None 表示禁用 chunked prefill
 ```
 
-### `add_one_req()` 决策逻辑（[`schedule_policy.py:858`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L815)）
+### `add_one_req()` 决策逻辑（[`schedule_policy.py:815`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_policy.py#L815)）
 
-核心截断逻辑（[`schedule_policy.py:907-953`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L907)）：
+核心截断逻辑（[`schedule_policy.py:907-953`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_policy.py#L907)）：
 
 ```python
 def add_one_req(self, req, has_chunked_req, truncation_align_size):
@@ -280,7 +283,7 @@ def add_one_req(self, req, has_chunked_req, truncation_align_size):
         # is_chunked += 1 不在这里！在 scheduler.py:2805 中统一执行
 ```
 
-### `add_chunked_req()` 继续上一轮的 chunked req（[`schedule_policy.py:704`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py#L668)）
+### `add_chunked_req()` 继续上一轮的 chunked req（[`schedule_policy.py:668`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_policy.py#L668)）
 
 ```python
 def add_chunked_req(self, req):
@@ -301,7 +304,7 @@ def add_chunked_req(self, req):
 
 ### Stash：暂存部分前缀
 
-每个 chunk 处理完后，部分前缀需要写回缓存，下一轮才能匹配到（[`scheduler.py:2447`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py#L2447)）：
+每个 chunk 处理完后，部分前缀需要写回缓存，下一轮才能匹配到（[`scheduler.py:2446`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/scheduler.py#L2446)）：
 
 ```python
 def stash_chunked_request(self, req):
@@ -309,11 +312,11 @@ def stash_chunked_request(self, req):
     maybe_cache_unfinished_req(req, self.tree_cache, chunked=True)
 ```
 
-调用时机：下一轮 `get_next_batch_to_run()` 的第一步（[`scheduler.py:2507`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py#L2507)）。
+调用时机：下一轮 `get_next_batch_to_run()` 的第一步（[`scheduler.py:2506`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/scheduler.py#L2506)）。
 
 ### init_next_round_input：恢复完整 fill_ids
 
-每轮调度前重建 `fill_ids` 并重新匹配前缀（[`schedule_batch.py:1123`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_batch.py#L988)）：
+每轮调度前重建 `fill_ids` 并重新匹配前缀（[`schedule_batch.py:988`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_batch.py#L988)）：
 
 ```python
 def init_next_round_input(tree_cache):
@@ -331,7 +334,7 @@ def init_next_round_input(tree_cache):
 
 ### Forward 结果输出
 
-`process_batch_result_prefill()`（[`scheduler_output_processor_mixin.py:181`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler_output_processor_mixin.py#L181)）：
+`process_batch_result_prefill()`（本文基线 v0.5.12 中位于 `scheduler_output_processor_mixin.py:181`，v0.5.13 重构迁移至 [`scheduler_components/batch_result_processor.py`](https://github.com/sgl-project/sglang/blob/v0.5.13/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)）：
 
 ```python
 for req in batch.reqs:
@@ -353,7 +356,7 @@ for req in batch.reqs:
 
 ## 七、调优：参数配置与性能数据
 
-### 显存自动调参（[`server_args.py:1401`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/server_args.py#L1401)）
+### 显存自动调参（[`server_args.py:1401`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/server_args.py#L1401)）
 
 SGLang 根据 GPU 显存自动选择 `chunked_prefill_size`：
 
@@ -433,4 +436,4 @@ Chunked Prefill 本质上是一个**调度策略**——它不改变模型计算
 
 ---
 
-_参考代码：[`scheduler.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py), [`schedule_policy.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py), [`schedule_batch.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_batch.py), [`server_args.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/server_args.py), [`scheduler_output_processor_mixin.py`](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler_output_processor_mixin.py)_
+_参考代码（除特别注明外均按 v0.5.12 校准）：[`scheduler.py`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/scheduler.py), [`schedule_policy.py`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_policy.py), [`schedule_batch.py`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/managers/schedule_batch.py), [`server_args.py`](https://github.com/sgl-project/sglang/blob/v0.5.12/python/sglang/srt/server_args.py), [`scheduler_components/batch_result_processor.py`](https://github.com/sgl-project/sglang/blob/v0.5.13/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)_

@@ -123,16 +123,16 @@ CPU 处理被"藏"在 GPU forward 的时间里——从串行变成并行，端�
 
 ### 3.2 FutureMap：采样结果的提前 relay
 
-SGLang 用 `FutureMap` 解决这个问题。`FutureMap` 在本轮 batch 采样完成后，将刚刚产生的 output tokens（`r.output_ids[-1]`）通过 `stash` 推入一个 device-side relay 缓冲区（`scheduler.py:2668`）：
+SGLang 用 `FutureMap` 解决这个问题。`FutureMap` 在本轮 batch 采样完成后，将刚刚产生的 output tokens（`r.output_ids[-1]`）通过 `stash` 推入一个 device-side relay 缓冲区（`scheduler.py:2541`）：
 
 ```python
 last_tokens = torch.tensor(
     [r.output_ids[-1] for r in reqs], dtype=torch.int64, device=device
 )
-self.future_map.stash(
-    batch.req_pool_indices, RelayPayload(bonus_tokens=last_tokens)
-)
+self.future_map.stash(batch.req_pool_indices, last_tokens)
 ```
+
+这一接口在版本间有过演进：上方的代码是 v0.5.14 的原貌，`stash` 直接收裸的 `last_tokens` 张量；v0.5.16 起 relay 载荷改为 `RelayPayload(bonus_tokens=...)` 包装（`scheduler.py:2671-2672`），为后续携带更多跨轮数据留出扩展位。
 
 下一轮 batch 组建 GPU 输入时，通过 `resolve_forward_inputs(batch, self.future_map)`（`scheduler.py:3187`）从 relay 缓冲区中取出上一轮的 output tokens，拼入当前 batch 的 input tensor——这些值是在上一轮采样后立即写入的，不受本轮的 CPU-GPU 竞态影响。最后 `future_map.publish` 更新 seq_lens 供再下一轮使用。
 
@@ -205,7 +205,7 @@ need_grammar_sync = (
 | 复杂度       | 低（单线顺序）                   | 中（result_queue + FutureMap relay）          |
 | 适用场景     | 大 batch、GPU 时间 >> CPU 时间   | 小 batch、延迟敏感                            |
 | Decode 收益  | 基准                             | 延迟降低 ~5-10%（典型小 batch 场景）          |
-| Prefill 收益 | 基准                             | 默认禁用（连续 prefill 不 overlap）           |
+| Prefill 收益 | 基准                             | 默认启用连续 prefill overlap（`environ.py:315` 中 `SGLANG_DISABLE_CONSECUTIVE_PREFILL_OVERLAP=False`） |
 
 ---
 

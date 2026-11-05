@@ -1,8 +1,8 @@
 # RoPE 与 Prefix Caching：位置编码如何决定 KV 能否复用
 
-想象你运营着一个 AI 客服系统。每通对话都以同样的 System Prompt 开头——"你是专业客服，回答要礼貌准确"。按照 Prefix Caching 的逻辑，这段 System Prompt 的 KV Cache 只需算一次，后续所有请求直接复用——省时省算力。但工程实践中很快发现：**复用经常失败**。
+想象你运营着一个 AI 客服系统。每通对话都以同样的 System Prompt 开头："你是专业客服，回答要礼貌准确"。按照 Prefix Caching 的逻辑，这段 System Prompt 的 KV Cache 只需算一次，后续所有请求直接复用，省时省算力。但工程实践中很快发现：**复用经常失败**。
 
-原因藏在位置编码里。RoPE（Rotary Position Embedding）将每个 token 的绝对位置"旋转"进了 K 向量。同一段 System Prompt，在第一通对话里占据位置 0-99，在另一通追加了历史记录的对话里可能占据位置 50-149——位置变了，K 向量的数值就变了，hash 对不上，缓存复用失败。
+原因藏在位置编码里。RoPE（Rotary Position Embedding）将每个 token 的绝对位置"旋转"进了 K 向量。同一段 System Prompt，在第一通对话里占据位置 0-99，在另一通追加了历史记录的对话里可能占据位置 50-149。位置变了，K 向量的数值就变了，hash 对不上，缓存复用失败。
 
 这就是 Prefix Caching 从理论到实践之间最容易被跳过的一步：**位置编码打破了"相同内容 = 相同表示"的假设**。
 
@@ -10,15 +10,15 @@
 
 ---
 
-## 一、位置为什么会变——从 AI Agent 的视角看
+## 一、位置为什么会变：从 AI Agent 的视角看
 
 ### 1.1 一个典型的多轮对话
 
-AI Agent 的一次任务执行通常需要多个推理轮次。每轮推理时，模型需要看到完整的上下文——之前的对话、工具调用结果、中间思考过程——全部拼接在一起作为新的 prompt。
+AI Agent 的一次任务执行通常需要多个推理轮次。每轮推理时，模型需要看到完整的上下文（之前的对话、工具调用结果、中间思考过程），全部拼接在一起作为新的 prompt。
 
-以客服 Agent 为例。第一轮，用户问"帮我查订单 #12345"，此时 prompt 只有 System Prompt（约 100 token）加上这短短一句用户问题。Agent 调用订单查询工具，拿到"已发货"的结果，组织成回复——这进入了第二轮推理：System Prompt、用户原始问题、工具调用记录、工具返回结果，全部拼接在一起，总计约 400 token。用户追问"那预计什么时候到？"——第三轮推理，prompt 又变长了，但只是往尾部追加了新内容。
+以客服 Agent 为例。第一轮，用户问"帮我查订单 #12345"，此时 prompt 只有 System Prompt（约 100 token）加上这短短一句用户问题。Agent 调用订单查询工具，拿到"已发货"的结果，组织成回复，这进入了第二轮推理：System Prompt、用户原始问题、工具调用记录、工具返回结果，全部拼接在一起，总计约 400 token。用户追问"那预计什么时候到？"这是第三轮推理，prompt 又变长了，但只是往尾部追加了新内容。
 
-**关键观察**：在这三轮推理中，System Prompt 始终在最开头，占据位置 0-99。每轮新增的对话和工具结果只是往尾部追加，前缀纹丝不动。KV Cache 的前缀 block 可以直接复用——这正是 vLLM 的 Automatic Prefix Caching (APC) 最擅长的场景。
+**关键观察**：在这三轮推理中，System Prompt 始终在最开头，占据位置 0-99。每轮新增的对话和工具结果只是往尾部追加，前缀纹丝不动。KV Cache 的前缀 block 可以直接复用，这正是 vLLM 的 Automatic Prefix Caching (APC) 最擅长的场景。
 
 ### 1.2 位置什么时候会偏移
 
@@ -26,11 +26,11 @@ AI Agent 的一次任务执行通常需要多个推理轮次。每轮推理时�
 
 **情况一：对话太长，触发截断：**
 
-当对话轮次累积到几千 token 时，模型上下文窗口有限（比如 4096 token），最早的内容会被截断。System Prompt 可能被部分或全部截掉，后续内容的绝对位置整体前移——原来在位置 2000 的 token，截断后可能变成了位置 500。所有缓存失效。
+当对话轮次累积到几千 token 时，模型上下文窗口有限（比如 4096 token），最早的内容会被截断。System Prompt 可能被部分或全部截掉，后续内容的绝对位置整体前移：原来在位置 2000 的 token，截断后可能变成了位置 500。所有缓存失效。
 
 **情况二：不同用户有着不同的前缀：**
 
-用户 A 发起了一次标准对话——System Prompt 在最前面，后面接用户问题。用户 B 则先上传了一份 500 token 的销售报告要求分析，System Prompt 被放在了报告之后。同一段 System Prompt，在用户 A 的请求里占据位置 0-99，在用户 B 的请求里被推到了位置 501-600。RoPE 编码的位置角完全不同——缓存命中失败。
+用户 A 发起了一次标准对话，System Prompt 在最前面，后面接用户问题。用户 B 则先上传了一份 500 token 的销售报告要求分析，System Prompt 被放在了报告之后。同一段 System Prompt，在用户 A 的请求里占据位置 0-99，在用户 B 的请求里被推到了位置 501-600。RoPE 编码的位置角完全不同，缓存命中失败。
 
 **情况三：多 Agent 协作：**
 
@@ -38,19 +38,19 @@ AI Agent 的一次任务执行通常需要多个推理轮次。每轮推理时�
 
 ### 1.3 问题的本质：content-identical ≠ cache-identical
 
-以上所有情况的共同根源是：**两个请求的 token 序列内容相同，但起始的绝对位置不同**。以 vLLM APC 为例，block 的哈希只由父块哈希、当前块的 token IDs 和可选 extra keys 算出（`hash_block_tokens`，见文末注 [^1]），K 向量并不参与——前文不同，哈希链就不同，缓存查找自然失败。
+以上所有情况的共同根源是：**两个请求的 token 序列内容相同，但起始的绝对位置不同**。以 vLLM APC 为例，block 的哈希只由父块哈希、当前块的 token IDs 和可选 extra keys 算出（`hash_block_tokens`，见文末注 [^1]），K 向量并不参与：前文不同，哈希链就不同，缓存查找自然失败。
 
 这意味着 **content-identical ≠ cache-identical**。位置信息已经"烧进"了 K 的数值表示里。在 Agent 场景中，由于上下文结构的高度动态性，这个问题尤为突出。
 
 ---
 
-## 二、RoPE 做了什么——从旋转角度到缓存障碍
+## 二、RoPE 做了什么：从旋转角度到缓存障碍
 
 上一节讲了"位置偏移导致缓存失败"的现象。这一节解释 RoPE **为什么**会让位置影响 K 的数值。
 
 ### 2.1 注意力需要位置信息
 
-自注意力机制本身是**置换不变的**——"猫追狗"和"狗追猫"的 token 集合相同，不加位置信息就无法区分。位置编码的任务是在计算注意力之前注入"第几个 token"的信息。
+自注意力机制本身是**置换不变的**："猫追狗"和"狗追猫"的 token 集合相同，不加位置信息就无法区分。位置编码的任务是在计算注意力之前注入"第几个 token"的信息。
 
 ### 2.2 RoPE 的数学直觉
 
@@ -70,7 +70,7 @@ $$
 
 **相对位置信息被自动嵌入到注意力分数中**，无需额外计算。这是 RoPE 被几乎所有现代 LLM 采用的核心理由。
 
-但这同时意味着**绝对位置 $m$ 也被不可逆地编码进了 K 向量**——这正是 §一 中 AI Agent 场景里缓存失败的数学根源。
+但这同时意味着**绝对位置 $m$ 也被不可逆地编码进了 K 向量**，这正是 §一 中 AI Agent 场景里缓存失败的数学根源。
 
 ---
 
@@ -78,17 +78,17 @@ $$
 
 既然绝对位置阻碍了 block 级复用，工程上有三条路径。共同目标：**缓存查找对位置不敏感，但注意力计算对位置保持正确**。
 
-### 3.1 方案 A：限制匹配范围——最简单，也最受限
+### 3.1 方案 A：限制匹配范围，最简单也最受限
 
 **思路**：只允许在相同绝对位置前缀上匹配。从位置 0 开始的 System Prompt block，只和另一个也从位置 0 开始的 System Prompt block 共享。
 
-**实现**：vLLM 的 Automatic Prefix Caching (APC) 通过 **hash chaining** 隐式编码位置——每个 block 的 hash 不仅依赖当前 token 内容，还依赖前一个 block 的 hash（`hash_block_tokens(prev_block_hash_value, curr_tokens, ...)`[^1]）。链的长度本身对应绝对位置——链上第 0 个 block 和第 50 个 block 的 hash 永远不同，即使 token 内容相同。
+**实现**：vLLM 的 Automatic Prefix Caching (APC) 通过 **hash chaining** 隐式编码位置：每个 block 的 hash 不仅依赖当前 token 内容，还依赖前一个 block 的 hash（`hash_block_tokens(prev_block_hash_value, curr_tokens, ...)`[^1]）。链的长度本身对应绝对位置，链上第 0 个 block 和第 50 个 block 的 hash 永远不同，即使 token 内容相同。
 
 **优点**：实现极简，无额外计算开销。
 
-**缺点**：回到 AI Agent 场景——如果用户 A 的请求以 System Prompt 开头（命中），用户 B 的请求前面有 500 token 的文件内容（System Prompt 在位置 501，不命中），用户 B 完全无法复用用户 A 已经算好的缓存。
+**缺点**：回到 AI Agent 场景：如果用户 A 的请求以 System Prompt 开头（命中），用户 B 的请求前面有 500 token 的文件内容（System Prompt 在位置 501，不命中），用户 B 完全无法复用用户 A 已经算好的缓存。
 
-### 3.2 方案 B：剥离 RoPE，重算位置——命中率换计算
+### 3.2 方案 B：剥离 RoPE，重算位置，命中率换计算
 
 **思路**：缓存时不存完整的 K，只存 K 的非位置部分（nope，即施加 RoPE **之前**的内容部分）。复用时，用目标位置重新施加 RoPE。
 
@@ -119,7 +119,7 @@ $$
 - **优势**：不需要缓存两份数据（nope + rope），不需要重新计算完整 RoPE forward，计算量更低
 - **劣势**：实现复杂——attention kernel 需要支持"复用 + 校正"混合路径；低精度（FP8/INT8）下旋转校正可能引入额外量化误差
 
-LMCache 的 `CacheBlend` 机制（EuroSys 2025 最佳论文，已集成入 [vLLM Production Stack](https://github.com/vllm-project/production-stack)）采用了这一思路，在 block 命中后对 K 做位置旋转校正，并支持 vLLM、SGLang、NVIDIA Dynamo 等多引擎间的跨引擎 KV 复用。[^2]
+需要澄清的是：常被归到这一类的 LMCache `CacheBlend`（EuroSys 2025，已集成入 [vLLM Production Stack](https://github.com/vllm-project/production-stack)）解决的其实是另一个问题——非前缀位置（如 RAG 中乱序的检索文档）的 KV 复用。它的做法是选择性重算约 15% 的 token 来修正注意力偏差（arXiv:2405.16444），并不做 RoPE 旋转校正。方案 C 这条路线目前没有成熟的开源实现。[^2]
 
 > **验证**：旋转可加性 $R_{m'} = R_{m'-m} \cdot R_m$ 在数学上精确成立（见 [`rope_verify.py`](rope_verify.py) 的矩阵验证），但直接用 PyTorch 叠加两次 `apply_rotary_emb` 会在高维上产生浮点累积噪声。工业实现通常直接用 CUDA kernel 计算 $R_{m'-m}$，避免两次旋转。
 
@@ -129,11 +129,11 @@ LMCache 的 `CacheBlend` 机制（EuroSys 2025 最佳论文，已集成入 [vLLM
 | ------------------------ | :----: | :------------: | :--------: | ----------------------- |
 | A: 位置限制匹配          |   低   |       无       |     低     | vLLM APC, SGLang (默认) |
 | B: nope 哈希 + 重算 RoPE |   高   | 中 (重做 RoPE) |     中     | MLA 架构天然支持        |
-| **C: Rotary Correction** |   高   | 低 (单次旋转)  |     高     | LMCache CacheBlend      |
+| **C: Rotary Correction** |   高   | 低 (单次旋转)  |     高     | 暂无成熟开源实现        |
 
-方案 A 和 C 在实际系统中往往**共存**：位置对齐时走 A 的快速路径直接命中，位置不对齐时走 C 做校正后复用——兼顾命中率和效率。
+方案 A 和 C 的组合是理论上的理想形态：位置对齐时走 A 的快速路径直接命中，位置不对齐时走 C 做校正后复用。不过由于 C 缺少现成实现，当前系统在位置不对齐时通常只能整体重算。
 
-> _注：SGLang 默认的 RadixAttention 通过 token 序列前缀做 Radix Tree 匹配，要求序列前缀对齐，属于方案 A。跨引擎的跨位置复用可通过集成 LMCache 的 CacheBlend 来获得方案 C 的能力。_
+> _注：SGLang 默认的 RadixAttention 通过 token 序列前缀做 Radix Tree 匹配，要求序列前缀对齐，属于方案 A。LMCache 的 CacheBlend 提供的是非前缀复用（选择性重算），不属于方案 C。_
 
 ---
 
@@ -149,7 +149,7 @@ AI Agent 的复杂性放大了这个问题——动态前缀、多轮拼接、�
 
 - **方案 B（nope 哈希 + 重算 RoPE）**：用每次命中时的一次额外 RoPE 旋转，换来了接近 100% 的命中率——因为缓存查找不再依赖绝对位置。额外计算量远小于完整 Prefill 重算，但需要框架同时维护内容和位置两份数据，并在 attention kernel 中支持"先读缓存、后补 RoPE"的路径。MLA 架构天然解耦了这两份数据，为方案 B 铺设了架构基础。
 
-- **方案 C（Rotary Correction）**：在方案 B 的基础上更进一步——不缓存两份数据，也不重做完整 RoPE，只对已缓存的完整 K 施加一个 $(m'-m)$ 的旋转差矩阵。计算量最低，命中率最高，但实现门槛也最高：attention kernel 必须支持"复用 + 校正"混合路径，且低精度场景下旋转校正可能引入量化误差。LMCache CacheBlend 是目前少数在工业级实现中走通这条路、并投入生产的方案。
+- **方案 C（Rotary Correction）**：在方案 B 的基础上更进一步——不缓存两份数据，也不重做完整 RoPE，只对已缓存的完整 K 施加一个 $(m'-m)$ 的旋转差矩阵。计算量最低，命中率最高，但实现门槛也最高：attention kernel 必须支持"复用 + 校正"混合路径，且低精度场景下旋转校正可能引入量化误差。这条路线目前没有成熟的开源实现（LMCache CacheBlend 走的是选择性重算路线，见 §3.3 的澄清）。
 
 理解这些权衡，才能真正理解 Prefix Caching 的命中率上限从何而来——以及 vLLM、SGLang、LMCache 在 Agent 场景下做出不同工程选择的原因。
 
@@ -159,7 +159,7 @@ AI Agent 的复杂性放大了这个问题——动态前缀、多轮拼接、�
 
 - [Prefix Caching 原理分析](prefix_caching.md) — block 级 KV 复用的基本机制
 - [RadixAttention 原理](radix_attention.md) — SGLang 的跨位置 block 复用方案
-- [LMCache CacheBlend](../../02_systems/lmcache/cache_blend.md) — RoPE 校正的工业实现
+- [LMCache CacheBlend](../../02_systems/lmcache/cache_blend.md) — 非前缀 KV 复用的选择性重算方案
 - [不同注意力类型的 KV Cache 到底长什么样](../basic/attention_kv_cache_formats.md) — MLA 为什么天然支持 nope 哈希
 - [RoPE 原始论文: RoFormer — Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864)
 - [vLLM APC 实现](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_utils.py) — `hash_block_tokens` 的 hash chaining 源码

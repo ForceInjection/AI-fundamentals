@@ -2,7 +2,7 @@
 
 > 本文以 vLLM V1 调度器源码为基准。SGLang 的 Chunked Prefill 在调度策略（Prefill 优先、chunk 连续执行）和 Prefix Caching 交互（stash 机制支持跨 chunk 命中）上做出了不同选择，详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked_prefill.md)。
 
-Preill 是一次性把整个 prompt 的 KV 全算完，还是切成小块逐步算？这看起来只是计算调度的问题，但 vLLM 的 Chunked Prefill 实际上深刻改变了 KV Cache 的分配时序、与 Prefix Caching 的交互方式，以及 Preemption 的触发窗口。
+Prefill 是一次性把整个 prompt 的 KV 全算完，还是切成小块逐步算？这看起来只是计算调度的问题，但 vLLM 的 Chunked Prefill 实际上深刻改变了 KV Cache 的分配时序、与 Prefix Caching 的交互方式，以及 Preemption 的触发窗口。
 
 这篇文章从 KV Cache 管理的视角拆解 vLLM 的 Chunked Prefill 实现——它如何把"一次性申请全部 block"变成"逐步申请逐批增长"，以及这个看似简单的变化在工程上引出的三个约束：prefix cache 只在第一个 chunk 查找、chunk 大小必须对齐 block_size、以及 chunk 之间的 Preemption 风险。
 
@@ -105,7 +105,7 @@ else:
 
 这意味着：如果请求 A 和请求 B 共享同一个长 System Prompt，但 A 先被调度，已经占用了前 2048 个 token 的 block，B 在第一个 chunk（`num_computed_tokens==0`）可以命中 A 的缓存。但 A 的第二个 chunk（`num_computed_tokens > 0`）不会去查 B 可能已经算好的后续 block——无论缓存是否存在，A 的后续 chunk 都会自己重新 Prefill。
 
-这不是设计缺陷，而是一个工程权衡。跨 chunk 做 prefix cache 查找的障碍不仅在于代码复杂度——还包括更实质的工程问题：缓存命中后需要判断命中的 block 是否与当前请求已分配的物理页冲突、部分命中时需要重组 block table 映射、以及处理"缓存的 block 已被其他请求淘汰"的竞态。当前版本选择了一条状态机更可控的路径：只在 `num_computed_tokens == 0` 时做一次缓存匹配，后续 chunk 沿着已建立的 block table 继续追加。
+这更像一个主动的工程权衡，而非设计缺陷。跨 chunk 做 prefix cache 查找的障碍不仅在于代码复杂度——还包括更实质的工程问题：缓存命中后需要判断命中的 block 是否与当前请求已分配的物理页冲突、部分命中时需要重组 block table 映射、以及处理"缓存的 block 已被其他请求淘汰"的竞态。当前版本选择了一条状态机更可控的路径：只在 `num_computed_tokens == 0` 时做一次缓存匹配，后续 chunk 沿着已建立的 block table 继续追加。
 
 > **对比 SGLang**：SGLang 采取了不同的设计——通过 `stash_chunked_request()` 将每个 chunk 的部分 KV 写回 Radix Tree，后续 chunk 调用 `init_next_round_input()` 重建 `fill_ids` 后重新匹配前缀，使得跨 chunk 的 HiCache 命中成为可能。两种设计体现了同一个权衡的不同选择：vLLM 选择了调度逻辑的简单性，SGLang 选择了缓存利用率的完整性。详见 [SGLang Chunked Prefill 原理与实现](../../../sglang/chunked_prefill.md)。
 
@@ -130,7 +130,7 @@ num_new_tokens = (budget // block_size) * block_size
 
 ### 3.1 第一个 chunk 的 hit 与后续 chunk 的 miss 并存
 
-结合 §2.2 和 §2.3，一个在实际部署中常见的场景：
+结合 §2.2 和 §2.3，同一个双请求场景的收益取决于 B 首次调度的时间点：
 
 ```text
 请求 A: System Prompt (4096 token) + User Query (256 token)
@@ -142,16 +142,21 @@ Chunk size = 2048, block_size = 16 (128 blocks/chunk)
   Chunk 1 (token 0-2047): 首次调度 → 查 prefix cache → 无命中 → 分配 128 blocks，计算
   Chunk 2 (token 2048-4095): num_computed_tokens=2048 > 0 → 跳过查找 → 分配 128 blocks，计算
   Chunk 3 (token 4096-4352): User Query → 分配 16 blocks，计算（同样不会触发 prefix cache 查找）
-  Preill 完成，开始 Decode
+  Prefill 完成，开始 Decode；确认后的 block 逐 chunk 写入 prefix cache
 
-请求 B 随后到达：
-  Chunk 1 (token 0-2047): 首次调度 → 查 prefix cache → 命中 A 的 chunk 1 的 block！→ 复用
-  Chunk 2 (token 2048-4095): num_computed_tokens=2048 > 0 → 跳过查找 → 但 A 的 chunk 2 的缓存明明存在……
+场景一：B 在 A 全部 Prefill 完成后才到达
+  B Chunk 1: 首次调度 → get_computed_blocks 对 B 的完整序列做哈希匹配
+             （首次调度会从头走一遍 B 的所有 block 的哈希链，scheduler.py:932）
+    → System Prompt 的 4096 token（256 个 block）全部命中 → 直接跳过
+  B 从 User Query 开始 Prefill，零重复计算
 
-  B 的 Chunk 2 会自己重新 Prefill 后 2048 个 token——即使 A 已经算过且缓存了相同的 block。
+场景二：B 在 A 的 chunk 1 刚入缓存、chunk 2 尚未计算时到达
+  B Chunk 1 (token 0-2047): 首次调度 → 查 prefix cache → 命中 A 的 chunk 1 的 128 个 block → 复用
+  B Chunk 2 (token 2048-4095): num_computed_tokens=2048 > 0 → 跳过查找
+    → 即使 A 的 chunk 2 稍后入缓存，B 也不会再查 → 自己重新 Prefill 这 2048 个 token
 ```
 
-这个场景揭示了当前实现的一个局限：**只有从位置 0 开始的请求才能从 prefix cache 中受益**。如果共享前缀正好跨越了一个 chunk 边界，第一个 chunk 之后的缓存全部浪费。
+可见"重算 chunk 2"只发生在 B 的首次缓存查找早于 A 的 chunk 2 block 入缓存的时序下；只要 B 首次调度时对应的 block 已在缓存中，首次匹配即可命中全部分配过的前缀。这个场景揭示了当前实现的真正局限：**缓存查找只有一次机会，且只发生在请求首次调度时**。B 的首个 chunk 命中多少，完全由"那一刻缓存里有多少"决定——共享前缀跨越 chunk 边界且对方算得比自己晚的部分，就浪费了。
 
 ### 3.2 Chunk 之间的 KV Cache 碎片
 
@@ -204,7 +209,7 @@ Chunked Prefill 的 Preemption 窗：
 - **小 chunk**（如 512）：分配更平滑、其他请求的 Decode 能更频繁地被穿插执行（请求自身仍需完成全部 chunk 才能开始 Decode），但第一个 chunk 更小意味着"从位置 0 开始的缓存查找"能复用的 token 更少——共享前缀可能在第一个 chunk 之后还在延续，但调度器不会再查缓存
 - **vLLM 默认**：`max_num_batched_tokens` 不设硬上限，由 token budget 自然约束。PR #7753 的 benchmark 显示 chunk_size=2048 配合 block_size=16 在 Llama-2 上取得了最佳吞吐（3929.7 tok/s）
 
-### 5.3 一句话总结
+### 5.3 小结
 
 **Chunked Prefill 把 KV Cache 的分配从"一次性大宗申请"变成了"多次小额分期"，降低了峰值压力和 Preemption 门槛，但付出的代价是 Prefix Caching 只在第一个 chunk 生效——共享前缀如果跨越 chunk 边界，后续的缓存将白白浪费。** 这个约束源自一个工程选择：为简单性牺牲跨 chunk 的缓存查找。如果未来 vLLM 支持 partial block hashing 或跨 chunk 缓存索引，Chunked Prefill 的内存效率还会有成倍的提升空间。
 

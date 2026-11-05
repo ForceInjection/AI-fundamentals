@@ -2,7 +2,7 @@
 
 > 2026-07-29 | 基于 vLLM v0.27.0+ `deepseek_v2.py` (1933行) 与 SGLang v0.5.14 `deepseek_v2.py` (3010行) 源码分析
 
-DeepSeek-V3 的推理链路涉及四组技术的交叉：MLA 压缩 KV cache、MoE 稀疏激活、MTP 多 token 预测、FP8 低精度量化。现有文章分别拆解了各组件——MLA 如何通过低秩压缩将 KV cache 缩小到标准 MHA 的 ~1.8%、MoE 如何通过 256 选 8 的路由将 671B 参数的激活量控制在 37B、MTP 如何通过 self-speculation 让一个 forward 处理 2 个 token——但缺少一篇"串起来"的文章。
+DeepSeek-V3 的推理链路涉及四组技术的交叉：MLA 压缩 KV cache、MoE 稀疏激活、MTP 多 token 预测、FP8 低精度量化。现有文章分别拆解了各组件——MLA 如何通过低秩压缩将 KV cache 缩小到标准 MHA 的 ~1.4%（576/40960 维）、MoE 如何通过 256 选 8 的路由将 671B 参数的激活量控制在 37B、MTP 如何通过 self-speculation 让一个 forward 处理 2 个 token——但缺少一篇"串起来"的文章。
 
 **读者知道各部件如何工作，却不知道一个 token 从 embedding 进入、从 lm_head 出来的 61 层旅程中，这些部件以什么顺序被调用、之间传递什么形状的 tensor、数据依赖关系是怎样的。**
 
@@ -188,7 +188,7 @@ output = score × V                 → (1, 128, 1, 128)
 attn_out = output.reshape(1, 16384) → 经 O 投影回到 7168
 ```
 
-关键差异不在计算，而在**写入 KV cache 的内容**——不是完整的 K `(128 heads × 192 dim)` 和 V `(128 heads × 128 dim)`，而是压缩后的 `kv_c: (1, 512)` 和 `k_rope: (1, 64)`。这两个加起来 **576 维**，而标准 MHA 的 KV cache per token 是 `128 heads × (192 + 128) dim × 2 bytes = ~80 KB`。MLA 将其压缩到 `(512 + 64) × 2 bytes = ~1.15 KB`——不到标准 MHA 的 1.5%。
+关键差异不在计算，而在**写入 KV cache 的内容**——不是完整的 K `(128 heads × 192 dim)` 和 V `(128 heads × 128 dim)`，而是压缩后的 `kv_c: (1, 512)` 和 `k_rope: (1, 64)`。这两个加起来 **576 维**，而标准 MHA 的 KV cache per token 是 `128 heads × (192 + 128) dim × 2 bytes = ~80 KB`。MLA 将其压缩到 `(512 + 64) × 2 bytes = ~1.15 KB`——约为标准 MHA 的 1.4%（1152/81920）。
 
 > **Prefill 的差异**：输入形状从 `(1, 7168)` 变为 `(N, 7168)`，所有投影的 batch 维度同步扩展。KV cache 写入从"追加 1 个 token"变为"追加 N 个 token"。Attention 的 QK^T 从 `(1, seq_len)` 变为 `(N, seq_len)` 的矩阵——这是 prefill 阶段计算密集的核心（GEMM）vs decode 阶段 memory-bound 的核心（GEMV）的分界线。
 
@@ -271,7 +271,7 @@ final_hidden_states = self.experts(hidden_states=hidden_states, router_logits=ro
 256 个专家 → 分为 8 组（n_group=8），每组 32 个专家
   → 对每组计算组内专家 logits 之和，选 top-4 组（topk_group=4）
     → 在选中的 4 组内（共 128 个专家），选 logits 最高的 8 个（num_experts_per_tok=8）
-      → 返回 8 个专家索引 + softmax(logits[选中的8个]) 作为路由权重
+      → 返回 8 个专家索引 + sigmoid 得分作为路由权重（V3 config `scoring_func="sigmoid"`，noaux_tc 门控，选中后归一化）
 ```
 
 分组路由的设计动机：256 个专家全量计算 logits 后直接 top-8 选出的专家可能集中在少数几组。先选组再选专家的两级路由迫使 token 分散到不同组，提升专家利用率——这是一种间接的负载均衡策略。
@@ -457,7 +457,7 @@ MoE FFN 占每层延迟的 ~72%——这是 DeepSeek-V3 decode 的最大性能�
 - **Final Norm + LM Head**：最后一个 normalization + 7168 → 129280 投影 → 采样
 - **MTP**：在主 forward 后、采样前运行，通过 speculative decoding 让一个 forward 处理 2 个 token
 
-这套 pipeline 的复杂性来自一个基本矛盾：**671B 参数太大，一次 forward 装不进 GPU；1M 上下文太长，KV cache 存不下。** MLA 解决了 KV cache 问题（压缩到 ~1.8%），MoE 解决了参数规模问题（激活 37B/671B），FP8 进一步压缩权重的显存和带宽，MTP 在 decode 阶段提供额外的吞吐。四组技术各自独立设计，但在前向传播中以严格的顺序交织——这就是理解 DeepSeek-V3 推理需要"走读"而非"分读"的原因。
+这套 pipeline 的复杂性来自一个基本矛盾：**671B 参数太大，一次 forward 装不进 GPU；1M 上下文太长，KV cache 存不下。** MLA 解决了 KV cache 问题（压缩到 ~1.4%），MoE 解决了参数规模问题（激活 37B/671B），FP8 进一步压缩权重的显存和带宽，MTP 在 decode 阶段提供额外的吞吐。四组技术各自独立设计，但在前向传播中以严格的顺序交织——这就是理解 DeepSeek-V3 推理需要"走读"而非"分读"的原因。
 
 ---
 

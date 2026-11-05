@@ -33,12 +33,14 @@ def parse_args():
 def calculate_qwen3_memory(args):
     # Qwen3-0.6B Configuration
     # Ref: https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/config.json
+    # 口径核对：2026-11-05；KV Cache 按 config.json 显式 head_dim=128 计算（不用 H/N_attn 近似）
     config = {
         "model_name": "Qwen3-0.6B",
         "hidden_size": 1024,        # H
         "num_hidden_layers": 28,    # L
         "num_attention_heads": 16,  # N_attn
         "num_key_value_heads": 8,   # N_kv (GQA)
+        "head_dim": 128,            # config.json 显式给出；注意不等于 H/N_attn = 64
         "vocab_size": 151936,
         "torch_dtype": "bfloat16",  # 2 bytes
         "param_count_approx": 0.6 * 10**9 # 0.6B
@@ -46,7 +48,8 @@ def calculate_qwen3_memory(args):
 
     print(f"--- Analysis for {config['model_name']} ---")
     print(f"Config: L={config['num_hidden_layers']}, H={config['hidden_size']}, "
-          f"N_attn={config['num_attention_heads']}, N_kv={config['num_key_value_heads']}")
+          f"N_attn={config['num_attention_heads']}, N_kv={config['num_key_value_heads']}, "
+          f"head_dim={config['head_dim']}")
     
     # 1. Model Weights
     # Precision: BF16 -> 2 bytes
@@ -57,21 +60,21 @@ def calculate_qwen3_memory(args):
     print(f"   ≈ {format_size(mem_weights)}")
     
     # 2. KV Cache Per Token
-    # Formula: 2 * b_kv * L * 1 * 1 * H * (N_kv / N_attn)
+    # Formula: 2 * b_kv * L * N_kv * head_dim（config.json 提供 head_dim 时优先使用）
     # b_kv = 2 (BF16)
     b_kv = 2
     L = config["num_hidden_layers"]
     H = config["hidden_size"]
-    ratio = config["num_key_value_heads"] / config["num_attention_heads"]
-    
-    kv_per_token = 2 * b_kv * L * 1 * 1 * H * ratio
+    head_dim = config["head_dim"]
+
+    kv_per_token = 2 * b_kv * L * config["num_key_value_heads"] * head_dim
     print(f"\n2. KV Cache Per Token:")
-    print(f"   Formula: 2 * {b_kv} * {L} * {H} * ({config['num_key_value_heads']}/{config['num_attention_heads']})")
+    print(f"   Formula: 2 * {b_kv} * {L} * {config['num_key_value_heads']} * {head_dim}")
     print(f"   Value: {kv_per_token:,.0f} Bytes")
     print(f"   ≈ {format_size(kv_per_token)}")
-    
+
     # Compare with Non-GQA (if N_kv = N_attn = 16)
-    kv_per_token_no_gqa = 2 * b_kv * L * 1 * 1 * H * 1.0
+    kv_per_token_no_gqa = 2 * b_kv * L * config["num_attention_heads"] * head_dim
     print(f"   (Without GQA: {format_size(kv_per_token_no_gqa)})")
 
     # 3. Case Study: GPU Memory Budget

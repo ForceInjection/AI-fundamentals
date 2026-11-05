@@ -52,7 +52,7 @@ write_through 模式下，备份的触发路径是：请求 prefill → `match_p
 **第二步：连续前缀不变量：**
 
 ```python
-# hiradix_cache.py:763-766
+# hiradix_cache.py:763-766（有删节，行为等价）
 if not write_back and not node.parent.backuped:
     return 0
 ```
@@ -64,7 +64,7 @@ write_backup 要求父节点已经完成备份，否则直接返回 0 跳过。�
 **第三步：DMA 搬运与空间竞争：**
 
 ```python
-# hiradix_cache.py:768-772
+# hiradix_cache.py:768-772（有删节，行为等价）
 host_indices = self.cache_controller.write(
     device_indices=node.value)
 ```
@@ -201,7 +201,7 @@ init_next_round_input → tree_cache.match_prefix()
 被 evict 的节点可能形成一条链。radix tree 的 split 操作将一个节点在匹配边界分裂为多个子节点——如果这些子节点随后都被 evicted，就形成了一条从被 evict 的子节点到第一个 non-evicted 祖先的"断裂链"。load_back 必须恢复整条链上的所有节点，否则断点处的 prefix 不完整。
 
 ```python
-# hiradix_cache.py:1147-1155
+# hiradix_cache.py:1147-1155（有删节，行为等价）
 nodes_to_load = []
 cur_node = best_match_node
 while cur_node is not None and cur_node.evicted:
@@ -217,7 +217,7 @@ nodes_to_load.reverse()  # 从祖先到叶子顺序加载
 不是所有 host hit 都值得 load_back。代码中有两道经济性检查：
 
 ```python
-# hiradix_cache.py:1163-1168
+# hiradix_cache.py:1163-1168（有删节，行为等价）
 if len(host_indices) < self.load_back_threshold:
     return None  # 太小，prefill 重算更快
 
@@ -234,7 +234,7 @@ if len(host_indices) > self.mem_quota + self.mem_quota_delta:
 通过检查后，进入实际恢复：
 
 ```python
-# hiradix_cache.py:1170-1181
+# hiradix_cache.py:1170-1181（有删节，行为等价）
 device_indices = self.cache_controller.load(
     host_indices=host_indices)
 ```
@@ -246,7 +246,7 @@ device_indices = self.cache_controller.load(
 加载成功后，`device_indices` 是一段连续的 slot 索引，需要按 node 边界切分：
 
 ```python
-# hiradix_cache.py:1196-1198
+# hiradix_cache.py:1196-1198（有删节，行为等价）
 for node in nodes_to_load:
     num = len(node.host_value)
     node.value = device_indices[offset:offset + num].clone()

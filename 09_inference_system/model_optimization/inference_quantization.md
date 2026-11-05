@@ -87,8 +87,8 @@ SmoothQuant（Xiao et al., 2023）的核心洞察：activation 的 outlier 是�
 算法的做法：在 forward 前，对每个通道 j 计算一个平滑因子 `s_j = max(|X_j|)^α / max(|W_j|)^(1-α)`（α 是迁移强度，通常 0.5），然后将 `X_j` 除以 `s_j`，`W_j` 乘以 `s_j`——保证数学等价（`W_j·X_j` = `(W_j·s_j)·(X_j/s_j)` 不变），同时将量化难度从 outlier 多的激活通道转移到分布更均匀的权重通道。
 
 ```text
-变换前: Y = W · X           ← W 有 outlier 通道，精度损失大
-变换后: Y = (W / s) · (X · s)  ← 数学完全等价，但 W/s 分布均匀，X·s 范围稍大
+变换前: Y = W · X           ← X 有 outlier 通道，激活量化精度损失大
+变换后: Y = (W · s) · (X / s)  ← 数学完全等价，X/s 平滑 outlier，量化难度转移到权重侧
 ```
 
 效果：per-tensor INT8 量化权重和激活，精度接近 FP16。这是当前 vLLM、TensorRT-LLM 等框架中 **W8A8 量化的理论基础**。

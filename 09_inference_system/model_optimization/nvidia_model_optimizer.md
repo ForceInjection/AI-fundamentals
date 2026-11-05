@@ -4,6 +4,8 @@ NVIDIA Model Optimizer（简称 ModelOpt）是一个包含最先进模型优化�
 
 地址：<https://github.com/NVIDIA/Model-Optimizer>
 
+> 截至 ModelOpt 0.x（2026-11 核对），本文内容以该时点的版本为准；ModelOpt 迭代较快，使用前请对照官方文档复核。
+
 ---
 
 ## 1. 核心功能与特性

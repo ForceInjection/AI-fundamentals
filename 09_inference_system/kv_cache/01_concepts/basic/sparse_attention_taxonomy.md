@@ -1,6 +1,6 @@
 # 稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少
 
-> 稀疏注意力方法有十几个名字——Sliding Window、Longformer、StreamingLLM、Vegas、NSA、H2O、CSA、Linformer——但它们都在回答同一个问题：对于当前 query，全量 KV 中哪些真正值得算注意力？本文按决策时机将稀疏注意力分为三条路线：计算前固定模式、计算中动态选择、先压缩再近似计算。每条路线的取舍不同，但共享同一个被普遍忽视的约束——读得少不等于存得少。
+> 稀疏注意力方法有十几个名字（Sliding Window、Longformer、StreamingLLM、Vegas、NSA、H2O、CSA、Linformer），但它们都在回答同一个问题：对于当前 query，全量 KV 中哪些真正值得算注意力？本文按决策时机将稀疏注意力分为三条路线：计算前固定模式、计算中动态选择、先压缩再近似计算。每条路线的取舍不同，但共享同一个被普遍忽视的约束：读得少不等于存得少。
 >
 > **2026-09-11 订正**：HCA 全称应为 **Heavily Compressed Attention**（此前误作 Heavy Compressed Attention）；V4-Pro 各层类型数量为 **30 个 c4a + 31 个 c128a = 61 层**（此前误作「两层各有 30 个」）。依据 DeepSeek-V4 技术报告（arXiv:2606.19348）与官方 `config.json` 中 `compress_ratios` 的计数。
 
@@ -8,11 +8,11 @@
 
 ## 一、注意力为什么需要「稀疏」？
 
-一个 128K 上下文的请求，单次 decode 需要为当前唯一的 query token 计算 128K 次 QK 内积。compute 本身不是唯一的瓶颈——把 128K 个 token 的 K 和 V 从 HBM 搬进 SM 才是。以 70B 模型为例，128K token 的 KV 总量约 40 GB，H100 的 HBM 带宽约 3.35 TB/s，仅 KV 读取就需要 ~12ms。而一个 decode step 的目标延迟通常在 10–20ms 以内——KV 读取一项就几乎吃掉了全部预算。
+一个 128K 上下文的请求，单次 decode 需要为当前唯一的 query token 计算 128K 次 QK 内积。compute 本身不是唯一的瓶颈，把 128K 个 token 的 K 和 V 从 HBM 搬进 SM 才是。以 70B 模型为例，128K token 的 KV 总量约 40 GB，H100 的 HBM 带宽约 3.35 TB/s，仅 KV 读取就需要 ~12ms。而一个 decode step 的目标延迟通常在 10–20ms 以内，KV 读取一项就几乎吃掉了全部预算。
 
 ### 1.1 全量 attention 的不可持续性
 
-这个数字随着上下文长度线性恶化。256K 上下文下，KV 读取吃掉 ~24ms，已经超过单个 decode step 的延迟目标。百万级上下文下，单靠 HBM 带宽根本无法在一个 step 内读完所有 KV。不是「要不要优化」的问题，而是「不优化的 decode 根本跑不动」。
+这个数字随着上下文长度线性恶化。256K 上下文下，KV 读取吃掉 ~24ms，已经超过单个 decode step 的延迟目标。百万级上下文下，单靠 HBM 带宽根本无法在一个 step 内读完所有 KV。「要不要优化」已无需讨论：不优化的 decode 根本跑不动。
 
 ### 1.2 稀疏的直觉：大多数 token 的注意力权重趋近于零
 
@@ -42,9 +42,9 @@
 
 滑动窗口是最简单的稀疏注意力：每个 token 只 attend 到它前面的 W 个 token。W 通常设置为 4096 或 8192。决策完全由位置距离决定，与序列内容无关。
 
-**优势**：计算复杂度从 O(n²) 降到 O(nW)，显存占用从 O(n) 降到 O(W)——KV cache 只需保留最近 W 个 token，其余既不算也不存。**滑动窗口是所有稀疏注意力方法中唯一既省计算又省存储的方案。**
+**优势**：计算复杂度从 O(n²) 降到 O(nW)，显存占用从 O(n) 降到 O(W)，KV cache 只需保留最近 W 个 token，其余既不算也不存。**滑动窗口是所有稀疏注意力方法中唯一既省计算又省存储的方案。**
 
-**局限**：一刀切地剥夺了所有长程注意力的可能性。长文档中跨段落的引用、代码中远程函数的依赖——全部丢失。更致命的发现来自 StreamingLLM 论文[^1]：仅保留最近 W 个 token（不给注意力提供数值锚点）会导致注意力的数值稳定性崩溃——输出在超过预训练长度后呈断崖式退化。这一现象的数学根源已在 [KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) §3 中详细展开，此处不再重复。
+**局限**：一刀切地剥夺了所有长程注意力的可能性。长文档中跨段落的引用、代码中远程函数的依赖全部丢失。更致命的发现来自 StreamingLLM 论文[^1]：仅保留最近 W 个 token（不给注意力提供数值锚点）会导致注意力的数值稳定性崩溃，输出在超过预训练长度后呈断崖式退化。这一现象的数学根源已在 [KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) §3 中详细展开，此处不再重复。
 
 **vLLM 支持状态**：支持滑动窗口模型（如 Mistral、Gemma 2），通过模型 config 中的 `sliding_window` 参数配置——这是训练时决定的架构特性，非运行时通用选项。FlashAttention 和 FlashMLA 后端原生支持滑动窗口掩码，不产生额外开销。
 
@@ -61,7 +61,7 @@ Longformer[^2] 和 BigBird[^3] 在滑动窗口之上叠加了额外的固定注�
 
 ### 2.3 固定模式的共同取舍
 
-固定模式的核心优势是零决策开销——模式在计算前已确定，没有任何动态判断消耗计算资源。代价是完全不懂内容——一个代码文件和一个财经文本，注意力焦点应该完全不同，但固定模式无视这种差异。
+固定模式的核心优势是零决策开销：模式在计算前已确定，没有任何动态判断消耗计算资源。代价是完全不懂内容，一个代码文件和一个财经文本，注意力焦点应该完全不同，但固定模式无视这种差异。
 
 更根本的局限在于显存：只有纯滑动窗口同时省了存储——因为它只需要保留最近 W 个 token 的 KV。Longformer 和 BigBird 的额外通道（全局 token、随机 token）需要访问全序列的 KV，所以仍然需要全量存储。**即使是固定模式内部，读得少也不一定存得少。**
 
@@ -69,7 +69,7 @@ Longformer[^2] 和 BigBird[^3] 在滑动窗口之上叠加了额外的固定注�
 
 ## 三、动态选择：让数据自己说话
 
-动态选择路线回答固定模式的盲区：不看数据就决定读哪儿，怎么可能精确？它的策略是——先扫一眼数据（轻量扫描），再根据扫描结果决定读哪里（选出 top-k），最后只对 top-k 做完整的注意力计算。
+动态选择路线回答固定模式的盲区：不看数据就决定读哪儿，怎么可能精确？它的策略是：先扫一眼数据（轻量扫描），再根据扫描结果决定读哪里（选出 top-k），最后只对 top-k 做完整的注意力计算。
 
 ### 3.1 通用框架：扫描 → 选择 → 精确计算
 
@@ -79,7 +79,7 @@ Longformer[^2] 和 BigBird[^3] 在滑动窗口之上叠加了额外的固定注�
 2. **选择阶段**：根据扫描结果选出分数最高的 k 个 token
 3. **精确计算阶段**：只对这 k 个 token 做完整的注意力计算
 
-每一步在「扫描精度」和「扫描开销」之间存在权衡。扫描越精确，选出的 top-k 越接近真实的全量注意力 top-k；但扫描本身越接近完整的 attention 计算——极端情况下扫描 = 全量 attention，稀疏退化回密集。
+每一步在「扫描精度」和「扫描开销」之间存在权衡。扫描越精确，选出的 top-k 越接近真实的全量注意力 top-k；但扫描本身越接近完整的 attention 计算，极端情况下扫描 = 全量 attention，稀疏退化回密集。
 
 ### 3.2 StreamingLLM：位置规则中的动态发现
 
@@ -89,25 +89,25 @@ StreamingLLM 的独特价值在于：它不需要轻量扫描。因为选择规�
 
 ### 3.3 Vegas：累积注意力分数的动态窗口
 
-Vegas 将「选哪些 token」从固定位置规则变为动态分数规则：维护每个 KV token 的累积注意力分数——所有历史 decode step 中该 token 被分配的注意力权重之和——每步选出累积分数最高的 top-k 个 token 参与注意力计算。
+Vegas 将「选哪些 token」从固定位置规则变为动态分数规则：维护每个 KV token 的累积注意力分数（所有历史 decode step 中该 token 被分配的注意力权重之和），每步选出累积分数最高的 top-k 个 token 参与注意力计算。
 
 与 StreamingLLM 的关键区别：Vegas 的 top-k 不固定于序列末尾。如果某个中间 token 在过去的 decode 中被反复关注，它可以跨越几百个 token 的距离，持续留在 top-k 中。这使 Vegas 具备 StreamingLLM 不具备的长程 memory 保留能力。
 
 **代价**：需要为每个 token 维护一个累积分数，每步更新 top-k 个最活跃 token 的分数。在大并发、长序列下，分数 tracking 的元数据存储和更新开销不可忽视。分数的降级（FP32 → FP16 → INT8）和更新频率（每步 vs 每 N 步）是工程落地的关键调优点。
 
-**vLLM 支持状态**：RFC [#47351](https://github.com/vllm-project/vllm/issues/47351) 提案阶段，尚未合入主分支。
+**vLLM 支持状态**：RFC [#47351](https://github.com/vllm-project/vllm/issues/47351) 已于 2026-10-31 被维护者关闭（close as not planned），无关联 PR 合入主分支——Vegas 累积分数路线在 vLLM 主分支暂无对应实现。
 
 ### 3.4 NSA/DSA：专用 Indexer 的高精度扫描
 
-NSA（Native Sparse Attention）/ DSA 是 DeepSeek 的稀疏选择技术，在 V3.2 中首次引入：在 MLA 框架内增加一个轻量级的 **Indexer** 模块。Indexer 是一个专门训练的注意力子网络——在完整的 MLA decode 之前，对所有历史 token 做一次廉价扫描（远少于完整 QK^T 的计算量），筛选出 top-k 个候选位置，仅对这些位置执行完整的 MLA decode。DSA 在 V4 中继续使用，但应用对象从原始 KV 变为压缩后的 KV（见 §4.3）。
+NSA（Native Sparse Attention）/ DSA 是 DeepSeek 的稀疏选择技术，在 V3.2 中首次引入：在 MLA 框架内增加一个轻量级的 **Indexer** 模块。Indexer 是一个专门训练的注意力子网络：在完整的 MLA decode 之前，对所有历史 token 做一次廉价扫描（远少于完整 QK^T 的计算量），筛选出 top-k 个候选位置，仅对这些位置执行完整的 MLA decode。DSA 在 V4 中继续使用，但应用对象从原始 KV 变为压缩后的 KV（见 §4.3）。
 
-Indexer 与 Vegas 的累积分数有本质区别：Indexer 是**当前 query 驱动的实时打分**——它根据当前 query 的内容判断哪些 token 可能相关。Vegas 的累积分数是**历史驱动的统计打分**——它根据过去被关注的频率判断哪些 token 重要。前者的扫描更精确（专为当前 query 定制），但扫描计算量更大；后者的扫描更廉价（只是查表和排序），但可能错过从未被关注但当前 query 恰好需要的 token。
+Indexer 与 Vegas 的累积分数有本质区别：Indexer 是**当前 query 驱动的实时打分**，它根据当前 query 的内容判断哪些 token 可能相关。Vegas 的累积分数是**历史驱动的统计打分**，它根据过去被关注的频率判断哪些 token 重要。前者的扫描更精确（专为当前 query 定制），但扫描计算量更大；后者的扫描更廉价（只是查表和排序），但可能错过从未被关注但当前 query 恰好需要的 token。
 
 **vLLM 支持状态**：DeepSeek V3.2 / GLM-5 的 Sparse MLA 后端已支持（`FLASHMLA_SPARSE`、`FLASHINFER_MLA_SPARSE`）。Indexer 模块位于 `vllm/model_executor/layers/sparse_attn_indexer.py`。关于 Indexer 与 MLA 的集成细节，参见 [注意力机制演进与 vLLM 支持全景](../../../vllm/module_analysis/attention_mha_mla_nsa.md) §4。
 
 ### 3.5 H2O：一个边界案例
 
-H2O[^4] 在本文的分类框架中是动态选择路线上的一个边界案例。它的核心机制——累积注意力分数 → 选出 Heavy Hitter——与 Vegas 高度相似。但 H2O 的原始动机是「永久删除哪些 KV」（eviction），而非「跳过哪些 KV 不读」（稀疏注意力）。
+H2O[^4] 在本文的分类框架中是动态选择路线上的一个边界案例。它的核心机制（累积注意力分数 → 选出 Heavy Hitter）与 Vegas 高度相似。但 H2O 的原始动机是「永久删除哪些 KV」（eviction），而非「跳过哪些 KV 不读」（稀疏注意力）。
 
 这个边界案例恰好暴露了动态选择路线的一个深层性质：**用注意力分数做选择（读哪些）和做淘汰（删哪些），底层评分基础设施完全相同——区别仅在阈值和执行动作。** 这一洞察在 [稀疏注意力 × KV Cache Offloading](../offloading/sparse_attention_driven_offloading_problems.md) §4.4 中有更详细的展开。关于 H2O 的次模函数最优性保证和工程实现，参见 [KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) §4.2。
 
@@ -125,11 +125,11 @@ H2O[^4] 在本文的分类框架中是动态选择路线上的一个边界案例
 
 ### 4.1 核心思路：用压缩替代选择
 
-与其从 n 个 KV token 中选出 k 个做精确计算，不如将 n 个 KV token 压缩为 k 个「虚拟 token」——每个虚拟 token 是多个真实 token 的 K 和 V 的加权组合——然后对这 k 个虚拟 token 做注意力。关键洞察：过程中没有「丢掉」任何 token 的信息，每个原始 token 的 K 和 V 都通过压缩参与了虚拟 token 的构造。这是压缩近似与动态选择最根本的哲学差异。
+与其从 n 个 KV token 中选出 k 个做精确计算，不如将 n 个 KV token 压缩为 k 个「虚拟 token」（每个虚拟 token 是多个真实 token 的 K 和 V 的加权组合），然后对这 k 个虚拟 token 做注意力。关键洞察：过程中没有「丢掉」任何 token 的信息，每个原始 token 的 K 和 V 都通过压缩参与了虚拟 token 的构造。这是压缩近似与动态选择最根本的哲学差异。
 
 ### 4.2 Linformer：线性复杂度的理论先驱
 
-Linformer[^5] 用两个可学习的投影矩阵 E 和 F（形状为 n × k，k ≪ n）将 K 和 V 从 n × d 投影到 k × d。投影矩阵在训练时学习，推理时固定。注意力复杂度从 O(n²) 降到 O(nk)——k 是常数，线性于 n。
+Linformer[^5] 用两个可学习的投影矩阵 E 和 F（形状为 n × k，k ≪ n）将 K 和 V 从 n × d 投影到 k × d。投影矩阵在训练时学习，推理时固定。注意力复杂度从 O(n²) 降到 O(nk)，k 是常数，线性于 n。
 
 **优势**：首次在理论上证明了线性复杂度自注意力的可行性。**局限**：投影矩阵大小与序列长度 n 绑定——训练时用 n=512 的 k，推理时扩展到 n=128K，投影矩阵需要重新训练。这使 Linformer 在长度泛化上几乎是不可用的，但它开创了压缩近似这条路线的理论基础。
 
@@ -139,13 +139,13 @@ Linformer[^5] 用两个可学习的投影矩阵 E 和 F（形状为 n × k，k �
 
 CSA（Compressed Sparse Attention）和 HCA（Heavily Compressed Attention）代表了压缩近似路线的当前工程巅峰。两者按层交替排布，共同构成了 DeepSeek V4 的注意力系统。
 
-**CSA（c4a 层，30 层）**：先将 KV 做 4× 压缩（每 4 个连续 token 的 K 和 V 压缩为 1 个），然后对压缩后的 token 应用 DSA 选出 top-512 做注意力。CSA 同时做了压缩（c4a 将 n 缩小到 n/4）和动态选择（DSA 从 n/4 中再选 top-512）。CSA 的名字本身就说明了这一点：Compressed（压缩）+ Sparse Attention（稀疏注意力，即 DSA）。原始 token 数：250K → 压缩后：~62.5K → DSA 选择后：512 个压缩 token。计算量相对全量注意力节省约 1500×。
+**CSA（c4a 层，30 层）**：先对 KV 做压缩（滑动窗口 8 个 token、步长 4，相邻窗口重叠一半，有效压缩比 4:1，每个原始 token 被覆盖 2 次，属于信息冗余而非存储翻倍），然后对压缩后的 token 应用 DSA 选出 top-512 做注意力。CSA 同时做了压缩（c4a 将 n 缩小到 n/4）和动态选择（DSA 从 n/4 中再选 top-512）。CSA 的名字本身就说明了这一点：Compressed（压缩）+ Sparse Attention（稀疏注意力，即 DSA）。原始 token 数：250K → 压缩后：~62.5K → DSA 选择后：512 个压缩 token。计算量相对全量注意力节省约 1500×。
 
 **HCA（c128a 层，31 层）**：压缩更激进（128×），1M token 压缩后仅约 8K 条目。因为压缩后的条目数已足够少，HCA 不做稀疏选择——对这 8K 个压缩 token 直接做全量注意力，结构上比 CSA 少了整个 indexer 与 top-k 选择器。计算量相对全量注意力节省约 128×。
 
-**CSA 和 HCA 的分工**：CSA 负责「检索」——在 4× 压缩的粗粒度表示上做 top-512 的精确选择，定位关键信息的位置。HCA 负责「整合」——在 128× 压缩的极粗粒度表示上做全量注意力，获得全局上下文。V4-Pro 共 61 层，**30 个 c4a 层 + 31 个 c128a 层**，交替排布（V4-Pro 官方 config.json 的 `compress_ratios` 计数：128 出现 31 次、4 出现 30 次）。
+**CSA 和 HCA 的分工**：CSA 负责「检索」，在 4× 压缩的粗粒度表示上做 top-512 的精确选择，定位关键信息的位置。HCA 负责「整合」，在 128× 压缩的极粗粒度表示上做全量注意力，获得全局上下文。V4-Pro 共 61 层，**30 个 c4a 层 + 31 个 c128a 层**，交替排布（V4-Pro 官方 config.json 的 `compress_ratios` 计数：128 出现 31 次、4 出现 30 次）。
 
-关于 CSA/HCA 的完整架构演进——它们如何从 V2 的 MLA、V3.2 的 NSA 逐步演化而来——参见 [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。本节仅聚焦于 CSA/HCA 在稀疏注意力分类框架中的位置：它们代表了压缩近似的工程成熟形态。
+关于 CSA/HCA 的完整架构演进（它们如何从 V2 的 MLA、V3.2 的 NSA 逐步演化而来），参见 [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../../../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)。本节仅聚焦于 CSA/HCA 在稀疏注意力分类框架中的位置：它们代表了压缩近似的工程成熟形态。
 
 ### 4.4 压缩近似的共同取舍
 
@@ -168,7 +168,7 @@ CSA（Compressed Sparse Attention）和 HCA（Heavily Compressed Attention）代
 | 是否省存储？       |   部分（仅滑动窗口省）   |       ✗（扫描需要全量 KV 可见）       |          理论可省，当前实现不省          |
 | 对已发布模型可用？ | 滑动窗口可，结构化需训练 | StreamingLLM/Vegas 可，NSA/DSA 需训练 |          否（压缩在训练时引入）          |
 | 长程 memory 保留？ |  滑动窗口无，结构化部分  |            取决于扫描精度             |     CSA：top-512 保留；HCA：全局整合     |
-| vLLM 支持状态      |       滑动窗口通用       |         NSA/DSA ✓，Vegas RFC          |           CSA/HCA ✓（V4 专属）           |
+| vLLM 支持状态      |       滑动窗口通用       |    NSA/DSA ✓，Vegas RFC 未采纳        |           CSA/HCA ✓（V4 专属）           |
 
 ### 5.2 「读得少 ≠ 存得少」：一个隐含约束的显式澄清
 
@@ -181,11 +181,11 @@ CSA（Compressed Sparse Attention）和 HCA（Heavily Compressed Attention）代
 | 少读但当前不省存 | CSA/HCA                          | 压缩只在计算时发生，存储的仍是原始全量 KV            |
 | 少读且理论可省存 | CSA/HCA（如果训练时存储压缩 KV） | 不存储原始 K/V，只存压缩后的——当前无实现             |
 
-**读和存的正交性是理解稀疏注意力与 KV Cache 压缩之间关系的钥匙。** 稀疏注意力优化「读路径」——SM 从 HBM 搬多少数据来做 attention。KV Cache 压缩（量化、MLA 低秩压缩）优化「存路径」——HBM 里放的数据占多少空间。两者的目标不同，优化手段不同，但在工程讨论中经常被混淆。
+**读和存的正交性是理解稀疏注意力与 KV Cache 压缩之间关系的钥匙。** 稀疏注意力优化「读路径」，决定 SM 从 HBM 搬多少数据来做 attention。KV Cache 压缩（量化、MLA 低秩压缩）优化「存路径」，决定 HBM 里放的数据占多少空间。两者的目标不同，优化手段不同，但在工程讨论中经常被混淆。
 
 这也是为什么 DeepSeek V4 同时使用 CSA/HCA（优化读路径）+ MLA（优化存路径）+ FP8 量化（读和存双重优化）——每个技术各自瞄准自己的瓶颈，互相不替代。CSA 的 4× 压缩不减少 HBM 中的 KV 存量，MLA 的 576 维低秩压缩不减少每次 attention 的读取量。两条优化方向的叠加，才能同时压缩读和存的开销。
 
-**一个自然的推论：DSA 和 CSA 没有让 offloading 变得多余——它们让 offloading 变得更聪明。** DSA 的 Indexer 和 H2O/Vegas 的累积注意力分数天然产出「哪些 KV 被反复读取」的信号。没有这些信号时，offloading 只能按 LRU/FIFO 做盲目卸载；有了这些信号后，offloading 决策可以从「按时间」升级为「按语义重要性」。稀疏注意力优化了读路径（省计算），同时产出的副产品恰好解决了 offloading 最缺的东西——一个可用的 KV 优先级排序。关于这个信号链的问题空间，参见 [稀疏注意力 × KV Cache Offloading](../offloading/sparse_attention_driven_offloading_problems.md)。
+**一个自然的推论：DSA 和 CSA 没有让 offloading 变得多余，它们让 offloading 变得更聪明。** DSA 的 Indexer 和 H2O/Vegas 的累积注意力分数天然产出「哪些 KV 被反复读取」的信号。没有这些信号时，offloading 只能按 LRU/FIFO 做盲目卸载；有了这些信号后，offloading 决策可以从「按时间」升级为「按语义重要性」。稀疏注意力优化了读路径（省计算），同时产出的副产品恰好解决了 offloading 最缺的东西：一个可用的 KV 优先级排序。关于这个信号链的问题空间，参见 [稀疏注意力 × KV Cache Offloading](../offloading/sparse_attention_driven_offloading_problems.md)。
 
 ---
 
@@ -217,15 +217,15 @@ CSA（Compressed Sparse Attention）和 HCA（Heavily Compressed Attention）代
 
 **扫描精度与扫描开销的黄金分割点**。动态选择路线中，扫描精度越高，稀疏质量越好；但扫描本身越贵。NSA/DSA 的 Indexer 在 128K+ 上下文下证明了高精度扫描的收益大于成本。但 32K 以下上下文，这个 crossover point 在哪里？是否存在上下文长度自适应的扫描策略——短上下文用廉价扫描（累积分数查询），长上下文用高精度扫描（Indexer 前向）？
 
-**压缩近似的不可逆信息损失**。CSA 的 4× 压缩抹平了相邻 4 个 token 的 K/V 差异。对于大多数 token 这无关紧要（语义是冗余的），但对于代码中的变量名、数字、API key——一个 token 的差异就决定了对错。「哪些 token 不能被压缩」这个判断本身需要计算，而做这个判断的计算又抵消了压缩节省的计算。是否存在任务感知的压缩粒度——对代码层使用 2× 压缩，对自然语言层使用 8× 压缩？
+**压缩近似的不可逆信息损失**。CSA 的 4× 压缩抹平了相邻 4 个 token 的 K/V 差异。对于大多数 token 这无关紧要（语义是冗余的），但对于代码中的变量名、数字、API key，一个 token 的差异就决定了对错。「哪些 token 不能被压缩」这个判断本身需要计算，而做这个判断的计算又抵消了压缩节省的计算。是否存在任务感知的压缩粒度，即对代码层使用 2× 压缩、对自然语言层使用 8× 压缩？
 
 **稀疏注意力 × speculative decoding 的深层协同**。当 sparse_attn self-speculation（[投机解码方法全景](../../../vllm/module_analysis/speculative_decoding_landscape.md) §5.4）成熟后，稀疏注意力的输出将同时服务于两个目的：减少当前 forward 的 KV 读取量（省计算），以及为下一轮 speculative decoding 提供草拟信号（保接受率）。两个目的的稀疏度需求可能冲突——前者要求极稀疏（top-256），后者要求中等稀疏（top-2048，否则接受率暴跌）。同一个稀疏选择能否用不同的 k 同时兼容两个目的？
 
 ---
 
-## 七、一句话总结
+## 七、小结
 
-稀疏注意力方法的三条路线——固定模式、动态选择、压缩近似——分别代表了「不看数据先画地图」「扫一眼再决定」「不选了改计算方式」三种设计哲学。它们共享同一个目标（少搬一些 KV 数据进 SM），但实现这个目标的决策时机不同，导致了完全不同的计算开销、存储代价和模型侵入性。选哪条路线，取决于三个前置问题——模型能不能改、任务需要多精确的长程 memory、瓶颈是计算还是存储——因为在稀疏注意力的世界里，读得少从来不等于存得少。
+稀疏注意力方法的三条路线（固定模式、动态选择、压缩近似）分别代表了「不看数据先画地图」「扫一眼再决定」「不选了改计算方式」三种设计哲学。它们共享同一个目标（少搬一些 KV 数据进 SM），但实现这个目标的决策时机不同，导致了完全不同的计算开销、存储代价和模型侵入性。选哪条路线，取决于三个前置问题（模型能不能改、任务需要多精确的长程 memory、瓶颈是计算还是存储），因为在稀疏注意力的世界里，读得少从来不等于存得少。
 
 ---
 

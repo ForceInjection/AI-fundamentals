@@ -400,13 +400,7 @@ $$
 
 ### 5.2 实测数据
 
-根据 LMCache 官方文档 [2] 的基准测试数据，在典型场景下的性能提升如下（测试基于 Llama-2-7B 模型，单 A100 GPU 环境）：
-
-| 场景       | 前缀长度   | TTFT 降低 | 吞吐量提升 |
-| ---------- | ---------- | --------- | ---------- |
-| 多轮对话   | 2K tokens  | 60-80%    | 2-3x       |
-| RAG 应用   | 4K tokens  | 70-85%    | 3-5x       |
-| 长文档处理 | 8K+ tokens | 80-95%    | 5-10x      |
+LMCache 官方文档提供的基准测试（as-of 2026-11 查证，模型 Qwen3-8B，long-doc-qa 基准组）：vLLM 单独部署时平均 TTFT 为 757 ms，挂载 LMCache 后降至 185 ms（约 **-75%**）；整场基准总时长从 23.47 s 降至 13.79 s（约 **-41%**）[2]。收益随前缀长度与命中率的组合变化，实际部署前建议以自身负载复测。
 
 ### 5.3 最佳实践
 
@@ -469,7 +463,7 @@ Prefix Caching 主要解决的是严格前缀匹配的问题。对于 RAG 场景
 
 ## 8. 总结
 
-Prefix Caching 是 LLM 推理优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 Prefill 计算开销（实测 TTFT 降低 60%-95%，取决于前缀长度和应用场景）。
+Prefix Caching 是 LLM 推理优化中的关键技术，通过缓存和复用重复前缀的 KV Cache，可以显著降低 Prefill 计算开销（LMCache 官方基准中 TTFT 降低约 75%，见 §5.2；实际收益取决于前缀长度和命中率）。
 
 **核心要点回顾**：
 
@@ -511,5 +505,5 @@ Prefix Caching 的核心思想与实现机制在多篇学术论文中均有探�
 - [3] L. Zheng et al., "SGLang: Efficient Execution of Structured Language Model Programs," _arXiv preprint arXiv:2312.07104_, 2023.
   - **贡献**：提出了 **RadixAttention** 技术，通过维护 Radix Tree（基数树）来自动管理和复用 KV Cache。vLLM 的 APC 借鉴了其 LRU 淘汰策略，但采用了 Hash Table（哈希表）作为底层数据结构。
 
-- [4] I. Gim et al., "Prompt Cache: Modular Attention Reuse for Low-Latency Inference," _arXiv preprint arXiv:2311.04934_, 2023.
+- [4] In Gim et al., "Prompt Cache: Modular Attention Reuse for Low-Latency Inference," _arXiv preprint arXiv:2311.04934_, 2023.
   - **贡献**：系统阐述了通过复用 Attention 状态来加速 LLM 推理的模块化方法，验证了其在长文本场景下的显著收益。

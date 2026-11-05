@@ -2,6 +2,8 @@
 
 `HiCache` 是 `SGLang` 为大语言模型（`LLM`）推理提供的分层 `KV Cache` 架构，通过将 `GPU` 显存、宿主机内存与分布式存储后端（如 `Mooncake`、`HF3FS`）纳入统一的三级缓存体系，突破单节点显存容量天花板并实现跨实例的前缀共享。本文面向 `SGLang` 的使用者与二次开发者，梳理其演进背景、多级调度机制与工程权衡，并给出关键代码入口以便深入源码。
 
+> 2026-11-05 | 基于 SGLang commit f4de6abee6 源码分析
+
 ## 目录
 
 - [HiCache 深入详解](#hicache-深入详解)
@@ -165,8 +167,8 @@ prefetch_from_storage(req_id)
 
 | 策略                  | `check_prefetch_progress` 行为                | 适用场景                      |
 | --------------------- | --------------------------------------------- | ----------------------------- |
-| `best_effort`（默认） | **立即返回 True**，不等待任何数据加载         | TTFT 最敏感，宁可重算不等磁盘 |
-| `timeout`             | I/O 完成**或**超时后返回 True，部分数据也放行 | 兼顾延迟与命中率              |
+| `best_effort`         | **立即返回 True**，不等待任何数据加载         | TTFT 最敏感，宁可重算不等磁盘 |
+| `timeout`（默认）     | I/O 完成**或**超时后返回 True，部分数据也放行 | 兼顾延迟与命中率              |
 | `wait_complete`       | 必须**全部页面加载完成**才返回 True           | 追求极致缓存命中率            |
 
 > [!NOTE]
@@ -325,18 +327,19 @@ python -m sglang.launch_server \
 
 ### 5.5 运行时动态挂载 / 卸载 L3 后端
 
-在运维场景下，`HiCache` 允许通过 `HTTP Admin API` 在不重启服务的前提下切换 L3 后端，常用于存储集群滑滚升级与故障隔离：
+在运维场景下，`HiCache` 允许通过 `HTTP Admin API`（`/hicache/storage-backend` 系列端点）在不重启服务的前提下挂载、卸载 L3 后端并清空其上缓存数据，常用于存储集群滑滚升级与故障隔离：
 
 ```bash
-# 挂载新的 L3 后端
-curl -X POST http://${HOST}:${PORT}/set_hicache_storage_backend \
+# 挂载新的 L3 后端（需确保队列空闲，无运行中或排队请求）
+curl -X PUT http://${HOST}:${PORT}/hicache/storage-backend \
   -H 'Content-Type: application/json' \
-  -d '{"storage_backend": "mooncake"}'
+  -d '{"hicache_storage_backend": "mooncake"}'
 
 # 卸载当前 L3 后端（需确保队列空闲）
-curl -X POST http://${HOST}:${PORT}/set_hicache_storage_backend \
-  -H 'Content-Type: application/json' \
-  -d '{"storage_backend": null}'
+curl -X DELETE http://${HOST}:${PORT}/hicache/storage-backend
+
+# 清空已写入分层缓存的 KV 数据（不重启服务，仅清数据不动配置）
+curl -X POST http://${HOST}:${PORT}/hicache/storage-backend/clear
 ```
 
 ### 5.6 参数速查表
@@ -346,11 +349,11 @@ curl -X POST http://${HOST}:${PORT}/set_hicache_storage_backend \
 | `--enable-hierarchical-cache`            | `False`                   | 启用 HiCache 的总开关                                                        |
 | `--hicache-ratio`                        | `2.0`                     | L2 主机内存相对 L1 KV Cache 的倍数                                           |
 | `--hicache-size`                         | `0`                       | 按绝对容量（GB / rank）覆盖 `hicache-ratio`                                  |
-| `--hicache-write-policy`                 | `write_through_selective` | `write_through` / `write_through_selective` / `write_back`                   |
-| `--hicache-mem-layout`                   | `layer_first`             | `layer_first` / `page_first` / `page_first_direct`                           |
+| `--hicache-write-policy`                 | `write_through`           | `write_through` / `write_through_selective` / `write_back`                   |
+| `--hicache-mem-layout`                   | `page_first`              | `layer_first` / `page_first` / `page_first_direct`                           |
 | `--hicache-io-backend`                   | `kernel`                  | `kernel` / `direct`（需与布局配套）                                          |
 | `--hicache-storage-backend`              | `None`                    | `file` / `mooncake` / `hf3fs` / `nixl` / `aibrix` / `eic` / `dynamic`        |
-| `--hicache-storage-prefetch-policy`      | `best_effort`             | `best_effort` / `wait_complete` / `timeout`                                  |
+| `--hicache-storage-prefetch-policy`      | `timeout`                 | `best_effort` / `wait_complete` / `timeout`                                  |
 | `--hicache-storage-backend-extra-config` | `None`                    | JSON / YAML / TOML，用于 `tp_lcm_size`、`prefetch_timeout_base` 等细粒度控制 |
 
 > [!TIP]

@@ -55,7 +55,7 @@ GPU 0: [模型副本 0] ← 请求 1,2      GPU 1: [模型副本 1] ← 请求 3
 
 ### vLLM 引擎内 DP（`--data-parallel-size`）
 
-另一种 DP 形态：引擎内原生 DP。与多实例推理 DP 不同，多个 DP rank 共享同一个 scheduler 进程，请求被显式分配到不同 rank，rank 间通过 `_synchronize_dp_ranks()` 同步 batch 元数据（ubatch 大小、cudagraph 模式）。多节点时通过 `--data-parallel-backend ray` 用 Ray placement group 编排。SGLang 目前没有引擎内 DP。
+另一种 DP 形态：引擎内原生 DP。与多实例推理 DP 不同，多个 DP rank 共享同一个 scheduler 进程，请求被显式分配到不同 rank，rank 间通过 `_synchronize_dp_ranks()` 同步 batch 元数据（ubatch 大小、cudagraph 模式）。多节点时通过 `--data-parallel-backend ray` 用 Ray placement group 编排。SGLang 也支持引擎内按请求切分的 DP attention（`--dp-size`，见 server_args.py）。
 
 ```text
 Dense 模型（LLaMA/Qwen）：
@@ -143,11 +143,11 @@ GPU 0: Expert 0-63       GPU 1: Expert 64-127     GPU 2: Expert 128-191    GPU 3
        每个 token 只激活 Top-K 专家，跨 GPU 通信只在有 token 路由过去时发生
 ```
 
-**方案**：每个 GPU 固定持有 1/N 的专家权重。路由层计算 token 到专家的匹配分数后，通过 All-to-All 通信将 token 的隐藏状态发送到对应专家所在的 GPU，专家计算完成后 All-to-All 返回。DeepSeek-V3 在 vLLM 和 SGLang 中均默认 EP=8（256 专家 ÷ 8 GPU = 每卡 32 专家）。
+**方案**：每个 GPU 固定持有 1/N 的专家权重。路由层计算 token 到专家的匹配分数后，通过 All-to-All 通信将 token 的隐藏状态发送到对应专家所在的 GPU，专家计算完成后 All-to-All 返回。vLLM 和 SGLang 中默认 EP size = TP size（vLLM 侧由 tp×dp×pcp 组合决定）。
 
-**权衡**：EP 的最大优势是通信量天然低——每个 token 只路由到 Top-K 专家（K=8），大部分 GPU 之间不需要通信。代价是负载均衡：如果某几个专家特别热门（token 大量涌向 Expert 5），对应的 GPU 会过载。SGLang 的 EPLB（Expert Parallel Load Balancer）动态监控各专家负载，将热门专家副本迁移到空闲 GPU 来解决。vLLM 通过 `KVCacheGroupSpec` 管理 EP 下的 KV 分布。
+**权衡**：EP 的最大优势是通信量天然低——每个 token 只路由到 Top-K 专家（K=8），大部分 GPU 之间不需要通信。代价是负载均衡：如果某几个专家特别热门（token 大量涌向 Expert 5），对应的 GPU 会过载。SGLang 的 EPLB（Expert Parallel Load Balancer）动态监控各专家负载，将热门专家副本迁移到空闲 GPU 来解决。vLLM 的 `KVCacheGroupSpec` 是通用的 KV group 抽象，与 EP 无关。
 
-EP 是 MoE 模型的专属策略，Dense 模型（LLaMA/Qwen）不需要。KV Cache 与专家同址存储——token 的 attention 计算和 KV 留在被路由到的 GPU 上，不需要跨 GPU 搬运。
+EP 是 MoE 模型的专属策略，Dense 模型（LLaMA/Qwen）不需要。注意 attention 与 KV Cache 始终留在请求所在的 rank：只有进入 MoE 层激活路径的 hidden states 经 All-to-All 送往专家所在 rank，专家计算完成后再经 All-to-All 返回——attention 部分不需要跨 GPU 搬运。
 
 ---
 

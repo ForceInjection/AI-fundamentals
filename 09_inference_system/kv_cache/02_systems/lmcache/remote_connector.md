@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 **Remote Connector** 是 LMCache 实现 **L4 共享存储/远程持久化** 的核心组件。它定义了一套统一的异步 I/O 接口，使得 LMCache 可以无缝对接各种远程存储系统（如 Redis, S3, LMCache Server, Mooncake Store 等），从而实现跨节点的 KV Cache 共享与持久化。
 
 本文档深入分析 `RemoteConnector` 的抽象设计以及四个典型的实现：基于标准协议的 **Redis Connector**、基于私有协议的 **LMCache Server Connector**、高性能分布式存储 **Mooncake Store Connector** 以及基于对象存储的 **S3 Connector**。

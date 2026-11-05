@@ -1,5 +1,7 @@
 # NIXL (NVIDIA Inference Xfer Library) 简介
 
+> 核对基线：NIXL（HEAD 61eb849，2026-02-04，0.1.0-685-g61eb849）；本文核对日期 2026-11-05
+
 ## 1. NIXL 简介
 
 NIXL 是专为大规模分布式 AI 推理设计的**点对点通信库**，通过统一的数据传输抽象屏蔽底层复杂性，高效解决异构环境下的高性能数据交换难题。
@@ -100,6 +102,18 @@ NIXL 内置了多种高性能后端插件，覆盖了从本地内存到跨节点
 - **POSIX / Shared Memory**:
   - **功能**: 基于标准文件系统或共享内存的传输。
   - **适用场景**: 单节点内的进程间通信或作为兜底方案。
+
+- **GPUNETIO (DOCA GPUNetIO)**:
+  - **功能**: 基于 NVIDIA DOCA GPUNetIO 库，实现 GPUDirect Async Kernel-Initiated (GDAKI) 网络通信，即由 GPU Kernel 直接发起的网络传输。
+  - **适用场景**: GPU 主动通信（GPU-driven communications），进一步降低网络路径上的 CPU 参与。
+
+- **GUSLI**:
+  - **功能**: 对接 NVIDIA GUSLI（用户态块设备 I/O）客户端，与 GUSLI 服务端协同完成高性能块设备 I/O，支持本地共享内存、网络服务器、内核直连三种连接模式。
+  - **适用场景**: 用户态高性能块存储（如 SPDK 类存储服务商），绕过内核 I/O 栈。
+
+- **AZURE_BLOB**:
+  - **功能**: 对接 Azure Blob Storage 的对象存储后端。
+  - **适用场景**: Azure 云环境下的分层缓存与数据加载。
 
 ### 3.2 插件开发接口
 

@@ -37,7 +37,7 @@
 **MLA 的 KV Cache 挑战与 WideEP 的解法**：
 DeepSeek-V3/R1 采用了 MLA（Multi-head Latent Attention）架构，虽然其 KV Cache 显著小于传统 MHA，但在传统的 Tensor Parallel (TP) 模式下，Latent Attention 的投影计算在不同 GPU 分片间存在大量重复，导致显存利用率低下。
 
-vLLM 推出的 **WideEP (EP + DP)** 方案巧妙解决了这一问题，实现了“各司其职”：
+vLLM 推出的 **WideEP (EP + DP)** 方案解决了这一问题，实现了“各司其职”：
 
 - **Expert Parallelism (EP)**：让一组专家在多个 Rank 间共享，Token 被动态路由到对应专家计算，解决了稀疏激活带来的计算不均问题。
 - **Data Parallelism (DP)**：在 DP 模式下，Attention 层被复制，使得 Latent Projections 在不同 Rank 间独立计算，从而提升了有效 Batch Size 和 KV Cache 的利用效率。
@@ -85,9 +85,9 @@ Blackwell 架构引入了革命性的 FP4 支持。vLLM 针对 DeepSeek 独特�
 
 ---
 
-## 6. 显存策略：Weight Offloading v2 —— 以退为进的智慧
+## 6. 显存策略：Weight Offloading v2
 
-作为资深架构师，我们发现了一个反直觉的结论：**减少 GPU 数量反而能提升 Prefill 吞吐量**。
+这里有一个反直觉的结论：**减少 GPU 数量反而能提升 Prefill 吞吐量**。
 
 **逻辑解析**：
 当 Prefill 任务的 Batch Size 达到 64K tokens 时，计算利用率已接近饱和。此时如果继续增加 GPU 数量，性能提升将面临边际效应，而 NCCL 集合通信（All-gather/Reduce-scatter）的开销却会随卡数增加。通过将 GPU 规模从 4 缩减至 2，我们可以使通信开销减半，从而获得更高的整体效率。
@@ -96,8 +96,8 @@ Blackwell 架构引入了革命性的 FP4 支持。vLLM 针对 DeepSeek 独特�
 为了在更少的 GPU 上容纳庞大的 DeepSeek 模型，vLLM 引入了 v2 版权重卸载：
 
 - **机制改进**：不同于 v1 版通过低效的 PCIe/UVA 访问 CPU 权重，v2 版采用异步预取（Asynchronous Prefetching）。在执行当前层计算时，利用独立的 CUDA 流提前将下一层权重从 CPU 加载（Onload）至 GPU。
-- **GB200 核心优势**：Blackwell 的 NVLink-C2C 互联技术提供了极高的 CPU-GPU 吞吐，使得这种异步加载的延迟能够被计算过程完美隐藏，实现了真正的“无损”存储扩展。
-- **配置参数**：用户可通过 `group_size`（层分组）、`num_in_group`（组内卸载层数）和 `prefetch_step`（预取步数）进行精细化调优。
+- **GB200 核心优势**：Blackwell 的 NVLink-C2C 互联技术提供了很高的 CPU-GPU 吞吐，使这种异步加载的延迟能被计算过程大量掩盖，从而在不明显损失计算性能的情况下扩展可用显存。
+- **配置参数**：用户可通过 `offload_group_size`（层分组）、`offload_num_in_group`（组内卸载层数）和 `offload_prefetch_step`（预取步数）进行调优（见 `vllm/config/offload.py:54-66`）。
 
 ---
 
@@ -116,7 +116,7 @@ Blackwell 架构引入了革命性的 FP4 支持。vLLM 针对 DeepSeek 独特�
 
 ## 8. 结语：迈向 GB300 的新征程
 
-vLLM 在 Blackwell 平台上的成功，是硬件极限算力与软件极致优化深度协同的结果。通过精度、算子、通信和显存管理的全面重构，我们成功释放了 DeepSeek 模型在 GB200 上的恐怖潜能。
+vLLM 在 Blackwell 平台上的成功，来自硬件算力与软件优化的协同。通过精度、算子、通信和显存管理的重构，DeepSeek 模型在 GB200 上的性能得到了充分释放。
 
 展望未来，我们的工作重点将转向更复杂的专家负载均衡、极致的计算-通信重叠（Overlap），并致力于将 WideEP 架构推向即将到来的 GB300 平台。届时，凭借更强的 HBM 性能，我们将再次挑战 AI 推理的成本边界。
 

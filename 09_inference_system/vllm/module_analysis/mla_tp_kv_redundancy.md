@@ -1,6 +1,6 @@
 # MLA 的 TP 切分：为什么 8 张 GPU 存了同一份 KV cache
 
-> DeepSeek V3 的 MLA 将 KV cache 压缩到标准 MHA 的 ~1.8%——从每 token 每层 32KB 压到 576 bytes。但当 TP=8 时，每个 GPU 的 KV cache 分配和单 GPU 部署完全一样——TP 没有为 KV cache 节省任何显存。这不是 bug——这是 MLA 的「跨 head 共享表示」撞上 TP 的「按 head 切分」时，二者在数学上根本不可调和的结果。
+> DeepSeek V3 的 MLA 将 KV cache 压缩到标准 MHA 的 ~1.4%——从每 token 每层 ~40 KB 压到 576 bytes（FP8 口径）。但当 TP=8 时，每个 GPU 的 KV cache 分配和单 GPU 部署完全一样——TP 没有为 KV cache 节省任何显存。这不是 bug——这是 MLA 的「跨 head 共享表示」撞上 TP 的「按 head 切分」时，二者在数学上根本不可调和的结果。
 
 ## 一、两个独立的好设计，合在一起就不对了
 
@@ -19,11 +19,11 @@ MLA（Multi-head Latent Attention）也是一个好设计。它不缓存显式�
 
 |                          | 标准 MHA（128 个 KV head）               | MLA                   |
 | ------------------------ | ---------------------------------------- | --------------------- |
-| 每 token 每层存储（FP8） | $128 \times (128 + 128) = 32{,}768$ 元素 | $512 + 64 = 576$ 元素 |
-| 每 token 每层字节        | ~32 KB                                   | ~576 bytes            |
-| 等效压缩比               | —                                        | **~1.8%**             |
+| 每 token 每层存储（FP8） | $128 \times (192 + 128) = 40{,}960$ 元素 | $512 + 64 = 576$ 元素 |
+| 每 token 每层字节        | ~40 KB                                   | ~576 bytes            |
+| 等效压缩比               | —                                        | **~1.4%**             |
 
-> 标准 MHA 基线按 `head_dim=128` 简化计算。若包含 RoPE 维度（DeepSeek V3 的 `qk_rope_head_dim=64`），K 的 head_dim 应为 192，基线为 $128 \times (192 + 128) = 40{,}960$，压缩比约 1.41%。两种口径不影响本文核心论点——MLA 的 576 维全部与 head 无关，TP 无法切分这一事实与基线取法无关。
+> 标准 MHA 基线含 RoPE 维度：DeepSeek V3 的 `qk_rope_head_dim=64`，K 的 head_dim 为 $192$（nope 128 + rope 64）、V 为 128，基线为 $128 \times (192 + 128) = 40{,}960$ 元素，压缩比 $576/40960 \approx 1.4\%$（BF16 口径下同为 $1152/81920 \approx 1.4\%$）。这一口径不影响本文核心论点——MLA 的 576 维全部与 head 无关，TP 无法切分这一事实与基线取法无关。
 
 `kv_lora_rank = 512`，`qk_rope_head_dim = 64`。关键是 `k_rope` 采用 MQA 风格——这 64 维是**所有 128 个 head 共用**的，不是每个 head 一份。整个 MLA 缓存只有 $512 + 64 = 576$ 维，全部与 attention head 无关。
 
@@ -256,7 +256,7 @@ V3 和 V4 的压缩机制不同（低秩 vs slot），但它们在 TP 面前的�
 
 ### 6.3 HMA：管理上的复杂度，不是 TP 行为上的差异
 
-vLLM 的 Hybrid KV Cache Manager（HMA）通过 `group_layers_by_identity()` 按 `(kv_size, num_heads, head_size, block_size, engine_group_idx, dtype, engine_kv_format)` 的 7 元组将层聚合为 KV cache 组，管理四组不同的 `tokens_per_block`、`slots_per_block` 和 `compress_ratio`（4× 到 128×）。
+LMCache 通过 `group_layers_by_identity()`（`lmcache/v1/kv_layer_groups.py:76`，`KernelGroupIdentity`）按 `(kv_size, num_heads, head_size, block_size, engine_group_idx, dtype, engine_kv_format)` 的 7 元组将各层聚合为 KV cache 组，以适配四组不同的 `tokens_per_block`、`slots_per_block` 和 `compress_ratio`（4× 到 128×）。注意这是 **LMCache 侧**的分组逻辑（用于决定哪些层走同一批传输 kernel）；vLLM 引擎侧自己的 HMA 分组由 `_get_kv_cache_groups_*` 系列函数（`vllm/v1/core/kv_cache_utils.py`）完成，两者是独立的两套实现。
 
 HMA 解决的是「如何在同一个显存池中管理不同 block 大小的页」——这是一个**显存分配**问题。但在**TP 冗余**问题上，四组都给出了相同的答案：`kv_size=1` → `is_mla=True` → `ReplicatedLinear` → 全部复制。V4 的冗余不是 V3 的「扩展」——它是同一个规则在四组上的四次应用。
 

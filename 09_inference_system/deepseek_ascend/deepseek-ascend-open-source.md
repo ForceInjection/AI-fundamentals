@@ -23,13 +23,13 @@
 
 两个值得单独说的点。**其一，TileLang 走的是「合入主线」**：昇腾作为与 cuda/hip/metal 并列的 codegen 后端进了 tilelang 0.1.15，默认设备代号 `dav-3510`（即 950），`@tilelang.jit(target="ascend")` 即可编译；适配器仓 tilelang-ascend 则是一条运行了一年的独立线（含 B 站课程与中文编程指南，实测覆盖上一代 A2/A3）。**其二，清单外还有配套**：DeepGEMM-Ascend 与 DeepEP-Ascend 共同依赖的 [DeepJIT](https://github.com/deepseek-ai/DeepJIT)（xPU kernel JIT 编译库）、IDE 补全用的 clangd-ascend，以及华为 CANN 生态放在 GitCode 上的 `cann/{catlass,pto-isa,shmem}` 三个 submodule——这套组件的指令层依赖，在华为的 GitCode 而不是 GitHub。
 
-**其三，最小的 DeepSelect 卡在两个热路径上**：DSA 稀疏注意力里 Lightning Indexer 的 token 筛选（DeepSeek V4 的 topk 即 512）与推理采样器对约 128K 词表的 TopK 采样——每生成一个 token 都要跑一遍的地方。README 明确只优化 topk ≤ 4096 的场景。
+**其三，最小的 DeepSelect 卡在两个热路径上**：DSA 稀疏注意力里 Lightning Indexer 的 token 筛选（DeepSeek V4 的 topk 即 512）与推理采样器对约 128K 词表的 TopK 采样——每生成一个 token 都要跑一遍的地方。README 明确 topk 仅支持 ≤ 4096，主优化场景为 512。
 
 ## 二、三种双端模式
 
 六个组件在「英伟达版 ↔ 昇腾版」的组织方式上分成了三种，每一种都有代码级证据。
 
-**模式一：同仓双后端**（FlashMLA、TileKernels、DeepSelect）。同一个仓库、同一套 Python API，运行时或安装期选择后端——`flash_mla_interface.py` 开头 `os.path.exists("/dev/davinci_manager")` 判定是否加载 NPU 后端，TileKernels 的 `config.py` 同款。内核是每端各写一份：TileKernels 的算子按 `*_kernel.py`（分发）+ `*_cuda.py` + `*_asc.py` 三件套组织（代码深读实测 33 个 `*_asc.py`、32 个 `*_cuda.py`，仅 `randn` 无 CUDA 对应）——官宣「DeepSeek 训练中用到的每一个 TileLang 算子，在昇腾上都有对应的高性能实现」，在这个仓库里可以逐文件核对。注意这不是跨端自动编译，是**每端一份手写内核、共享 Python 接口**。
+**模式一：同仓双后端**（FlashMLA、TileKernels、DeepSelect）。同一个仓库、同一套 Python API，运行时或安装期选择后端——`flash_mla_interface.py` 开头 `os.path.exists("/dev/davinci_manager")` 判定是否加载 NPU 后端，TileKernels 的 `config.py` 同款（main 后续在 2026-10 后已重构为安装期 `_build_info.BACKEND == "npu"` 的选择）。内核是每端各写一份：TileKernels 的算子按 `*_kernel.py`（分发）+ `*_cuda.py` + `*_asc.py` 三件套组织（代码深读实测 33 个 `*_asc.py`、32 个 `*_cuda.py`，仅 `randn` 无 CUDA 对应）——官宣「DeepSeek 训练中用到的每一个 TileLang 算子，在昇腾上都有对应的高性能实现」，在这个仓库里可以逐文件核对。注意这不是跨端自动编译，是**每端一份手写内核、共享 Python 接口**。
 
 **模式二：平行仓、同 API**（DeepGEMM-Ascend、DeepEP-Ascend）。内核完全重写为昇腾风格（DeepGEMM 的 `__global__ __mix__(1, 2)` 即 1 Cube + 2 Vector 核混合编程，走 CANN 9.20 的 bisheng 编译器经 DeepJIT 运行时编译），但接口层逐文件对齐英伟达版：`csrc/` 目录树一一对应、Python 包同名（`deep_gemm`、`deep_ep`）、连 JIT 环境变量命名与测试目录结构都对应。DeepGEMM-Ascend 自述 "fully API-compatible"，连英伟达版的 `cublaslt_gemm_*` 都以 ACLNN 后端的同名别名提供；DeepEP-Ascend README 明示 implementation follows DeepEP V2.5 APIs——而英伟达仓恰在 9 月 29 日合入 DeepEP V2.5（#763），两边是同一次架构重构的两份实现。
 
@@ -69,7 +69,7 @@ FlashMLA 仓库当日随代码附了一篇中文文档《Ascend Sparse Attention
 
 更难得的是文档把设计选择全部还原成硬件数字：为什么每 AI Core 配 64 个 q head（存算比按 4096 FMA/cycle 与 5 TB/s 算，head ≥ 64 才是 compute bound）、为什么 1C2V、为什么 `B_TOPK` 最终取 64（报告在 1C1V 口径下要求 `B_TOPK > 73.14`、故建议 96/128；最终 1C2V 代码取 64，gather2 折半后每 AIV 恰好 16 个在飞 MTE2 请求，与 16 的队列深度持平）。
 
-顺带一个格式细节：V4.1 的 KV cache 每 token **528 字节**（FP8：512 字节数据 + 16 字节 e8m0 scale，每 32 个值一个），FP4 版压到 **288 字节**——scale 与 data 相邻放置，正是给昇腾 MTE2 一次拷齐优化的。
+顺带一个格式细节（出自 DeepSelect README 的 k_cache 格式一节）：V4.1 的 KV cache 每 token **528 字节**（FP8：512 字节数据 + 16 字节 e8m0 scale，每 32 个值一个），FP4 版压到 **288 字节**——scale 与 data 相邻放置，正是给昇腾 MTE2 一次拷齐优化的。
 
 本站已将原文转载存档并整理了一份速查：
 
@@ -84,7 +84,7 @@ FlashMLA 仓库当日随代码附了一篇中文文档《Ascend Sparse Attention
 
 对齐官宣口径之后，缺口同样清楚：
 
-- **覆盖不完整**：FlashMLA 的 fused norm-RoPE-attn-RoPE-cast 内核与 MHA dense 仍 CUDA-only；DeepSelect 昇腾版仅 BF16 输入、索引仅 int32、不支持 sorted 输出；DeepEP-Ascend 的 reduce-scatter/all-reduce 内核、专家负载均衡通信、graph capture 均未实现（README「Ongoing」自列）；
+- **覆盖不完整**：FlashMLA 的 fused norm-RoPE-attn-RoPE-cast 内核与 MHA dense 仍 CUDA-only；DeepSelect 昇腾版仅 BF16 输入、索引仅 int32、sorted_index 为可选项但官方建议非必要不开启（开启有性能代价）；DeepEP-Ascend 的 reduce-scatter/all-reduce 内核、专家负载均衡通信、graph capture 均未实现（README「Ongoing」自列）；
 - **没有框架同步开源**：Megatron / vLLM / SGLang 的昇腾后端不在本次范围——组件是组件，端到端训练与推理方案还得等生态接入；
 - **工程规范瑕疵**：DeepEP-Ascend 没有 LICENSE 文件（同批其他仓均 MIT）；DeepGEMM-Ascend 与 DeepEP-Ascend 单 commit 放出，无演进历史；
 - **双路线未声明收敛方向**：tilelang-ascend 适配器（A2/A3、Ascend C & PTO 路线）与主线 950 后端长期关系如何，README 未说；

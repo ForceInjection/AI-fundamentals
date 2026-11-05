@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `P2PBackend` 构成了 LMCache 多级存储架构中的 **L2 弹性互联层**。它的核心理念是打破单机内存的物理隔离，通过高速网络（如 RDMA 或 TCP）将集群中其他节点的空闲内存汇聚成一个巨大的共享缓存池。
 
 当本地 L1 内存未命中时，系统会优先尝试从邻居节点（Peer）“借用”数据，而不是直接回退到慢速的 L3 磁盘。
@@ -489,8 +491,7 @@ p2p_host: "192.168.1.11"
 **Sender (Instance A):**
 
 ```python
-from lmcache.v1.storage_backend import LMCacheEngine
-# ... (测试代码)
+# 示意代码，完整测试脚本见 5.3.3
 ```
 
 #### 5.3.3 单机多实例测试 (Loopback)
@@ -510,51 +511,50 @@ p2p_lookup_ports: [60001] # 控制端口 A
 
 **Instance 2 配置**:
 
-````yaml
+```yaml
 p2p_host: "127.0.0.1"
 p2p_init_ports: [60002]   # 数据端口 B (必须不同)
 p2p_lookup_ports: [60003] # 控制端口 B (必须不同)
-```from lmcache.v1.config import LMCacheEngineConfig
+```
+
+**Sender (Instance A) 测试逻辑（示意）**：
+
+```python
+# 示意代码：仅展示 P2P 写入路径的关键环节，非可直接运行的完整脚本。
+# 实际部署中 LMCacheEngine 由 vLLM 集成层（LMCacheConnectorV1Dynamic）创建，
+# 独立构造还需 metadata、GPU connector 等参数。
+from lmcache.v1.cache_engine import LMCacheEngine
+from lmcache.v1.config import LMCacheEngineConfig
 import time
 
-# 加载配置
 config = LMCacheEngineConfig.from_file("config_a.yaml")
-engine = LMCacheEngine(config)
+engine = ...  # 构造 LMCacheEngine（经 vLLM 集成层创建）
 
-# 模拟生成并存入数据
-key = "test_key"
-data = b"x" * 1024 * 1024  # 1MB 数据 (实际场景中应为 Tensor)
-# 注意：这里仅演示 put 触发本地存储和元数据上报
-engine.put(key, data)
-print(f"Put data for key: {key}")
+# vLLM 正常推理时，引擎内部调用 store() 写入本地缓存，
+# 并向 Controller 上报元数据供 Peer 发现
+# ...
 
 # 保持进程存活以响应 P2P 请求
 while True:
     time.sleep(1)
-````
+```
 
-**Receiver (Instance B):**
+**Receiver (Instance B) 测试逻辑（示意）**：
 
 ```python
-from lmcache.v1.storage_backend import LMCacheEngine
+# 示意代码：仅展示 P2P 读取路径的关键环节
+from lmcache.v1.cache_engine import LMCacheEngine
 from lmcache.v1.config import LMCacheEngineConfig
 import time
 
-# 加载配置
 config = LMCacheEngineConfig.from_file("config_b.yaml")
-engine = LMCacheEngine(config)
+engine = ...  # 同上，经 vLLM 集成层创建
 
 # 等待 Sender 上报元数据到 Controller
 time.sleep(2)
 
-# 读取数据 (触发 P2P 查找和拉取)
-key = "test_key"
-retrieved_data = engine.get(key)
-
-if retrieved_data:
-    print(f"Successfully retrieved {len(retrieved_data)} bytes via NixlChannel")
-else:
-    print("Failed to retrieve data")
+# lookup 未命中本地缓存时，经 P2P 后端向 Peer 发起查找，
+# 再通过 NixlChannel 拉取数据；实际调用入口为 lookup()/retrieve()（以 token 序列为键）
 ```
 
 #### 5.3.4 常见问题排查

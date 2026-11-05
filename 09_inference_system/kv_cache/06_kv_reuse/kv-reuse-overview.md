@@ -4,7 +4,7 @@
 
 ## 一、背景：前缀缓存能复用什么，不能复用什么
 
-「复用」是推理系统里最便宜的一层优化：一段算过的上下文，下一次请求撞上，就省掉整段 prefill。主流引擎都默认开着它——vLLM 的 Automatic Prefix Caching、SGLang 的 RadixAttention——匹配以 token 块为单位（逐块哈希或沿树比对），命中多长就省多长；机制细节可看 [Prefix Caching 原理与实现](../01_concepts/prefix_caching/prefix_caching.md) 与 [RadixAttention 原理与 SGLang 实践](../01_concepts/prefix_caching/radix_attention.md)。
+「复用」是推理系统里最便宜的一层优化：一段算过的上下文，下一次请求撞上，就省掉整段 prefill。主流引擎都默认开着它（vLLM 自 V1 引擎起默认开启）——vLLM 的 Automatic Prefix Caching、SGLang 的 RadixAttention——匹配以 token 块为单位（逐块哈希或沿树比对），命中多长就省多长；机制细节可看 [Prefix Caching 原理与实现](../01_concepts/prefix_caching/prefix_caching.md) 与 [RadixAttention 原理与 SGLang 实践](../01_concepts/prefix_caching/radix_attention.md)。
 
 但它认的条件很硬，任何一条不满足，想复用的那段内容就要**从头计算（full prefill）**：
 

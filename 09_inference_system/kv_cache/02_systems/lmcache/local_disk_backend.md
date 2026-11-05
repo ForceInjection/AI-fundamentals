@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `LocalDiskBackend` 构成了 LMCache 多级存储架构中的 **L3 本地磁盘缓存层**。它利用本地磁盘（强烈推荐 NVMe SSD）作为高容量、低成本的扩展缓冲池，主要用于接纳从 L1/L2 内存层溢出（Evict）的冷热数据。
 
 与传统的文件存储不同，`LocalDiskBackend` 的设计目标并非数据的长期归档，而是作为 **Runtime Swap** 扩展 GPU/CPU 有限的内存容量。为了弥补磁盘 I/O 相对内存的延迟劣势，该模块深度集成了 **O_DIRECT 直通 I/O**、**异步优先级调度流水线** 以及 **精细的内存生命周期管理** 等高性能技术。

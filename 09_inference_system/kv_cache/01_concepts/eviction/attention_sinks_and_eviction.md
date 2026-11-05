@@ -1,10 +1,10 @@
 # KV Cache 淘汰策略：从滑动窗口到注意力引导的精确淘汰
 
-KV Cache 随序列长度线性膨胀——百万级上下文下，单请求的 KV 就能吃掉几十 GB 显存。PagedAttention 通过按需分配 block 解决了"怎么高效存"，但它不回答"存不下了怎么办"。当 GPU 显存耗尽，推理系统必须选择：**谁的 KV 块被牺牲？**
+KV Cache 随序列长度线性膨胀：百万级上下文下，单请求的 KV 就能吃掉几十 GB 显存。PagedAttention 通过按需分配 block 解决了"怎么高效存"，但它不回答"存不下了怎么办"。当 GPU 显存耗尽，推理系统必须选择：**谁的 KV 块被牺牲？**
 
-CPU Cache 淘汰里选错一个 cache line，多等几十个周期而已。KV Cache 淘汰里丢掉一段关键上下文，模型可能给出完全错误的答案。而最直觉的淘汰策略——滑动窗口，只保留最近 N 个 token——在实践中会导致生成质量断崖式下降。
+CPU Cache 淘汰里选错一个 cache line，多等几十个周期而已。KV Cache 淘汰里丢掉一段关键上下文，模型可能给出完全错误的答案。而最直觉的淘汰策略（滑动窗口，只保留最近 N 个 token）在实践中会导致生成质量断崖式下降。
 
-这篇文章从"滑动窗口为什么失败"入手：先介绍 Attention Sinks——一个 SoftMax + Causal Mask 导致的数值稳定现象，它构成了淘汰策略必须遵守的硬约束（前几个 token 绝对不能丢）。然后分析业界如何在这条底线之上，用注意力分数区分剩余 token 的信息价值，实现从"盲目按位置淘汰"到"精确按重要性淘汰"的演进。
+这篇文章从"滑动窗口为什么失败"入手：先介绍 Attention Sinks 这个 SoftMax + Causal Mask 导致的数值稳定现象，它构成了淘汰策略必须遵守的硬约束（前几个 token 绝对不能丢）。然后分析业界如何在这条底线之上，用注意力分数区分剩余 token 的信息价值，实现从"盲目按位置淘汰"到"精确按重要性淘汰"的演进。
 
 > **前置阅读**：[KV Cache 原理简介](../basic/kv_cache_basics.md) — KV Cache 的工作机制、显存公式；[PagedAttention 原理介绍](../basic/paged_attention.md) — block 级内存管理，本文假设你已了解 block table 和按需分配的基本概念。
 
@@ -26,8 +26,8 @@ $$\text{128K context, batch=8} = 4 \text{ KB} \times 80 \times 131072 \times 8 \
 
 面对这个压力，业界沿着两条路径推进：
 
-- **压缩每个 token 的 KV**：GQA/MQA 减少 KV head 数、MLA 低秩压缩、量化（FP8/INT4）。但压缩率有上限——MLA 已将每 token 从 32 KB 压至 ~1.1 KB，继续压缩到 0.1 KB 以下将触及精度红线。
-- **减少存储的 token 数**：即淘汰——丢弃部分历史 token 的 KV。只要淘汰策略足够精确，理论上可以压缩到任意小。
+- **压缩每个 token 的 KV**：GQA/MQA 减少 KV head 数、MLA 低秩压缩、量化（FP8/INT4）。但压缩率有上限：MLA 已将每 token 从 32 KB 压至 ~1.1 KB，继续压缩到 0.1 KB 以下将触及精度红线。
+- **减少存储的 token 数**：即淘汰，丢弃部分历史 token 的 KV。只要淘汰策略足够精确，理论上可以压缩到任意小。
 
 **两条路径互补，但淘汰是唯一可以"不受维度限制"持续缩容的手段。** 压缩决定每个 token 存多少，淘汰决定存多少个 token。最终 KV Cache 大小 = 压缩后的单 token 大小 × 保留的 token 数量。
 
@@ -37,7 +37,7 @@ $$\text{128K context, batch=8} = 4 \text{ KB} \times 80 \times 131072 \times 8 \
 
 ### 2.1 "越近越重要"的朴素假设
 
-淘汰策略设计的第一个自然想法是：自回归生成是逐步推进的，最新 token 理应对下一步预测最重要。因此最简单的策略就是**滑动窗口**——只保留最近 W 个 token 的 KV，其余全部丢弃。
+淘汰策略设计的第一个自然想法是：自回归生成是逐步推进的，最新 token 理应对下一步预测最重要。因此最简单的策略就是**滑动窗口**：只保留最近 W 个 token 的 KV，其余全部丢弃。
 
 这个策略有令人难以拒绝的优点：
 
@@ -49,11 +49,11 @@ $$\text{128K context, batch=8} = 4 \text{ KB} \times 80 \times 131072 \times 8 \
 
 ### 2.2 实验给出了残酷的否定
 
-2023 年，MIT、Meta、CMU 和 NVIDIA 的联合团队在 StreamingLLM 论文[^1]中进行了系统的消融实验。结论是明确的：
+2023 年，MIT、Meta AI 和 CMU 的联合团队在 StreamingLLM 论文[^1]中进行了系统的消融实验。结论是明确的：
 
-**仅保留最近 W 个 token（无初始 token）时，PPL 在超过预训练长度后呈断崖式上升——不是缓慢退化，而是瞬间崩塌。** 模型输出变得完全不可用。
+**仅保留最近 W 个 token（无初始 token）时，PPL 在超过预训练长度后呈断崖式上升——缓慢退化都算不上，是瞬间崩塌。** 模型输出变得完全不可用。
 
-但实验中有一个更关键的发现：**只要额外保留开头 4 个 token，再加上最近 W 个 token，PPL 就能保持稳定**——即使序列长度远超预训练上限（如用预训练 4K 的 Llama-2 跑到 4M token）。这 4 个开头的 token 甚至不需要有语义——替换成换行符 `\n`，效果一样。
+但实验中有一个更关键的发现：**只要额外保留开头 4 个 token，再加上最近 W 个 token，PPL 就能保持稳定**，即使序列长度远超预训练上限（如用预训练 4K 的 Llama-2 跑到 4M token）。这 4 个开头的 token 甚至不需要有语义，替换成换行符 `\n`，效果一样。
 
 这个现象反直觉：为什么离当前生成位置最远的 4 个 token，比中间的几千个 token 都关键？
 
@@ -67,9 +67,9 @@ $$\text{128K context, batch=8} = 4 \text{ KB} \times 80 \times 131072 \times 8 \
 
 $$\alpha_{m,n} = \frac{\exp(q_m \cdot k_n / \sqrt{d})}{\sum_{j=0}^{m} \exp(q_m \cdot k_j / \sqrt{d})}$$
 
-分母是位置 0 到 $m$ 的指数和，分子是位置 $n$ 的指数。关键约束：$\sum_{n=0}^{m} \alpha_{m,n} = 1$——SoftMax 强制所有权重之和等于 1。
+分母是位置 0 到 $m$ 的指数和，分子是位置 $n$ 的指数。关键约束：$\sum_{n=0}^{m} \alpha_{m,n} = 1$，SoftMax 强制所有权重之和等于 1。
 
-当 query 与大多数前面的 key 都没有强语义关联时，**SoftMax 不允许注意力"不消费"**。多出来的注意力质量必须有个去处。由于 SoftMax 的指数放大效应——即使所有内积值都很小，归一化后仍然会分配出 100% 的权重——多余的注意力被倾倒给了某个固定目标。
+当 query 与大多数前面的 key 都没有强语义关联时，**SoftMax 不允许注意力"不消费"**。多出来的注意力质量必须有个去处。由于 SoftMax 的指数放大效应（即使所有内积值都很小，归一化后仍然会分配出 100% 的权重），多余的注意力被倾倒给了某个固定目标。
 
 ### 3.2 为什么是前几个 token？
 
@@ -81,9 +81,9 @@ $$\alpha_{m,n} = \frac{\exp(q_m \cdot k_n / \sqrt{d})}{\sum_{j=0}^{m} \exp(q_m \
 
 ### 3.3 去掉 Sink 后发生了什么？
 
-去掉前几个 Attention Sink token 后，模型并不会"均匀地"把注意力重新分配给剩余 token。由于 SoftMax 的指数特性——即使内积的微小波动，经过指数放大后也会导致注意力高度集中到少数几个 token 上——某个恰好与 query 有微小正内积的 token 会成为新的"伪 Sink"。但这个新 Sink 在序列中的位置不稳定，其语义也并不适合承担注意力接收器的角色，导致信息流混乱，逐层放大后最终输出崩塌。
+去掉前几个 Attention Sink token 后，模型并不会"均匀地"把注意力重新分配给剩余 token。由于 SoftMax 的指数特性（即使内积的微小波动，经过指数放大后也会导致注意力高度集中到少数几个 token 上），某个恰好与 query 有微小正内积的 token 会成为新的"伪 Sink"。但这个新 Sink 在序列中的位置不稳定，其语义也并不适合承担注意力接收器的角色，导致信息流混乱，逐层放大后最终输出崩塌。
 
-**滑动窗口失败的根源在此：它不是因为"丢失了重要语义信息"而失败，而是因为"破坏了注意力分布的数值稳定性"而失败。** Attention Sink 像一个锚——去掉它，整个注意力机制就开始漂移。
+**滑动窗口失败的根源在此：它并非"丢失了重要语义信息"，而是"破坏了注意力分布的数值稳定性"。** Attention Sink 像一个锚——去掉它，整个注意力机制就开始漂移。
 
 > **与位置编码无关**：Attention Sinks 是 SoftMax + Causal Mask 数学结构的副产品，与使用 RoPE、ALiBi 还是可学习绝对位置编码无关。位置编码只影响注意力分布的具体形状，不影响 Attention Sink 现象的存在——这是自注意力机制本身的结构属性，不是某种位置编码的副作用。
 
@@ -91,11 +91,11 @@ $$\alpha_{m,n} = \frac{\exp(q_m \cdot k_n / \sqrt{d})}{\sum_{j=0}^{m} \exp(q_m \
 
 ## 四、从发现到策略：Informed Eviction 的三条路线
 
-Attention Sinks 回答了"为什么滑动窗口不行"，但它的作用止步于划出一条硬底线：**前几个 token 绝对不能丢**——丢掉的后果不是信息损失，而是数值崩溃。这是淘汰策略必须遵守的约束，不是淘汰的方法论。
+Attention Sinks 回答了"为什么滑动窗口不行"，但它的作用止步于划出一条硬底线：**前几个 token 绝对不能丢**，丢掉的后果是数值崩溃而非一般性的信息损失。这条底线是淘汰策略必须遵守的约束，它本身并不提供淘汰的方法论。
 
 在这条底线之上，还需要回答另一个问题：**剩余的 token 中，哪些更值得保留？** 这个问题与 Sink 无关——它需要的是信息重要性排序，而非稳定性保障。业界发展出的三类"知情淘汰"（Informed Eviction）策略围绕这个排序问题展开，它们共享同一个硬约束（Sink 不可丢弃），但通过不同的方式识别剩余 token 的信息价值。
 
-### 4.1 StreamingLLM：最简可行方案——Sink + Window
+### 4.1 StreamingLLM：最简可行方案（Sink + Window）
 
 既然前几个 token 的注意力吸收功能不依赖语义，那最简单的方案就是：**永久锁定开头的 4 个 token 作为 Attention Sink，同时保留最近 W 个 token 的 Rolling Window。中间的 token 全部丢弃。**[^1]
 
@@ -116,7 +116,7 @@ Attention Sinks 回答了"为什么滑动窗口不行"，但它的作用止步�
 
 ### 4.2 H2O：让注意力分数做裁判
 
-StreamingLLM 的问题在于它**根本不看内容**——不管是"请记住这个密码：xyz789"还是"嗯嗯好的我知道了"，在中间位置一律平等淘汰。H2O (Heavy Hitter Oracle)[^2] 换了一个思路：**让注意力分数来打分——被注意力机制频繁"关照"的 token，就是重要的 token。**
+StreamingLLM 的问题在于它**根本不看内容**：不管是"请记住这个密码：xyz789"还是"嗯嗯好的我知道了"，在中间位置一律平等淘汰。H2O (Heavy Hitter Oracle)[^2] 换了一个思路：**让注意力分数来打分，被注意力机制频繁"关照"的 token，就是重要的 token。**
 
 核心机制：
 
@@ -181,7 +181,7 @@ Prefill 阶段:                                   Decode 阶段:
 
 > **GQA 下的 KV 共享**：SnapKV 在每个 head 内独立打分并选出 top-k 位置，但由于 GQA 下多个 Q head 共享同一组 KV head，最终保留的 KV 是所有 head 选择的**并集**——任一 head 投票为重要的位置，其完整的 KV（覆盖该组所有 head）都会被保留。这避免了各 head 各自保留不同子集导致的 KV 碎片化。
 
-**关键局限——"休眠 token"问题**：SnapKV 和 H2O 都假设"注意力高的 token = 重要的 token"。但有些 token 在注意力分布中几乎不可见，却至关重要——比如 API key、密码、代码中的常量值。这些 token 在 generation 早期不被 attend，但在特定 query 出现时（如"请输出之前生成的 API key"）才突然变得关键。此时它们早已被淘汰，无法恢复。2025 年 Transactional Attention[^4] 论文在凭据检索类任务上实测 SnapKV 几乎完全失败（准确率接近 0%）——这类"休眠 token"在注意力分布中完全不可见，却是后续生成的关键依赖。
+**关键局限——"休眠 token"问题**：SnapKV 和 H2O 都假设"注意力高的 token = 重要的 token"。但有些 token 在注意力分布中几乎不可见，却十分关键（如 API key、密码、代码中的常量值）。这些 token 在 generation 早期不被 attend，但在特定 query 出现时（如"请输出之前生成的 API key"）才突然变得关键。此时它们早已被淘汰，无法恢复。2025 年 Transactional Attention[^4] 论文在凭据检索类任务上实测 SnapKV 几乎完全失败（准确率接近 0%）——这类"休眠 token"在注意力分布中完全不可见，却是后续生成的关键依赖。
 
 ---
 
@@ -197,7 +197,7 @@ StreamingLLM 或 H2O 可以将重要性精确到单个 token，但在块管理�
 - **仅淘汰全"冷" block**：只有当 block 内所有 token 都低于重要性阈值时才淘汰——更保守，需要更大的 `block_size` 预算
 - **双速 block 池**：将"冷 block"和"热 block"放入不同的分配池，优先从冷池中回收
 
-vLLM 的 RFC #39076[^5] 提出了一种更激进的方案——**Entropy-Gated Online Block Expiration**：在 decode 阶段实时追踪每个 block 的注意力质量，低于阈值的 block 在 decode 过程中被动态标记为 EXPIRED，PagedAttention kernel 在 softmax 前直接将其归零，物理页立即回收。这与前面基于注意力分数的静态淘汰不同——过期判断发生在 decode 的每一步，而非 Prefill 结束时一次性决定。据提案估计可减少 30-60% 的活跃 KV 占用，但该方案仍在提案阶段，尚未在生产环境中大规模验证。
+vLLM 的 RFC #39076[^5] 提出了一种更激进的方案 **Entropy-Gated Online Block Expiration**：在 decode 阶段实时追踪每个 block 的注意力质量，低于阈值的 block 在 decode 过程中被动态标记为 EXPIRED，PagedAttention kernel 在 softmax 前直接将其归零，物理页立即回收。这与前面基于注意力分数的静态淘汰不同：过期判断发生在 decode 的每一步，而非 Prefill 结束时一次性决定。据提案估计可减少 30-60% 的活跃 KV 占用，但该方案仍在提案阶段，尚未在生产环境中大规模验证。
 
 ### 5.2 vLLM Preemption：当逐块淘汰不够用时
 
@@ -208,9 +208,9 @@ vLLM 的 RFC #39076[^5] 提出了一种更激进的方案——**Entropy-Gated O
 | **Recompute**（V1 唯一模式）      | 释放所有 block，请求返回等待队列，需重新 Prefill（共享前缀的 token 可能命中 prefix cache） | 丢弃未缓存的已计算 KV | 所有请求                     |
 | **Swap**（V0，需 CPU Offloading） | Block 移至 CPU 内存，请求进入 swapped 队列，恢复时回传                                     | 需要 CPU↔GPU 带宽     | V0 多序列请求（Beam Search） |
 
-V1 只有 Recompute 一种模式——SWAP 在 V1 中被有意移除（`num_cpu_blocks = 0`），设计假设是 Prefix Caching 可以让恢复时的大部分 Prefill token 命中缓存，从而降低重算成本[^6]。但需要注意：**并非总能完全命中**——如果 Preemption 发生在 decode 中段且请求没有与其他请求共享前缀，恢复时仍需从头完整 Prefill。被 Preempt 的请求通过 `_preempt_request()` 插入 `self.waiting` 队列最前面，保证不会长期饥饿。Preemption 是"核选项"：整个请求的所有 KV block 被释放，`num_computed_tokens` 归零，缓存完全命中前仍需完整走一遍 block 分配路径。
+V1 只有 Recompute 一种模式：SWAP 在 V1 中被有意移除（`num_cpu_blocks = 0`），设计假设是 Prefix Caching 可以让恢复时的大部分 Prefill token 命中缓存，从而降低重算成本[^6]。但需要注意：**并非总能完全命中**，如果 Preemption 发生在 decode 中段且请求没有与其他请求共享前缀，恢复时仍需从头完整 Prefill。被 Preempt 的请求通过 `_preempt_request()` 插入 `self.waiting` 队列最前面，保证不会长期饥饿。Preemption 是"核选项"：整个请求的所有 KV block 被释放，`num_computed_tokens` 归零，缓存完全命中前仍需完整走一遍 block 分配路径。
 
-**Preemption 触发条件**：由调度器 `schedule()` 中 `allocate_slots()` 返回 `None`（KV Cache 耗尽）触发——不是基于水位线的主动预防，而是分配失败的被动响应。KVCacheManager 内部有一个 watermark 参数用于为等待/被抢占请求预留 block，但它不驱动 Preemption 决策本身，只影响新请求的接纳时机[^6]。
+**Preemption 触发条件**：由调度器 `schedule()` 中 `allocate_slots()` 返回 `None`（KV Cache 耗尽）触发；vLLM 并不做基于水位线的主动预防，Preemption 属于分配失败后的被动响应。KVCacheManager 内部有一个 watermark 参数用于为等待/被抢占请求预留 block，但它不驱动 Preemption 决策本身，只影响新请求的接纳时机[^6]。
 
 ### 5.3 两层逻辑，一条链路
 
@@ -243,23 +243,23 @@ V1 只有 Recompute 一种模式——SWAP 在 V1 中被有意移除（`num_cpu_
 | **Entropy-Gated Exp.**           | 注意力质量（实时） |  ✅ 优秀  |     中     |   高   |  40-70%（据提案估计）   | 超长 decode        |
 | **Preemption**（系统层）         | 调度策略           | ✅ 可恢复 | 高（重算） |   低   |    0%（全请求释放）     | 内存压力极限       |
 
-Sliding Window 不加入生产比较——它是其他所有策略的"反面教材"，也是理解为什么需要 Informed Eviction 的起点。
+Sliding Window 不加入生产比较：它是其他所有策略的"反面教材"，也是理解为什么需要 Informed Eviction 的起点。
 
 > 注："额外开销"指相对于纯位置策略（Sliding Window）新增的注意力分数追踪、存储或计算成本。"复杂度"指在 PagedAttention block 管理体系中的集成难度。
 
 ### 6.2 三个开放问题
 
-**注意力分数的存储成本**。H2O 要求为每个 KV token 维护累积注意力分数——对于 1M token 的单请求，朴素存储 FP32 累计分数需约 4 MB，单个请求看似不大，但 batch=32 时即达 ~128 MB，且需每步更新，访存开销不可忽略。工业落地通常对分数做 FP16 或 INT8 量化，或用滑动平均替代精确累积。若分数存储瓶颈未能解决，H2O 在超长序列场景下的有效保留比例将被迫降低，退化为近似 StreamingLLM——仅保留 sink + 少量疑似 heavy hitter + window。
+**注意力分数的存储成本**。H2O 要求为每个 KV token 维护累积注意力分数，对于 1M token 的单请求，朴素存储 FP32 累计分数需约 4 MB，单个请求看似不大，但 batch=32 时即达 ~128 MB，且需每步更新，访存开销不可忽略。工业落地通常对分数做 FP16 或 INT8 量化，或用滑动平均替代精确累积。若分数存储瓶颈未能解决，H2O 在超长序列场景下的有效保留比例将被迫降低，退化为近似 StreamingLLM（仅保留 sink + 少量疑似 heavy hitter + window）。
 
-**"休眠 token"的检测与保护**。凭据类、数值类 token 在注意力分布中几乎不可见，却在特定 query 下突然变得至关重要。完全依赖注意力分数的淘汰策略（H2O、SnapKV）存在系统性的漏判风险——这是注意力引导策略的阿喀琉斯之踵。需要注意，回退到 StreamingLLM 并不能解决这个问题（它同样会丢弃中间 token）。可行的方向包括引入语义层保护——如 Transactional Attention[^4] 的锚定词赞助机制——或在已知存在关键信息的区间强制保留对应 block（通过用户标注或 prompt 结构推断）。
+**"休眠 token"的检测与保护**。凭据类、数值类 token 在注意力分布中几乎不可见，却在特定 query 下突然成为关键依赖。完全依赖注意力分数的淘汰策略（H2O、SnapKV）存在系统性的漏判风险——这是注意力引导策略的阿喀琉斯之踵。需要注意，回退到 StreamingLLM 并不能解决这个问题（它同样会丢弃中间 token）。可行的方向包括引入语义层保护（如 Transactional Attention[^4] 的锚定词赞助机制），或在已知存在关键信息的区间强制保留对应 block（通过用户标注或 prompt 结构推断）。
 
 **训练时预防 vs 推理时修补**。StreamingLLM 的 sink token 预训练代表了另一种范式：在训练阶段解决问题（"你只有一个 sink token"），而非在推理阶段修补问题（"我们帮你保留前 4 个"）。这引出了一个更深层的问题：是否可以训练模型将注意力更多地分配给语义相关的 token，而非固定地倾泻给前几个位置（减小 Attention Sink 效应）？如果重要 token 能因此获得更高的相对注意力分数，H2O 和 SnapKV 的淘汰精度将大幅提升——它们正是依赖分数差异来区分关键与非关键 token。反之，若注意力分布变得均匀而缺乏区分度，top-k 选择反而不稳定。目前这是一个 open research direction，也是连接训练与推理优化的一个交叉点。
 
-### 6.3 一句话总结
+### 6.3 小结
 
-**KV Cache 淘汰的演进分为两步：第一步，Attention Sinks 教会我们"不能做什么"——不能按位置盲目丢弃。第二步，H2O 和 SnapKV 教会我们"可以做什么"——可以用注意力分数区分 token 的信息价值，做精确淘汰。两步共同构成了从盲目到精确的完整路径——代价是越来越多的 bookkeeping。选择哪个策略，取决于你的任务对"丢失中间关键信息"有多敏感，以及你愿意为此付出多少额外显存和计算。**
+**KV Cache 淘汰的演进分为两步：第一步，Attention Sinks 教会我们"不能做什么"，即不能按位置盲目丢弃。第二步，H2O 和 SnapKV 教会我们"可以做什么"，即用注意力分数区分 token 的信息价值，做精确淘汰。两步共同构成了从盲目到精确的完整路径，代价是越来越多的 bookkeeping。选择哪个策略，取决于你的任务对"丢失中间关键信息"有多敏感，以及你愿意为此付出多少额外显存和计算。**
 
-如果你的场景是多轮对话——StreamingLLM 的零开销方案足够。如果需要精确 recall（RAG、长文档分析）——H2O 或 SnapKV 的注意力引导淘汰值得投入。如果你在构建推理平台——系统层 Preemption + 算法层压缩两者都需要。没有哪种方案是"最好的"，只有最匹配你的任务对"精确性 vs 成本"权衡点的那个。
+如果你的场景是多轮对话，StreamingLLM 的零开销方案足够。如果需要精确 recall（RAG、长文档分析），H2O 或 SnapKV 的注意力引导淘汰值得投入。如果你在构建推理平台，系统层 Preemption + 算法层压缩两者都需要。没有哪种方案是"最好的"，只有最匹配你的任务对"精确性 vs 成本"权衡点的那个。
 
 ---
 

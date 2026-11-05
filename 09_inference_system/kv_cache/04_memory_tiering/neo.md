@@ -141,7 +141,7 @@ GPU 侧做了一件跟内存无关但很关键的事：Python 的 GIL 让数据�
 
 | 论文位置         | 内容                                                                                                 |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| §1 / p.1–2       | 显存危机与批大小天花板；既有 offload 不适在线、FastDecode 的 CPU 成本反例；「随卡白送」的主机 CPU 立论 |
+| §1 / p.1–2       | 显存危机与批大小上限；既有 offload 不适在线、FastDecode 的 CPU 成本反例；「随卡白送」的主机 CPU 立论 |
 | §2.1–2.3 / p.2–3 | 背景（iteration-level scheduling、selective batching、paged attention）；attention 可下移的两条论证与带宽-算力对照；Challenge #1/#2（Fig.1） |
 | §3.1 / p.4–5     | 两个 strawman（simple offloading、symmetric pipelining 三宗罪）与非对称流水线四设计（Fig.3–5）        |
 | §3.2 / p.5–6     | 调度难点、Greedy/Balancing/Hiding CPU/Maximizing GPU 四原则、代价模型公式与两条不等式、六步调度流程   |

@@ -2,6 +2,8 @@
 
 [< 返回架构概览](./lmcache_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 本文档深入剖析 LMCache 的核心调度中枢 `LMCacheEngine`——该组件不仅统筹 KV Cache 的存储、检索全生命周期管理，还支撑层级流水线并行推理的 I/O-计算协同，同时实现与 vLLM 等计算引擎的无缝交互、缓存钉住（Pin）/压缩等进阶能力，并联动存储后端完成跨节点缓存迁移与资源释放。
 
 ---
@@ -133,7 +135,7 @@ def post_init(self, **kwargs) -> None:
 
 ## 4. 核心操作：Retrieve (检索)
 
-130→`retrieve` 方法负责将 KV Cache 从存储后端加载回 GPU。这一过程首先通过 `StorageManager` 将数据从后端（如磁盘或远程服务器）加载到 CPU 内存（或者在 GDS/Nixl 模式下直接 DMA 到 GPU 显存），随后利用 `GPUConnector` 组件高效地将数据批量传输至 GPU 显存中。
+`retrieve` 方法负责将 KV Cache 从存储后端加载回 GPU。这一过程首先通过 `StorageManager` 将数据从后端（如磁盘或远程服务器）加载到 CPU 内存（或者在 GDS/Nixl 模式下直接 DMA 到 GPU 显存），随后利用 `GPUConnector` 组件高效地将数据批量传输至 GPU 显存中。
 
 ### 4.1 接口定义
 

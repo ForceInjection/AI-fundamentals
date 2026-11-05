@@ -1,5 +1,7 @@
 # CacheBlend 技术详解：RAG 场景下的 KV Cache 动态融合机制与源码剖析
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 本文档旨在深入剖析 CacheBlend 技术在 LMCache 项目中的工程实现。基于 EuroSys '25 论文 _CacheBlend: Fast Large Language Model Serving for RAG with Cached Knowledge Fusion_ 的理论基础，本文将结合 LMCache 源码，详细解读如何通过“选择性重算与融合”机制，在检索增强生成 (RAG) 场景下突破 Prefix Caching 的限制，实现非前缀 KV Cache 的高效复用与推理加速。
 
 ## 1. 论文核心思想概述
@@ -424,13 +426,13 @@ CacheBlend 是 LMCache 为应对 RAG 场景中复杂多变的 KV Cache 复用需
 
 CacheBlend 默认在 Layer 1 进行关键 Token 选择。这是一种在**准确性**和**开销**之间的权衡：Layer 1 已经过一次完整的 Attention 计算，能够捕获 Token 间的上下文依赖；同时，实验表明 Layer 1 选出的关键 Token 与后续层高度一致，因此无需逐层检测，从而节省计算资源。
 
-### A.2 为什么使用 Value 差异？
+### A.2 为什么使用 Key 差异？
 
-在衡量 KV Cache 失效程度时，CacheBlend 选择计算 **Value 向量的 L2 距离**。这是因为 Value 向量直接参与最终的加权求和，其变化直接反映了输出内容的差异。相比之下，Key 的变化不一定直接导致输出变化，且同时计算 K 和 V 的差异会带来双倍开销。
+在衡量 KV Cache 失效程度时，CacheBlend 选择计算 **Key 向量的 L2 距离（的平方）**——源码中的差异变量就叫 `diff_k`（[blender.py:90](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/compute/blend/blender.py#L90)）。原因在于注意力权重的分布由 Q·Kᵀ 决定：Key 发生漂移，softmax 后的注意力权重就会重新分配，哪些 Token 的 KV“过期”可以从 Key 的偏差直接看出。因此对 `diff_k` 做 Top-K，选出的就是注意力分布受影响最大的 Token；而 V 向量不参与权重计算，用 V 差异反而无法定位需要重算的位置。
 
-### A.3 重计算比例 (16%) 的选择
+### A.3 重计算比例 (15%) 的选择
 
-默认 16% 的重计算比例基于对 Attention 稀疏性的观察。在 RAG 场景中，绝大多数注意力权重集中在少部分 Token 上。16% 是一个经验值，处于质量-开销曲线的拐点，既能覆盖绝大多数关键 Token（如语义转折点），又能保证较低的重计算延迟。
+默认 15% 的重计算比例基于对 Attention 稀疏性的观察（论文给出的经验区间）。在 RAG 场景中，绝大多数注意力权重集中在少部分 Token 上。15% 是一个经验值，处于质量-开销曲线的拐点，既能覆盖绝大多数关键 Token（如语义转折点），又能保证较低的重计算延迟。
 
 ### A.4 流水线优化
 

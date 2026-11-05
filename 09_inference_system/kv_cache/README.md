@@ -221,6 +221,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - **[当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想](05_kv_security/kv-security-overview.md)**：三篇正式录用论文的横切总纲——读行为 / 读数据 / 读时延三种取证位置、按角色选路的对号表、三篇的「数字怎么读」口径清单，与一个「共享层级 + 默认加密」的设想（§六）。
 - 单篇精读：[I Know What You Asked](05_kv_security/i-know-what-you-asked.md)（NDSS '25，PromptPeek 调度行为侧信道）· [Shadow in the Cache](05_kv_security/shadow-in-the-cache.md)（NDSS '26，KV 数据重建 + KV-Cloak 防御）· [Auditing Prompt Caching](05_kv_security/auditing-prompt-caching.md)（ICML '25，商业 API 黑盒审计）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[PromptPeek](05_kv_security/references/i-know-what-you-asked-report.md) · [Shadow](05_kv_security/references/shadow-in-the-cache-report.md) · [Auditing](05_kv_security/references/auditing-prompt-caching-report.md)；论文原文 PDF 在 `05_kv_security/references/papers/`
+- 调研报告（筛选期 venue 核实与评级记录）：[reuse-security-report](05_kv_security/references/reuse-security-report.md)（复用 / 共享 / 安全类候选论文，与复用专题共用）
 
 ---
 
@@ -231,6 +232,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - **[当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](06_kv_reuse/kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）与 DroidSpeak（NSDI '26）两条路径、按条件选路的对号表，以及两篇的「数字怎么读」口径清单。
 - 单篇精读：[KVLink](06_kv_reuse/kvlink.md)（NeurIPS 2025，文档级预计算 + link token）· [DroidSpeak](06_kv_reuse/droidspeak.md)（NSDI '26，跨微调变体共享 + 关键层重算）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[KVLink](06_kv_reuse/references/kvlink-report.md) · [DroidSpeak](06_kv_reuse/references/droidspeak-report.md)；论文原文 PDF 在 `06_kv_reuse/references/papers/`
+- 调研报告（筛选期 venue 核实与评级记录）：[reuse-security-report](05_kv_security/references/reuse-security-report.md)（复用 / 共享 / 安全类候选论文，与安全专题共用）
 
 ---
 
@@ -241,3 +243,4 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - **[当压缩表示被继续使用：三篇论文给出的三种二次决策](07_kv_compression/kv-compression-overview.md)**：三篇正式录用论文的横切总纲——Self-Indexing KVCache（AAAI '26）、SALS（NeurIPS 2025）与 EchoKV（NeurIPS 2026）三种压缩表示用法、按条件选路的对号表，以及三篇的「数字怎么读」口径清单。
 - 单篇精读：[Self-Indexing KVCache](07_kv_compression/self-indexing.md)（AAAI '26，压缩码兼任稀疏检索索引）· [SALS](07_kv_compression/sals.md)（NeurIPS 2025，pre-RoPE 潜空间选 token）· [EchoKV](07_kv_compression/echokv.md)（NeurIPS 2026，丢弃维度 + 轻量重建）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[Self-Indexing](07_kv_compression/references/self-indexing-report.md) · [SALS](07_kv_compression/references/sals-report.md) · [EchoKV](07_kv_compression/references/echokv-report.md)；论文原文 PDF 在 `07_kv_compression/references/papers/`
+- 调研报告（筛选期 venue 核实与评级记录）：[compression-report](07_kv_compression/references/compression-report.md)（压缩 / 驱逐类候选论文）

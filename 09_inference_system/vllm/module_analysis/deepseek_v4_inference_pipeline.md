@@ -173,7 +173,7 @@ mlp_output = self.mlp(self.post_attention_layernorm(collapsed))
 return post * mlp_output + comb.T @ hidden_states
 ```
 
-对比标准残差 `h = h + attn(norm(h))`，mHC 的版本是 `h = post ⊙ attn(norm(collapse(h))) + comb.T @ h`。`post`、`comb` 和 `collapsed` 的权重不是固定的——它们是 hidden_states 的可微函数。**mHC 本身是一个微型神经网络，每层学习如何路由和混合信息。** 参数开销：单个 HC 的 `fn` 矩阵为 `(2+hc_mult)×hc_mult × hc_mult×hidden` = `24 × 16384 ≈ 393K params`（~768 KB BF16），每层 `attn_hc` + `ffn_hc` 共约 ~1.5 MB——43 层合计约 65 MB，不到 V4-Flash 总参数量的 0.01%。
+对比标准残差 `h = h + attn(norm(h))`，mHC 的版本是 `h = post ⊙ attn(norm(collapse(h))) + comb.T @ h`。`post`、`comb` 和 `collapsed` 的权重不是固定的——它们是 hidden_states 的可微函数。**mHC 本身是一个微型神经网络，每层学习如何路由和混合信息。** 参数开销：单个 HC 的 `fn` 矩阵为 `(2+hc_mult)×hc_mult × hc_mult×hidden` = `24 × 16384 ≈ 393K params`（~768 KB BF16），每层 `attn_hc` + `ffn_hc` 共约 ~1.5 MB——43 层合计约 65 MB，约占 V4-Flash 总参数量的 ~0.012%。
 
 ---
 
@@ -312,11 +312,13 @@ Hash-MoE 的路由不依赖 hidden_states——它直接查表：
 
 ```python
 # 根据 input_ids 查哈希表得到专家 ID
-# tid2eid: [vocab_size] → expert_id（从 checkpoint 加载，冻结）
-expert_id = self.tid2eid[input_ids]  # 每个 token → 1 个专家
+# tid2eid: [vocab_size, top_k] → top_k 个专家 ID（从 checkpoint 加载，冻结）
+expert_ids = self.tid2eid[input_ids]  # 每 token 静态映射到 top_k=6 个专家
 ```
 
-**为什么前 3 层用 Hash-MoE？** 浅层 hidden_states 语义分化不够，标准 MoE 的路由信号不可靠（和 V3 的前 3 层 dense 同样的问题）。但 V4 的解决方案不是退回到 dense MLP，而是用 Hash-MoE——将路由决策绑定到 token 本身而非 hidden_states。同一个 token（如"巴黎"）在所有上下文中始终路由到同一个专家——这让专家学到的是"token 级知识"（词法、常见搭配），而非"语义级知识"（需要上下文判断）。后 40 层标准 MoE 专注于后者。
+注意：Hash-MoE 的门控只对查表选出的这 6 个专家**产生权重**，不改变专家选择本身——专家集合由 token ID 静态决定，门控打分（sqrtsoftplus + 归一化）仅决定 6 个专家各自的加权系数。
+
+**为什么前 3 层用 Hash-MoE？** 浅层 hidden_states 语义分化不够，标准 MoE 的路由信号不可靠（和 V3 的前 3 层 dense 同样的问题）。但 V4 的解决方案不是退回到 dense MLP，而是用 Hash-MoE——将路由决策绑定到 token 本身而非 hidden_states。同一个 token（如"巴黎"）在所有上下文中始终路由到同一组（6 个）专家——这让专家学到的是"token 级知识"（词法、常见搭配），而非"语义级知识"（需要上下文判断）。后 40 层标准 MoE 专注于后者。
 
 Hash-MoE 的专家计算与标准 MoE 完全相同（gate_proj → up_proj → SiLU → down_proj），只是路由方式不同。
 
@@ -380,10 +382,10 @@ MTP 在 V4 中的作用与 V3 相同——通过 self-speculation 在低熵场�
 
 ## 八、完整时间线：一个 token 的延迟拆解
 
-以下基于 H100 单卡的近似 profile（受 batch size、序列长度、EP 通信等因素影响）：
+以下为**合成估算**（非实测 profile）：按 H100 单卡的公开 kernel 性能数量级推算，实际数值受 batch size、序列长度、EP 通信等因素影响：
 
 ```text
-一个 decode token 的完整旅程（~8ms，H100, TP=1）:
+一个 decode token 的完整旅程（~8ms，H100, TP=1，合成估算）:
 
   Embedding:           ~0.05ms  ▏
   mHC (attn+ffn, ×2):  ~0.02ms  ▏ (每层各 2 次 Sinkhorn)

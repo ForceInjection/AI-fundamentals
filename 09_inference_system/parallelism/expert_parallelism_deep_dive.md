@@ -35,7 +35,7 @@ DeepSeek-V3 有 671B 参数、256 个路由专家。一个 H100 只有 80 GB HBM
 EP 的核心操作：把模型的所有路由专家均匀分配到 EP 组的各张 GPU 上。每张 GPU 持有连续的 1/N 专家权重。
 
 ```text
-EP=8, 256 个路由专家, 共享专家 = 2
+EP=8, 256 个路由专家, 共享专家 = 1
 
 GPU 0: Expert   0 -  31  (32 experts)       ← 每张 GPU 还有共享专家的完整副本
 GPU 1: Expert  32 -  63  (32 experts)
@@ -49,7 +49,7 @@ GPU 7: Expert 224 - 255  (32 experts)
 
 连续分布（连续编号的专家在同一张 GPU 上）是 vLLM 和 SGLang 的默认策略，原因有两个：一是路由层的输出（256 维 logits）可以简单地按分段映射到 GPU ID，不需要一张额外的映射表；二是连续分布让 Router 的 weight 和专家 weight 的索引对应关系保持可预测。
 
-共享专家（shared experts，DeepSeek-V3 中有 2 个）不参与 EP 切分——它们处理的是「所有 token 不经过路由都会经过的专家」，所以每张 GPU 都需要完整副本。相较于每个 MoE 层 256 个路由专家的总权重（~22.5 GB FP16），2 个共享专家的开销（~176 MB）可忽略不计。
+共享专家（shared experts，DeepSeek-V3 中有 1 个，V2 才是 2 个）不参与 EP 切分——它处理的是「所有 token 不经过路由都会经过的专家」，所以每张 GPU 都需要完整副本。相较于每个 MoE 层 256 个路由专家的总权重（~22.5 GB FP16），1 个共享专家的开销（~88 MB）可忽略不计。
 
 ### 2.2 一个 token 的完整 EP 旅程
 
@@ -90,15 +90,15 @@ Step 5 — Router 加权求和（本 GPU ⊗，无通信）
 
 通信量的精算：
 
-- **Dispatch**：token 被发送到它路由到的专家所在的 GPU。最坏情况每个 token 的 Top-8 分布在 8 张不同的 GPU 上，数据量 = $\mathrm{batch size} \times \mathrm{top k} \times \mathrm{hidden size} \times \mathrm{dtype size}$。但实际上，一个 token 的 Top-8 通常集中分布在 2-4 张 GPU 上（因为相邻编号的专家在连续 token 上有相似的激活模式）。
+- **Dispatch**：token 被发送到它路由到的专家所在的 GPU。最坏情况每个 token 的 Top-8 分布在 8 张不同的 GPU 上，数据量 = $\mathrm{batch size} \times \mathrm{top k} \times \mathrm{hidden size} \times \mathrm{dtype size}$。但实际上，一个 token 的 Top-8 通常集中分布在 2-4 张 GPU 上（经验观察、无公开统计：相邻编号的专家激活模式往往相似）。
 - **Combine**：与 dispatch 对称，从各 GPU 收回专家计算结果，数据量与 dispatch 相同。
 - **总通信量（每 token 每 MoE 层）**： $2 \times \mathrm{top k} \times \mathrm{hidden size} \times 2\,\text{bytes}$（FP16）= $2 \times 8 \times 7168 \times 2 \approx 229\,\text{KB}$。如果使用 FP8 通信，减半至 $\approx 115\,\text{KB}$。
 
-对比 TP 的 All-Reduce：TP=8 的每次 All-Reduce 通信量 $\approx 2 \times \mathrm{hidden size} \times 2\,\text{bytes} \times (N-1)/N \approx 2 \times 7168 \times 2 \times 7/8 \approx 25\,\text{KB}$。但 TP 每层有多次 All-Reduce（QKV proj、output proj、FFN up、FFN down），总共约 4-6 次 All-Reduce 每层。
+对比 TP 的 All-Reduce：TP=8 的每次 All-Reduce 通信量 $\approx 2 \times \mathrm{hidden size} \times 2\,\text{bytes} \times (N-1)/N \approx 2 \times 7168 \times 2 \times 7/8 \approx 25\,\text{KB}$。但 TP 每层都有 All-Reduce（up_proj、down_proj 之后各一次），每层约 2 次。
 
 EP 的每次通信量比 TP 大（229 KB vs 25 KB），但 EP 只在 MoE 层通信（attention 层无 EP 通信），且 EP 的 combine 可以和最后一轮专家计算并行。
 
-> **Given**：EP 的通信模式是 All-to-All（一对多 + 多对一）→ **New**：为什么 EP 的通信开销在 MoE 架构下是可接受的——因为它只在需要时才发生，而非每层无差别执行。
+EP 的通信开销之所以在 MoE 架构下可以接受，在于它只在需要时才发生——token 路由命中的 GPU 之间才通信，而非像 TP 那样每层无差别执行。
 
 ---
 
@@ -116,7 +116,7 @@ EP 不行。**EP 需要并发请求驱动多个 rank 同时工作。**原因非�
 | -------- | -------------------------------- | --------------------------------------------------- |
 | 概念     | 每个实例有完整模型副本，独立服务 | EP 组内划分的并行维度，rank 间共享专家切分          |
 | 通信     | 无需通信                         | 有元数据通信（调度、负载均衡）                      |
-| 适用模型 | Dense 和 MoE 均可                | **仅 MoE**（`parallel.py:859` 阻止 Dense 模型使用） |
+| 适用模型 | Dense 和 MoE 均可                | **仅 MoE**（vLLM 引擎内 DP 与 EP 绑定，Dense 模型不适用） |
 | 实现方式 | 启动多个 vLLM 实例 + 外部 LB     | `--data-parallel-size N --enable-expert-parallel`   |
 
 本文后续讨论的"DP"均指 vLLM 引擎内 DP——它在 EP 语境下与 `--data-parallel-size` 含义一致。传统多实例 DP 不在 EP 讨论范围内。
@@ -126,7 +126,7 @@ EP 不行。**EP 需要并发请求驱动多个 rank 同时工作。**原因非�
 vLLM 中 EP 组的大小由源码 `parallel_state.py` 的初始化逻辑决定，而非由用户直接配置：
 
 ```text
-vLLM EP 组的 rank 编排（parallel_state.py:1894-1901）
+vLLM EP 组的 rank 编排（`parallel_state.py` 模型并行组初始化逻辑）
 
 WORLD_SIZE = PP_SIZE × TP_SIZE × DP_SIZE × CP_SIZE
   （WORLD_SIZE 为本次推理作业的总 GPU 数，
@@ -139,11 +139,11 @@ EP 组大小 = DP_SIZE × TP_SIZE × CP_SIZE
   → 所有 rank 在同一个 EP 组内，专家切分跨全部 WORLD_SIZE
 ```
 
-`parallel.py:127-128` 的注释明确了这一设计意图：_"MoE layers will be sharded according to the product of the tensor parallel size and data parallel size."_
+`vllm/config/parallel.py` 中 `data_parallel_size` 字段的注释明确了这一设计意图：_"MoE layers will be sharded according to the product of the tensor, prefill-context, and data parallel sizes."_
 
 实际的 EP rank 数 = `TP_SIZE × DP_SIZE`（当 CP=1、PP=1 时就等于 WORLD_SIZE）。每张 GPU 持有的专家数 = 总路由专家数 ÷ (TP_SIZE × DP_SIZE)。TP 也在专家维度上生效——如果用 TP=4、DP=1，每卡持有 256/4 = 64 个专家；如果用 TP=1、DP=8，每卡持有 256/8 = 32 个专家。DP 提供了比 TP 更粗粒度的专家切分，且避免了每层 All-Reduce 的开销。
 
-SGLang 的 EP 关系略有不同：`ep_size × moe_dp_size = tp_size`（见 `server_args.py:5273`）。SGLang 将 TP 视为总并行度，从中分出 EP 和 DP 两个子维度。这与 vLLM 的「EP = TP × DP」在数学上等价，但概念上 SGLang 将 EP 和 DP 作为 TP 的子划分。
+SGLang 的 EP 关系略有不同：`ep_size × moe_dp_size = tp_size`（校验在 `server_args.py:6577-6584`，基线 f7101b0ae6；新版本移至 parallel 校验逻辑）。SGLang 将 TP 视为总并行度，从中分出 EP 和 DP 两个子维度。这与 vLLM 的「EP = TP × DP」在数学上等价，但概念上 SGLang 将 EP 和 DP 作为 TP 的子划分。
 
 典型配置：
 
@@ -174,7 +174,7 @@ token 被 dispatch 到远程 GPU 后，仅执行专家 FFN 计算。计算完成
 
 这个设计很巧妙：EP 借助了「attention 的计算量和 KV Cache 的大小都远小于专家 FFN 的权重」这个事实。如果 attention 本身也需要跨 GPU 切分（如超长上下文下的 SP），那才需要额外的策略——EP 和 SP 可以叠加使用，但它们在 KV Cache 的管理上是独立的。
 
-> **Given**：DP 是「每张 GPU 有完整模型副本，各处理不同的请求」→ **New**：EP 在 DP 的基础上把专家权重进一步切分，但 attention 和 KV Cache 仍由 DP 管理，EP 和 DP 各有分工、不可互换。
+EP 在 DP 的基础上把专家权重进一步切分，但 attention 和 KV Cache 仍由 DP 管理——EP 与 DP 各有分工、不可互换。
 
 ---
 
@@ -190,7 +190,7 @@ EP 用 All-to-All（dispatch + combine）：每张 GPU 把需要远程专家计�
 | ------------------ | ----------------------- | --------------------------------------- |
 | 模式               | 全对全归约              | 全对全散射+收集                         |
 | 触发条件           | 每次矩阵乘之后          | 仅在 MoE 层                             |
-| 频率               | 每层 4-6 次             | 每 MoE 层 2 次                          |
+| 频率               | 每层 2 次               | 每 MoE 层 2 次                          |
 | 通信量（每 token） | ~25 KB × 次数           | ~229 KB × 2（FP16）/ ~115 KB × 2（FP8） |
 | 延迟特征           | 与 hidden_size 相关     | 与 top_k × hidden_size 相关             |
 | 是否可重叠         | 与下一层重叠（PP 场景） | 与专家计算重叠                          |
@@ -217,7 +217,7 @@ DeepEP 直接基于 NVLink（节点内）和 RDMA（节点间）构建通信原�
 
 1. **专用通信原语**：针对 EP 的 dispatch-combine 模式定制，不携带 NCCL 为通用集合通信引入的额外元数据和调度开销。
 2. **Persistent kernel**：将多次 All-to-All 调用的 kernel 在 GPU 上持久驻留（不退出），消除每次调用的 CUDA kernel launch 开销。这对 decode 阶段的频繁小批量通信尤其有效。
-3. **FP8 通信路径**：dispatch 和 combine 的数据保持 FP8 格式在线路传输，接收端直接以 FP8 格式消费（不 dequant），将通信量减半。在 H100 的 NVLink 4.0（900 GB/s 双向）上，7 KB 的 FP8 token 传输延迟约 8ns。
+3. **FP8 通信路径**：dispatch 和 combine 的数据保持 FP8 格式在线路传输，接收端直接以 FP8 格式消费（不 dequant），将通信量减半。以 H100 的 NVLink 4.0（单向 450 GB/s）计算，7 KB 的 FP8 token 纯带宽传输时间约 15.6 ns——但这只是带宽下限，链路本身的延迟在 μs 量级，实际耗时远高于带宽时间。
 4. **计算-通信重叠**：第一个 dispatch 的数据到达后立即开始专家计算（不等全部 dispatch 完成），最后一轮专家计算与 combine 并行执行。这是 DeepEP 最大的延迟收益来源。
 
 ### 5.2 两种模式：normal vs low_latency
@@ -245,7 +245,7 @@ vllm serve deepseek-ai/DeepSeek-V3 \
 
 ### 5.3 实际收益
 
-根据 DeepSeek 在 [DeepEP GitHub](https://github.com/deepseek-ai/DeepEP) 中报告的测试数据，在 8×H100 EP=8 的 DeepSeek-V3 部署中，`deepep_low_latency` 相比标准 NCCL All-to-All 取得了以下典型收益（实际数值取决于 batch size 和序列长度）：
+以下为示意估计（非 DeepEP 官方口径——DeepEP 仓库未发布此类端到端收益数据），在 8×H100 EP=8 的 DeepSeek-V3 部署中，`deepep_low_latency` 相比标准 NCCL All-to-All 的典型量级（实际数值取决于 batch size 和序列长度，需自行基准测试）：
 
 - **Decode 延迟降低**：约 15-25%（小 batch 场景收益最大）
 - **Prefill 吞吐提升**：约 5-10%
@@ -253,7 +253,7 @@ vllm serve deepseek-ai/DeepSeek-V3 \
 
 收益主要来自 kernel launch 开销的消除（decode 主导）和计算-通信重叠。
 
-> **Given**：标准 NCCL All-to-All 在 EP 场景下的延迟瓶颈 → **New**：DeepEP 如何通过专用化、persistent kernel、FP8 通信和计算-通信重叠来突破这些瓶颈。
+DeepEP 的思路由此而来：用专用化原语、persistent kernel、FP8 通信和计算-通信重叠，逐一突破标准 NCCL All-to-All 在 EP 场景下的延迟瓶颈。
 
 ---
 
@@ -263,56 +263,54 @@ vllm serve deepseek-ai/DeepSeek-V3 \
 
 训练中可以用 auxiliary load balancing loss 强制专家均衡——损失函数里加一项惩罚专家负载方差。推理中没法这么做——请求的 token 路由分布完全由输入内容决定。
 
-根据 DeepSeek-V3 技术报告中路由器饱和度的分析，256 个专家在推理时呈长尾激活分布——少数热门专家承载了大部分 token，但绝大多数专家仍然被激活（覆盖面广），极少出现「某专家完全不被使用」的情况。以经验值估算：约 30% 的专家处理了 60% 的 token，其余 70% 的专家处理 40% 的 token。
+256 个专家在推理时呈长尾激活分布——少数热门专家承载了大部分 token，但绝大多数专家仍然被激活（覆盖面广），极少出现「某专家完全不被使用」的情况。经验观察是约 30% 的专家处理了 60% 的 token，其余 70% 处理 40%——无公开统计支撑，量级仅供参考。
 
 真正的问题是**空间局部性**：如果 GPU 3 上的 32 个专家中恰好有 8 个是热门专家，GPU 3 会成为整个 EP 组的瓶颈——其他 GPU 都在等它的专家计算完成。
 
-### 6.2 EPLB：不停机地迁移专家
+### 6.2 EPLB：周期性统计 + 权重重排
 
-SGLang 率先实现了 **EPLB（Expert Parallel Load Balancer）**，vLLM 后续跟进：
+SGLang 率先实现了 **EPLB（Expert Parallel Load Balancer）**，vLLM 后续跟进。两者遵循同一套思路——不是在线逐 token 迁移专家，而是「周期性统计 + 整体权重重排」：
 
 ```text
-EPLB 工作流程：
+EPLB 工作流程（以 vLLM 为例）：
 
-1. 监控（持续进行）
-   滑动窗口统计每个专家的 token 到达率（如过去 100ms 内）
-   计算每张 GPU 的负载总和 = Σ(该 GPU 上各专家的 token 到达率)
+1. 统计（滑动窗口，持续进行）
+   逐 step 记录每个专家收到的 token 数，填入固定长度的负载窗口
+   （EPLBConfig.window_size = 1000，即最近 1000 step 的负载）
 
-2. 检测（周期触发）
-   IF max(GPU 负载) / avg(GPU 负载) > 阈值（典型 1.2）:
-       触发重平衡
+2. 触发（周期到达）
+   每隔固定 step 数触发一次重排
+   （EPLBConfig.step_interval = 3000，即约每 3000 step 重排一次）
 
-3. 迁移（在线执行）
-   - 选择过载 GPU 上最热门的 1-2 个专家
-   - 在目标空闲 GPU 上创建这些专家的权重副本
-   - 等待副本同步完成
-   - 原子性更新 Router 映射表：后续 token 立即路由到新位置
-   - 原 GPU 上的专家权重保留（仍在处理路由表中的旧 token）
-
-4. 清理
-   旧映射表中的请求全部处理完毕后，可以选择回收原位置的专家副本
-   （可选，取决于显存压力）
+3. 重排（整体计算 + 权重重布置）
+   基于窗口内的统计负载，离线算出一套新的「逻辑专家 → 物理专家」
+   放置方案（含冗余专家的热度复制），再按新方案把专家权重
+   整体重新布置到各 GPU
+   （vllm/distributed/eplb/eplb_state.py 的 def step 驱动整个
+   「记录 → 触发 → 重排」循环）
 ```
 
-关键设计决策：**迁移期间不中断推理**。这通过双缓冲路由表实现——Router 维护两套映射表，迁移期间的旧请求仍使用旧表，新请求使用新表。类似于 RCU（Read-Copy-Update）。
+重排是「整批」进行的：两个重排时刻之间，专家放置保持不变，Router 按当前物理放置路由。窗口 + 周期的设计让负载统计和重排计算都不在逐 token 的关键路径上。
 
 ### 6.3 冗余专家：以空间换均衡
 
-当迁移频率太高（某些专家持续热门）时，EPLB 的收益被迁移开销吃掉。另一种互补策略是**冗余专家**——允许特定热门专家在多个 GPU 上有副本。
+当某些专家持续热门、周期性重排也难以追平负载时，另一种互补策略是**冗余专家**——允许特定热门专家在多个 GPU 上有副本。
 
 ```bash
-# vLLM 冗余专家配置
+# vLLM 冗余专家配置（冗余数不是独立 flag，是 --eplb-config 的 JSON 字段；
+# 未启用 EPLB 时设置它会直接 raise）
 vllm serve deepseek-ai/DeepSeek-V3 \
   --data-parallel-size 8 \
   --enable-expert-parallel \
-  --num-redundant-experts 8     # 8 个额外专家副本
+  --enable-eplb \
+  --eplb-config '{"num_redundant_experts": 8}'   # 8 个额外专家副本
 ```
 
 256 个路由专家 + 8 个冗余 = 264 个专家分布在 8 张 GPU 上。每卡 33 个专家（比原来多 1 个），但 8 个热门专家被复制到其他 GPU 上——Router 可以将 token 随机路由到副本中的任意一个，分散负载。
 
 多余显存开销：每个冗余专家 ≈ 专家 FFN 权重大小（DeepSeek-V3 中约 88 MB FP16），8 个副本 ≈ 700 MB——对于每个 MoE 层 ~22.5 GB 的专家总权重来说，是 ~3% 的额外开销。
 
-> **Given**：EP 的静态分布（256 专家均匀分到 8 GPU）无法适应推理负载的不均衡 → **New**：EPLB 动态迁移和冗余专家两种策略如何在延迟和显存之间做权衡。
+EPLB 的周期性重排与冗余专家，正是在负载不均衡的严重程度与显存开销之间做权衡：重排零显存代价但滞后于负载变化，冗余副本即时有效但每多一个副本多一份专家权重。
 
 ---
 
@@ -382,10 +380,11 @@ vllm serve deepseek-ai/DeepSeek-V3 \
 vllm serve deepseek-ai/DeepSeek-V3 \
   --data-parallel-size 8 \
   --enable-expert-parallel \
-  --num-redundant-experts 8
+  --enable-eplb \
+  --eplb-config '{"num_redundant_experts": 8}'
 ```
 
-> **Given**：读者完整理解了 EP 的机制、通信、负载均衡 → **New**：如何根据模型特性、硬件规模和延迟需求，在 EP 和 TP 之间做出具体选择。
+理解了 EP 的机制、通信与负载均衡之后，剩下的就是根据模型特性、硬件规模和延迟需求，在 EP 和 TP 之间做出具体选择。
 
 ---
 
@@ -397,7 +396,7 @@ EP 的核心取舍：
 
 - **收益**：让 MoE 模型能在多卡上跑，专家权重存储降低到 1/N。对于 DeepSeek-V3 的 256 专家，EP=8 意味着每 GPU 只需存储 32 个专家（而非全部 256 个）。
 - **代价**：每次 MoE 层引入两次 All-to-All 通信（dispatch + combine），每次 ~115-229 KB per token。负载不均衡导致部分 GPU 过载。
-- **应对**：DeepEP 用专用化、persistent kernel、FP8 通信、计算-通信重叠来压延迟。EPLB 用动态迁移和冗余副本解决负载均衡。
+- **应对**：DeepEP 用专用化、persistent kernel、FP8 通信、计算-通信重叠来压延迟。EPLB 用周期性统计 + 权重重排 + 冗余副本解决负载均衡。
 - **边界**：EP 永远与 DP 耦合——没有 DP 的并行请求，EP 无法工作。Dense 模型不需要 EP。
 
 向前看：随着 MoE 模型专家数从 256 增长到 512、1024，EP 的 All-to-All 延迟瓶颈将被进一步放大。FP4 通信（Blackwell 支持）、更激进的计算-通信全重叠、以及专家分组（先按组路由再按专家路由）是下一代 EP 优化的探索方向。

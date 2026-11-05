@@ -137,7 +137,7 @@ FA1 的 IO 复杂度公式（定理 2）揭示了 tiling 的收益：FlashAttent
 
 不存照片，存拍摄参数。如果你拍了一张照片但存储空间有限，与其保存这张巨大的 JPEG（几 MB），不如保存拍摄时的参数——光圈、快门、ISO、焦距（几十 bytes）——需要时花几毫秒重新冲洗。反正你的相机处理器闲着也是闲着。
 
-这就是 FlashAttention backward 的思路：不存 N×N 的 softmax 结果矩阵 P（2 TB for 128K seq），而是存 forward 的统计量 m（running max）和 l（running sum）——每个 Q 行只需 2 个标量，总共 32 MB。backward 需要 P 时，用存储的 Q、K、V 和 m、l 重新计算——数学上精确到逐 bit 相同。
+这就是 FlashAttention backward 的思路：不存 N×N 的 softmax 结果矩阵 P（2 TB for 128K seq），而是存 forward 的统计量 m（running max）和 l（running sum）——每个 Q 行只需 2 个标量，总共 32 MB。backward 需要 P 时，用存储的 Q、K、V 和 m、l 重新计算——数学上与完整 softmax 精确等价（浮点计算路径不同，并非逐 bit 相同）。
 
 ### 4.2 Recomputation 公式
 
@@ -238,7 +238,7 @@ FA1-4 解决的都是同一个场景：Q、K、V 是 dense tensor，每个 token
 
 MLA（DeepSeek V2/V3）的 KV 在压缩空间中（kv_lora_rank=512 + k_rope=64 = 576 维）。标准 FA 要求 Q、K、V 维度对齐，而 MLA 通过矩阵吸收（`q @ W_UK^T`）将 Q 变换到压缩空间——吸收由模型层 GEMM（或将 `W_UK` 折叠进 Q 投影权重）完成，无需在 attention 时展开 K/V。
 
-FlashMLA 是专门为 MLA 设计的 CUDA kernel。它直接消费 576 维的潜变量 query 和 kv_c + k_rope 缓存，在压缩空间中完成点积与 online softmax——展开后的 K 和 V 永不物化。这保留了 FA 的 IO-aware 特性，同时适配了 MLA 的压缩运算。`W_UV` 侧的吸收在 kernel 之后由 `_v_up_proj_and_o_proj` 完成。
+FlashMLA 是专门为 MLA 设计的 CUDA kernel。它直接消费 576 维的潜变量 query 和 kv_c + k_rope 缓存，在压缩空间中完成点积与 online softmax——展开后的 K 和 V 永不物化。这保留了 FA 的 IO-aware 特性，同时适配了 MLA 的压缩运算。`W_UV` 侧上投影在 kernel 之后由 `_v_up_proj` 完成（o_proj 是其后的独立步骤；见 `vllm/model_executor/layers/attention/mla_attention.py:1374`）。
 
 vLLM 中 FlashMLA 作为一个独立的 attention backend 注册（`FlashMLABackend`），仅对 MLA 架构的模型（DeepSeek V2/V3）自动激活。
 

@@ -1,12 +1,14 @@
 # SGLang HiSparse：当稀疏注意力从算法变为系统组件
 
 > SGLang 的 HiSparse 与 vLLM 的 Sparse MLA 后端实现了同一套 DSA 稀疏选择技术，但架构选择截然不同：两者都在 attention 之外用 Indexer 做 token 级 top-k 选择，但 vLLM 直接将 top-k 索引传入 attention kernel 内部消费，SGLang 在 Indexer 和 attention 之间插入了一个 coordinator 层做 page 级翻译和选择性加载。这不是孰优孰劣的差异——而是稀疏注意力从「attention 的加速技巧」被拉入「存储系统的一部分」时，自然发生的架构分裂。
+>
+> 2026-11-05 | 基于 SGLang commit f4de6abee6 源码分析
 
 ---
 
 ## 一、同一个 DSA，两种实现
 
-DSA（Dynamic Sparse Attention）做的是同一件事：用 Indexer 扫描全量 KV，选出 top-k 个最重要的 token 位置，只对这些位置做精确注意力。关于 DSA 的完整机制和它在稀疏注意力分类学中的位置，参见 [稀疏注意力分类学(../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) §3.4。本节聚焦于一个不同的问题：同样的 DSA，在推理引擎中可以被放在不同的系统层级实现——这个选择改变了它的性质。
+DSA（Dynamic Sparse Attention）做的是同一件事：用 Indexer 扫描全量 KV，选出 top-k 个最重要的 token 位置，只对这些位置做精确注意力。关于 DSA 的完整机制和它在稀疏注意力分类学中的位置，参见 [稀疏注意力分类学](../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) §3.4。本节聚焦于一个不同的问题：同样的 DSA，在推理引擎中可以被放在不同的系统层级实现——这个选择改变了它的性质。
 
 ### 1.1 vLLM：在 attention backend 内部搞定
 
@@ -38,11 +40,11 @@ HiSparse 的架构围绕三个独立但关联的设计决策展开。每个决�
 
 ### 2.1 swap_in_selected_pages：page 级选择性加载
 
-HiSparse coordinator 的核心操作：在 decode 阶段，根据 Indexer 产出的每层 top-k 索引，仅加载包含这些 token 的 KV 页，而非全量 KV。操作通过 `swap_in_selected_pages` 实现，接收四个参数——请求池索引列表（`req_pool_indices`）、每请求的序列长度（`seq_lens`）、当前层的 top-k 索引（`topk_indices`）、以及层 ID（`layer.layer_id`）——为每层独立计算需要加载的 page 集合。
+HiSparse coordinator 的核心操作：在 decode 阶段，根据 Indexer 产出的每层 top-k 索引，仅加载包含这些 token 的 KV 页，而非全量 KV。操作通过 `swap_in_selected_pages` 实现，接收四个参数——请求池索引列表（`req_pool_indices`）、每请求的序列长度（`seq_lens`）、当前层的 top-k 索引（`topk_indices`）、以及层 ID（`layer.layer_id`）——为每层独立计算需要加载的 page 集合。（现行源码中后两个参数名已演化为 `compressed_seq_lens` / `top_k_result`，语义不变。）
 
 `swap_in_selected_pages` 在 `forward_decode` 中被逐层调用。coordinator 根据 `topk_indices` 计算需要加载的 page 集合，返回一个稀疏的 page table 直接传给 decode attention kernel。未被选中的 page 不参与 attention 计算的数据搬运。
 
-这与 vLLM 方案形成了一个清晰的对比：vLLM 全量存储 KV（在 HBM 中）但在 attention 内稀疏读取（SM 内跳过），HiSparse 选择性加载（只加载被选中的 page，其余无需在当前 step 驻留在 GPU 工作集中）且稀疏读取（只对加载的 page 做 attention）。**HiSparse 在「读得少」的同时也减少了当前 step 的 GPU 工作集大小——这是在 [稀疏注意力分类学(../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) §5.2 的「读和存的正交性」框架中，压缩近似路线之外的另一种工程路径：不靠压缩 KV 的表示，而是靠选择性加载减少 attention 的输入数据量。**
+这与 vLLM 方案形成了一个清晰的对比：vLLM 全量存储 KV（在 HBM 中）但在 attention 内稀疏读取（SM 内跳过），HiSparse 选择性加载（只加载被选中的 page，其余无需在当前 step 驻留在 GPU 工作集中）且稀疏读取（只对加载的 page 做 attention）。**HiSparse 在「读得少」的同时也减少了当前 step 的 GPU 工作集大小——这是在 [稀疏注意力分类学](../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) §5.2 的「读和存的正交性」框架中，压缩近似路线之外的另一种工程路径：不靠压缩 KV 的表示，而是靠选择性加载减少 attention 的输入数据量。**
 
 ### 2.2 plan_topk_v2：消除选择与计算之间的间隙
 
@@ -112,7 +114,7 @@ HiSparse 把 DSA 的稀疏选择从 attention kernel 的内部优化变成了跨
 
 ## 相关阅读
 
-- [稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少(../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) — DSA 的机制原理、分类位置及与 Vegas/H2O/CSA 的对比（本文 §1 的上下文）
+- [稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少](../kv_cache/01_concepts/basic/sparse_attention_taxonomy.md) — DSA 的机制原理、分类位置及与 Vegas/H2O/CSA 的对比（本文 §1 的上下文）
 - [SGLang 超大规模推理调优案例](sglang-scaling-case-study.md) — SGLang 生产环境中的 KV Cache 竞态与时序缺陷定位
 - [SGLang HiCache 深入详解](hicache_deep_dive.md) — SGLang 分层存储架构，HiSparse 与之在 KV 管理上的协同
-- [投机解码方法全景(../vllm/module_analysis/speculative_decoding_landscape.md) — 稀疏注意力自投机与 speculative decoding 的协同
+- [投机解码方法全景](../vllm/module_analysis/speculative_decoding_landscape.md) — 稀疏注意力自投机与 speculative decoding 的协同

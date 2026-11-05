@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `GdsBackend` 是 LMCache 中基于 **NVIDIA GPUDirect Storage (GDS)** 技术实现的高性能持久化存储后端。它利用 `libcufile` 库，允许 GPU 显存直接与 NVMe 存储进行数据传输（DMA），从而绕过 CPU 和系统内存，显著降低延迟并减轻 CPU 负载。
 
 > **核心定位**: 通用的高性能持久化存储层。与 `NixlStorageBackend` 的“极致 Runtime Cache”定位不同，`GdsBackend` 采用更传统的文件系统布局，强调数据的持久性、可恢复性和通用性。当系统环境不支持 GDS 时，会自动回退到基于 `libcudart` 的 `mmap` + `cudaMemcpy` 机制，确保兼容性。
@@ -22,17 +24,18 @@
 class GdsBackend(AllocatorBackendInterface):
     def __init__(self, config, metadata, loop, dst_device="cuda"):
         # ...
+        # gds_path 支持分片（gds_path_sharding），取所选路径检测文件系统类型
+        self.fstype = get_fstype(self.gds_path)
+
+        # 是否走 GDS 由 use_gds 决定；tmpfs/overlayfs 上自动停用 GDS，
+        # WekaFS 上强制要求 GDS 并改用专用文件后缀（.weka1）
+        self.use_gds = config.use_gds
+
         # 初始化内存分配器
         self.memory_allocator = self.initialize_allocator(config, metadata)
-        self.gds_path = config.gds_path
 
-        # 自动检测文件系统类型 (fstype)
-        self.fstype = get_fstype(config.gds_path)
-
-        # 加载 libcufile (GDS) 或 libcudart (Fallback)
-        # 针对 WekaFS 有特殊优化 (强制开启 cufile 和多线程)
-        if self.fstype == "wekafs":
-             self.use_thread_pool = True
+        # 线程池随 GDS 一起启用（use_thread_pool = self.use_gds）
+        self.use_thread_pool = self.use_gds
 
         # 启动时扫描元数据，重建内存索引
         asyncio.run_coroutine_threadsafe(self._scan_metadata(), self.loop)
@@ -46,7 +49,7 @@ class GdsBackend(AllocatorBackendInterface):
 
    - 负责管理用于 GDS 传输的 GPU 显存 Buffer。
    - GDS 要求内存地址必须是 4KB 对齐的，且最好是注册过的显存。
-   - `GdsBackend` 在初始化时会申请一大块显存（由 `cufile_buffer_size` 指定），作为数据搬运的“中转站”或“目的地”。
+   - `GdsBackend` 在初始化时会申请一大块显存（由 `gds_buffer_size` 指定），作为数据搬运的“中转站”或“目的地”。
 
 2. **Metadata Cache (`hot_cache`)**:
 
@@ -54,8 +57,8 @@ class GdsBackend(AllocatorBackendInterface):
    - 作用: 在内存中维护磁盘上所有 KV Cache 的元数据（大小、形状、路径）。
    - **启动恢复**: 初始化时会遍历 `gds_path` 下的所有文件，重建这个索引。这使得 `GdsBackend` 具备了**故障恢复**能力——即使服务重启，之前的缓存数据依然可用。
 
-3. **IO Thread Pool (WekaFS 专用)**:
-   - 对于 **WekaFS** 文件系统，`GdsBackend` 会自动启用 `ThreadPoolExecutor` 来并发处理读取请求，以更好地打满高性能存储的队列深度。普通文件系统默认不启用。
+3. **IO Thread Pool**:
+   - 只要启用了 GDS，`GdsBackend` 就会启用 `ThreadPoolExecutor` 并发处理 I/O 请求（`use_thread_pool = self.use_gds`），以更好地打满高性能存储的队列深度。线程数由 `extra_config.disk_io_threads` 控制，默认 4。
 
 ---
 
@@ -116,7 +119,7 @@ def _save_gds(self, ...):
 
 ### 3.2 批量读取
 
-读取操作支持并发（主要针对 WekaFS），利用 GDS 的高带宽特性。
+读取操作支持并发（GDS 启用时线程池随之启用），利用 GDS 的高带宽特性。
 
 1. **元数据检查**: 首先检查 `hot_cache`，如果未命中则尝试从磁盘读取元数据文件（`_try_to_read_metadata`）。
 2. **内存分配**: 调用 `memory_allocator.allocate` 分配目标显存。
@@ -141,13 +144,16 @@ def _load_bytes_from_disk_with_memory(self, ...):
 
 **代码位置**: 配置解析主要发生在 [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/gds_backend.py) 的 `__init__` 方法中，部分布尔值解析使用了 `get_extra_config_bool` 辅助函数。
 
-| 配置项               | 说明                                                             | 默认值   |
-| :------------------- | :--------------------------------------------------------------- | :------- |
-| `gds_path`           | 缓存数据存储的根目录路径。                                       | **必填** |
-| `cufile_buffer_size` | 预分配的 GDS 显存 Buffer 大小 (MB)。                             | **必填** |
-| `use_cufile`         | 是否启用 `libcufile` (GDS)。若为 `False` 则回退到 `cudaMemcpy`。 | `True`   |
-| `use_direct_io`      | 是否开启 `O_DIRECT`。                                            | `False`  |
-| `gds_io_threads`     | WekaFS 模式下的 I/O 线程池大小。                                 | `4`      |
+| 配置项                          | 说明                                                                                            | 默认值   |
+| :------------------------------ | :---------------------------------------------------------------------------------------------- | :------- |
+| `gds_path`                      | 缓存数据存储的根目录路径（支持 `gds_path_sharding` 分片）。                                     | **必填** |
+| `gds_buffer_size`               | 预分配的 GDS 显存 Buffer 大小 (MB)。                                                            | **必填** |
+| `use_gds`                       | 是否启用 GDS。为 `False` 时回退到 `mmap + cudaMemcpy`；tmpfs/overlayfs 上未显式配置时自动停用。 | `True`   |
+| `gds_backend`                   | 使用的 GDS 库：`cufile` / `hipfile`。                                                           | `cufile` |
+| `extra_config.use_direct_io`    | 是否开启 `O_DIRECT`。                                                                           | `False`  |
+| `extra_config.disk_io_threads`  | GDS 线程池大小（仅 GDS 启用时生效）。                                                           | `4`      |
+
+> 旧键名对照：`cufile_buffer_size` → `gds_buffer_size`；`use_cufile` → `gds_backend`（布尔开关改为选择后端字符串）；`extra_config.gds_io_threads` → `extra_config.disk_io_threads`（旧名仍可读但已弃用，会打告警）。
 
 ---
 
@@ -161,7 +167,7 @@ def _load_bytes_from_disk_with_memory(self, ...):
 
 1. **混合 I/O 路径**: 优先使用 `libcufile` (GDS) 进行 GPU-Storage 直接传输，在不支持的环境下自动降级为 `libcudart` (mmap + cudaMemcpy)，保证了极高的环境适应性。
 2. **持久化元数据**: 采用“数据文件 + 元数据文件”的双文件结构，配合启动时的全量扫描，实现了故障后的快速状态恢复。
-3. **异步与并发**: 写入操作全异步化，避免阻塞推理主循环；读取操作在特定文件系统（如 WekaFS）下启用线程池并发，最大化存储带宽利用率。
+3. **异步与并发**: 写入操作全异步化，避免阻塞推理主循环；读取操作在启用 GDS 时经线程池并发，最大化存储带宽利用率。
 4. **专用内存管理**: 内置 `CuFileMemoryAllocator`，确保所有 I/O Buffer 满足 GDS 的对齐与注册要求。
 
 ### 5.2 后端横向对比
@@ -175,7 +181,7 @@ def _load_bytes_from_disk_with_memory(self, ...):
 | **数据流向**   | GPU <-> NVMe (Direct)               | CPU RAM <-> Disk                 | GPU <-> NVMe / Remote (Direct)    |
 | **持久性**     | **高** (重启可用)                   | **低** (重启不可用)              | **低** (重启通常丢失)             |
 | **文件管理**   | **按需创建** (One-file-per-chunk)   | **按需创建** (Flat files)        | **池化复用** (Pre-allocated Pool) |
-| **元数据管理** | 磁盘持久化 + 启动扫描               | 磁盘持久化 + 内存索引            | 纯内存字典 (Soft State)           |
+| **元数据管理** | 磁盘持久化 + 启动扫描               | 纯内存索引（重启失效）           | 纯内存字典 (Soft State)           |
 | **典型场景**   | 高频推理、需要故障恢复、高性能 NVMe | 常规推理、低成本磁盘、兼容性优先 | 超低延迟、临时缓存、高性能集群    |
 | **依赖**       | `libcufile` / `libcudart`           | 标准 Python 库                   | `nixl` C++ 扩展                   |
 

@@ -1,5 +1,7 @@
 # gpu-memory-utilization 的谢幕：vLLM 如何用「实测」替代「估算」
 
+> **2026-11 更新**：extensible KV cache 方向已由后继 PR 落地 main——`vllm/utils/vmm_driver.py` 已在 main 分支（2026-11-05 经 GitHub 核实；本地检出版本尚早、未见该文件），`gpu_memory_utilization` 默认值已改为 `None`、未指定时按 1.0（配合 extensible KV cache 按实测内存定容；非该路径仍为 0.92，见 main 分支 `vllm/config/cache.py` 的 `resolved_gpu_memory_utilization`）。本文对 PR #50779 本身的分析仍然成立，`file:line` 行号仍以 2026-08-20 的 PR head 分支为准。
+>
 > 2026-08-20 | 基于 vLLM PR [#50779](https://github.com/vllm-project/vllm/pull/50779)（Extensible KV cache，njhill，draft）与 [#51718](https://github.com/vllm-project/vllm/pull/51718)（KV cache layout 标准化，LucasWilkinson）的 patch 分析。**两个 PR 均未合入 main**——#50779 明确标注 draft，且依赖 #51718 先落地。文中所有 `file:line` 行号以 2026-08-20 的 PR head 分支为准，合入后可能漂移。
 
 一张 H100 的 80GB 显存里，模型权重、KV Cache、激活值、CUDA Graph 池各分走多少——这个问题在 vLLM 里由一个数字回答：`--gpu-memory-utilization`。它是教程里出现频率最高的参数，也是一个把「运行时才确定的事实」提前到「启动前必须猜对」的接口。猜大一点，warmup 阶段 OOM；猜小一点，8% 的 HBM 常年闲置。而 vLLM 正在消灭这个猜谜游戏：PR #50779 用驱动级虚拟内存管理（VMM）把 KV Cache 变成**可增长的**——先预留虚拟地址空间，warmup 后实测真实内存占用，再一次性补齐物理页。**sizing 从「profiling 估算 + 手工 margin」变成「warmup 后实测」**，合入后参数默认值将从 0.92 变为 1.0。本文拆解这个转变：参数为什么必然猜错、VMM 机制如何让"先留地址后付页"成为可能、layout 标准化（#51718）为什么是前置依赖，以及权衡与已知缺口。

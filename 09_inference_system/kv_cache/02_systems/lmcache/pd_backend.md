@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `PDBackend` (Prefill-Decode Backend) 是 LMCache 专为 **预填充-解码分离 (Prefill-Decode Disaggregation)** 架构设计的核心存储后端。在此模式下，计算负载被拆分为两个阶段：
 
 1. **Prefill (预填充)**: 负责处理输入的 Prompt，生成 KV Cache。通常由高算力节点（如 H100）承担。
@@ -9,7 +11,7 @@
 
 `PDBackend` 的核心职责是实现 KV Cache 从 Prefill 实例到 Decode 实例的**低延迟、高吞吐、主动推送 (Push-based)** 传输。
 
-> **架构定位**: 它不仅是一个存储后端 (Storage Backend)，还取代了 `LocalCPUBackend` 充当 **内存分配器 (Allocator)** 的角色，直接管理 Host 内存以实现零拷贝传输。
+> **架构定位**: 它不仅是一个存储后端 (Storage Backend)，还在 PD 模式下**主导**内存分配器 (Allocator) 角色（`LocalCPUBackend` 仍可共存，见 §3.4），直接管理 Host 内存以实现零拷贝传输。
 
 ---
 
@@ -258,18 +260,19 @@ def allocate(self, shapes, dtypes, ...):
 
 ### 3.4 关于共存性的说明
 
-**Q: 启用 PD 模式后，是否还需要 `LocalCPUBackend`？**
+**Q: 启用 PD 模式后，还需要 `LocalCPUBackend` 吗？**
 
-A: **不需要，两者在架构设计上是互斥的。**
+A: **两者可以共存，但分配角色由 `PDBackend` 主导。** 开启 PD 并不会移除 `LocalCPUBackend`——只要配置了 `local_cpu: true` 且 `max_local_cpu_size > 0`，它仍会照常创建。源码注释写得很明白："The local_cpu backend is always created because other backends might need it as a buffer"（`lmcache/v1/storage_backend/__init__.py`，LocalCPUBackend 的创建分支）——因为其他后端（磁盘/远程/P2P）可能依赖它做分配缓冲。
 
-这不仅仅是功能重叠的问题，更核心的原因在于 **KV Cache 在 PD 场景下的角色发生了根本转变**：
+不过要注意 **KV Cache 在 PD 场景下的角色转变**，这决定了两者的分工而非互斥：
 
 1. **流式传输 vs 静态缓存**:
 
-   - 在 PD 架构中，KV Cache 是连接 Prefill 和 Decode 阶段的 **一次性数据流 (Transient Stream)**。Sender 生成数据后立即推送，Receiver 接收后立即使用，整个过程不涉及“缓存复用”。
+   - 在 PD 架构中，KV Cache 是连接 Prefill 和 Decode 阶段的 **一次性数据流 (Transient Stream)**。Sender 生成数据后立即推送，Receiver 接收后立即使用，这条流由 `PDBackend` 全权管理，不走 `LocalCPUBackend` 的 LRU 逐出策略。
 
-2. **分配器 (Allocator) 的排他性**:
-   - LMCache 系统要求内存分配器是唯一的。PD 模式下，KV Cache 的生命周期（申请->传输->释放）由 `PDBackend` 全权管理。`LocalCPUBackend` 的 LRU 逐出策略并不适用于这种流式场景。
+2. **分配器 (Allocator) 的主导权**:
+
+   - PD 模式下，KV Cache 的生命周期（申请->传输->释放）由 `PDBackend` 主导；`LocalCPUBackend` 退居“依赖缓冲”的角色，服务于其他仍需要它的后端。
 
 ---
 

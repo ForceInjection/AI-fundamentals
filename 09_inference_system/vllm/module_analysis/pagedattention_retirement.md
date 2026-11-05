@@ -14,7 +14,7 @@ const int64_t physical_block_number = block_table[block_idx];
 
 这套机制让 vLLM 在吞吐量上远超同期引擎，PagedAttention 成为 vLLM 的标志性设计。
 
-2026 年 7 月，v0.25.0 发布。在 Release Notes 的 Highlights 中，**「PagedAttention has been removed」被列为第一条**。同时列出的还有新注意力后端矩阵——`FLASH_ATTN_MLA_SPARSE`、`FLASHINFER_MLA_SPARSE`、FlashAttention 3——以及「V1/MRv2 backends are the standard path」。这是一个版本内同时完成「旧事物退场」和「新体系确立」的时刻。
+2026 年 7 月，v0.25.0 发布。在 Release Notes 的 Highlights 中，**「PagedAttention has been removed」被列为第二条**（第一条是「Model Runner V2 is now the default for all dense models」），该条目同时带出了「V1/MRv2 backends are the standard path」。新注意力后端矩阵（`FLASH_ATTN_MLA_SPARSE` 等 sparse-MLA 后端、FlashAttention 3 稳定化）则列在 Highlights 之外的分节中。这是一个版本内同时完成「旧事物退场」和「新体系确立」的时刻。
 
 好的抽象有保质期。PagedAttention 的退役，不是因为它有什么缺陷，而是因为它面对的世界已经完全变了。
 
@@ -36,7 +36,7 @@ const cache_t* __restrict__ v_cache,  // [num_blocks, num_kv_heads,
                                        //   head_size, block_size]
 ```
 
-但 2025 年以后，DeepSeek V2 引入 MLA——Multi-head Latent Attention。MLA 把 K 和 V 从独立的矩阵压缩为一个低秩表示 `[c_kv, k_rope]`。在标准 MHA 中，KV 的维度是 $2 \times \mathrm{num layers} \times \mathrm{num heads} \times \mathrm{head size}$；在 MLA 中，这个数字缩小到了 $\mathrm{kv lora rank} + \mathrm{qk rope head dim}$——约为原来的 $27\%$。
+但 2025 年以后，DeepSeek V2 引入 MLA——Multi-head Latent Attention。MLA 把 K 和 V 从独立的矩阵压缩为一个低秩表示 `[c_kv, k_rope]`。以 DeepSeek V3 为例，标准 MHA 每 token 每层的 KV 为 $2 \times \mathrm{num heads} \times (qk\_nope + rope + v\_head\_dim)\ \text{dims} = 128 \times (128+64+128) = 40{,}960$ 维；MLA 只存 $\mathrm{kv lora rank} + \mathrm{qk rope head dim} = 512+64 = 576$ 维——约为原来的 $1.4\%$（576/40960，缩减约 $98.6\%$）。
 
 PagedAttention 的 kernel 期望拿到两个独立的张量，一个叫 `k_cache`，一个叫 `v_cache`。MLA 只给一个压缩表示。PagedAttention 没有从 `[c_kv, k_rope]` 解压回 K 和 V 的代码路径。**这不是一个可以「修一修」就解决的问题——需要从存储格式、计算流程、到显存布局都重新设计。**
 
@@ -97,7 +97,7 @@ $9 \times 3 \times 2 \times 2 \times 2 \times 2 \approx 400$ 个 kernel 实例�
 
 代价是每一个 kernel 实例都必须在最低公分母硬件上运行——这意味着放弃了 H100 上三个关键能力：**TMA**（Tensor Memory Accelerator，硬件异步从 HBM 搬运数据到 shared memory，不占用 CUDA core 的计算周期）、**wgmma**（warp group 级别的异步 FP8 矩阵乘累加指令，一次发射代替多次 FMA）、**persistent kernel**（thread block 在 SM 上驻留不退出，跨多次迭代复用 register 和 shared memory，消除 kernel launch 开销）。PagedAttention 用的是一套从 A100 时代继承下来的编程模型——`WARP_SIZE=32`、`__syncthreads()` 同步、shared memory 手动管理。对 A100 来说，这套模型是当时最好的选择；对 H100 来说，它放弃了硬件近一半的有效吞吐。
 
-v0.25.0 的新后端体系正好相反。FlashMLA 按 SM 代独立实现——sm90 decode、sm90 sparse fp8 decode、sm100 prefill、sm100 decode——每一个 SM 代都有自己完整的 `.cu` 文件。但更关键的数字是：v0.25.0 的 `vllm/v1/attention/backends/` 目录下有 **21 个通用 attention backend**，`mla/` 子目录另有 **18 个 MLA 专用后端**——`flashattn_mla.py`、`flashattn_mla_sparse.py`、`flashinfer_mla.py`、`flashinfer_mla_sparse.py`、`flashmla.py`、`flashmla_sparse.py`、`triton_mla.py`、`cutlass_mla.py`、`rocm_aiter_mla.py`……这不是冗余。这是承认注意力已经不再是一个可以用单一实现覆盖全部场景的问题。
+v0.25.0 的新后端体系正好相反。FlashMLA 按 SM 代独立实现——sm90 decode、sm90 sparse fp8 decode、sm100 prefill、sm100 decode——每一个 SM 代都有自己完整的 `.cu` 文件。但更关键的数字是：v0.25.0 的 `vllm/v1/attention/backends/` 顶层有 21 个通用后端模块，`mla/` 子目录另有 18 个模块、其中定义了 17 个具体 MLA backend 类（`flashattn_mla.py`、`flashattn_mla_sparse.py`、`flashinfer_mla.py`、`flashinfer_mla_sparse.py`、`flashmla.py`、`flashmla_sparse.py`、`triton_mla.py`、`cutlass_mla.py`、`rocm_aiter_mla.py`……此外还有按预填充路径拆分的 `prefill/` 子目录）。这不是冗余。这是承认注意力已经不再是一个可以用单一实现覆盖全部场景的问题。
 
 ## 6. 退役，不是重构
 
@@ -108,7 +108,7 @@ v0.25.0 的 Release Notes 把 PagedAttention 删除放在 Highlights，同时把
 | 输入格式 | K 和 V 分离，五维张量               | 压缩表示，MLA 的 `[c_kv, k_rope]`  |
 | 计算流程 | 两遍遍历（K 遍 + V 遍）             | 单遍融合                           |
 | 精度模型 | 存储 FP8 → 计算 FP16/BF16           | 原生 FP8 计算路径                  |
-| 后端数量 | 1 个（CUDA kernel，内置在 `_C` 中） | 21 个通用 backend + 18 个 MLA 变体 |
+| 后端数量 | 1 个（CUDA kernel，内置在 `_C` 中） | 21 个通用 backend + 17 个 MLA backend 类 |
 | 硬件定位 | sm_80+ 通用                         | sm_90+ 和 sm_100+ 独立优化         |
 | 编译策略 | 模板参数笛卡尔积（~400 实例）       | 按 SM 代 + 精度组合（~20 实例）    |
 

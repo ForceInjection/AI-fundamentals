@@ -1,6 +1,6 @@
 # SGLang KV Pool 管理：物理存储、Radix Tree 索引与请求视图
 
-> 2026-07-24 | 基于 sglang v0.5.14 源码分析
+> 2026-07-24 | 基于 sglang commit 420f0de318（2026-07-23 OSS sync）源码分析
 
 sglang 的 KV cache 管理核心是在有限的 GPU HBM 中高效存储和复用所有请求的 K/V tensor。
 
@@ -313,6 +313,8 @@ MambaPool（`memory_pool.py:313`）：管理 conv state + temporal state，可�
 | `HiSparseTokenToKVPoolAllocator` | `allocator/hisparse.py:15`    | 任意      | 稀疏索引                             |
 | `MambaSlotAllocator`             | `allocator/mamba.py:30`       | N/A       | Mamba 固定大小 slot                  |
 
+> 注：`multi_ended_allocator.py` 在现行 release tag 中已不存在（仅 commit 420f0de318 前后窗口存在），后续重构已将组合分配器移入 `allocator/` 目录；本文行号按 420f0de318 校准。
+
 分配器选择（`model_runner_kv_cache_mixin.py:1162-1270`）：
 
 ```text
@@ -348,7 +350,7 @@ free(free_index)
   → free_page_indices = torch.unique(free_index // self.page_size)
 ```
 
-`MultiEndedAllocator`（`multi_ended_allocator.py:99`）：两个子池从同一块 byte buffer 两端向中间增长，virtual page table 做 virtual→physical 映射，不够时触发 compaction。
+`MultiEndedAllocator`（`multi_ended_allocator.py:99`，该文件在现行 tag 已不存在，仅 420f0de318 前后窗口存在）：两个子池从同一块 byte buffer 两端向中间增长，virtual page table 做 virtual→physical 映射，不够时触发 compaction。
 
 ---
 

@@ -103,7 +103,7 @@ LMCache 的存储和检索接口 (如 `store_layer` 和 `retrieve_layer`) 并不
   - **消费者**: GPU 连接器 (GPU Connector) 负责将数据拷贝至显存。
 
 ```python
-# 伪代码示例：LMCache 的层级检索生成器
+# 伪代码示例（示意性质，非逐行对照源码）：LMCache 的层级检索生成器
 def retrieve_layer(self, tokens):
     # 启动阶段：预取第 0 层和第 1 层 (Prefetch-2 策略)
     prefetch(0); prefetch(1)
@@ -233,4 +233,4 @@ def retrieve_layer(self, tokens):
 ## 8. 参考文献
 
 1. LMCache Project. "LMCache Documentation". GitHub Repository. Available: [https://github.com/LMCache/LMCache](https://github.com/LMCache/LMCache)
-2. Y. Li et al., "DualPath: Rethinking KV Cache Loading for Agentic LLM Inference," arXiv preprint arXiv:2602.21548v2, 2024. Available: [https://arxiv.org/abs/2602.21548](https://arxiv.org/abs/2602.21548)
+2. Y. Li et al., "DualPath: Rethinking KV Cache Loading for Agentic LLM Inference," arXiv preprint arXiv:2602.21548v2, 2026. Available: [https://arxiv.org/abs/2602.21548](https://arxiv.org/abs/2602.21548)

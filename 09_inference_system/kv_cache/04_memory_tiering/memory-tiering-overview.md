@@ -54,7 +54,7 @@ NEO 的起点是一句反向的前提检查：decoding attention 在 GPU 和 CPU
 
 eLLM 的抽象叫 **eTensor**：逻辑层保留两套定制化管理，物理层共享一个统一内存池（p.3）。KV 池不够时向 activation 池 inflation：轻量 GC 回收不活跃块、只转所有权不搬数据、再按需映射进目标虚拟地址空间；deflation 惰性归还（p.4）。第二级弹性把 CPU DRAM 当溢出 buffer，靠 layer-wise pipelining 把 O(N) 的 KV 传输藏进 O(N²) 的 prefill 计算（p.4）。调度按 SLO 分阶段调整 logical buffer 的可用尺寸（p.4）。
 
-账本：解码吞吐最高 2.32×（128k-4k 离线配置、Jamba-Mini、2 GPU，p.6），goodput 最高 2.5×（p.5）。代价论文自己认：CPU buffer 引入 prefill 偏好、TPOT 高于 vLLM（p.5），PCIe 带宽是无法完全重叠的天花板（p.6）。前提：单机 A100 + 大 CPU DRAM + PCIe。实现未开源（vLLM v0.5.5 上约 4000 行修改）。
+账本：解码吞吐最高 2.32×（128k-4k 离线配置、Jamba-Mini、2 GPU，p.6），goodput 最高 2.5×（p.5）。代价论文自己认：CPU buffer 引入 prefill 偏好、TPOT 高于 vLLM（p.5），PCIe 带宽是无法完全重叠的上限（p.6）。前提：单机 A100 + 大 CPU DRAM + PCIe。实现未开源（vLLM v0.5.5 上约 4000 行修改）。
 
 ![eLLM：eTensor 统一内存池与 inflation / deflation](../../assets/mtier-ellm-elastic-pool.svg)
 
@@ -81,15 +81,15 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 
 ## 四、共同的支点与边界
 
-**先量缺口，再对数字设计。** 四篇的机制都能回指一组事先被测出来的数字：DirectKV 量出朴素零拷贝把 B 的流量放大到 33.5 GB、L2 命中率掉到 32.3%，三招各自对着这两笔账修；NEO 量出带宽差约 3×、算力差约 100×，才敢把 bandwidth-bound 的 decoding attention 搬走；eLLM 量出预留占比 30.8% 对实际利用率约 1% 的错位，才有了互借的池；Strata 量出 22% 的带宽利用率、最高 24% 的加载停顿与 38% 的 delay hit 撞车率，才去换 I/O 机制与调度。
+先量缺口，再对数字设计。四篇的机制都能回指一组事先被测出来的数字：DirectKV 量出朴素零拷贝把 B 的流量放大到 33.5 GB、L2 命中率掉到 32.3%，三招各自对着这两笔账修；NEO 量出带宽差约 3×、算力差约 100×，才敢把 bandwidth-bound 的 decoding attention 搬走；eLLM 量出预留占比 30.8% 对实际利用率约 1% 的错位，才有了互借的池；Strata 量出 22% 的带宽利用率、最高 24% 的加载停顿与 38% 的 delay hit 撞车率，才去换 I/O 机制与调度。
 
-**第二个交叉点：把搬运藏起来的四种配对手法。** 四篇走的都是同一条路：把传输藏进另一份资源面的计算里（DirectKV 消掉的也只是 staging 这一个动作），配对方式各不相同：kernel 内藏（DirectKV 的 warp 级流水，producer 预取下一 tile 与 consumer 的计算同 kernel 掩护）、两侧互藏（NEO 的双 batch，CPU attention 与 GPU 线性段互为掩护，调度约束落成 `Tl0 ≥ Tca1` 这样的不等式）、层间藏（eLLM 的 layer-wise pipelining，O(N) 的 KV 传输藏进 O(N²) 的 prefill）、批间藏（Strata 的气泡填充，加载吃 PCIe、解码吃 HBM，资源面错开）。手法不同、约束相同：掩护窗口要盖得下传输，且两份负载不能抢同一种资源。
+第二个交叉点：把搬运藏起来的四种配对手法。四篇走的都是同一条路：把传输藏进另一份资源面的计算里（DirectKV 消掉的也只是 staging 这一个动作），配对方式各不相同：kernel 内藏（DirectKV 的 warp 级流水，producer 预取下一 tile 与 consumer 的计算同 kernel 掩护）、两侧互藏（NEO 的双 batch，CPU attention 与 GPU 线性段互为掩护，调度约束落成 `Tl0 ≥ Tca1` 这样的不等式）、层间藏（eLLM 的 layer-wise pipelining，O(N) 的 KV 传输藏进 O(N²) 的 prefill）、批间藏（Strata 的气泡填充，加载吃 PCIe、解码吃 HBM，资源面错开）。手法不同、约束相同：掩护窗口要盖得下传输，且两份负载不能抢同一种资源。
 
-**都建立在当代硬件的某道新缝隙上。** DirectKV 赌 NVLink-C2C 把互联和 HBM 的差距缩进一个数量级；NEO 赌 CPU 带宽与 GPU 只差约 3 倍；eLLM 赌 GPU VMM 支持映射转手；Strata 赌数千个 GPU 线程搬 KB 级数据的效率。硬件前提变了，账就要重算。四篇论文各自的局限章节都在谈硬件，原因就在这里。
+都建立在当代硬件的某道新缝隙上。DirectKV 赌 NVLink-C2C 把互联和 HBM 的差距缩进一个数量级；NEO 赌 CPU 带宽与 GPU 只差约 3 倍；eLLM 赌 GPU VMM 支持映射转手；Strata 赌数千个 GPU 线程搬 KB 级数据的效率。硬件前提变了，账就要重算。四篇论文各自的局限章节都在谈硬件，原因就在这里。
 
-**精度账普遍缺席。** DirectKV 全文没有 accuracy/perplexity 实验；eLLM 是纯内存管理、理论上不影响精度但没报告；NEO 也没有质量数据。内存层级重构在数值上"免费"到什么程度，四篇里没有一篇测完。
+精度账普遍缺席。DirectKV 全文没有 accuracy/perplexity 实验；eLLM 是纯内存管理、理论上不影响精度但没报告；NEO 也没有质量数据。内存层级重构在数值上"免费"到什么程度，四篇里没有一篇测完。
 
-**与 FAST'26 系列的分工。** 那边的五篇是「KV × 存储的五个场景」（端侧、智能体、多轮对话、分离式、冷启动），对象是 SSD 与文件系统；这边四篇的对象是显存之外的第一层：DRAM、互联、内存抽象与调度。串起来读的顺序是：先把内存层级用对（本系列），再和存储打交道（[FAST'26 系列](../03_fast26/fast26-kv-storage-five-scenarios.md)）。
+与 FAST'26 系列的分工。那边的五篇是「KV × 存储的五个场景」（端侧、智能体、多轮对话、分离式、冷启动），对象是 SSD 与文件系统；这边四篇的对象是显存之外的第一层：DRAM、互联、内存抽象与调度。串起来读的顺序是：先把内存层级用对（本系列），再和存储打交道（[FAST'26 系列](../03_fast26/fast26-kv-storage-five-scenarios.md)）。
 
 ## 五、未来方向：统一命名空间与成本旋钮
 
@@ -115,10 +115,10 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 
 ## 系列篇目
 
-- [不搬 KV 反而更快：OSDI'26 DirectKV 让显存少占 43%](directkv.md)——**去搬运**（OSDI '26）
-- [显存卡死 batch 的 GPU 上：NEO 把 decoding attention 搬给了随卡白送的 CPU](neo.md)——**挪计算**（MLSys 2025）
-- [30.8% 的显存按 200K 上下文预留，实际只用 1%：eLLM 让 Activation 与 KV Cache 互相借内存](ellm.md)——**并账本**（DAC 2026）
-- [8192 个 token 的 KV 只跑出 22% PCIe 带宽：Strata 重做分层缓存的搬运与调度](strata.md)——**重排调度**（OSDI '26）
+- [不搬 KV 反而更快：OSDI'26 DirectKV 让显存少占 43%](directkv.md)——去搬运（OSDI '26）
+- [显存卡死 batch 的 GPU 上：NEO 把 decoding attention 搬给了随卡白送的 CPU](neo.md)——挪计算（MLSys 2025）
+- [30.8% 的显存按 200K 上下文预留，实际只用 1%：eLLM 让 Activation 与 KV Cache 互相借内存](ellm.md)——并账本（DAC 2026）
+- [8192 个 token 的 KV 只跑出 22% PCIe 带宽：Strata 重做分层缓存的搬运与调度](strata.md)——重排调度（OSDI '26）
 - 精读报告（逐条页码核对版）：[DirectKV](references/directkv-report.md) · [NEO](references/neo-report.md) · [eLLM](references/ellm-report.md) · [Strata](references/strata-report.md)；论文原文 PDF 在 `references/papers/`（已核页数与首末页）
 
 ## 诚实声明
@@ -131,23 +131,23 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 
 > 本系列只管「显存之外的第一层」；上下游的传输、系统与存储线索按主题列在这里，完整映射见 [KV Cache 技术体系门户](../README.md)。
 
-**卸载与预取**（把 KV 搬到 CPU/盘，并隐藏搬运延迟）：
+卸载与预取（把 KV 搬到 CPU/盘，并隐藏搬运延迟）：
 
 - [KV Offloading 架构对比](../01_concepts/offloading/01_kv_offloading.md) · [KV Cache 层级流水线并行](../01_concepts/offloading/02_layerwise_pipeline.md) · [KV Cache Prefetching：三层预取](../01_concepts/offloading/03_kv_cache_prefetching.md) · [稀疏注意力 × KV Cache Offloading：跨层联动必须回答的八个问题](../01_concepts/offloading/sparse_attention_driven_offloading_problems.md)
 
-**PD 分离与跨节点传输**（搬运走出单机之后）：
+PD 分离与跨节点传输（搬运走出单机之后）：
 
 - [PD 分离架构下的 KV Cache 传输](../01_concepts/pd_transfer/01_disaggregated_prefill_kv_transfer.md) · [压缩、重叠、复用、隔离：PD 状态交接优化的四条轴](../01_concepts/pd_transfer/02-pd-state-handoff-optimization-map.md) · [分卡之后再跨机：DCP 与 PD 分离叠加时的 KV 传输](../01_concepts/pd_transfer/03-dcp-pd-transfer.md)
 
-**系统与容量**（分层缓存的工业实现与并发账本）：
+系统与容量（分层缓存的工业实现与并发账本）：
 
 - [SGLang HiCache 深读](../../sglang/hicache_deep_dive.md) · [LMCache 概览](../02_systems/lmcache/lmcache_overview.md) · [L2 还有大半空着，TTFT 为什么先崩了？L1 KV Pool 才是系统并发的上限](../01_concepts/capacity_planning/hbm_kv_pool_concurrency.md)
 
-**压缩与淘汰**（把 KV 变小的经典两条腿）：
+压缩与淘汰（把 KV 变小的经典两条腿）：
 
 - [KV Cache 压缩技术详解](../01_concepts/compression/kv_cache_compression.md) · [KV Cache 淘汰策略：从滑动窗口到注意力引导的精确淘汰](../01_concepts/eviction/attention_sinks_and_eviction.md)
 
-**KV × 存储的五个场景**（本系列的下一层：SSD 与文件系统）：
+KV × 存储的五个场景（本系列的下一层：SSD 与文件系统）：
 
 - [当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案](../03_fast26/fast26-kv-storage-five-scenarios.md)
 

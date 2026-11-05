@@ -412,13 +412,13 @@ def dsv41_dspark_needs_rebootstrap(
 
 所以那两个 ROPE 池是 V4 在 ROCm 上的东西，与 V4.1 无关。
 
-**V4.1 没有 fp4 主 KV。** `deepseek_v4_memory_pool.py:99` 有一条硬断言：
+**FP4 不进主缓存，两个口径要分开。** `deepseek_v4_memory_pool.py:99` 有一条硬断言：
 
 ```python
     assert kv_layout is KVLayout.V41, f"{kv_layout} is not a main-cache layout"
 ```
 
-`V41_FP4` 这个布局从设计上就不能当 main cache，它只用于压缩 cache 与 indexer。
+`V41_FP4` 这个布局从设计上就不能当 main cache，它只用于压缩 cache 与 indexer。这里要与 [02 篇](02-deepseek-v41-flash.md)「FP4 main KV」的说法消歧：SWA 主环 KV 保持 FP8（V4.1 布局）；FP4 仅用于压缩 latent 与 indexer，而压缩 latent 正是 02 篇沿报告口径所称的「FP4 main KV」（global 分支压缩后的 KV 条目）。两处「主」字指的不是同一个东西：本文的「主 KV」是 SGLang 池布局里作锚点的主缓存，02 篇说的是报告里 global 分支压缩后的条目，两种说法并不矛盾。
 
 ---
 

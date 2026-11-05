@@ -1,5 +1,7 @@
 # CacheGen 技术详解：KV Cache 的高效压缩与流式传输
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 本文档旨在从源码层面深入剖析 **CacheGen** 在 **LMCache** 中的工程落地。基于 SIGCOMM 2024 顶会论文 _CacheGen: KV Cache Compression and Streaming for Fast Large Language Model Serving_，我们将详细解读其核心机制——**自适应量化 (Adaptive Quantization)** 与 **流式算术编码 (Streaming Arithmetic Coding)** 的代码实现。通过分析 Python 控制层与 CUDA 算子层的交互，揭示 LMCache 如何在保证模型推理精度的前提下，实现极致的 KV Cache 压缩比与传输吞吐量。
 
 ---
@@ -50,7 +52,7 @@ graph TB
 CacheGen 实现了 **3.7 倍的性能飞跃**，具体表现如下：
 
 - **延迟大幅降低**: 相比于量化基准方法，CacheGen 将首字延迟 (TTFT) 降低了 **3.2-3.7 倍**。
-- **存储与带宽节省**: CacheGen 将 KV 缓存体积缩小了 **4.3 倍**。
+- **存储与带宽节省**: CacheGen 将 KV 缓存体积缩小 **3.5–4.3 倍（论文区间）**。
 - **质量损失极小**: 压缩对 LLM 响应质量的影响可以忽略不计（准确率下降通常小于 2%）。
 
 **KV 缓存压缩效果对比 (基于 Mistral-7B 模型)**：

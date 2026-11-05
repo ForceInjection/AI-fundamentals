@@ -2,6 +2,8 @@
 
 [< 返回架构概览](./lmcache_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 本文档深入剖析 LMCache 的控制平面 —— **Cache Controller**。作为分布式部署的核心组件，它负责集群元数据管理、节点协调以及全局指令下发，是 LMCache 实现跨节点 KV Cache 共享与调度的“大脑”。
 
 ---
@@ -136,7 +138,7 @@ LMCache 使用 `msgspec` 库进行高性能的序列化与反序列化（基于 
   这些事件被封装为轻量级的 `KVOpEvent` 结构，并通过 `BatchedKVOperationMsg` 批量发送。每个事件包含：
   - `op_type`: 操作类型 (`admit` 或 `evict`)。
   - `key`: Chunk 的唯一标识 (Hash)。
-  - `seq_num`: 序列号，用于处理乱序（配合 `SeqTracker` 检测丢包）。
+  - `seq_num`: 序列号，用于处理乱序（配合 Worker 节点上的 `seq_tracker` 字典字段——`location → 最新 seq_num` 的映射，见 `lmcache/v1/cache_controller/utils.py:72`——检测丢失/迟到的事件）。
 
 #### 2.3.2 节点生命周期事件
 
@@ -234,7 +236,7 @@ LMCache 定义了一套标准化的控制指令，覆盖了从资源清理、数
 | **Clear**    | `ClearMsg`         | 清理指定范围的 KV Cache，释放存储空间。通常用于任务结束后的资源回收。                 | `instance_id="default"`, `location="gpu"`               |
 | **Pin**      | `PinMsg`           | 锁定特定 KV 数据，防止被 LRU 策略驱逐。适用于高频访问的热点数据（如 System Prompt）。 | `tokens=[1, 2, 3]`, `location="gpu"`                    |
 | **Move**     | `MoveMsg`          | 触发跨层级（CPU <-> Disk）或跨节点的数据迁移。用于负载均衡或预热。                    | `old_position="cpu"`, `new_position=("1.2.3.4", "gpu")` |
-| **Compress** | `CompressMsg`      | 对指定 KV 数据进行压缩，节省存储空间。                                                | `method="lz4"`, `tokens=[1, 2, 3]`                      |
+| **Compress** | `CompressMsg`      | 对指定 KV 数据进行压缩，节省存储空间。                                                | `method="cachegen"`, `tokens=[1, 2, 3]`（当前 compress 分发仅放行 `cachegen`；`kivi` 等 serde 虽存在但未接入该路径） |
 
 ---
 

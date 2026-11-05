@@ -17,7 +17,7 @@
 - **Few-shot Examples**：相同的示例在多个请求中复用。
 - **RAG 场景**：检索到的文档片段被多个查询复用。
 
-根据生产环境的统计数据 [1,3]，**40%-80% 的 token 序列存在可复用的共享前缀**。如果每次请求都从零开始计算这些重复前缀的 KV Cache，将造成巨大的计算资源浪费。
+生产环境中多轮对话、few-shot、RAG 等负载普遍存在可复用的共享前缀（具体比例随应用形态差异很大，公开文献没有统一数字）。如果每次请求都从零开始计算这些重复前缀的 KV Cache，将造成巨大的计算资源浪费。
 
 ```text
 场景示例：客服机器人
@@ -26,7 +26,8 @@
 请求 B: [System Prompt: 8K tokens] + [用户问题 B: 128 tokens]
 请求 C: [System Prompt: 8K tokens] + [用户问题 C: 512 tokens]
 
-→ System Prompt 被重复计算 3 次，浪费约 95% 的 Prefill 浮点运算量
+→ 可去重的 Prefill 计算占全部请求的 ~94%（8192×3 / (8192×3 + 256 + 128 + 512)）；
+  若不命中缓存，这部分算力全部被浪费
 ```
 
 ### 1.2 为什么需要 KV Cache 复用
@@ -1018,29 +1019,9 @@ $$
 
 ### 6.2 实测数据
 
-本节汇总 SGLang 和 vLLM 在不同工作负载下的实测性能数据。
+需要说明的是，SGLang 论文 [1] 与官方文档 [4] 均未提供可按工作负载细分的提升倍数表——本节不虚构此类数字。实际收益取决于前缀命中率（由工作负载的共享前缀比例决定）与 Prefix 长度/Query 长度之比，可参照 §6.1 的理论公式结合自身负载估算。
 
-#### 6.2.1 SGLang 官方基准测试
-
-根据 SGLang 论文 [1] 和官方文档 [4] 的基准测试：
-
-| 工作负载         | 模型       | 吞吐量提升 | TTFT 降低 |
-| ---------------- | ---------- | ---------- | --------- |
-| 多轮对话         | Llama-2-7B | 2-3x       | 60-80%    |
-| Few-shot 学习    | Llama-2-7B | 3-5x       | 70-85%    |
-| 结构化生成       | Llama-2-7B | 4-6x       | 75-90%    |
-| Tree of Thoughts | Llama-2-7B | 5-8x       | 80-95%    |
-
-#### 6.2.2 与 vLLM APC 的对比
-
-根据 SGLang 官方提供的测试数据 [4]，在相同硬件和模型配置下，RadixAttention 与 vLLM APC 的性能对比如下：
-
-| 指标         | SGLang (RadixAttention) | vLLM (APC) |
-| ------------ | ----------------------- | ---------- |
-| 前缀命中率   | 85-95%                  | 80-90%     |
-| 内存开销     | +5-10%                  | +2-5%      |
-| 动态前缀支持 | 优秀                    | 良好       |
-| 实现复杂度   | 高                      | 中         |
+一个可溯源的官方基准来自 LMCache 文档（as-of 2026-11 查证）：在 Qwen3-8B、长文档多轮问答负载下，vLLM 单独部署的平均 TTFT 为 757 ms，挂载 LMCache 后降至 185 ms（约 -75%），整场基准时长从 23.47 s 降至 13.79 s（约 -41%）——详见 [Prefix Caching 技术详解](prefix_caching.md) §5.2。SGLang 与 vLLM APC 的绝对性能对比建议以相同工作负载自测为准，两者在机制层面的差异见 §3 与 §6.3。
 
 ### 6.3 最佳实践
 
@@ -1072,17 +1053,14 @@ $$
 原则：稳定内容在前，动态内容在后
 ```
 
-#### 6.3.2 Chunk Size 选择
+#### 6.3.2 缓存粒度：vLLM APC 的 block_size 与 LMCache 的 chunk_size
 
-在使用哈希表方案（如 vLLM APC）时，Chunk Size 的大小直接影响缓存的匹配粒度和管理开销。不同大小的优缺点对比如下：
+两个系统的"匹配粒度"参数是不同的东西，不要混淆：
 
-| Chunk Size | 优点       | 缺点             | 推荐场景     |
-| ---------- | ---------- | ---------------- | ------------ |
-| 64 tokens  | 细粒度匹配 | 哈希计算开销大   | 高度动态前缀 |
-| 256 tokens | 平衡       | -                | **通用推荐** |
-| 512 tokens | 低管理开销 | 粒度粗，浪费空间 | 前缀非常稳定 |
+- **vLLM APC**：粒度就是 PagedAttention 的 `block_size`（默认 16 token），APC 没有独立的 "chunk size" 配置——每个 block 一次 hash，改大 block_size 即改大匹配粒度。粒度细则命中率保障好（前缀差异要小到 block 内才失效），hash 计算次数多；粒度粗则相反。
+- **LMCache**：以 `chunk_size`（默认 256 token）为存储与匹配单元，面向 CPU/磁盘/远程等大容量层，大 chunk 降低元数据与 I/O 次数。
 
-建议：**选择 vLLM Block Size 的整数倍**（如 256 = 16 × 16），便于与 PagedAttention 对齐。
+若同时部署两者，LMCache 的 `chunk_size` 应取 vLLM `block_size` 的整数倍（如 256 = 16 × 16），便于缓存对齐。
 
 #### 6.3.3 缓存预热策略
 
@@ -1160,7 +1138,7 @@ RadixAttention 通过创新性地将 Radix Tree 数据结构应用于 KV Cache �
 - [2] W. Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention," _SOSP 2023_.
   - **核心贡献**：提出 PagedAttention，是 RadixAttention 的内存管理基础。
 
-- [3] I. Gim et al., "Prompt Cache: Modular Attention Reuse for Low-Latency Inference," _arXiv preprint arXiv:2311.04934_, 2023.
+- [3] In Gim et al., "Prompt Cache: Modular Attention Reuse for Low-Latency Inference," _arXiv preprint arXiv:2311.04934_, 2023.
   - **核心贡献**：系统阐述了 Attention 状态复用的模块化方法。
 
 ### 8.3 项目文档

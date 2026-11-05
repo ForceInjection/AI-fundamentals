@@ -19,7 +19,7 @@ vLLM Router 提供了丰富的功能模块，涵盖从基础的请求路由到�
 
 ### 1.2 技术栈
 
-项目在 Rust 侧精心选择了一系列成熟稳定的核心依赖，以确保系统的高性能和可靠性：Web 服务层采用 **axum** 作为高性能异步 Web 框架，底层异步运行时则基于 **tokio** 构建；对于需要 gRPC 通信的场景，项目集成了 **tonic** 框架；Kubernetes 原生支持通过 **kube** 客户端实现服务发现和集群管理；为了实现 Rust 与 Python 的无缝互操作，项目使用 **pyo3** 创建 Python 绑定；此外，**tokenizers** 库提供了对 Hugging Face 分词器的支持，使路由器能够进行 token 级别的负载感知。
+项目在 Rust 侧的核心依赖都是成熟稳定的选择：Web 服务层采用 **axum** 作为高性能异步 Web 框架，底层异步运行时则基于 **tokio** 构建；对于需要 gRPC 通信的场景，项目集成了 **tonic** 框架；Kubernetes 原生支持通过 **kube** 客户端实现服务发现和集群管理；为了实现 Rust 与 Python 的无缝互操作，项目使用 **pyo3** 创建 Python 绑定；此外，**tokenizers** 库提供了对 Hugging Face 分词器的支持，使路由器能够进行 token 级别的负载感知。
 
 ---
 
@@ -83,8 +83,8 @@ Rust 核心位于 `src/`，按职责分为六组；Python 包装位于 `py_src/v
 | `core/`      | 节点状态与可靠性 | `worker.rs`（Worker trait）、`worker_registry.rs`、`circuit_breaker.rs`、`retry.rs`、`token_bucket.rs`   |
 | `policies/`  | 五种负载均衡策略 | `random.rs`、`round_robin.rs`、`consistent_hash.rs`、`power_of_two.rs`、`cache_aware.rs` + `registry.rs` |
 | `routers/`   | 协议与拓扑路由   | `http/`（标准/OpenAI/PD/vLLM PD 四种路由器）、`grpc/`、`router_manager.rs`                               |
-| `tokenizer/` | 前缀缓存感知     | `huggingface.rs`、`tiktoken.rs` + `tree.rs`（Radix 树）                                                  |
-| 顶层         | 基础设施         | `server.rs`（Axum 服务器）、`middleware.rs`、`metrics.rs`、`service_discovery.rs`、`protocols/`          |
+| `tokenizer/` | 前缀缓存感知     | `huggingface.rs`、`tiktoken.rs`                                                                          |
+| 顶层         | 基础设施         | `server.rs`（Axum 服务器）、`middleware.rs`、`metrics.rs`、`service_discovery.rs`、`protocols/`、`tree.rs`（Radix 树） |
 | `py_src/`    | Python 包装      | `launch_router.py`（CLI）、`router.py`（PyO3 桥接）、`mini_lb.py`（纯 Python 备用 LB）                   |
 
 ---
@@ -144,7 +144,7 @@ Prefill-Decode（PD）分离模式是针对大语言模型推理特性优化的�
 
 ### 3.2 负载均衡策略
 
-vLLM Router 内置了五种经过精心设计的负载均衡策略，每种策略都针对特定的使用场景进行了优化，用户可以通过 `--policy` 命令行参数灵活选择最适合自身业务特点的策略：
+vLLM Router 内置了五种负载均衡策略，每种策略都针对特定的使用场景进行了优化，用户可以通过 `--policy` 命令行参数灵活选择最适合自身业务特点的策略：
 
 | 策略              | 描述                   | 会话亲和性 | 负载感知 | 适用场景              |
 | ----------------- | ---------------------- | ---------- | -------- | --------------------- |
@@ -249,24 +249,23 @@ Cache Aware 策略的核心创新在于动态平衡缓存命中与负载均衡�
 
 - **触发条件**：树节点数超过 `max_tree_size` 或达到 `eviction_interval_secs` 间隔
 - **淘汰对象**：最久未访问的叶子节点（通过 `tenant_last_access_time` 追踪）
-- **批量处理**：每次淘汰约 10% 的过期节点，减少性能抖动
 
-Cache Aware 策略提供了丰富的可调参数，允许用户根据实际工作负载特征进行精细调优：
+Cache Aware 策略提供了丰富的可调参数，允许用户根据实际工作负载特征进行精细调优（默认值核对自 router 仓库 9b43894 的 `py_src/vllm_router/router_args.py:31-35`）：
 
-| 参数                     | 默认值 | 说明                                                                     |
-| ------------------------ | ------ | ------------------------------------------------------------------------ |
-| `cache_threshold`        | 0.5    | 当请求与某节点的前缀匹配率超过此阈值时，才会基于缓存进行路由决策         |
-| `balance_abs_threshold`  | 32     | 当节点间负载绝对差异超过此值时，策略将切换到负载均衡模式而非缓存优先模式 |
-| `balance_rel_threshold`  | 1.1    | 当节点间负载比率超过此值时，同样触发负载均衡模式                         |
-| `eviction_interval_secs` | 30     | radix 树缓存条目的定期清理周期，用于移除过期的前缀记录                   |
-| `max_tree_size`          | 10000  | 每个工作节点对应的 radix 树允许的最大节点数量                            |
+| 参数                     | 默认值        | 说明                                                                     |
+| ------------------------ | ------------- | ------------------------------------------------------------------------ |
+| `cache_threshold`        | 0.3           | 当请求与某节点的前缀匹配率超过此阈值时，才会基于缓存进行路由决策         |
+| `balance_abs_threshold`  | 64            | 当节点间负载绝对差异超过此值时，策略将切换到负载均衡模式而非缓存优先模式 |
+| `balance_rel_threshold`  | 1.5           | 当节点间负载比率超过此值时，同样触发负载均衡模式                         |
+| `eviction_interval_secs` | 120           | radix 树缓存条目的定期清理周期，用于移除过期的前缀记录                   |
+| `max_tree_size`          | 67108864 (2²⁶) | 每个工作节点对应的 radix 树允许的最大节点数量                            |
 
 ```bash
 ./target/release/vllm-router \
   --policy cache_aware \
-  --cache-threshold 0.5 \
-  --balance-abs-threshold 32 \
-  --balance-rel-threshold 1.1 \
+  --cache-threshold 0.3 \
+  --balance-abs-threshold 64 \
+  --balance-rel-threshold 1.5 \
   --worker-urls http://worker1:8000 http://worker2:8000
 ```
 

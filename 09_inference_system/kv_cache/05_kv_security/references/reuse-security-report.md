@@ -34,7 +34,7 @@
 
 **核心贡献与数字**：文档级 KV 预计算复用——每篇文档的 KV cache 独立编码后存储，推理时直接拼接复用。两个保真机制：(1) KV Positional Re-encoding（把缓存 KV 的位置编码调整到拼接后的全局位置）；(2) Link Token 训练（可训练连接 token 恢复不连续文档间的自注意力）。7 个数据集上 QA 准确率平均 +4%，TTFT 相对标准解码降 85–96%（v4 正文数字）。
 
-**口径注意**：「GPU 内存省 98%、吞吐 8.5×」这两个数在 v4 全文与 v1 摘要中均无法溯源（2026-10-13 复核），不建议引用；v1 → v4 的实际口径变化是 TTFT "up to 90%" → "up to 96%"。引用以 v4 为准（[arXiv abs](https://arxiv.org/abs/2502.16002)、[GitHub](https://github.com/UCSB-NLP-Chang/KVLink)，48 star）。定位是 ML 会议的 RAG 效率论文，非 serving 系统论文；后续 CacheClip、C2KV 已跟进。81 引用。
+**口径注意**：「GPU 内存省 98%、吞吐 8.5×」这两个数在 v4 全文与 v1 摘要中均无法溯源（2026-10-13 复核），不建议引用；v1 → v4 的实际口径变化是 TTFT "up to 90%" → "up to 96%"。引用以 v4 为准（[arXiv abs](https://arxiv.org/abs/2502.16002)、[GitHub](https://github.com/UCSB-NLP-Chang/KVLink)，48 star（2026-10））。定位是 ML 会议的 RAG 效率论文，非 serving 系统论文；后续 CacheClip、C2KV 已跟进。81 引用（2026-10）。
 
 **评级：A**（NeurIPS 2025 正式录用；UCSB + Accenture 团队，文档级 KV 预计算复用路线被 CacheClip、C2KV 等后续工作跟进）。
 
@@ -94,7 +94,7 @@
 
 | 论文                                                                                         | Venue                                                                                           | 机构                                                                                     | 要点                                                                                                                           |
 | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **I Know What You Asked: Prompt Leakage via KV-Cache Sharing in Multi-Tenant LLM Serving**   | **NDSS 2025**（官方页 ndss-symposium.org，DBLP 收录；Semantic Scholar 64 引）                   | Guanlong Wu 等，SUSTech + ByteDance                      | 首篇系统论证多租户 serving 的 KV cache 共享构成侧信道、可恢复他人 prompt；是 PrefixWall/Selective Sharing 等防御工作的攻击基线 |
+| **I Know What You Asked: Prompt Leakage via KV-Cache Sharing in Multi-Tenant LLM Serving**   | **NDSS 2025**（官方页 ndss-symposium.org，DBLP 收录；Semantic Scholar 64 引（2026-10））                   | Guanlong Wu 等，SUSTech + ByteDance                      | 首篇系统论证多租户 serving 的 KV cache 共享构成侧信道、可恢复他人 prompt；是 PrefixWall/Selective Sharing 等防御工作的攻击基线 |
 | **Shadow in the Cache: Unveiling and Mitigating Privacy Risks of KV-cache in LLM Inference** | **NDSS 2026**（DOI 10.14722/ndss.2026.240258；arXiv 2508.09442；代码 github.com/SiO-2/kvcloak） | Zhifan Luo、Shuo Shao 等，**浙江大学 + 华为**（Zhan Qin资深）                        | 三类攻击向量（可从 KV cache 数据本身重建用户输入）+ 防御 KV-Cloak；攻防一体                                                    |
 | **Auditing Prompt Caching in Language Model APIs**                                           | **ICML 2025**（OpenReview 官方页面）                                                            | Chenchen Gu、Xiang Lisa Li、Rohith Kuditipudi、Percy Liang、Tatsunori Hashimoto（**Stanford**） | 对真实商业 API 做实测审计（17 家中 8 家检出缓存、7 家跨组织全局共享，含 OpenAI）；缓存时序 oracle 可跨用户探测（探测口径，非逐 token 提取）；攻击面真实性最强      |
 
@@ -121,5 +121,5 @@
 
 1. **攻击面最真实**：直接针对 vLLM APC 等生产默认开启的多租户共享机制，不依赖"攻击者拿到原始 KV 张量"这类过强前提，攻击模型就是同一 serving 集群上的普通租户——与本仓库 KV 复用/共享主题完全对口。
 2. **承上启下**：它定义了攻击模型，PrefixWall（防御）、Selective KV-Cache Sharing（防御）、Non-Prefix RAG 攻击（扩展）全部以它为基线；精读一篇即可拿到整个子领域的坐标。
-3. **正式录用 + 已受检验**：NDSS 2025 正式发表、64 引用，比 PrefixWall（arXiv-only）和 Shadow in the Cache（攻击需要 KV 数据访问权，前提偏强）更稳。
+3. **正式录用 + 已受检验**：NDSS 2025 正式发表、已有数十次引用，比 PrefixWall（arXiv-only）和 Shadow in the Cache（攻击需要 KV 数据访问权，前提偏强）更稳。
 4. 备选：若想一篇同时覆盖攻防，选 **Shadow in the Cache（NDSS 2026，KV-Cloak）**；若想从 API 层理解真实世界暴露面，选 **Auditing Prompt Caching（ICML 2025，Stanford）**。

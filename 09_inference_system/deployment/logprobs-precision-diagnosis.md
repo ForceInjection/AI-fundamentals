@@ -132,7 +132,7 @@ logprobs 判别有明确的边界，使用前应当知道：
 
 ## 附录：一次请求的完整判别示例
 
-从请求到结论的完整数据流（SGLang `/v1/completions`，greedy 解码 + `logprobs=2`；数值取自 Falcon 实测，为便于演示做了简化整理：gap 取 0.45（正文 0.455 的两位近似）、跨路径差取位置 6（0-based 索引 5）的 -0.51，方向约定为基线减可疑路径，量级与正文一致）：
+从请求到结论的完整数据流（SGLang `/v1/completions`，greedy 解码 + `logprobs=2`；数值取自 Falcon 实测，为便于演示做了简化整理：gap 取 0.45（正文 0.455 的两位近似）、跨路径差取位置 6（0-based 索引 5）的 +0.51，方向约定为基线减可疑路径，量级与正文一致）：
 
 **1. 请求**
 
@@ -220,13 +220,13 @@ top2, gap = top2_gap(top, 5)             # 0-based 位置 5 = " artificial"（�
 # top2 = [(" artificial", -1.04), (" Artificial", -1.49)]
 # gap = 0.45  ← 大 gap：翻转需要约 0.45 nats 的力——噪声（1e-3 量级）不够 → 数据问题实锤
 
-# 判别二：同 token 跨路径差（R1 可疑路径 vs R3 基线路径，同一 token 的 logprob）
-def cross_path_diff(top1, top3, i, token):
-    return top1[i].get(token) - top3[i].get(token)
+# 判别二：同 token 跨路径差（方向约定：基线减可疑，即 R3 基线 − R1 可疑，同一 token 的 logprob）
+def cross_path_diff(top_baseline, top_suspicious, i, token):
+    return top_baseline[i].get(token) - top_suspicious[i].get(token)
 
 # R1: " artificial" = -1.04；R3: " artificial" = -0.53
-diff = cross_path_diff(top_r1, top_r3, 5, " artificial")
-# diff = -0.51  ← |diff| > 0.1 nats → 排除 bf16 浮点噪声
+diff = cross_path_diff(top_r3, top_r1, 5, " artificial")
+# diff = +0.51  ← |diff| > 0.1 nats → 排除 bf16 浮点噪声
 ```
 
 **4. 判别结论对照**
@@ -234,5 +234,5 @@ diff = cross_path_diff(top_r1, top_r3, 5, " artificial")
 | 步骤     | 计算                | 值           | 判据                     | 结论                |
 | -------- | ------------------- | ------------ | ------------------------ | ------------------- |
 | gap      | top1 - top2 logprob | 0.45 nats    | > 0.4 → 翻转需系统性偏移 | 数据问题（非噪声）  |
-| 跨路径差 | 同 token R1 - R3    | -0.51 nats   | > 0.1 → 排除 bf16        | 偏移量级实测        |
+| 跨路径差 | 同 token R3 − R1（基线减可疑） | +0.51 nats   | > 0.1 → 排除 bf16        | 偏移量级实测        |
 | 全局性   | 各位置逐一算        | 每步 0.2-0.5 | 全部位置偏移             | 根因在 prefill 输入 |

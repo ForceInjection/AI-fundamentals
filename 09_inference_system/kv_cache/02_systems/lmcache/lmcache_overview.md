@@ -1,5 +1,7 @@
 # LMCache 架构概览
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 **LMCache** 是一个专为大语言模型服务引擎设计的 KV Cache 管理系统，旨在通过高效的缓存机制降低 **Time-To-First-Token(TTFT)** 并提高系统吞吐量，特别是在**长上下文 (Long-Context)** 场景下表现优异。
 
 它通过将 KV Cache 存储在**多种介质**（GPU 显存、CPU 内存、本地磁盘、远程存储）中，实现了跨推理实例的 KV Cache 重用。LMCache 不仅支持**前缀缓存(Prefix Caching)** ，还支持任意文本片段的复用，从而显著节省 GPU 计算资源并降低用户响应延迟。在**多轮对话**和**检索增强生成**等场景中，LMCache 能够带来 `3-10` 倍的性能提升。
@@ -357,7 +359,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
      5. **LocalDiskBackend**: 若配置了本地磁盘路径。
      6. **GdsBackend**: 若启用 GPUDirect Storage。
      7. **RemoteBackend**: 远程后端 (Redis/Mooncake/LMCache Server)。
-     8. **PluginBackend**: 自定义插件后端。
+     8. **Storage Plugins**: 自定义插件后端。没有统一的 `PluginBackend` 类，经 `config.storage_plugins` 声明名字、由 `extra_config` 提供 `module_path`/`class_name` 动态加载（`lmcache/v1/storage_backend/__init__.py` 的 `storage_plugin_launcher`）。
      9. **AuditBackend**: (可选) 审计包装器，用于记录 I/O 操作日志。
    - **并发写入**: `batched_put` 会向所有激活的后端并发提交任务。例如，数据会同时被写入本地内存（同步更新索引）、提交给磁盘写入线程（异步）以及发送给远程服务器（异步）。
 

@@ -1,6 +1,6 @@
 # CacheSlide 精读报告（FAST'26）
 
-**论文**:CacheSlide: Unlocking Cross Position-Aware KV Cache Reuse for Accelerating LLM Serving。Yang Liu、Yunfei Gu(共同一作)等,上海交大 + 浪潮济南 + 北大 + 华为云;通讯 <gu.yunfei@sjtu.edu.cn> / <wuct@cs.sjtu.edu.cn>。FAST'26 论文集 pp.83–99,带 Artifact Evaluated–Available 徽章。
+**论文**:CacheSlide: Unlocking Cross Position-Aware KV Cache Reuse for Accelerating LLM Serving。一作 Yang Liu 等,上海交大 + 浪潮济南 + 北大 + 华为云;通讯 Yunfei Gu / Chentao Wu(<gu.yunfei@sjtu.edu.cn> / <wuct@cs.sjtu.edu.cn>)。FAST'26 论文集 pp.83–99,带 Artifacts Available 徽章。
 
 ## 一、问题与动机
 
@@ -22,7 +22,7 @@
 CacheSlide 三组件(Figure 6,p.88;§4.1):
 
 1. **CCPE(Chunked Contextual Position Encoding)**:位置不敏感编码,「提高缓存 KV 与重算 KV 的相似度」(摘要);面向「可变 prompt 分段」的 RPDC 场景。编码器按「学习到的任务特定模式」把输入切成 reused/recomputed chunk,reused chunk 经 hash map 直接取 KV(步骤①)。
-2. **WCA(Weighted Correction Attention)**:prefill 期只在 reused chunk 中**选极少数 token 重算**,并用学习到的权重融合新 KV 与缓存 KV、恢复跨注意力(步骤②;Figure 1(c) 标为 Compute local attention + Reuse Attention)。具体选哪些 token、每块算多少:只对复用块中约 12% 的 token 重算注意力(对比 CacheBlend 的 18%、EPIC 的每分段 64 token),用偏差加权融合恢复跨注意力,并每 4 层做一次 CKSim 门控——已收敛的 token 移出重算集合(§4.2–4.3)。
+2. **WCA(Weighted Correction Attention)**:prefill 期只在 reused chunk 中**选极少数 token 重算**,并用学习到的权重融合新 KV 与缓存 KV、恢复跨注意力(步骤②;Figure 1(c) 标为 Compute local attention + Reuse Attention)。具体选哪些 token、每块算多少:top-k ≈ 0.26,即只对复用块中约 26% 的 token 重算注意力(重算比例并不低于 CacheBlend 的 18%,优势在精度稳定性;EPIC 为每分段首尾 64 token),用偏差加权融合恢复跨注意力,并每 4 层做一次 CKSim 门控(阈值 τ ≈ 0.12)——已收敛的 token 移出重算集合(§4.2–4.3)。
 3. **SLIDE**(Spill awareness、Load–write decoupling(Intra-layer)、Dirty-page Evocation,p.84 贡献列表):③ 层内读写解耦提升加载/更新并发;④ 重定位 reused chunk 中被选中的 KV;⑤ 内存压力时优先把**不含选中 token 的干净页**溢写 SSD;⑥ decode 期把 KV 覆写回含选中 token 的页,削减存储足迹——整体指向消除小随机写与脏页驱逐开销。
 
 实现上扩展 vLLM 0.8.5 的 KV cache 管理部分,加入 CCPE 与 WCA(§5)。
@@ -38,4 +38,4 @@ CacheSlide 三组件(Figure 6,p.88;§4.1):
 
 ## 六、关联
 
-KV 复用谱系可排成:位置固定(PDC:ContextCache、PromptCache,以及 vLLM APC/SGLang radix cache 这类前缀缓存——同族,精读员注)→ 位置无关(PIC:CacheBlend、EPIC,靠选择性重算恢复)→ 相对位置保持(CacheSlide:改编码本身把漂移抹平,把重算量从启发式 18%/64-token 压到「极少数」)。论文明确把 vLLM/SGLang/TensorRT-LLM 点名为层内串行读写的问题来源,并直接扩展 vLLM 实现。SLIDE 处理的 SSD 溢写、脏页感知淘汰、读写解耦,与 LMCache 的 KV 分层下沉、Mooncake 的 KVCache 中心化池化属同一问题域(精读员注)——可视为把「KV 分层存储」从容量优化推进到为位置漂移复用服务的并行 I/O 设计。
+KV 复用谱系可排成:位置固定(PDC:ContextCache、PromptCache,以及 vLLM APC/SGLang radix cache 这类前缀缓存——同族,精读员注)→ 位置无关(PIC:CacheBlend、EPIC,靠选择性重算恢复)→ 相对位置保持(CacheSlide:改编码本身把漂移抹平,重算比例取稳健值 top-k ≈ 0.26,优势在精度稳定性与存储侧协同)。论文明确把 vLLM/SGLang/TensorRT-LLM 点名为层内串行读写的问题来源,并直接扩展 vLLM 实现。SLIDE 处理的 SSD 溢写、脏页感知淘汰、读写解耦,与 LMCache 的 KV 分层下沉、Mooncake 的 KVCache 中心化池化属同一问题域(精读员注)——可视为把「KV 分层存储」从容量优化推进到为位置漂移复用服务的并行 I/O 设计。

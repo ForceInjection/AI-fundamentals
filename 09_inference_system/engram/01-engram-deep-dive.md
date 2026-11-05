@@ -77,7 +77,7 @@ host 表默认是关闭的：`SGLANG_ENABLE_DSV41_ENGRAM_HOST_TABLE` 默认 Fals
 - 加载 checkpoint 前先 `posix_fadvise(DONTNEED)` 丢掉 page cache（`:511-530`）——缓存住的旧页会让 512 MiB 巨页 fault 回退（per_rank 路径）；
 - `per_rank` 布局注册前用 `np.frombuffer(...)[::PAGESIZE] = 0` 逐页 touch（`:586-587`），确保物理页按巨页粒度分配；
 - 然后用 `ctypes` 直调 `libc.madvise(MADV_COLLAPSE=25)` 同步折叠巨页（`:613-633`，Python 的 mmap 模块没有这个常量，注释标明要求 Linux ≥ 6.1），EAGAIN 重试三次；
-- 最后读 `/proc/self/smaps` 实测 `AnonHugePages/ShmemPmdMapped` 占比，低于 98% 就丢缓存重折一次；仍为 0 时直接警告「预计查表慢约 10 倍（每行一次 TLB miss）」（`:641-664`）。这套重折与验证是 per_rank 路径专属——shared 是 shmem，`MADV_COLLAPSE` 对它直接拒绝。
+- 最后读 `/proc/self/smaps` 实测 `AnonHugePages/ShmemPmdMapped` 占比；per_rank 路径低于 98% 就丢缓存重折一次；任一布局实测为 0 都直接警告「预计查表慢约 10 倍（每行一次 TLB miss）」（`:641-664`）。丢缓存重折仅 per_rank 可用——shared 是 shmem，`MADV_COLLAPSE` 对它直接拒绝。
 
 把巨页占比当成必须验证的运行时指标，而不是默默祈祷，是这一段最值得学的地方。
 
@@ -108,7 +108,7 @@ Engram 的表可以离开 GPU，根本原因是 2.4 节的确定性寻址——�
 **代价侧**（源码与部署口径）：
 
 - **带宽鸿沟是真的**。主机查表走 PCIe 与 LPDDR，带宽比 HBM 低一到两个数量级。SGLang 当前实现的对策不是论文说的预取-重叠，而是**同步查表 + 巨页把每次访问做到可用**——`ngram_embedding_manager.py` 全文没有 prefetch、没有独立 stream（哈希在层循环前同步完成，见 §2.4）。也就是说：预取-重叠目前是论文口径，代码里靠巨页硬吃延迟，巨页折叠失败就是警告里那个 10 倍；
-- **主机内存被钉死一大块**。LMSYS 口径约 189 GiB 钉住内存，且进程生命周期内永不释放（`engram.py:550-552`）——这笔占用直接从系统和其他进程碗里拿走；
+- **主机内存被钉死一大块**。「钉住且进程生命周期内永不释放」是代码事实——`_HostTable` 文档写明 mapping、memfd 与 `cudaHostRegister` 的 pin 全程不释放（`engram.py:549-552`）；「约 189 GiB」则是 LMSYS 博客口径（按 196.6B 参数 fp8 折算约 183 GiB，量级吻合；代码中无此数）——这笔占用直接从系统和其他进程碗里拿走；
 - **布局是二选一的 tradeoff**。`shared` 省通信但要求共享 PID namespace 且每卡读全量；`per_rank` 省副本但每次查表多一次 all-reduce（§4.1 的表）；
 - **精度做了裁剪**。表内容 fp8 e4m3 + e8m0 scale，门控权重 block-FP8——记忆查的是「够用」而非「精确」；
 - **哈希碰撞没有兜底**。碰撞直接读到别的行，门控的 sigmoid 只能衰减不能关断该分支；越界与非本 rank 行输出零行。论文赌的是素数表 + 多头把碰撞压到极低，但没有运行时检测；
@@ -120,13 +120,13 @@ Engram 的表可以离开 GPU，根本原因是 2.4 节的确定性寻址——�
 
 论文把「固定总参数预算下，MoE 专家和 Engram 槽位怎么分」形式化为稀疏分配问题，得到一条 U 型缩放律：Engram 占比太低，模型缺静态记忆，被迫用深度重建模式；占比太高，损失条件计算能力——记忆替代不了推理。中间的最优点在不同规模下位置稳定。V4.1-Flash 的 552B/196B 就是这条律上的一个工作点。
 
-这条路线不是 DeepSeek 独有（以下为各模型卡口径）：美团 LongCat-2.0 明确列出 135B 的 N-gram Embedding 参数，并给出与论文同构的表述——「MoE 的稀疏度已越过甜点，N-gram 嵌入的比例被约束在最优区间内」；阿里 Qwen3.8-Flash-Next 的模型卡称 N-gram Embedding 是「比 MoE 更易于卸载的参数扩展轴」。三家同代旗舰同时把参数搬向主机内存，「用 LPDDR 换 HBM」已经不是权宜之计。
+这条路线不是 DeepSeek 独有（以下为各模型卡口径）：美团 LongCat-2.0 明确列出 135B 的 N-gram Embedding 参数，并给出与论文同构的表述——「MoE 的稀疏度已越过甜点，N-gram 嵌入的比例被约束在最优区间内」；阿里 Qwen3.8-Flash-Next 的模型卡称 N-gram Embedding 是「比 MoE 更易于卸载的参数扩展轴」。不过三家的进度并不相同：DeepSeek 已确认记忆表常驻主机内存；LongCat-2.0 与 Qwen3.8-Flash-Next 依据的是模型卡等二手文档，描述的是「可卸载」方案，是否常驻尚无部署实证。方向上，「用 LPDDR 换 HBM」已经不是权宜之计。
 
 ## 七、边界与诚实声明
 
 - 本文机制描述以论文为准（预取-重叠、Zipf 多级缓存含 NVMe 层、U 型缩放律均为论文口径）；SGLang 代码中未见 prefetch 与 NVMe 层，巨页 + 同步查表是当前的工程答案；
 - V4.1-Flash 的 `engram_layer_ids=[1, 14]`、`max_ngram_size=4`、`n_heads=8`、196.6B = (384,006,168 + 384,016,682) × 256 为 checkpoint config 口径（核对见 [02 篇](../kv_compression/02-deepseek-v41-flash.md)）；官方 demo 的默认是 `[1, 15]`、3-gram、8 头（`engram_demo_v1.py:41-45`），那是教学配置——论文记载的 Engram-27B 实配为第 2、15 层、3-gram、8 头、维度 1280。两套数字都不要与 Flash 的混用；
-- 「189 GiB 钉住内存」为 LMSYS 博客口径，代码中只能读到加载后的 resident/huge-page 日志（`engram.py:649-652`）；
+- 「钉住且不释放」为代码口径（`_HostTable` 文档，`engram.py:549-552`）；「189 GiB」为 LMSYS 博客口径（196.6B×fp8 折算约 183 GiB），代码中只能读到加载后的 resident/huge-page 日志（`engram.py:649-652`）；
 - SGLang 的 Engram 路径强制 eager、不支持 CUDA graph（BCG 场景，`deepseek_v4.py:734-740`），吞吐代价未量化；
 - host 表是 opt-in：`SGLANG_ENABLE_DSV41_ENGRAM_HOST_TABLE` 默认 False，默认布局下表按行分片驻 HBM。
 

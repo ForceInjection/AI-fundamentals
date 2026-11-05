@@ -1,6 +1,6 @@
 # Continuous Batching 深度解析：从静态批处理到迭代级调度
 
-> 2026-07-29 | 基于 vLLM v0.27.0+ 与 SGLang v0.5.14 源码分析
+> 2026-07-29 | 基于 vLLM v0.27.0+（检出 `8b365ff949`）与 SGLang v0.5.14+（检出 `f4de6abee6`）源码分析，文中行号以这两个基线为准
 
 LLM 推理引擎的调度器有一个根本矛盾：GPU 一次只算一个 batch，但请求是源源不断到达的，每条请求的输出长度也无法预知。如果 batch 是一条"刻在石头上"的固定名单——建好就不再改变——那么短请求必须等长请求完成才能释放 GPU，新请求必须等整个 batch 结束才能加入。这意味着 GPU 在大量时间里是空的——计算着 padding tokens，等待着一个遥遥无期的 batch 结束。
 
@@ -86,7 +86,7 @@ t=50:  B 生成 EOS → 释放 B  → batch = {C, D, E}
        ...
 ```
 
-每一步 forward 之后，batch 的组成都可以不同。Gone 是"batch 锁定"，取代的是"迭代级流体"。
+每一步 forward 之后，batch 的组成都可以不同——"batch 锁定"消失了，取代它的是"迭代级流体"。
 
 ### 3.2 为什么这件事以前做不了
 
@@ -119,7 +119,7 @@ while True:
 
 ### 4.1 取消 prefill/decode 的二元对立
 
-vLLM V1 调度器最激进的设计选择在源码注释中表达得很清楚（`scheduler.py:398-407`）：
+vLLM V1 调度器最激进的设计选择在源码注释中表达得很清楚（`scheduler.py:559-568`）：
 
 ```python
 # NOTE(woosuk) on the scheduling algorithm:
@@ -146,9 +146,9 @@ Token-level scheduling 的最大优势在于：**chunked prefill 不再需要特
 
 ### 4.2 调度循环：RUNNING → WAITING → 后处理
 
-每次 forward pass 的调度 `schedule()`（`scheduler.py:396`）内部分为两个阶段，第三个阶段 `_update_after_schedule` 在 forward 完成后由引擎主循环调用。三者构成一个完整的调度循环：
+每次 forward pass 的调度 `schedule()`（`scheduler.py:557`）内部分为两个阶段，第三个阶段 `_update_after_schedule` 在 forward 完成后由引擎主循环调用。三者构成一个完整的调度循环：
 
-**阶段一：调度 RUNNING 请求**（`schedule()` 内, `scheduler.py:441-634`）
+**阶段一：调度 RUNNING 请求**（`schedule()` 内, `scheduler.py:624` 起）
 
 遍历 `self.running` 列表中的每个请求，对每个请求计算 `num_new_tokens = num_tokens_with_spec - num_computed_tokens`。这个值：
 
@@ -164,17 +164,17 @@ Token-level scheduling 的最大优势在于：**chunked prefill 不再需要特
 - 调用 `_preempt_request()` 释放其 block，重置状态，放回 waiting queue
 - 然后重试 `allocate_slots`
 
-**阶段二：调度 WAITING 请求**（`schedule()` 内, `scheduler.py:637-1050+`）
+**阶段二：调度 WAITING 请求**（`schedule()` 内, `scheduler.py:868` 起）
 
 如果没有 preemption 在执行，调度器从 waiting queue 中依次取出请求，为新请求分配 KV cache block。同样受 token budget 和 KV cache 空间限制。新请求的 `num_new_tokens` 通常是整个 prompt（或其第一个 chunk）。
 
-**阶段三：后处理**（`_update_after_schedule`, `scheduler.py:1164`，`schedule()` 返回后由引擎主循环调用）
+**阶段三：后处理**（`_update_after_schedule`, `scheduler.py:1584`，`schedule()` 返回后由引擎主循环调用）
 
 推进每个被调度的请求的 `num_computed_tokens`，更新 `is_prefill_chunk` 标志（当 `num_computed_tokens < num_tokens_with_spec` 时为 True，表示该请求在下一个 iteration 仍需调度 prefill tokens）。
 
 ### 4.3 preemption：温和驱逐
 
-vLLM 的 `_preempt_request()`（`scheduler.py:1140`）执行以下操作：
+vLLM 的 `_preempt_request()`（`scheduler.py:1539`）执行以下操作：
 
 ```python
 def _preempt_request(self, request: Request, timestamp: float) -> None:
@@ -190,7 +190,7 @@ def _preempt_request(self, request: Request, timestamp: float) -> None:
 
 ### 4.4 完成与回收
 
-请求完成后（生成 EOS 或达到 max_tokens），在 `update_from_output()`（`scheduler.py:1499`）中处理。`_free_request()` 将请求标记为 `FINISHED`，记录到 `finished_req_ids`，并立即释放 KV cache block（`scheduler.py:2108-2114`）。`defer_block_free` 在异步/重叠调度且启用 KV Connector（consumer 侧）时激活，此时 block 释放被延后到 GPU 侧的写入操作完成后——但在常见路径下，block 的回收是即时的。
+请求完成后（生成 EOS 或达到 max_tokens），在 `update_from_output()`（`scheduler.py:1967`）中处理。`_free_request()`（`scheduler.py:2628`）将请求标记为 `FINISHED`，记录到 `finished_req_ids`，并立即释放 KV cache block（`_free_request_blocks`, `scheduler.py:2679`）。`defer_block_free` 在异步/重叠调度且启用 KV Connector（consumer 侧）时激活，此时 block 释放被延后到 GPU 侧的写入操作完成后——但在常见路径下，block 的回收是即时的。
 
 ---
 
@@ -200,7 +200,7 @@ SGLang 的调度哲学与 vLLM V1 有一个根本差异：**SGLang 显式区分 
 
 ### 5.1 get_next_batch_to_run()：prefill first
 
-`get_next_batch_to_run()`（`scheduler.py:2684`）是 SGLang 的调度决策入口。其核心逻辑可以简化为：
+`get_next_batch_to_run()`（`scheduler.py:3641`）是 SGLang 的调度决策入口。其核心逻辑可以简化为：
 
 ```text
 将上一个 prefill batch 中已完成的请求合并到 running_batch
@@ -219,7 +219,7 @@ else:
 
 ### 5.2 PrefillAdder：五维预算
 
-`PrefillAdder`（`schedule_policy.py:441`）是组建 prefill batch 的核心类。它像一个预算管理器，在五个维度上同时约束 prefill batch 的大小：
+`PrefillAdder`（`schedule_policy.py:621`）是组建 prefill batch 的核心类。它像一个预算管理器，在五个维度上同时约束 prefill batch 的大小：
 
 | 预算          | 变量/检查                    | 含义                                                              |
 | ------------- | ---------------------------- | ----------------------------------------------------------------- |
@@ -235,7 +235,7 @@ else:
 
 ### 5.3 update_running_batch() 与 retract_decode
 
-`update_running_batch()`（`scheduler.py:3135`）负责 decode batch 的维护：
+`update_running_batch()`（`scheduler.py:4191`）负责 decode batch 的维护：
 
 ```text
 1. filter_batch()     → 移除已完成请求（EOS / abort）
@@ -244,10 +244,10 @@ else:
 4. prepare_for_decode() → 构建 decode 输入 tensor
 ```
 
-**retract_decode** 是 SGLang 区别于 vLLM 最具标志性的机制。当 decode batch 自身的 KV cache 空间不足（通常是因为 prefill 持续 admit 新请求挤压了 decode 预算），`check_decode_mem` 失败，调度器主动驱逐正在 decode 的请求（`scheduler.py:3163`）：
+**retract_decode** 是 SGLang 区别于 vLLM 最具标志性的机制。当 decode batch 自身的 KV cache 空间不足（通常是因为 prefill 持续 admit 新请求挤压了 decode 预算），`check_decode_mem` 失败，调度器主动驱逐正在 decode 的请求（`scheduler.py:4217`）：
 
 ```python
-retracted_reqs, new_token_ratio, reqs_to_abort = batch.retract_decode(self.server_args)
+retracted_reqs, new_token_ratio, reqs_to_abort = batch.retract_decode()
 ```
 
 被驱逐的请求回到 waiting_queue（`_add_request_to_queue(req, is_retracted=True)`），等待重新 prefill。这意味着一个请求可能在 decode 了一半的时候被突然"踢出"——它的已生成 token 不丢失（保存在请求对象中），但寄存在 GPU 上的 KV cache 全被丢弃，恢复时需要重新 prefill 整个 `prompt + 已生成 token` 序列。
@@ -363,9 +363,9 @@ vLLM V1 和 SGLang 在这个共同框架下做了不同的选择：
 
 ## 延伸阅读
 
-- [vLLM V1 Scheduler 源码](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/scheduler.py) — `schedule()` 方法（L396），`_preempt_request()`（L1140），`update_from_output()`（L1499）
-- [SGLang Scheduler 源码](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py) — `get_next_batch_to_run()`（L2684），`update_running_batch()`（L3135）
-- [SGLang Schedule Policy 源码](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py) — `PrefillAdder`（L441），`add_one_req()`（L815）
+- [vLLM V1 Scheduler 源码](https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/sched/scheduler.py) — `schedule()` 方法（L557），`_preempt_request()`（L1539），`update_from_output()`（L1967）
+- [SGLang Scheduler 源码](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py) — `get_next_batch_to_run()`（L3641），`update_running_batch()`（L4191）
+- [SGLang Schedule Policy 源码](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/schedule_policy.py) — `PrefillAdder`（L621），`add_one_req()`（L1347）
 - [SGLang 调度器：请求编排与 Batch 调度](../sglang/sglang-scheduler.md) — SGLang 调度器的完整源码分析
 - [SGLang Chunked Prefill — 原理与代码实现](../sglang/chunked_prefill.md)
 - [PagedAttention 退役的技术原因](../vllm/module_analysis/pagedattention_retirement.md)

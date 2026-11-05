@@ -246,7 +246,9 @@ first_token_id2 = torch.argmax(last_hidden2 @ lm_head, dim=-1).item()
 assert first_token_id == first_token_id2, "Prefill 结果不一致"
 
 # Decode 阶段：每一步都重算全部 Attention（费时，但理论上等价）
-seq_token_ids = prompt_ids.tolist() + [first_token_id2]
+# 注意：不预放 first_token_id2，循环内首步以 current_id = first_token_id2 追加，
+# 与带缓存路径（首步输入 first_token_id）逐 token 对齐
+seq_token_ids = prompt_ids.tolist()
 generated_tokens_no_cache = [first_token_id2]
 
 for step in range(DECODE_STEPS):
@@ -336,7 +338,7 @@ article_decode_ai     = article_decode_flops / article_decode_data
 print(f"\n  文章中的参考值:")
 print(f"    Prefill 算术强度: ~{article_prefill_ai:.1f} FLOPs/byte")
 print(f"    Decode  算术强度: ~{article_decode_ai:.2f} FLOPs/byte")
-print(f"    Decode/Preill:    {article_decode_ai/article_prefill_ai:.0%}")
+print(f"    Decode/Prefill:   {article_decode_ai/article_prefill_ai:.0%}")
 
 print(f"\n{'='*60}")
 print("验证通过：KV Cache 在数学上与全量重算完全等价，但 Decode 每步比")

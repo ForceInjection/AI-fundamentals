@@ -42,7 +42,7 @@ scale 的精度决定了量化误差的大小。**每个数值共享同一个 sc
 
 ## 二、三种量化模式的原理与实现
 
-vLLM 通过 `KVQuantMode` 枚举定义了五种量化模式（外加 `NONE`）[^1]：
+vLLM 通过 `KVQuantMode` 枚举定义了九种量化模式（外加 `NONE`，共 10 个成员）[^1]，本文展开讨论其中最常用的三类（FP8 Per-Tensor、Per-Token-Head、NVFP4），其余 TurboQuant 与 DS-MLA 变体见注释：
 
 ```python
 # vllm/v1/kv_cache_interface.py
@@ -53,6 +53,12 @@ class KVQuantMode(IntEnum):
     FP8_PER_TOKEN_HEAD = 3   # per-token-head 动态 fp8 量化
     INT4_PER_TOKEN_HEAD = 4  # per-token-head 动态 int4 量化
     NVFP4 = 5                # 打包 fp4 数据 + fp8 block scales
+    # Hadamard 旋转 + Lloyd-Max 量化，K+V 打包进一个 slot
+    TURBOQUANT_K8V4 = 6
+    TURBOQUANT_4BIT_NC = 7
+    TURBOQUANT_K3V4_NC = 8
+    TURBOQUANT_3BIT_NC = 9
+    NVFP4_DS_MLA = 10        # DS-MLA 的 NVFP4 opaque-bytes 布局（FlashMLA sparse）
 ```
 
 ### 2.1 FP8 Per-Tensor：最简路径
@@ -154,9 +160,9 @@ vLLM 当前对此的处理方式是：**在同一 vLLM 实例内，所有请求�
 
 在粒度选择之外，把量化与稀疏、重建联合设计是另一条正在展开的路线：Self-Indexing KVCache 让低比特量化码兼任稀疏检索索引，SALS 在低秩潜空间里选 token 后再重建，EchoKV 丢弃部分维度后由轻量网络补回——逐篇精读与横向对照见 [KV Cache 压缩系列](../../07_kv_compression/kv-compression-overview.md)。
 
-### 5.2 一句话总结
+### 5.2 小结
 
-**KV Cache 量化的核心矛盾不是"能不能压"，而是"scale 该有多细"——Per-Tensor 一个 scale 管全张量，实现简单但 outlier 敏感；Per-Token-Head 把 scale 下放到每个 token 每个 head，精度高但引入微小的 scale 存储开销；NVFP4 是硬件的未来，但当前仅在 B200 上可用。** FP8 Per-Token-Head 在精度与复杂度之间取得了最佳平衡，是当前生产环境中最值得推荐的配置——除非你在 Blackwell 上，那就直接 NVFP4。
+**KV Cache 量化的核心矛盾在于"scale 该有多细"：Per-Tensor 一个 scale 管全张量，实现简单但 outlier 敏感；Per-Token-Head 把 scale 下放到每个 token 每个 head，精度高但引入微小的 scale 存储开销；NVFP4 是硬件的未来，但当前仅在 B200 上可用。** FP8 Per-Token-Head 在精度与复杂度之间取得了最佳平衡，是当前生产环境中最值得推荐的配置——除非你在 Blackwell 上，那就直接 NVFP4。
 
 ---
 
@@ -167,6 +173,6 @@ vLLM 当前对此的处理方式是：**在同一 vLLM 实例内，所有请求�
 - [Attention Sinks 与 KV Cache 淘汰策略](../eviction/attention_sinks_and_eviction.md) — 量化 + 淘汰 = 压缩的两条腿
 - [KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache](https://arxiv.org/abs/2402.02750) — INT4 K + FP16 V 的非对称量化方案
 
-[^1]: vLLM 量化模式枚举 [`vllm/v1/kv_cache_interface.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/kv_cache_interface.py) — `KVQuantMode` 定义五种量化模式：`NONE`/`FP8_PER_TENSOR`/`INT8_PER_TOKEN_HEAD`/`FP8_PER_TOKEN_HEAD`/`INT4_PER_TOKEN_HEAD`/`NVFP4`；`get_kv_quant_mode()` 根据 `kv_cache_dtype` 字符串映射到对应模式。
+[^1]: vLLM 量化模式枚举 [`vllm/v1/kv_cache_interface.py`](https://github.com/vllm-project/vllm/blob/main/vllm/v1/kv_cache_interface.py) — `KVQuantMode` 共 10 个成员：`NONE`/`FP8_PER_TENSOR`/`INT8_PER_TOKEN_HEAD`/`FP8_PER_TOKEN_HEAD`/`INT4_PER_TOKEN_HEAD`/`NVFP4`/`TURBOQUANT_K8V4`/`TURBOQUANT_4BIT_NC`/`TURBOQUANT_K3V4_NC`/`TURBOQUANT_3BIT_NC`/`NVFP4_DS_MLA`；`get_kv_quant_mode()` 根据 `kv_cache_dtype` 字符串映射到对应模式。
 
-[^2]: vLLM Cache 配置 [`vllm/config/cache.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/cache.py) — `cache_dtype: CacheDType = "auto"`，可选值包括 `auto`/`fp8`/`fp8_e4m3`/`fp8_e5m2`/`fp8_per_token_head`/`int8_per_token_head`/`nvfp4`。`--kv-cache-dtype` 启动参数映射到此配置项。
+[^2]: vLLM Cache 配置 [`vllm/config/cache.py`](https://github.com/vllm-project/vllm/blob/main/vllm/config/cache.py) — `cache_dtype: CacheDType = "auto"`，可选值包括 `auto`/`float16`/`bfloat16`/`fp8`/`fp8_e4m3`/`fp8_e5m2`/`fp8_inc`/`fp8_ds_mla`/`nvfp4_ds_mla`/`turboquant_k8v4`/`turboquant_4bit_nc`/`turboquant_k3v4_nc`/`turboquant_3bit_nc`/`int4_per_token_head`/`int8_per_token_head`/`fp8_per_token_head`/`nvfp4`/`nvfp4_4over6`。`--kv-cache-dtype` 启动参数映射到此配置项。

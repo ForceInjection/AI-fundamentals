@@ -1,6 +1,6 @@
 # 附录：2026 年国内外主流 Coding Plan 真实数据看板
 
-作为《每月花多少才不冤？2026 年国内外 11 款 Coding Plan 深度对比与避坑指南》的配套数据附录，本文档直接提取归一化后的厂商定价源数据，通过结构化表格与分组柱状图，直观呈现各家工具的费用阶梯与核心用量限制，为您提供纯粹的数据查阅参考。
+作为《每月花多少才不冤？2026 年国内外 11 款 Coding Plan 深度对比与避坑指南》的配套数据附录，本文档直接提取归一化后的厂商定价源数据，通过结构化表格与分组柱状图，直观呈现各家工具的费用阶梯与核心用量限制，为你提供纯粹的数据查阅参考。
 
 ## 1 海外套餐数据看板
 
@@ -10,17 +10,17 @@
 
 | 厂商      | 产品                    | 套餐          | 分类     | 月费          | 用量限制                                                  | 限制条款                                       |
 | --------- | ----------------------- | ------------- | -------- | ------------- | --------------------------------------------------------- | ---------------------------------------------- |
-| GitHub    | GitHub Copilot          | Free          | **入门** | $0.0          | -                                                         | -                                              |
+| GitHub    | GitHub Copilot          | Free          | **入门** | $0            | -                                                         | -                                              |
 | GitHub    | GitHub Copilot          | Pro           | **高级** | $10           | 每月高级请求次数与额度以官方页面为准                      | -                                              |
 | GitHub    | GitHub Copilot          | Pro+          | **专家** | $39           | 1,500 次高级请求/月（以官方页面为准）                     | -                                              |
 | GitHub    | GitHub Copilot          | Business      | **团队** | $19           | -                                                         | -                                              |
 | GitHub    | GitHub Copilot          | Enterprise    | **专家** | $39           | -                                                         | 购买入口为 Contact sales（以官方页面说明为准） |
-| Cursor    | Cursor                  | Hobby         | **入门** | $0.0          | -                                                         | -                                              |
+| Cursor    | Cursor                  | Hobby         | **入门** | $0            | -                                                         | -                                              |
 | Cursor    | Cursor                  | Pro           | **高级** | $20           | 500 次快速请求/月                                         | -                                              |
-| Cursor    | Cursor                  | Business      | **团队** | $40.0         | -                                                         | -                                              |
-| Cursor    | Cursor                  | Ultra         | **专家** | $200.0        | -                                                         | -                                              |
+| Cursor    | Cursor                  | Business      | **团队** | $40           | -                                                         | -                                              |
+| Cursor    | Cursor                  | Ultra         | **专家** | $200          | -                                                         | -                                              |
 | Cursor    | Cursor                  | Pro+          | **专家** | $60           | 1,500 次快速请求/月                                       | -                                              |
-| Windsurf  | Windsurf (Codeium)      | Free          | **入门** | $0.0          | -                                                         | -                                              |
+| Windsurf  | Windsurf (Codeium)      | Free          | **入门** | $0            | -                                                         | -                                              |
 | Windsurf  | Windsurf (Codeium)      | Pro           | **高级** | $20           | Prompt Credits 与模型支持范围以官方页面为准               | -                                              |
 | Windsurf  | Windsurf (Codeium)      | Teams         | **团队** | $40           | -                                                         | -                                              |
 | AWS       | Amazon Q Developer      | Pro           | **高级** | $19           | 每月代理请求次数与包含的 LOC 额度以官方页面为准           | -                                              |

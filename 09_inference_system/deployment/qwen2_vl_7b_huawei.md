@@ -1,5 +1,7 @@
 # Qwen2-VL-7B-Instruct 昇腾部署指南
 
+> 整理于 2026-11-05。版本栈（MindIE 1.0.0 / CANN 8.0.RC1）为 2024 年代的版本，已落后于当前 MindIE/CANN 主线，具体参数与安装步骤请以所用版本的官方文档复核。
+
 ## 1. 背景
 
 ### 1.1 模型简介
@@ -274,15 +276,15 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
   },
   "ServerConfig": {
     "ipAddress": "127.0.0.1",
-    "port": 1040, // 主服务端口，可自定义
-    "managementPort": 1041, // 管理端口，可自定义
-    "metricsPort": 1042, // 监控端口，可自定义
+    "port": 1040,
+    "managementPort": 1041,
+    "metricsPort": 1042,
     "maxLinkNum": 200,
     "httpsEnabled": false,
     "timeoutInSeconds": 300
   },
   "BackendConfig": {
-    "npuDeviceIds": [[0, 1, 2, 3, 4, 5, 6, 7]], // NPU设备ID配置
+    "npuDeviceIds": [[0, 1, 2, 3, 4, 5, 6, 7]],
     "ModelDeployConfig": {
       "maxSeqLen": 50000,
       "maxInputTokenLen": 50000,
@@ -290,10 +292,10 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
       "ModelConfig": [
         {
           "modelInstanceType": "Standard",
-          "modelName": "qwen2_vl", // 建议使用qwen2_vl便于benchmark测试
-          "modelWeightPath": "/data/Qwen2-VL-7B-Instruct", // 模型权重路径
-          "worldSize": 8, // 并行度，需与npuDeviceIds数量一致
-          "npuMemSize": 8, // KV cache分配，单位GB，需给VIT预留显存空间
+          "modelName": "qwen2_vl",
+          "modelWeightPath": "/data/Qwen2-VL-7B-Instruct",
+          "worldSize": 8,
+          "npuMemSize": 8,
           "maxBatchSize": 32,
           "maxInputTokens": 8192,
           "maxOutputTokens": 512
@@ -309,6 +311,8 @@ vim /usr/local/Ascend/mindie/latest/mindie-service/conf/config.json
   }
 }
 ```
+
+注释（原示例中的行内说明，JSON 不支持注释，仅供阅读参考）：`port` 为主服务端口、`managementPort` 为管理端口、`metricsPort` 为监控端口，均可自定义；`npuDeviceIds` 为 NPU 设备 ID 配置；`modelName` 建议使用 `qwen2_vl` 便于 benchmark 测试；`modelWeightPath` 为模型权重路径；`worldSize` 为并行度，需与 `npuDeviceIds` 数量一致；`npuMemSize` 为 KV cache 分配（单位 GB），需给 VIT 预留显存空间。
 
 #### 6.1.3 配置参数优化建议
 

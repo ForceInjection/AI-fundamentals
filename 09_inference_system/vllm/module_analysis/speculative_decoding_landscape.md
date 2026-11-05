@@ -1,6 +1,6 @@
 # vLLM 投机解码方法全景：六种草拟方法的工程选择
 
-> vLLM V1 支持六种投机解码方法——ngram、suffix、Medusa、EAGLE、draft_model、MTP。它们共享同一个 Proposer 抽象框架，但草拟信号的来源、模型依赖、接入成本和收益边界完全不同。本文从 vLLM 的工程视角出发，构建六种方法的分类地图，提供选型决策框架，并追踪 roadmap 中的演进趋势。
+> vLLM V1 支持六种投机解码方法——ngram、suffix、Medusa、EAGLE、draft_model、MTP。它们共享同一个 Proposer 抽象框架，但草拟信号的来源、模型依赖、接入成本和收益边界完全不同。本文从 vLLM 的工程视角出发，构建六种方法的分类地图，提供选型决策框架，并追踪 roadmap 中的演进趋势。（核对基线：vLLM 8b365ff949，2026-09-25；「六种」为截稿时口径——`dflash`、`gemma4_mtp`、`step3p5_mtp`、`dspark` 等更新方法已在后续版本出现。）
 
 ---
 
@@ -12,7 +12,7 @@
 
 无论哪种投机解码，核心循环都是相同的：提议 K 个候选 → 大模型批量验证 → 接受/回退。vLLM V1 将这个循环抽象为 **Proposer 接口**——一个统一的草拟-验证调度框架。Proposer 只做一件事：给定当前请求的状态（已生成 token 序列、KV cache 位置），输出 K 个候选 token。
 
-但 Proposer **如何生成**这 K 个候选，却有六种完全不同的实现路径：
+但 Proposer **如何生成**这 K 个候选，截稿时已有六种完全不同的实现路径（后续版本还在增加）：
 
 - 从 prompt 文本中匹配 ngram 片段
 - 从历史响应中匹配后缀模式推测候选 token
@@ -151,10 +151,10 @@ vLLM 中，draft model 通过 `get_model()` 加载为独立的 `nn.Module` 实�
 
 ### 3.4 训练内置层：MTP
 
-MTP 在预训练阶段就将草拟能力嵌入模型内部——推理时不需要加载任何额外模型或 head。vLLM 当前通过 `deepseek_mtp` 方法接入（roadmap 中正在统一为 `mtp` 通用方法）：
+MTP 在预训练阶段就将草拟能力嵌入模型内部——推理时不需要加载任何额外模型或 head。vLLM 通过 `mtp` 方法接入（`method="mtp"`，见 `vllm/config/speculative.py:58`；统一已完成，旧名 `deepseek_mtp` 仍可用并自动归一化为 `mtp`，见 `speculative.py:1133-1137`）：
 
 ```bash
---speculative-config='{"method": "deepseek_mtp", "num_speculative_tokens": 1}'
+--speculative-config='{"method": "mtp", "num_speculative_tokens": 1}'
 ```
 
 MTP 在 vLLM 中走 self-speculation 执行路径：draft 和 target 共用同一个 base model 的 hidden state，不产生独立的 KV cache。target model 通过 `get_mtp_target_hidden_states()` 向 MTP 模块提供 pre-head 残差流；MTP 模块（`DeepSeekV4MTP`）基于此残差流和已生成的 token embedding，通过级联 transformer block 预测未来 token。
@@ -180,7 +180,7 @@ MTP 在 vLLM 中走 self-speculation 执行路径：draft 和 target 共用同�
 | Draft 前向开销     |    0     |       0        |  极低（线性头）  | 低（轻量 decoder） | 高（完整模型 forward） |     极低（内置）     |
 | 接受率             |  低–中   |     低–中      |      中–高       |         高         |         中–高          |          高          |
 | 适用范围           | 全部模型 |    全部模型    |   特定微调模型   |    特定训练模型    |     同架构大小模型     |   内置 MTP 的模型    |
-| vLLM method 值     | `ngram`  |    `suffix`    |     `medusa`     |  `eagle`/`eagle3`  |     `draft_model`      | `deepseek_mtp`→`mtp` |
+| vLLM method 值     | `ngram`  |    `suffix`    |     `medusa`     |  `eagle`/`eagle3`  |     `draft_model`      | `mtp`（旧名 `deepseek_mtp` 自动归一） |
 | 配置复杂度         |   最低   | 低（需额外库） |        低        |         中         |           中           |   最低（模型自带）   |
 
 ### 4.2 选型决策路径
@@ -206,7 +206,7 @@ flowchart TD
 
 ### 4.3 当前生态中的实际分布
 
-- **DeepSeek V3/V4 用户**：MTP 已经内置。配置 `method=deepseek_mtp`（未来改为 `mtp`）即可，不需要任何额外 draft model。
+- **DeepSeek V3/V4 用户**：MTP 已经内置。配置 `method=mtp` 即可（旧名 `deepseek_mtp` 仍可，会自动归一化），不需要任何额外 draft model。
 - **LLaMA/Qwen 用户（已有 Medusa/EAGLE 模型）**：直接用对应的 method。部署成本几乎为零，接受率经过专门优化。
 - **LLaMA/Qwen 用户（无专用 draft）**：draft_model 是主流选择（LLaMA 3 70B + 8B），ngram 是低成本的补充——两者可以同时配置吗？当前 vLLM 不支持多个 Proposer 并行，但 roadmap 中的 Proposer 接口统一可能使混合草拟（ngram 兜底 + 模型草拟）成为可能。
 - **训练新模型的团队**：MTP 是最具长期价值的选择——训练时的一次性投入，所有下游用户无需任何投机配置即可享受加速。
@@ -217,9 +217,9 @@ flowchart TD
 
 当前六种方法并存是历史演进的快照。vLLM roadmap 中有明确的演进方向，理解这些方向有助于正确的今日选型——选择正在收敛的方向，而非即将被替代的过渡方案。
 
-### 5.1 `deepseek_mtp` → `mtp`：从专属到通用
+### 5.1 `deepseek_mtp` → `mtp`：从专属到通用（已完成）
 
-当前 `deepseek_mtp` 是 DeepSeek 专属的配置方法名。Roadmap 将其统一为 `mtp` 通用方法——任何内置 MTP heads 的模型（Gemma 4 等已有投机解码支持，更多模型正在跟进）都通过同一个 `mtp` 方法接入。对今天配置 `deepseek_mtp` 的用户来说，这只是配置名的一次重命名，不涉及模型文件或执行路径的变化。
+这一统一已经落地：`mtp` 是通用的配置方法名（`vllm/config/speculative.py:58`），任何内置 MTP heads 的模型——DeepSeek 系列、Gemma 4（`gemma4_mtp`）、Step 3.5（`step3p5_mtp`）等——都通过同一个 `mtp` 方法接入。旧的专属名（如 `deepseek_mtp`）未删除，配置时会打 deprecation 警告并自动归一化为 `mtp`（`speculative.py:1133-1137`）。对今天配置 `deepseek_mtp` 的用户来说，这只是配置名的一次重命名，不涉及模型文件或执行路径的变化。
 
 ### 5.2 Proposer 接口标准化
 

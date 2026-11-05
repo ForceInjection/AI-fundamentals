@@ -2,6 +2,8 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `NixlStorageBackend` 是 LMCache 为高性能计算环境设计的 **L4 级存储/网络后端**。它基于 NVIDIA 的 **NIXL (NVIDIA Inference Xfer Library)** 库构建，旨在屏蔽底层异构存储与网络协议的复杂性，提供统一的高吞吐、低延迟数据传输能力。
 
 与 `LocalDiskBackend` 专注于本地磁盘不同，`NixlStorageBackend` 的视野更为宽广，它既可以利用 **GPUDirect Storage (GDS)** 加速本地 NVMe 读写，也可以对接 **S3 对象存储** 实现云端分层，甚至可以通过 **RDMA** 访问高性能文件系统（如 HF3FS）。
@@ -14,9 +16,9 @@
 
 ### 1.1 版本差异说明
 
-`NixlStorageBackend` 的功能在不同版本中存在显著差异，请根据您使用的 LMCache 版本进行配置：
+`NixlStorageBackend` 的功能在不同版本中存在显著差异，请根据您使用的 LMCache 版本进行配置（口径：**v0.3.11 及以下为旧版，v0.3.13 及以上为现行版**；截至 2026-11-05，现行最新为 v0.5.1，行为同 v0.3.13+ 一档）：
 
-| 特性         | **v0.3.11 及以下 (Current)**             | **v0.3.13 及以上 (Dev)**                                             |
+| 特性         | **v0.3.11 及以下 (旧版)**                | **v0.3.13 及以上 (含当前 v0.5.x)**                                   |
 | :----------- | :--------------------------------------- | :------------------------------------------------------------------- |
 | **支持模式** | 仅 **Static** 模式                       | **Static** + **Dynamic** 模式                                        |
 | **类结构**   | 单一 `NixlStorageBackend` 类             | 拆分为基类及 `NixlStaticStorageBackend`, `NixlDynamicStorageBackend` |

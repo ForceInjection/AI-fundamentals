@@ -41,3 +41,5 @@
 | 腾讯云 | 腾讯云 Coding Plan | Pro | CNY | 299 |  | 39.9 | 6000 次请求/5 小时；45000 次请求/周；90000 次请求/月（以官方活动页说明为准） | 每日限量供应，部分活动套餐可能出现“已抢光” | https://cloud.tencent.com/act/pro/codingplan | 2026-04-17 | ok |
 | 阿里云 | 阿里云百炼 Coding Plan | Lite | CNY | 40 |  |  | 不支持 qwen3.6-plus | 自 2026 年 3 月 20 日起停止新购；4 月 13 日起停止续费与升级 | https://help.aliyun.com/zh/model-studio/coding-plan | 2026-04-17 | ok |
 | 阿里云 | 阿里云百炼 Coding Plan | Pro | CNY | 200 |  |  | 独家支持 qwen3.6-plus（每月请求次数与限流规则以官方页面为准） |  | https://help.aliyun.com/zh/model-studio/coding-plan | 2026-04-17 | ok |
+
+> 注：腾讯云 ¥299 对应产品线两处记录不一致（本表记为 Pro 档；coding_plan_report.md 记为独立的 Token Plan），以官方页复核为准。

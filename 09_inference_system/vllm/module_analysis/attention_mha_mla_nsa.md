@@ -31,13 +31,13 @@
 经过代码层面的交叉验证，vLLM 展现了对多种注意力机制的差异化支持。以下结论汇总了 vLLM 在机制覆盖度、硬件平台兼容性以及复杂场景（如 KV Cache Offloading 与混合架构）下的实际支持边界：
 
 1. **机制支持全面性**：vLLM 对标准注意力（MHA / MQA / GQA）提供完整主线支持，具备自动后端选择能力；对 MLA 提供专用实现与独立后端族；通过 Sparse MLA 后端与 Indexer 机制承载 NSA（如 DeepSeek-V3.2、GLM-5）的稀疏语义 [1, 2, 3, 5]。
-2. **平台支持差异**：各类注意力机制在不同平台上的成熟度不一。CUDA 平台对所有注意力机制支持最佳；ROCm 支持标准注意力与部分 MLA 变体；CPU 平台仅支持标准注意力 [3]。
+2. **平台支持差异**：各类注意力机制在不同平台上的成熟度不一。CUDA 平台对所有注意力机制支持最佳；ROCm 支持标准注意力与部分 MLA 变体；CPU 平台支持标准注意力，MLA 提供参考级实现（`CPU_MLA` / `AMX_MLA`，AMX 可用时自动优先），稀疏 MLA 暂不支持 [3]。
 3. **KV Cache Offloading 兼容性**：
    - **单模型场景**：标准注意力（MHA / MQA / GQA）与 MLA 的主 KV（潜变量）均完美兼容底层的 `OffloadingConnector` 机制。
    - **特殊隔离场景**：NSA（Sparse MLA）引入的专用 `DeepseekV32IndexerCache` 与主 KV 池隔离，目前暂不支持自动卸载 [10, 11]。
-   - **混合架构模型 (Hybrid Architecture) 冲突**：在启用 Hybrid KV Cache Manager (HMA) 的复杂混合模型中，现有的 `OffloadingConnector` 和 `LMCacheConnectorV1` 因缺乏 `SupportsHMA` 接口支持，均无法与 HMA 协同工作 [13]。
+   - **混合架构模型 (Hybrid Architecture) 兼容性**：能否与 Hybrid KV Cache Manager (HMA) 协同取决于 connector 是否实现 `SupportsHMA` 接口。截至核对基线（vLLM 8b365ff949，2026-09-25）：`OffloadingConnector` 已实现该接口，可与 HMA 协同工作；LMCache 走 `LMCacheMPConnector` 也已实现；vLLM 内置的旧版 `LMCacheConnectorV1` 未实现、仍不兼容 [13, 14]。
      > [!WARNING]
-     > 对于 Qwen3.5-Next、MiniMax-Text-01、Jamba 等混合注意力架构模型，当前任何形式的 KV Cache Offloading 均不可用，与注意力机制类型无关。
+     > 对于 Qwen3.5-Next、MiniMax-Text-01、Jamba 等混合注意力架构模型：使用 `OffloadingConnector` 或 LMCache 多进程 connector 时 KV Cache Offloading 可用；若走旧版 `LMCacheConnectorV1`，任何形式的 KV Cache Offloading 均不可用，与注意力机制类型无关。
 
 ---
 
@@ -322,13 +322,13 @@ _注：NSA 实际包含一次全序列的轻量 Indexer 打分，但其计算量
 
 ### 6.1 平台支持矩阵
 
-当前 vLLM 的注意力支持在不同硬件平台上表现出显著的成熟度差异：CUDA 平台实现了对三类机制的全覆盖，ROCm 提供了对 MHA 及部分 MLA 的支持，而 CPU 平台目前仅限于标准注意力计算。
+当前 vLLM 的注意力支持在不同硬件平台上表现出显著的成熟度差异：CUDA 平台实现了对三类机制的全覆盖，ROCm 提供了对 MHA 及部分 MLA 的支持，CPU 平台以标准注意力为主、MLA 提供参考级实现（`CPU_MLA` / `AMX_MLA`）。
 
 | 平台 | MHA / MQA / GQA           | MLA                                    | 稀疏 MLA（NSA 语义）                                 |
 | ---- | ------------------------- | -------------------------------------- | ---------------------------------------------------- |
 | CUDA | 支持，自动优先级选择      | 支持，独立优先级队列                   | 支持，含 `FLASHMLA_SPARSE` / `FLASHINFER_MLA_SPARSE` |
 | ROCm | 支持，AITER / Triton 路径 | 支持，`ROCM_AITER_MLA` 或 `TRITON_MLA` | 支持，`ROCM_AITER_MLA_SPARSE`                        |
-| CPU  | 支持 `CPU_ATTN`           | 不支持                                 | 不支持                                               |
+| CPU  | 支持 `CPU_ATTN`           | 支持（参考级 `CPU_MLA` / `AMX_MLA`）   | 不支持                                               |
 
 上述结论来自平台选择函数与 CPU 限制逻辑 [3]。
 
@@ -354,7 +354,7 @@ vLLM 通过 `KVTransferConfig` 提供了面向 CPU 或远程节点（如 LMCache
    - **结论：部分支持（仅主 KV 支持，Indexer Cache 暂不支持）**。稀疏 MLA 模型的主 KV（即低秩潜变量）走 `MLAAttentionSpec`，支持基础的 Block 卸载流程。但 NSA 引入了专用的 `DeepseekV32IndexerCache` 用于保存 FP8 格式的粗粒度索引。目前卸载机制主要作用于主 KV 池，Indexer 专用的 Cache 缓冲与主池隔离，尚未被纳入现有的自动卸载链路中 [10, 11]。
 
 4. **混合架构模型 (Hybrid Architecture) 的特殊冲突**：
-   - **结论：当前不支持**。如果模型是混合注意力架构（例如 Qwen3.5、Qwen3-Next、MiniMax-Text-01、Kimi-Linear 以及 Jamba 等，交替使用了标准的 Attention 层与 Mamba、线性注意力或其他非标准层），vLLM 会强制启用 Hybrid KV Cache Manager (HMA) 进行精细化内存调度。现有的 `OffloadingConnector` 和 `LMCacheConnectorV1` 因缺乏 `SupportsHMA` 接口支持，均无法与 HMA 协同工作。因此，任何触发了 HMA 的模型，无论其内部使用何种注意力机制，当前均无法开启 KV Cache Offloading [13]。
+   - **结论：取决于 connector 是否实现 `SupportsHMA`**。如果模型是混合注意力架构（例如 Qwen3.5、Qwen3-Next、MiniMax-Text-01、Kimi-Linear 以及 Jamba 等，交替使用了标准的 Attention 层与 Mamba、线性注意力或其他非标准层），vLLM 会启用 Hybrid KV Cache Manager (HMA) 进行精细化内存调度。截至核对基线（vLLM 8b365ff949）：`OffloadingConnector` 已实现 `SupportsHMA`（`offloading_connector.py:52`），可与 HMA 协同工作；LMCache 走 `LMCacheMPConnector`（`lmcache/integration/vllm/lmcache_mp_connector.py:512`）也已实现；vLLM 内置的旧版 `LMCacheConnectorV1` 因缺乏该接口支持，仍无法与 HMA 协同工作——走该 connector 的混合模型目前无法开启 KV Cache Offloading [13, 14]。
 
 5. **MoE 模型补充说明**：
    - **完全支持卸载，不受 MoE 路由影响**：KV Cache 的存储与卸载逻辑与注意力层紧密绑定，而 MoE (混合专家) 机制主要作用于 FFN（前馈神经网络）层。因此，MoE 模型的 KV Cache Offloading 能力**仅取决于**其使用的注意力机制类型（如 MHA 或 MLA），不受其 MoE 架构的影响。
@@ -395,3 +395,4 @@ vllm serve THUDM/glm-5-9b --trust-remote-code --attention-backend FLASHMLA_SPARS
 11. vLLM Project. _KV Cache Offloading 配置与流转_. https://github.com/vllm-project/vllm/blob/main/vllm/config/vllm.py
 12. vLLM Project. _统一 KV Cache 规格校验_. https://github.com/vllm-project/vllm/blob/main/vllm/v1/core/kv_cache_utils.py
 13. KuntaiDu. _\[Core\]\[Hybrid allocator + kv connector 1/n\] Enable hybrid allocator + KV cache connector_. https://github.com/vllm-project/vllm/pull/25712
+14. vLLM Project. _OffloadingConnector（已实现 SupportsHMA）_. https://github.com/vllm-project/vllm/blob/main/vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py

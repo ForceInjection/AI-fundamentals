@@ -2,13 +2,15 @@
 
 [< 返回存储架构概览](./lmcache_storage_overview.md)
 
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+
 `LocalCPUBackend` 构成了 LMCache 多级存储架构中的 **L1 本地内存缓存层**。它利用主机内存（Host Memory）作为最高速的缓存介质，提供微秒级的数据访问延迟。
 
 更关键的是，`LocalCPUBackend` 在系统中不仅仅是一个存储后端，它还承担了 **核心内存分配器 (Core Memory Allocator)** 的重任。无论是本地磁盘的 I/O 中转，还是远程数据的网络传输，所有涉及内存对象（MemoryObj）创建的操作，最终都依赖于该模块进行物理内存的分配与管理。
 
 > **架构定位**: 在 `lmcache_storage_overview.md` 定义的层级中，它是 L1 层。它是整个存储系统的“内存池”，直接对接 GPU 的 H2D/D2H 拷贝操作，并负责驱动下层存储（L2/L3/L4）的数据流转。
 >
-> **注意**: 在 Prefill-Decode 分离架构中，L1 层和 Allocator 的角色由 `PDBackend` 承担（详见 [PDBackend 源码分析](./pd_backend.md)），两者互斥。
+> **注意**: 在 Prefill-Decode 分离架构中，KV Cache 的分配角色由 `PDBackend` 主导（详见 [PDBackend 源码分析](./pd_backend.md)）；但 `LocalCPUBackend` 并不会被移除——只要 `max_local_cpu_size > 0` 照常创建，继续作为其他后端的分配缓冲。
 
 ---
 

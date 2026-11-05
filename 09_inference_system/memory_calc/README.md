@@ -9,7 +9,7 @@
 
 ## 2. 估算脚本与配置
 
-脚本均为零依赖的独立 Python 文件，输出显存总量、按组件拆解的占比、以及不同并发 × 序列长度下的敏感性表格。
+脚本均为零依赖的独立 Python 文件，输出显存总量、按组件拆解的明细，以及不同序列长度下的最大并发（Batch Size）估算。
 
 - **[`calculate_qwen3_memory.py`](calculate_qwen3_memory.py)**：Qwen3-0.6B 级别通用 MHA/GQA 模型的显存估算器（适用多数开源 Dense 模型）
 - **[`qwen3_06b_config.json`](qwen3_06b_config.json)**：Qwen3-0.6B 的 HuggingFace `config.json` 样例，与 qwen 脚本的内置参数一一对应，供核对与改参

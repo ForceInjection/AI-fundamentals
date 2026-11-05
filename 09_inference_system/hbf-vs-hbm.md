@@ -98,6 +98,8 @@ dense 模型没有区段 ①，它每生成一个 token 都要把全量权重过
 
 幻灯片给这三张图的注解是：Same cost. More capacity. Less bandwidth.
 
+> 注：All-HBF 一格按 4,096 GB ÷ 8 die 折算是 512 GB/die，而规范与 tape-out 报道口径的单 die 容量为 256 GB——两处读数对不上，系幻灯片口径差异，本文按幻灯片原数 4,096 GB 计算。
+
 ### 5.1 短上下文：赢在成本，代价是 85% 死容量
 
 256 进 / 256 出，Kimi-K2 权重约 538–615 GB，随 batch 从 8 涨到 128：
@@ -191,7 +193,7 @@ MoE 越稀疏，缓存越晚才划算。只要 batch 上到几十，DeepSeek-V3 
 | attention + 其它固定权重     | 110 GB      | 7%       | HBM（计算密集、频繁访问）     |
 | 单条 1M 序列的 KV Cache      | 30 GB       | —        | HBF（卸载池 + 前缀缓存）      |
 
-93% 的字节是只写一次、冷态读取的专家权重，这个生命周期特征确实和闪存对得上。剩下的 7% 计算密集、访问频繁，留在 HBM。
+93% 的字节是只写一次、冷态读取的专家权重，这个生命周期特征确实和闪存对得上。剩下的 7% 计算密集、访问频繁，留在 HBM。（「单条 1M 序列 KV 30 GB」是幻灯片读数；按本仓 [B300 部署篇](deployment/b300-deployment-and-kv-cache.md) §3.3 的逐层口径，K3 的 MLA KV 为 FP8 13,824 B/token，1M 序列约 13.8 GB——两者相差约 2 倍，幻灯片未注明其层数/精度假设，本文保留幻灯片原数。）
 
 第 18 页给出了改造后的 vLLM 内存子系统（文字还原）：HBM 侧是 Model Weights (resident)、Paged KV Cache、Activations 和 Router MoE 权重；HBF 侧用红色虚线框标出，包含 Paged KV Offload Pool、Prefix KV-Cache 和 1.45 TB 的 MoE Experts Pool，框上注明 _instead of host CPU pinned-memory_；左侧另有两块外部存储，SSD-resident KV 与 Scale-out RDMA Remote KV Pools。
 

@@ -8,7 +8,7 @@ LLM 推理的两阶段——**Prefill** 和 **Decode**——和这座图书馆�
 
 这两个阶段在同一个模型、同一组权重上运行，但因为输入形状不同，计算模式截然不同——一个是把 GPU 算力打满的矩阵-矩阵乘法（编目），一个是让 GPU 空转等数据的矩阵-向量乘法（翻卡片）。这个差异直接解释了 KV Cache 为什么必须存在，以及围绕它的所有优化方向——GQA、量化、PagedAttention、Offloading、PD 分离——到底在优化什么。
 
-本文用一个贯穿始终的具体例子——「4 个 token 的 prompt、d_model=4096、32 个注意力头」——把两个阶段中每一步的矩阵形状和计算量都标清楚。阅读前提：理解自注意力的 Q/K/V 投影和 softmax 注意力公式（参考 [Transformer 架构详解(../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md)）。
+本文用一个贯穿始终的具体例子——「4 个 token 的 prompt、d_model=4096、32 个注意力头」——把两个阶段中每一步的矩阵形状和计算量都标清楚。阅读前提：理解自注意力的 Q/K/V 投影和 softmax 注意力公式（参考 [Transformer 架构详解](../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md)）。
 
 > **配套资源**：
 >
@@ -64,7 +64,7 @@ V = X × W_V     → (4, 4096) × (4096, 4096) = (4, 4096)
 
 每次乘法：4 × 4096 × 4096 × 2 FLOPs ≈ 134M FLOPs。Q、K、V 三次投影共约 402M FLOPs。
 
-**类比**：W_K 是「如何写关键词」的规则书，W_V 是「如何写摘要」的规则书。管理员按照规则书，一次性为 4 本书产出了 4 组卡片。这是 **矩阵-矩阵乘法（GEMM）**——GPU 的 Tensor Core 在 FP16 下能达到 70%+ 的利用率，就像一个经验丰富的编目员火力全开。
+**类比**：W_K 是「如何写关键词」的规则书，W_V 是「如何写摘要」的规则书。管理员按照规则书，一次性为 4 本书产出了 4 组卡片。这是 **矩阵-矩阵乘法（GEMM）**——GPU 的 Tensor Core 在 FP16 下理想条件能达到 70%+ 的利用率，就像一个经验丰富的编目员火力全开。
 
 ### 2.2 拆分为多头
 
@@ -119,7 +119,7 @@ O = O_concat × W_O   → (4, 4096) × (4096, 4096) = (4, 4096)
 
 W_O 把 32 位管理员的独立视角融合成一套统一的输出。
 
-**以上只是 1 层 Attention。** 完整的 Decoder Layer 还在 Attention 之后串接了 FFN（SwiGLU）、残差相加和 RMSNorm（详见 [Transformer 架构详解(../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) 第七节）。经过全部 32 层后，最后一层的输出是一个 `(4, 4096)` 的隐藏状态矩阵。
+**以上只是 1 层 Attention。** 完整的 Decoder Layer 还在 Attention 之后串接了 FFN（SwiGLU）、残差相加和 RMSNorm（详见 [Transformer 架构详解](../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) 第七节）。经过全部 32 层后，最后一层的输出是一个 `(4, 4096)` 的隐藏状态矩阵。
 
 取最后一个位置（第 4 个 token「是」）的隐藏状态向量 `(1, 4096)`，乘以 LM Head 权重 `(4096, vocab_size)` 得到词汇表中每个 token 的 logits，再 softmax → argmax 采样，就得到了第一个输出 token——比如「巴」。
 
@@ -318,7 +318,7 @@ KV Cache 操作          写入（初始化目录）                   读取 + 
 
 标准 MHA（多头注意力）下，32 位管理员每人有一套独立的卡片目录——32 套 × 每套数千张卡片 = 海量翻找。
 
-GQA（Grouped-Query Attention）的做法：让 4 位管理员共享一套卡片目录。卡片总数缩减为原来的 1/8，翻卡片的时间也缩减为原来的 1/8。
+GQA（Grouped-Query Attention）的做法：让每 4 位管理员共享一套卡片目录——32 位管理员只需要 8 套目录。卡片总数缩减为原来的 1/4，翻卡片的时间也缩减为原来的 1/4。
 
 ```text
 MHA：  K 读取量 = 32 × seq_len × 128 × 2 bytes
@@ -375,7 +375,7 @@ PD 分离架构把这俩人分到不同的房间：
 ## 七、相关资源
 
 - [KV Cache 原理简介](../kv_cache/01_concepts/basic/kv_cache_basics.md) — 本文的姊妹篇，侧重 KV Cache 的工作机制、显存公式和工程实践。
-- [Transformer 架构详解(../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) — Q/K/V 投影和自注意力的完整数学推导。
+- [Transformer 架构详解](../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) — Q/K/V 投影和自注意力的完整数学推导。
 - [GQA: Training Generalized Multi-Query Transformer Models](https://arxiv.org/abs/2305.13245) — GQA 原始论文。
 - [vLLM: PagedAttention](https://arxiv.org/abs/2309.06180) — 分页 KV Cache 管理的原始论文。
 - [BentoML LLM Inference Handbook](https://bentoml.com/llm/llm-inference-basics/how-does-llm-inference-work) — Prefill/Decode 的交互式可视化。

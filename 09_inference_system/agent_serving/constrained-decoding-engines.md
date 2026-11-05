@@ -101,7 +101,7 @@ SGLang 把这套逻辑做成显式的 `GrammarManager`（`grammar_manager.py:26`
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
 | `vllm/v1/structured_output/__init__.py`             | `StructuredOutputManager`、`grammar_init`、`grammar_bitmask`、`_async_submit_fill_bitmask`、`trim_reasoning_for_advance` | :35、:114、:212、:207、:462         |
 | `vllm/v1/structured_output/request.py`              | `StructuredOutputRequest`、`is_grammar_ready`、`structured_output_key`                                                   | :22、:62、:82                       |
-| `vllm/v1/structured_output/backend_xgrammar.py`     | `compile_grammar`、`allocate_token_bitmask`                                                                              | :78、:131（jump-forward 注释 :141） |
+| `vllm/v1/structured_output/backend_xgrammar.py`     | `compile_grammar`、`allocate_token_bitmask`                                                                              | :78、:128（jump-forward 注释 :141） |
 | `vllm/sampling_params.py`                           | `StructuredOutputsParams`                                                                                                | :72                                 |
 | `vllm/v1/core/sched/scheduler.py`                   | `get_grammar_bitmask`、`has_structured_output_requests`                                                                  | :1655、:1347                        |
 | `python/sglang/srt/constrained/grammar_manager.py`  | `GrammarManager`、`has_waiting_grammars`、`process_req_with_grammar`、`set_cache`                                        | :26、:69、:131、:286                |
