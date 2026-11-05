@@ -1,6 +1,6 @@
 # PCIe 拓扑可视化：从 sysfs 到 nvidia-smi
 
-> 基于 Intel Xeon Platinum 8470Q + RTX 5090 实际环境。`lspci` 需要安装 `pciutils` 且在新环境中可能不可用——本文展示通过 sysfs 和 nvidia-smi 推断 PCIe 拓扑的方法。
+> 基于 Intel Xeon Platinum 8470Q + RTX 5090 实际环境。`lspci` 需要安装 `pciutils` 且在新环境中可能不可用：本文展示通过 sysfs 和 nvidia-smi 推断 PCIe 拓扑的方法。
 
 ---
 
@@ -67,7 +67,7 @@ readlink -f /sys/bus/pci/devices/0000:98:00.0
 路径解读：
 
 ```text
-pci0000:97              ← PCI domain 0000, bus 97 (Root Complex)
+pci0000:97              ← PCI domain 0000 的根总线（host bridge）
   └── 0000:97:01.0      ← PCIe Bridge (bus 97, device 01, function 0)
         └── 0000:98:00.0 ← GPU (bus 98, device 00, function 0)
 ```
@@ -81,7 +81,7 @@ pci0000:97              ← PCI domain 0000, bus 97 (Root Complex)
 sysfs 路径体现了 PCIe 层次结构。以上述路径为例：
 
 ```text
-pci0000:97          → Root Port (CPU 的 PCIe Root Complex)
+pci0000:97          → 根总线（host bridge；其下的 97:01.0 才是 Root Port）
   0000:97:01.0      → PCIe Switch/Bridge 的上游端口
     0000:98:00.0    → GPU (下游设备)
 ```
@@ -183,7 +183,7 @@ done
 | PCIe 树深度  | 浅 (RC → Bridge → GPU) | 深 (RC → Switch → 多层 → GPU)  |
 | sysfs 路径数 | 1                      | N 个                           |
 | 拓扑关键信息 | NUMA node              | PCIe Switch affinity           |
-| 推荐工具     | sysfs + nvidia-smi     | lspci -t + nvidia-smi topo -mp |
+| 推荐工具     | sysfs + nvidia-smi     | lspci -t + nvidia-smi topo -m |
 
 ---
 

@@ -85,7 +85,7 @@ create-region  enable-region  disable-region  destroy-region  monitor
 | Region 管理 | `create-region`/`enable-region`/`disable-region`/`destroy-region`                     | 08 文章的核心概念：region 的创建到销毁    |
 | 其他        | `version`、`help`                                                                     | 版本与帮助                                |
 
-decoder 不需要用户手动创建：root / port decoder 由固件（ACPI CEDT 表）枚举，endpoint decoder 在 `create-region` 时自动配置——`-d` 选项只是从已枚举的 decoder 里挑选目标（见 3.2）。
+decoder 不需要用户手动创建：root decoder 来自固件（ACPI CEDT 表的 CFMWS），port / endpoint decoder 由硬件寄存器枚举、`create-region` 时自动配置——`-d` 选项只是从已枚举的 decoder 里挑选目标（见 3.2）。
 
 ### 2.2 概念映射表：命令 ↔ 协议概念
 
@@ -130,7 +130,7 @@ online-memory  offline-memory  disable-device  enable-device
 
 > **本节命令序列依据 cxl-cli v77 官方 man page 与内核文档整理**，命令输出为 man page 自带示例。
 >
-> **执行前置条件**：以下命令**均需 root 权限**（`cxl`/`daxctl`/`ndctl` 无例外）；工具通过安装 ndctl 包获得（如 `apt install ndctl` / `dnf install ndctl`）；以下命令在**插有 CXL 设备（且固件预留了 CFMWS 窗口）的服务器**上执行——普通机器上执行会得到 4.1 节的 `[]` 输出。
+> **执行前置条件**：以下命令**均需 root 权限**（`cxl`/`daxctl`/`ndctl` 无例外）；工具随 ndctl 包分发——注意 Debian/Ubuntu 把 `cxl` 拆为独立包（`apt install ndctl cxl` 才齐）；Fedora/Arch 装 ndctl 即得；以下命令在**插有 CXL 设备（且固件预留了 CFMWS 窗口）的服务器**上执行——普通机器上执行会得到 4.1 节的 `[]` 输出。
 
 ### 3.1 第 0 步：`cxl list` 枚举——先看有什么
 
@@ -220,13 +220,16 @@ error reconfiguring devices: Operation not supported
 reconfigured 0 devices
 ```
 
-此时需先 `daxctl migrate-device-model`（见 2.3）。成功路径下命令无输出（或输出 `reconfigured N devices`），判断成败以第 4 步验证为准。
+此时需先 `daxctl migrate-device-model`（见 2.3）。成功路径默认输出 JSON 设备列表（`-s` 场景输出 `reconfigured N devices`），判断成败以第 4 步验证为准。
 
-形态转换不是单向的——**BIOS 重启后 devdax 会回落为 system-ram 模式**（CXL 内存重新枚举为 NUMA 节点，内存块未上线、字符设备不可用），真实部署中重启后需反向转换切回 devdax：
+形态转换默认不跨重启持久——daxctl-reconfigure-device(1) 明确：设备本身不记录所设模式，**开机默认态就是 devdax**。所以要每次开机都进入 system-ram，需要配置持久化策略（daxctl 配置文件或 udev 规则）：
 
 ```text
-# system-ram → devdax 反向转换（转换前需 offline memblock，--force 自动处理）
+# 手动反向转换：system-ram → devdax（转换前需 offline memblock，--force 自动处理）
 daxctl reconfigure-device --mode=devdax --force dax0.0
+
+# 持久化 system-ram：在 daxctl 配置目录写 <name>.conf，
+# [daxctl_reconfigure_device] 段指定 uuid 与 mode = system-ram，开机由 udev 自动执行
 ```
 
 ### 3.5 第 4 步：验证——内存真的可用吗

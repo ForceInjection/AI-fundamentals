@@ -75,7 +75,7 @@ NVLink-C2C（Chip-to-Chip）是一种封装级高速互连技术，用于连接�
 
 ### 2.3 核心架构与协议
 
-NVLink-C2C 的核心思想是通过高速 SerDes 实现 die-to-die coherent interconnect。它不仅仅是物理层连接，更包含了完整的缓存一致性协议栈。
+NVLink-C2C 的核心思想是通过高速 SerDes 实现 die-to-die coherent interconnect：物理层之上承载完整的缓存一致性协议栈。
 
 #### 2.3.1 物理互连架构
 
@@ -144,7 +144,7 @@ NVLink-C2C 的一个关键能力是内存一致性（Memory Coherency），即 C
 
 - **零拷贝 (Zero-Copy)**：GPU 可以直接访问 CPU 内存，不需要显式数据复制（如 `cudaMemcpy`）。
 - **原子操作 (Atomics)**：支持系统级原子操作，GPU kernel 可以直接更新 CPU 数据，CPU 也可以直接更新 GPU 数据。
-- **大内存支持**：GPU 可以利用 CPU 的大容量 LPDDR5X 内存（Grace Hopper 单 Superchip 最高 512 GB LPDDR5X）来存放超大模型参数或 KV Cache，突破 HBM 容量限制 [2]。
+- **大内存支持**：GPU 可以利用 CPU 的大容量 LPDDR5X 内存（Grace Hopper 单 Superchip 的 CPU 侧上限为 512 GB LPDDR5X，GH200 实配 SKU 最高 480 GB）来存放超大模型参数或 KV Cache，突破 HBM 容量限制 [2]。
 
 ---
 
@@ -159,12 +159,12 @@ GH200 将一颗 Grace CPU 和一颗 Hopper GPU 封装在一起 [2]。不同产�
 ![gb200 architecture](./img/gh200_cpu_gpu_connection.png)
 
 - **互连带宽**：900 GB/s（双向，450 GB/s/方向）[2]。
-- **内存容量**：96 GB HBM3 + 最多 512 GB LPDDR5X，单 Superchip 可寻址内存最多 608 GB [2]。
+- **内存容量**：96 GB HBM3 + 最多 512 GB LPDDR5X（CPU 上限口径，GH200 实配最高 480 GB），单 Superchip 可寻址内存最多 608 GB [2]。
 - **应用场景**：推荐系统、大模型推理、图计算。
 
 ### 3.2 Grace Blackwell Superchip (GB200/GB300)
 
-在最新的 Blackwell 架构中，NVLink-C2C 的应用进一步扩大。以 **GB300 NVL72** 为例，其基础构建模块为 **GB300 NVL4 Node**，包含 2 颗 Grace CPU 与 4 颗 Blackwell Ultra GPU。官方给出的整机规格为 72 颗 Blackwell Ultra GPU 与 36 颗 Grace CPU；在 NVL72 域内提供 130 TB/s 的 NVLink 带宽 [3]。Blackwell 官方技术页也明确指出 Grace CPU 与 Blackwell GPU 之间存在 900 GB/s 的高速链路 [4]。
+在最新的 Blackwell 架构中，NVLink-C2C 的应用进一步扩大。以 **GB300 NVL72** 为例，其基础构建模块为计算 tray（2 颗 Grace CPU + 4 颗 Blackwell Ultra GPU，官方 RA 文档口径；「NVL4」是沿用 GB200 时代的称呼）——文中记作 GB300 NVL4 Node。官方给出的整机规格为 72 颗 Blackwell Ultra GPU 与 36 颗 Grace CPU；在 NVL72 域内提供 130 TB/s 的 NVLink 带宽 [3]。Blackwell 官方技术页也明确指出 Grace CPU 与 Blackwell GPU 之间存在 900 GB/s 的高速链路 [4]。
 
 GB300 NVL4 Node 的拓扑示意如下：
 
@@ -190,8 +190,8 @@ graph LR
     CPU1 <== "NVLink-C2C (450 GB/s)" ==> GPU2
     CPU1 <== "NVLink-C2C (450 GB/s)" ==> GPU3
 
-    %% CPU 与 CPU Link (NVLink-C2C)
-    CPU0 <== "NVLink-C2C (900 GB/s)" ==> CPU1
+    %% CPU 与 CPU Link (Clinks，非 NVLink-C2C)
+    CPU0 <== "Clinks (~150 GB/s)" ==> CPU1
 
     %% Styling
     classDef green fill:#006400,stroke:#222,stroke-width:2px,color:#ffffff;
@@ -200,8 +200,8 @@ graph LR
 
 - **拓扑结构**：以 GB300 NVL4 为基本单元，两颗 Grace CPU 通过 NVLink-C2C 互连，每颗 CPU 分别连接两颗 Blackwell GPU [3, 4]。
 - **链路能力**：
-  - **CPU 与 GPU**：单条链路提供 450 GB/s（双向），每颗 CPU 总计 900 GB/s [4]。
-  - **CPU 与 CPU**：两颗 Grace CPU 之间提供 900 GB/s（双向）的一致性互连。
+  - **CPU 与 GPU**：官方口径为 CPU↔GPU 聚合 900 GB/s（450 GB/s/方向为聚合值 ÷2 的推算口径），每颗 CPU 总计 900 GB/s [4]。
+  - **CPU 与 CPU**：两颗 Grace CPU 之间通过 **Clinks** 互连（约 150 GB/s，Hot Chips 2025 教程与 GB300 RA Figure 5 口径），支持跨 CPU 缓存一致性——注意这条不是 900 GB/s 的 NVLink-C2C（后者只连 CPU↔GPU）。
 - **整机规模**：在 NVL72 规模下，官方 NVLink 域带宽为 130 TB/s [3]。
 - **实测数据**：通过 `nvbandwidth` 测试，单卡 H2D 带宽实测约 **210 GB/s**，达到理论极限 225 GB/s 的 **93%**，远超 PCIe Gen5 x16 的 56 GB/s。详细测试报告参见 [GB300 架构解析与性能测试](./nvidia_gb300.md)。
 
@@ -284,15 +284,13 @@ NVLink 与 NVLink-C2C 同属 NVIDIA 高速互连体系，但二者服务的系�
 
 ## 6. 总结
 
-NVLink-C2C 是 NVIDIA 为 AI 时代设计的一种芯片级高速互连技术，深刻改变了异构计算系统的设计范式。
+NVLink-C2C 是 NVIDIA 面向 AI 时代的芯片级高速互连技术。它的三个实际作用：
 
-其核心价值在于：
+1. **扩展 GPU 可用内存**：CPU 与 GPU 共享统一内存架构，GPU 以 900 GB/s（CPU↔GPU 双向聚合）直接访问 LPDDR5X，把 CPU 内存当作大容量扩展显存。
+2. **支撑 Superchip 形态**：Grace Hopper/GB200/GB300 这类超级芯片都以 C2C 作为 CPU 与 GPU 间的互连基础。
+3. **提供 Die-to-Die 互连标准**：为定制化硅片集成提供了高性能的一致性互连参考。
 
-1. **打破内存墙**：通过 900 GB/s 的带宽和统一内存架构，消除了 CPU 和 GPU 之间的物理隔阂。
-2. **赋能 Superchip**：使得 Grace Hopper/Blackwell 这样的超级芯片成为可能，重新定义了数据中心的计算单元。
-3. **推动 Chiplet 生态**：提供了高性能的 Die-to-Die 互连标准，为未来的定制化硅片集成铺平了道路。
-
-在未来 AI 基础设施中，类似 NVLink-C2C 的 chip-to-chip coherent interconnect 将成为连接算力与数据的核心血管。
+需要注意的边界：C2C 的 900 GB/s 只存在于 CPU↔GPU 方向；多 CPU 之间是 ~150 GB/s 的 Clinks，跨 Superchip 则回到 NVLink 域与常规网络。把这些带宽差异纳入数据放置决策，才是用好 Superchip 的关键。
 
 ---
 

@@ -18,7 +18,7 @@ AI 基础设施是一条从硅片到智能体的长链路：GPU 芯片设计、P
 
 **《计算机体系结构：量化研究方法》（Hennessy & Patterson，机械工业出版社）**〔深度〕——计算机体系结构领域的经典之作，沉淀的量化分析方法论至今仍是评估任何新硬件（GPU、NPU、CXL 设备）的思维框架。适合想真正读懂硬件规格表、而不只是背参数的系统工程师。
 
-> 该层技术迭代极快（NVLink 一年一代、CXL 3.0 织网），纸质书跟不上硬件节奏，体系化课程见第十二章 ZOMI 酱 AISystem，2026 年视角可配合 AI Fundamentals 仓库的[硬件架构章节](https://github.com/ForceInjection/AI-fundamentals)。
+> 该层技术迭代极快（NVLink 一年一代、CXL 3.0 Fabric），纸质书跟不上硬件节奏，体系化课程见第十二章 ZOMI 酱 AISystem，2026 年视角可配合 AI Fundamentals 仓库的[硬件架构章节](https://github.com/ForceInjection/AI-fundamentals)。
 
 ## 二、AI 集群运维与高性能通信
 

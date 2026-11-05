@@ -8,17 +8,17 @@
 
 PCIe 体系中，Bridge 和 Switch 是最容易混淆的两个组件。两者 class code 相同 (0x060400)，但在硬件架构中的作用截然不同。
 
-**PCIe Bridge** 是 PCI/PCI-X 时代的遗留概念。它提供一条 1:1 的透明转发通道——上游总线的一个端口映射到下游总线的一个设备。Bridge 在 PCI 配置空间中表现为 Type 1 Header，分配 1 个 secondary bus number（无 subordinate 扩展）。大多数桌面和工作站系统中，GPU 前面就是一个简单的 Bridge。
+**PCIe Bridge** 是 PCIe bridge 的最简形态（2 端口）：提供一条 1:1 的透明转发通道，上游总线的一个端口映射到下游总线的一个设备。配置空间为 Type 1 Header，primary/secondary/subordinate 三个 bus number 寄存器齐备（bridge 的 subordinate = secondary，只挂一条下游总线）。大多数桌面和工作站系统中，GPU 前面就是一个简单的 Bridge。
 
-**PCIe Switch** 是现代高速 I/O 的核心组件。它像一个"PCIe 交换机"——1 个上游端口连接 Root Complex，N 个下游端口各连接一个设备（GPU、NVMe 等）。Switch 内部有多条 PCI bus：上游端口 1 个 + 下游端口各 1 个，每个下行端口分配独立的 secondary bus number，允许各端口并行转发互不阻塞。Switch 还支持 ACS (Access Control Services) 来控制 P2P 流量的访问隔离。
+**PCIe Switch** 是现代高速 I/O 的核心组件：1 个上游端口连接 Root Complex，N 个下游端口各连接一个设备（GPU、NVMe 等）。Switch 内部有多条 PCI bus——自身内部总线 1 条 + 每个下游端口各 1 条，每个下行端口分配独立的 secondary bus number，允许各端口并行转发互不阻塞。Switch 还支持 ACS (Access Control Services) 来控制 P2P 流量的访问隔离。
 
 |             | PCIe Bridge                        | PCIe Switch                                                           |
 | ----------- | ---------------------------------- | --------------------------------------------------------------------- |
 | 端口数      | 2 (1 up + 1 down)                  | N+1 (1 up + N down)                                                   |
-| Bus 数量    | 分配 1 个 secondary bus            | 分配 N+1 个 bus (上游 1 + 下游各 1)                                   |
+| Bus 数量    | 1 条 secondary bus（= subordinate）| 自身内部 bus 1 条 + 下游各 1 条                                       |
 | 功能        | 透明转发                           | 支持多播、ACS (Access Control Services)、VC (Virtual Channel)         |
-| 延迟        | ~零                                | 每个端口 ~100-200ns                                                   |
-| 对 P2P 影响 | 通常支持                           | 取决于 ACS 配置                                                       |
+| 延迟        | 每跳数十 ns 量级                   | 每个端口 ~100-200ns                                                   |
+| 对 P2P 影响 | 不适用（单下游口，无 P2P 转发场景）| 取决于 ACS 配置                                                       |
 | sysfs 表现  | 下游 1 个 device                   | 下游 ≥2 个 device                                                     |
 
 Switch 每个下行端口分配独立的 secondary bus number。Bridge 也分配 bus number，但只有一个。
@@ -67,9 +67,8 @@ for dev in /sys/bus/pci/devices/*; do
     [ "$cls" != "0x060400" ] && continue
     bdf=$(basename "$dev")
     path=$(readlink -f "$dev")
-    # 排除 Root Port (bus = domain bus)
+    # 排除 Root Port（device=00 的端口挂根总线下；按 domain_bus 上的 00 设备判断）
     bus=$(echo "$bdf" | cut -d: -f2)
-    domain_bus=$(echo "$bdf" | cut -d: -f1 | sed 's/0000://')
     [ "$bus" = "00" ] && continue
     count=$(ls "$path" 2>/dev/null | grep -c "^0000:")
     [ "$count" -gt 1 ] && echo "POTENTIAL SWITCH: $bdf, downstream=$count"
@@ -99,6 +98,7 @@ Switch 的 PCIe Express Capability 中 `Device/Port Type` 字段会标明：
 | 值  | 类型                           |
 | --- | ------------------------------ |
 | 0x0 | PCIe Endpoint                  |
+| 0x1 | Legacy Endpoint（显卡常见）    |
 | 0x4 | Root Port of PCIe Root Complex |
 | 0x5 | Upstream Port of PCIe Switch   |
 | 0x6 | Downstream Port of PCIe Switch |
@@ -114,9 +114,9 @@ Switch 的 PCIe Express Capability 中 `Device/Port Type` 字段会标明：
 Switch 下游端口通常有 ACS 能力：
 
 ```bash
-# Switch 有 acs_* 文件（如果 ACS 被启用）
+# ACS 能力判据有局限：Root Port 同样可能有 acs_*，
+# 更可靠的是看 lspci -vvv 的 ACSCap + 下游设备数
 ls /sys/bus/pci/devices/$BDF/acs_* 2>/dev/null
-# 如果存在 = 可能为 Switch（但开启 ACS 的 Bridge 也可能有）
 ```
 
 ---

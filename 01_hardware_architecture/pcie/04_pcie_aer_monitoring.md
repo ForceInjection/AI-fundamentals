@@ -1,6 +1,6 @@
 # PCIe AER 错误监控与链路健康检查
 
-> 基于 RTX 5090 实测——本环境所有 AER 计数器为 0，PCIe Replay = 0，链路信号质量完美。本文教读者如何通过 sysfs 和 nvidia-smi 监控 PCIe 链路健康状态。
+> 基于 RTX 5090 实测——本环境所有 AER 计数器与 PCIe Replay 均为 0——即无错误记录、无重传（新装机属常态，不构成信号质量的长期结论）。本文教读者如何通过 sysfs 和 nvidia-smi 监控 PCIe 链路健康状态。
 
 ---
 
@@ -43,7 +43,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/aer_dev_correctable
 RxErr 0            # 接收错误
 BadTLP 0           # 损坏的 TLP (Transaction Layer Packet)
 BadDLLP 0          # 损坏的 DLLP (Data Link Layer Packet)
-Rollover 0         # 计数器翻转（长时间运行后正常）
+Rollover 0         # 计数器溢出标志；非零 = 累计大量可纠正错误，需查根因
 Timeout 0          # 超时
 NonFatalErr 0      # 非致命错误
 CorrIntErr 0       # 内部可纠正错误
@@ -114,7 +114,7 @@ Rx Throughput : 525 KB/s   (当前下行)
 ```text
 nvidia-smi -q → Replays > 0？
   ├── YES → 检查 AER 计数器 → 对应章节排查
-  └── NO  → 链路健康 ✅
+  └── NO  → 链路健康（无错误记录）
 
 sysfs aer_dev_* → 非零计数？
   ├── Correctable 增长
@@ -124,7 +124,7 @@ sysfs aer_dev_* → 非零计数？
   │     → 严重问题：检查驱动、固件、GPU 硬件状态
   │     → UnsupReq → 驱动/Firmware 兼容性问题
   │     → CmpltTO → GPU 无响应，检查供电和散热
-  └── ALL 0 → 链路完美
+  └── ALL 0 → 无错误记录
 ```
 
 ### 4.1 常见错误场景
@@ -173,7 +173,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/power/runtime_status
 # active / suspended
 ```
 
-GPU 的 `runtime_status` 通常为 `active`，`runtime_enabled` 通常为 `forbidden`（GPU 不允许 PCIe 休眠）。
+GPU 的 `runtime_status` 通常为 `active`；运行时电源开关由 `power/control` 控制（置为 `on` 即禁用自动休眠，允许休眠时值为 `auto`）。
 
 ---
 
@@ -181,12 +181,12 @@ GPU 的 `runtime_status` 通常为 `active`，`runtime_enabled` 通常为 `forbi
 
 | 指标                     | 值                 | 判定        |
 | ------------------------ | ------------------ | ----------- |
-| AER Correctable Total    | 0                  | ✅ 完美     |
-| AER Fatal Total          | 0                  | ✅ 完美     |
-| AER Non-Fatal Total      | 0                  | ✅ 完美     |
-| Replays Since Reset      | 0                  | ✅ 完美     |
-| 当前 PCIe Gen / Width    | Gen 5 x16 (负载下) | ✅ 全速     |
-| RxErr / BadTLP / BadDLLP | 0 / 0 / 0          | ✅ 信号完美 |
+| AER Correctable Total    | 0                  | 无错误记录  |
+| AER Fatal Total          | 0                  | 无错误记录  |
+| AER Non-Fatal Total      | 0                  | 无错误记录  |
+| Replays Since Reset      | 0                  | 无重传      |
+| 当前 PCIe Gen / Width    | Gen 5 x16（负载下）| 全速运行    |
+| RxErr / BadTLP / BadDLLP | 0 / 0 / 0          | 无错误记录  |
 
 链路质量理想——无错误、无重传、全速协商。
 

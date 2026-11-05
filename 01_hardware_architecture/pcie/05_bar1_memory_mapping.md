@@ -10,7 +10,7 @@ GPU 通过 PCIe 暴露两类 BAR (Base Address Register)：
 
 | BAR      | 类型            | 大小 (RTX 5090) | 用途                                                                                        |
 | -------- | --------------- | --------------- | ------------------------------------------------------------------------------------------- |
-| **BAR0** | MMIO 寄存器映射 | 32 MB           | 驱动控制和配置 (NVML 指令通路)。NVML (NVIDIA Management Library) 是 nvidia-smi 的底层 C API |
+| **BAR0** | MMIO 寄存器映射 | 64 MB           | 驱动控制和配置 (NVML 指令通路)。NVML (NVIDIA Management Library) 是 nvidia-smi 的底层 C API |
 | **BAR1** | GPU 显存窗口    | 256 MB          | Host 直接映射 GPU 显存                                                                      |
 
 BAR1 是 Host 通过 PCIe **直接访问 GPU 显存**的窗口。CUDA Unified Memory、GPUDirect P2P 都依赖 BAR1。
@@ -40,7 +40,7 @@ BAR1 Memory Usage
 | A100 / H100 (数据中心) | 64 GB+    | 支持大量并发 UM 映射           |
 | GH200 (Grace Hopper)   | 512 GB    | C2C 直连，无传统 PCIe BAR 限制 |
 
-消费级 GPU 的 BAR1 偏小，意味着**同一时刻只能映射 256 MB 的 Unified Memory 到 Host 可见**。
+消费级 GPU 的 BAR1 偏小，意味着同一时刻约有 256 MB 的 Unified Memory 可直接经 BAR1 被 Host 访问（典型路径示意，实际边界还取决于访问方向与驱动迁移策略）。
 
 ---
 
@@ -63,7 +63,7 @@ cudaMallocManaged(&data, 2ULL * 1024 * 1024 * 1024);  // 2 GB → 慢
 
 ### 3.2 GPUDirect P2P 受限
 
-单卡 RTX 5090 不支持 P2P，但在多卡消费级 GPU 环境中，BAR1 不足也会限制 P2P 映射窗口。
+消费级多卡环境里 NVIDIA 驱动限制卡间 P2P；即便未来放开，BAR1 不足也会限制 P2P 映射窗口。
 
 ---
 
@@ -88,7 +88,7 @@ cat /sys/bus/pci/devices/0000:98:00.0/resource
 
 - `d4000000` — BAR 起始物理地址
 - `d7ffffff` — BAR 结束物理地址
-- `0x40200` — 属性标志（bit 1 = memory space, bit 9 = prefetchable, bit 18 = 64-bit）
+- `0x40200` — 属性标志，内核 IORESOURCE_* 位组合（0x200 = IORESOURCE_MEM，0x40000 = IORESOURCE_BUSY；完整定义见 include/linux/ioport.h）
 
 BAR1 的大小 = `结束 - 起始 + 1`。如果 BAR1 大小等于全部显存（如 32 GB），则 ReBAR 已启用。
 
@@ -102,7 +102,7 @@ dmesg | grep -i "BAR\|rebar\|resizable"
 | 条件      | 说明                              |
 | --------- | --------------------------------- |
 | BIOS 支持 | 需 Above 4G Decoding + ReBAR 开启 |
-| GPU 支持  | RTX 30 系列+、A100+               |
+| GPU 支持  | RTX 30 系列及之后的消费卡（数据中心卡出厂 BAR1 即覆盖显存，无需 ReBAR） |
 | 驱动支持  | 525.xx+ (Linux)                   |
 
 在云环境中（如本 Seetacloud），ReBAR 状态取决于宿主机 BIOS，容器内通常无法修改。
@@ -120,10 +120,10 @@ dmesg | grep -i "BAR\|rebar\|resizable"
 设计启示：
 
 ```text
-✅ GPU 频繁访问的数据 → 留在 FB，不经过 BAR1
-✅ Host 偶尔访问 GPU 结果 → 通过 BAR1 窗口直接读
-✅ 大量 Host↔GPU 迁移 → 用 cudaMemPrefetchAsync，驱动管理 BAR1
-❌ 频繁通过 BAR1 逐字节访问 → 性能灾难
+- GPU 频繁访问的数据 → 留在显存（FB），不经过 BAR1
+- Host 偶尔访问 GPU 结果 → 通过 BAR1 窗口直接读
+- 大量 Host↔GPU 迁移 → 用 cudaMemPrefetchAsync，驱动管理 BAR1
+- 频繁通过 BAR1 逐字节访问 → 性能很差，避免
 ```
 
 ---

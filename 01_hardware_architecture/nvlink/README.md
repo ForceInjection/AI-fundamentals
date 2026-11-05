@@ -5,7 +5,7 @@ NVLink 是 NVIDIA 专为 GPU 间通信设计的私有高速链路，NVSwitch 将
 ## 文档
 
 - [**NVLink 技术入门**](nvlink_intro.md)：NVLink 1.0→6.0 版本演进、物理层与协议层原理、NVSwitch/SHARP/NVL72 架构、与 PCIe 协议对比、应用场景决策。
-- [**NVLink 诊断与实操**](nvlink_diagnostics.md)：`nvidia-smi nvlink` 完整命令集（status/capabilities/errorcounters/topo）、A100 实测验证（12 links × 25 GB/s = 600 GB/s）、GPU 7 NVLink 故障案例排查。
+- [**NVLink 诊断与实操**](nvlink_diagnostics.md)：`nvidia-smi nvlink` 完整命令集（status/capabilities/errorcounters/topo）、A100 实测验证（12 links × 25 GB/s × 2 = 600 GB/s 双向）、GPU 7 NVLink 故障案例排查。
 
 ## 关键数字速查
 
@@ -16,7 +16,7 @@ NVLink 是 NVIDIA 专为 GPU 间通信设计的私有高速链路，NVSwitch 将
 | H100 | 4.0         | 18    | 25 GB/s    | 900 GB/s   |
 | B200 | 5.0         | 18    | 50 GB/s    | 1.8 TB/s   |
 
-> 消费级 GeForce RTX 系列不支持 NVLink。
+> 现行消费级 GeForce RTX 系列（RTX 40 系起）不支持 NVLink；RTX 3090 及更早的部分消费卡支持。
 
 ## 参考
 

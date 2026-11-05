@@ -6,7 +6,7 @@
 
 ## 1. 系统规格
 
-**NVIDIA GB300 NVL72** 是基于 Grace Blackwell 架构的机架级计算系统，通过 NVLink-C2C 技术将 **36 颗 Grace CPU** 和 **72 颗 Blackwell Ultra GPU (B300)** 连接为统一计算域 [1,4]。
+**NVIDIA GB300 NVL72** 是基于 Grace Blackwell 架构的机架级计算系统（规格于 2026-11 对照 NVIDIA 官方页与 DGX SuperPOD GB300 RA 复核；preliminary 规格可能随固件/驱动更新）：**72 颗 Blackwell Ultra GPU (B300)** 经 NVLink 5 / NVSwitch 连成单一 NVLink 域；**36 颗 Grace CPU** 则各自通过 NVLink-C2C 连接本地的 GPU 与对端 CPU（详见 §2.2/§2.3）[1,4]。
 
 ### 1.1 Blackwell GPU 架构特性
 
@@ -14,7 +14,7 @@ Blackwell 架构 GPU 采用**双芯片 (Dual-Die) 封装设计**，集成 2080 �
 
 根据 NVIDIA 官方技术博客 [10] 披露的 Blackwell Ultra (B300) 核心架构细节：
 
-- **统一计算域**: 包含 160 个流多处理器 (SMs)，提供 640 个第五代 Tensor Cores。
+- **统一计算域**: 最多包含 160 个流多处理器（SM 数量随 SKU 而异） (SMs)，提供 640 个第五代 Tensor Cores。
 - **Tensor Memory (TMEM)**: 每个 SM 配备 256 KB 的 TMEM，用于中间结果的 warp 级同步存储，减少片外显存访问。
 - **NVFP4 精度**: 引入全新的 4-bit 浮点格式，通过两级缩放（block-level + tensor-level）实现接近 FP8 的精度，同时将显存占用降低约 1.8 倍。
 
@@ -93,7 +93,7 @@ graph LR
 ```
 
 - **CPU-CPU 互连**: 两颗 Grace CPU (绿色节点) 之间通过 **Clinks** 连接（~150 GB/s），支持跨 CPU 的缓存一致性。
-- **CPU-GPU 互连**: 每个 Grace CPU 通过两条独立的 **NVLink-C2C** 链路分别连接两颗 Blackwell GPU。单条链路提供 **450 GB/s** 的双向带宽（单向理论值为 225 GB/s），一个 Superchip 内 CPU↔GPU 总带宽为 900 GB/s [4,9]。
+- **CPU-GPU 互连**: 每个 Grace CPU 通过两条独立的 **NVLink-C2C** 链路分别连接两颗 Blackwell GPU。单条链路提供 **450 GB/s** 的双向带宽（单向理论值为 225 GB/s；900/450 为官方聚合口径 900 ÷ 2 的推算），一个 Superchip 内 CPU↔GPU 总带宽为 900 GB/s [4,9]。
 - **系统总带宽分析**:
   - **CPU <-> GPU 实测带宽**: 4 × 210 GB/s (单向)，接近 225 GB/s 的理论极限，表明链路利用率极高。
   - **CPU <-> CPU 带宽**: ~150 GB/s (Clinks)，为跨 NUMA 节点的内存访问提供通道。
@@ -103,12 +103,12 @@ graph LR
 除了外部的 C2C 互连，Grace CPU 内部采用了 **NVIDIA Scalable Coherency Fabric (SCF)** 网状架构 [6]。
 
 - **核心与缓存规格**:
-  - **核心**: 72 个 ARM Neoverse V2 核心（架构详情见 2.5 节）。
+  - **核心**: 72 个 ARM Neoverse V2 核心（架构详情见 2.6 节）。
   - **缓存**: 每个核心拥有 **64 KB L1 Cache** 和 **1 MB L2 Cache**；所有核心共享 **114 MB L3 Cache** (LLC) [7]。
 - **功能**: SCF 提供超过 **3.2 TB/s** 的片内对分带宽，负责在核心、缓存、NVLink-C2C 接口、内存和系统 I/O 之间进行高速数据路由。
 - **作用**: 它确保了从 CPU 核心到 NVLink-C2C 接口的数据流不会成为内部瓶颈，从而能够跑满外部 900 GB/s 的物理链路。
 
-### 2.5 Grace CPU 核心架构
+### 2.6 Grace CPU 核心架构
 
 根据 NVIDIA 官方白皮书 [8]，Grace CPU 采用了 **Arm Neoverse V2** 核心，这是 Arm 专为数据中心设计的高性能核心，基于 Armv9.0-A 架构。
 
@@ -123,7 +123,7 @@ graph LR
   - 采用 **LPDDR5X** 内存，支持 **Error Correction Code (ECC)**，在提供高带宽的同时大幅降低了功耗（相比 DDR5 带宽提升 53%，每 GB 功耗降低 87%）。
   - 这种设计平衡了带宽、能效和成本，特别适合大规模 AI 和 HPC 工作负载。
 
-### 2.6 CPU-GPU 互连细节与数据流
+### 2.7 CPU-GPU 互连细节与数据流
 
 虽然 GB300 属于 Blackwell 架构，但其 CPU 部分（Grace CPU）与前代 GH200 (Grace Hopper) 架构保持一致。参考 ACM 关于 GH200 架构的分析研究 [7]，我们可以深入理解 CPU 与 GPU 之间 NVLink-C2C 的互连机制，该机制在 GB300 中同样适用。其内部数据流路径如下：
 
@@ -142,7 +142,7 @@ _图 1: NVIDIA GH200 架构中 Grace CPU 与 H100 GPU 通过 NVLink C2C 的互�
   - _注：GB300 (Blackwell Ultra) 的 GPU 内部架构可能在 SMs 和 XBar 上有进一步优化，但整体通过 Hub 连接 NVLink-C2C 的逻辑保持不变。_
 
 - **NVLink-C2C 链路特性**:
-  - 物理链路通过 **18 x 25 GB/s** 的通道组成，单向理论带宽达到 225 GB/s (双向 450 GB/s)，与前文实测数据吻合。
+  - 物理链路由 10 条 C2C 链路组成，每条链路 9 数据信号 × 40 Gbps，单向聚合理论带宽约 225 GB/s（双向 450 GB/s），与前文实测数据吻合（链路构成据 arXiv 2408.11556；「18 × 25 GB/s」是 H100 NVLink 4.0 的数字，不适用于 C2C）。
   - 该链路支持 **硬件级缓存一致性**，允许 GPU 直接以高带宽访问 CPU 的 LPDDR5X 内存，实际上将 CPU 内存作为 GPU 的"扩展显存"使用，这对于处理超过 GPU 显存容量的大模型推理至关重要。
 
 ---

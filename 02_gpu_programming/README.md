@@ -6,17 +6,17 @@
 
 我们大致会走三步：
 
-- **环境**：先把开发环境搭起来。依靠 NVIDIA Container Toolkit 和 CUDA 镜像，把驱动、工具链、框架依赖封装成可复现的容器环境。
+- **环境**：先把开发环境搭起来。生产环境主流走容器路线（NVIDIA Container Toolkit + CUDA 镜像，见 [环境准备目录](01_environment/README.md)）；无容器条件的工作站/教学机可走裸金属安装。
 - **范式**：先从 CUDA SIMT 的基础入手，然后接触 Streams 带来的异步并发，最后过渡到以 Tensor Core 为中心的 Tile-Based 编程范式。
 - **工具**：在真正写出代码后，用 nvbandwidth、Nsight Compute / Systems 等工具链来回答“快不快、为什么不快”。
 
-走完这三步，你将具备从写 Kernel 到定位带宽/算力瓶颈的完整能力。
+走完这三步，就能独立完成从写 Kernel 到定位带宽/算力瓶颈的过程。
 
 ---
 
 ## 2. 环境准备
 
-“工欲善其事，必先利其器”。在开始写 CUDA 代码之前，需要先把开发环境整顺。在生产环境中，大家通常不会直接裸装驱动和 CUDA，而是用 **NVIDIA Container Toolkit 加 CUDA 基础镜像** 把开发环境标准化。
+“工欲善其事，必先利其器”。在开始写 CUDA 代码之前，需要先把开发环境整顺。生产环境通常走容器路线（NVIDIA Container Toolkit + CUDA 基础镜像）；工作站/教学机等无容器条件的场景走裸金属安装——两条路线见下方条目与[环境目录](01_environment/README.md)。
 
 这里有几个经常踩坑的关键点：
 
@@ -26,9 +26,9 @@
 
 这也是 vLLM、TGI、Llama.cpp、DeepSpeed 这类框架能在生产集群上“可复现”的前提——一旦环境一致，高层框架的部署才会真正变得可预测。
 
-- [NVIDIA GPU 容器环境：原理与构建指南](01_environment/01_nvidia_container_setup.md) - 深入解析容器化架构原理，提供从驱动安装到实战配置的完整手册。
-- [大模型训练与推理框架的 GPU 镜像构建深度解析](01_environment/02_cuda_image_build_analysis.md) - 剖析 vLLM、TGI、Llama.cpp、DeepSpeed 四大框架的 Dockerfile，详解 CUDA 镜像变体选择与构建优化策略。
-- [CUDA / Metal 裸机安装指南](01_environment/03_cuda_metal_install_guide.md) - 不依赖容器的原生 CUDA Toolkit 与 Metal 驱动安装流程，适用于 macOS + Ubuntu 双平台。
+- [NVIDIA GPU 容器环境：原理与构建指南](01_environment/01_nvidia_container_setup.md) - 讲清宿主机与容器的职责划分，以及从驱动安装到实战配置的全过程。
+- [大模型训练与推理框架的 GPU 镜像构建深度解析](01_environment/02_cuda_image_build_analysis.md) - 对比 vLLM、TGI、Llama.cpp、DeepSpeed 四大框架的 Dockerfile，详解 CUDA 镜像变体选择与构建优化策略。
+- [裸金属 CUDA 环境安装指南 (Ubuntu 22.04)](01_environment/03_cuda_metal_install_guide.md) - 不依赖 Docker/SLURM 的裸金属路线：Ubuntu 22.04 上安装 NVIDIA 驱动、CUDA Toolkit 与 NCCL，附环境验收清单。
 
 ---
 
@@ -74,9 +74,12 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 - **Nsight Systems 看整个系统**：CPU 和 GPU 的时间线、NCCL 集合通信的调度和等待，看谁在等谁。
 - **nvbandwidth 实测带宽**：验证 HBM 和 PCIe 实测带宽是否接近理论上限，以排除硬件或拓扑层面的瓶颈。
 
-- [nvbandwidth 最佳实践](04_profiling/01_nvbandwidth_best_practices.md) - 深入了解和测量 GPU 的显存带宽与 PCIe 传输带宽。
+带宽上不去时，瓶颈常在硬件侧：PCIe 拓扑与 ACS、NVLink 状态、GPUDirect 路径的诊断方法见 [硬件架构模块](../01_hardware_architecture/README.md)（PCIe / NVLink / GPUDirect / DMA 各一节）。
+
+- [nvbandwidth：用法、原理与测试项详解](04_profiling/01_nvbandwidth_best_practices.md) - 测量 GPU 显存与 PCIe 传输带宽，并解读各项测试的适用场景。
 - [GPU 间数据传输方法实测](04_profiling/09_gpu_transfer_methods.md) - 4 种 GPU→GPU 传输方法 A100 实测，从 P2P (249 GB/s) 到 UM (2.1 GB/s)，差距 119×。含交互式可视化。
 - [Profiling 示例代码](04_profiling/code/README.md) - PCIe/HBM/传输效率的可运行 benchmark 集合。
+- 其余 7 篇（PCIe 带宽实测、HBM 带宽、功耗管理、传输效率曲线、ncu/nsys CLI、P2P 带宽）见 [性能分析目录](04_profiling/README.md)。
 
 ---
 
@@ -97,7 +100,7 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 
 ### 5.2 进阶实战
 
-进阶阶段的重心通常放在 Tensor Core MMA、CuTe 布局、寄存器复用，以及 Warp-Specialized 流水这类极致优化技巧上，适合已经熟悉 CUDA 基础、想再抓一点性能的开发者。
+进阶阶段的重心通常放在 Tensor Core MMA、CuTe 布局、寄存器复用，以及 Warp-Specialized 流水这类深度优化技巧上，适合已经熟悉 CUDA 基础、想再抓一点性能的开发者。
 
 - [CUDA-Learn-Notes](https://github.com/xlite-dev/CUDA-Learn-Notes) - 涵盖 200+ 个 Tensor Core/CUDA Core 极致优化内核示例 (HGEMM, FA2 via MMA and CuTe)。
 

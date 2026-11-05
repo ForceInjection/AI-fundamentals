@@ -9,13 +9,13 @@
 ```bash
 nvidia-smi nvlink --status         # 每条 link 的当前带宽 (GB/s)
 nvidia-smi nvlink --capabilities   # P2P / atomics / SLI 能力
-nvidia-smi nvlink --errorcounters  # 链路错误计数器 (Replay/Recovery/CRC)
+nvidia-smi nvlink --errorcounters  # 链路错误计数器（Replay/Recovery/CRC，A100/NVLink 3 口径；NVLink 5 输出字段不同）
 nvidia-smi nvlink --getthroughput d # tx/rx 数据量 (KiB)
 nvidia-smi topo -m                 # GPU 间拓扑矩阵 (NV12/SYS/NODE/PXB)
-nvidia-smi nvlink --resetcounters  # 清零计数器（调试前先复位）
+nvidia-smi nvlink --resetcounters  # 清零计数器（官方已标弃用；NVLink 5 上 --reseterrorcounters 不支持）
 ```
 
-> 消费级 GPU (GeForce RTX 系列) 不支持 NVLink，执行 `nvidia-smi nvlink` 会输出 `Device does not have or support Nvlink`。
+> 现行消费级 GPU（RTX 40 系起）不支持 NVLink，执行 `nvidia-smi nvlink` 会输出 `Device does not have or support Nvlink`（RTX 3090 及更早的部分消费卡有 NVLink）。
 
 ---
 
@@ -82,17 +82,18 @@ GPU 0: NVIDIA A100-SXM4-80GB
 
 ## 4. 拓扑矩阵解读：`nvidia-smi topo -m`
 
-这是诊断多 GPU 系统最重要的命令——它直接告诉你 GPU 对之间走的是 NVLink 还是 PCIe：
+这是诊断多 GPU 系统最重要的命令：它直接告诉你 GPU 对之间走的是 NVLink 还是 PCIe。
 
 ```text
+（节选自实测输出，完整矩阵为 8×8 对称；GPU 7 掉 NVLink 后其余各行/列同步变为非 NV12）
         GPU0  GPU1  GPU2  GPU3  GPU4  GPU5  GPU6  GPU7
-GPU0     X    NV12  NV12  NV12  NV12  NV12  NV12  NV12
-GPU1    NV12   X    NV12  NV12  NV12  NV12  NV12  NV12
-GPU2    NV12  NV12   X    NV12  NV12  NV12  NV12  NV12
-GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  NV12
-GPU4    NV12  NV12  NV12  NV12   X    NV12  NV12  NV12
-GPU5    NV12  NV12  NV12  NV12  NV12   X    NV12  NV12
-GPU6    NV12  NV12  NV12  NV12  NV12  NV12   X    NV12
+GPU0     X    NV12  NV12  NV12  NV12  NV12  NV12  SYS
+GPU1    NV12   X    NV12  NV12  NV12  NV12  NV12  SYS
+GPU2    NV12  NV12   X    NV12  NV12  NV12  NV12  SYS
+GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  SYS
+GPU4    NV12  NV12  NV12  NV12   X    NV12  NV12  NODE
+GPU5    NV12  NV12  NV12  NV12  NV12   X    NV12  NODE
+GPU6    NV12  NV12  NV12  NV12  NV12  NV12   X    PXB
 GPU7    SYS   SYS   SYS   SYS   NODE  NODE  PXB    X
 ```
 
@@ -101,9 +102,9 @@ GPU7    SYS   SYS   SYS   SYS   NODE  NODE  PXB    X
 | 标识     | 含义                                   | 带宽层级          | 延迟      |
 | -------- | -------------------------------------- | ----------------- | --------- |
 | **NV12** | NVLink 3.0 (Ampere), 12 links 全连     | 600 GB/s 双向     | ~μs       |
-| **NODE** | 同一 NUMA node 内，经 PCIe Host Bridge | PCIe 带宽         | ~10-20 μs |
-| **SYS**  | 跨 NUMA node，经 SMP (QPI/UPI)         | PCIe + CPU 间互联 | 更高      |
-| **PXB**  | PCIe Host Bridge 直连                  | PCIe 带宽         | ~10 μs    |
+| **NODE** | 同一 NUMA node 内，经 PCIe Host Bridge | PCIe 带宽         | μs 量级（经验估计） |
+| **SYS**  | 跨 NUMA node，经 CPU 间互连（UPI/xGMI）| PCIe + CPU 间互联 | 更高      |
+| **PXB**  | PCIe Host Bridge 直连                  | PCIe 带宽         | μs 量级（经验估计） |
 
 ### 4.2 GPU 7 异常案例分析
 
@@ -137,7 +138,7 @@ nvidia-smi nvlink --status -i 0      # 预期：12 links × 25 GB/s
 | --------------------------- | ------------------------ | ------------------- |
 | NVSwitch 端口故障           | 仅个别 GPU 断开 NVLink   | 替换 NVSwitch tray  |
 | GPU 基板连接松动            | 拓扑中该 GPU 全部走 SYS  | 重新插拔 GPU tray   |
-| NVLink 桥接器 (bridge) 损坏 | 物理层错误计数器持续增长 | 检查物理连接        |
+| GPU 基板连接器异常          | 物理层错误计数器持续增长 | 检查物理连接（A100 SXM 无独立 bridge） |
 | 固件/驱动版本不匹配         | 所有 link 显示 inactive  | 更新驱动或 GPU 固件 |
 
 > 在本环境中，GPU 7 是 ECC enabled + MIG disabled 状态，且 `nvidia-smi nvlink --status -i 7` 返回空——确认是一个活跃的 NVLink 故障。但 GPU 7 仍通过 PCIe 可用（只是 P2P 带宽会大幅下降）。NCCL 在检测到拓扑后会走 PCIe fallback 路径，不会崩溃但性能会显著下降。
@@ -181,7 +182,7 @@ nvidia-smi nvlink --reseterrorcounters -i 0
 
 # 3. 再次检查
 nvidia-smi nvlink --errorcounters -i 0
-# 如果 Replay > 100 / minute → 链路质量有问题
+# 如果 Replay 增长快（经验阈值 > 100 次/分钟）→ 链路质量有问题
 # 如果 Recovery > 0 → 硬件可能需要更换
 ```
 
@@ -191,12 +192,12 @@ nvidia-smi nvlink --errorcounters -i 0
 
 | 检查项                   | GPU 0-6 (正常)     | GPU 7 (异常) |
 | ------------------------ | ------------------ | ------------ |
-| `nvlink --status`        | 12 links × 25 GB/s | 无输出       |
-| `nvlink --capabilities`  | 全部 true          | 无输出       |
+| `nvlink --status`        | 12 links × 25 GB/s | 无任何 Link 行 |
+| `nvlink --capabilities`  | 全部 true          | 无 Link 行   |
 | `topo -m` 连接类型       | NV12 全互联        | SYS/NODE/PXB |
 | `nvlink --errorcounters` | 全部 0             | N/A          |
 
-**生产环境建议**：部署时通过脚本检查所有 GPU 的 `nvidia-smi nvlink --status`，如果某 GPU 的输出为空，立即告警——这比依赖 NCCL 报错快得多（NCCL 可能在 NVLink 故障时自动回退到 PCIe，不会报错但训练吞吐会腰斩）。
+**生产环境建议**：部署时通过脚本检查所有 GPU 的 `nvidia-smi nvlink --status`，如果某 GPU 的输出为空，立即告警——这比依赖 NCCL 报错快得多（NCCL 可能在 NVLink 故障时自动回退到 PCIe，不会报错，但吞吐会显著下降，取决于并行策略）。
 
 ---
 
