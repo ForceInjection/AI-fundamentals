@@ -63,6 +63,8 @@ Tile-Based 的思路是把数据块（Tile）做为编程单元，把原本需�
 实际的收益很直接：手写高性能 GEMM 或 FlashAttention 这类算子时，之前要难做对的一大堆底层细节，现在能被编译器帮你处理掉一大半，工程门槛明显降低。
 
 - [TileLang 快速入门](03_tilelang/01_tilelang_quick_start.md)
+- [57 行代码的 FlashAttention：TileLang 前向算子源码级拆解](03_tilelang/02_tilelang_flash_attention.md) - online softmax 五状态递推、mask 预填与累加语义的配合，附 H100 实测（248/360 TFLOPs）
+- [把权重压到 4-bit：TileLang 反量化 GEMM 源码级拆解](03_tilelang/03_dequant_gemm_lowprecision.md) - 寄存器与 shared memory 两条反量化路径、LOP3/twiddling 快速解码、wgmma 发射形态实测验证
 
 ---
 

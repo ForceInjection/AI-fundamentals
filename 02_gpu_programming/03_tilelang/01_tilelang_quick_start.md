@@ -2,7 +2,7 @@
 
 TileLang 是 tile-ai 开源的面向 GPU/CPU/NPU 高性能 Kernel 的 DSL，语法是 Python，底层编译器是 TVM TIR。开发者描述数据分块与计算逻辑，分块、流水线、指令选择由编译器完成。
 
-> 本文基于 tilelang v0.1.15（2026-11 核对，commit 8587866）。TileLang 迭代很快（0.1.12 加 LLVM 后端、0.1.13 移除多个旧 API、0.1.15 为当前版），安装要求与 API 以官方仓库为准；文中安装要求在 v0.1.6.post2 之前不同（当时还是 Python 3.8）。
+> 本文基于 tilelang v0.1.15（tag 指向 a35f8ddf；2026-11 核对，当时 main 已推进至 8587866）。TileLang 迭代很快（0.1.12 加 LLVM 后端、0.1.13 移除多个旧 API、0.1.15 为当前版），安装要求与 API 以官方仓库为准；文中安装要求在 v0.1.6.post2 之前不同（当时还是 Python 3.8）。
 
 ## 1. 为什么需要 TileLang？
 

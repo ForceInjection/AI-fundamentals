@@ -143,6 +143,8 @@
 **Tile-Based 编程**：
 
 - [TileLang 快速入门](./02_gpu_programming/03_tilelang/01_tilelang_quick_start.md)：语法详解、算子开发实战与性能优化技巧
+- [57 行代码的 FlashAttention](./02_gpu_programming/03_tilelang/02_tilelang_flash_attention.md)：TileLang 前向算子源码级拆解，online softmax 与软件流水演进，附 H100 实测
+- [把权重压到 4-bit](./02_gpu_programming/03_tilelang/03_dequant_gemm_lowprecision.md)：反量化 GEMM 的两条路径与快速解码指令族，wgmma/TMA 发射形态实测
 
 **性能分析与调优**：
 
