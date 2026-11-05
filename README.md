@@ -20,7 +20,7 @@
 
 - **基础计算芯片架构**
   - [深入理解 GPU 架构](./01_hardware_architecture/nvidia/understand_gpu_architecture/README.md)
-  - [TPU 101：深度学习专用加速器架构解析](./01_hardware_architecture/tpu/tpu%20101.md)
+  - [TPU 101：深度学习专用加速器架构解析](./01_hardware_architecture/tpu/tpu_101.md)
   - [GPGPU vs NPU：大模型推理训练对比](./01_hardware_architecture/nvidia/GPGPU_vs_NPU_大模型推理训练对比.md)
   - [Ascend950 稀疏注意力 Forward 算子与优化技术简析](./01_hardware_architecture/ascend/Ascend950_稀疏注意力Forward算子与优化技术简析.md) — 深度求索官方 950 微架构解析（1 Cube + 2 Vector、L1 双 bank、FixPipe），DSA 稀疏注意力 prefill/decode 优化转载存档
 - **高速互连与数据传输技术**
@@ -52,7 +52,7 @@
   - [理论基础：IB 网络架构与协议](./03_ai_cluster_ops/02_infiniband/01_ib_network_theory.md)
   - [网络运维：健康检查与性能监控实战](./03_ai_cluster_ops/02_infiniband/README.md)
 - **数据中心市场与容量**
-  - [中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](./03_ai_cluster_ops/04_datacenter/china-dc-boom-semianalysis.md) - 逐栋模型精读：双速市场（高空置与 AI 容量短缺并存）、四阶段史、东数西算的配额传导机制与需求侧五家打法
+  - [中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](./03_ai_cluster_ops/05_datacenter/china-dc-boom-semianalysis.md) - 逐栋模型精读：双速市场（高空置与 AI 容量短缺并存）、四阶段史、东数西算的配额传导机制与需求侧五家打法
 - **NCCL 分布式通信测试**
   - [理论基础：NCCL 教程](./03_ai_cluster_ops/03_nccl/01_nccl_theory.md)
   - [实战指南：基准测试与多节点部署](./03_ai_cluster_ops/03_nccl/README.md)

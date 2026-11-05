@@ -128,6 +128,8 @@ Despite the impressive bandwidth of the GPU's global memory, reads or writes fro
 
 尽管 GPU 的全局内存带宽令人印象深刻，但来自个别线程的读写操作具有很高的读写延迟。SM 的共享内存和 L1 缓存可以在一定程度上避免与 DRAM 直接交互的延迟。但在 GPU 编程中，避免与全局内存相关的高延迟惩罚的最佳方法是启动大量的线程。这样，每当另一个 warp 因等待数据而停滞时，至少有一个 warp 能够从指令缓冲区获取其下一个指令并继续执行。这种技术被称为 _延迟隐藏_。
 
+> 译注：原文此句写作 "direct interactions with with DRAM"，"with" 重复，系原文排版笔误，译文按原意（与 DRAM 的直接交互）译出。
+
 Effectively, there is one additional layer of memory that ought to be considered for a GPU: the memory of the host. The need to transfer data between the host and the GPU can place a heavy constraint on the GPU's overall performance—particularly if the GPU is attached to the host via PCIe. Ideally, once the necessary data are transferred to the GPU, they remain there for computations as much as possible.
 
 实际上，对于 GPU 来说，还有一个额外的内存层应该被考虑：主机的内存。主机和 GPU 之间传输数据的需求可能会严重限制 GPU 的整体性能——特别是如果 GPU 通过 PCIe 连接到主机的话。理想情况下，一旦将必要的数据传输到 GPU，它们就尽可能地保留在那里进行计算。

@@ -114,7 +114,7 @@ CUDA_VISIBLE_DEVICES=3,7 ./simpleP2P
 
 P2P 要求 GPU 能直接通过 DMA 访问对方显存，这需要：
 
-- 同一 PCIe domain 内的设备（PIX/NV12）
+- 同一 PCIe 根总线段内的设备（PIX/NV12）
 - ACS (Access Control Services) 已禁用或配置允许 P2P
 - 无 IOMMU 隔离阻止
 

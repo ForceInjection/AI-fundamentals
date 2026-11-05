@@ -15,6 +15,9 @@ NCCL 根据数据量和 GPU 数量自动选择算法：
 | < 32 KB      | Tree               | O(log₂N) 步，延迟最优 | ~5 GB/s                 |
 | 32 KB - 2 MB | Double Binary Tree | 平衡延迟和带宽        | ~50-150 GB/s            |
 | > 2 MB       | Ring               | O(N) 步但带宽高       | **225 GB/s** (NVSwitch) |
+| 大消息       | NVLS               | NVSwitch Gen3 组播在网归约，单遍完成 | —（A100 无 Gen3 Switch，不启用；NVSwitch Gen3 + NCCL 2.17+，即 Hopper 世代起的大消息首选） |
+
+> 注：< 32 KB / 32 KB-2 MB / > 2 MB 三档阈值为 NCCL 2.29.x + A100 8-GPU 环境的实测经验值，不是官方数字。NCCL 按拓扑与消息大小自动选择，版本间会调整。
 
 ### 1.1 Ring AllReduce
 
@@ -31,7 +34,7 @@ GPU 构成二叉树（或经 NVSwitch），归约沿树向上、广播沿树向�
 
 - 8 GPU：3 步完成（vs Ring 的 14 步）
 - 延迟远低于 Ring，尤其适合小数据
-- NVSwitch 硬件做归约（SHARP）：数据在流经 Switch 时被截获归约，仅返回最终结果
+- NVSwitch 硬件做归约（SHARP）：数据在流经 Switch 时被截获归约，仅返回最终结果。注意代际：SHARP/NVLS 需要 NVSwitch Gen3（Hopper 世代起），A100 的 Gen2 Switch 不支持
 
 A100 + NVSwitch 环境下，NCCL 在 > 2 MB 时仍选 Ring，因为 Ring 在 NVSwitch 全连接下也能高效运作。实测 7 GPU bus_bw 达 225 GB/s，与 P2P 单向 239 GB/s 仅差 6%。详见 [NCCL 基准测试方法论](04_nccl_benchmark.md)。
 
@@ -70,9 +73,9 @@ GPU VRAM → NIC (via PCIe, direct DMA) → 网络
 ### 2.2 前置条件
 
 - GPU 支持 GPUDirect RDMA（数据中心 GPU: V100/A100/H100）
-- 网卡支持 PCIe P2P（需在同一 PCIe domain）
+- 网卡支持 PCIe P2P（需与 GPU 在同一 PCIe 根总线段下）
 - `nvidia-smi topo -m` 确认 P2P 能力
-- `NCCL_NET_GDR_LEVEL=2`（启用 GPUDirect 读写）
+- `NCCL_NET_GDR_LEVEL`：限制 GDR 使用的 GPU-NIC 距离上限（GDR 默认已启用，该变量只调上限）；整数仅为兼容保留（`2` = `PXB`），推荐用字符串 `PXB`，即 GPU 与网卡之间最多跨两级 PCIe switch
 
 > 深度阅读：[GPUDirect RDMA 与 Storage 技术详解](../../01_hardware_architecture/gpudirect/01_gpudirect_technology.md) | [GPUDirect P2P 技术详解](../../01_hardware_architecture/gpudirect/02_gpudirect_p2p.md)
 
@@ -81,7 +84,7 @@ GPU VRAM → NIC (via PCIe, direct DMA) → 网络
 GPUDirect P2P 是 CUDA 层的 API（`cudaDeviceEnablePeerAccess`），NVLink 是物理层的高速链路。当一个 GPU 通过 GPUDirect P2P 访问另一个 GPU 时：
 
 - **有 NVLink 时**：走 NVLink（600 GB/s 双向），CUDA 自动优选
-- **无 NVLink 时**：走 PCIe P2P（~32 GB/s Gen4），需同一 PCIe domain
+- **无 NVLink 时**：走 PCIe P2P（~32 GB/s Gen4），需在同一 PCIe 根总线段下
 - **跨 NUMA node**：P2P 不可用，回退到 CPU 中转
 
 > 实测数据：A100 NVLink P2P 单向 239 GB/s，PCIe H2D 约 28 GB/s，差距 8.5 倍。详见 [GPU P2P 带宽实测](../../02_gpu_programming/04_profiling/08_p2p_bandwidth.md)。
@@ -90,7 +93,7 @@ GPUDirect P2P 是 CUDA 层的 API（`cudaDeviceEnablePeerAccess`），NVLink 是
 
 ## 3. NCCL 自动拓扑检测
 
-NCCL 启动时通过 `nvidia-smi topo -m` 和驱动 API 检测 GPU 间连接类型，构建通信拓扑图，为每对 GPU 选择最优路径。
+NCCL 启动时通过 NVML 与 `/sys` 读取总线与 NVLink 拓扑，`nvidia-smi topo -m` 是同一份信息的人工视图；NCCL 据此构建通信拓扑图，为每对 GPU 选择最优路径。
 
 ### 3.1 单节点检测优先级
 
@@ -163,7 +166,7 @@ T_tree = 2log₂(P) × α + 2 × message_size × β
 | 瓶颈类型 | 指标特征                                | 排查工具                         | 优化方向                |
 | -------- | --------------------------------------- | -------------------------------- | ----------------------- |
 | 计算瓶颈 | GPU SM Active > 80%，通信 < 10% 总时间  | `ncu --set basic`                | 优化 kernel，增大 batch |
-| 通信瓶颈 | 通信 > 30% 总时间，网络带宽利用率 > 80% | `nsys profile`, `allreduce_perf` | 换更快网络，减少通信量  |
+| 通信瓶颈 | 通信 > 30% 总时间，网络带宽利用率 > 80% | `nsys profile`, `all_reduce_perf` | 换更快网络，减少通信量  |
 | 内存瓶颈 | HBM 带宽利用率 > 85%，频繁分配/释放     | `dcgmi dmon -e 204`, `ncu`       | 内存池，梯度累计        |
 
 ### 5.2 排查流程
@@ -171,7 +174,7 @@ T_tree = 2log₂(P) × α + 2 × message_size × β
 ```text
 发现问题 → nsys 看 timeline（谁在等谁）
           → 若 CPU 等 GPU → ncu 看 kernel（compute/memory bound）
-          → 若 GPU 等通信 → allreduce_perf 测带宽 → 对照 topo 拓扑
+          → 若 GPU 等通信 → all_reduce_perf 测带宽 → 对照 topo 拓扑
           → 若等网络 IO → ib_write_bw 测 RDMA → 检查交换机/线缆
 ```
 
@@ -190,7 +193,7 @@ T_tree = 2log₂(P) × α + 2 × message_size × β
 重叠方式：Layer N 反向 ∥ AllReduce 梯度（异步启动，不等结果）
 ```
 
-重叠效率 = `min(T_compute, T_comm) / max(T_compute, T_comm)`。理想情况下 T_total = max(T_compute, T_comm)。PyTorch DDP 默认开启 `gradient_as_bucket_view` 实现此优化。
+重叠效率 = `min(T_compute, T_comm) / max(T_compute, T_comm)`。理想情况下 T_total = max(T_compute, T_comm)。注意：PyTorch DDP 的反向/通信重叠默认来自 bucket 机制（按 bucket 切分梯度、边算边传），`gradient_as_bucket_view` 参数默认为 False，与该重叠机制无关。
 
 ### 6.2 梯度压缩
 
@@ -245,7 +248,7 @@ NCCL 将 AllReduce 拆分为异步流水线：
 
 ### 7.3 缓存与一致性
 
-- L1 (128 KB/SM，可配置为 Shared Memory) 和 L2 (A100 40 MB) 被 NCCL 用于缓冲小块数据
+- 统一 L1/Shared Memory（A100 为 192 KB/SM）和 L2 (A100 40 MB) 被 NCCL 用于缓冲小块数据
 - GPU 使用弱一致性模型，NCCL 在需要时通过 `__threadfence_system()` 确保跨 GPU 可见性
 - GPUDirect RDMA 涉及 PCIe 的 DMA 一致性，需 BAR1 映射正确配置
 
@@ -276,8 +279,8 @@ NCCL 将 AllReduce 拆分为异步流水线：
 ### 8.3 容错策略
 
 - **检查点机制**：定期保存模型参数 + 优化器状态 + 通信拓扑快照，支持从故障恢复
-- **弹性训练**：NCCL 2.9+ 支持动态节点加入/离开（需框架配合，如 TorchElastic）
-- **故障隔离**：检测到某个 GPU 的 NVLink/PCIe 异常后，NCCL 自动将该 GPU 降级到 fallback 路径而不影响其他 GPU
+- **弹性训练**：NCCL 本身不支持 communicator 运行中的动态成员变更（拓扑在初始化时定型）。节点加入/离开靠上层框架（如 TorchElastic）在成员变化时重启进程、重建 communicator
+- **故障隔离**：NCCL 不做单 GPU 降级。初始化阶段探测到异常路径会直接报错退出，通信中的链路异常会置 communicator 为错误态；恢复都需要上层重建 communicator
 
 ---
 

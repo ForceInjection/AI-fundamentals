@@ -1,8 +1,8 @@
 # InfiniBand 网络理论与实践
 
 > 作者：Grissom
-> Version：1.2
-> Updated Date：2025/7/29
+> Version：1.3
+> Updated Date：2026/11/5
 
 ## 术语定义
 
@@ -202,6 +202,7 @@
 - **单通道速率**: 每个物理通道的原始数据速率
 - **x4 链路**: InfiniBand 标准链路配置，使用 4 个物理通道
 - **有效带宽**: 扣除编码开销后的实际可用带宽
+- **HDR/NDR 行口径**: 表中 HDR 200 Gbps / NDR 400 Gbps 为含 RS-FEC 前向纠错开销后的官方有效带宽；上面的公式只体现 64b/66b 编码效率（不含 RS-FEC），因此对 HDR/NDR 会算出偏高的数值（如 NDR：425 × 96.97% ≈ 412 Gbps ≠ 400 Gbps），对 XDR 则恰好吻合（800 × 96.97% ≈ 775.76 Gbps）
 - **适配器延迟**: 网络适配器的硬件处理延迟，不包括传输延迟和应用层处理时间
 - **编码效率**: 8b/10b 编码效率为 80%，64b/66b 编码效率为 96.97%
 - **PAM-4**: Pulse Amplitude Modulation 4-level，四电平脉冲幅度调制
@@ -400,11 +401,14 @@ InfiniBand 支持多达 **16** 个虚拟通道 (VL0-VL15)，其中：
    **配置示例**:
 
    ```text
-   # OpenSM 配置文件示例
-   vl_arb_high_limit_0 40    # VL0 高优先级权重
-   vl_arb_high_limit_1 30    # VL1 高优先级权重
-   vl_arb_low_limit_0 20     # VL0 低优先级权重
-   vl_arb_low_limit_1 10     # VL1 低优先级权重
+   # OpenSM 配置文件（opensm.conf）QoS 相关键示例
+   # 键名以 opensm.conf(5) 为准（opensm 源码 osm_subnet.c 的选项表）：
+   # qos_high_limit / qos_vlarb_high / qos_vlarb_low / qos_sl2vl，
+   # 另有按设备类型细分的 qos_ca_* / qos_sw0_* / qos_swe_* / qos_rtr_* 变体
+   qos_high_limit  0             # VL high priority 门限
+   qos_vlarb_high  0:40,1:30     # VL 仲裁表 high 段（VL:权重 对）
+   qos_vlarb_low   0:20,1:10     # VL 仲裁表 low 段
+   qos_sl2vl       0,1,2,3       # SL 到 VL 映射表（逐 SL 给出目标 VL）
    ```
 
 2. **死锁避免机制**
@@ -485,8 +489,8 @@ InfiniBand 支持多达 **16** 个虚拟通道 (VL0-VL15)，其中：
 
 ```bash
 # 查看当前 VL 配置
-ibstat -v                    # 显示 VL 能力
-perfquery -a                 # 查看各 VL 性能计数器
+ibstat                       # 查看设备与端口状态（ibstat 仅支持 -l/-s/-p/-h/-V，没有 -v 选项）
+perfquery -a                 # 查询子网内所有端口的 PM 性能计数器（按端口计数，不分 VL）
 
 # OpenSM VL 配置
 opensm -c /etc/opensm/opensm.conf  # 使用自定义 VL 配置
@@ -618,18 +622,18 @@ InfiniBand 网络需要子网管理器 (Subnet Manager, SM) 进行集中管理�
 1. **单 SM 模式**
 
    ```bash
-   # 启动主 SM
-   sudo opensm -D 0x2c903000a0b1c
+   # 启动主 SM（-g 指定绑定的本地端口 GUID；注意 -D 是日志/调试标志位，不是绑 GUID）
+   sudo opensm -g 0x2c903000a0b1c
    ```
 
 2. **主备 SM 模式 (Master/Standby)**
 
    ```bash
    # 主 SM (优先级 15)
-   sudo opensm -p 15 -D 0x2c903000a0b1c
+   sudo opensm -p 15 -g 0x2c903000a0b1c
 
    # 备 SM (优先级 10)
-   sudo opensm -p 10 -D 0x2c903000a0b1d
+   sudo opensm -p 10 -g 0x2c903000a0b1d
    ```
 
 3. **多 SM 高可用模式**
@@ -693,7 +697,9 @@ InfiniBand 网络需要子网管理器 (Subnet Manager, SM) 进行集中管理�
 
 ```bash
 # 启用自适应路由 (OpenSM)
-sudo opensm -R ftree -Q 1 -P 0x0001
+# -R 选择路由引擎（ftree = fat tree 优化路由）；-Q 无参数，含义是启用 QoS 配置；
+# -P 接的是分区配置文件路径，不是分区号——不要写 -P 0x0001 这类值
+sudo opensm -R ftree -Q
 
 # 获取端口连接报告 (显示 LID、端口号、GUID、链路宽度、速度等信息)
 sudo ibnetdiscover -p | grep -E "Switch|CA"
@@ -750,7 +756,7 @@ sudo ibstatus
   - 关键应用 (如 MPI) 使用高优先级 VL
   - 存储流量使用中等优先级 VL
   - 管理流量使用最高优先级 VL15
-  - 支持 8 个服务级别 (SL0-SL7)
+  - 支持 16 个服务级别 (SL0-SL15，SL 字段 4 bits)，经 SL→VL 映射落到 16 个 VL 上（见 §1.3.3）
 
 - **流量隔离**:
   - 不同租户使用独立的 VL
@@ -760,14 +766,16 @@ sudo ibstatus
 **VL 配置示例**:
 
 ```bash
-# 配置 VL 映射
-sudo opensm -Q 1 -V 4  # 启用 4 个 VL
+# VL 数量与 SL2VL/VL 仲裁映射不在命令行上配，统一走 opensm.conf：
+# qos_sl2vl（SL→VL 映射表）、qos_vlarb_high / qos_vlarb_low（VL 仲裁表）、
+# qos_high_limit（high priority 门限）等 qos_* 键；改完重启 opensm 生效
+sudo nano /etc/opensm/opensm.conf
 
-# 查看 VL 配置
+# -Q 无参数（启用 QoS 配置）；-V 也无参数（日志级别直接开到 0xFF 全开）
+sudo opensm -Q -V
+
+# 查看 VL 仲裁配置
 sudo saquery -g | grep VLArb
-
-# 配置 SL 到 VL 映射
-echo "0,1,2,3,4,5,6,7" > /etc/opensm/sl2vl.conf
 ```
 
 #### 1.5.4 硬件级别容错
@@ -849,6 +857,8 @@ sudo mlxlink -d /dev/mst/mt4119_pciconf0 -p 1 --eye
 
 #### 1.5.6 性能指标与 SLA
 
+> 注：本节列出的可用性、MTBF/MTTR、故障检测/恢复、延迟抖动、丢包率与负载均衡效率均为**工程经验值**（容量规划与运维基准参考口径），不是 IBTA 规范值，也不是厂商质保数字；SLA 以具体采购合同与设备规格书为准。
+
 **可用性指标**:
 
 - **网络可用性**: 99.99% (年停机时间 < 53 分钟)
@@ -917,7 +927,7 @@ ib_write_bw -d mlx5_0 -i 1 -s 1048576
 
 #### 2.1.1 NVIDIA (原 Mellanox)
 
-NVIDIA 是 InfiniBand 市场的领导者，在 2025 年继续保持主导地位。根据最新市场数据，NVIDIA 在 InfiniBand 网络设备市场占据主导地位，其 InfiniBand 产品销售额在 2025 年第一季度达到 27.1 亿美元，占其网络业务收入的 85.5% [8]：
+NVIDIA 是 InfiniBand 市场的领导者，在 2025 年继续保持主导地位。根据第三方市场数据，NVIDIA 在 InfiniBand 网络设备市场占据主导地位，其 InfiniBand 产品销售额在 2025 财年第一季度（2024 年 2-4 月）达 27.1 亿美元，占其网络业务收入的 85.5% [8]（第三方估算口径，非 NVIDIA 财报直接披露；数字随季度更新，引用前请以 NVIDIA 最新 10-Q 复核）：
 
 **ConnectX 系列**:
 
@@ -995,10 +1005,10 @@ VPI 网卡可以根据网络环境动态切换协议：
 # 查看当前协议
 ibv_devinfo | grep link_layer
 
-# 方法一: 传统切换 (需要重启)
-echo eth > /sys/class/infiniband/mlx5_0/ports/1/link_layer
+# 注意：/sys/class/infiniband/mlx5_0/ports/1/link_layer 是只读属性，
+# 只反映固件/驱动当前的选择，不能 echo 写入，改它切换不了协议
 
-# 方法二: 动态切换 (推荐，无需重启)
+# 协议切换只有 mlxconfig 一条路（写固件配置 + 重载驱动/重启生效）
 mlxconfig -d /dev/mst/mt412* set LINK_TYPE_P1=ETH
 mlxconfig -d /dev/mst/mt412* set LINK_TYPE_P2=ETH
 
@@ -1047,6 +1057,7 @@ sudo apt install -y perftest
 
 ```bash
 # 下载 MLNX_OFED (以 Ubuntu 22.04 为例，请访问官网获取最新版本)
+# 24.10-0.7.0.0 是 24.10 系列的正式 GA 版本（2024 年 11 月发布），下载 URL 已验证可达（2026-11-05 复核）
 wget https://www.mellanox.com/downloads/ofed/MLNX_OFED-24.10-0.7.0.0/MLNX_OFED_LINUX-24.10-0.7.0.0-ubuntu22.04-x86_64.tgz
 
 # 解压安装包
@@ -1087,12 +1098,14 @@ network:
     ib0:
       addresses:
         - 192.168.100.10/24
-      gateway4: 192.168.100.1
+      routes:
+        - to: default
+          via: 192.168.100.1
       nameservers:
         addresses:
           - 8.8.8.8
           - 8.8.4.4
-      mtu: 2044 # IPoIB 数据报模式标准 MTU (受 LLC 层限制)
+      mtu: 2044 # IPoIB 数据报模式标准 MTU (IB MTU 2048 减 4 字节 IPoIB 头)
       # 注意: IPoIB 连接模式下 MTU 可达 65520 字节
       optional: true
 ```
@@ -1119,10 +1132,6 @@ sudo ip link set ib0 mtu 2044  # 数据报模式标准 MTU
 
 # 添加路由
 sudo ip route add 192.168.100.0/24 dev ib0
-
-# 注意: IPoIB 连接模式下 MTU 可达 65520 字节，但需要特殊配置
-# sudo modprobe ib_ipoib send_queue_size=128 recv_queue_size=512
-# sudo modprobe ib_ipoib send_queue_size=128 recv_queue_size=512
 ```
 
 #### 3.2.2 RoCE 配置
@@ -1133,11 +1142,14 @@ sudo ip route add 192.168.100.0/24 dev ib0
 # 检查 Link Layer 类型
 ibv_devinfo | grep link_layer
 
-# 配置 RoCE v2 (推荐)
-echo "RoCEv2" | sudo tee /sys/class/infiniband/mlx5_0/ports/1/gid_attrs/types/3
+# RoCE v2 判定：由驱动按端口 netdev 类型自动完成（gid_attrs/types 是只读的 sysfs 枚举数字，
+# RoCE v2 对应值 2），不要 echo 写入，也不需要手工配置
 
-# 启用流量控制
-sudo ethtool -A eth0 rx on tx on
+# 无损网络配置（PFC + ECN，对应 §1.3.2 技术注释 5）：
+# PFC 用 mlnx_qos 配 802.1Qbb 优先级流控（示例对第 4、5 优先级开 PFC），并设置优先级信任模式
+sudo mlnx_qos -i eth0 --trust dscp --pfc 0,0,0,0,1,1,0,0
+# ECN 由交换机侧拥塞标记 + 网卡侧响应配合完成
+# 注意：ethtool -A rx on tx on 是 802.3x 全局 pause，不是 PFC；RoCE 无损配置不使用它
 
 # 设置 Jumbo Frame
 sudo ip link set eth0 mtu 9000
@@ -1298,8 +1310,11 @@ ibroute
 #### 4.1.3 连通性测试
 
 ```bash
-# 测试到指定 LID 的连通性
-ibping -S <source_lid> -D <dest_lid>
+# 连通性测试（ibping 分两端）：
+#   目标机（服务端）先跑:  ibping -S
+#   本机（客户端）按 LID 打: ibping -L <dest_lid>   （或按端口 GUID: ibping -G <port_guid>）
+#   注意 -S/--Server 是服务端模式，不是源地址；rdma-core 版 ibping 没有 -D 选项
+ibping -L <dest_lid>
 
 # 路径追踪
 ibtracert <source_lid> <dest_lid>
@@ -1457,8 +1472,10 @@ sudo systemctl status opensm
 # 配置子网管理器
 sudo nano /etc/opensm/opensm.conf
 
-# 重新扫描网络
-sudo opensm -R
+# 指定路由算法启动（-R 选择 routing engine，如 ftree/up-dn；不是"重新扫描"）
+sudo opensm -R ftree
+# 拓扑变化由 SM 周期性 sweep 自动捕捉（opensm.conf 的 sweep_interval，默认 10 秒），
+# 不存在也不需要"手动 rescan"命令
 ```
 
 #### 4.3.2 虚拟化配置
@@ -1570,26 +1587,27 @@ ib_send_lat <server_ip>
 ```bash
 # 使用硬件时间戳的高精度测试
 ib_send_lat -d mlx5_0 -i 1 -s 64 -n 100000 \
-  --use_event --cpu_util
+  -e --cpu_util
 
 # 参数说明:
 # -s 64        : 64 字节小消息
 # -n 100000    : 大量迭代确保统计准确性
-# --use_event  : 使用事件驱动模式
+# -e           : 事件驱动模式（等完成事件，替代轮询；perftest 没有 --use_event 这个长选项）
 # --cpu_util   : 监控 CPU 使用率
 ```
 
 **延迟分布分析**:
 
 ```bash
-# 生成延迟分布直方图
-ib_send_lat -s 64 -n 1000000 --output=histogram > latency_hist.txt
+# 生成延迟分布数据（-H/--report-histogram 打印全部样本，格式：序号, 延迟[usec]；
+# --output 只接受 bandwidth/message_rate/latency，没有 histogram 取值）
+ib_send_lat -s 64 -n 1000000 -H > latency_hist.txt
 
-# 分析结果
-echo "延迟统计分析:"
-echo "平均延迟: $(grep 'Average' latency_hist.txt)"
-echo "99%分位: $(grep '99.00' latency_hist.txt)"
-echo "99.9%分位: $(grep '99.90' latency_hist.txt)"
+# 分析结果（文件末两行是表头 + 汇总行，含 t_min/t_avg/t_stdev 与 99%/99.9% 分位）
+echo "延迟汇总:"
+tail -n 2 latency_hist.txt
+echo "延迟样本分布（前 5 个采样点）:"
+grep -E "^[0-9]+, " latency_hist.txt | head -5
 ```
 
 #### 4.4.3 RDMA 性能测试
@@ -1659,6 +1677,8 @@ wait
 | **Send/Recv 延迟**  | 64B      | < 0.8 μs   | 事件驱动模式         |
 | **原子操作延迟**    | 8B       | < 0.9 μs   | 硬件原子支持         |
 
+> 注：表中延迟为网卡硬件口径（adapter latency，消息不离开网卡）。perftest 实测是端到端口径（含软件栈、PCIe 往返），64B 消息一般在 1.x μs 量级。对比数字前先确认口径一致。
+
 **性能调优检查清单**:
 
 1. **NUMA 绑定**: 确保进程和内存在同一 NUMA 节点
@@ -1671,8 +1691,9 @@ wait
 **PCIe 瓶颈说明**:
 
 ```plaintext
-PCIe 4.0 x16 带宽 ≈ 64 GB/s → 理论上可支撑单端口 NDR 400Gbps (50 GB/s)，但双端口会受限
-解决方案：使用 PCIe 5.0 或 OCP NIC 3.0 接口
+PCIe 5.0 x16 带宽 ≈ 64 GB/s → 可支撑单端口 NDR 400Gbps (50 GB/s)，双端口会受限
+PCIe 4.0 x16 ≈ 32 GB/s → 单口 HDR (25 GB/s) 尚可，双口 HDR 吃紧；NDR 单口已不够
+（ConnectX-7 本身是 PCIe 5.0 设备，主机插槽也要 PCIe 5.0 才能跑满）
 
 PCIe 版本对比 (x16 通道理论单向带宽):
 - PCIe 3.0 x16: ~16 GB/s (支持 EDR 100Gbps)
@@ -1777,7 +1798,7 @@ GPUDirect RDMA 是 GPU 与 InfiniBand 高效集成的关键技术：
 **软件栈**：
 
 - CUDA 驱动：支持 GPUDirect 的版本
-- MLNX_OFED：包含 nvidia_peermem 模块
+- NVIDIA 驱动自带的 `nvidia-peermem` 模块（内存注册入口在 GPU 驱动侧；MLNX_OFED 提供的是内核 RDMA 基础设施，早期 `nv_peer_mem` 随 OFED 分发，现已由 NVIDIA 驱动内置模块取代）
 - NCCL：GPU 集群通信库
 - 应用框架：PyTorch、TensorFlow 等
 
@@ -1807,7 +1828,7 @@ python3 -c "import torch; print(torch.cuda.nccl.version())"
 ```bash
 # 核心配置：启用 InfiniBand 和 GPUDirect
 export NCCL_IB_DISABLE=0             # 启用 InfiniBand
-export NCCL_NET_GDR_LEVEL=2          # 启用 GPUDirect RDMA
+export NCCL_NET_GDR_LEVEL=2          # GDR 的 GPU-NIC 距离上限，2 = PXB（GDR 默认已启用；推荐写 "PXB"）
 export NCCL_IB_HCA=mlx5_0            # 指定 IB 设备
 
 # 调试配置：问题排查时使用
@@ -1996,13 +2017,13 @@ perfquery -a | grep -E "Error|Discard" | grep -v ": 0"
 
 ## 6. 总结
 
-InfiniBand 网络技术作为高性能计算和 AI 训练的核心基础设施，其理论理解和实践应用都至关重要。本文档从 InfiniBand 的基本原理出发，详细介绍了网卡选型、配置方法、常用命令，以及在 GPU 场景下的特殊应用。
+高性能计算和 AI 训练集群的节点间通信，大多跑在 InfiniBand 上。本文档从 InfiniBand 的基本原理出发，详细介绍了网卡选型、配置方法、常用命令，以及在 GPU 场景下的特殊应用。
 
 ### 6.1 关键要点
 
 1. **技术理解**: InfiniBand 提供了比传统以太网更优越的性能特性，特别是在延迟和 CPU 开销方面
 2. **硬件选择**: NVIDIA ConnectX 系列是目前市场主流，支持 VPI 技术可以灵活适应不同网络环境
-3. **配置优化**: 正确的驱动安装、网络配置和性能调优对发挥 InfiniBand 性能至关重要
+3. **配置优化**: 驱动安装、网络配置、性能调优三步都做到位，才能跑出接近硬件指标的性能
 4. **GPU 集成**: GPUDirect RDMA 和 NCCL 的正确配置是 AI 训练集群的关键
 5. **监控维护**: 定期的健康检查和性能监控有助于及早发现和解决问题
 

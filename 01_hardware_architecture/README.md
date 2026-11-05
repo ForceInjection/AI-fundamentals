@@ -55,7 +55,7 @@ AI 加速器大致沿两条路线发展。一条是以 **NVIDIA GPU** 为代表�
 
 TPU 是 Google 为深度学习量身打造的另一条路径。它的核心思想是用**脉动阵列（Systolic Array）**把矩阵乘法做到极致，以换取在特定负载下远高于通用 GPU 的能效比。
 
-- **[TPU 101：深度学习专用加速器架构解析](tpu/tpu%20101.md)**：探索 TPU 的设计哲学、核心计算单元原理及其与 GPU 的差异。
+- **[TPU 101：深度学习专用加速器架构解析](tpu/tpu_101.md)**：探索 TPU 的设计哲学、核心计算单元原理及其与 GPU 的差异。
 
 ### 2.3 CPU 矩阵加速：AMX
 
@@ -143,19 +143,20 @@ Blackwell 代际把 AI 机器边界从“单机”推到“机架级单域”：
 
 互连拓扑的最终落脚点是性能：GPU 插在哪个 PCIe 槽、属于哪个 NUMA node，直接影响 H2D/D2H 带宽和跨 socket 延迟。
 
-- **[单卡 GPU 拓扑与 NUMA 深入分析](performance/02_single_gpu_topology_analysis.md)**：单 GPU 场景下 `nvidia-smi topo -m` 输出解读、NUMA 亲和性验证与跨 socket 延迟分析（含 taskset 实测数据）。
-- **[多 PCIe Domain 与 NUMA 映射](performance/04_pcie_domain_numa.md)**：Sapphire Rapids 多 domain 架构、BDF 编码的 NUMA 推断、跨 socket PCIe 访问的性能评估。
+- **[单卡 GPU 拓扑与 NUMA 分析](performance/02_single_gpu_topology_analysis.md)**：单 GPU 场景下 `nvidia-smi topo -m` 输出解读、NUMA 亲和性验证与跨 socket 延迟分析（含 taskset 实测数据）。
+- **[多 PCIe 根总线段与 NUMA 映射](performance/04_pcie_domain_numa.md)**：Sapphire Rapids 多根总线段架构、BDF 编码的 NUMA 推断、跨 socket PCIe 访问的性能评估。
 
 ### 5.3 性能参考指标
 
 系统访问延迟跨越 **5–6 个数量级**，是 KV Cache 分层、容量规划、集合通信调度的决策基准——**“别让热数据跑到慢介质上”**：
 
-| 层级        | 延迟量级 | 相对寄存器倍数 |
-| ----------- | -------- | -------------- |
-| 寄存器 / L1 | ~1 ns    | 1×             |
-| HBM         | ~100 ns  | ~100×          |
-| 跨节点 RDMA | ~2 μs    | ~2,000×        |
-| NVMe 存储   | ~100 μs  | ~100,000×      |
+| 层级            | 延迟量级                           | 相对寄存器倍数 |
+| --------------- | ---------------------------------- | -------------- |
+| 寄存器 / L1     | ~1 ns                              | 1×             |
+| NVLink 硬件 hop | ~100 ns 级（含软件栈端到端 ~2 μs） | ~100×          |
+| HBM             | ~250-350 ns（HBM3）                | ~250-350×      |
+| 跨节点 RDMA     | ~2 μs                              | ~2,000×        |
+| NVMe 存储       | ~100 μs                            | ~100,000×      |
 
 - **[HBM 显存技术演进](performance/01_hbm_evolution.md)**：从 HBM2 到 HBM3e 的技术迭代，A100 HBM2e vs RTX 5090 GDDR7 实测对比，含 3D 封装原理与 L2 Cache 加速效应。
 - **[AI 基础设施延迟金字塔](performance/ai_latency_pyramid.md)**：寄存器→内存→跨节点网络的各级延迟基准。

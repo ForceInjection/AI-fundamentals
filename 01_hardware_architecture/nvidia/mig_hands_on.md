@@ -1,6 +1,6 @@
 # MIG 配置与实操
 
-> 基于 A100-SXM4-80GB (GPU 7, MIG Enabled) 的现场查询数据。MIG (Multi-Instance GPU) 将一张物理 A100 切分为最多 7 个独立 GPU 实例——每个有专用 SM、显存、L2 Cache 和内存带宽。本文覆盖查询、启用/禁用、创建实例的全流程，基于 `nvidia-smi mig` 命令集，不执行任何变更操作。
+> 基于 A100-SXM4-80GB (GPU 7, MIG Enabled) 的现场查询数据。MIG (Multi-Instance GPU) 将一张物理 A100 切分为最多 7 个独立 GPU 实例，每个实例有专用 SM、显存、L2 Cache 和内存带宽切片。本文覆盖查询、启用/禁用、创建实例的全流程，基于 `nvidia-smi mig` 命令集，不执行任何变更操作。
 
 ---
 
@@ -14,7 +14,7 @@
 | 算力隔离 | GPU 时间片 (MPS)   | 无故障隔离，kernel 可能被阻塞 |
 | QoS 保证 | 靠调度器优先级     | 无法保证延迟 SLO              |
 
-**MIG 的解决方案**：在硬件层将一张 GPU 物理分区——每个实例有独立的内存通道、SM 集合、L2 Cache 分片和显存控制器。
+**MIG 的解决方案**：在硬件层将一张 GPU 物理分区，每个实例获得专用的 SM 集合、L2 Cache 分片、显存容量与带宽切片和显存控制器（带宽切片不等于独立物理内存通道）。
 
 ```text
                     A100-80GB (MIG Disabled)
@@ -113,7 +113,7 @@ CUDA_VISIBLE_DEVICES=7 ./check_device
 # 输出: CUDA device count: <错误码>
 ```
 
-**解读**：MIG Enabled 但没有任何 GI（GPU Instance）被创建时，该 GPU 对 CUDA 应用**完全不可见**。这是 MIG 与普通模式的本质区别——必须创建至少一个 GI，CUDA 才能"看到"这个 GPU。
+**解读**：MIG Enabled 但没有任何 GI（GPU Instance）被创建时，该 GPU 对 CUDA 应用**完全不可见**。这是 MIG 与普通模式的本质区别：必须创建至少一个 GI，CUDA 才能"看到"这个 GPU。
 
 ---
 
@@ -134,9 +134,10 @@ nvidia-smi -i <GPU_ID> --query-gpu=mig.mode.current,mig.mode.pending --format=cs
 # 步骤 3：创建 GPU Instance (GI)
 nvidia-smi mig -i <GPU_ID> -cgi 19,19,14  # 创建 2×1g.10gb + 1×2g.20gb
 # 这里 19,14 是 profile ID (从 --list-gpu-instance-profiles 获取)
+# 创建后按顺序分配 GI ID：0, 1, 2
 
 # 步骤 4：创建 Compute Instance (CI)
-nvidia-smi mig -i <GPU_ID> -cci 0,0,0  # 为每个 GI 各创建 1 个 CI
+nvidia-smi mig -i <GPU_ID> -cci 0 -gi 0,1,2  # 在 GI 0/1/2 中各创建 1 个 CI（CI profile 0）
 ```
 
 **完整流程**：Enable MIG → Create GI → Create CI → CUDA 可见。GI 定义资源划分，CI 是可被 CUDA 程序使用的实例。
@@ -162,7 +163,7 @@ nvidia-smi mig -i <GPU_ID> --list-gpu-instances
 nvidia-smi mig -i <GPU_ID> --list-compute-instances
 
 # 销毁特定 CI
-nvidia-smi mig -i <GPU_ID> -dci -ci 0,0
+nvidia-smi mig -i <GPU_ID> -dci -gi 0 -ci 0  # 销毁 GI 0 中的 CI 0
 
 # 销毁特定 GI 及其 CI
 nvidia-smi mig -i <GPU_ID> -dgi -gi 0
@@ -192,7 +193,7 @@ nvidia-smi mig -i <GPU_ID> -dgi -gi 0
 | NVLink            | NV12 全互联               | 无（走 PCIe SYS）          |
 | 当前显存使用      | 130 MiB                   | 0 MiB                      |
 
-> **GPU 7 同时失去 NVLink 和 MIG Enabled 但无实例**——在 NCCL 拓扑中被标记为仅 PCIe 可达，且在 CUDA 中不可见。这是实验室环境中的典型配置：专门留给 MIG 实验而不影响训练 GPU。
+> **GPU 7 同时失去 NVLink，处于 MIG Enabled 但未创建实例的状态**：在 NCCL 拓扑中被标记为仅 PCIe 可达，且在 CUDA 中不可见。这是实验室环境中的典型配置：专门留给 MIG 实验而不影响训练 GPU。
 
 ---
 

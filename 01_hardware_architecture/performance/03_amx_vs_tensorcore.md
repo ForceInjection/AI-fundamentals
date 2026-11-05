@@ -33,22 +33,24 @@ lscpu | grep -E "amx_bf16|amx_tile|amx_int8"
 
 ### 2.1 硬件规格
 
-| 维度      | Intel AMX (SPR)      | NVIDIA Tensor Core (RTX 5090) |
-| --------- | -------------------- | ----------------------------- |
-| 架构      | Sapphire Rapids      | Blackwell                     |
-| FP32 核心 | AVX-512 (1×512b FMA) | CUDA Cores (170 SM × 128)     |
-| 矩阵加速  | AMX tile (8×1KB)     | 5th Gen Tensor Core           |
-| BF16 算力 | ~1.5 TFLOPS/socket   | 数百 TFLOPS (未公开)          |
-| INT8 算力 | ~3 TOPS/socket       | 数百 TOPS                     |
-| 内存      | DDR5, ~480 GB/s      | GDDR7, 1792 GB/s              |
-| 功耗      | 350W/socket          | 575W                          |
-| 延迟      | 极低 (无 PCIe 开销)  | 需经 PCIe 传输数据            |
+| 维度      | Intel AMX (SPR)                 | NVIDIA Tensor Core (RTX 5090)    |
+| --------- | ------------------------------- | -------------------------------- |
+| 架构      | Sapphire Rapids                 | Blackwell                        |
+| FP32 核心 | AVX-512 (2×512b FMA)            | CUDA Cores (170 SM × 128)        |
+| 矩阵加速  | AMX tile (8×1KB)                | 5th Gen Tensor Core              |
+| BF16 算力 | ~106-130 TFLOPS/socket (估算*)  | ~209.5 TFLOPS dense (官方规格页) |
+| INT8 算力 | ~200+ TOPS/socket (估算*)       | 数百 TOPS                        |
+| 内存      | DDR5, ~307 GB/s (8 通道)        | GDDR7, 1792 GB/s                 |
+| 功耗      | 350W/socket                     | 575W                             |
+| 延迟      | 极低 (无 PCIe 开销)             | 需经 PCIe 传输数据               |
+
+\* AMX 算力按每核峰值模型估算：每核 1024 BF16 FLOP/cycle（Intel 官方口径，约 16× AVX-512 FP32），8470Q 52 核 × 2.0-2.4 GHz 得 ~106-130 TFLOPS/socket，INT8 翻倍约 200+ TOPS。未找到 8470Q 的直接实测数据。DDR5 侧 8 通道 DDR5-4800 理论带宽约 307 GB/s/socket；~480 GB/s 需 12 通道，是 Granite Rapids 级别。
 
 ### 2.2 适用场景
 
 | 场景                    | 推荐              | 原因                      |
 | ----------------------- | ----------------- | ------------------------- |
-| 大规模矩阵乘 (GEMM)     | GPU Tensor Core   | 算力高 2-3 个数量级       |
+| 大规模矩阵乘 (GEMM)     | GPU Tensor Core   | BF16 dense 算力约 2-4 倍，同一数量级 |
 | 小 batch 推理 (< 4)     | CPU AMX           | 避免 PCIe 往返延迟        |
 | 实时性要求高            | CPU AMX           | 确定性延迟，无 PCIe       |
 | 训练大批次              | GPU Tensor Core   | 高吞吐                    |
@@ -143,20 +145,20 @@ taskset -c 52-103,156-207 ./hybrid_amx_cuda_program
 ## 5. 何时使用 AMX，何时用 GPU
 
 ```text
-        小 batch ➡️ CPU AMX
+        小 batch → CPU AMX
         ↓
-推理    大 batch ➡️ GPU Tensor Core
+推理    大 batch → GPU Tensor Core
         ↓
-        实时 < 1ms ➡️ CPU AMX
+        实时 < 1ms → CPU AMX
         ↓
-训练    微调 ➡️ GPU Tensor Core
+训练    微调 → GPU Tensor Core
         ↓
-        预训练 ➡️ GPU Tensor Core (唯一选择)
+        预训练 → GPU Tensor Core (唯一选择)
 ```
 
 核心决策因素：
 
-1. **batch size**：AMX 优势体现在小 batch，大 batch 时 GPU 的吞吐优势压倒一切
+1. **batch size**：AMX 优势体现在小 batch，大 batch 时 GPU 的吞吐明显更高
 2. **实时性**：AMX 的延迟可预测（~μs 级），GPU 需经 PCIe + kernel launch（~10-50μs）
 3. **现有架构**：如果管线已经在 CPU 上完成 tokenize/prefill，加 AMX 推理比引入 GPU 改动小
 

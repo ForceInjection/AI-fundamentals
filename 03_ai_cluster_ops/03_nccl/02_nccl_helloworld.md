@@ -1,6 +1,8 @@
 # NCCL 单卡验证指南
 
 > 本文提供一个最简 NCCL 验证程序，无需多卡、无需 Docker、无需 InfiniBand，在单张 GPU 上即可验证 NCCL 安装和基本功能。
+>
+> as-of 2026-11-05：验证环境为 libnccl2 v2.29.3（Ubuntu apt 安装）+ A100-SXM4-80GB 单卡，宿主驱动版本文中未记录；命令与输出格式随 NCCL/CUDA 版本变化不大，版本号以实际安装为准。
 
 ---
 

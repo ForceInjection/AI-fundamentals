@@ -191,4 +191,4 @@ done
 
 - [PCIe 技术大全](01_pcie_comprehensive_guide.md)
 - [PCIe P2PDMA 技术介绍](02_p2pdma_technology.md)
-- [单卡 GPU 拓扑与 NUMA 深入分析](../performance/02_single_gpu_topology_analysis.md)
+- [单卡 GPU 拓扑与 NUMA 分析](../performance/02_single_gpu_topology_analysis.md)

@@ -1,6 +1,6 @@
-# 单卡 GPU 拓扑与 NUMA 深入分析
+# 单卡 GPU 拓扑与 NUMA 分析
 
-> 基于 Intel Xeon Platinum 8470Q (Sapphire Rapids) + RTX 5090 实际环境。本文聚焦单 GPU 场景下的拓扑分析方法，与多卡 NVLink/NVSwitch 场景形成互补。
+> 基于 Intel Xeon Platinum 8470Q (Sapphire Rapids) + RTX 5090 实际环境。本文聚焦单 GPU 场景下的拓扑分析方法，与多卡 NVLink/NVSwitch 场景形成互补。实测在 Seetacloud 容器内进行，实测时间未记录（按 RTX 5090 上市时间推断约 2025 年），驱动与内核版本未留存记录。
 
 ---
 
@@ -113,7 +113,7 @@ GPU0     X      52-103,156-207  1               N/A
 | SYS  | 跨 CPU Socket（经 UPI/IF）                 | 高   |
 | NV#  | 经 NVLink                                  | 极低 |
 
-多卡场景下，同一 NUMA 节点的 GPU 之间通常显示为 `NODE` 或 `PIX`，跨 NUMA 则为 `SYS`。
+多卡场景下，同一 NUMA 节点的 GPU 之间通常显示为 `NODE` 或 `PIX`，跨 NUMA 则为 `SYS`。注意 `PIX`/`PXB`/`PHB` 本身是桥接层级分类，与 NUMA 无关：两张卡即使在同一 NUMA 节点，只要路径跨了 host bridge 也显示 `PHB`；只有 `NODE`/`SYS` 才编码 NUMA/socket 信息。
 
 ### 3.2 矩阵拓扑 (`topo -mp`)
 

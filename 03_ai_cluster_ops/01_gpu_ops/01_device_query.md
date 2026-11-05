@@ -1,8 +1,8 @@
-# GPU 设备属性查询——不是「看一眼」，而是「写对 Kernel 的前置条件」
+# GPU 设备属性查询：写 Kernel 前先查这张卡的并行上限
 
-写 CUDA 代码之前，你有两个选择：凭经验设 Grid/Block 大小，或者先查一下这张卡到底有几个 SM、每个 Block 最多放多少线程、共享内存多大。选前者的结果是 Kernel 在 A100 上跑得好好的，换到 T4 上直接 `cudaLaunch` 报错——因为 T4 的 `maxThreadsPerBlock` 是 1024，你写了 2048。
+写 CUDA 代码之前，你有两个选择：凭经验设 Grid/Block 大小，或者先查一下这张卡到底有几个 SM、每个 Block 最多放多少线程、共享内存多大。选前者可能出事：Kernel 在 A100 上跑得好好的，换到 T4 上直接 `cudaLaunch` 报错，因为 T4 的 `maxThreadsPerBlock` 是 1024，你写了 2048。
 
-GPU 设备查询存在的意义不是「看看配置」，而是回答一个更实际的问题：**这段 Kernel 在这张卡上最多能怎么并行？** 本文从 Runtime API 和 Driver API 两条路径切入，最后落到一张速查表——只列和 Kernel 设计直接相关的那几个参数。
+GPU 设备查询回答的是一个具体的问题：这段 Kernel 在这张卡上最多能怎么并行。本文从 Runtime API 和 Driver API 两条路径切入，最后落到一张速查表，只列和 Kernel 设计直接相关的那几个参数。
 
 ---
 
@@ -12,10 +12,10 @@ CUDA 提供了两套查询接口，侧重不同：
 
 | API 层      | 入口函数                    | 典型用途                                 |
 | ----------- | --------------------------- | ---------------------------------------- |
-| Runtime API | `cudaGetDeviceProperties()` | 应用开发首选——一行调用拿到所有属性       |
+| Runtime API | `cudaGetDeviceProperties()` | 应用开发首选，一行调用拿到所有属性       |
 | Driver API  | `cuDeviceGetAttribute()`    | 需要逐属性查询的场景（如中间件、框架层） |
 
-Runtime API 返回一个 `cudaDeviceProp` 结构体——几十个字段一次性填好。Driver API 按需逐项查询，更灵活但更繁琐。两者的信息源相同（驱动层），不存在精度差异。
+Runtime API 返回一个 `cudaDeviceProp` 结构体，几十个字段一次性填好。Driver API 按需逐项查询，更灵活但更繁琐。两者的信息源相同（驱动层），不存在精度差异。
 
 NVIDIA 官方示例中，`deviceQuery` 用 Runtime API，`deviceQueryDrv` 用 Driver API。源码在 [cuda-samples](https://github.com/NVIDIA/cuda-samples) 的 `Samples/1_Utilities/` 下。
 
@@ -82,7 +82,7 @@ Device 0: "Tesla T4"
 | **共享内存/Block** | `sharedMemPerBlock`   | Block 内的高速 Scratchpad | 申请超过 48KB 的 `extern __shared__` 时会报错（除非配置 `cudaFuncSetAttribute` 调上限） |
 | **Warp Size**      | `warpSize`            | 硬件调度单位              | 所有 NVIDIA GPU 都是 32，但 Block Size 不整除 32 会浪费线程槽位                         |
 
-其次重要的——决定能跑多快：
+其次重要的是决定能跑多快的参数：
 
 | 参数                          | 含义                                                        |
 | ----------------------------- | ----------------------------------------------------------- |
@@ -117,7 +117,7 @@ printf("SM count: %d, Max threads/block: %d\n", smCount, maxThreadsPerBlock);
 nvcc -o device_query_drv device_query_drv.cu -lcuda
 ```
 
-> Driver API 无需 CUDA Runtime 初始化——它在加载 `libcuda.so` 后即可调用，适合需要在 `cudaSetDevice` 之前做硬件能力探测的场景（如框架层的设备筛选）。
+> Driver API 无需 CUDA Runtime 初始化，在加载 `libcuda.so` 后即可调用，适合需要在 `cudaSetDevice` 之前做硬件能力探测的场景（如框架层的设备筛选）。
 
 ---
 
@@ -139,7 +139,7 @@ nvcc -o device_query_drv device_query_drv.cu -lcuda
 
 ## 六、相关资源
 
-- [cuda-samples/deviceQuery](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/1_Utilities/deviceQuery) — Runtime API 完整示例
-- [cuda-samples/deviceQueryDrv](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/1_Utilities/deviceQueryDrv) — Driver API 完整示例
+- [cuda-samples/deviceQuery](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/1_Utilities/deviceQuery)：Runtime API 完整示例
+- [cuda-samples/deviceQueryDrv](https://github.com/NVIDIA/cuda-samples/tree/master/Samples/1_Utilities/deviceQueryDrv)：Driver API 完整示例
 - [CUDA Runtime API 文档 - cudaGetDeviceProperties](https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html)
 - [CUDA Driver API 文档 - cuDeviceGetAttribute](https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__DEVICE.html)

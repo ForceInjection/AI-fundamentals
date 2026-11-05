@@ -262,6 +262,8 @@ Devices with the same first number in their compute capability share the same co
 
 计算能力中第一个数字相同的设备共享相同的核心架构。例如，如果设备的计算能力以 7 开头，则表示 GPU 基于 Volta 架构；8 表示 Ampere 架构；依此类推。次要版本号对应于对基础架构的增量改进。例如，Turing 被分配了 7.5 的计算能力，因为它是 Volta 架构的增量更新。
 
+> 译注：主版本号与架构的对应关系补充：7.5=Turing、8.9=Ada、9.0=Hopper，原文写作年代较早，未涵盖这些后继架构。另外「Turing 是 Volta 的增量更新」是 compute capability 视角的说法，Turing 在硬件上新增了 RT Core 和第二代 Tensor Core，并不是简单的小改款。
+
 ![NVIDIA Quadro RTX 5000 image](img/QuadroRTX5000small.png)
 
 NVIDIA Tesla V100, based on the Volta architecture, and NVIDIA Quadro RTX 5000, based on the Turing architecture.

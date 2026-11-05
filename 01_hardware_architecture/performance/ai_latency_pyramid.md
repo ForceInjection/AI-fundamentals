@@ -2,19 +2,19 @@
 
 本文旨在为 AI 工程师提供一份直观的系统延迟参考指南。通过建立 **"延迟金字塔" (Latency Pyramid)** 模型，将从芯片内部到跨数据中心的各级延迟数据可视化，帮助开发者建立对系统性能数量级的第一性认知。
 
-> ⚠️ **基准说明**：数据基于 NVIDIA H100/A100 + NVLink/NVSwitch + IB NDR 网络环境下的典型热路径估算。
+> **基准说明**：数据基于 NVIDIA H100/A100 + NVLink/NVSwitch + IB NDR 网络环境下的典型热路径估算。
 
 ---
 
 ## 1. 延迟金字塔总览
 
-为了更直观地理解**数据移动的代价**，我们将时间延迟映射为**"人类距离尺度" (Human Distance Scale)**。
+为了更直观地理解数据移动的代价，我们将时间延迟映射为"人类距离尺度" (Human Distance Scale)。
 
 > **核心隐喻**：
 > 在 AI 基础设施中，我们将基准定义为 **1 GPU 周期 (~0.5 ns)**。
 > 假设 **1 GPU 周期 (0.5 ns)** 相当于 **迈出 1 步 (0.5 米)**。
 >
-> 👉 **速算口诀**: `1 ns ≈ 1 米`
+> **速算口诀**: `1 ns ≈ 1 米`
 
 ```text
 # -----------------------------------------------------------------------------
@@ -51,7 +51,7 @@ NCCL AllReduce (Cross Node)     200 us - 5 ms         200 km+   (高铁跨省)
 NVMe Random Read (4KB)          ~100 us               100 km   (北京到保定)
 NVMe Seq Read (1MB)             100-300 us            100-300 km (北京到石家庄)
 HDD Seek                        ~10 ms                10,000 km (坐飞机去美国)
-Object Storage First Byte       30-100 ms             30,000-100,000 km (绕地球 1-2.5 圈)
+Object Storage First Byte       30-100 ms             30,000-100,000 km (绕地球约 0.75-2.5 圈)
 Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月距离的 1/4)
 ```
 
@@ -71,7 +71,7 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
   - **Shared Memory (20-30 ns)**: 开发者可控的暂存区，若发生 Bank Conflict，延迟会显著增加。
 - **L2 Cache (100-120 ns)**: 所有 SM 共享的片上缓存 (50MB)。相比 A100 (40MB)，H100 的 L2 更大，延迟约 200+ 周期。
 
-> **关键认知**: 即使是访问 L2 Cache (100ns+)，相比寄存器 (0.5ns) 也慢了 **200倍**。
+> **关键认知**: 即使是访问 L2 Cache (100ns+)，相比寄存器 (0.5ns) 也慢了 200 倍。
 
 ### 2.2 Level 2: 显存与互联层
 
@@ -85,7 +85,7 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
   - **Transaction (400-600 ns)**: 纯硬件总线传输延迟。
   - **Host-Device RTT (1-3 us)**: 包含驱动和 CPU 交互的端到端往返延迟。
 
-> **关键认知**: 通过 NVLink 访问邻居 GPU 的 L2 Cache (Total ~200-300 ns) 甚至比访问本地 HBM (250-350 ns) **更快**。这意味着利用"邻居缓存" (Cooperative Caching) 在物理上是可行的。
+> **关键认知**: 经 NVLink 访问邻居 GPU 显存的完整路径是 本地 L2 → NVLink → 远端 L2 → 远端 HBM，GPU 之间没有跨卡的 L2 一致性。这条路径 (Total ~200-300 ns) 比访问本地 HBM (250-350 ns) 更快，所以"邻居缓存" (Cooperative Caching) 指的是读邻居的显存，而不是共享它的 L2。
 
 ### 2.3 Level 3: 分布式通信层
 
@@ -98,7 +98,7 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
   - **Typical Payload (50-200 us)**: 正常训练负载下的通信耗时。
 - **TCP RTT (20-150 us)**: 同机架 (20-50 us) vs 跨机架 (50-150 us)。
 
-> **关键认知**: 跨机通信 (Network) 相比机内通信 (NVLink) 有 **10-100 倍** 的延迟差距，这是设计分布式算法时必须考虑的物理约束。
+> **关键认知**: 跨机通信 (Network) 相比机内通信 (NVLink) 有 10-100 倍的延迟差距，这是设计分布式算法时必须考虑的物理约束。
 
 ### 2.4 Level 4: 存储与 I/O 层
 
@@ -109,7 +109,7 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
   - **Seq Read 1MB (100-300 us)**: 大块顺序读取效率极高，远快于 1ms。
 - **Object Storage (30-100 ms)**: 首字节延迟 (TTFB) 波动较大，受网络和云服务负载影响。
 
-> **关键认知**: I/O 延迟是计算延迟的 **10,000 倍** 以上。任何同步 I/O 操作都会导致 GPU 算力的巨大浪费。
+> **关键认知**: I/O 延迟是计算延迟的 10,000 倍以上。任何同步 I/O 操作都会导致 GPU 算力的巨大浪费。
 
 ---
 
@@ -119,14 +119,14 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
 | :---------------- | :--------- | :----- | :---------------------------- |
 | **Math**          | < 1 ns     | Nano   | FMA, Tensor Core op           |
 | **SRAM Access**   | 15-30 ns   | Nano   | L1 (~30 cycles), Shared       |
-| **DRAM Access**   | 250-350 ns | Micro  | HBM3 (500 cycles+), DDR5      |
-| **GPU-GPU Raw**   | 80-250 ns  | Micro  | NVLink (Direct vs Switch)     |
+| **DRAM Access**   | 250-350 ns | Nano   | HBM3 (500 cycles+), DDR5      |
+| **GPU-GPU Raw**   | 80-250 ns  | Nano   | NVLink (Direct vs Switch)     |
 | **Host-Device**   | 1-3 us     | Micro  | PCIe RTT                      |
 | **Net-Device**    | 2-4 us     | Micro  | GPUDirect RDMA                |
 | **Kernel Launch** | 5-15 us    | Micro  | CUDA API Overhead             |
 | **Small Kernel**  | ~5 us      | Micro  | Element-wise op               |
 | **Attention**     | 50-300 us  | Micro  | FlashAttn (seq len dependent) |
-| **AllReduce**     | 50us - 5ms | Milli  | Single Node vs Multi Node     |
+| **AllReduce**     | 50 μs - 5 ms | Milli  | Single Node vs Multi Node     |
 | **Disk I/O**      | 0.1-10 ms  | Milli  | NVMe vs HDD                   |
 
 ---
@@ -153,8 +153,8 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
 
 **"延迟金字塔"** 揭示了 AI 系统设计的核心挑战：
 
-1. **层级跨越代价巨大**: 每跨越一层，延迟增加约 **1-2 个数量级**。
-2. **局部性 (Locality) 是王道**: 将计算留在 Level 1/2，避免频繁跌落到 Level 3/4。
+1. **层级跨越代价巨大**: 每跨越一层，延迟增加约 1-2 个数量级。
+2. **局部性 (Locality)**: 把计算留在 Level 1/2，避免频繁跌落到 Level 3/4。
 3. **隐藏延迟 (Hiding)**: 高层级的延迟 (Level 3/4) 必须通过异步流水线被低层级的计算 (Level 1) 掩盖。
 
-记住这张金字塔图，当你在写代码或设计架构时，时刻问自己：**"我现在的数据在第几层？"**
+写代码或设计架构时，先确认数据当前在哪一层，再决定要不要移动它。

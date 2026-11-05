@@ -1,6 +1,6 @@
 # PCIe 拓扑层次：Root Complex、Switch、Bridge 与 Device
 
-> 基于双路 Sapphire Rapids (24 个 PCIe domain) + RTX 5090 实测。从 sysfs 出发，逐层解析 PCIe 拓扑的四个核心组件。
+> 基于双路 Sapphire Rapids (24 个 PCIe 根总线段) + RTX 5090 实测。从 sysfs 出发，逐层解析 PCIe 拓扑的四个核心组件。
 
 ---
 
@@ -29,15 +29,15 @@ CPU Socket
 
 ## 2. sysfs 识别各层
 
-### 2.1 识别 PCIe Domains (Root Complex)
+### 2.1 识别根总线段 (Root Complex)
 
-每个 `pci0000:XX` 目录是一个独立的 PCIe domain，对应一个 Root Complex：
+每个 `pci0000:XX` 目录是一个根总线段（都在 domain 0000 内，各占一段 bus 号），对应一个 RC stack：
 
 ```bash
 ls /sys/devices/ | grep pci
 ```
 
-本环境输出（24 个 domain）：
+本环境输出（24 个根总线段）：
 
 ```text
 pci0000:00  pci0000:15  pci0000:26  ...  pci0000:7f  pci0000:80

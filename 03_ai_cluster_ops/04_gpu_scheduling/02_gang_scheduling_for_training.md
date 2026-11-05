@@ -31,7 +31,7 @@ K8s 默认调度器逐个处理 8 个 Pod:
 
 ## 二、方案 A：Volcano Coscheduling
 
-Volcano 是 CNCF 的批量计算调度器，在原生 K8s 调度能力之上增加了 Gang Scheduling、Fair-share、Queue 等特性。其 Coscheduling 的实现思路是：
+Volcano 是 CNCF 的批量计算调度器（截至 2026-10 最新版本 v1.16.0），在原生 K8s 调度能力之上增加了 Gang Scheduling、Fair-share、Queue 等特性。其 Coscheduling 的实现思路是：
 
 ```text
 1. PodGroup 创建 → 声明 "这个作业需要 8 个 Pod"
@@ -49,16 +49,16 @@ metadata:
   name: training-job-tp8
 spec:
   minMember: 8 # 至少 8 个 Pod 全部就绪才启动
-  minResources: # 每个 Pod 需要的资源
-    nvidia.com/gpu: "1"
+  minResources: # 整组最低资源总量（组级，非按 Pod）
+    nvidia.com/gpu: "8"
   queue: ai-training # 所属队列
 ---
 # 每个训练 Pod 中指定所属的 PodGroup
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    scheduling.volcano.sh/podgroup: training-job-tp8 # 关联到 PodGroup
+  annotations:
+    scheduling.k8s.io/group-name: training-job-tp8 # 关联到 PodGroup（Volcano 官方注记）
 spec:
   schedulerName: volcano # 使用 Volcano 调度器
   containers:
@@ -67,13 +67,13 @@ spec:
           nvidia.com/gpu: 1
 ```
 
-与默认调度器的关键区别：Volcano 在看到 8 个 Pod 时不会逐个提交——它先检查集群中是否存在能同时容纳 8 个 Pod 的节点/节点组。如果存在，一次性全调；如果不存在，PodGroup 进入 `Inqueue` 状态等待。
+Pod 与 PodGroup 的关联靠的是 Pod 上的 `scheduling.k8s.io/group-name` 注记（Volcano 官方文档与源码口径；不少老资料写作 `scheduling.volcano.sh/podgroup` 的 label，这个 key 并不存在）。与默认调度器的关键区别：Volcano 在看到 8 个 Pod 时不会逐个提交——它先检查集群中是否存在能同时容纳 8 个 Pod 的节点/节点组。如果存在，一次性全调；如果不存在，PodGroup 进入 `Inqueue` 状态等待。
 
 ---
 
 ## 三、方案 B：Kubernetes SchedulingGates（1.26+）
 
-K8s 1.26 引入了 SchedulingGates，允许外部控制器在 Pod 上设置「栅栏」，被栅住的 Pod 不会被调度器处理。配合一个 Gang Scheduling Controller，可以在不替换调度器的前提下实现 All-or-Nothing：
+K8s 1.26 引入了 SchedulingGates，允许外部控制器在 Pod 上设置「栅栏」，被栅住的 Pod 不会被调度器处理。K8s 社区也在把 Gang Scheduling 收进原生能力：KEP-4671 以 Scheduling Gates 为基础构建，1.35 进入 alpha、1.37 进入 beta（引入 Workload API），落地后可以不再依赖外部控制器。配合一个 Gang Scheduling Controller，可以在不替换调度器的前提下实现 All-or-Nothing：
 
 ```text
 1. Job Controller 创建 8 个 Pod，每个 Pod 带一个 scheduling gate
@@ -115,7 +115,7 @@ SchedulingGates 的优势是不需要替换调度器，但劣势也很明显：�
 
 ## 五、相关资源
 
-- [Volcano 官方文档](https://volcano.sh/docs/) — PodGroup / Queue / Coscheduling
+- [Volcano 官方文档](https://volcano.sh/en/docs/) — PodGroup / Queue / Coscheduling
 - [K8s SchedulingGates KEP](https://github.com/kubernetes/enhancements/tree/master/keps/sig-scheduling/3521-pod-scheduling-readiness)
 - [GPU 调度问题总览](01_gpu_scheduling_problem.md) — 碎片化、拓扑、Gang Scheduling 三个盲区
 - [拓扑感知调度](03_topology_aware_scheduling.md) — Gang Scheduling 解决「够不够」的问题，拓扑感知解决「快不快」的问题

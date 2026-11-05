@@ -1,6 +1,6 @@
-> 来源:[deepseek-ai/FlashMLA](https://github.com/deepseek-ai/FlashMLA) 仓库文档 `docs/20260930-ascend-prefill-deep-dive-zh.md`(深度求索著,2026-09-30,MIT License)。本站转载存档(2026-09-30 拉取),正文未改动。
-
 # Ascend Sparse Attention Forward 算法与优化技术简析
+
+> 来源:[deepseek-ai/FlashMLA](https://github.com/deepseek-ai/FlashMLA) 仓库文档 `docs/20260930-ascend-prefill-deep-dive-zh.md`(深度求索著,2026-09-30,MIT License)。本站转载存档(2026-09-30 拉取),正文未改动。原文个别句子不完整(上游即如此),照录。
 
 ## 前言
 

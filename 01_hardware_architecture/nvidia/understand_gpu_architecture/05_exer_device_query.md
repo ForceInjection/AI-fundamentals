@@ -6,7 +6,7 @@ Here is how to compile the source code, prepare the batch file, and submit the j
 
 1\. Copy and paste (or [download](exer1.txt)) the following code into a new file named _devicequery.cu_.
 
-```bash
+```c
 #include <stdio.h>
 
 // Print device properties

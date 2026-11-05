@@ -1,8 +1,10 @@
 # GPU 架构深入理解
 
-这个目录是一套沿着 Cornell 的经典教程 [Understanding GPU Architecture](https://cvw.cac.cornell.edu/gpu-architecture/gpu-memory/index) 整理和扩展而来的笔记，重点回答一个问题：**GPU 内部到底长什么样，它和我们写的代码的性能之间究竟是怎么关联的？**
+这个目录是一套沿着 Cornell 的经典教程 [Understanding GPU Architecture](https://cvw.cac.cornell.edu/gpu-architecture) 整理和扩展而来的笔记，重点回答一个问题：**GPU 内部到底长什么样，它和我们写的代码的性能之间究竟是怎么关联的？**
 
 对做高性能计算或 AI 应用的开发者来说，看懂底层才能真正优化得动代码，而不是只能凭感觉调参。
+
+> 说明：Cornell 原文约 2021-2022 年口径（个别页面后续有修订），文中涉及的硬件型号与系统（Frontera、Longhorn 等）以当时为准；整理时对明显过时或原文笔误处已加译注。
 
 ## 1. 架构基础与特性
 
@@ -17,7 +19,7 @@
 
 - [03_tesla_v100.md](03_tesla_v100.md)：以数据中心级 GPU 为例，看 Volta 架构的核心创新——Tensor Core 加速单元和 HBM2 内存系统是怎么回事。
 - [04_rtx_5000.md](04_rtx_5000.md)：以工作站级 GPU 为例，看 Turing 架构在图形和计算融合上的设计思路，包含 RT Core 和光线追踪能力。
-- [07_a100_architecture.md](07_a100_architecture.md)：**新增** — 基于 A100-SXM4-80GB 服务器实测的 Ampere 架构深度解析，涵盖 GA100 SM 结构、第三代 Tensor Core (TF32/Sparsity)、HBM2e 显存、MIG 分区、NVLink 3.0，并附 deviceQuery 实测数据。
+- [07_a100_architecture.md](07_a100_architecture.md)：基于 A100-SXM4-80GB 服务器实测的 Ampere 架构深度解析，涵盖 GA100 SM 结构、第三代 Tensor Core (TF32/Sparsity)、HBM2e 显存、MIG 分区、NVLink 3.0，并附 deviceQuery 实测数据。
 
 ## 3. 性能测试与实践练习
 

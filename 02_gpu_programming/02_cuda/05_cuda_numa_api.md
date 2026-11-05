@@ -16,7 +16,7 @@
 Socket 0 (NUMA node 0)               Socket 1 (NUMA node 1)
   ├── CPU 0-51, 104-155                ├── CPU 52-103, 156-207
   ├── DDR5 385 GB (本地)               ├── DDR5 387 GB (本地)
-  └── PCIe domain 7e/7f                └── PCIe domain 97/d7 (GPU + NVMe)
+  └── PCIe bus 0x7e/0x7f               └── PCIe bus 0x97/0xd7 (GPU + NVMe)
          ↓                                      ↓
     本地访问: 10 (distance)               GPU 在这里!
          ↓                                      ↓
@@ -223,4 +223,4 @@ cudaDeviceGetAttribute(&v, cudaDevAttrDirectManagedMemAccessFromHost, 0);
 
 - [CUDA Runtime API: Memory Management](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html)
 - [CUDA C Programming Guide: UM](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd)
-- [单卡 GPU 拓扑与 NUMA 深入分析](../../01_hardware_architecture/performance/02_single_gpu_topology_analysis.md)
+- [单卡 GPU 拓扑与 NUMA 分析](../../01_hardware_architecture/performance/02_single_gpu_topology_analysis.md)

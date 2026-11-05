@@ -58,7 +58,7 @@ NVLink 的发展史就是 NVIDIA GPU 集群架构的进化史。每一代 NVLink
 | **3.0** | 2020     | Ampere (A100)    | NRZ      | 4 (Sub-link)            | 25 GB/s           | 12             | 600 GB/s           | 信号对减半，链路数翻倍   |
 | **4.0** | 2022     | Hopper (H100)    | PAM-4    | 2 (Diff-pair)           | 25 GB/s           | 18             | 900 GB/s           | 引入 SHARP               |
 | **5.0** | 2024     | Blackwell (B200) | PAM-4    | 2 (Diff-pair)           | 50 GB/s           | 18             | 1.8 TB/s           | 支持 NVL72 机架级扩展    |
-| **6.0** | 2026     | Rubin (Vera)     | -        | -                       | -                 | -              | 3.6 TB/s           | NVLink Switch 6, RAS增强 |
+| **6.0** | 2026     | Rubin (Vera)     | -        | -                       | -                 | -              | 3.6 TB/s           | NVLink Switch 6, RAS增强。带宽双口径：3.6 TB/s/GPU、域聚合 260 TB/s（GTC 2025 宣传口径）；当前官网 3,000 GB/s/GPU、域 216 TB/s（2026-11 核对） |
 
 > **注**：
 >

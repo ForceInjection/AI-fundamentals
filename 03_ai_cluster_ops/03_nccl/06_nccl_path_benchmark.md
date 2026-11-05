@@ -1,8 +1,10 @@
 # NCCL 通信路径逐层压测——从 NVLink 到 PCIe Fallback
 
-多 GPU 通信的性能天花板由物理拓扑决定——NVLink、PCIe P2P、IB、TCP 依次递减。但理论带宽是一回事，实际能跑到多少、禁用某条路径后衰减多少、不同 GPU pair 之间有没有差异，只有压测才能回答。
+多 GPU 通信的性能天花板由物理拓扑决定：NVLink、PCIe P2P、IB、TCP 依次递减。但理论带宽是一回事，实际能跑到多少、禁用某条路径后衰减多少、不同 GPU pair 之间有没有差异，只有压测才能回答。
 
 本文在一台 8×H100 服务器上用 NCCL all_reduce 逐层验证：NVLink（同 NUMA / 跨 NUMA）→ PCIe P2P 降级 → 禁用 P2P fallback。每层固定张量从 1MB 到 512MB，记录 bus bandwidth。最后给出一张速查表：从最快到最慢的完整通信层级，带实测值和理论对照。
+
+> as-of 2026-11-05：实测环境 8×NVIDIA H100 80GB HBM3 + CUDA 12.8 + 容器镜像 lmsysorg/sglang:v0.5.13.post1（NCCL 版本随镜像），宿主驱动版本文中未记录；带宽数字随 NCCL/驱动版本与机型变化，引用前复核。
 
 ---
 
@@ -22,7 +24,7 @@ GPU6    NV18    NV18    NV18    NV18    NV18    NV18     X      NV18
 GPU7    NV18    NV18    NV18    NV18    NV18    NV18    NV18     X
 ```
 
-所有 8 张 GPU 两两之间都标 `NV18`——18 条 NVLink 4.0 link 直连。这意味着全部 GPU 在同一个 NVSwitch 域内，任意 pair 都有完整的 450 GB/s 单向带宽。
+所有 8 张 GPU 两两之间都标 `NV18`，即 18 条 NVLink 4.0 link 直连。这意味着全部 GPU 在同一个 NVSwitch 域内，任意 pair 都有完整的 450 GB/s 单向带宽。
 
 NUMA 分布：
 
@@ -31,7 +33,7 @@ NUMA 分布：
 | 0         | GPU 0,1,2,3 | NIC 0,1,2,3 (PIX) |
 | 1         | GPU 4,5,6,7 | NIC 4,5,6,7 (PIX) |
 
-GPU 和 NIC 之间存在亲和性——GPU0 与 NIC0 走 PIX（同一 PCIe switch），与 NIC6 走 SYS（跨 NUMA + PCIe + SMP）。这对于 GPUDirect RDMA 的 NIC 选型至关重要。
+GPU 和 NIC 之间存在亲和性：GPU0 与 NIC0 走 PIX（同一 PCIe switch），与 NIC6 走 SYS（跨 NUMA + PCIe + SMP）。GPUDirect RDMA 选哪块 NIC，这条亲和性是决定性信息。
 
 ---
 
@@ -150,7 +152,7 @@ P2P 禁用后，NCCL 不再使用 NVLink 直接传输。数据走 GPU0 → CPU M
 
 ![NVLink vs P2P Disabled 带宽-张量大小曲线](assets/nccl_path_benchmark.svg)
 
-NVLink 在 8MB 时已达 170 GB/s（54% 峰值），256MB 时达 295 GB/s（93% 峰值），512MB 时收敛至 316 GB/s。P2P 禁用后 8MB 即触顶 23 GB/s——小消息的带宽天花板同样受 PCIe 限制。
+NVLink 在 8MB 时已达 170 GB/s（54% 峰值），256MB 时达 295 GB/s（93% 峰值），512MB 时收敛至 316 GB/s。P2P 禁用后 8MB 即触顶 23 GB/s，小消息的带宽天花板同样受 PCIe 限制。
 
 ---
 
@@ -160,13 +162,13 @@ NVLink 在 8MB 时已达 170 GB/s（54% 峰值），256MB 时达 295 GB/s（93% 
 
 2. **NVLink → PCIe 降级损失 13 倍**：P2P 禁用后带宽从 ~316 GB/s 骤降至 ~24 GB/s。确保 `NCCL_P2P_DISABLE` 在生产环境中不被错误设置。
 
-3. **建议：NIC 选型关注 PIX 亲和性**（拓扑分析，未经本文实测）：GPU0 与 NIC0/1 走 PIX（同一 PCIe switch），与 NIC4-7 走 SYS（跨 NUMA + PCIe + SMP）。GPUDirect RDMA 场景下优先将跨节点通信绑定到 PIX 路径的 NIC，理论上可避免跨 NUMA 的额外 PCIe 跳数——但实际收益取决于 NCCL 的 multi-NIC 调度策略，需在 IB/RoCE 环境下单独验证。
+3. **建议：NIC 选型关注 PIX 亲和性**（拓扑分析，未经本文实测）：GPU0 与 NIC0/1 走 PIX（同一 PCIe switch），与 NIC4-7 走 SYS（跨 NUMA + PCIe + SMP）。GPUDirect RDMA 场景下优先将跨节点通信绑定到 PIX 路径的 NIC，理论上可避免跨 NUMA 的额外 PCIe 跳数。实际收益取决于 NCCL 的 multi-NIC 调度策略，需在 IB/RoCE 环境下单独验证。
 
 ---
 
 ## 六、相关资源
 
 - [NCCL 技术理论深度解析](01_nccl_theory.md) — AllReduce 算法、Ring/Tree 拓扑选择、RDMA 机制。
-- [NCCL 基准测试方法论](04_nccl_benchmark.md) — `allreduce_perf` 编译、运行，A100 实测。
+- [NCCL 基准测试方法论](04_nccl_benchmark.md) — `all_reduce_perf` 编译、运行，A100 实测。
 - [GPU 拓扑检测工具](gpu_topology_detector.sh) — 自动化 GPU 拓扑分析与通信路径规划。
 - [GPUDirect RDMA 跨节点验证](../../01_hardware_architecture/gpudirect/04_gpudirect_rdma_verification.md) — 跨节点 IB HDR 的端到端验证。

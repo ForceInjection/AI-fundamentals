@@ -4,17 +4,21 @@ TPU 是 Google 为深度学习量身打造的专用加速器。与 GPU 的通用
 
 ## 文档
 
-- [**TPU 101：深度学习专用加速器架构解析**](tpu%20101.md)：TPU 的设计哲学、Systolic Array 核心计算原理、与 GPU 的架构差异及适用场景对比。
+- [**TPU 101：深度学习专用加速器架构解析**](tpu_101.md)：TPU 的设计哲学、Systolic Array 核心计算原理、与 GPU 的架构差异及适用场景对比。
 
 ## TPU vs GPU 速览
+
+对比对象为 2023-2024 世代（v5p vs H100），数据截至 2026-11：
 
 | 维度     | GPU (NVIDIA H100)     | TPU v5p                       |
 | -------- | --------------------- | ----------------------------- |
 | 计算核心 | SIMT + Tensor Core    | 脉动阵列                      |
 | 编程模型 | CUDA / Triton         | JAX / XLA                     |
-| 内存     | HBM3 80 GB            | HBM3 95 GB                    |
+| 内存     | HBM3 80 GB            | HBM 95 GB（官方未标代际）     |
 | 互连     | NVLink 4.0 + NVSwitch | ICI (Inter-Chip Interconnect) |
 | 适用场景 | 训练 + 推理（通用）   | 训练 + 推理（Google 生态）    |
+
+Google 当前旗舰为 TPU v7（Ironwood）世代（截至 2026-11），规格与本表不再对应，选型以官方架构页为准。
 
 ## 参考
 

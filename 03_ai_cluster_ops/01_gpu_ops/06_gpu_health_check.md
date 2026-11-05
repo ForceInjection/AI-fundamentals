@@ -1,6 +1,6 @@
 # GPU 集群健康检查
 
-> 基于 A100-SXM4-80GB (8 GPU) 现场数据。将日常运维中零散的检查项整合为系统化的健康检查流程——从温度/功耗的快速扫一眼，到 NVLink 链路、ECC 错误、MIG 状态等深入诊断。GPU 7（NVLink 故障 + MIG Enabled）作为贯穿全文的真实异常案例。
+> 基于 A100-SXM4-80GB (8 GPU) 现场数据（采集于 2026-11 之前，驱动 535.183.01 + DCGM v3.3.9）。将日常运维中零散的检查项整合为系统化的健康检查流程：从温度/功耗的快速扫一眼，到 NVLink 链路、ECC 错误、MIG 状态等深入诊断。GPU 7（NVLink 故障 + MIG Enabled）作为贯穿全文的真实异常案例。
 
 ---
 
@@ -71,6 +71,7 @@ nvidia-smi topo -m
 ```text
         GPU0  GPU1  GPU2  GPU3  GPU4  GPU5  GPU6  GPU7
 GPU0     X    NV12  NV12  NV12  NV12  NV12  NV12  NV12
+...                                                       ← 中间行（GPU1/GPU2/GPU4/GPU5/GPU6）省略
 GPU3    NV12  NV12  NV12   X    NV12  NV12  NV12  NV12
 GPU7    SYS   SYS   SYS   SYS   NODE  NODE  PXB    X
 ```
@@ -232,7 +233,7 @@ CUDA_VISIBLE_DEVICES=3,7 ./simpleP2P   # 应失败（SYS 不支持 P2P）
 git clone https://github.com/NVIDIA/nccl-tests.git && cd nccl-tests && make MPI=0
 
 # 在所有 NVLink 正常的 GPU 上运行（排除 GPU 7）
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 ./build/allreduce_perf -b 1G -e 8G -g 7
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 ./build/all_reduce_perf -b 1G -e 8G -g 7
 ```
 
 期望值参考：[NCCL 通信路径逐层压测](../03_nccl/06_nccl_path_benchmark.md) — H100 NVLink ~316 GB/s, P2P Disable ~24 GB/s。
@@ -258,9 +259,12 @@ nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv,noheader | \
 
 echo ""
 echo "=== [L2] NVLink 拓扑摘要 ==="
-nv_count=$(nvidia-smi topo -m 2>/dev/null | grep -c "NV12" || true)
-sys_count=$(nvidia-smi topo -m 2>/dev/null | grep -c "\bSYS\b" || true)
-echo "NV12 连接数: $nv_count  SYS 连接数: $sys_count"
+# grep -c 统计的是行数；拓扑矩阵对称，一对连接出现两次，用 grep -o 统计出现次数。
+# 先删掉 Legend 之后的图例（图例文本里也有 SYS/NODE 等字样，会污染计数）
+topo_matrix=$(nvidia-smi topo -m 2>/dev/null | sed '/^Legend/,$d')
+nv_count=$(echo "$topo_matrix" | grep -o "NV12" | wc -l | tr -d ' ')
+non_nv_count=$(echo "$topo_matrix" | grep -oE "\b(SYS|NODE|PXB|PIX)\b" | wc -l | tr -d ' ')
+echo "NV12 连接数: $nv_count  非 NVLink 连接数: $non_nv_count"
 
 echo ""
 echo "=== [L2] ECC 错误 ==="
@@ -283,7 +287,7 @@ nvidia-smi --query-gpu=index,mig.mode.current --format=csv,noheader
 ```text
 GPU 7: 26°C  48.75W              ← 温度/功耗正常
 GPU 7: 0 / 81920 MiB              ← 显存完全空闲
-NV12 连接数: 42  SYS 连接数: 28   ← GPU 7 贡献了 14 条 SYS 连接
+NV12 连接数: 42  非 NVLink 连接数: 14   ← GPU 0-6 两两 NV12 共 21 对 ×2；GPU 7 无 NVLink，7 对连接 ×2（SYS×8、NODE×4、PXB×2）
 GPU 7, 0, 0                       ← ECC 无错误
 GPU 7: Gen 4 x16                  ← PCIe 链路正常
 MIG Mode: GPU 7 = Enabled         ← 与 GPU 0-6 不一致

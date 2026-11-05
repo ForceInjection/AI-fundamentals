@@ -9,7 +9,7 @@ NCCL 的性能直接决定多机多卡训练的扩展效率。本目录覆盖从
 | 01  | [NCCL 技术理论](./01_nccl_theory.md)            | AllReduce 算法、Ring/Tree 拓扑、RDMA 机制、性能建模       |
 | 02  | [单卡验证指南](./02_nccl_helloworld.md)         | 无需多卡的 NCCL 安装验证                                  |
 | 03  | [详细使用教程](./03_nccl_tutorial.md)           | 安装、配置、单/多节点测试、容器化部署                     |
-| 04  | [基准测试方法论](./04_nccl_benchmark.md)        | `allreduce_perf` 编译运行，A100 实测，MIG+NVLink 异常案例 |
+| 04  | [基准测试方法论](./04_nccl_benchmark.md)        | `all_reduce_perf` 编译运行，A100 实测，MIG+NVLink 异常案例 |
 | 05  | [Debug 输出解读](./05_nccl_debug_output.md)     | `NCCL_DEBUG=INFO` 逐段拆解，正常/异常速查表               |
 | 06  | [通信路径逐层压测](./06_nccl_path_benchmark.md) | H100 实测：NVLink (316 GB/s) → P2P Disable (24 GB/s)      |
 | —   | [Kubernetes 部署](./k8s/README.md)              | K8s 多节点 NCCL 测试方案                                  |

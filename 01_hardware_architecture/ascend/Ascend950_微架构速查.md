@@ -1,6 +1,6 @@
 # Ascend 950 微架构速查：来自 FlashMLA 算子报告的硬件信息整理
 
-> 2026-09-30 | 信息整理。全部数值来自单一来源：deepseek-ai/FlashMLA 仓库官方文档《Ascend Sparse Attention Forward 算子与优化技术简析》（深度求索著，MIT License，本站存档为 [《Ascend950 稀疏注意力 Forward 算子与优化技术简析》](Ascend950_稀疏注意力Forward算子与优化技术简析.md)，下称「源文档」），逐条标注出处章节。口径是**算子视角的微架构**，不是官方 data sheet；性能数字为厂商自报，无第三方复现。另有三处补充：DeepGEMM-Ascend 与 DeepEP-Ascend 仓库 README（缩放因子格式、卡级型号），以及 2026-09-30 对 FlashMLA 仓库的代码深读（B_TOPK 最终取值、MTE2 在飞数、VLOOP 检出情况，随条标注 file:line）。
+> 2026-09-30 | 信息整理。全部数值来自单一来源：deepseek-ai/FlashMLA 仓库官方文档《Ascend Sparse Attention Forward 算法与优化技术简析》（深度求索著，MIT License；本站存档为 [《Ascend950 稀疏注意力 Forward 算子与优化技术简析》](Ascend950_稀疏注意力Forward算子与优化技术简析.md)，存档文件名用「算子」，下称「源文档」），逐条标注出处章节。口径是**算子视角的微架构**，不是官方 data sheet；性能数字为厂商自报，无第三方复现。另有三处补充：DeepGEMM-Ascend 与 DeepEP-Ascend 仓库 README（缩放因子格式、卡级型号），以及 2026-09-30 对 FlashMLA 仓库的代码深读（B_TOPK 最终取值、MTE2 在飞数、VLOOP 检出情况，随条标注 file:line）。
 
 ## 一、AI Core：1 Cube + 2 Vector
 
@@ -17,14 +17,14 @@
 | 层级   | 数值 / 特性                                                                                           | 源文档出处                         |
 | ------ | ----------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | L1     | **512 KB，分两个 bank**（0–256K / 256K–512K 两段地址空间）；Tensor 切两份配平摆放可打满双 bank 带宽   | 〈L1 bank 配平〉                   |
-| L2     | 总带宽 **5 TB/s**（32 核分摊）——注意是片上 L2，不是 HBM                                               | 〈每个 AI Core 负责多少个 q head〉 |
+| L2     | 总带宽 **5 TB/s**（32 核分摊，注意是片上 L2，不是 HBM）                                              | 〈每个 AI Core 负责多少个 q head〉 |
 | UB     | 有 bank conflict 问题（NZ buffer 额外 pad 一行规避）；读写带宽可被单个 SIMD VF 打满                   | 〈高速 ND2NZ〉                     |
 | icache | CUBE **32 KB** / VECTOR **16 KB** / SIMD VF **8 KB**——代码体积需控制（报告建议用 `VLOOP` 硬件循环、慎用内联；代码深读未在源码检出该符号） | 〈icache miss 问题〉               |
 
 ## 三、搬运与流水约束
 
-- **MTE2 在飞请求上限 16 个**（单 VECTOR Core 的 Issue Queue 深度）——稀疏 gather 逐 token 发请求会爆队列，催生 gather2 技巧（`burst_count=2`、`src_stride` 设两 token 地址差，一次拷两个 token）。（〈gather2〉〈能否用 1C1V〉）
-- **FixPipe 向外搬运 128 Byte/cycle/AI Core**——1C1V 被否的三个瓶颈之一；1C1V 口径下由此推出 `B_TOPK > 73.14`。最终 1C2V 代码实际取 **`B_TOPK = 64`**（`config.h:55`），每 AIV 32 token、gather2 折半后恰好 **16 个在飞 MTE2 请求**——与 16 的队列深度持平。（〈能否用 1C1V〉；代码深读 `kernel_body.h:1041`）
+- **MTE2 在飞请求上限 16 个**（单 VECTOR Core 的 Issue Queue 深度）：稀疏 gather 逐 token 发请求会爆队列，催生 gather2 技巧（`burst_count=2`、`src_stride` 设两 token 地址差，一次拷两个 token）。（〈gather2〉〈能否用 1C1V〉）
+- **FixPipe 向外搬运 128 Byte/cycle/AI Core**（1C1V 被否的三个瓶颈之一，由这一口径推出 `B_TOPK > 73.14`）。最终 1C2V 代码实际取 **`B_TOPK = 64`**（`config.h:55`），每 AIV 32 token、gather2 折半后恰好 **16 个在飞 MTE2 请求**，与 16 的队列深度持平。（〈能否用 1C1V〉；代码深读 `kernel_body.h:1041`）
 - **BIU 访存合并条件**：源和目标**都连续**才合并。「源连续、目的不连续」无法合并，L2 带宽利用率低——KV 的 ND2NZ 被迫绕行 UB 用 SIMD VF 完成，而不是走 GM→L1 随路转换。（〈KV 的 ND2NZ Layout 转换何时进行〉）
 - **硬件 PIPE 顺序发射、顺序执行**：`PIPE_V` 前一条不发射会阻塞整条管线；跨核信号用 SS buffer + cross core flag（能读写 SS buffer 的只有 scalar core）。（〈如何进行 skip-scale 的同步〉〈流水线〉）
 

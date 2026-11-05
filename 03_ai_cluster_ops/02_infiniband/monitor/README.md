@@ -196,6 +196,8 @@ sudo yum install infiniband-diags perftest bc
 实际速率 (MB/s) = (当前计数器 - 前次计数器) × 4字节 / 时间差 / (1024 * 1024)
 ```
 
+> 注：这里除以 1024²，实际是 MiB/s（二进制口径，1 MiB/s = 1.048576 MB/s）。
+
 #### 4.4.2 包速率计算
 
 ```bash
@@ -208,6 +210,8 @@ sudo yum install infiniband-diags perftest bc
 利用率 (%) = max(发送速率, 接收速率) / 链路最大速率 × 100
 链路最大速率 (MB/s) = 链路速率 (Gbps) × 125
 ```
+
+> 注：×125 是十进制口径（1 Gbps = 125,000,000 字节/秒 = 125 MB/s）。分子按二进制（MiB/s）、分母按十进制（MB/s）混用，会使 %ifutil 高估约 4.9%（1024²/10⁶ ≈ 1.0486）——脚本当前实现如此，解读利用率数值时需按此折扣修正。
 
 #### 4.4.4 关键计数器说明
 
@@ -380,9 +384,10 @@ $ ./ib_bandwidth_monitor.sh -d mlx5_0
 # 带宽告警脚本示例
 THRESHOLD=80  # 利用率阈值 80%
 
+# tail -n +2 跳过表头行
 ./ib_bandwidth_monitor.sh -d mlx5_0 -q -t 30 | \
-  tail -n +2 | \  # 跳过表头
-  while read timestamp interface rxpps txpps rxkbps txkbps util; do
+  tail -n +2 | \
+  while read timestamp interface rxpps txpps rxmbs txmbs util; do
     if (( $(echo "$util > $THRESHOLD" | bc -l) )); then
       echo "WARNING: High bandwidth utilization on $interface: ${util}%"
       # 发送告警通知

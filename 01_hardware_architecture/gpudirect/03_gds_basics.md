@@ -127,7 +127,7 @@ nvcc -I/usr/local/cuda/include \
 | **文件对齐**           | 偏移和大小需对齐到 4 KB                                                      |
 | **nvidia-fs 内核模块** | Legacy (pre-CUDA 12.8) 必须 + MOFED 补丁 NVMe 驱动；Modern (CUDA 12.8+) 可选 |
 | **消费级 GPU**         | 支持 GDS 但性能低于数据中心 GPU（BAR1 窗口限制）                             |
-| **PCIe topology**      | GPU 和 NVMe 需在同一 PCIe domain 且支持 P2P                                  |
+| **PCIe topology**      | GPU 和 NVMe 需在同一 PCIe 根总线段下且 P2P 可达                              |
 
 ---
 

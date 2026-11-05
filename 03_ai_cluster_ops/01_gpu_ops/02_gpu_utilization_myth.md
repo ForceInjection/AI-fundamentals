@@ -1,8 +1,9 @@
 # GPU 利用率是一个误导性指标
 
-> 原文: `https://www.trainy.ai/blog/gpu-utilization-misleading`
+> 原文: "GPU Utilization is a Misleading Metric"，作者 Roanak Baviskar，Trainy，发表于 2024-08-22。
+> 原文链接（`https://www.trainy.ai/blog/gpu-utilization-misleading`）已失效（404），Wayback 存档：<https://web.archive.org/web/20241205065943/https://www.trainy.ai/blog/gpu-utilization-misleading>。文中数据与工具状态为 2024-08 口径。
 
-机器学习团队最常用于评估 `GPU` 使用情况的指标是 **`GPU` 利用率**，通常通过在终端运行 `nvidia-smi` 命令获取。许多集成可观测性工具也将 `GPU` 利用率作为其主要性能监测指标。令人惊讶的是，我们发现这并非总是衡量 `GPU` 性能的最佳指标。事实上，仅通过内存读写操作（不进行任何计算）就能获得 `100%` 的 `GPU` 利用率！本文旨在揭示这一发现的过程，并分享我们在此过程中获得的其他洞见。
+机器学习团队最常用于评估 `GPU` 使用情况的指标是 **`GPU` 利用率**，通常通过在终端运行 `nvidia-smi` 命令获取。许多集成可观测性工具也将 `GPU` 利用率作为其主要性能监测指标。我们发现这并非总是衡量 `GPU` 性能的最佳指标：仅通过内存读写操作（不进行任何计算）就能获得 `100%` 的 `GPU` 利用率。本文旨在揭示这一发现的过程，并分享我们在此过程中获得的其他洞见。
 
 在 [Trainy](https://trainy.ai/)，我们专注于 `GPU` 集群管理基础设施的研发，因此长期深耕该领域。去年我们与某基础模型公司合作，致力于扩展其大语言模型（`LLM`）训练规模并提升效率。我们遵循了几乎所有 `PyTorch` 性能调优指南都会提及的基础步骤，具体包括：
 
@@ -15,7 +16,7 @@
 
 > **简要回顾**：如 [Google 的 PaLM 论文](https://arxiv.org/pdf/2204.02311) 所述，`MFUs`（模型浮点运算利用率）是理解 `GPU` 性能的最佳指标之一。其定义为“观察到的吞吐量（每秒处理 token 数）与系统在峰值 FLOPs 状态下理论最大吞吐量的比值”。简而言之，它反映了当前工作负载的每秒浮点运算量占 `GPU` 理论最大能力的百分比。该指标的主要局限在于，相较于 `GPU` 利用率等指标，其数值依赖于具体参数和框架实现。
 
-令人遗憾的是，该模型训练仅达到约 `20%` 的 `MFU`（模型浮点利用率）。作为参考，目前大多数 `LLM` 训练的 `MFU` 水平在 [35%-45% 之间](https://github.com/mosaicml/llm-foundry/tree/main/scripts/train/benchmarking) 。这就引出了核心问题：在 `GPU` 利用率显示 `100%` 的情况下，为何我们仅使用了 `GPU` 理论最大计算能力的 `20%`？
+然而，该模型训练仅达到约 `20%` 的 `MFU`（模型浮点利用率）。作为参考，目前大多数 `LLM` 训练的 `MFU` 水平在 [35%-45% 之间](https://github.com/mosaicml/llm-foundry/tree/main/scripts/train/benchmarking) 。这就引出了核心问题：在 `GPU` 利用率显示 `100%` 的情况下，为何我们仅使用了 `GPU` 理论最大计算能力的 `20%`？
 
 要解答这个问题，我们需要更深入地理解 `GPU` 利用率指标的实际监测对象。
 
@@ -23,7 +24,7 @@
 
 在 [Nvidia 官方文档](https://developer.nvidia.com/management-library-nvml) 中，`GPU` 利用率被模糊地定义为“当前利用率指标同时反映 `GPU` 计算资源和内存接口的使用率”，这种表述具有显著的语义不确定性。
 
-（令人意外的是）[`Datadog` 的 `NVML` 文档](https://docs.datadoghq.com/integrations/nvml/#metrics) 提供了更明确的定义：“**过去采样周期内，`GPU` 执行一个或多个内核运算的时间占比**”。要理解这个指标的误导性，我们需要简要回顾 `GPU` 的工作原理。
+[`Datadog` 的 `NVML` 文档](https://docs.datadoghq.com/integrations/nvml/#metrics) 提供了更明确的定义：“**过去采样周期内，`GPU` 执行一个或多个内核运算的时间占比**”。要理解这个指标的误导性，我们需要简要回顾 `GPU` 的工作原理。
 
 `GPU` 具有[核心和多处理管理器](https://cvw.cornell.edu/gpu-architecture/gpu-characteristics/kernel_sm) 。在英伟达 `GPU` 中这些多处理管理器被称为流式多处理器（`SM`），而 `AMD` 硬件上则称为计算单元（`CU`）。下图展示了包含 `144` 个流式多处理器（`SM`）的 `GH100 GPU` 架构示意图。
 
@@ -51,7 +52,7 @@
 
 流多处理器效率（亦称 `SM` 活动度）是英伟达 `GPU` 上的一个度量指标，用于描述特定时间间隔内活跃流多处理器（`SM`）的百分比。如前所述，流多处理器可视为 `CUDA` 核心集群的调度中枢。以 [英伟达 H100 GPU](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/) 为例，其拥有 `132` 个流多处理器，每个 `SM` 包含大量 `CUDA` 核心。通过测量流多处理器效率，我们可以判断 `CUDA` 内核是否有效利用了流多处理器资源。若某个 `CUDA` 内核持续运行 `10` 秒但仅使用 `1` 个流多处理器，在 `H100` 上该操作会显示 `100%` 利用率，但流多处理器效率仅为 `1/132=0.7%`。
 
-非常棒，这正是我们需要的解决方案！通过逐层监测流多处理器效率，我们可以明确优化过程中最容易实现的性能增益点。
+这正是我们需要的指标：通过逐层监测流多处理器效率，我们可以明确优化过程中最容易实现的性能增益点。
 
 ## 进行优化
 
@@ -59,11 +60,11 @@
 
 ![fused](assets/fused.png)
 
-所谓融合，是指我们不使用 `PyTorch` 原生定义的层集合，而是将其替换为用 `CUDA` 或 `Triton` 实现的 `GPU` 内核——该内核将所有层合并为一个。这种加速源于：对于某些层（如 [Softmax](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html) ），相比执行数学运算的时间，减少内核读写 `GPU` 内存的时间更为关键。[Flash Attention](https://github.com/Dao-AILab/flash-attention) 就是这种融合内核的典型示例。其他需要融合的内核包括 [MLP](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f6639deb04c455b109c5311f55/flash_attn/ops/fused_dense.py#L531) 和 [dropout layer norm residual add](https://github.com/Dao-AILab/flash-attention/blob/9a11f440d3a34f6639deb04c455b109c5311f55/flash_attn/ops/fused_dense.py#L531) 操作。
+所谓融合，是指我们不使用 `PyTorch` 原生定义的层集合，而是将其替换为用 `CUDA` 或 `Triton` 实现的 `GPU` 内核——该内核将所有层合并为一个。这种加速源于：对于某些层（如 [Softmax](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html) ），相比执行数学运算的时间，减少内核读写 `GPU` 内存的时间更为关键。[Flash Attention](https://github.com/Dao-AILab/flash-attention) 就是这种融合内核的典型示例。其他需要融合的内核包括 [MLP（`FusedMLP`）](https://github.com/Dao-AILab/flash-attention/blob/main/flash_attn/ops/fused_dense.py) 和 [dropout + layer norm + residual add（`DropoutAddLayerNormFn`）](https://github.com/Dao-AILab/flash-attention/blob/main/flash_attn/ops/layer_norm.py) 操作。
 
 这些内核是我们自己编写的吗？并非如此。其中大部分已通过 `Flash Attention` 等库实现为 `nn.Modules` 层，因此您无需担心从零开始使用内核实现 `torch.autograd.function`。此外，这些实现通常已进行硬件级优化，不仅运行速度更快，还能减少内存占用。
 
-最大的挑战在于确定代码中需要替换具体网络层的位置。虽然 `torch.compile` 试图自动完成这项工作，但截至本文撰写时，该工具 [与 FSDP 等新型分布式策略兼容性不佳](https://dev-discuss.pytorch.org/t/torch-compile-fsdp-dec-8th/1718) ，且由于计算图中断问题，实践中未能兑现预期的加速效果。展望未来，我们期待 `torch` 编译器能自动完成这些优化，但目前仍需手动集成融合实现方案。
+最大的挑战在于确定代码中需要替换具体网络层的位置。虽然 `torch.compile` 试图自动完成这项工作，但截至原文撰写时（2024-08），该工具 [与 FSDP 等新型分布式策略兼容性不佳](https://dev-discuss.pytorch.org/t/torch-compile-fsdp-dec-8th/1718) ，且由于计算图中断问题，实践中未能兑现预期的加速效果。展望未来，我们期待 `torch` 编译器能自动完成这些优化，但目前仍需手动集成融合实现方案。（时敏口径：截至 2026-11，FSDP2 与 `torch.compile` 的组合已基本可用，并被 PyTorch 官方作为推荐搭配演进，实际兼容性以所用版本实测为准。）
 
 在成果方面，我们为该客户实现了训练速度 `4` 倍的提升，模型浮点利用率（`MFU`）从最初的 `20%` 提升至 `38%`。大部分优化来源于融合内核技术的应用，以及根据其模型规模和可用的 `3.2 Tbps Infiniband` 网络带宽，确定的最优模型并行层级配置。
 
@@ -77,16 +78,16 @@
 
 ### MFU vs SM Efficiency vs GPU Utilization 对比表
 
-| **指标名称**                                            | **关注层级** | **表示意义**                                 | **典型使用场景**          | **优点**               | **局限性**                         | **计算公式（含说明）**                                                                                                                                                    | **举例解释**                                                                       |
-| ------------------------------------------------------- | ------------ | -------------------------------------------- | ------------------------- | ---------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `MFU` (`Model Flops Utilization`)                       | 模型级       | 模型实际执行的 `FLOPs` 占理论 `FLOPs` 的比例 | 深度学习训练、推理        | 准确反映模型计算利用率 | 不适用于非模型任务，需已知模型结构 | `MFU` = 实际执行的 `FLOPs` / 理论最大 `FLOPs`<br>（需通过 `profiler` 获取模型实际 `FLOPs`）                                                                               | 理论 `FLOPs` 为 `1000 GFLOPs`，实际执行了 `900 GFLOPs`，则 `MFU = 0.9`             |
-| `SM Efficiency` (`Streaming Multiprocessor Efficiency`) | GPU 内核级   | `SM` 上有活跃 `warp` 的周期占总周期比例      | `CUDA kernel` 优化        | 可反映线程调度活跃性   | 活跃 `warp` 不代表充分利用核心     | `SM Efficiency` = 有 `warp` 活跃的周期数 / `SM` 总周期数                                                                                                                  | `SM` 在 `100` 个周期中有 `40` 个周期有活跃 `warp`，则 `SM Efficiency` = `40%`      |
-| `GPU Util` (`GPU Utilization`)                          | 整体硬件级   | `GPU` 在某时间段内是否“忙碌”（无论执行类型） | 粗略判断 GPU 是否在被使用 | 简单直观，易于采集     | 可能误判内存读写或轻负载为满载     | `GPU Util = 忙碌时间 / 总采样时间`<br>**说明：**<br>1) **忙碌**定义为有任意内核在运行<br>2) 不考虑是否占满 `CUDA` 核心<br>3) 哪怕只是执行内存 `copy`，也可能显示为 `100%` | `GPU` 执行内存 `copy` 操作时，即使 `CUDA` 核心空闲，`GPU Util` 也可能显示为 `100%` |
+| 指标名称                                                | 关注层级 | 表示意义                                     | 典型使用场景              | 优点               | 局限性                         | 计算公式（含说明）                                                                                                          | 举例解释                                                                       |
+| ------------------------------------------------------- | -------- | -------------------------------------------- | ------------------------- | ------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `MFU` (`Model Flops Utilization`)                       | 模型级   | 模型实际执行的 `FLOPs` 占理论 `FLOPs` 的比例 | 深度学习训练、推理        | 准确反映模型计算利用率 | 不适用于非模型任务，需已知模型结构 | `MFU` = 实际执行的 `FLOPs` / 理论最大 `FLOPs`<br>（需通过 `profiler` 获取模型实际 `FLOPs`）                               | 理论 `FLOPs` 为 `1000 GFLOPs`，实际执行了 `900 GFLOPs`，则 `MFU = 0.9`             |
+| `SM Efficiency` (`Streaming Multiprocessor Efficiency`) | GPU 内核级   | `SM` 上有活跃 `warp` 的周期占总周期比例      | `CUDA kernel` 优化        | 可反映线程调度活跃性   | 活跃 `warp` 不代表充分利用核心     | `SM Efficiency` = 有 `warp` 活跃的周期数 / `SM` 总周期数                                                                    | `SM` 在 `100` 个周期中有 `40` 个周期有活跃 `warp`，则 `SM Efficiency` = `40%`      |
+| `GPU Util` (`GPU Utilization`)                          | 整体硬件级   | `GPU` 在某时间段内是否“忙碌”（无论执行类型） | 粗略判断 GPU 是否在被使用 | 简单直观，易于采集     | 可能误判内存读写或轻负载为满载     | `GPU Util = 忙碌时间 / 总采样时间`<br>说明：1) “忙碌”定义为有任意内核在运行；2) 不考虑是否占满 `CUDA` 核心；3) 哪怕只是执行内存 `copy`，也可能显示为 `100%` | `GPU` 执行内存 `copy` 操作时，即使 `CUDA` 核心空闲，`GPU Util` 也可能显示为 `100%` |
 
 ### 补充说明：GPU Utilization 的误区
 
-- **`GPU Utilization` ≠ 实际计算能力利用率**。
+- `GPU Utilization` ≠ 实际计算能力利用率。
 - 只要有任何内核在运行（包括仅做 `memory copy`），就会视为“忙碌”；
-- **即使 CUDA 核心空闲，`GPU Utilization` 也可能是 100%**；
-- 若要精确评估 `GPU` 的计算利用情况，建议结合 **`MFU`** 或 **`SM Efficiency`**；
-- 通过结合 `MFU` 和 `SM Efficiency`，可以更全面地评估 GPU 的计算效率，而不仅仅是依赖 `GPU Utilization` 这一粗略指标。
+- 即使 CUDA 核心空闲，`GPU Utilization` 也可能是 100%；
+- 若要精确评估 `GPU` 的计算利用情况，建议结合 `MFU` 或 `SM Efficiency`；
+- 结合 `MFU` 和 `SM Efficiency`，可以更全面地评估 GPU 的计算效率，而不是只依赖 `GPU Utilization` 这个粗略指标。

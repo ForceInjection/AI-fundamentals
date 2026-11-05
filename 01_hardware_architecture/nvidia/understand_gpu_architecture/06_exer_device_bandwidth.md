@@ -28,6 +28,8 @@ cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/bandwidthTest.cu .
 cp $CUDA_PATH/samples/1_Utilities/bandwidthTest/Makefile .
 ```
 
+> 注：`$CUDA_PATH/samples/` 这套随 toolkit 自带的示例只存在于 CUDA 11.5 及更早版本。CUDA 11.6 起官方示例移到 GitHub 仓库 [NVIDIA/cuda-samples](https://github.com/NVIDIA/cuda-samples)，CUDA 12 的 toolkit 不再自带 samples 目录；在新版本上需要先克隆该仓库，再取对应文件（截至 2026-11）。
+
 4\. Set `INCLUDES` as an environment variable for the Makefile you just copied, then build the executable with `make -e`.
 
 ```bash

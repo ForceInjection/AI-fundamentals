@@ -1,6 +1,6 @@
 # DCGM 监控实操
 
-> 基于 A100-SXM4-80GB (8 GPU) + DCGM v3.3.9 实测。DCGM (Data Center GPU Manager) 是 NVIDIA 官方推荐的 GPU 集群监控方案——它提供了 `nvidia-smi` 不具备的能力：正确的 SM 利用率、显存带宽利用率、长时间趋势采集、以及与 Prometheus/Grafana 的原生集成。本文覆盖 `dcgmi` 命令行的诊断、监控、健康检查三大功能。
+> 基于 A100-SXM4-80GB (8 GPU) + DCGM v3.3.9 实测（数据采集于 2026-11 之前）。DCGM (Data Center GPU Manager) 是 NVIDIA 官方推荐的 GPU 集群监控方案，它提供了 `nvidia-smi` 不具备的能力：SM Active 等 profiling 指标、显存带宽利用率、长时间趋势采集、以及与 Prometheus/Grafana 的原生集成。本文覆盖 `dcgmi` 命令行的诊断、监控、健康检查三大功能。
 
 ---
 
@@ -14,7 +14,7 @@
 | 显存带宽利用率  | ❌ 无               | **DRAM Active** / **PCIe TX/RX** | 判断是否是 memory bound                |
 | 功耗            | `power.draw`        | **Power Usage**                  | 两者都有，DCGM 可做趋势                |
 | NVLink 状态     | `nvidia-smi nvlink` | **NVLink 链路 Up/Down**          | DCGM 输出更紧凑，适合脚本解析          |
-| 历史数据        | ❌ 无               | ✅ 时间序列存储                  | 回溯分析的关键                         |
+| 历史数据        | ❌ 无               | DCGM 只负责输出指标，时间序列存储在 Prometheus 侧 | 回溯分析的关键       |
 | Prometheus 集成 | ❌ 无               | ✅ 原生 exporter                 | 集群级监控的基础                       |
 
 > 前置阅读：[GPU 利用率是一个误导性指标](02_gpu_utilization_myth.md)
@@ -81,28 +81,32 @@ dcgmi group -l
 
 ### 3.1 关键 Field ID 速查
 
-| Field ID | 短名  | 含义                                              | 什么时候用                           |
-| -------- | ----- | ------------------------------------------------- | ------------------------------------ |
-| **203**  | GRACT | **SM Active** — 至少 1 个 warp 活跃的 SM 周期占比 | 替代 GPU-Util，判断 GPU 是否真的在算 |
-| **204**  | MCUTL | Mem Controller Utilization — 显存带宽利用率       | > 80% 且 SM Active 低 → memory bound |
-| **1001** | SMACT | SM Active 时间 (μs)                               | 精确到微秒的 SM 使用量               |
-| **1002** | DRAMA | DRAM Active 时间 (μs)                             | 精确到微秒的显存使用量               |
-| **1005** | PCIRX | PCIe RX 吞吐                                      | 跨机通信数据量                       |
-| **150**  | TMPTR | GPU 温度 (°C)                                     | 散热健康                             |
-| **155**  | PWR   | GPU 功耗 (W)                                      | 能效评估                             |
+下表按 DCGM v3.3.9 的 `dcgm_fields.h` 核对。注意：203 是 `DCGM_FI_DEV_GPU_UTIL`，与 nvidia-smi 的 GPU-Util 同口径（采样周期内有 kernel 执行的时间占比）；真正反映 SM 活跃度的是 profiling 指标 1002。
+
+| Field ID | 短名  | 含义                                                                        | 什么时候用                                 |
+| -------- | ----- | --------------------------------------------------------------------------- | ------------------------------------------ |
+| **203**  | GPUTL | `DCGM_FI_DEV_GPU_UTIL`：有 kernel 执行的时间占比，即被 [GPU 忙不忙怎么判断](09_gpu_busy_check.md) 批评的 GPU-Util 口径 | 与 nvidia-smi GPU-Util 对齐                |
+| **204**  | MCUTL | `DCGM_FI_DEV_MEM_COPY_UTIL`：显存拷贝/带宽利用率                            | > 80% 且 SMACT 低 → memory bound           |
+| **1001** | GRACT | `DCGM_FI_PROF_GR_ENGINE_ACTIVE`：图形引擎活跃周期占比（比例）               | kernel 执行占比的比例形式                  |
+| **1002** | SMACT | `DCGM_FI_PROF_SM_ACTIVE`：SM 上至少一个 warp 活跃的周期占比                 | 判断 SM 真实活跃度，替代 GPU-Util          |
+| **1003** | SMOCC | `DCGM_FI_PROF_SM_OCCUPANCY`：SM 占用率（活跃 warp 驻留比例）                | 区分"SM 活跃"与"SM 驻留深度"               |
+| **1005** | DRAMA | `DCGM_FI_PROF_DRAM_ACTIVE`：DRAM 活跃周期占比                               | 显存带宽瓶颈定位                           |
+| **1010** | PCIRX | `DCGM_FI_PROF_PCIE_RX_BYTES`：PCIe 接收吞吐                                 | 跨机通信数据量                             |
+| **150**  | TMPTR | GPU 温度 (°C)                                                               | 散热健康                                   |
+| **155**  | PWR   | GPU 功耗 (W)                                                                | 能效评估                                   |
 
 ### 3.2 基础监控示例
 
 ```bash
-# 每 3 秒采样，共 5 次。监控 SM Active、显存利用率、温度
+# 每 3 秒采样，共 5 次。监控 GPU 利用率、显存利用率、SM Active、温度
 dcgmi dmon -e 203,204,1001,1002,150 -d 3000 -c 5
 ```
 
-当前节点输出（8 GPU 全部空闲）：
+当前节点输出（8 GPU 全部空闲；列头短名为示意口径，按 §3.1 字段表对应，实机输出未逐列复核）：
 
 ```text
-#Entity   GRACT      MCUTL      SMACT       DRAMA       TMPTR
-ID                                    (us)        (us)        (C)
+#Entity   GPUTL      MCUTL      GRACT       SMACT       TMPTR
+ID                                                (C)
 GPU 7     N/A        N/A        0.000       0.000       26
 GPU 6     0          0          0.000       0.000       26
 GPU 5     0          0          0.000       0.000       25
@@ -115,9 +119,9 @@ GPU 0     0          0          0.000       0.000       28
 
 **解读**：
 
-- GPU 7 `GRACT` 和 `MCUTL` 显示 `N/A`，其他 GPU 显示 `0`——前者是 MIG Enabled 导致的监控异常（参见 [MIG 配置与实操](../../01_hardware_architecture/nvidia/mig_hands_on.md)），后者是真实空闲
-- 所有 GPU 的 SMACT 和 DRAMA 为零 — 无负载
-- 温度 25-29°C — 健康空闲温度范围
+- GPU 7 `GPUTL` 和 `MCUTL` 显示 `N/A`，其他 GPU 显示 `0`：前者是 MIG Enabled 导致的监控异常（参见 [MIG 配置与实操](../../01_hardware_architecture/nvidia/mig_hands_on.md)），后者是真实空闲
+- 所有 GPU 的 GRACT 和 SMACT 为零，无负载
+- 温度 25-29°C，健康空闲温度范围
 
 > **对比 nvidia-smi**：同样的空闲状态，`nvidia-smi` 的 GPU-Util 也会显示 0%。但关键区别发生在**有负载时**——nvidia-smi 的 GPU-Util 50% 可能意味着 SM Active 只有 20% 或 80%，DCGM 能精确区分。
 >
@@ -173,15 +177,16 @@ more GPUs has MIG mode enabled and one or more GPUs has MIG mode disabled.
 
 ## 6. Prometheus + Grafana 集成
 
-DCGM 的 `dcgm-exporter` 将 GPU 指标暴露为 Prometheus 格式，配合 Grafana 实现集群级长期监控。这是 DCGM 相比纯 CLI 工具的核心优势——`nvidia-smi` 和 `nvtop` 只能看「现在」，DCGM + Prometheus 能回溯「昨天」。
+DCGM 的 `dcgm-exporter` 将 GPU 指标暴露为 Prometheus 格式，配合 Grafana 实现集群级长期监控。CLI 工具只能看当前时刻的采样值，指标写入 Prometheus 之后才能做跨天的趋势回溯。
 
 ```bash
-# 启动 DCGM Exporter
+# 启动 DCGM Exporter（主渠道为 NGC 的 nvcr.io/nvidia/k8s/dcgm-exporter；
+# tag 规则：<exporter 版本>-<DCGM 版本>-<OS>，应选用与节点 DCGM 版本配套的 tag，勿用 latest）
 docker run -d --gpus all --name dcgm-exporter -p 9400:9400 \
-  nvidia/dcgm-exporter:latest
+  nvcr.io/nvidia/k8s/dcgm-exporter:3.3.9-3.6.1-ubuntu22.04
 
 # 验证指标端点
-curl http://localhost:9400/metrics | grep -E "DCGM_FI_DEV_(SM_CLOCK|DRAM_ACTIVE|POWER)"
+curl http://localhost:9400/metrics | grep -E "DCGM_FI_(DEV_SM_CLOCK|PROF_DRAM_ACTIVE|DEV_POWER_USAGE)"
 ```
 
 Grafana Dashboard 推荐：**NVIDIA DCGM Exporter Dashboard**（ID: 12239），关键面板：SM Active、DRAM Active、NVLink 吞吐、温度、功耗。
@@ -211,7 +216,7 @@ dcgmi dmon -e 150 -d 1000 -c 1 2>/dev/null | tail -9 | awk '{printf "GPU %s: %s�
 
 echo ""
 echo "=== SM Active (最近 3 秒) ==="
-dcgmi dmon -e 203 -d 3000 -c 1 2>/dev/null
+dcgmi dmon -e 1002 -d 3000 -c 1 2>/dev/null
 ```
 
 ---

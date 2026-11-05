@@ -8,46 +8,38 @@
 
 ## 一、GPU 亲和性——NVLink 域内 vs 跨 NVSwitch
 
-同一个节点上 8 张 A100/H100 通过 NVSwitch 全互联。任意两张 GPU 都能达到 NVLink 最高带宽（H100: ~450 GB/s 理论单向带宽，NCCL all_reduce 实测 bus_bw ~316 GB/s；A100: ~600 GB/s 双向）。但如果 4 张 GPU 分别来自两个 NVSwitch 域（A100 有 2 个 NVSwitch，每 4 张 GPU 一组），跨域通信需要经过 PCIe 中转：
+同一个节点上 8 张 A100/H100 通过 NVSwitch 全互联（DGX/HGX 机型）。任意两张 GPU 都能达到 NVLink 最高带宽（H100: ~450 GB/s 理论单向带宽，NCCL all_reduce 实测 bus_bw ~316 GB/s；A100: ~600 GB/s 双向）。但并非所有 8 卡机型都有 NVSwitch：无 NVSwitch 的 A100 服务器按 4 张一组用 NVLink bridge 互联，如果 4 张 GPU 分别来自两个 bridge 组，跨组通信需要经过 PCIe 中转：
 
 ```text
-NVSwitch 域 1 (GPU 0-3):         NVSwitch 域 2 (GPU 4-7):
+bridge 组 1 (GPU 0-3):          bridge 组 2 (GPU 4-7):
   GPU 0 ←→ GPU 3: NVLink          GPU 4 ←→ GPU 7: NVLink
-  GPU 0 ←→ GPU 4: PCIe P2P        ← 跨 NVSwitch 域，走 PCIe
-                                    （带宽约 NVLink 的 1/10-1/5）
+  GPU 0 ←→ GPU 4: PCIe P2P        ← 跨组，走 PCIe
+                                    （带宽约 NVLink 的 1/10-1/5，数量级估计）
 ```
 
-调度器的任务是：为 TP=4 的作业分配 4 张 GPU 时，优先选择**全部在同一个 NVSwitch 域内**的 GPU 组。
+调度器的任务是：为 TP=4 的作业分配 4 张 GPU 时，优先选择**全部在同一个 NVLink 域内**的 GPU 组。
 
-### 1.1 实现方式
+### 1.1 实现方式（概念模型）
 
-NVIDIA GPU Operator 提供的 Topology-Aware Scheduler 基于 `nvidia-smi topo -m` 的输出构建拓扑图，在 Filter 和 Score 阶段做两件事：
+拓扑感知调度在 Filter 和 Score 阶段做两件事：
 
-- **Filter**：剔除不满足拓扑约束的节点。如果 Pod 指定了 `nvidia.com/gpu.topo.nvswitch=4`，则 Filter 阶段只保留定义了包含 4 张 GPU 的 NVSwitch 域的节点。
-- **Score**：在满足 Filter 的节点中，给拓扑更优的节点更高分。同 NVSwitch 域 > 同 PCIe switch > 同 NUMA node。
+- **Filter**：剔除不满足拓扑约束的候选。比如 TP=4 的作业，如果某个候选节点找不出同一个 NVLink 域内的 4 张卡，就把它排除。
+- **Score**：在通过 Filter 的候选里，给拓扑更优的节点更高分。同 NVLink 域 > 同 PCIe switch > 同 NUMA node。
 
-### 1.2 配置示例
+这套概念模型是通用的，但落到具体产品，配置入口各不相同，并不存在 `nvidia.com/gpu.topo.nvswitch`、`schedulerName: nvidia-topology-aware-scheduler` 这类统一字段。
 
-```yaml
-# 使用 NVIDIA GPU Operator 的拓扑感知调度
-apiVersion: v1
-kind: Pod
-metadata:
-  name: training-tp4
-spec:
-  schedulerName: nvidia-topology-aware-scheduler
-  containers:
-    - resources:
-        limits:
-          nvidia.com/gpu: 4
-  annotations:
-    nvidia.com/gpu.topology.prefer: "nvswitch" # 偏好同 NVSwitch 域
-    # nvidia.com/gpu.topology.require: "nvswitch" # 强制同 NVSwitch 域
-```
+### 1.2 现状：项目已换代（截至 2026-10）
+
+NVIDIA 早年开源过一个 topology-aware scheduler（基于 Volcano 的 PodGroup/minMember 机制构建），但其文档页和 GitHub 仓库都已下线，围绕它的各种配置写法随之失效。NVIDIA 现行的方案是：
+
+- **KAI-Scheduler**：源自 Run:AI 调度器，NVIDIA 捐给 CNCF 的 sandbox 项目（2025 年受理），内置 gang 调度与拓扑感知放置（topology 维度）。
+- **Topograph**：NVIDIA 开源的拓扑导出层，把 NVLink/PCIe/IB 拓扑整理成节点标签，供 KAI-Scheduler 等调度器消费。
+
+生态里的其他选择：Volcano 的 network-topology-aware 调度（HyperNode 层级）、HAMi 的 GPU 池化与亲和调度。
 
 ### 1.3 代价
 
-强制执行拓扑约束会降低 GPU 利用率——如果在某个节点上同 NVSwitch 域的 4 张 GPU 被占用，即使有其他 4 张空闲 GPU 分布在两个 NVSwitch 域中，这个 Pod 也不会被调度。对于训练任务这是正确的取舍（慢 10 倍的训练 ≈ 浪费），但对于推理任务（单 GPU，无跨 GPU 通信），拓扑约束没有意义。
+强制执行拓扑约束会降低 GPU 利用率：如果在某个节点上同 NVLink 域的 4 张 GPU 被占用，即使有其他 4 张空闲 GPU 分布在两个 NVLink 域中，这个 Pod 也不会被调度。对于训练任务这是正确的取舍（慢 10 倍的训练 ≈ 浪费），但对于推理任务（单 GPU，无跨 GPU 通信），拓扑约束没有意义。
 
 ---
 
@@ -72,7 +64,7 @@ GPU 通过 PCIe 连接到特定的 NUMA node。H2D 传输时，如果 CPU 线程
 
 ### 2.1 实现方式
 
-K8s 1.27+ 的 Topology Manager 配合 CPU Manager + Memory Manager 可以做 NUMA 对齐。GPU 的 NUMA 亲和性需要 Device Plugin 在 `Allocate()` 时上报拓扑信息：
+K8s 1.18+（beta）的 Topology Manager 配合 CPU Manager + Memory Manager 可以做 NUMA 对齐（功能在 1.16 以 alpha 引入）。GPU 的 NUMA 亲和性需要 Device Plugin 在 `Allocate()` 时上报拓扑信息：
 
 ```yaml
 # Kubelet Topology Manager 策略
@@ -81,7 +73,7 @@ topologyManagerPolicy: single-numa-node # 所有资源在同一 NUMA node
 # 可选: best-effort, restricted, single-numa-node
 ```
 
-`single-numa-node` 策略会导致 Pod 被限制在一个 NUMA node 内——如果 GPU 在 NUMA 0 但所需的 CPU 核心不够，Pod 不会调度。这是最严格的策略，只在延迟极其敏感的场景（如 HPC 训练）中使用。
+`single-numa-node` 策略会导致 Pod 被限制在一个 NUMA node 内：如果 GPU 在 NUMA 0 但所需的 CPU 核心不够，Pod 不会调度。这是最严格的策略，只在延迟极其敏感的场景（如 HPC 训练）中使用。
 
 ### 2.2 建议
 
@@ -95,11 +87,11 @@ topologyManagerPolicy: single-numa-node # 所有资源在同一 NUMA node
 
 ## 三、跨节点亲和性——什么时候才需要关心
 
-Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，但不解决「跨节点通信有多快」的问题。TP=8 如果跨了 2 个节点，NCCL 通信从 NVLink（μs 级）变成了 IB（10-20 μs 级）——延迟上升了 10-20 倍。
+Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，但不解决「跨节点通信有多快」的问题。TP=8 如果跨了 2 个节点，NCCL 通信就要从 NVLink（μs 级）换成 IB（10-20 μs 级），延迟上升一个数量级（数量级估计）。
 
-对于 TP（Tensor Parallelism），跨节点是必须避免的——TP 的通信频率极高，延迟的放大直接反映为训练吞吐的下降。调度器应优先将 TP 组内的 GPU 放在同一节点上。
+对于 TP（Tensor Parallelism），跨节点必须避免：TP 的通信频率极高，延迟的放大直接反映为训练吞吐的下降。调度器应优先将 TP 组内的 GPU 放在同一节点上。
 
-对于 DP（Data Parallelism），跨节点是不可避免的——梯度同步本来就是节点间的操作，IB 带宽可接受。DP 的训练作业不需要拓扑约束。
+对于 DP（Data Parallelism），跨节点不可避免，梯度同步本来就是节点间的操作，IB 带宽可接受。DP 的训练作业不需要拓扑约束。
 
 ```text
 训练作业: 2 节点 × 4 GPU = 8 GPU 总量
@@ -117,11 +109,11 @@ Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，�
 
 | 通信路径                                 | 512MB all_reduce bus_bw | 调度含义                         |
 | ---------------------------------------- | ----------------------- | -------------------------------- |
-| NVLink GPU0↔GPU1（同 NVSwitch 域）       | **315.8 GB/s**          | 最优——TP 组内 GPU 的期望值       |
+| NVLink GPU0↔GPU1（同 NVSwitch 域）       | **315.8 GB/s**          | 最优，TP 组内 GPU 的期望值       |
 | NVLink GPU0↔GPU4（跨 NUMA，同 NVSwitch） | **316.3 GB/s**          | 同 NVSwitch 域内，NUMA 无影响    |
-| P2P 禁用 GPU0↔GPU1（走 PCIe fallback）   | **23.8 GB/s**           | 比 NVLink 慢 13 倍——训练不可接受 |
+| P2P 禁用 GPU0↔GPU1（走 PCIe fallback）   | **23.8 GB/s**           | 比 NVLink 慢 13 倍，训练不可接受 |
 
-关键发现：同 NVSwitch 域内跨 NUMA 不影响带宽（316.3 ≈ 315.8 GB/s），调度器不需要担心 NUMA 对 GPU-GPU 通信的影响。真正要避免的是跨 NVSwitch 域（PCIe P2P）或禁用 P2P（CPU fallback）的路径——它们比 NVLink 慢一个数量级。
+关键发现：同 NVSwitch 域内跨 NUMA 不影响带宽（316.3 ≈ 315.8 GB/s），调度器不需要担心 NUMA 对 GPU-GPU 通信的影响。真正要避免的是跨 NVLink 域（走 PCIe P2P）或禁用 P2P（CPU fallback）的路径，它们比 NVLink 慢一个数量级。
 
 ---
 
@@ -137,7 +129,8 @@ Gang Scheduling（§02）解决了「跨节点 GPU 数量足够」的问题，�
 
 ## 相关资源
 
-- [NVIDIA GPU Operator Topology-Aware Scheduling](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-operator-topology-aware-scheduler.html)
+- [KAI-Scheduler（CNCF sandbox）](https://github.com/kai-scheduler/KAI-Scheduler)
+- [NVIDIA Topograph](https://docs.nvidia.com/topograph/) — 拓扑导出层
 - [K8s Topology Manager](https://kubernetes.io/docs/tasks/administer-cluster/topology-manager/)
 - [GPU 调度问题总览](01_gpu_scheduling_problem.md)
 - [NCCL 通信路径逐层压测](../03_nccl/06_nccl_path_benchmark.md) — NVLink 和 PCIe 实测差距

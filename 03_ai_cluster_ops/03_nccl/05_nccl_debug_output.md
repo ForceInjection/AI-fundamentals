@@ -1,6 +1,8 @@
 # NCCL Debug 输出实战解读
 
-> 基于 A100-SXM4-80GB (3 GPU, NVLink NV12) + NCCL 2.29.3 实测。`NCCL_DEBUG=INFO` 是排查分布式通信问题的"第一手线索"——但默认输出近 100 行，大部分是噪音。本文逐段拆解初始化阶段的关键信息，标注哪些行正常、哪些行是危险信号、哪些字眼出现就意味着问题。
+> 基于 A100-SXM4-80GB (3 GPU, NVLink NV12) + NCCL 2.29.3 实测。`NCCL_DEBUG=INFO` 是排查分布式通信问题的"第一手线索"，但默认输出近 100 行，大部分是噪音。本文逐段拆解初始化阶段的关键信息，标注哪些行正常、哪些行是危险信号、哪些字眼出现就意味着问题。
+>
+> as-of 2026-11-05：日志样例采集自 NCCL 2.29.3（libnccl2，容器外 apt 安装）+ A100-SXM4-80GB 单机 3 卡环境，宿主驱动版本文中未记录；日志行格式以 NCCL 源码为准，跨版本可能变化。
 
 ---
 
@@ -18,7 +20,7 @@ NCCL_DEBUG=INFO ./build/all_reduce_perf -b 1M -e 1M -g 3
 | **`INFO`** | 拓扑检测 + 通信路径选择 + 初始化参数（~80-120 行） | **性能异常排查首选** |
 | `TRACE`    | 每次通信操作的详细时间戳（数千行）                 | 极深层问题定位       |
 
-> 输出同时打印到 stdout 和 stderr。建议重定向到文件：`NCCL_DEBUG=INFO ./test 2>&1 | tee nccl_debug.log`。
+> NCCL 日志默认走 stdout（或重定向到 `NCCL_DEBUG_FILE` 指定的文件）。稳妥写法是 `NCCL_DEBUG=INFO ./test 2>&1 | tee nccl_debug.log`，把 stderr 一并收进来，避免与程序自身输出交错时丢行。
 
 ---
 
@@ -38,7 +40,7 @@ gpu-node:2674380:2674380 [0] NCCL INFO NCCL git version stable dcf2a2fbe
 
 | 行                               | 解读                                                 | 正常信号                                      |
 | -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
-| `Could not find: libnccl-env.so` | 可选插件未加载——**无影响**，大多数环境都会出现这一行 | ✅ 可忽略                                     |
+| `Could not find: libnccl-env.so` | 可选插件未加载，**无影响**，大多数环境都会出现这一行 | ✅ 可忽略                                     |
 | `Bootstrap: Using eth0...`       | NCCL 使用该网络接口做初始握手（不是数据面通信）      | ✅ 单节点可忽略；多节点需确认是正确的 IB 接口 |
 | `cudaDriverVersion 13000`        | CUDA 驱动版本 13.0                                   | ✅                                            |
 | `NCCL version 2.29.3`            | NCCL 库版本                                          | ✅ 与安装版本一致                             |
@@ -51,9 +53,9 @@ gpu-node:2674380:2674380 [1] NCCL INFO Comm config nvlinkCentricSched set to 1
 gpu-node:2674380:2674380 [2] NCCL INFO Comm config nvlinkCentricSched set to 1
 ```
 
-**关键字 `nvlinkCentricSched`**：NCCL 检测到 NVLink 存在，启用了 NVLink 优先的调度策略。三个 rank（GPU 0,1,2 = 物理 GPU 3,4,5）均确认启用。
+**关键字 `nvlinkCentricSched`**：这是 communicator 配置项的回显（由环境变量 `NCCL_NVLINK_UTIL_CENTRIC_SCHED_ENABLE` 控制，源码 init.cc 中的 `nvlinkUtilCentricSchedEnable`），值为 1 说明 NVLink 利用率优先的调度配置已生效。它是配置结果，不是拓扑探测结论。三个 rank（GPU 0,1,2 = 物理 GPU 3,4,5）均确认生效。
 
-> ⚠️ 如果这里出现的是 `pcieCentricSched`，说明 NCCL 认为 NVLink 不可用或不足以构成主要通信路径——检查 `nvidia-smi topo -m` 和 NVLink 链路状态。
+> ⚠️ 这一行只在显式设置过该配置时打印，缺省环境不出现，也不代表 NVLink 不可用。NVLink 路径是否真的被启用，看 §2.5 的 `Channel via P2P/NVLink` 行。
 
 ### 2.3 网络后端检测
 
@@ -64,14 +66,14 @@ gpu-node:2674380:2674388 [0] NCCL INFO NET/IB : Using [RO]; OOB eth0:10.0.0.1<0>
 gpu-node:2674380:2674388 [0] NCCL INFO Failed to initialize NET plugin IB
 ```
 
-| 行                                   | 解读                                                  |
-| ------------------------------------ | ----------------------------------------------------- |
-| `NET/Plugin: Could not find`         | 未安装自定义网络插件——单节点无需                      |
-| `NET/IB : No device found`           | 未检测到 InfiniBand 设备——本机无 IB 硬件              |
-| `Failed to initialize NET plugin IB` | IB 初始化失败——因为无硬件，**预期的正常行为**         |
-| `Using [RO]`                         | RO = Ring Order。单节点 NVLink 环境下的默认 Ring 算法 |
+| 行                                   | 解读                                                                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `NET/Plugin: Could not find`         | 未安装自定义网络插件。单节点无需                                                                                  |
+| `NET/IB : No device found`           | 未检测到 InfiniBand 设备。本机无 IB 硬件                                                                          |
+| `Failed to initialize NET plugin IB` | IB 初始化失败。因为无硬件，**预期的正常行为**                                                                     |
+| `Using [RO]; OOB eth0:...`           | IB 插件初始化随设备列表打印的一行。`[RO]` 是 Relaxed Ordering（宽松序）标记，与「Ring Order」无关；`OOB` 后面是带外引导用的本地接口和地址。方括号设备列表为空（无 `[0]mlx5_0:1/IB` 这类条目）印证本机无 IB 设备 |
 
-> **关键区分**：有 IB 硬件的多节点环境应看到 `NET/IB : Using ...` + 具体的 HCA 设备名（如 `mlx5_0`）。如果硬件存在但这里显示 `No device found`，检查 `ibv_devinfo` 和 `NCCL_IB_HCA` 环境变量。
+> **关键区分**：`[RO]` 出现在 `No device found` 之后并不矛盾——两者都出自 IB 插件初始化阶段（net_ib/init.cc）：前者先报设备数，后者打印宽松序能力与 OOB 接口。有 IB 硬件的多节点环境则应看到 `NET/IB : Using [RO] [0]mlx5_0:1/IB ...` + 具体 HCA 设备名。如果硬件存在但这里显示 `No device found`，检查 `ibv_devinfo` 和 `NCCL_IB_HCA` 环境变量。
 
 ### 2.4 GPU 识别与设备分配
 
@@ -90,13 +92,11 @@ gpu-node:2674380:2674388 [0] NCCL INFO Failed to initialize NET plugin IB
 | `[0000:XX:00]`          | `4c:00`, `84:00`, `8a:00` | GPU 的 PCIe BDF (Bus:Device.Function)            |
 | `NVIDIA A100-SXM4-80GB` | —                         | GPU 型号确认                                     |
 
-> **诊断用途**：物理 GPU 3 的 PCIe BDF 是 `0000:4C:00`，GPU 4 是 `0000:84:00`。可以用 `nvidia-smi -q` 交叉验证——如果 NCCL 报告某个 rank 使用了预期之外的 GPU，问题出在 `CUDA_VISIBLE_DEVICES` 或容器 GPU 分配。
+> **诊断用途**：物理 GPU 3 的 PCIe BDF 是 `0000:4C:00`，GPU 4 是 `0000:84:00`。可以用 `nvidia-smi -q` 交叉验证：如果 NCCL 报告某个 rank 使用了预期之外的 GPU，问题出在 `CUDA_VISIBLE_DEVICES` 或容器 GPU 分配。
 
 ### 2.5 通信拓扑与 NVLink 检测
 
 ```text
-gpu-node:2674380:2674380 [0] NCCL INFO NVLS multicast support is available on domain 0
-gpu-node:2674380:2674380 [0] NCCL INFO NVLS multicast is available on this communicator
 gpu-node:2674380:2674380 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[1] via P2P/NVLink/0
 gpu-node:2674380:2674380 [0] NCCL INFO Channel 01/0 : 0[0] -> 1[1] via P2P/NVLink/1
 ...
@@ -104,12 +104,13 @@ gpu-node:2674380:2674380 [0] NCCL INFO Connected all rings
 gpu-node:2674380:2674380 [0] NCCL INFO Connected all trees
 ```
 
-| 行                                             | 解读                                                                                                       |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `NVLS multicast support is available`          | NVL Switch 多播可用——**NVSwitch 正常工作的标志**。如果 A100+NVSwitch 环境看不到这行，NVSwitch 可能未被识别 |
-| `Channel XX/0 : 0[0] -> 1[1] via P2P/NVLink/X` | 每个通信通道的物理路径。这里的 `via P2P/NVLink/0` 确认数据走 NVLink 而非 PCIe                              |
-| `Connected all rings`                          | Ring 拓扑构建完成——所有 GPU 已加入通信环                                                                   |
-| `Connected all trees`                          | Tree 拓扑构建完成——用于小数据量的 Tree 算法                                                                |
+| 行                                             | 解读                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| `Channel XX/0 : 0[0] -> 1[1] via P2P/NVLink/X` | 每个通信通道的物理路径。这里的 `via P2P/NVLink/0` 确认数据走 NVLink 而非 PCIe  |
+| `Connected all rings`                          | Ring 拓扑构建完成，所有 GPU 已加入通信环                                       |
+| `Connected all trees`                          | Tree 拓扑构建完成，用于小数据量的 Tree 算法                                    |
+
+> **NVLS 行只在 Hopper 世代出现**：`NVLS multicast support is available on dev 0 (NVLS_NCHANNELS 16)`（源码 nvls.cc，NCCL 2.17+）。它依赖 CUDA 组播（`CU_DEVICE_ATTRIBUTE_MULTICAST_SUPPORTED`），即 NVSwitch Gen3——A100（NVSwitch Gen2）的日志里不会有这一行。看到 `not available` 也不一定是故障：无 NVSwitch Gen3、CUDA 12.1 以下或 `NCCL_NVLS_ENABLE=0` 都会关闭 NVLS。
 
 > ⚠️ **危险信号对照**：如果看到 `via P2P/PCIe` 或 `via NET` 而非 `via P2P/NVLink`，GPU 间走了慢速路径。此时检查 `nvidia-smi nvlink --status`。
 
@@ -118,10 +119,11 @@ gpu-node:2674380:2674380 [0] NCCL INFO Connected all trees
 ```text
 gpu-node:2674380:2674380 [0] NCCL INFO comm 0x7ff13c005d40 rank 0 nranks 3 cudaDev 0 nid 0 busId 4c00 ...
 # AllReduce test output:
-  1048576   262144  float  sum  -1  52.27  20.06  30.09  0  56.34  18.61  31.90  0
+  1048576   262144  float  sum  -1  52.27  20.06  26.75  0
+  1048576   262144  float  sum   0  56.34  18.61  24.81  0
 ```
 
-最后一行是 AllReduce 性能数据——`bus_bw = 30.09 GB/s`（out-of-place）和 `31.90 GB/s`（in-place）。3 GPU × 1 MB 数据时 bus_bw 较低是正常的（launch latency 主导），对照期望带宽参考 [NCCL 基准测试方法论](04_nccl_benchmark.md)。
+最后两行是 AllReduce 性能数据（第 5 列 `-1`/`0` 是 out-of-place / in-place 标记）：`bus_bw = 26.75 GB/s`（out-of-place）和 `24.81 GB/s`（in-place）。自检口径：busbw = algbw × 2(N-1)/N，3 GPU 时系数是 4/3 ≈ 1.333（20.06 × 4/3 = 26.75）。3 GPU × 1 MB 数据时 bus_bw 较低是正常的（launch latency 主导），对照期望带宽参考 [NCCL 基准测试方法论](04_nccl_benchmark.md)。
 
 ---
 
@@ -130,8 +132,7 @@ gpu-node:2674380:2674380 [0] NCCL INFO comm 0x7ff13c005d40 rank 0 nranks 3 cudaD
 ### 3.1 正常环境（NVLink + NVSwitch）
 
 ```text
-✅ Comm config nvlinkCentricSched set to 1     ← NVLink 优先调度
-✅ NVLS multicast support is available          ← NVSwitch 正常
+✅ Comm config nvlinkCentricSched set to 1     ← NVLink 优先调度（显式配置过才打印）
 ✅ Channel XX via P2P/NVLink/X                  ← NVLink 路径
 ✅ Connected all rings / Connected all trees     ← 拓扑完整
 ```
@@ -139,9 +140,8 @@ gpu-node:2674380:2674380 [0] NCCL INFO comm 0x7ff13c005d40 rank 0 nranks 3 cudaD
 ### 3.2 NVLink 故障环境（如 GPU 7）
 
 ```text
-❌ Comm config pcieCentricSched set to 1        ← 被迫走 PCIe 调度
 ❌ Channel XX via P2P/PCIe                      ← 仅 PCIe 路径（或 via NET 走网络）
-❌ NVLS multicast support is available (可能仍在) ← NVSwitch 自身正常，但该 GPU 未连接
+❌ 某对 GPU 的 Channel 反复超时/重连             ← NVLink 降级或不可达
 ```
 
 ### 3.3 IB 缺失/故障环境（多节点）

@@ -1,6 +1,6 @@
 # GPU 架构实例：NVIDIA A100 (Ampere)
 
-> 基于 A100-SXM4-80GB (CC 8.0) 服务器实测。A100 是 NVIDIA 数据中心 GPU 从 Volta 到 Hopper 的关键转折点——它引入了 TF32 精度、结构稀疏性（Sparsity）、MIG 分区等至今仍是 AI 训练推理基座的能力。本文从架构规格到实测验证完整覆盖。
+> 基于 A100-SXM4-80GB (CC 8.0) 服务器实测。A100 是 NVIDIA 数据中心 GPU 从 Volta 到 Hopper 的关键转折点：TF32 精度、结构稀疏性（Sparsity）、MIG 分区这些至今仍是 AI 训练推理基座的能力都从这一代开始。本文从架构规格到实测验证完整覆盖，规格数字为 NVIDIA A100 数据表口径（2020 年发布）。
 
 ---
 
@@ -46,7 +46,7 @@ GA100 SM (108 个在 A100 中)
 └── 寄存器文件: 65536 × 32-bit
 ```
 
-**关键改进**：V100 中 FP32 和 INT32 数据路径分离，不能同时使用。A100 将两者合并到同一条数据路径上——当不需要 INT32 运算时，INT32 数据路径也可执行 FP32 指令，使每 SM 的 FP32 吞吐实际上可达 V100 的 2 倍。
+**关键改进**：V100 中 FP32 和 INT32 数据路径分离，不能同时使用。A100 将两者合并到同一条数据路径上：当不需要 INT32 运算时，INT32 数据路径也可执行 FP32 指令，使每 SM 的 FP32 吞吐实际上可达 V100 的 2 倍。
 
 ---
 
@@ -60,24 +60,30 @@ A100 的 Tensor Core 是第三代，带来两个关键新能力：
 TF32 = FP32 的 8-bit 指数 + FP16 的 10-bit 尾数 = 19 bits
 ```
 
-TF32 的数值范围与 FP32 相同（不会溢出），但尾数精度截断到 10 bits。对于深度学习训练，这种精度截断在实践中不影响收敛，却能让 Tensor Core 吞吐达到 FP16 的水平——**不需要修改任何训练代码，只需将输入保持为 FP32**。
+TF32 的数值范围与 FP32 相同（不会溢出），但尾数精度截断到 10 bits。对于深度学习训练，这种精度截断在实践中不影响收敛，Tensor Core 吞吐为 FP16 的一半（TF32 156 TFLOPS，FP16 312 TFLOPS）；不需要修改任何训练代码，只需将输入保持为 FP32。
 
 ```c
-// CUDA 11+ 中，TF32 默认开启
-// cuBLAS / cuDNN 中的 FP32 矩阵乘法自动使用 TF32 Tensor Core
+// cuBLAS 的默认 math mode（CUBLAS_DEFAULT_MATH）官方语义是
+// "Tensor Cores will be used whenever possible"——CC ≥ 8.0 上的 FP32 GEMM
+// 默认就会走 TF32；显式设置 CUBLAS_TF32_TENSOR_OP_MATH 是把这一点写死，
+// 不依赖默认行为随版本漂移。
+// cuDNN 的默认 math mode 不做 FP32 下转换，需要显式开关；
+// PyTorch、TensorFlow 等框架则由框架自己的开关控制 TF32
 cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH);
 ```
 
 ### 3.2 精度矩阵
 
+按 A100-SXM4-80GB 数据表口径折算（FP32 19.5 TFLOPS 为 1×；带 2:4 稀疏时各 Tensor Core 精度再翻倍）：
+
 | 精度 | 吞吐 (相对 FP32) | 主要用途 |
 |------|-----------------|---------|
 | TF32 | 8× | 训练（无代码改动） |
-| FP16 | 8× | 训练 + 推理 |
-| BF16 | 8× | 训练（与 TPU 兼容） |
-| INT8 | 16× | 推理量化 |
-| INT4 | 32× | 轻量推理 |
-| FP64 | 2× | HPC（A100 FP64 ratio = 2:1，V100 相同） |
+| FP16 | 16× | 训练 + 推理 |
+| BF16 | 16× | 训练（与 TPU 兼容） |
+| INT8 | 32× | 推理量化 |
+| INT4 | 64× | 轻量推理 |
+| FP64 | 0.5× | HPC（A100 的 FP64 是 FP32 的一半，V100 也是这一比例） |
 
 ---
 
@@ -91,9 +97,9 @@ A100 80GB 版本配备 5 个 HBM2e 堆栈，每个提供 1024-bit 接口：
 理论带宽: 2 × 1.593 GHz × 5120 / 8 = 2039 GB/s
 ```
 
-**L2 Cache** 从 V100 的 6 MB 暴增到 **40 MB**——这是 A100 最被低估的升级。40 MB 的 L2 意味着多数中等大小矩阵的中间结果可以被完整缓存，大幅减少 HBM 访问。
+**L2 Cache** 从 V100 的 6 MB 增加到 **40 MB**。40 MB 的 L2 意味着多数中等大小矩阵的中间结果可以被完整缓存，大幅减少 HBM 访问。
 
-> 实测验证：在 A100 上运行 `transpose` (4 MB 矩阵)，optimized copy 达到 ~1188 GB/s (~58% 理论峰值)。64 MB 矩阵在 RTX 5090 (96 MB L2) 上达到峰值 1341 GB/s——A100 的 40 MB L2 对于 4 MB 矩阵同样提供了可观的加速。
+> 实测验证：在 A100 上运行 `transpose` (4 MB 矩阵)，optimized copy 达到 ~1188 GB/s (~58% 理论峰值)。另一组跨代参考数据：64 MB 矩阵在 RTX 5090 (96 MB L2，理论带宽 1792 GB/s) 上实测约 1341 GB/s，不是其理论峰值。A100 的 40 MB L2 对于 4 MB 矩阵同样提供了可观的加速。
 
 ---
 
@@ -121,7 +127,7 @@ nvidia-smi --query-gpu=index,name,memory.total,clocks.current.sm,clocks.current.
 | NVLink | 12 links × 25 GB/s | 总双向 600 GB/s |
 | PCIe | Gen 4 × 16 | max: 5 (RTX 5090) / 4 (A100) |
 
-**deviceQuery 完整输出参见**：[`02_gpu_programming/04_profiling/README.md` 中提及的 deviceQuery](../../../02_gpu_programming/04_profiling/README.md)
+**deviceQuery 示例与输出**：见同目录 [05_exer_device_query.md](05_exer_device_query.md)。
 
 **NVLink 拓扑**：8 卡通过 NVSwitch Gen2 全互联 (NV12)，每对 GPU 间 600 GB/s 双向。详见 [NVLink 诊断与实操](../../nvlink/nvlink_diagnostics.md)。
 
@@ -129,14 +135,15 @@ nvidia-smi --query-gpu=index,name,memory.total,clocks.current.sm,clocks.current.
 
 ## 6. MIG：多实例 GPU
 
-A100 是首款支持 **MIG (Multi-Instance GPU)** 的 NVIDIA GPU——将一张物理 GPU 切分为最多 7 个独立的 GPU 实例，每个实例有专用的 SM、显存、L2 Cache 和内存带宽：
+A100 是首款支持 **MIG (Multi-Instance GPU)** 的 NVIDIA GPU，它将一张物理 GPU 切分为最多 7 个独立的 GPU 实例，每个实例有专用的 SM、显存、L2 Cache 和内存带宽：
 
 ```text
 A100-80GB MIG 配置示例:
   7 × 1g.10gb  (10 GB, ~14 SMs)    — 最多实例
   3 × 2g.20gb  (20 GB, ~28 SMs)    — 均衡
-  1 × 4g.40gb  (40 GB, ~56 SMs)    — 最大单实例
-  1 × 7g.80gb  (80 GB, full GPU)   — 默认 (非 MIG)
+  1 × 4g.40gb  (40 GB, ~56 SMs)    — 常用大实例
+  1 × 7g.80gb  (80 GB, 98 SM, 79 GiB) — MIG 最大单实例
+非 MIG 的默认态是完整 GPU（108 SM，80 GB），不创建任何 MIG 实例
 ```
 
 **适用场景**：多租户推理服务、小模型训练、CI/CD 资源隔离。训练通常不用 MIG（需要整卡算力），推理场景中 MIG 可以避免多个服务竞争同一 GPU。
@@ -153,7 +160,7 @@ nvidia-smi mig --list-gpu-instances
 
 ## 7. 结构化稀疏 (2:4 Sparsity)
 
-A100 的 Tensor Core 支持 **2:4 结构化稀疏**——在每 4 个连续权重值中，最多 2 个可以为零。硬件直接跳过零值的计算，使有效吞吐翻倍：
+A100 的 Tensor Core 支持 **2:4 结构化稀疏**：在每 4 个连续权重值中，最多 2 个可以为零。硬件直接跳过零值的计算，使有效吞吐翻倍：
 
 ```text
 权重向量: [w0, 0, w2, 0, w4, w5, 0, w7]

@@ -65,7 +65,7 @@ echo quit | nvidia-cuda-mps-control
 
 启动后，所有 CUDA 进程自动通过 MPS 调度，无需修改代码。**限制**：MPS 与 MIG 互斥——启用了 MIG 的 GPU 不能同时使用 MPS；MPS 不提供显存隔离，一个进程 OOM 仍会影响同 GPU 上的其他进程。
 
-> 典型部署：一张 A100 上同时跑 4 个轻量推理服务 → 开启 MPS，用 `CUDA_VISIBLE_DEVICES` 或 MIG 做隔离，MPS 让计算资源得到充分利用。
+> 典型部署：一张 A100 上同时跑 4 个轻量推理服务 → 开启 MPS，用 `CUDA_VISIBLE_DEVICES` 圈定进程范围，MPS 让计算资源得到充分利用（MPS 不做显存隔离，显存超用风险仍在）。
 
 ---
 
@@ -103,19 +103,20 @@ fuser -v /dev/nvidia*
 
 正常输出会列出每个 `/dev/nvidia*` 设备文件的打开进程。如果列出的 PID 在 `nvidia-smi` 中看不到 → 僵尸 GPU context（进程退出但 CUDA context 未释放）。
 
-**清理僵尸进程**：
+**清理残留 context**：
 
 ```bash
 # 1. 确认进程已退出
 ps aux | grep <PID>
 
-# 2. 等待 CUDA context 自动回收（通常 < 30s）——大多数情况这样就够了
+# 2. 等待 CUDA context 自动回收（通常 < 30s），大多数情况这样就够了
 
-# 3. 如果等待后仍未释放，重置持久化模式强制清理
-nvidia-smi -pm 0 && nvidia-smi -pm 1
+# 3. 如果等待后仍未释放，且该 GPU 已无其他负载，用 GPU reset 强制清空
+nvidia-smi -i <ID> -r
+# 需要 root；reset 要求 GPU 上没有运行中的进程，生产环境不保证总能成功，失败兜底是重启机器
 ```
 
-> **常见场景**：Python 脚本 `Ctrl+C` 中断后，PyTorch 的 CUDA context 可能延迟数秒才释放。`nvidia-persistenced` 保持驱动常驻，重置持久化模式会触发 context 回收——比杀守护进程更轻量。
+> **常见场景**：Python 脚本 `Ctrl+C` 中断后，PyTorch 的 CUDA context 可能延迟数秒才释放。`-pm 0/-pm 1` 只切换驱动是否常驻，并不清理残留 context；清不掉时的标准做法是 GPU reset（`-r`）或重启。
 
 ---
 
@@ -160,7 +161,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python train.py
 
 A100 通过 PCIe 连接到特定的 NUMA node。如果 GPU 和 CPU 线程不在同一 NUMA node，H2D/D2H 传输需要跨 socket 经 QPI/UPI，延迟显著增加。
 
-### 4.1 查看 GPU 的 NUMA 归属
+### 5.1 查看 GPU 的 NUMA 归属
 
 ```bash
 nvidia-smi topo -m
@@ -175,7 +176,7 @@ GPU7    ...      SYS    PXB  ...   X    24-47,72-95      1
 - GPU 0-3 → NUMA node 0, CPUs 0-23, 48-71
 - GPU 4-7 → NUMA node 1, CPUs 24-47, 72-95
 
-### 4.2 NUMA 绑定：taskset + numactl
+### 5.2 NUMA 绑定：taskset + numactl
 
 ```bash
 # 将进程绑定到 GPU 3 所属的 NUMA node 0 的 CPU
@@ -187,10 +188,10 @@ numactl --cpunodebind=0 --membind=0 CUDA_VISIBLE_DEVICES=3 python train.py
 
 **为什么重要**：
 
-| 场景                      | 无 NUMA 绑定            | 有 NUMA 绑定 | 影响     |
-| ------------------------- | ----------------------- | ------------ | -------- |
-| GPU 3 + CPU 线程在 node 1 | H2D 跨 socket (距离 32) | —            | 延迟翻倍 |
-| GPU 3 + CPU 线程在 node 0 | ✅ 本地访问 (距离 10)   | 可进一步固化 | 最优     |
+| 场景                                          | H2D 路径            | NUMA 距离 | 影响                   |
+| --------------------------------------------- | ------------------- | --------- | ---------------------- |
+| GPU 3 (node 0)，CPU 线程在 node 1 或被调度到远端 | 跨 socket 经 UPI    | 32        | 延迟显著增加，带宽下降 |
+| GPU 3 (node 0)，CPU 线程绑定到 node 0         | 本地访问            | 10        | 最优                   |
 
 ```bash
 # 查看 NUMA 距离
@@ -199,13 +200,13 @@ numactl --hardware
 # node 0 → node 0: 10  (本地, 快)
 ```
 
-> **经验法则**：单 GPU 推理无需 NUMA 绑定（H2D 只发生一次）。用 `taskset` 绑定；多 GPU 分布式训练建议用 `torchrun` / `mpirun` 的 NUMA 感知启动器。
+> **经验法则**：单 GPU 推理对 NUMA 不敏感（H2D 每请求只发生一两次，绑定收益有限）；多 GPU 分布式训练建议用 `torchrun` / `mpirun` 的 NUMA 感知启动器，或手动 `taskset` / `numactl` 绑定。
 
 ---
 
 ## 6. 显存管理
 
-### 5.1 检查显存使用
+### 6.1 检查显存使用
 
 ```bash
 nvidia-smi --query-gpu=index,memory.used,memory.free,memory.total --format=csv
@@ -222,7 +223,7 @@ GPU 3/4/5 的显存状态：
 - 130 MiB（GPU 3）：之前跑过测试后 CUDA context 可能未完全释放
 - 4 MiB（GPU 4/5）：纯空闲，仅驱动开销
 
-### 5.2 PyTorch 显存控制
+### 6.2 PyTorch 显存控制
 
 ```python
 import torch
@@ -237,7 +238,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 > `set_per_process_memory_fraction` 在多进程共享同一 GPU 时最有用——限制每个进程不会抢光全部显存。单进程独占 GPU 时不需要设。
 
-### 5.3 清理显存
+### 6.3 清理显存
 
 ```python
 # 释放 PyTorch 缓存的显存（不释放仍被引用的 tensor）
@@ -258,7 +259,7 @@ torch.cuda.empty_cache()        # 再释放 CUDA 侧缓存
 | 多用户冲突             | 两个训练任务 OOM                          | `nvidia-smi --query-compute-apps` 看是否同一 GPU | 设置 EXCLUSIVE_PROCESS 或用 `CUDA_VISIBLE_DEVICES`       |
 | 跨 NUMA 延迟高         | H2D 带宽远低于预期 (~15 GB/s vs ~28 GB/s) | `numactl --hardware` 看 GPU 和 CPU 的 NUMA 归属  | `taskset` 绑定 CPU 到对应 NUMA node                      |
 | CUDA out of memory     | 训练中途 OOM                              | `nvidia-smi` 看剩余显存                          | 减小 batch size / 启用 gradient checkpointing            |
-| GPU 3 (130 MiB) 不是 0 | CUDA context 未完全释放                   | `nvidia-smi` 无活跃进程但 `memory.used > 0`      | `nvidia-smi -pm 0 && nvidia-smi -pm 1` 重置 persistenced |
+| GPU 3 (130 MiB) 不是 0 | CUDA context 未完全释放                   | `nvidia-smi` 无活跃进程但 `memory.used > 0`      | 等待自动回收；未释放则 `nvidia-smi -i <ID> -r`（需无应用占用）或重启 |
 
 ---
 

@@ -8,10 +8,10 @@ GPU 运维中最让人焦虑的不是性能差，而是 `nvidia-smi` 本身报�
 
 ## 一、现象分类速查
 
-| 现象                                                    | 最可能的根因                     | 最快验证                                            |
-| ------------------------------------------------------- | -------------------------------- | --------------------------------------------------- |
-| `nvidia-smi` 报 "No devices were found"                 | 驱动未加载                       | `lsmod \| grep nvidia`                              |
-| `nvidia-smi` 报 "Unable to determine the device handle" | GPU 被其他驱动占用（如 nouveau） | `lspci -nnk \| grep -A3 NVIDIA`                     |
+| 现象                                                    | 最可能的根因                                                | 最快验证                                            |
+| ------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------- |
+| `nvidia-smi` 报 "No devices were found"                 | 驱动未加载，或 GPU 被 nouveau 占用                          | `lsmod \| grep nvidia`；`lsmod \| grep nouveau`      |
+| `nvidia-smi` 报 "Unable to determine the device handle" | GPU 处于故障态或 `/dev/nvidia*` 设备项陈旧（fallen off the bus、驱动重载后最常见）；nouveau 占用也会触发（其典型表现是 "No devices were found"） | `dmesg \| grep -i "Xid\|fallen"`；`lspci -nnk \| grep -A3 NVIDIA` |
 | `nvidia-smi` 卡住，无输出                               | GPU 陷入不可恢复状态             | `dmesg \| tail -30` 查 XID 错误                     |
 | 驱动更新后 `nvidia-smi` 版本不匹配                      | DKMS 编译失败或未重启            | `cat /proc/driver/nvidia/version` 对比 `nvidia-smi` |
 | GPU 在 `lspci` 中可见但 `nvidia-smi` 看不到             | PCIe AER 错误导致 GPU 被隔离     | `dmesg \| grep -i "AER\|PCIe.*error"`               |
@@ -108,23 +108,29 @@ systemctl status nvidia-persistenced
 # → GPU 硬件脱离 PCIe 总线，不是 persistenced 的问题
 # → 检查电源、散热、物理连接
 
-# 重置 persistenced（§四的情况排除后）
-nvidia-smi -pm 0 && nvidia-smi -pm 1
+# 恢复 persistenced（§四的情况排除后）
+systemctl restart nvidia-persistenced
+
+# 若只是持久化模式被关掉，重新开启即可。注意 -pm 只切换驱动常驻，
+# 不清理已退出进程的 context；要彻底清理用 GPU reset（-r，需无进程占用）：
+nvidia-smi -pm 1
 ```
 
 ---
 
-## 六、旧 GPU（Kepler/Maxwell）兼容性
+## 六、旧 GPU（Kepler/Maxwell/Pascal/Volta）兼容性
 
-Kepler（CC 3.x）和部分 Maxwell（CC 5.x）GPU 在新驱动中已进入 Legacy 支持。如果 `nvidia-smi` 显示 "Legacy Support" 或 CUDA 版本不兼容：
+Kepler（CC 3.x）早已移出主线；Maxwell（CC 5.x）、Pascal（CC 6.x）和 Volta（CC 7.0）自 CUDA 13.0 起也不再支持，驱动止于 R580 legacy 分支。如果 `nvidia-smi` 显示 "Legacy Support" 或 CUDA 版本不兼容：
 
 ```bash
 # 查询 GPU 的计算能力
 nvidia-smi --query-gpu=compute_cap --format=csv,noheader
 
-# Kepler (3.x) → 最高支持 CUDA 11.x
-# Maxwell (5.x) → 最高支持 CUDA 12.x
-# Pascal+ (6.x+) → 当前最新 CUDA
+# 截至 2026-11 的支持口径（CUDA 13.0 起最低要求 CC 7.5）：
+# Kepler (3.x)              → 早已移除，止步 CUDA 11.x，对应 legacy 驱动分支
+# Maxwell (5.x) / Pascal (6.x) / Volta (7.0)
+#                           → CUDA 13.0 已移除，止步 CUDA 12.x；驱动止于 R580 legacy 分支
+# Turing (7.5) 及之后       → 当前 CUDA 13.x 仍支持
 ```
 
 ---

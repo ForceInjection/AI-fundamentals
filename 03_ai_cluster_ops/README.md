@@ -19,14 +19,14 @@
 
 集群里每一张卡的健康情况都得看得见。这一节按场景组织：查设备能力 → 判断利用率 → 日常监控 → 健康检查 → 进程管理 → 驱动故障。
 
-一个常被忽视的点是：**`nvidia-smi` 里的 GPU-Util 并不等于 SM 真的在忙**——它只说明某段时间有 Kernel 在执行，并不代表算力被用满了。三行命令的正确判断方式见 [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md)。
+一个常被忽视的点是：`nvidia-smi` 里的 GPU-Util 只说明某段时间有 Kernel 在执行，并不代表算力被用满了。nvidia-smi 本身没有 SM 利用率查询（`utilization.gpu` 与 GPU-Util 同源，都是 kernel 执行时间占比），真正的 SM Active 要用 DCGM 的 profiling 字段 1002 取。判断流程见 [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md)。
 
-- **设备能力**：[GPU 设备属性查询](01_gpu_ops/01_device_query.md) | [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md) ——前者查 Kernel 设计参数，后者三行命令判断 GPU 真忙假忙。
-- **利用率**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)（原文翻译）——为什么 GPU-Util ≠ 算力利用率。
-- **日常监控**：[nvidia-smi 场景速查](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 监控工具](01_gpu_ops/04_nvtop_guide.md) ——前者按场景组织命令，后者提供交互式 TUI。
-- **长期趋势**：[DCGM 监控实操](01_gpu_ops/05_dcgm_monitoring.md) ——NVIDIA 官方方案，含 SM Active、DRAM Active、Prometheus 集成。
-- **故障排查**：[GPU 集群健康检查](01_gpu_ops/06_gpu_health_check.md) | [GPU 驱动故障速查](01_gpu_ops/08_gpu_driver_troubleshooting.md) ——前者 L1/L2/L3 三层检查，后者 nvidia-smi 不可用时的排查路径。
-- **资源管理**：[GPU 进程与资源管理](01_gpu_ops/07_gpu_process_management.md)——Compute Mode、MPS、CUDA_VISIBLE_DEVICES、NUMA 亲和性。
+- **设备能力**：[GPU 设备属性查询](01_gpu_ops/01_device_query.md) | [GPU 忙不忙怎么判断](01_gpu_ops/09_gpu_busy_check.md)：前者查 Kernel 设计参数，后者用 util + 功耗温度排假忙、用 DCGM SMACT 看真实 SM 占用。
+- **利用率**：[GPU 利用率是一个误导性指标](01_gpu_ops/02_gpu_utilization_myth.md)（原文翻译）：为什么 GPU-Util ≠ 算力利用率。
+- **日常监控**：[nvidia-smi 场景速查](01_gpu_ops/03_nvidia_smi_guide.md) | [nvtop 监控工具](01_gpu_ops/04_nvtop_guide.md)：前者按场景组织命令，后者提供交互式 TUI。
+- **长期趋势**：[DCGM 监控实操](01_gpu_ops/05_dcgm_monitoring.md)：NVIDIA 官方方案，含 SM Active、DRAM Active、Prometheus 集成。
+- **故障排查**：[GPU 集群健康检查](01_gpu_ops/06_gpu_health_check.md) | [GPU 驱动故障速查](01_gpu_ops/08_gpu_driver_troubleshooting.md)：前者 L1/L2/L3 三层检查，后者 nvidia-smi 不可用时的排查路径。
+- **资源管理**：[GPU 进程与资源管理](01_gpu_ops/07_gpu_process_management.md)：Compute Mode、MPS、CUDA_VISIBLE_DEVICES、NUMA 亲和性。
 
 ---
 
@@ -36,7 +36,7 @@
 
 运维视角看 IB，主要关心三件事：
 
-- **理论基础**：[IB 网络架构与协议](02_infiniband/01_ib_network_theory.md)——理解 RDMA、Verbs、SubnetManager 等核心概念，才能看懂诊断信息。
+- **理论基础**：[IB 网络架构与协议](02_infiniband/01_ib_network_theory.md)：理解 RDMA、Verbs、SubnetManager 等核心概念，才能看懂诊断信息。
 - **健康检查**：链路状态、端口错误计数、子网管理器状态，这些是排查通信异常时的第一手线索。
 - **性能监控**：实时带宽、丢包、拥塞指标能够反映集合通信是否被网络拖慢。
 
@@ -46,33 +46,33 @@
 
 ## 4. [NCCL 分布式通信测试](03_nccl/README.md)
 
-NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vLLM）背后实际在跑的集合通信库。它把 AllReduce、AllGather、Broadcast 这些操作按照 GPU 之间的物理拓扑自动选择最优路径（NVLink / PCIe / IB），开发者基本感受不到它的存在——直到它变慢。
+NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vLLM）背后实际在跑的集合通信库。它把 AllReduce、AllGather、Broadcast 这些操作按照 GPU 之间的物理拓扑自动选择最优路径（NVLink / PCIe / IB），开发者基本感受不到它的存在，直到它变慢。
 
 这一节围绕实战展开：
 
-- **理论入门**：[NCCL 技术理论](03_nccl/01_nccl_theory.md) | [NCCL 单卡验证](03_nccl/02_nccl_helloworld.md)——先理解原理，再动手跑通。
-- **使用教程**：[NCCL 测试验证工具说明](03_nccl/03_nccl_tutorial.md)——单节点 → 容器化 → 多节点完整流程。
-- **基准测试**：[NCCL 基准测试方法论](03_nccl/04_nccl_benchmark.md)——`allreduce_perf` 编译运行，A100 实测数据。
-- **调试工具**：[NCCL Debug 输出解读](03_nccl/05_nccl_debug_output.md)——`NCCL_DEBUG=INFO` 完整输出的逐行拆解与异常速查。
-- **通信路径压测**：[NCCL 通信路径逐层压测](03_nccl/06_nccl_path_benchmark.md)——H100 实测：NVLink (316 GB/s) → P2P Disable (24 GB/s)，跨 NUMA 无衰减验证。
+- **理论入门**：[NCCL 技术理论](03_nccl/01_nccl_theory.md) | [NCCL 单卡验证](03_nccl/02_nccl_helloworld.md)：先理解原理，再动手跑通。
+- **使用教程**：[NCCL 测试验证工具说明](03_nccl/03_nccl_tutorial.md)：单节点 → 容器化 → 多节点完整流程。
+- **基准测试**：[NCCL 基准测试方法论](03_nccl/04_nccl_benchmark.md)：`all_reduce_perf` 编译运行，A100 实测数据。
+- **调试工具**：[NCCL Debug 输出解读](03_nccl/05_nccl_debug_output.md)：`NCCL_DEBUG=INFO` 完整输出的逐行拆解与异常速查。
+- **通信路径压测**：[NCCL 通信路径逐层压测](03_nccl/06_nccl_path_benchmark.md)：H100 实测：NVLink (316 GB/s) → P2P Disable (24 GB/s)，跨 NUMA 无衰减验证。
 
-当你看到训练吞吐”突然掉了一截”却找不到代码原因时，十有八九要去 NCCL 这一层找答案。
+当你看到训练吞吐「突然掉了一截」却找不到代码原因时，十有八九要去 NCCL 这一层找答案。
 
 ---
 
-## 5. [GPU 调度——从”够不够”到”快不快”](04_gpu_scheduling/README.md)
+## 5. [GPU 调度：从「够不够」到「快不快」](04_gpu_scheduling/README.md)
 
 当 GPU 数量从 8 张扩展到 800 张，K8s 默认调度器把 GPU 当成标量资源 (`nvidia.com/gpu: 1`) 的模型就不够用了。训练作业的 TP 组需要同 NVSwitch 域的 GPU、All-or-Nothing 的 Gang Scheduling、以及 MIG/MPS/Time-slicing 对推理负载的共享表达。
 
-- **问题分析**：[GPU 调度为什么比 CPU 调度难](04_gpu_scheduling/01_gpu_scheduling_problem.md)——碎片化、拓扑、Gang Scheduling 三个盲区。
-- **Gang Scheduling**：[All-or-Nothing 调度](04_gpu_scheduling/02_gang_scheduling_for_training.md)——Volcano Coscheduling vs K8s SchedulingGates。
-- **拓扑感知**：[NVLink / NUMA / 跨节点](04_gpu_scheduling/03_topology_aware_scheduling.md)——三层拓扑感知 + NVIDIA Topology-Aware Scheduler。
-- **GPU 共享**：[MIG、MPS、Time-slicing](04_gpu_scheduling/04_gpu_sharing_scheduling.md)——三种共享方式在 K8s 中的资源表达。
+- **问题分析**：[GPU 调度为什么比 CPU 调度难](04_gpu_scheduling/01_gpu_scheduling_problem.md)：碎片化、拓扑、Gang Scheduling 三个盲区。
+- **Gang Scheduling**：[All-or-Nothing 调度](04_gpu_scheduling/02_gang_scheduling_for_training.md)：Volcano Coscheduling vs K8s SchedulingGates。
+- **拓扑感知**：[NVLink / NUMA / 跨节点](04_gpu_scheduling/03_topology_aware_scheduling.md)：三层拓扑感知，NVIDIA 方案已换代（KAI-Scheduler + Topograph）。
+- **GPU 共享**：[MIG、MPS、Time-slicing](04_gpu_scheduling/04_gpu_sharing_scheduling.md)：三种共享方式在 K8s 中的资源表达。
 
 ---
 
-## 6. [数据中心市场与容量](04_datacenter/README.md)
+## 6. [数据中心市场与容量](05_datacenter/README.md)
 
-GPU 调度之上还有一层更物理的问题：**这些集群所在的数据中心本身**——中国市场有多大、建在哪、谁在租。SemiAnalysis 用逐栋模型回答了这件事，本节是该报告的精读存档。
+GPU 调度之上还有一层更物理的问题：**这些集群所在的数据中心本身**，中国市场有多大、建在哪、谁在租。SemiAnalysis 用逐栋模型回答了这件事，本节是该报告的精读存档。
 
-- **市场全景**：[中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](04_datacenter/china-dc-boom-semianalysis.md)——高空置与 AI 容量短缺并存的双速市场、四阶段史、「东数西算」的配额传导机制、12 个月交付 100MW 的速度账，以及需求侧五家（字节/阿里/腾讯/百度/华为）的多套打法；全部数字为 SemiAnalysis 模型口径。
+- **市场全景**：[中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](05_datacenter/china-dc-boom-semianalysis.md)：高空置与 AI 容量短缺并存的双速市场、四阶段史、「东数西算」的配额传导机制、12 个月交付 100MW 的速度账，以及需求侧五家（字节/阿里/腾讯/百度/华为）的多套打法；全部数字为 SemiAnalysis 模型口径。

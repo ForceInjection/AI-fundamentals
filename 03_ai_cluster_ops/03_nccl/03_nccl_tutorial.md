@@ -30,7 +30,7 @@ torchrun --nproc_per_node=4 nccl_python_template.py --size 256M --iters 20
 ./nccl_multinode_launcher.sh 1 192.168.1.100 --world-size 4 --nproc-per-node 2
 
 # Kubernetes
-cd k8s/ && ./deploy.sh deploy --gpus 4 --test-size 1G --test-duration 120
+cd k8s/ && ./deploy.sh deploy -g 4 -s 1G -t 120
 ```
 
 详细部署参数见 [K8s 指南](k8s/README.md)。
@@ -91,7 +91,7 @@ NCCL 自动检测（`--network auto`，默认）在大多数场景下是最优�
 ./nccl_container_manager.sh --gpus all --size 100M --time 60
 
 # 3. 对照期望带宽
-# NVLink (NVSwitch): > 250 GB/s @ 512MB
+# NVLink (NVSwitch): H100 ~316 GB/s、A100 ~225 GB/s @512MB（均为实测，见 04/06 篇；>250 GB/s 是 H100 口径的阈值，A100 卡见 225）
 # PCIe P2P: ~24 GB/s @ 512MB
 # CPU fallback: < 10 GB/s
 ```
@@ -136,7 +136,7 @@ CUDA_VISIBLE_DEVICES=0,4 torchrun --nproc_per_node=2 nccl_python_template.py
 `test/` 目录包含 `nccl_benchmark.sh` 脚本的单元测试，验证参数解析、配置注入、网络后端选择等脚本层面的正确性。
 
 ```bash
-./test/run_all_tests.sh           # 全部 4 个套件
+./test/run_all_tests.sh           # 全部 5 个套件
 ./test/run_all_tests.sh --quick   # 快速模式
 ./test/run_all_tests.sh --suite config  # 单个套件
 ```
@@ -144,6 +144,7 @@ CUDA_VISIBLE_DEVICES=0,4 torchrun --nproc_per_node=2 nccl_python_template.py
 | 套件           | 测试内容                                                                |
 | -------------- | ----------------------------------------------------------------------- |
 | `syntax`       | 脚本语法、参数验证、帮助信息                                            |
+| `args`         | 命令行参数解析（`--size` / `--time` / `--network` / `--dry-run`）       |
 | `config`       | 20 项：`set_nccl_config` / `setup_network_config` / `cache_system_info` |
 | `optimization` | 三种优化级别（conservative / balanced / aggressive）                    |
 | `pxn`          | PXN 模式参数和配置                                                      |

@@ -73,8 +73,8 @@ cd /AI-fundamentals/nccl
 # 部署默认配置
 ./k8s/deploy.sh deploy
 
-# 或者自定义配置
-./k8s/deploy.sh deploy --world-size 8 --gpus-per-node 4
+# 或者自定义配置（-r 副本数，-g 每节点 GPU 数；总 GPU 数 = 副本数 × 每节点 GPU 数）
+./k8s/deploy.sh deploy -r 8 -g 4
 ```
 
 ### 3. 监控测试
@@ -145,7 +145,7 @@ env:
   - name: NCCL_IB_DISABLE
     value: "0" # 启用 InfiniBand
   - name: NCCL_NET_GDR_LEVEL
-    value: "2" # 启用 GPUDirect RDMA
+    value: "2" # GDR 的 GPU-NIC 距离上限，2 = PXB（GDR 默认已启用；整数仅兼容保留，推荐写 "PXB"）
   - name: NCCL_P2P_DISABLE
     value: "0" # 启用 P2P 通信
   - name: NCCL_IGNORE_CPU_AFFINITY
@@ -341,7 +341,7 @@ env:
 7. **配置管理**: 使用 ConfigMap 和 Secret 管理配置
 8. **测试验证**: 在生产环境部署前充分测试
 
-通过 Kubernetes 部署 NCCL 测试，你可以获得更好的资源管理、故障恢复和扩展能力，这对于大规模的分布式训练环境尤其重要。
+用 Kubernetes 跑 NCCL 测试，收益集中在资源管理、故障恢复和扩缩容三处；节点规模上去之后，这些差异才会真正显现。
 
 ## YAML 配置清单
 

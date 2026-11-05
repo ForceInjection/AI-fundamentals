@@ -1,21 +1,22 @@
 # PCIe & NVLink 带宽速查表
 
-> 涵盖 PCIe 各代、NVLink 各代、主流 GPU 互连规格及 NVMe SSD 速度的快速参考。数据来源标注于各表下方。
+> 涵盖 PCIe 各代、NVLink 各代、主流 GPU 互连规格及 NVMe SSD 速度的快速参考。数据来源标注于各表下方。数据截至 2026-11；B300 与 NVLink 6.0 为厂商口径，标于相应表格。
 
 ---
 
 ## 1. PCIe 各代带宽
 
-单向带宽 = GT/s × 编码效率 × Lane 数 ÷ 8。Gen3–5 使用 128b/130b 编码 (效率 ≈ 98.5%)；Gen6 使用 PAM-4 + FLIT 编码 (效率 ≈ 94.5%) [1,2]。
+单向带宽 = GT/s × 编码效率 × Lane 数 ÷ 8。Gen3–5 使用 128b/130b 编码 (效率 ≈ 98.5%)；Gen6/Gen7 使用 PAM-4 + FLIT 编码 (效率 ≈ 94.5%) [1,2]。
 
-| 版本     | 年份 | GT/s | 编码       | x1 单向   | x4 单向    | x8 单向    | x16 单向   | x16 双向   |
-| :------- | :--- | :--- | :--------- | :-------- | :--------- | :--------- | :--------- | :--------- |
-| **Gen1** | 2003 | 2.5  | 8b/10b     | 0.25 GB/s | 1.0 GB/s   | 2.0 GB/s   | 4.0 GB/s   | 8.0 GB/s   |
-| **Gen2** | 2007 | 5.0  | 8b/10b     | 0.5 GB/s  | 2.0 GB/s   | 4.0 GB/s   | 8.0 GB/s   | 16 GB/s    |
-| **Gen3** | 2010 | 8.0  | 128b/130b  | ~1.0 GB/s | ~3.9 GB/s  | ~7.9 GB/s  | ~15.8 GB/s | ~31.5 GB/s |
-| **Gen4** | 2017 | 16.0 | 128b/130b  | ~2.0 GB/s | ~7.9 GB/s  | ~15.8 GB/s | ~31.5 GB/s | ~63 GB/s   |
-| **Gen5** | 2019 | 32.0 | 128b/130b  | ~3.9 GB/s | ~15.8 GB/s | ~31.5 GB/s | ~63 GB/s   | ~126 GB/s  |
-| **Gen6** | 2022 | 64.0 | PAM-4/FLIT | ~7.6 GB/s | ~30.3 GB/s | ~60.5 GB/s | ~121 GB/s  | ~242 GB/s  |
+| 版本     | 年份 | GT/s  | 编码       | x1 单向    | x4 单向    | x8 单向    | x16 单向   | x16 双向   |
+| :------- | :--- | :---- | :--------- | :--------- | :--------- | :--------- | :--------- | :--------- |
+| **Gen1** | 2003 | 2.5   | 8b/10b     | 0.25 GB/s  | 1.0 GB/s   | 2.0 GB/s   | 4.0 GB/s   | 8.0 GB/s   |
+| **Gen2** | 2007 | 5.0   | 8b/10b     | 0.5 GB/s   | 2.0 GB/s   | 4.0 GB/s   | 8.0 GB/s   | 16 GB/s    |
+| **Gen3** | 2010 | 8.0   | 128b/130b  | ~1.0 GB/s  | ~3.9 GB/s  | ~7.9 GB/s  | ~15.8 GB/s | ~31.5 GB/s |
+| **Gen4** | 2017 | 16.0  | 128b/130b  | ~2.0 GB/s  | ~7.9 GB/s  | ~15.8 GB/s | ~31.5 GB/s | ~63 GB/s   |
+| **Gen5** | 2019 | 32.0  | 128b/130b  | ~3.9 GB/s  | ~15.8 GB/s | ~31.5 GB/s | ~63 GB/s   | ~126 GB/s  |
+| **Gen6** | 2022 | 64.0  | PAM-4/FLIT | ~7.6 GB/s  | ~30.3 GB/s | ~60.5 GB/s | ~121 GB/s  | ~242 GB/s  |
+| **Gen7** | 2025 | 128.0 | PAM-4/FLIT | ~15.1 GB/s | ~60.5 GB/s | ~121 GB/s  | ~242 GB/s  | ~485 GB/s  |
 
 > **来源**: [1] PCI-SIG 官方规范各代速率定义；[2] 本仓库 `pcie/01_pcie_comprehensive_guide.md` 第 31–47 行。
 
@@ -34,6 +35,8 @@ NVLink 总双向带宽 = 单 link 速率 × 双向 × link 数量 [3]。
 | **5.0** | 2024 | Blackwell | B200/B300 | 50 GB/s      | 18      | 1.8 TB/s   | NVL72 机架级扩展     |
 | **6.0** | 2026 | Rubin     | Vera      | —            | —       | 3.6 TB/s   | NVSwitch 6, RAS 增强 |
 
+> NVLink 6.0 带宽双口径：GTC 2025 宣传口径为单 GPU 3.6 TB/s、NVL72 域聚合 260 TB/s；NVIDIA 官网当前为单 GPU 3,000 GB/s、Vera Rubin NVL72 聚合 216 TB/s（2026-11 核对）。表中取 GTC 2025 口径。
+>
 > **来源**: [3] 本仓库 `nvlink/nvlink_intro.md` 第 57–61 行；[4] NVIDIA GB200 NVL4 Architecture Whitepaper。
 
 ---
@@ -50,14 +53,14 @@ NVLink 总双向带宽 = 单 link 速率 × 双向 × link 数量 [3]。
 | **H100**     | Hopper          | 80 GB HBM3   | 3.35 TB/s | Gen5 x16  | 4.0    | 900 GB/s      | 3.0      |
 | **H200**     | Hopper          | 141 GB HBM3e | 4.8 TB/s  | Gen5 x16  | 4.0    | 900 GB/s      | 3.0      |
 | **B200**     | Blackwell       | 192 GB HBM3e | 8.0 TB/s  | Gen5 x16  | 5.0    | 1.8 TB/s      | 4.0      |
-| **B300**     | Blackwell Ultra | 270 GB HBM3e | 7.7 TB/s  | Gen6 x16  | 5.0    | 1.8 TB/s      | 4.0      |
+| **B300**     | Blackwell Ultra | 270 GB HBM3e | 8.0 TB/s  | Gen6 x16  | 5.0    | 1.8 TB/s      | 4.0      |
 | **RTX 5090** | Blackwell       | 32 GB GDDR7  | 1.79 TB/s | Gen5 x16  | **—**  | —             | —        |
 | **L40S**     | Ada Lovelace    | 48 GB GDDR6  | 864 GB/s  | Gen4 x16  | **—**  | —             | —        |
 
 > [!NOTE]
-> **消费级 GPU (GeForce RTX) 不支持 NVLink**。自 RTX 30 系列起，NVIDIA 移除了消费级 GPU 的 NVLink 接口。仅数据中心 GPU (Tesla/Quadro/HGX) 支持 NVLink [3]。
+> **消费级 GPU (GeForce RTX) 不支持 NVLink**。40 系（Ada Lovelace）起全面移除；30 系仅 RTX 3080/3090 保留接口（官方桥接器面向 3090）。仅数据中心 GPU (Tesla/Quadro/HGX) 提供 NVLink 支持 [3]。
 >
-> B300 数据为 **HGX B300 形态**。NVL72 SXM 变体为 279 GB HBM3e / 8.0 TB/s [10]。
+> B300 数据为 **HGX B300 形态**，显存带宽为厂商口径「up to 8 TB/s」。NVL72 SXM 变体为 279 GB HBM3e / 8.0 TB/s [10]。
 >
 > **注意 270 / 279 是「系统可用显存」而非卡规格。** B300 的卡规格是 **288 GB HBM3e**（NVIDIA 官方博客口径）；系统形态下的可用值按 [MIG 产品页](https://www.nvidia.com/en-us/technologies/multi-instance-gpu/)分档：**HGX B300 = `1x 270 GB`，GB300 NVL72 = `1x 279 GB`**。该页脚注标明这些为 `Preliminary specifications`，且 NVL72 形态比裸卡少约 6–9 GB 属惯例（GB200 同样 186 vs 192）。**读规格表用 288，做容量规划用 270/279。**
 >
@@ -92,8 +95,9 @@ NVMe SSD 使用 PCIe x4 接口。理论值 = PCIe x4 单向带宽；典型读取
 | NVMe→GPU (传统, O_DIRECT)     | PCIe Gen4 x4 → DRAM → GPU | ~7 GB/s                   | 2 次 PCIe 穿越，无 CPU memcpy [9]       |
 | NVMe→GPU (GDS)                | PCIe P2P 直通             | ~7 GB/s (同 PCIe Gen4 x4) | 1 次 PCIe 穿越，同 Switch 最优 [9]      |
 | NVMe→GPU (GDS, Gen5)          | PCIe P2P 直通             | ~14 GB/s                  | 1 次 PCIe 穿越，基于 Gen5 x4 NVMe [9]   |
-| CPU↔GPU (NVLink-C2C)          | NVLink-C2C                | ~225 GB/s                 | Grace Hopper/Grace Blackwell，单向 [7]  |
-| CPU↔CPU (NVLink-C2C)          | NVLink-C2C                | ~450 GB/s                 | Grace CPU 之间，单向 [7]                |
+| CPU↔GPU (NVLink-C2C, GH200)   | NVLink-C2C                | ~450 GB/s                 | GH200 单向（900 GB/s 双向）[7]          |
+| CPU↔GPU (NVLink-C2C, GB300)   | NVLink-C2C                | ~225 GB/s                 | 每链单向（双链聚合 900 GB/s）[7]        |
+| CPU↔CPU (GB300 Clinks)        | Clinks                    | ~150 GB/s                 | GB300 两颗 Grace CPU 之间，单向 [7]     |
 
 > **来源**: [8] 本仓库 `gpudirect/02_gpudirect_p2p.md` 第 5.1 节；[9] 本仓库 `gpudirect/01_gpudirect_technology.md` 第 3.1–3.4 节；[3] `nvlink/nvlink_intro.md`；[7] `superchips/nvidia_gb300.md`。
 
@@ -119,16 +123,16 @@ NVMe 典型读取 = PCIe x4 理论单向 × ~0.85–0.90 (NVMe 协议开销)
 
 ## 7. NVLink vs PCIe 带宽对比 (x16)
 
-| NVLink 代   | 总双向带宽 | 对比 PCIe Gen5 (×16) | 倍数 |
-| :---------- | :--------- | :------------------- | :--- |
-| 1.0 (P100)  | 160 GB/s   | vs ~31.5 GB/s (Gen3) | 5.1× |
-| 2.0 (V100)  | 300 GB/s   | vs ~63 GB/s (Gen3)   | 4.8× |
-| 3.0 (A100)  | 600 GB/s   | vs ~63 GB/s (Gen4)   | 9.5× |
-| 4.0 (H100)  | 900 GB/s   | vs ~126 GB/s (Gen5)  | 7.1× |
-| 5.0 (B200)  | 1.8 TB/s   | vs ~126 GB/s (Gen5)  | 14×  |
-| 6.0 (Rubin) | 3.6 TB/s   | vs ~242 GB/s (Gen6)  | 14×  |
+| NVLink 代   | 总双向带宽 | 对比 PCIe (x16 双向) | 倍数  |
+| :---------- | :--------- | :------------------- | :---- |
+| 1.0 (P100)  | 160 GB/s   | vs ~31.5 GB/s (Gen3) | 5.1×  |
+| 2.0 (V100)  | 300 GB/s   | vs ~31.5 GB/s (Gen3) | 9.5×  |
+| 3.0 (A100)  | 600 GB/s   | vs ~63 GB/s (Gen4)   | 9.5×  |
+| 4.0 (H100)  | 900 GB/s   | vs ~126 GB/s (Gen5)  | 7.1×  |
+| 5.0 (B200)  | 1.8 TB/s   | vs ~126 GB/s (Gen5)  | 14.3× |
+| 6.0 (Rubin) | 3.6 TB/s   | vs ~242 GB/s (Gen6)  | 14.9× |
 
-> 注：NVLink 1.0/2.0/3.0 对应的是各自年代的 PCIe 版本 (Gen3/Gen4)，NVLink 4.0+ 对比最新 PCIe Gen5。
+> 注：NVLink 1/2 对应 Gen3，NVLink 3 对应 Gen4，NVLink 4.0+ 对比最新 PCIe；对比基准为 PCIe x16 双向带宽，与第 1 节口径一致。
 
 ---
 
