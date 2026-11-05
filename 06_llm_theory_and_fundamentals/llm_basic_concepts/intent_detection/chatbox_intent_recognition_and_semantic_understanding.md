@@ -4,7 +4,7 @@
 
 ## 一、引言：大模型时代的用户意图理解变革
 
-在实际对话场景中，用户习惯使用不完整表达与系统交互。研究表明，大部分对话请求都存在语法省略或语义隐含现象。"**帮我查一下**"、"**之前那个怎么样了**"、"改成明天吧"这类表达对传统对话系统构成巨大挑战，但大语言模型（LLM）技术正在重塑意图理解范式，使系统能像人类一样理解"说半句"的表达。
+在实际对话场景中，用户习惯使用不完整表达与系统交互，语法省略或语义隐含是常见的表达现象（经验观察，非统计数据）。"**帮我查一下**"、"**之前那个怎么样了**"、"改成明天吧"这类表达对传统对话系统构成巨大挑战，但大语言模型（LLM）技术正在重塑意图理解范式，使系统能像人类一样理解"说半句"的表达。
 
 ### 1.1 不完整表达的技术挑战
 
@@ -22,13 +22,13 @@ def handle_ellipsis(text):
 ```
 
 - **技术方案**：基于依存句法分析的槽位填充（使用Stanford CoreNLP）
-- **数据特征**：省略主语的请求更为常见，省略宾语次之（对话日志分析显示）
+- **数据特征**：省略主语的请求更为常见，省略宾语次之（示意性经验描述，具体分布以自家对话日志统计为准）
 
 **隐含语义依赖**  
 
 ```mermaid
 flowchart TB
-    A["太贵了"] --> B{商品价格 > 用户心理价位？}
+    A["太贵了"] --> B{"商品价格 > 用户心理价位？"}
     B -->|是| C[隐含意图：议价/替代品]
     B -->|否| D[隐含意图：价值确认]
 ```
@@ -75,7 +75,7 @@ graph LR
 **大模型范式的技术突破**  
 
 ```python
-# 端到端理解实现
+# 端到端理解实现（示意伪代码，非真实 API）
 def llm_understanding(query, history):
     prompt = f"""
     [历史] {history}
@@ -135,7 +135,7 @@ sequenceDiagram
        return fill_template(query, entities)
    ```
 
-   - 补全准确率达到较高水平（实测数据集验证）
+   - 补全准确率取决于知识图谱覆盖率与槽位模板质量（示意性描述，非实测数据）
 
 3. **上下文推理(Contextual Reasoning)**  
    - 时间推理：相对时间到绝对时间的转换
@@ -165,7 +165,7 @@ sequenceDiagram
 - 异常熔断：当语义补全置信度过低时触发重新识别
 - 动态优先级：多轮对话中上下文推理权重动态调整
 
-> **架构优势**：相比传统流水线，错误率显著降低，处理时间大幅缩短（基于AWS负载测试），特别适合处理"说半句"场景下的语义断层问题。
+> **架构优势**：相比传统流水线，错误率显著降低，处理时间大幅缩短（定性结论，文中未附实测数据），特别适合处理"说半句"场景下的语义断层问题。
 
 ---
 
@@ -199,7 +199,7 @@ flowchart LR
     C --> D[第2轮理解完全失控]
 ```
 
-- 实测数据：多轮对话后错误率呈指数级增长（金融客服场景验证）
+- 常见现象（示意性描述）：多轮对话中错误会逐轮累积放大，具体增速因场景而异
 - 根本原因：状态表示缺乏语义纠错机制
 
 ### 2.2 大模型驱动方案工程实现
@@ -280,6 +280,7 @@ def detect_topic_drift(current_vec, history_vecs):
 **共指消解工业方案**  
 
 ```python
+# 示意伪代码，非真实 API（SpanBertCorefModel/LRUCache 需自行封装或选用第三方库）
 class CoreferenceResolver:
     def __init__(self):
         self.model = SpanBertCorefModel.load()
@@ -315,7 +316,7 @@ graph TD
         C2 --> E{资源冲突？}
         D2 --> E
         E -->|是| F[优先级仲裁器]
-        F --> G[支付>日程]
+        F --> G["支付 > 日程"]
     end
 ```
 
@@ -326,6 +327,8 @@ graph TD
 #### **Fallback三级熔断机制**
 
 ```python
+# 示意伪代码，非真实 API（Python 标准库没有内置的 timeout 上下文管理器，
+# 需用 asyncio.wait_for、signal 或第三方库实现超时控制）
 def intent_fallback(user_input, history, attempt=0):
     if attempt == 0:  # Level1: 大模型重试
         return llm_retry_with_context(user_input, history)
@@ -335,7 +338,7 @@ def intent_fallback(user_input, history, attempt=0):
         log_escalation(user_input)
         return {"intent": "HUMAN_ASSIST", "slots": {}}
 
-# 超时控制
+# 超时控制（示意写法）
 with timeout(reasonable_time_limit):  # 合理超时设置
     result = intent_fallback(input, history)
 ```
@@ -344,11 +347,11 @@ with timeout(reasonable_time_limit):  # 合理超时设置
 
 `confidence = α * semantic_score + β * context_match + γ * user_consistency`  
 
-其中：
+其中（示意权重，需按业务场景调优，满足 α + β + γ = 1）：
 
-- `α`（当前语句语义完整性权重较高）
-- `β`（与历史对话匹配度权重适中）
-- `γ`（用户行为一致性权重较低）
+- `α ≈ 0.5`（当前语句语义完整性权重较高）
+- `β ≈ 0.3`（与历史对话匹配度权重适中）
+- `γ ≈ 0.2`（用户行为一致性权重较低）
 - **阈值策略**：  
   - 高置信度：直接执行
   - 中等置信度：确认后执行
@@ -356,7 +359,7 @@ with timeout(reasonable_time_limit):  # 合理超时设置
 
 #### **实时监控看板**
 
-```dashboard
+```text
 [意图识别] 
  成功率：优秀 ██████████ 
  多意图率：适中 ↑轻微上升 
@@ -366,7 +369,7 @@ with timeout(reasonable_time_limit):  # 合理超时设置
  1. 订单查询(最高) 2. 预约变更(较高) 3. 支付问题(中等)
 ```
 
-> **工程经验**：在电商系统实测表明，该架构使"说半句"场景的意图识别准确率显著提升，平均响应时间保持在毫秒级别。关键优化点在于：1) CoT提示的链式推理设计 2) 动态权重的多意图仲裁 3) 三级熔断的稳定性保障。
+> **工程经验**：该架构在"说半句"场景下通常能带来明显的意图识别质量提升，响应时间量级取决于模型与部署方式（文中数字为示意性经验总结，非实测报告）。关键优化点在于：1) CoT提示的链式推理设计 2) 动态权重的多意图仲裁 3) 三级熔断的稳定性保障。
 
 ---
 
@@ -395,7 +398,7 @@ class ContextWeighter:
             total_weight += weight
         return weighted_sum / total_weight
 
-# 实测效果：长对话关键信息召回率显著提升
+# 示意性设计目标：长对话关键信息召回率提升（效果依实现而异）
 ```
 
 **用户偏好实时建模引擎**  
@@ -550,7 +553,7 @@ flowchart TD
 
 3. **实时知识更新状态**
 
-    ```dashboard
+    ```text
     [知识库状态]
     总条目：海量级别 
     昨日更新：大量新增 
@@ -604,7 +607,7 @@ def hallucination_detection(response, knowledge_sources):
     
     return False, None
 
-# 实测显著降低幻觉率（医疗领域测试验证）
+# 示意性设计目标：降低幻觉率（效果依知识库覆盖度而异）
 ```
 
 > **工程实践洞见**：  
@@ -718,7 +721,7 @@ def hierarchical_compress(history, strategy="balanced"):
         "aggressive": "较高压缩比"
     }
     
-    summary = bart_summarize(history, strategy=strategy)
+    summary = bart_summarize(history, strategy=strategy)  # 示意伪代码，非真实 API（可用 transformers 的 BartForConditionalGeneration 封装）
     
     # 第3层：向量化表示
     vector_rep = sentence_embedding(summary)
@@ -814,7 +817,7 @@ sequenceDiagram
 
 **状态健康度监控**  
 
-```dashboard
+```text
 [对话状态健康度] 
  完整性 ████████▋ 良好
  一致性 ██████████ 优秀
@@ -959,7 +962,7 @@ graph TB
 **推理加速策略**：
 
 ```python
-# 生产环境优化配置
+# 生产环境优化配置（示意伪代码：字段值为文字说明，非可直接运行的真实配置）
 optimization_config = {
     "model_serving": {
         "batch_size": "优化批处理大小",
@@ -990,7 +993,7 @@ optimization_config = {
 
 **多维度评估框架**：
 
-```dashboard
+```text
 [系统健康度监控]
  ├─ 功能指标
  │  ├─ 意图识别准确率: 优秀 ↑
@@ -1038,7 +1041,7 @@ flowchart LR
 
 - **技术瓶颈**：超长对话的信息压缩与关键信息保留平衡
 - **解决方案**：分层压缩+向量化表示+关键实体追踪
-- **实测效果**：支持长轮次对话，信息保留率保持高水平
+- **设计目标**：支持长轮次对话，同时保持较高信息保留率（示意性描述，非实测数据）
 
 **多模态理解不足**：
 
@@ -1112,7 +1115,5 @@ service_architecture = {
 我们正站在对话系统发展的关键节点上。未来的系统不仅要能够理解用户的"说半句话"，更要能够理解用户的真实需求、情感状态、潜在意图。这需要技术的进步，也需要对人类认知和交流本质的深刻理解。
 
 正如本文开篇所述，让机器理解人类的不完整表达，这本身就是一个极具挑战性的技术问题。而我们今天的努力，正是为了构建一个更加智能、更加人性化的人机交互未来。在这个过程中，每一个技术突破都是向"真正理解"这一终极目标的重要迈进。
-
-> "**最好的对话系统不是那些能够完美回答所有问题的系统，而是那些能够真正理解用户意图，并与用户建立有意义连接的系统。**"
 
 ---

@@ -40,14 +40,14 @@ text = 'We are lucky to live in an age in which we are still making discoveries'
 # 分词 - 将文本拆分为单词
 words = word_tokenize(text)
 print(words)
-# ['我们', '很', '幸运', '能', '生活', '在', '一个', '时代', '中', '在',
-#  '我们', '仍然', '在', '进行', '发现']
+# ['We', 'are', 'lucky', 'to', 'live', 'in', 'an', 'age', 'in', 'which',
+#  'we', 'are', 'still', 'making', 'discoveries']
 
 stemmer = SnowballStemmer(language = "english")
 stemmed_words = list(map(lambda x: stemmer.stem(x), words))
 print(stemmed_words)
-# ['我们', '很', '幸运', '能', '生活', '在', '一个', '时代', '中', '在',
-#  '我们', '仍然', '在', '进行', '发现']
+# ['we', 'are', 'lucki', 'to', 'live', 'in', 'an', 'age', 'in', 'which',
+#  'we', 'are', 'still', 'make', 'discoveri']
 ```
 
 现在，我们有了所有单词的基本形式列表。 下一步是计算它们的频率以创建一个向量。
@@ -56,11 +56,11 @@ print(stemmed_words)
 import collections
 bag_of_words = collections.Counter(stemmed_words)
 print(bag_of_words)
-# {'我们': 2, '在': 2, '运气': 2, '中': 1, '生活': 1,
-# '一个': 1, '时代': 1, '我们': 1, '仍然': 1, '可以': 1, '发现': 1}
+# {'we': 2, 'are': 2, 'in': 2, 'lucki': 1, 'to': 1, 'live': 1,
+#  'an': 1, 'age': 1, 'which': 1, 'still': 1, 'make': 1, 'discoveri': 1}
 ```
 
-实际上，如果我们想将文本转换为向量，我们不仅需要考虑文本中的单词，还需要考虑整个词汇表。 假设我们的词汇中还有 _我_、_你_ 和 _学习_，让我们从费曼的名言中创建一个向量。
+实际上，如果我们想将文本转换为向量，我们不仅需要考虑文本中的单词，还需要考虑整个词汇表。 假设我们的词汇中还有 _i_ 和 _you_，让我们从费曼的名言中创建一个向量。
 
 ![作者图表](./img/bag-of-words-vector.png)
 
@@ -98,7 +98,7 @@ print(bag_of_words)
 
 ![作者的方案](./img/word2vec-encoder-decoder.png)
 
-该模型开始考虑单词的意义，因为它是基于单词的上下文进行训练的。 然而，它忽略了形态学（我们可以从单词部分获得的信息，例如，_\-less_ 意味着缺乏某物）。 这个缺点后来通过查看[GloVe](https://www-nlp.stanford.edu/pubs/glove.pdf) 中的子词跳字模型得到了改善。
+该模型开始考虑单词的意义，因为它是基于单词的上下文进行训练的。 然而，它忽略了形态学（我们可以从单词部分获得的信息，例如，_\-less_ 意味着缺乏某物）。 这个缺点后来通过 [fastText](https://arxiv.org/abs/1607.04606) 得到了改善——它将单词拆分为字符级子词（n-gram），用子词级别的跳字模型学习表示，从而能从词的部分推断词义。
 
 此外，`word2vec` 只能处理单词，但我们希望能够编码整个句子。 所以，让我们继续迈向变换器的下一个进化步骤。
 
@@ -120,7 +120,7 @@ print(bag_of_words)
 
 ## 2. 计算嵌入
 
-在本文中，我们将使用 `OpenAI` 嵌入。 我们将尝试一个新的模型 `text-embedding-3-small`，该模型最近刚刚[发布](https://openai.com/blog/new-embedding-models-and-api-updates) 。 新模型的性能相比于 `text-embedding-ada-002` 有所提升：
+在本文中，我们将使用 `OpenAI` 嵌入。 我们将尝试一个新的模型 `text-embedding-3-small`，该模型于 2024 年初[发布](https://openai.com/blog/new-embedding-models-and-api-updates)（截至本文写作时的口径）。 新模型的性能相比于 `text-embedding-ada-002` 有所提升：
 
 - 在一个广泛使用的多语言检索基准（[MIRACL](https://github.com/project-miracl/miracl) ）上的平均得分从 `31.4%` 上升到 `44.0%`。
 - 在一个常用的英语任务基准（[MTEB](https://github.com/embeddings-benchmark/mteb) ）上的平均表现也有所改善，从 `61.0%` 上升到 `62.3%`。
@@ -136,7 +136,7 @@ from openai import OpenAI
 client = OpenAI()
 
 def get_embedding(text, model="text-embedding-3-small"):
-   text = text.replace("n", " ")
+   text = text.replace("\n", " ")
    return client.embeddings.create(input = [text], model=model)
        .data[0].embedding
 
@@ -630,9 +630,9 @@ should know about?
 
 随着大型语言模型最近的流行，嵌入技术在 `RAG` 用例中得到了广泛应用。
 
-当我们有大量文档（例如，来自 ·Stack Exchange· 的所有问题）时，我们需要检索增强生成，因为我们无法将它们全部传递给大型语言模型，因为
+当我们有大量文档（例如，来自 `Stack Exchange` 的所有问题）时，我们需要检索增强生成，因为我们无法将它们全部传递给大型语言模型，因为
 
-- 大型语言模型在上下文大小上有限制（目前，`GPT-4 Turbo` 的限制是 `128K`）。
+- 大型语言模型在上下文大小上有限制（`GPT-4 Turbo` 的限制是 `128K`，截至 2024 年初的口径；当前主流模型已普遍达到 128K 量级，部分模型超过 1M）。
 - 我们为令牌付费，因此总是传递所有信息会更昂贵。
 - 大型语言模型在更大的上下文中表现较差。 你可以查看 [Needle In A Haystack – Pressure Testing LLMs](https://github.com/gkamradt/LLMTest_NeedleInAHaystack) 以了解更多细节。
 
@@ -642,7 +642,7 @@ should know about?
 - 当我们收到用户请求时，我们可以计算其嵌入并从存储中检索与该请求相关的文档。
 - 仅将相关文档传递给大型语言模型以获得最终答案。
 
-要了解更多关于 RAG 的信息，请随时阅读我更详细的文章 [这里.](https://towardsdatascience.com/rag-how-to-talk-to-your-data-eaf5469b83b0)
+要了解更多关于 RAG 的信息，请随时阅读我更详细的文章[这里](https://towardsdatascience.com/rag-how-to-talk-to-your-data-eaf5469b83b0)。
 
 ## 6. 总结
 

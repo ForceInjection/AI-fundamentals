@@ -1,5 +1,7 @@
 # Coze 部署和配置手册
 
+> 信息核对日：2026-11-05。镜像版本以核对时点为准：官方已将免费镜像由 `bitnami/*` 迁至 `bitnamilegacy/*`（2025-08-28 起，旧镜像冻结不再更新），本文镜像名保持核对时点口径；全文多处 `:latest` 用法仅适合体验环境，生产建议钉住具体版本。
+
 ## 1. 系统概述与架构
 
 ### 1.1 平台概述
@@ -30,7 +32,7 @@ Coze Studio 采用分层架构设计，包含以下核心组件：
 
 ### 1.3 系统组件详细配置
 
-本节将基于 [Docker Compose 配置](../../08_agentic_system/multi_agent/multi_agent_system/docker-compose.yml) 对各组件的详细配置进行说明。
+本节基于 Coze Studio 仓库自带的 [docker/docker-compose.yml](https://github.com/coze-dev/coze-studio/blob/main/docker/docker-compose.yml) 对各组件的详细配置进行说明。
 
 #### 1.3.1 MySQL 数据库
 
@@ -414,11 +416,6 @@ sudo chown -R $USER:$USER /opt/coze-studio
 # 克隆项目代码
 git clone https://github.com/coze-dev/coze-studio.git
 cd coze-studio/docker
-
-# 或者下载发布包
-wget https://github.com/coze-dev/coze-studio/releases/latest/download/coze-studio-docker.tar.gz
-tar -xzf coze-studio-docker.tar.gz
-cd coze-studio-docker
 ```
 
 #### 3.2.2 配置环境变量
@@ -515,7 +512,7 @@ docker-compose logs [service_name]
 # 快速验证关键服务
 docker-compose exec mysql mysql -u root -p -e "SELECT 1" && \
 docker-compose exec redis redis-cli ping && \
-curl -f http://localhost:8888/health && \
+curl -I http://localhost:8888 && \
 echo "✅ 所有服务正常"
 ```
 
@@ -533,21 +530,17 @@ curl -I http://localhost:8888
 
 ### 3.5 初始化配置
 
-#### 3.5.1 创建管理员账户
+#### 3.5.1 访问验证
 
-访问 `http://your-server-ip:8888` 进行首次设置：
-
-- 设置管理员邮箱和密码
-- 配置基本系统设置
-- 添加 AI 模型配置
+coze-studio 没有首访初始化向导。服务启动后直接访问 `http://your-server-ip:8888`，能打开 Coze Studio 控制台即代表部署成功；管理员邮箱/密码等账户体系通过所配置的存储与认证组件提供，不通过页面向导设置。
 
 #### 3.5.2 配置 AI 模型
 
-在管理界面中配置：
+模型不经管理界面配置，而是通过 `.env` 环境变量 + 重启生效，详见 4.3 节：
 
-- 添加聊天模型（如 `GPT`、`Claude` 等）
-- 配置嵌入模型
-- 设置模型参数和限制
+- 聊天模型：`MODEL_PROTOCOL_n` / `MODEL_OPENCOZE_ID_n` 等变量
+- 嵌入模型：`*_EMBEDDING_*` 系列变量
+- 修改后执行 `docker-compose up -d` 重启使配置生效
 
 #### 3.5.3 测试功能
 
@@ -1064,7 +1057,7 @@ export PADDLEOCR_OCR_API_URL=""               # PaddleOCR API 地址
 
 ```bash
 # Rerank 模型类型配置
-export RERANK_TYPE="rrf"                      # vikingdb / rrf / ark / openai / http
+export RERANK_TYPE="rrf"                      # vikingdb / rrf
 
 # VikingDB Rerank 配置
 export VIKINGDB_RERANK_HOST="api-knowledgebase.mlp.cn-beijing.volces.com"
@@ -1244,7 +1237,7 @@ logging:
 
 3. **验证升级**
    - 检查服务状态：参考附录中的服务管理命令
-   - 检查应用功能：`curl -f http://localhost:8888/health`
+   - 检查应用功能：`curl -I http://localhost:8888`
 
 #### 5.3.2 回滚策略
 
@@ -1563,7 +1556,7 @@ export EMBEDDING_MAX_BATCH_SIZE="100"             # 批处理大小（字符串�
 ```bash
 # 聊天模型配置（可配置多个）
 export MODEL_PROTOCOL_0="ollama"                 # 协议类型
-export MODEL_COZE_ID_0="200001"                  # 记录 ID
+export MODEL_OPENCOZE_ID_0="200001"              # 记录 ID
 export MODEL_NAME_0="Llama 3.1 8B"               # 显示名称
 export MODEL_ID_0="llama3.1:8b"                  # 模型名称
 export MODEL_API_KEY_0="ollama"                  # API 密钥（可为任意值）
@@ -1571,7 +1564,7 @@ export MODEL_BASE_URL_0="http://ollama:11434"    # Ollama 服务地址
 
 # 第二个模型配置
 export MODEL_PROTOCOL_1="ollama"
-export MODEL_COZE_ID_1="200002"
+export MODEL_OPENCOZE_ID_1="200002"
 export MODEL_NAME_1="通义千问 2.5 7B"
 export MODEL_ID_1="qwen2.5:7b"
 export MODEL_API_KEY_1="ollama"
@@ -1579,7 +1572,7 @@ export MODEL_BASE_URL_1="http://ollama:11434"
 
 # 第三个模型配置
 export MODEL_PROTOCOL_2="ollama"
-export MODEL_COZE_ID_2="200003"
+export MODEL_OPENCOZE_ID_2="200003"
 export MODEL_NAME_2="Gemma 2 9B"
 export MODEL_ID_2="gemma2:9b"
 export MODEL_API_KEY_2="ollama"
@@ -1754,7 +1747,7 @@ ollama:
   networks:
     - coze-network
   healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+    test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]  # 官方镜像不带 curl，用内置 CLI 探测
     interval: 30s
     timeout: 10s
     retries: 3
@@ -1800,10 +1793,9 @@ curl -s http://localhost:11434/api/tags | jq '.models[].name' || echo "API 连�
 # 内存优化
 export OLLAMA_MAX_LOADED_MODELS=1
 export OLLAMA_KEEP_ALIVE=1m
-
-# GPU 优化
-export OLLAMA_GPU_LAYERS=35  # 根据显存调整
 ```
+
+注意：Ollama 没有 `OLLAMA_GPU_LAYERS` 这类全局变量；GPU 卸载层数是 per-model 参数（`num_gpu`），在模型级别设置。
 
 通用故障排除方法请参考 5.2 章节。
 

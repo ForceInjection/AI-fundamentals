@@ -1,5 +1,7 @@
 # 深度解读「通义 DeepResearch」：ReAct 范式驱动的智能 Agent 架构
 
+> 信息核对日：2026-11-05，对照 [Alibaba-NLP/DeepResearch](https://github.com/Alibaba-NLP/DeepResearch) 仓库与官方博客；文中标注「示意」的代码段非仓库真实实现。
+
 **核心要点**：**通义 DeepResearch** 是基于 `ReAct` 范式构建的**智能 Agent 系统**（而非是**推理框架**），采用**思考-行动-观察**的循环推理流程，本质上是一个具备工具调用能力的**多模态智能 Agent**。
 
 ## 1. 概述
@@ -90,7 +92,7 @@ def react_inference(query, tools):
 
 | 局限性维度     | 传统 LLM 问题                 | ReAct 范式解决方案           |
 | -------------- | ----------------------------- | ---------------------------- |
-| **上下文管理** | 静态窗口限制（4K-32K tokens） | 动态上下文管理，按需加载信息 |
+| **上下文管理** | 静态窗口限制（`DeepResearch` 上下文长度为 128K，官方口径） | 多轮工具调用中按需加载信息 |
 | **信息获取**   | 封闭知识库，时效性差          | 实时工具调用，获取最新信息   |
 | **推理模式**   | 单轮生成，无法迭代优化        | 多轮思考-行动循环，持续优化  |
 | **错误处理**   | 无自我修正能力                | 基于观察反馈的自适应调整     |
@@ -155,7 +157,7 @@ def react_inference(query, tools):
 
 - **搜索工具**：Google 搜索、学术检索
 - **访问工具**：网页内容获取和解析
-- **文件工具**：本地文件读写操作
+- **文件工具**：文件内容解析（`FileParser`，处理上传的 PDF/docx/zip/音视频等文件并转文本，非本地文件读写）
 - **代码工具**：Python 代码执行环境
 
 _注：工具列表基于 DeepResearch 源码中的 TOOL_MAP 配置。_
@@ -237,11 +239,11 @@ class Search:
         response = requests.request("POST", url, headers=headers, data=payload)
         return response.json()
 
-# 统一工具集成框架
+# 统一工具集成框架（示意伪代码，非仓库真实实现；仓库入口为 inference/react_agent.py 的 MultiTurnReactAgent._run，见 4.1）
 class DeepResearchAgent:
     def __init__(self):
-        # 底层推理引擎
-        self.llm_engine = vLLMEngine(model="qwen-max")
+        # 底层推理引擎（可对接 vLLM 等推理后端）
+        self.llm_engine = load_llm_backend()
 
         # 工具注册表（基于真实的 TOOL_MAP）
         self.tools = TOOL_MAP
@@ -380,7 +382,7 @@ def _run(self, data: str, model: str, **kwargs):
 
 ### 4.2 动态上下文管理
 
-与传统 `LLM` 的静态上下文不同，`DeepResearch` 实现了动态上下文管理：
+与传统 `LLM` 的静态上下文不同，`DeepResearch` 在多轮工具调用中需要管理不断增长的上下文。以下为**示意设计，仓库中不存在**对应实现：
 
 ```python
 class DynamicContextManager:
@@ -425,7 +427,7 @@ class DynamicContextManager:
 
 ### 4.3 多轮交互机制
 
-`DeepResearch` 支持复杂的多轮交互，能够根据中间结果调整策略：
+`DeepResearch` 支持复杂的多轮交互，能够根据中间结果调整策略。以下为**示意设计，仓库中不存在**对应实现：
 
 ```python
 def multi_turn_research(self, query):
@@ -459,10 +461,11 @@ def multi_turn_research(self, query):
 
 `DeepResearch` 的核心优势在于能够实时集成多种外部信息源：
 
-- **网络搜索**：通过 `GoogleSearchTool` 获取实时网络信息
-- **学术检索**：通过 `ScholarSearchTool` 获取权威学术资料
-- **网页解析**：通过 `WebVisitTool` 深度解析网页内容
-- **代码执行**：通过 `PythonExecuteTool` 进行数据分析和计算
+- **网络搜索**：通过 `Search` 工具获取实时网络信息
+- **学术检索**：通过 `Scholar` 工具获取权威学术资料
+- **网页解析**：通过 `Visit` 工具深度解析网页内容
+- **文件解析**：通过 `FileParser` 工具解析上传的 PDF/docx/zip/音视频等文件
+- **代码执行**：通过 `PythonInterpreter` 工具进行数据分析和计算
 
 **信息处理流程**：
 
@@ -479,7 +482,7 @@ def multi_turn_research(self, query):
 
 ## 5. 性能特征与对比分析
 
-基于前述的架构分析和推理流程解析，本章将从性能维度深入对比 `DeepResearch` 与传统 `LLM` 的差异。通过量化指标和实际测试数据，全面评估 `ReAct` 范式在推理效率、准确性、资源消耗等方面的表现，为技术选型和系统优化提供数据支撑。
+基于前述的架构分析和推理流程解析，本章将从性能维度对比 `DeepResearch` 与传统 `LLM` 的差异，评估 `ReAct` 范式在运行模式、资源消耗等方面的特点，为技术选型提供参考。
 
 ### 5.1 运行模式对比
 
@@ -502,23 +505,14 @@ def multi_turn_research(self, query):
 - **空间复杂度**：`O(k×n×d + S)`（基于系统架构的内存使用统计）
 - 其中 k 为轮次数，T 为工具执行时间，S 为外部信息存储
 
-| 性能指标             | 传统 LLM                              | DeepResearch            | 说明                           |
-| -------------------- | ------------------------------------- | ----------------------- | ------------------------------ |
-| **延迟特征**         |                                       |                         |                                |
-| 首 Token 延迟 (TTFT) | 200-500ms                             | 不适用                  | 传统 LLM 关注单次生成延迟      |
-| 每 Token 延迟 (TPOT) | 20-50ms                               | 不适用                  | DeepResearch 关注任务完成时间  |
-| 任务完成时间         | 不适用                                | 30s-300s                | 取决于任务复杂度和工具调用次数 |
-| 单次工具执行         | 不适用                                | 1s-10s                  | 网络请求和数据处理时间         |
-| **吞吐量**           |                                       |                         |                                |
-| Token 生成速度       | 50-200 tokens/s                       | 不适用                  | 高吞吐量文本生成               |
-| 并发请求数           | 100-1000                              | 不适用                  | 批处理优化                     |
-| 任务处理能力         | 不适用                                | 10-100 tasks/hour       | 复杂研究任务处理               |
-| 并发 Agent 数        | 不适用                                | 5-50 agents             | 受资源和工具限制               |
-| **内存占用**         |                                       |                         |                                |
-| KV 缓存              | O(batch_size × seq_len × hidden_size) | 不适用                  | 注意力机制缓存                 |
-| 模型权重             | 7B-70B parameters                     | 同左                    | 底层仍使用 LLM                 |
-| 上下文缓存           | 不适用                                | O(turns × context_size) | 多轮对话状态                   |
-| 外部数据缓存         | 不适用                                | O(external_data_size)   | 搜索结果和网页内容             |
+| 性能指标     | 传统 LLM                              | DeepResearch            | 说明                           |
+| ------------ | ------------------------------------- | ----------------------- | ------------------------------ |
+| KV 缓存      | O(batch_size × seq_len × hidden_size) | 不适用                  | 注意力机制缓存                 |
+| 模型权重     | 各类开源/闭源 LLM 均可接入            | Tongyi-DeepResearch-30B-A3B（30B 总参数 / 3B 激活，128K 上下文，官方口径） | 底层仍使用 LLM |
+| 上下文缓存   | 不适用                                | O(turns × context_size) | 多轮对话状态                   |
+| 外部数据缓存 | 不适用                                | O(external_data_size)   | 搜索结果和网页内容             |
+
+_注：官方未发布延迟、吞吐量类基准数据，本表不列具体数值；复杂度项为上文的理论分析口径，非实测结果。_
 
 ### 5.3 性能优化策略
 
@@ -542,18 +536,7 @@ def multi_turn_research(self, query):
 - 结合最近交互和重要交互的混合策略
 - 动态调整上下文长度，适应不同任务需求
 
-### 5.4 性能测试数据
-
-| 测试场景       | 传统 LLM | DeepResearch | 性能提升 |
-| -------------- | -------- | ------------ | -------- |
-| **简单问答**   | 0.5s     | 1.2s         | -140%    |
-| **复杂推理**   | 2.1s     | 8.5s         | -305%    |
-| **信息检索**   | N/A      | 3.2s         | 新增能力 |
-| **多步骤任务** | 失败     | 15.6s        | 质量提升 |
-
-_注：测试数据基于 DeepResearch 官方性能基准测试，使用相同硬件环境和测试用例。_
-
-### 5.5 适用场景分析
+### 5.4 适用场景分析
 
 | 应用场景类型   | 传统 LLM                | DeepResearch           | 推荐选择       |
 | -------------- | ----------------------- | ---------------------- | -------------- |

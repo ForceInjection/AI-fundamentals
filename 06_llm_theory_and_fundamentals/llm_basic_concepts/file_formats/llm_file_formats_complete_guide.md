@@ -75,13 +75,13 @@
 * **定位**：框架无关的神经网络中间表示，用于模型标准化和跨平台部署。
 * **图结构**：基于 Protocol Buffer 的有向无环图（DAG）表示，支持静态计算图。
 * **兼容性控制**：
-  * **Opset 版本**：通过 `opset_version` 管理算子版本与兼容性（当前主流为 opset 11-17）。
+  * **Opset 版本**：通过 `opset_version` 管理算子版本与兼容性（主流 runtime 已支持 opset 21+，截至 2026-11）。
   * **算子支持**：支持 200+ 标准算子，覆盖主流深度学习操作。
 * **优化与量化**：
   * 原生支持 INT8、FP16、BF16 等量化格式。
   * 支持动态量化和静态量化工作流。
 * **应用限制**：
-  * 不支持动态控制流（if/while 等）。
+  * 控制流表达能力有限（虽有 If/Loop/Scan 等控制流算子，但在图中表达循环、分支等动态逻辑较繁琐）。
   * 对自定义算子支持有限。
   * 转换复杂模型时可能出现精度损失。
 * **兼容部署平台**：ONNX Runtime、TensorRT、OpenVINO、DirectML 等主流推理引擎。
@@ -375,12 +375,17 @@
 
 ### 8.3 新兴技术格式
 
-* **Apple MLX**：针对 Apple Silicon 优化的统一机器学习框架格式。
 * **IREE-MLIR**：Google 开源的端到端编译器中间表示。
-* **FasterTransformer**：NVIDIA 针对 Transformer 架构的专用优化格式。
-* **DeepSpeed-Inference**：Microsoft 的大模型推理优化框架专用格式。
 
-### 8.4 行业发展预测
+### 8.4 配套推理生态（框架/库，非格式）
+
+以下不属于模型文件格式，而是围绕模型部署的推理框架/优化库，常与上述格式配合使用：
+
+* **Apple MLX**：针对 Apple Silicon 优化的统一机器学习框架（模型权重多以 safetensors 存储）。
+* **FasterTransformer**：NVIDIA 针对 Transformer 架构的专用推理优化库。
+* **DeepSpeed-Inference**：Microsoft 的大模型推理优化框架。
+
+### 8.5 行业发展预测
 
 1. **格式收敛**：预计未来 2-3 年内，主流格式将收敛为 3-5 种核心标准。
 2. **自动化工具链**：模型格式转换和优化将更加自动化和智能化。

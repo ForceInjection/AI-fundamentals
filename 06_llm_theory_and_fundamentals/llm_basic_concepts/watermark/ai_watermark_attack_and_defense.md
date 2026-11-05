@@ -4,7 +4,7 @@
 
 2026 年 8 月 11 日，Anthropic 宣布将给 Claude 生成的文本打上水印，以满足欧盟《人工智能法案》自 8 月 2 日起生效的透明度义务。就在同一天，一个名叫 [watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover) 的开源仓库在 GitHub 上诞生——它干的事恰好相反：把 Claude、Gemini、OpenAI 等各家产品可能留下的"AI 印记"，从文本和文件里清除出去。
 
-四天后，面对沸沸扬扬的用户反弹，Anthropic 发布[官方博客](https://www.anthropic.com/news/claude-text-watermark)拆解水印的技术细节，还打了一个生动的比方：玩大富翁，骰子被换成了《圆周率》。博客里明说，轻度的修改洗不掉水印，但逐词重写可以。而此时，仓库早在博客发布前三天，就把"重写"做成了流水线；到第六天，它已经斩获一万一千多颗星。
+三天后（2026 年 8 月 14 日），面对沸沸扬扬的用户反弹，Anthropic 发布[官方博客](https://www.anthropic.com/news/claude-text-watermark)拆解水印的技术细节，还打了一个生动的比方：玩大富翁，骰子被换成了《圆周率》。博客里明说，轻度的修改洗不掉水印，但逐词重写可以。而此时，仓库早在博客发布前三天（即 8 月 11 日当天），就把"重写"做成了流水线；到 8 月 17 日，它已经斩获一万一千多颗星。
 
 官方刚亮出骰子的秘密，玩家已经备好了另一颗骰子。一场攻防战就此开打。这篇文章记录的，是这场战争的前四个回合，以及它们指向的那个没有终局的未来。
 
@@ -62,7 +62,7 @@ watermarks-remover 的第一层回应只有一个字：删。它的 Layer A 把�
 
 **拆招**。watermarks-remover 掏出了整场战争最重的武器：CtrlRegen。它用 ControlNet 引导一次受控的重新生成——不是在原图上涂抹，而是"按原图重画一遍"，水印所在的频域结构在重画中被打散；另一个可选后端 MarkDiffusion 提供 DiffusionPurification，一种对扩散水印的盲再生攻击：不认水印方案，代价是图像漂移更大。
 
-**胜负手**。信号确实能被破坏，但这是四回合里唯一没有便宜胜利的一局：GPU、时间、像素细节的漂移，缺一不可；而音视频水印，至今仍是无人区。这一回合，双方打平。
+**胜负手**。信号确实能被破坏，但这是四回合里唯一没有便宜胜利的一局：GPU、时间、像素细节的漂移，缺一不可。音视频水印的战况也在变化：2026 年开源工具（如 watermarks-remover v0.7.0）已支持破坏性音频水印去除与逐帧视频净化，但通用水印鲁棒性仍是开放问题。这一回合，双方打平。
 
 ## 六、左右互搏：怎么证明"删干净了"
 
@@ -74,7 +74,7 @@ watermarks-remover 的第一层回应只有一个字：删。它的 Layer A 把�
 
 四回合打完，战局陷入僵持。破解方最深的困境不在工程，而在信息不对称：没有官方的检测器与密钥，一切"已清除"都只是 best-effort。厂商之所以不公开，是因为学术界早已证明——检测器一旦公开，攻击者就能针对它训练自适应攻击；公开，即失效。于是防守方必须把方法藏起来，而破解方只需要把方法开源。这组不对称，决定了防守方永远是更被动的一方。
 
-代价也是真实存在的：文本重写保意不保字；像素重建要 GPU、要时间、要接受漂移；短文本上一切努力收益递减。项目自己也把边界划得清清楚楚：C2PA 软绑定清不掉，音视频水印不在范围，训练后门（trigger phrases 之类的模型级标记）更是无解。在一个万物皆可吹的领域，这种"承认不能"的诚实，反而构成可信度。
+代价也是真实存在的：文本重写保意不保字；像素重建要 GPU、要时间、要接受漂移；短文本上一切努力收益递减。项目自己也把边界划得清清楚楚：C2PA 软绑定清不掉，音视频水印到 v0.7.0 才提供破坏性去除与逐帧净化、通用水印鲁棒性仍是开放问题，训练后门（trigger phrases 之类的模型级标记）更是无解。在一个万物皆可吹的领域，这种"承认不能"的诚实，反而构成可信度。
 
 下一轮的钥匙，握在双方手里：厂商随时可能公布官方检测器，那将是全部攻防重新洗牌的起点；开源侧则在打磨更高保真的重写与更强的配方。而棋盘之外的问题，比棋盘上的更重要：谁有资格决定"你的内容带不带标"？工具是中立的，去标记的正当性取决于内容归属与用途——清理自己拥有的内容，是隐私与卫生；用它造假，是另一回事。责任在使用者，不在工具。
 
@@ -94,7 +94,7 @@ watermarks-remover 的第一层回应只有一个字：删。它的 Layer A 把�
 - Dathathri et al., _Scalable watermarking for identifying large language model outputs_(SynthID-Text,Nature 634,2024)
 - Wen et al., _Tree-Rings Watermarks: Invisible Fingerprints for Diffusion Images_([arXiv:2305.20030](https://arxiv.org/abs/2305.20030))
 - Tancik et al., _StegaStamp: Invisible Hyperlinks in Physical Photographs_([arXiv:1904.05343](https://arxiv.org/abs/1904.05343))
-- CtrlRegen(ICLR 2025)：基于 ControlNet + DINOv2 的受控再生去水印
+- Liu et al., _Image Watermarks are Removable Using Controllable Regeneration from Clean Noise_（CtrlRegen，[ICLR 2025](https://arxiv.org/abs/2410.05470)）：基于 ControlNet + DINOv2 的受控再生去水印
 - MarkLLM：清华主导的 LLM 水印评测开源工具包
 - 欧盟《人工智能法案》第 50 条([EUR-Lex](https://eur-lex.europa.eu/eli/reg/2024/1689/oj))
 - 中国《人工智能生成合成内容标识办法》（2025 年 9 月 1 日施行）

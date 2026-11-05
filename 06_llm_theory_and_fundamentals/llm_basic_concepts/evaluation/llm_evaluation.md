@@ -12,12 +12,12 @@
 
 ### 1.1 知识与推理
 
-衡量模型「知道什么」和「能从已知推出什么」。MMLU 是当前最通用的「模型能力标尺」，覆盖 57 个学科的选择题。但仅靠选择题分数会高估模型的理解深度——MMLU Chain-of-Thought（让模型先推理再选）比直接选择更能反映真实推理能力，高分模型的排序也可能因此改变。
+衡量模型「知道什么」和「能从已知推出什么」。MMLU 是长期使用最广泛的「模型能力标尺」（截至 2024 年口径；对更强的前沿模型，社区已逐步转向 GPQA 等更难的基准），覆盖 57 个学科的选择题。但仅靠选择题分数会高估模型的理解深度——MMLU Chain-of-Thought（让模型先推理再选）比直接选择更能反映真实推理能力，高分模型的排序也可能因此改变。
 
 | Benchmark | 考察方向             | 题型   | 规模     |
 | --------- | -------------------- | ------ | -------- |
 | MMLU      | 57 学科综合知识      | 选择题 | ~14K 题  |
-| C-Eval    | 中文综合知识         | 选择题 | ~14K 题  |
+| C-Eval    | 中文综合知识         | 选择题 | 12,352 题 |
 | HellaSwag | 常识推理（完形填空） | 选择题 | ~10K 题  |
 | ARC       | 科学推理（小初高）   | 选择题 | ~7.8K 题 |
 | BIG-Bench | 200+ 子任务综合      | 混合   | 超大     |
@@ -29,12 +29,12 @@ GSM8K 是最常用的数学推理基准——8.5K 道小学数学应用题，需
 | Benchmark    | 考察方向           | 说明                                 |
 | ------------ | ------------------ | ------------------------------------ |
 | GSM8K        | 小学数学应用题     | 最通用的数学基准，但存在记忆化风险   |
-| MATH         | 竞赛级数学         | 含代数、几何、微积分，难度远超 GSM8K |
+| MATH         | 竞赛级数学         | 含代数、几何、预备微积分（Precalculus）等 7 个科目，难度远超 GSM8K |
 | GSM-Symbolic | 符号随机化的 GSM8K | 用于区分「推理」和「记忆」           |
 
 ### 1.3 代码能力
 
-HumanEval 是代码能力的首选基准，但 pass@k 指标需要仔细解读：k=1 和 k=100 的差距意味着模型可能只有 60% 的概率一次写对，但给 100 次机会总有一次是对的。在生产环境中，pass@1 才是体感指标。
+HumanEval 是代码能力的首选基准，但 pass@k 指标需要仔细解读——它表示 k 次采样中**至少一次**通过测试的概率，不是单次正确率：k=1 和 k=100 的差距意味着模型可能只有 60% 的概率一次写对，但给 100 次机会很可能有一次是对的。在生产环境中，pass@1 才是体感指标。
 
 | Benchmark     | 考察方向               | 评估方式       |
 | ------------- | ---------------------- | -------------- |
@@ -82,7 +82,7 @@ Benchmark 分数和模型能力之间的差距，往往来自三个系统性陷�
 
 ### 3.2 Prompt 敏感性
 
-同一模型在略微不同的 Prompt 下，同一 Benchmark 的分数可以差 5-10%。这意味着「分高」不等于「模型强」——可能只是「Prompt 写得好」。好的评估应该使用多套 Prompt 模板，报告均值与方差，而非单次最高分。
+同一模型在略微不同的 Prompt 下，同一 Benchmark 的分数可以相差数个百分点（具体幅度因基准与模型而异，没有通用数字）。这意味着「分高」不等于「模型强」——可能只是「Prompt 写得好」。好的评估应该使用多套 Prompt 模板，报告均值与方差，而非单次最高分。
 
 ### 3.3 维度错配
 
@@ -106,5 +106,5 @@ Benchmark 分数和模型能力之间的差距，往往来自三个系统性陷�
 - [LLM 基础概念总览](../README.md)
 - [Scaling Laws](../scaling_laws/scaling_laws.md) — 模型规模与 Benchmark 分数的幂律关系。
 - HELM: Holistic Evaluation of Language Models (Stanford, 2022) — 全面评估方法论论文。
-- [Chatbot Arena](https://chat.lmsys.org/) — LMSYS 的在线盲评平台。
-- [Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) — HuggingFace 开源模型排行。
+- [Chatbot Arena（LMArena）](https://lmarena.ai/) — 在线盲评平台（原 LMSYS 项目，已独立为 LMArena）。
+- [Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) — HuggingFace 开源模型排行（2025 年已归档停更，数据仅作历史参考）。

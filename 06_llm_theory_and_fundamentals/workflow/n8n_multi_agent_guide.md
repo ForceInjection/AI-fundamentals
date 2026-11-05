@@ -1,5 +1,7 @@
 # 使用 n8n 构建多智能体系统的实践指南
 
+> 信息核对日：2026-11-05。节点名称按现行官方文档口径书写（`Code` node、`Schedule Trigger`；旧文档中的 `Function` 节点、`Cron` 触发器为其前身名称）。
+
 ## 1. 引言
 
 多智能体系统（`MAS`, `Multi-Agent System`）是一种由多个相互协作的智能体（`Agent`）组成的系统结构。这些智能体具备自主性、交互性、协作性等特征，能够共同完成复杂任务。随着大语言模型（LLM）和自动化工具的发展，MAS 越来越多地被用于构建复杂的智能应用，例如多轮问答、自动化客服、内容生成等。
@@ -90,7 +92,7 @@ graph LR
    - [Manual Trigger Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.manualworkflowtrigger/)
 
 2. 核心处理节点（`Core Processing Node`）：核心处理节点负责执行智能体的主要逻辑，包括：
-   - `Function Node`：编写自定义 `JavaScript` 代码，处理数据和实现逻辑。
+   - `Code node`：编写自定义 `JavaScript` 代码，处理数据和实现逻辑。
    - `LLM Integration Node`：集成大语言模型（如 `OpenAI`、`DeepSeek`）进行自然语言处理。
    - `If Node`：根据条件判断执行不同的路径。
    - `Set Node`：设置或修改数据字段。
@@ -108,7 +110,7 @@ graph LR
 | **Webhook**      | 接收外部 `HTTP` 请求以触发工作流，支持多种 `HTTP` 方法（`GET`、`POST` 等），可配置响应方式（立即响应、等待工作流完成等）。 | [Webhook 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)                                                        |
 | **HTTP Request** | 向其他智能体或外部 `API` 主动发起 `HTTP` 请求，支持多种请求方法，适用于数据获取、任务下发等场景。                          | [HTTP Request 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/)                                               |
 | **LLM 节点**     | 集成大语言模型（如 `OpenAI`、`DeepSeek`）处理自然语言任务，实现文本生成、意图识别等功能。                                  | [OpenAI Functions Agent 节点文档](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/openai-functions-agent/) |
-| **Function**     | 编写自定义 `JavaScript` 代码，处理数据转换、逻辑判断等，增强工作流的灵活性。                                               | [Function 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.code/)                                                          |
+| **Code**         | 编写自定义 `JavaScript` 代码，处理数据转换、逻辑判断等，增强工作流的灵活性。                                               | [Code 节点文档](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.code/)                                                              |
 | **Redis**        | 与 Redis 数据库交互，实现状态追踪、结果存储、消息发布等功能，适用于缓存和快速数据访问。                                    | [Redis 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.redis/)                                                             |
 | **Postgres**     | 与 `PostgreSQL` 数据库交互，支持执行查询、插入、更新等操作，适用于持久化存储和复杂数据管理。                               | [Postgres 节点文档](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.postgres/)                                                       |
 
@@ -136,9 +138,9 @@ graph TD
 
 1. `Webhook` 节点接收用户输入的任务；
 2. 调用 `DeepSeek API` 对任务进行分析与拆解；
-3. `Function` 节点解析响应结果，批量发送子任务至执行智能体。
+3. `Code` 节点解析响应结果，批量发送子任务至执行智能体。
 
-#### 5.2.2 输入提取节点（Function）
+#### 5.2.2 输入提取节点（Code）
 
 ```javascript
 return [
@@ -166,7 +168,7 @@ return [
 2. 模拟任务执行过程（可替换为实际逻辑）；
 3. 通过 HTTP Request 节点将结果发送至审核智能体。
 
-#### 5.3.2 模拟执行节点（Function）
+#### 5.3.2 模拟执行节点（Code）
 
 ```javascript
 const task = $json.task;
@@ -183,11 +185,13 @@ return [
 
 #### 5.4.1 审核逻辑
 
-1. 每个子任务结果存入 `Redis`（或内存）；
-2. 检查是否收到全部 3 个子任务结果；
-3. 聚合结果后返回至用户。
+三个执行智能体的结果分三路汇入审核智能体。注意 n8n 的一次执行中，Code 节点的 `$input.all()` 只能看到本轮实际流入的输入项——三条分支各自独立到达时，任一次执行都只含 1 个结果，直接判数量会永远不等于 3。真实汇合做法：
 
-#### 5.4.2 状态判断逻辑（Function）
+1. 三条分支的结果统一接入 **Aggregate** 节点，把多路输出合并成一条包含全部项的记录；
+2. Aggregate 之后接 Code 节点，用 `$input.all()` 判断是否收齐 3 个子任务结果；
+3. 收齐则聚合返回；未收齐的场景（结果跨多次执行到达）改用 `Redis` / Set 累积——每收到一个结果写入 Redis，凑满 3 个再触发聚合。
+
+#### 5.4.2 汇合判断逻辑（Code，接在 Aggregate 之后）
 
 ```javascript
 const completedTasks = $input.all().map((item) => item.json);
@@ -225,7 +229,7 @@ if (completedTasks.length === 3) {
 在多智能体系统中，异步控制策略有助于提高系统的响应性和资源利用率。以下是常见的异步控制策略：
 
 1. **回调机制**：执行智能体在完成任务后，主动通过 `HTTP Request` 节点将结果发送给审核智能体，实现非阻塞的任务处理。
-2. **轮询机制**：审核智能体使用定时触发器（如 `Cron` 节点）定期检查任务状态，适用于无法使用回调的场景。
+2. **轮询机制**：审核智能体使用定时触发器（`Schedule Trigger`，旧称 Cron Trigger）定期检查任务状态，适用于无法使用回调的场景。
 3. **事件驱动**：集成消息队列（如 `NATS`、`Kafka`）实现事件驱动的工作流触发，适用于高并发、复杂的系统架构。
 
 ```mermaid
@@ -246,7 +250,7 @@ graph TD
 ### 7.1 调试技巧
 
 - **逐节点验证流程**：右键点击节点，选择「执行此节点」，可单独验证节点逻辑，便于定位问题。
-- **使用 `console.log()` 输出调试信息**：在 `Function` 或 `Code` 节点中添加 `console.log()` 语句，调试信息将显示在浏览器控制台中，便于观察变量值和流程状态。
+- **使用 `console.log()` 输出调试信息**：Code 节点在服务端 Node.js 中执行，`console.log()` 的输出不会出现在浏览器控制台，而是在该节点执行后的输出面板（Debug 信息区）和 n8n 服务端日志中查看。
 - **利用版本控制管理测试方案**：合理使用 `n8n` 的「版本控制」功能，记录和管理不同的测试方案，便于回溯和比较。
 - **重现历史执行数据**：通过「执行记录」面板，选择失败的执行记录，点击「在编辑器中调试」，可加载历史数据进行调试，提升问题定位效率。
 
@@ -327,8 +331,8 @@ graph LR
 
 | **智能体**           | **功能说明**                                       | **n8n 实现建议**                             |
 | -------------------- | -------------------------------------------------- | -------------------------------------------- |
-| **数据采集 Agent**   | 定时抓取数据来源（`API`、`RSS`、数据库等）         | `Cron` 节点 + `HTTP Request` / `Query` 节点  |
-| **预处理 Agent**     | 数据清洗、格式化、缺失处理                         | `Function` 节点 + `Set` 节点                 |
+| **数据采集 Agent**   | 定时抓取数据来源（`API`、`RSS`、数据库等）         | `Schedule Trigger` + `HTTP Request` / `Query` 节点 |
+| **预处理 Agent**     | 数据清洗、格式化、缺失处理                         | `Code` 节点 + `Set` 节点                     |
 | **模型分析 Agent**   | 调用外部 ML 服务进行聚类/分类/预测分析             | `HTTP Request` 节点 + `Python` 后端服务      |
 | **可视化报告 Agent** | 生成图表、表格或自然语言分析总结                   | `Chart API` 调用或 `Markdown` 汇总           |
 | **通知发送 Agent**   | 发送到 `Email`、`Slack`、飞书或生成日报 `PDF` 存档 | `Email` 节点 / `Webhook` / `Telegram` 节点等 |
@@ -356,7 +360,7 @@ graph LR
 | **选题规划 Agent**   | 调用 `LLM` 生成内容主题，结合关键词/热点        | `LLM` 节点 + `Google Trends API` / `RSS Feed`    |
 | **结构设计 Agent**   | 输出标题、副标题、段落结构草稿                  | `LLM` 节点 + `Prompt` 结构模板                   |
 | **文案撰写 Agent**   | 按结构生成文章主体内容                          | `LLM` 节点 + 语气/风格控制 `Prompt`              |
-| **质量审核 Agent**   | 调用 `LLM` 评估逻辑完整性、可读性与语法问题     | `LLM` 节点 + 多轮交互 / 规则检查 `Function` 节点 |
+| **质量审核 Agent**   | 调用 `LLM` 评估逻辑完整性、可读性与语法问题     | `LLM` 节点 + 多轮交互 / 规则检查 `Code` 节点 |
 | **多平台发布 Agent** | 将内容同步发布至微信公众号、`WordPress`、知乎等 | `HTTP Request` + 第三方平台 `API` 节点           |
 
 ---

@@ -1,5 +1,7 @@
 # Databricks Assistant Data Science Agent 使用场景指南
 
+> 信息核对日：2026-11-05。本文基于 Databricks 官方博客（2025-09-03）整理，当时该功能为 **beta / 公测预览**状态；产品此后持续迭代，文末「启用步骤」等预览期操作可能已漂移，以[官方文档](https://docs.databricks.com/aws/en/release-notes/product)为准。
+
 ## 1. 概述
 
 [Databricks Assistant Data Science Agent](https://www.databricks.com/blog/introducing-databricks-assistant-data-science-agent) 是 Databricks Assistant 的重大升级，从简单的代码助手演进为真正的自主数据科学合作伙伴。该 Agent 完全集成在 Databricks Notebooks 和 SQL Editor 中，将智能化、适应性和执行能力融合在单一体验中。
@@ -211,6 +213,8 @@ Planner 模式体现了产品在透明度与自动化之间的精妙平衡。通
 ## 7. 开始使用
 
 ### 7.1 启用步骤
+
+> 注：以下为 2025 年预览期的启用方式，后续版本入口可能已调整。
 
 1. **管理员配置**：工作区管理员从 Databricks 预览门户启用 Assistant agent 模式 beta
 2. **模式切换**：在 Assistant 右下角找到切换开关，切换到 Agent 模式

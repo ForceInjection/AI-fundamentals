@@ -5,7 +5,7 @@
 ## 1. 核心概念与理论
 
 - **[思维链 (CoT)](cot/chain_of_thought_cot_intro.md)** — 通过显式书写中间推理步骤提升复杂任务准确率的机制，及其与 few-shot / zero-shot / self-consistency 的关系。
-- **[Token 机制](token/README.md)** — 切分算法（BPE / WordPiece）、长度估算工具与 Token-based 成本控制实战，配套 `token_estimation.py` 脚本与 Dockerfile。
+- **[Token 机制](token/README.md)** — 长度估算工具（tiktoken / transformers）的使用与 Token-based 成本控制实战，配套 `token_estimation.py` 脚本与 Dockerfile。
 - **[模型幻觉 (Hallucination)](hallucination/llm_hallucination_and_mitigation.md)** — 幻觉成因的分层解释（数据层 / 训练层 / 推理层）及检索、约束、校验三类缓解手段。
 
 ## 2. 嵌入（Embedding）
@@ -28,7 +28,7 @@
 - **[当记忆成为模型状态：MemT-1.0 的架构、训练与边界](memory_native/memt_1_0_memory_native.md)** — 记忆原生基础模型：local/hyper memory、GDN-2、MoS、34B token 训练与 11 项记忆基准，附源码核对与 release 边界。
 - **[EdgeRock-4B 拆解：把 KV Cache 变成固定容量记忆](memory_native/edgerock-4b-constant-memory.md)** — 用 1024 token 局部窗口与 1024 条 RMA 锚点替换 8 层全注意力，历史固定 97.76 MiB/序列；附 RMA 机制、四阶段转换与性能口径。
 - **[Attention 演进与 KV Cache 之变](architecture_evolution/attention_evolution_kv_cache.md)** — 2020–2026 年 17 个代表性模型的存储侧账目：MHA→GQA→MLA→滑窗→稀疏→线性→压缩，每代记「存了什么、省几倍、代价什么」；2026 年三条路线（序列压缩/稀疏选择/线性混合）的账不可互相比较。全部数字对照 config.json 与引擎源码核对。
-- **[七张图讲透 KV Cache](architecture_evolution/kv_cache_seven_charts.md)** — 上文的图解传播版：从「7 年前一个 token 要 4.5 MB、今天只要 890 B」讲起，手绘风格，每图配文不超过 150 字，入门从这里开始。
+- **[七张图讲透 KV Cache](architecture_evolution/kv_cache_seven_charts.md)** — 上文的图解传播版：从「7 年前一个 token 要 4.5 MiB、今天只要 890 B」讲起，手绘风格，每图配文不超过 150 字，入门从这里开始。
 - **[注意力算力账](architecture_evolution/attention_compute_fifteen_charts.md)** — 计算侧的十五张图：从 171.7 亿格的注意力矩阵，到 Delta 规则、门控衰减、K3 的 93 层混合，再到 DeepSeek 的先挑后算与序列压缩——三条路线三本账。
 
 ### 3.2 参数效率与推理优化
@@ -36,11 +36,11 @@
 - **[混合专家 (MoE)](moe/mixture_of_experts_moe_visual_guide.zh-CN.md)** — 稀疏激活、专家路由与负载均衡，如何让模型参数量增长而不线性增加推理成本。
 - **[Scaling Laws](scaling_laws/scaling_laws.md)** — Kaplan → Chinchilla → MoE 三代缩放定律的演进，以及「数据墙」与推理时间 Scaling 的前沿探索。
 - **[把轨迹当状态：推理时间 Scaling 的一个新维度](scaling_laws/test_time_scaling.md)** — 采样、长度、搜索、迭代四类做法都在「多算」，而这篇论文（Trace as State, arXiv:2609.02702）问的是「已经花掉的算力，产出该怎么放」：同一份推理轨迹，放在长上下文前面比放在后面，27 个实验组合赢下 26 个，GraphWalks 上把 DeepSeek V4 Pro 从 29.2% 拉到 81.8%。
-- **[模型量化 (Quantization)](quantization/visual_guide_to_quantization.md)** — FP16 / INT8 / INT4 / GPTQ / AWQ 等量化路径的图解解析，以及精度—性能的折中决策。
+- **[模型量化 (Quantization)](quantization/visual_guide_to_quantization.md)** — FP16 / INT8 / INT4 / GPTQ 等量化路径的图解解析，以及精度—性能的折中决策。
 
 ## 4. 模型文件格式
 
-- **[大模型文件格式](file_formats/llm_file_formats_complete_guide.md)** — GGUF / GGML / Safetensors 的存储结构、元数据布局与互转注意事项。
+- **[大模型文件格式](file_formats/llm_file_formats_complete_guide.md)** — Safetensors / GGUF / ONNX / TensorRT 等格式的存储结构与选型、互转注意事项。
 
 ## 5. 应用层技术
 

@@ -596,7 +596,7 @@ const dp = n / 8;
 
 ### 3.2 权重：唯一随 n 缩小的轴
 
-K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` 等多处硬编码），routed expert 走 latent 3584（`kimi_k3.py:661-663`），896 routed expert + 1 shared，top-k = 16。checkpoint 是 MXFP4，**约 1.5 TB**（`test/registered/amd/accuracy/mi35x/test_kimi_k3_eval_mi35x.py:19-21`）。
+K3 的 geometry 是固定的：`hidden_size = 7168`（`kimi_k3/attn_res.py:22` 等多处硬编码），routed expert 走 latent 3584（`kimi_k3.py:661-663`），896 routed expert + 2 shared（HF config `num_shared_experts=2`），top-k = 16。checkpoint 是 MXFP4，**约 1.5 TB**（`test/registered/amd/accuracy/mi35x/test_kimi_k3_eval_mi35x.py:19-21`）。
 
 按逐投影形状累加，attention + embedding 部分约 **16.3 GB**（非官方数字，估算），剩下 ≈ 1.474 TB 全是专家。**专家按 EP = n 切，非专家按 attnTP = 8 切**：
 

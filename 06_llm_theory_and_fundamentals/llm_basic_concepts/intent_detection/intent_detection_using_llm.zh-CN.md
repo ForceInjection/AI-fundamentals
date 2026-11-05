@@ -7,7 +7,7 @@
 
 然而，要在恰当时机提供精准功能，关键在于准确 _路由_ 和解析用户 _行为_ 。因此，用户意图的理解已成为任何基于`LLM`和检索增强生成（`RAG`）技术解决方案成功的核心要素。
 
-本文中，我们将深入解析如何运用`LLMs` 🤖从多样化的用户查询中有效检测并解读其潜在意图。
+本文中，我们将深入解析如何运用`LLMs`从多样化的用户查询中有效检测并解读其潜在意图。
 
 ## 意图检测的定义与核心价值
 
@@ -85,7 +85,7 @@ graph LR
 | 分类模型（朴素贝叶斯、`SVM`、随机森林） | - 通常比基于规则的系统更准确<br>- 可以处理多种输入 | - 需要特征工程<br>- 可能无法捕捉复杂的语言细微差别 |
 | 序列模型（`RNN`、`LSTM`、`GRU`） | - 在捕捉上下文和处理长序列方面有效<br>- 善于建模文本中的时间依赖关系 | - 计算成本高<br>- 需要大型数据集 |
 | 基于 `Transformer` 的方法（`BERT`、`GPT`、`SetFit`、`FastFit`） | - 在许多 `NLP` 任务中具有最先进的性能<br>- 能够理解复杂的上下文和细微差别 | - 需要大量的计算能力<br>- 需要大量的训练数据 |
-| 大型语言模型（`GPT-4`、`Haiku`、`Mistral Large`） | - 在各种应用中具有高准确性和通用性<br>- 在无需大量重新训练的情况下能够处理广泛的任务 | - 计算成本非常高<br>- 可能存在偏见和可解释性问题 |
+| 大型语言模型（`GPT-4o`、`Haiku`、`Mistral Large`） | - 在各种应用中具有高准确性和通用性<br>- 在无需大量重新训练的情况下能够处理广泛的任务 | - 计算成本非常高<br>- 可能存在偏见和可解释性问题 |
 
 ## 基于`LLM`的意图检测
 
@@ -105,9 +105,9 @@ graph LR
 3. `RECIPE_TRANSLATE`：对食谱整体或部分内容进行形式转换
 4. `RECIPE_EXPLAIN`：食谱深度解析（如菜系分类等属性说明）
 5. `GENERAL_QA`：通用型聊天机器人问答
-6. `GENREAL_RECOMMENDATION`：与食谱推荐相关的查询请求
+6. `GENERAL_RECOMMENDATION`：与食谱推荐相关的查询请求
 
-为提升示例趣味性 🔥，本项目将采用 `TypeScript`——主要基于笔者当前工作中对 `TS` 和 `JS` 的深度使用经验。
+为提升示例趣味性，本项目将采用 `TypeScript`——主要基于笔者当前工作中对 `TS` 和 `JS` 的深度使用经验。
 
 我们将要使用的程序库包括：
 
@@ -120,17 +120,17 @@ graph LR
 ```TypeScript
 /* Enum for chat context */
 export enum FoodContextType {
-    RECIPE = "RECIPE"
+    RECIPE = "RECIPE",
     GENERAL = "GENERAL"
 }
 
 /* Enum for chat intent */
 export enum FoodIntentType {
-    RECIPE_QA = "RECIPE_QA"
-    RECIPE_SUGGEST = "RECIPE_SUGGEST"
-    RECIPE_TRANSLATE = "RECIPE_TRANSLATE"
-    RECIPE_EXPLAIN = "RECIPE_EXPLAIN"
-    GENERAL_QA = "GENERAL_QA"
+    RECIPE_QA = "RECIPE_QA",
+    RECIPE_SUGGEST = "RECIPE_SUGGEST",
+    RECIPE_TRANSLATE = "RECIPE_TRANSLATE",
+    RECIPE_EXPLAIN = "RECIPE_EXPLAIN",
+    GENERAL_QA = "GENERAL_QA",
     GENERAL_RECOMMENDATION = "GENERAL_RECOMMENDATION"
 }
 ```
@@ -146,8 +146,8 @@ export enum FoodIntentType {
 
 根据上述查询，可推导出以下两种意图：
 
-1. `GENERAL_RECOMMENDATION`：用户希望获得法式（🇫🇷）烹饪推荐
-2. `RECIPE_TRANSLATE`：用户需要法语（🇫🇷）版本的法式烹饪指导方案
+1. `GENERAL_RECOMMENDATION`：用户希望获得法式烹饪推荐
+2. `RECIPE_TRANSLATE`：用户需要法语版本的法式烹饪指导方案
 
 为实现此功能，我们采用`zod`库[3]进行模式验证。值得庆幸的是，大多数LLM具备优秀的`functionCalling`能力，能够根据既定模式提取结构化输出（`structuredOutput`）
 
@@ -160,12 +160,15 @@ const zDetectFoodIntentResponse = z.object({
     foodIntent: z
       .array(
         z.object({
-            foodContextType: z.nativeEnum(FoodContextType))
-            .describe('Type of context the user is in'),
-            foodIntentType: z.nativeEnum(FoodIntentType))
-            .describe('Predict food related intent'),
-            reasoning: z.string()
-            .describe('Reasoning around the predicted intent')
+            foodContextType: z
+              .nativeEnum(FoodContextType)
+              .describe('Type of context the user is in'),
+            foodIntentType: z
+              .nativeEnum(FoodIntentType)
+              .describe('Predict food related intent'),
+            reasoning: z
+              .string()
+              .describe('Reasoning around the predicted intent')
         })
       )
 });
@@ -175,13 +178,13 @@ type FoodIntentDetectionResponse = z.infer<typeof zDetectFoodIntentResponse>;
 
 ```
 
-现代多数大型语言模型已原生支持工具调用与结构化输出，通过`langchain`等编排框架能快速实现相关功能。`Langchain`最新发布了跨多个LLM服务商的结构化输出提取和函数调用方案，具体可参阅[此技术博客](https://blog.langchain.dev/tool-calling-with-langchain/  ) 。
+现代多数大型语言模型已原生支持工具调用与结构化输出，通过`langchain`等编排框架能快速实现相关功能。`Langchain`最新发布了跨多个LLM服务商的结构化输出提取和函数调用方案，具体可参阅[此技术博客](https://blog.langchain.dev/tool-calling-with-langchain/)。
 
-后续步骤需构建提示模板（`prompt`）并设计由单次或多次`LLM`调用组成的处理链（`chain`）。如需了解数据提取任务中多重`LLM`调用的优化技巧，请参阅我的[数据工程博客](https://dswithmac.com/posts/prompt-eng-ner/  ) ；若对`DSPy`框架感兴趣，推荐阅读我的[另一篇技术解析](https://dswithmac.com/posts/ner-dspy/  ) 。
+后续步骤需构建提示模板（`prompt`）并设计由单次或多次`LLM`调用组成的处理链（`chain`）。如需了解数据提取任务中多重`LLM`调用的优化技巧，请参阅我的[数据工程博客](https://dswithmac.com/posts/prompt-eng-ner/)；若对`DSPy`框架感兴趣，推荐阅读我的[另一篇技术解析](https://dswithmac.com/posts/ner-dspy/)。
 
 以下是提示工程（prompt engineering）的初始模板参考：
 
-```text
+```typescript
 export const FoodIntentDetectionPromptTemplate = `
 You are an expert restauranteur and online TV chef.
 Based on the provided 'context' and 'userQuery', predict the users 'intent'.
@@ -214,8 +217,8 @@ import { ChatOpenAI } from '@langchain/openai'
 
 /* MessageRole enum */
 export enum MessageRole {
-    ASSISTANT = 'ASSISTANT'
-    SYSTEM = 'SYSTEM'
+    ASSISTANT = 'ASSISTANT',
+    SYSTEM = 'SYSTEM',
     USER = 'USER'
 }
 
@@ -234,7 +237,7 @@ export class Messages {
 async predictIntent(messages: Messages)
 : Promise<FoodIntentDetectionResponse> {
     // unpack message
-    const { content, recipe, role } = message;
+    const { content, recipe, role } = messages;
 
     // get userContext
     const userContext = (content == null && recipe != null) ? recipe : content;
@@ -243,7 +246,7 @@ async predictIntent(messages: Messages)
     const foodContextType = !recipe ? FoodContextType.GENERAL : FoodContextType.RECIPE ;
 
     // get user question
-    const userQuery = ...;
+    const userQuery = content;
 
     // build chain
     const llm = new ChatOpenAI({
@@ -253,17 +256,17 @@ async predictIntent(messages: Messages)
 
     });
 
-    const = chain = ChatPromptTemplate
+    const chain = ChatPromptTemplate
     .fromTemplate(FoodIntentDetectionPromptTemplate)
     .pipe(llm.withStructuredOutput(zDetectFoodIntentResponse));
 
     // invoke chain and parse response
-    const response = await chain.invoke(({
+    const response = await chain.invoke({
         context: userContext ?? '',
         foodContextType,
-        userQuery: userquery ?? '' 
+        userQuery: userQuery ?? ''
 
-    }));
+    });
 
     const parsedResponse = zDetectFoodIntentResponse.safeParse(response);
 
@@ -315,7 +318,7 @@ _能否推荐一份快捷简便的优质晚餐方案，最好是日式料理？_
             "foodContextType": "RECIPE",
             "foodIntentType": "RECIPE_TRANSLATE",
             "reasoning": "The user ..."
-        },
+        }
     ]
 }
 ```
@@ -326,10 +329,10 @@ _能否推荐一份快捷简便的优质晚餐方案，最好是日式料理？_
 
 我们通过示例展示了如何运用诸如`gpt-4o`等大型语言模型在虚构问答系统中实现 _意图检测_ 。意图检测不仅是技术实现的基础要求，更是构建智能化、以用户为中心的`LLM`驱动系统的重要战略优势。
 
-虽然本例采用`gpt-4o`进行演示，但实际应用中存在诸多低延迟替代方案，例如`Anthropic`公司开发的`haiku`。当样本量达到数百个时，基于`Transformer`架构的其他方法如`FastFit`或`SetFit`同样具有应用价值。感谢您的阅读，我们下期再会👋！
+虽然本例采用`gpt-4o`进行演示，但实际应用中存在诸多低延迟替代方案，例如`Anthropic`公司开发的`haiku`。当样本量达到数百个时，基于`Transformer`架构的其他方法如`FastFit`或`SetFit`同样具有应用价值。感谢您的阅读，我们下期再会！
 
 ## 参考
 
 * [1] **Papers With Code, Intent Detection**: `https://paperswithcode.com/task/intent-detection`
 * [2] **Langchain, Route Logic Based on Input**: `https://python.langchain.com/v0.1/docs/expression_language/how_to/routing/`
-* [3] **This is somewhat similar to `Pydantic` in Python.**
+* [3] **Zod, Schema Validation**: `https://zod.dev/`（类似 Python 中的 `Pydantic`）

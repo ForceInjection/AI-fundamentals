@@ -3,6 +3,8 @@
 基于《**Building Research Agents for Tech Insights**》的工程化实践与系统架构设计。
 
 > 原文地址：[Building Research Agents for Tech Insights](https://towardsdatascience.com/building-research-agents-for-tech-insights/)
+>
+> 信息核对日：2026-11-05，内容以原文发表时点为准。
 
 ## 1. 引言
 

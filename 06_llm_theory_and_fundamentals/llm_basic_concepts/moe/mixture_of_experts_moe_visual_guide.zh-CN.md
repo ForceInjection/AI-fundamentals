@@ -3,26 +3,22 @@
 > 原文：`https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-mixture-of-experts`<br/>
 > 作者：`Maarten Grootendorst`
 
-在追踪最新发布的**大型语言模型**时，您会发现许多模型的标题中都醒目标注着「**MoE**」。 这个「**MoE**」究竟代表何种技术？为何能成为众多 `LLM` 的架构首选？
+在追踪最新发布的大型语言模型时，你会发现许多模型的标题中都标注着「MoE」。这个「MoE」究竟代表什么？为何能成为众多 LLM 的架构首选？
 
-本图解指南将通过 **50+组可视化解析图**，带您深入探索这一核心组件——**混合专家系统**（`Mixture of Experts`）。
+本图解指南将通过 50+ 组可视化图，带你深入探索这一核心组件——混合专家系统（Mixture of Experts）。
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F50a9eba8-8490-4959-8cda-f0855af65d67_1360x972.png)
 
-本文将系统解析MoE架构的两大核心模块：应用于典型`LLM`架构中的**专家系统**与**路由分配器**。
+本文将系统解析 MoE 架构的两大核心模块：专家系统与路由分配器。
 
-若想获取更多与大型语言模型相关的可视化解析，并支持本专栏持续创作，欢迎查阅笔者编著的《**大型语言模型实战指南**》！
+> 作者还著有《**大型语言模型实战指南**》（代码在 [GitHub](https://github.com/HandsOnLLM/Hands-On-Large-Language-Models) 开源）。
 
-> 附言：若您已品读此书，在[亚马逊平台](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) 撰写简短书评将是对作者最珍贵的鼓励——您的反馈切实影响着学术创作生态。
->
-> `Github` 地址：`https://github.com/HandsOnLLM/Hands-On-Large-Language-Models`
+混合专家系统（Mixture of Experts，MoE）是一种通过协同多个差异化子模型（即「专家单元」）来提升大型语言模型性能的技术范式。
 
-**混合专家系统**（`Mixture of Experts`，`MoE`）是一种通过协同多个差异化子模型（即「**专家单元**」）来提升大型语言模型性能的技术范式。
+MoE 架构包含两大核心组件：
 
-`MoE`架构包含两大核心组件：
-
-* **专家集群**——每个前馈神经网络层配置了可动态调度的多组专家单元集合这些专家单元本质上仍保持前馈神经网络的结构特性；
-* **路由分配器**或**门控网络**——负责确定文本标记的专家调度路径。
+* 专家集群——每个前馈神经网络层配置了可动态调度的多组专家单元集合这些专家单元本质上仍保持前馈神经网络的结构特性；
+* 路由分配器（门控网络）——负责确定文本标记的专家调度路径。
 
 在集成`MoE`的大型语言模型各层级中，均部署了（具有领域特化能力的）专家单元：
 
@@ -34,7 +30,7 @@
 
 更准确地说，这些专家系统的核心能力体现在处理**特定语境中的文本标记**。
 
-**路由决策层**（门控网络）会为当前输入层动态选择最优的专家集群：
+路由决策层（门控网络）会为当前输入层动态选择最优的专家集群：
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb6a623a4-fdbc-4abf-883b-3c2679b4ad4d_1460x640.png)
 
@@ -66,7 +62,7 @@
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fcc4eeaf8-166b-419f-896c-463498af5692_880x656.png)
 
-核心原理在于：**每个专家单元在训练过程中会习得不同的信息特征**。**在执行推理时，仅调用与当前任务最相关的特定专家系统**。
+核心原理在于：每个专家单元在训练过程中会习得不同的信息特征；执行推理时，仅调用与当前任务最相关的专家。
 
 当处理具体问题时，可选取最适合当前任务的专家单元：
 
@@ -108,9 +104,9 @@
 
 在构建专家集群后，模型如何智能选择适用的专家系统？
 
-专家层前端配置的**路由分配器**（亦称**门控网络**），经专项训练可为特定文本标记智能匹配最优专家单元。
+专家层前端配置的路由分配器（亦称门控网络），经训练为每个文本标记匹配合适的专家单元。
 
-**路由分配器**（或称**门控网络**）本身作为前馈神经网络，基于输入特征动态选择专家单元。该机制通过概率输出实现专家单元的最优匹配：
+路由分配器本身是一个前馈神经网络，基于输入特征动态选择专家单元，通过概率输出实现匹配：
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Facc49abf-bc55-45fd-9697-99c9434087d0_864x916.png)
 
@@ -126,11 +122,11 @@
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F46aadf17-3afe-4c98-b57c-83b7b38918b2_1004x720.png)
 
-例如，当给定一组文本标记时，混合专家架构会将标记分配给所有专家集群进行处理，而稀疏混合专家架构则仅会选取少量专家单元参与计算。
+例如，给定一组文本标记时，密集型 MoE 的路由方式是把标记交给全部专家单元、按门控权重加权聚合；稀疏 MoE 则只选取少量专家单元参与计算。
 
 在当前大型语言模型的技术现状中，所提及的`MoE`通常特指稀疏混合专家架构，这种设计允许系统仅调用部分专家单元进行运算。这种架构显著降低了计算成本，这对大型语言模型的运行效率具有关键意义。
 
-门控网络堪称混合专家架构的核心组件，它不仅主导 _**推理过程**_ 中的专家选择机制，更在 _**训练流程**_ 中发挥着关键调控作用。
+门控网络是混合专家架构的核心组件：它既主导推理过程中的专家选择，也在训练流程中起关键调控作用。
 
 在最基础的数学表达中，输入向量(_**x**_)将与路由权重矩阵(_**W**_)进行矩阵乘法运算：
 
@@ -338,13 +334,11 @@
 
 ![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1dfd20b4-d3b7-433b-8072-2e67fc70afaa_1376x544.png)
 
-模型需要 _加载_ **8×5.6B（ **_46.7B_** ）**参数（含全部共享参数），但实际推理仅需激活**2×5.6B（ **_12.8B_** ）**参数。
+模型需要 _加载_ **8×5.6B（46.7B）**参数（含全部共享参数），但实际推理每 token 仅激活约 **12.9B** 参数（Mixtral 论文口径：含注意力等每层共享部分，并非「2 个专家 FFN」的 2×5.6B = 11.2B）。
 
-至此我们完成了对专家混合模型的全面解析！相信通过本文阐述，您能更深入理解这项创新技术的应用潜力。当前几乎所有主流模型集合都包含至少一个混合专家变体，这标志着该技术已成为行业标准配置。
+当前几乎所有主流模型家族都包含至少一个 MoE 变体——这项技术已成为行业标准配置。
 
-若想获取更多与大型语言模型相关的可视化解析，并支持本专栏持续创作，欢迎查阅笔者编著的《**大型语言模型实战指南**》！
-
-希望本文能为您提供关于混合专家系统的入门指引。若您希望深入研究，以下资源值得参考：
+想继续深入研究，以下资源值得参考：
 
 * [这篇](https://arxiv.org/pdf/2209.01667) 与[这篇](https://arxiv.org/pdf/2407.06204) 论文详尽阐述了混合专家系统领域的最新突破。
 

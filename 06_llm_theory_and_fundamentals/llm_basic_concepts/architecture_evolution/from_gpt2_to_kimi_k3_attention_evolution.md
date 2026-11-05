@@ -6,7 +6,7 @@
 
 两万两千五百八十。这是能塞进一个 Kimi K3（2026）里的 GPT-2（2019）的数量——2.8 万亿参数 ÷ 1.24 亿参数 = 22,580。
 
-但这不仅仅是规模的故事。每一次架构迭代，都在解决前一代的一个具体缺陷。本文追踪一条完整的技术演进线索——从 softmax 注意力到线性注意力，从 DeltaNet 到 Gated DeltaNet，从 Kimi Linear 到 Kimi K3 的混合架构——每一步回答一个问题：**前一步卡在哪里，新方案用什么代价换来了什么收益。**
+但这不仅仅是规模的故事。每一次架构迭代，都在解决前一代的一个具体缺陷。本文追踪一条完整的技术演进线索——从 softmax 注意力到线性注意力，从 DeltaNet 到 Gated DeltaNet，从 Kimi Linear 到 Kimi K3 的混合架构——看清每一代为了解决什么缺陷、又付出了什么代价。
 
 ---
 
@@ -174,13 +174,13 @@ KV Cache 将每步解码的计算量从 O(T²·D) 降到 O(T·D)，但存储随�
 
 $$\text{KV Cache 大小} = 2 \times n_{\text{layer}} \times n_{\text{kv heads}} \times d_{\text{head}} \times \text{seq len} \times \text{bytes}$$
 
-对于 70B 模型、128K 上下文的标准 GQA8 配置，仅 KV Cache 就吃掉了约 320 GB 显存。
+对于 70B 模型、128K 上下文：若仍是 MHA（64 个 KV 头），KV Cache 约需 320 GiB；标准 GQA8 配置（8 个 KV 头）把它压到约 40 GiB。
 
 更关键的是，解码时的每步都要从 HBM 中**流式读出全部 KV Cache**。即使计算量已经减小，内存带宽仍是瓶颈：每步 decode 的计算强度（FLOP/Byte）极低，属于 **memory-bound** 操作。
 
 ![KV Cache 解码时的 HBM 读写模式：每步两次 O(ND) 读、两次 O(1D) 写，Cache 随序列长度线性增长](https://www.datocms-assets.com/104802/1785352769-5.png?auto=format&w=1200)
 
-> **注**：KV Cache 的存储、压缩、量化、淘汰策略等，详见本站 **[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)**（42 篇文章）。PagedAttention 如何将 KV Cache 从连续内存中"打碎"以消除碎片，See **[vLLM PagedAttention 源码分析](../../../09_inference_system/vllm/README.md)**。
+> **注**：KV Cache 的存储、压缩、量化、淘汰策略等，详见本站 **[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)**（60+ 篇文章）。PagedAttention 如何将 KV Cache 从连续内存中"打碎"以消除碎片，See **[vLLM PagedAttention 源码分析](../../../09_inference_system/vllm/README.md)**。
 
 ---
 
@@ -385,7 +385,7 @@ $$S_t = S_{t-1} - \beta_t \cdot (k_t^\top \otimes (k_t \cdot S_{t-1})) + \beta_t
 
 可重新参数化为一个更紧凑的形式：
 
-$$S_t = S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$$
+$$S_t = (I - \beta_t k_t k_t^\top) S_{t-1} + \beta_t k_t v_t^\top$$
 
 这一重新参数化是将 delta 更新**向量化到块级别**的关键——它允许我们在一个块内一次性计算全部 C 个 delta。
 
@@ -648,9 +648,9 @@ class KimiLinearAttention(nn.Module):
         self.W_q = nn.Linear(d_model, d_head, bias=False)
         self.W_k = nn.Linear(d_model, d_head, bias=False)
         self.W_v = nn.Linear(d_model, d_head, bias=False)
-        # 关键改进：每个通道独立的门控参数
+        # 关键改进：每个通道独立的门控参数（α 逐通道；β 在实际 KDA 中为每头标量）
         self.W_alpha = nn.Linear(d_model, d_head, bias=False)   # [B, T, D] 每通道衰减
-        self.W_beta = nn.Linear(d_model, d_head, bias=False)    # [B, T, D] 每通道写入强度
+        self.W_beta = nn.Linear(d_model, 1, bias=False)         # [B, T, 1] 每 token 标量写入强度
         self.W_o = nn.Linear(d_head, d_model, bias=False)
 
     def forward_recurrent(self, x):
@@ -662,7 +662,8 @@ class KimiLinearAttention(nn.Module):
 
         # 逐通道门控：alpha 不再是标量，而是 [B, T, D] 的向量
         alpha = torch.sigmoid(self.W_alpha(x)).view(B, T, -1)  # [B, T, D]
-        beta = torch.sigmoid(self.W_beta(x)).view(B, T, -1)
+        # β 与 DeltaNet/GDN 一致，保持标量形状（实际 KDA 的 β 为每头标量学习率）
+        beta = torch.sigmoid(self.W_beta(x)).view(B, T, 1)     # [B, T, 1]
 
         S = torch.zeros(B, self.d_head, self.d_head, device=x.device)
         outputs = []
@@ -670,7 +671,7 @@ class KimiLinearAttention(nn.Module):
         for t in range(T):
             qt, kt, vt = q[:, t], k[:, t], v[:, t]
             alpha_t = alpha[:, t]  # [B, D] — 每通道独立衰减！
-            beta_t = beta[:, t]
+            beta_t = beta[:, t]    # [B, 1] — 标量，与 GDN 一致
 
             # 逐通道衰减（element-wise 乘法在 D 维度上）
             S = alpha_t.unsqueeze(-1) * S           # [B, D, D]，每行独立衰减
@@ -696,7 +697,7 @@ class KimiLinearAttention(nn.Module):
 
 Kimi Linear 论文在受控对比下（相同参数量、相同训练数据）展示：其混合架构的表现**超过了全注意力 Transformer**。作者将其定位为"drop-in architectural replacement"——可替换标准注意力的即插即用组件。
 
-Kimi Linear 的解码吞吐比全注意力最高提升 6 倍——这个提升来自用 O(D²) 的固定大小状态操作替代 O(T·D) 的 KV Cache 读取。
+Kimi Linear 的解码吞吐比全注意力最高提升 6 倍（论文口径 6.3×）——这个提升来自用 O(D²) 的固定大小状态操作替代 O(T·D) 的 KV Cache 读取。
 
 ---
 
@@ -904,7 +905,7 @@ $$h_l = h_1 + \sum_{i=1}^{l-1} f_i(h_i)$$
 
 ### 9.2 AttnRes：学习式中继
 
-AttnRes（Attention Residual）的解决方案简洁而优雅：对求和中的每一项乘一个专门的权重，权重通过查询-键注意力学习：
+AttnRes（Attention Residual）的做法是：对求和中的每一项乘一个专门的权重，权重通过查询-键注意力学习：
 
 $$h_l = \alpha_0 \cdot h_1 + \sum_{i=1}^{l-1} \alpha_i \cdot f_i(h_i)$$
 
@@ -970,7 +971,7 @@ class AttnRes(nn.Module):
 
 ### 9.3 AttnRes 与 MLA 的分工
 
-Ali Taha 给出了一个精辟的总结：
+Ali Taha 对此总结道：
 
 > "AttnRes and MLA address the same underlying limitation from different directions. KDA layers operate with constant-size state and must inevitably discard information. MLA retrieves from the token context, while AttnRes retrieves from earlier depth-wise representations."
 
@@ -1001,7 +1002,7 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 | **Kimi K3**           | 工业规模混合 + Gated MLA + LatentMoE + SiTU | 新激活函数需要融合内核，架构极其复杂            |
 | **AttnRes**           | 选择性深度残差访问，解耦横向与纵向信息检索  | +2% 推理延迟                                    |
 
-根本洞见可以归结为一句话：**固定容量的联想记忆需要逐出策略**。纯加性线性操作一旦达到容量就会引入干扰——这就是为什么每一代架构都在增加「选择性」：门控是选择性的写入衰减，Delta 规则是选择性的值替换，MLA 是选择性的 token 检索，AttnRes 是选择性的深度检索。
+这条演进线背后的逻辑是：**固定容量的联想记忆需要逐出策略**。纯加性线性操作一旦达到容量就会引入干扰——所以每一代架构都在增加「选择性」：门控是选择性的写入衰减，Delta 规则是选择性的值替换，MLA 是选择性的 token 检索，AttnRes 是选择性的深度检索。
 
 而**注意力仍然是迄今为止最有效的选择性读取机制**——这正是 Kimi K3 即使在 KDA 为主力的架构中，依然保留周期性 MLA 层和 AttnRes 的原因。每一分额外的容量，都花在了具有特定功能作用的地方。
 
@@ -1013,5 +1014,5 @@ KDA 的恒定大小状态**不可避免会丢失信息**。MLA 从 **token 维�
 > - 源码验证：[01-post-kv-cache-era.md](../../../09_inference_system/kv_compression/01-post-kv-cache-era.md) — 逐条对照 vLLM/SGLang 源码的机制验证
 > - KV Cache 视角：[Attention 演进与 KV Cache 之变](attention_evolution_kv_cache.md) — 同一条时间线上，每代架构在存储侧省下的那笔账（2019–2026）
 > - 架构主线：[LLM 架构演进史](llm_architecture_evolution.md) — GPT-1 到 DeepSeek-V3 的七个拐点
-> - KV Cache：[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md) — 42 篇文章，从原理到分布式管理
+> - KV Cache：[KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md) — 60+ 篇文章，从原理到分布式管理
 > - 基础概念：[Transformer 架构详解](../transformer/transformer_architecture.md) — 从自注意力到完整 Decoder Block

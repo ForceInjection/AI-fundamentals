@@ -45,7 +45,7 @@ K (Key)    = x · W_K    —— "我能提供什么？"
 V (Value)  = x · W_V    —— "如果被选中，我给出什么信息？"
 ```
 
-每个 token 的 Embedding 向量通过三个不同的线性变换，分别投影为查询向量 Q、键向量 K、值向量 V。$W_Q$、$W_K$、$W_V$ 是可学习的权重矩阵，维度为 $d_{\text{model}} \times d_k$（通常 $d_k = d_{\text{model}} / \text{num\_heads}$）。
+每个 token 的 Embedding 向量通过三个不同的线性变换，分别投影为查询向量 Q、键向量 K、值向量 V。$W_Q$、$W_K$、$W_V$ 是可学习的权重矩阵，维度为 $d_{\text{model}} \times d_k$（通常 $d_k = d_{\text{model}} / n_{\text{heads}}$）。
 
 这个三元组设计来自信息检索：Query 代表用户的搜索意图，Key 代表文档的索引标签，Value 代表文档的实际内容。把每个 token 既当作「提问者」又当作「被检索的文档」，就得到了自注意力。
 
@@ -236,7 +236,9 @@ $$
   训练完全并行化                       推理仍是自回归串行的
   O(1) 步内跨越任意距离                 每步的注意力计算是 O(n²)
   统一架构替代 RNN/CNN                 位置信息需额外编码（RoPE）
-  易于扩展到千亿参数                    显存占用与序列长度平方成正比
+  易于扩展到千亿参数                    注意力分数矩阵的峰值激活随长度平方
+                                         增长（FlashAttention 可消除）；
+                                         KV Cache 随序列长度线性增长
 ```
 
 这些权衡驱动了 Transformer 后续 7 年的演化方向——FlashAttention 缓解了 O(n²) 的内存瓶颈，RoPE+YaRN 让 4K 训练的模型外推到 128K，MoE 在维持推理成本的同时成倍扩大参数容量。这些正是 [LLM 架构演进史](../architecture_evolution/llm_architecture_evolution.md) 所覆盖的内容。

@@ -1,12 +1,12 @@
 # 工作流编排与应用平台（Workflow）
 
-写一个调 ChatGPT 的 demo 很简单；但要把 LLM 嵌入真实业务里，还得解决数据接入、多步流程、权限与审计、插件扩展、线上观测等一堆工程问题。工作流编排平台（Dify / n8n / Coze / AnythingLLM / Ragflow 等）就是填这道鸿沟的通用中间层。本目录聚焦选型对比与两套典型平台的落地实践。
+写一个调 ChatGPT 的 demo 很简单；但要把 LLM 嵌入真实业务里，还得解决数据接入、多步流程、权限与审计、插件扩展、线上观测等一堆工程问题。工作流编排平台（Dify / n8n / Coze / AnythingLLM / RAGFlow 等）就是填这道鸿沟的通用中间层。本目录聚焦选型对比与两套典型平台的落地实践。
 
 ## 1. 核心内容
 
 ### 1.1 平台对比与选型
 
-- **[开源 LLM 应用编排平台对比](open_source_llm_orchestration_platforms_comparison.md)** — 横向对比 Dify、AnythingLLM、Ragflow、n8n 与 Coze Studio 在工作流建模、RAG 能力、Agent 支持、插件生态以及商用许可（License）上的差异，帮助企业按合规约束与功能需求做选型。
+- **[开源 LLM 应用编排平台对比](open_source_llm_orchestration_platforms_comparison.md)** — 横向对比 Dify、AnythingLLM、RAGFlow、n8n 与 Coze Studio 在工作流建模、RAG 能力、Agent 支持、插件生态以及商用许可（License）上的差异，帮助企业按合规约束与功能需求做选型。
 
 ### 1.2 部署与配置指南
 

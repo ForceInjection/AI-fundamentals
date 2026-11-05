@@ -77,7 +77,7 @@ $$
 
 最终通过将两个组成部分相乘得到`TF-IDF`分数：
 
-$t f i d f(t,d)=t f(t,d)\times i d f(t)$ 我们通过具体示例来理解：
+$\text{tfidf}(t,d)=\text{tf}(t,d)\times\text{idf}(t)$ 我们通过具体示例来理解：
 
 假设我们有一个包含`10`篇文档的语料库，其中"猫"这个词仅出现在`2`篇文档中。则"猫"的逆文档频率计算为：
 
@@ -87,9 +87,9 @@ $$
 
 若某文档中'cat'出现5次（总词数100），其词频统计（TF）值为 0.05。则该文档中'cat'的最终词频-逆文档频率（TF-IDF）得分为：
 
-$
-t f i d f(^{\prime\prime}{\mathrm{cat}}^{\prime\prime})=0.05\times1.61\approx0.08
-$
+$$
+\text{tfidf}(\mathrm{cat})=0.05\times1.61\approx0.08
+$$
 
 该得分反映'`cat`'在当前文档相对于整个语料库的重要性。得分越高，说明该词不仅在本文档高频出现，同时在所有文档中相对罕见，这使其更可能成为表征文档内容的关键特征。
 
@@ -170,7 +170,7 @@ print(f"Embedding shape: {embeddings.shape}")
 
 您可以从谷歌官方页面下载预训练版本[5]。以下是实际应用词向量模型的代码示例：
 
-```phthon
+```python
 # let's load the pretrained embeddings and see how they look
 import gensim
 model = gensim.models.KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin.gz', binary=True)
@@ -545,7 +545,7 @@ for token, neighbors in tokens_and_neighbors.items():
 **BibTeX引用格式**:
 
 ```text
-@misc{llm_embeddings_explained, title = {LLM Embeddings Explained: A Visual and Intuitive Guide}, author={Hesam Sheikh Hessani}, year = {2025} , }
+@misc{llm_embeddings_explained, title = {LLM Embeddings Explained: A Visual and Intuitive Guide}, author={Hesam Sheikh Hassani}, year = {2025} , }
 ```
 
 ## 参考文献

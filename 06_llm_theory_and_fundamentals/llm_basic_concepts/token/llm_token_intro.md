@@ -17,7 +17,7 @@
 
 大多数 `LLM`（如 `GPT` 系列）通过 `token`s 对文本编码。每个 `token` 对应一个嵌入向量，模型据此预测后续内容。`Token` 数量直接影响模型的性能、计算负载及调用成本。
 
-例如，`GPT-3` 的最大上下文长度为 **2,048 tokens**，若输入超出限制则需截断或拆分。
+例如，`GPT-3` 的最大上下文长度为 **2,048 tokens**，若输入超出限制则需截断或拆分。而当前主流模型的上下文窗口已普遍达到 **128K tokens**，部分长上下文模型甚至支持 **1M tokens**，但按 token 计费与截断的逻辑并未改变。
 
 ## 如何估算 Tokens 数量
 
@@ -41,7 +41,7 @@ pip install tiktoken
 import tiktoken
 
 encoder = tiktoken.get_encoding("cl100k_base")  # 指定 cl100k_base 的分词器
-text = "What is the capital of Chinese?"
+text = "What is the capital of China?"
 tokens = encoder.encode(text)
 
 print(f"Token 数量: {len(tokens)}")  # 输出: 7
@@ -68,7 +68,8 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")  # 加载中文�
 text = "《哪吒之魔童闹海》于2025年1月29日上映，讲述了哪吒在成长过程中，面对重重困难，不断挑战自我，最终逆天改命的故事。影片融合了精彩的特效和深刻的情感，展现了哪吒的勇敢与坚韧。"
 tokens = tokenizer.encode(text, add_special_tokens=False)  # 去掉特殊字符
 
-print(f"Token 数量: {len(tokens)}")  # 输出: 84
+print(f"Token 数量: {len(tokens)}")  # 输出: 84（实测值：汉字逐字切分，
+# 但数字串如 "2025"、"29" 在词表中整体成词，故略少于全文 88 个字符；具体计数以实测为准）
 ```
 
 ---
@@ -88,7 +89,7 @@ print(f"Token 数量: {len(tokens)}")  # 输出: 115
 ```
 
 **结果差异说明**  
-`tiktoken` 的 BPE 算法会将中文拆分为更细粒度的子词（如单字或常见组合），而 `transformers` 的 `BertTokenizer` 基于词表匹配，可能保留更多完整词语，因此两者计数不同。
+`tiktoken` 的 BPE 算法会将中文拆分为更细粒度的子词（如字节级单字或常见组合），而 `transformers` 的 `BertTokenizer`（bert-base-chinese）对中文按单字切分、粒度最细，保留的完整词最少（仅 ASCII 数字串等会按词表合并，如 "2025" 整体成一个 token），因此两者计数不同。
 
 ---
 

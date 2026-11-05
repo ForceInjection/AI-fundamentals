@@ -1,6 +1,6 @@
 # 当记忆成为模型状态：MemT-1.0 的架构、训练与边界
 
-> 论文：MemT-1.0: Towards Memory-Native Evolution（arXiv 2610.26825v1，2026-10-19，74 位作者）｜官方实现：MemTensor/MemT-1.0（HEAD e75c13d，inference release）｜模型：MemT-1.0-Nano / MemT-1.0-Flash（Hugging Face）｜核对日期：2026-10-20。性能数字来自论文与官方实现，未独立复现；代码行号指仓库当前 HEAD。
+> 论文：MemT-1.0: Towards Memory-Native Evolution（arXiv 2610.26825v2，2026-10-20，74 位作者）｜官方实现：MemTensor/MemT-1.0（commit e75c13d，inference release）｜模型：MemT-1.0-Nano / MemT-1.0-Flash（Hugging Face）｜核对日期：2026-10-20。性能数字来自论文与官方实现，未独立复现；代码行号以 commit e75c13d（2026-10-20）为快照；后续 perf 优化 commit（7937b49，2026-11-03）改动了记忆读取与 CUDA Graph 执行路径，行号可能漂移。
 
 一个 coding agent 在仓库里连续工作三天。第一天试过的失败路径、第二天验证过的测试命令、用户纠正过的偏好，都堆在上下文里。上下文快满了，它只有三种选择：截断历史、把历史交给检索、或者重开会话。
 
@@ -150,7 +150,7 @@ MemT 没有直接在原模型上挂记忆模块。它先做一轮 backbone prepa
 
 训练目标是 off-policy distillation。教师是冻结的 full-context backbone，学生是带记忆的 MemT；教师能看到历史文本 `C_<t`，学生只能看到当前输入和上一轮留下的记忆状态。两边都在教师生成的固定轨迹上做 teacher forcing。
 
-教师输出截断到 top-64 token，温度 1.0；损失是重归一化后的教师分布到学生的 forward KL，加上对观测目标的 cross-entropy。只有记忆参数被优化，主干冻结。CPT 阶段用 cross-entropy，post-training 阶段用 KL 蒸馏；response token 参与损失，history/query/padding 不直接参与 token loss，但梯度会通过记忆写入传回去。
+教师输出截断到 top-64 token，温度 1.0；损失是重归一化后的教师分布到学生的 forward KL，加上对观测目标的 cross-entropy。KL 损失与 cross-entropy 是两类通式，MemT 各阶段取的权重不同：CPT 阶段用 cross-entropy，post-training 阶段用 KL 蒸馏。只有记忆参数被优化，主干冻结。response token 参与损失，history/query/padding 不直接参与 token loss，但梯度会通过记忆写入传回去。
 
 这个目标解释了为什么需要 backbone preparation：教师和学生的条件差异很大，教师看全文，学生只看记忆；如果主干本身不够强，蒸馏信号会很噪。
 
@@ -218,8 +218,6 @@ MemT-1.0-Flash 平均 50.60，Nano 46.97，在参评的参数化记忆方法里�
 
 Flash 的指令遵循、长文本和代码生成基本稳住，LiveCodeBench v6 只掉 0.7；Nano 在 IFEval 和 BigCodeBench-Hard 上有提升，但 LiveCodeBench v6 掉了 5.8 分，LongBench v2 掉 2.0。论文的结论是“整体保留、任务级有差异”，这个说法比“通用能力不受影响”准确。
 
-文章里给的绝对分（IFEval 93.9 / 92.6、BigCodeBench-Hard 34.4 / 27.7、LongBench v2 64.4）是 backbone 分加上差值算出来的，和论文 Table 3 对得上。
-
 ### 4.4 Agentic coding：平均提升不大，重复执行的一致性更明显
 
 SWE-bench Verified 的结果：
@@ -238,7 +236,7 @@ Multilingual 的结论类似但更弱：Harness-Triggered 平均成功率 63.56�
 
 ### 4.5 效率与存储：长历史才有优势
 
-在 BEAM 历史上，Nano 的端到端延迟在短历史下比 full context 慢，64K 时约 1.20×，128K 时 1.86×，256K 时 3.99×。查询首 token 延迟（TTFT）在 512 到 256K 的范围内约 104–112 ms，基本稳定；full context 的 TTFT 在 128K 时约 257 ms，256K 时约 445 ms。
+在 BEAM 历史上，Nano 在 32K 以下的历史比 full context 慢，32K 时大致打平；64K 起反超，加速比约 1.20×（64K）、1.86×（128K）、3.99×（256K）。查询首 token 延迟（TTFT）在 512 到 256K 的范围内约 104–112 ms，基本稳定；full context 的 TTFT 在 128K 时约 257 ms，256K 时约 445 ms。
 
 论文特别说明，端到端优势主要来自更低的历史准备成本；生成阶段仍要付固定 128-token 回答的成本。不要把 1.86× 直接当成“query 快 1.86 倍”。
 
@@ -262,7 +260,7 @@ Nano 同理：Qwen3.6-35B-A3B 是主干名称，加 451M 记忆参数后是 36B 
 
 ### 5.2 源码不能验证什么
 
-训练语料、backbone preparation、11 项记忆基准、SWE-bench 结果，都不在仓库里。仓库是 inference release，只有 `inference/` 和 examples；没有训练脚本、评测 harness、SWE-bench agent。论文是 2026-10-19 的 arXiv v1，不是同行评审论文；这些数字只能按“作者报告”处理。
+训练语料、backbone preparation、11 项记忆基准、SWE-bench 结果，都不在仓库里。仓库是 inference release，只有 `inference/` 和 examples；没有训练脚本、评测 harness、SWE-bench agent。论文是 2026-10-20 的 arXiv v2，不是同行评审论文；这些数字只能按“作者报告”处理。
 
 ### 5.3 MoS 的交付状态
 
@@ -274,7 +272,7 @@ MoS 的论文实验存在，但 release 不是多专家：每层 1 个 expert，
 
 - 仓库根 `LICENSE` 是 **PolyForm Noncommercial 1.0.0**；`inference/pyproject.toml:11` 写 `LicenseRef-PolyForm-Noncommercial-1.0.0 AND MIT`（MIT 部分是 vendored FLA）；根 `README.md:208-219` 明确写商业使用需要授权。
 - 论文是 **CC BY-NC-SA 4.0**（`LICENSE-PAPER:1`）。
-- Hugging Face 模型卡另标：Nano 权重 Apache 2.0、Flash 权重 MIT；Nano 卡片甚至称 adapted inference code 也是 Apache 2.0，这与仓库 LICENSE 不一致，需要向作者确认。
+- Hugging Face 模型卡另标：Nano 权重 Apache 2.0、Flash 权重 MIT；模型卡仅声明部分改编代码保留上游 Apache 2.0 署名，未提及仓库的非商业许可；商用前需分别确认代码与权重的许可。
 
 所以准确的说法是：代码是 source-available、非商业许可；权重另有许可；不能简单称为“开源”，商用前必须分别确认代码和权重。
 
@@ -303,6 +301,8 @@ MemT-1.0 把记忆从“上下文里的文本”换成“模型内部的状态�
 
 ## 源文件索引
 
+> 表中代码行号以 commit `e75c13d`（2026-10-20）为快照；后续 perf 优化 commit（`7937b49`，2026-11-03）改动了记忆读取与 CUDA Graph 执行路径，行号可能漂移。
+
 | 来源                                             | 主要内容                                                              | 引用点                                |
 | ------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------- |
 | 论文 §2.2–2.3                                    | Native Memory Block、local/hyper memory、GDN-2、MoS                   | §2.2–2.3                              |
@@ -324,7 +324,7 @@ MemT-1.0 把记忆从“上下文里的文本”换成“模型内部的状态�
 
 ## 参考资料
 
-- 论文：[arXiv 2610.26825v1](https://arxiv.org/abs/2610.26825)｜[HTML 全文](https://arxiv.org/html/2610.26825)
-- 官方实现：[MemTensor/MemT-1.0](https://github.com/MemTensor/MemT-1.0)，HEAD `e75c13d`
+- 论文：[arXiv 2610.26825v2](https://arxiv.org/abs/2610.26825)｜[HTML 全文](https://arxiv.org/html/2610.26825)
+- 官方实现：[MemTensor/MemT-1.0](https://github.com/MemTensor/MemT-1.0)，快照 `e75c13d`（HEAD 已前进至 `7937b49`，2026-11-03）
 - 模型：[Hugging Face collection](https://huggingface.co/collections/MemTensor/memt-1)｜[Nano](https://huggingface.co/MemTensor/MemT-1.0-Nano)｜[Flash](https://huggingface.co/MemTensor/MemT-1.0-Flash)
 - 官方发布稿：[MemT 1.0 发布并开源：让记忆成为模型能力](https://mp.weixin.qq.com/s/h1DSQ2902c_Uo_2CGNkcEQ)
