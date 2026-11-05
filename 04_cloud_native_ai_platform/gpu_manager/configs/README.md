@@ -5,7 +5,7 @@
 ## 目录结构
 
 ```bash
-configs/
+configs/                  # 注：以下为节选，scripts/ 实际含 24 个脚本，network/、templates/ 等子目录未列出
 ├── cloud/                 # 云平台 GPU 集群配置
 │   ├── aws-eks-gpu-cluster.yaml      # AWS EKS GPU 集群配置
 │   ├── azure-aks-gpu-setup.sh        # Azure AKS GPU 集群部署脚本
@@ -16,13 +16,14 @@ configs/
 ├── docker/                # Docker GPU 配置
 │   └── docker-gpu-config.yaml         # Docker GPU 资源预留配置
 ├── hami/                  # HAMi GPU 管理系统
-│   └── hami-deployment.yaml           # HAMi v2.6.0 部署配置
+│   ├── hami-deployment.yaml           # HAMi v2.6.0 部署配置
+│   └── hami-workload-examples.yaml    # HAMi 工作负载示例（切分/多卡/异构调度）
 ├── kubernetes/            # Kubernetes GPU 配置
 │   └── gpu-pod-templates.yaml        # GPU Pod 模板集合
 ├── monitoring/            # 监控和告警配置
 │   ├── grafana-gpu-dashboard.json    # Grafana GPU 监控仪表板
 │   └── prometheus-gpu-config.yaml     # Prometheus GPU 监控配置
-└── scripts/               # 工具脚本
+└── scripts/               # 工具脚本（节选，共 24 个）
     ├── gpu-benchmark-suite.sh         # GPU 基准测试套件
     └── multicloud-gpu-scheduler.sh    # 多云 GPU 调度脚本
 ```
@@ -182,8 +183,8 @@ configs/
    # 部署 Prometheus
    kubectl apply -f configs/monitoring/prometheus-gpu-config.yaml
 
-   # 部署 Grafana 仪表板
-   kubectl apply -f configs/monitoring/grafana-gpu-dashboard.json
+   # 导入 Grafana 仪表板（JSON 不能 kubectl apply，需在 Grafana 界面导入）
+   # Grafana → Dashboards → Import → 上传 configs/monitoring/grafana-gpu-dashboard.json
    ```
 
 3. **运行 GPU 基准测试**:
@@ -258,3 +259,5 @@ kubectl logs -n hami-system -l app=hami-scheduler
 | NVIDIA Driver | ≥ 525.60 | 535.54   |
 | CUDA          | ≥ 11.8   | 12.2     |
 | HAMi          | ≥ 2.5.0  | 2.6.0    |
+
+> 版本口径：上表「测试版本」为本目录示例脚本验证所用的版本组合（截至 2026-11）；其中驱动 535.54 对应 CUDA 12.2 基础场景，如需 CUDA 12.4+ 全部特性建议 550+ 驱动。HAMi 社区最新 release 已至 v2.11.0（2026-11-04），升级前请对照官方 changelog。

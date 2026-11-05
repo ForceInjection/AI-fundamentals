@@ -2,6 +2,8 @@
 
 **NVIDIA Inference Context Memory Storage** (ICMS) 是 **NVIDIA Rubin** 平台面向推理场景引入的一类上下文存储基础设施，旨在将推理上下文（Key-Value, KV cache）作为一种 AI 原生数据类别进行高效复用与共享。其核心思路是在 GPU HBM 与通用共享存储之间建立面向 KV cache 的 **G3.5** 层（以太网连接的闪存层），并结合 **BlueField-4** 数据处理器与 **Spectrum-X** 以太网 RDMA 互联，为延迟敏感且可重建的 KV 数据提供更高吞吐、更优能效与更稳定的低抖动访问路径。
 
+> 命名说明：NVIDIA 于 2026-03 将该平台更名为 **CMX Context Memory Storage**（官方博客页于 2026-03-16 更新并改题），本文沿用发布时名称 ICMS。
+
 ---
 
 ## 要点总结
@@ -10,7 +12,7 @@
 - **BlueField-4** 作为数据处理器，为 KV I/O 提供加速能力，包括线速加密与 CRC 保护，并可在 DPU 侧完成 NVMe-oF 与对象 / RDMA 等协议的终结（termination）。
 - **Spectrum-X** 以太网提供 RDMA 互联，为共享 KV cache 提供可预期的低延迟、低抖动与高带宽访问路径。
 - **Dynamo / NIXL / DOCA** 等软件组件协同进行上下文放置、KV block 管理与预置（prestage），降低 decode 阶段 stall 并提升复用效率。
-- 在长上下文与 Agentic AI 推理场景中，官方给出的对比结果为：最高可达 5× 持续 TPS 提升与 5× 能效提升，并改善大规模部署的 TCO。
+- 在长上下文与 Agentic AI 推理场景中，官方给出了量化收益口径（TPS / 能效倍数与 TCO 改善），集中列于第五节表格。
 
 > 注：本文所称 **GPU pod** 对应原文的 **Compute pod** 概念，是由多机架 GPU、Spectrum-X 以太网与存储组成的伸缩单元；原文使用 “petabytes” 的量级表述描述其容量目标，并未在该处给出精确的上限数值。
 
@@ -33,6 +35,8 @@
 > 注：上述延迟量级用于帮助理解 G1–G4 的相对层级差异；原文主要强调不同层级在推理场景中的职责分工与效率差异，并未在该处给出统一的端到端延迟测量数据。
 
 ![KV cache memory hierarchy, from on‑GPU memory (G1) to shared storage (G4)](./img/kv-cache-memory-hierarchy-latency-efficiency-tradeoffs-png.webp)
+
+> 图源说明：配图为第三方报道转载素材（文件名为转载时命名），原始图样出自 NVIDIA 官方博客，以官方页面为准。
 
 ---
 
@@ -61,6 +65,8 @@ ICMS 引入了一个新的层级 **G3.5**，作为以太网连接的闪存层，
 
 ![NVIDIA Inference Context Memory Storage architecture within the NVIDIA Rubin platform, from inference pool to BlueField-4 ICMS target nodes](./img/nvidia-inference-context-memory-storage-architecture-1536x1441-png.webp)
 
+> 图源说明：同上，第三方报道转载素材，原始图样出自 NVIDIA 官方博客。
+
 ### 3.1 BlueField-4 DPU 作为架构核心
 
 ICMS 的控制与数据平面由 **NVIDIA BlueField-4 数据处理单元 (DPU)** 驱动：
@@ -69,6 +75,8 @@ ICMS 的控制与数据平面由 **NVIDIA BlueField-4 数据处理单元 (DPU)**
 - 内置 64-核 NVIDIA Grace CPU 和高带宽 LPDDR；
 - 提供线速加密与 CRC 数据保护，用于 KV 数据路径的安全与完整性校验；
 - 可高效终结 NVMe-oF 与对象 / RDMA 协议（termination），减少主机 CPU 负载。
+
+> 规格出处：800 Gb/s 连接、64 核 Grace CPU 与高带宽 LPDDR 见《Inside the NVIDIA Vera Rubin Platform》博客（"BlueField-4 integrates a 64-core Grace CPU and high-bandwidth LPDDR5X memory…"）与 BlueField-4 / CMX 官方产品页，见第七节参考文献；ICMS/CMX 官方博客原文只作功能性描述，未列出具体数字。
 
 ---
 
@@ -129,8 +137,26 @@ G4: 共享对象/文件存储 ← 冷数据与日志等持久数据
 
 ---
 
-## 六、参考文献
+## 六、总评
 
-- **参考资料**: 详见 [DOCA 编程入门](../../../02_dpu_programming/doca/doca_programming_guide.md) 中的相关章节。
+CMX/ICMS 把推理上下文当作一等数据类别来建存储层，方向上有两点站得住：其一，G3.5 层瞄准的是 G3（本地 SSD）与 G4（共享存储）之间真实的性能/容量断层，而复用对象是可重建的 KV cache，用较低价值介质承担高价值路径的思路成立；其二，把 BlueField-4 的协议终结与线速加密下沉到 KV 数据路径，与 DPU 的定位一致，确实能为主机 CPU 减负。
 
-- NVIDIA Corporation. "Introducing NVIDIA BlueField-4-Powered Inference Context Memory Storage Platform for the Next Frontier of AI." NVIDIA Technical Blog. 2026-01-06. 访问日期: 2026-01-07. [Online]. Available: https://developer.nvidia.com/blog/introducing-nvidia-bluefield-4-powered-inference-context-memory-storage-platform-for-the-next-frontier-of-ai/
+引用其结论前需要打折的地方：
+
+- 5× TPS、5× 能效均为 NVIDIA 官方口径，未附测试配置，也缺独立第三方复现，宜当作设计目标而非实测结论；
+- 「petabytes 级」是量级表述，官方未给出单 pod 的精确容量上限；
+- G1–G4 的延迟数字是帮助理解层级的量级示意，官方未提供统一的端到端测量数据；
+- 平台 2026-03 由 ICMS 更名为 CMX，Dynamo / NIXL / DOCA 的分工仍在演进，细节以官方页面最新版本为准；
+- G3.5 依赖 Rubin 代际硬件（BlueField-4 + Spectrum-X），存量集群无法通过软件升级直接受益。
+
+---
+
+## 七、参考文献
+
+- **参考资料**: 详见 [DOCA 编程入门](../../../02_dpu_programming/doca/doca_programming_guide.md) 第 5.4 节「存储虚拟化与仿真（`doca_devemu`）」（对应 BlueField-4 终结 NVMe-oF / 对象协议的场景）；控制平面卸载可参考第 5.2 节「控制平面卸载（`doca_comch`）」。
+
+- NVIDIA Corporation. "Introducing NVIDIA BlueField-4-Powered Inference Context Memory Storage Platform for the Next Frontier of AI." NVIDIA Technical Blog. 2026-01-06. 访问日期: 2026-01-07. [Online]. Available: https://developer.nvidia.com/blog/introducing-nvidia-bluefield-4-powered-inference-context-memory-storage-platform-for-the-next-frontier-of-ai/ （题名以发布时为准；该页 2026-03-16 更新后现题为 "Introducing NVIDIA BlueField-4-Powered CMX Context Memory Storage Platform…"，现名 CMX）
+
+- NVIDIA Corporation. "Inside the NVIDIA Vera Rubin Platform: Six New Chips, One AI Supercomputer." NVIDIA Technical Blog. 2026-01-05. [Online]. Available: https://developer.nvidia.com/blog/inside-the-nvidia-rubin-platform-six-new-chips-one-ai-supercomputer （BlueField-4 规格出处：64 核 Grace CPU、高带宽 LPDDR5X、最高 800 Gb/s 以太网 / InfiniBand 连接）
+
+- NVIDIA Corporation. CMX Context Memory Storage（官方产品页）. [Online]. Available: https://www.nvidia.com/en-us/data-center/ai-storage/cmx/

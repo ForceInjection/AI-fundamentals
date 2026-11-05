@@ -65,19 +65,21 @@
 
 ### 3.1 Kubernetes AI 基础设施
 
-解析 Kubernetes AI 场景核心组件，包括容器运行时 GPU 支持底层机制、设备插件源码分析、Kueue 调度整合，以及基于 LWS 的大模型分布式训练与推理架构。
+解析 Kubernetes AI 场景核心组件，包括容器运行时 GPU 支持底层机制、设备插件源码分析、Kueue 调度整合，以及基于 LWS 的大模型推理调度架构。
 
 - [Kubernetes GPU 管理与 AI 工作负载](./04_cloud_native_ai_platform/k8s/README.md)：云原生 AI 基础设施建设指南与技术导图
-- [NVIDIA Container Toolkit 原理](./04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md)：容器使用 GPU 的底层机制深度解析
+- [NVIDIA Container Toolkit 原理](./04_cloud_native_ai_platform/k8s/01_nvidia_container_toolkit_analysis.md)：容器使用 GPU 的底层机制解析
 - [Device Plugin 原理](./04_cloud_native_ai_platform/k8s/02_nvidia_k8s_device_plugin_analysis.md)：Kubernetes 设备插件机制源码分析
 - [Kueue + HAMi 调度方案](./04_cloud_native_ai_platform/k8s/03_kueue_hami_integration.md)：云原生作业队列与细粒度 GPU 共享机制
-- [LWS (Leader Worker Set) 介绍](./04_cloud_native_ai_platform/k8s/04_lws_intro.md)：Kubernetes 原生的大模型分布式训练与推理调度抽象
+- [vLLM + LWS：Kubernetes 上的多机多卡推理方案](./04_cloud_native_ai_platform/k8s/04_lws_intro.md)：Kubernetes 原生的大模型推理调度抽象
 - [分布式推理框架](./04_cloud_native_ai_platform/k8s/05_llm_d_intro.md)：基于 Kubernetes 的 LLM 推理架构设计
 - [Containerd 日志分析](./04_cloud_native_ai_platform/k8s/06_containerd_log_analysis.md)：云原生容器运行时的日志排查与分析
 
 ### 3.2 GPU 资源管理与虚拟化
 
-提供异构算力环境下的 GPU 资源精细化管理方案，涵盖硬件级/内核态/用户态虚拟化机制、CUDA 流与 MPS 调度优化，并提供 HAMi 资源隔离与 Flex AI 的生产环境落地配置。
+提供异构算力环境下的 GPU 资源精细化管理方案，涵盖硬件级/内核态/用户态虚拟化机制、CUDA 流与 MPS 调度优化，并提供 HAMi 资源隔离、GPU 虚拟化实现对比与生产环境落地配置。
+
+- [GPU 管理技术深度解析](./04_cloud_native_ai_platform/gpu_manager/README.md)：GPU 虚拟化与切分专题的子门户，按文档、代码、配置三条线组织内容
 
 **基础系列文档**：
 
@@ -88,10 +90,10 @@
 
 **HAMi 专题**：
 
-- [HAMi 资源管理使用手册](./04_cloud_native_ai_platform/gpu_manager/hami/hmai-gpu-resources-guide.md)：异构算力管理与隔离实战指南
-- [HAMi Prometheus 监控指标](./04_cloud_native_ai_platform/gpu_manager/hami/hami-prometheus-metrics.md)：构建完善的 GPU 虚拟化可观测性体系
-- [KAI vs HAMi 对比分析](./04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md)：深度对比原生 Kubernetes AI 调度器与 HAMi 方案
-- [Flex AI 介绍](./04_cloud_native_ai_platform/gpu_manager/hami/flex_ai_intro.md)：探讨灵活异构算力环境下的前沿实践
+- [HAMi GPU 资源管理完整指南](./04_cloud_native_ai_platform/gpu_manager/hami/hami-gpu-resources-guide.md)：异构算力管理与隔离实战指南
+- [HAMi-WebUI 的 Prometheus 监控指标](./04_cloud_native_ai_platform/gpu_manager/hami/hami-prometheus-metrics.md)：构建完善的 GPU 虚拟化可观测性体系
+- [KAI vs HAMi 对比分析](./04_cloud_native_ai_platform/gpu_manager/hami/KAI_vs_HAMi_Comparison.md)：以 KAI Scheduler 架构解析为主，含与 HAMi 的对比
+- [GPU-Virtual-Service 与 HAMi-Core 实现对比](./04_cloud_native_ai_platform/gpu_manager/hami/flex_ai_intro.md)：解析 CUDA 劫持机制与 LD_PRELOAD 用户态虚拟化方案，附与 HAMi-Core 的源码级对比
 
 **代码实现与配置**：
 
@@ -102,11 +104,12 @@
 
 针对 AI 训练中海量小文件读取与跨节点共享的性能瓶颈，解析 JuiceFS 数据与元数据分离架构、DeepSeek 3FS 高性能设计及面向推理的 ICMS (KV Cache) 存储层机制。
 
+- [AI 存储：训练 I/O 和推理 KV Cache 的数据底座](./04_cloud_native_ai_platform/storage/README.md)：JuiceFS、DeepSeek 3FS 与 ICMS 三个子专题的门户导航
 - [JuiceFS 分布式文件系统](./04_cloud_native_ai_platform/storage/juicefs/README.md)：数据与元数据分离的架构设计，兼容 POSIX 接口
   - [文件修改机制分析](./04_cloud_native_ai_platform/storage/juicefs/01_juicefs_file_modification_mechanism_analysis.md)：底层数据一致性与写入流程解析
   - [后端存储变更手册](./04_cloud_native_ai_platform/storage/juicefs/02_juicefs_backend_storage_migration_guide.md)：生产环境下的存储运维与数据迁移指南
 - [DeepSeek 3FS 设计笔记](./04_cloud_native_ai_platform/storage/deepseek_3fs/01_deepseek_3fs_design_notes.md)：高性能存储系统架构设计与特性分析
-- [NVIDIA ICMS 架构解析](./04_cloud_native_ai_platform/storage/inference_context_memory_storage/01_icms_architecture.md)：面向推理的 KV Cache 存储层架构深度解析
+- [NVIDIA ICMS 架构解析](./04_cloud_native_ai_platform/storage/inference_context_memory_storage/01_icms_architecture.md)：面向推理的 KV Cache 存储层架构解析（NVIDIA 已于 2026-03 更名为 CMX，本文沿用发布时名称）
 
 ---
 
@@ -396,7 +399,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 云原生推理基础设施全景，涵盖基于 LWS 的 Kubernetes 多机多卡分布式推理调度，以及高性能 llm-d 框架在不同集群规模下的技术选型与最佳实践。
 
 - [推理优化技术方案](09_inference_system/README.md) - 企业级推理优化全景指南，涵盖集群规模分析、核心优化技术及实施路径
-- [vLLM + LWS ： Kubernetes 上的多机多卡推理方案](04_cloud_native_ai_platform/k8s/04_lws_intro.md) - 大模型推理在 Kubernetes 上的最佳实践
+- [vLLM + LWS：Kubernetes 上的多机多卡推理方案](04_cloud_native_ai_platform/k8s/04_lws_intro.md) - 大模型推理在 Kubernetes 上的最佳实践
 - [云原生高性能分布式 LLM 推理框架 llm-d 介绍](04_cloud_native_ai_platform/k8s/05_llm_d_intro.md) - 云原生架构下的高性能推理服务栈
 - **[nano-vllm](https://github.com/ForceInjection/nano-vllm) ★** — 从零构建的轻量级 vLLM 实现（~1400 行 Python），在极简代码中保留 PagedAttention、连续批处理、张量并行与 CUDA Graph 等核心机制，推理速度与 vLLM 相当。配套 8 课 **[在线 PPT 实战课程](https://forceinjection.github.io/nano-vllm/)**，逐步拆解 Sequence 生命周期、调度器队列、KV Cache 管理与注意力算子分支
 

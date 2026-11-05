@@ -69,6 +69,8 @@ NCCL 是几乎所有主流训练框架（PyTorch DDP、Megatron、DeepSpeed、vL
 - **拓扑感知**：[NVLink / NUMA / 跨节点](04_gpu_scheduling/03_topology_aware_scheduling.md)：三层拓扑感知，NVIDIA 方案已换代（KAI-Scheduler + Topograph）。
 - **GPU 共享**：[MIG、MPS、Time-slicing](04_gpu_scheduling/04_gpu_sharing_scheduling.md)：三种共享方式在 K8s 中的资源表达。
 
+GPU 池化与共享的引擎侧实现（MIG/MPS/HAMi 设备插件）见 [04_cloud_native_ai_platform](../04_cloud_native_ai_platform/README.md) 的 gpu_manager 专题。
+
 ---
 
 ## 6. [数据中心市场与容量](05_datacenter/README.md)

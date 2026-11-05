@@ -234,17 +234,13 @@
 
 在 `Cohort` 内部，`Kueue` 实现了基于权重的公平共享机制，确保各队列在资源竞争时获得合理的资源分配：
 
-**公平性算法：**
+**公平性算法（定性描述）：**
 
-- **权重分配**：每个 `ClusterQueue` 可以设置权重值，权重越高获得的资源比例越大
-- **动态调整**：系统根据队列的实际使用情况和等待作业数量动态调整资源分配
-- **饥饿防护**：确保低权重队列也能获得基本的资源保障，避免长期饥饿
+- **权重分配**：每个 `ClusterQueue`/`Cohort` 可以设置权重值，权重越高在资源竞争中越占优
+- **加权份额（weighted share）判据**：`Kueue` 为每个队列计算基于名义配额（nominal quota）、借用量与实际用量的 dominant resource share；准入时偏好份额低的队列，抢占时优先挑选份额高的队列作为候选
+- **借用与归还**：队列在借用状态下的准入会推高自身份额，归还（抢占别人）则降低份额；官方文档证明了抢占不会形成循环（若 A 能抢占 B，则 B 之后无法反过来抢占 A）
 
-**计算公式：**
-
-```bash
-队列资源份额 = (队列权重 / Cohort总权重) × Cohort总资源
-```
+Kueue 官方没有给出「队列资源份额 = 权重比例 × 总资源」这类线性公式，份额由 dominant resource share 在多资源维度上计算得出，这里不做过度简化。
 
 **应用场景：**
 
@@ -276,11 +272,14 @@
 4. **优雅终止**：被抢占的作业会收到终止信号，有机会进行清理工作
 5. **重新排队**：被抢占的作业自动重新进入队列等待调度
 
-**抢占保护：**
+**抢占保护与策略配置（ClusterQueue 的 `preemption` 字段）：**
 
-- **最小运行时间**：可以设置作业的最小运行时间，避免频繁抢占
-- **抢占冷却期**：设置抢占操作之间的最小间隔，防止系统震荡
-- **关键作业保护**：可以标记某些关键作业为不可抢占
+- **同队列内抢占**：`withinClusterQueue`，取值 `Never`（默认）/`LowerPriority`/`LowerOrNewerEqualPriority`，控制是否可抢占本队列内低优先级（或新提交的同优先级）工作负载
+- **跨队列回收配额**：`reclaimWithinCohort`，取值 `Never`/`LowerPriority`/`LowerOrNewerEqualPriority`/`Any`，控制队列是否可从同 Cohort 内借用了自己配额的队列手中回收资源
+- **借用时抢占**：`borrowWithinCohort.maxPriorityThreshold`，限制借用状态下可被抢占者的优先级上限
+- **候选排序**：候选被抢占者按「借用队列优先、优先级最低优先、最近准入优先」排序，天然抑制了频繁抢占刚启动作业的行为
+
+Kueue 没有「抢占冷却期」「最小运行时间」这类配置项；抢占行为完全由上述策略字段和候选排序规则决定。
 
 ### 2.3 详细调度流程
 
@@ -863,7 +862,8 @@ status:
 **安装最新稳定版本：**
 
 ```bash
-# 安装 Kueue v0.13.2（当前稳定版本）
+# 安装 Kueue v0.13.2（本文示例基于 v0.13.x 编写；截至 2026-11-05 核对日，官方最新 release 已到 v0.20.x，
+# 生产环境请到 releases 页面取最新版并核对 CRD 兼容性）
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/kueue/releases/download/v0.13.2/manifests.yaml
 ```
 
@@ -1641,11 +1641,11 @@ resources:
 **华为昇腾 NPU 支持**:
 
 ```yaml
-# 昇腾 NPU 资源配置示例
+# 昇腾 NPU 资源配置示例（HAMi charts 默认口径，按芯片型号命名，核对日 2026-11-05）
 resources:
-  huawei.com/Ascend910B: "1"        # 昇腾 NPU 数量
-  huawei.com/Ascend910B-memory: "4096"  # NPU 显存 (MB)
-  huawei.com/Ascend910B-cores: "30"     # NPU 算力百分比
+  huawei.com/Ascend910B2: "1"            # 昇腾 NPU 数量
+  huawei.com/Ascend910B2-memory: "4096"  # NPU 显存 (MB)
+  huawei.com/Ascend910B2-core: "30"      # NPU 算力百分比（hami-core/enpu 模式）
 ```
 
 **AMD GPU 支持**:
@@ -1804,10 +1804,13 @@ kind: ClusterQueue
 metadata:
   name: ai-training-queue
 spec:
-  # 命名空间选择器：只有标记为 ai-research 团队的命名空间可以使用此队列
+  # 命名空间选择器：只有打了 team 标签（ai-research 或 ai-production）的命名空间可以使用此队列
+  # 注意：LocalQueue 必须建在被此选择器命中的命名空间里，否则创建的 LocalQueue 不会被激活
   namespaceSelector:
-    matchLabels:
-      team: "ai-research"
+    matchExpressions:
+    - key: team
+      operator: In
+      values: ["ai-research", "ai-production"]
   resourceGroups:
   # 定义资源组，包含 HAMi 提供的三种 GPU 资源类型
   - coveredResources: ["nvidia.com/gpu", "nvidia.com/gpumem", "nvidia.com/gpucores"]

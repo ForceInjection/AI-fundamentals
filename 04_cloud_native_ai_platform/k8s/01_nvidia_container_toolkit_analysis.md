@@ -142,7 +142,7 @@
 根据官方文档和代码结构，`NVIDIA Container Toolkit` 包含以下核心组件：
 
 1. **nvidia-container-runtime**：`OCI` 兼容的运行时 `shim`，负责拦截和修改容器创建请求
-2. **nvidia-ctk** (v1.4.0+)：NVIDIA Container Toolkit CLI，提供配置管理和 `CDI` 规范生成功能
+2. **nvidia-ctk** (v1.10.0+)：NVIDIA Container Toolkit CLI，提供配置管理和 `CDI` 规范生成功能（版本号核对日 2026-11-05，官方 changelog 口径）
 3. **nvidia-cdi-hook**：`CDI` 钩子程序，处理 `CDI` 规范的运行时钩子操作
 4. **nvidia-container-runtime-hook**：传统运行时钩子，用于 `Legacy` 模式的容器修改
 5. **nvidia-container-cli**：容器 CLI 工具，由 `libnvidia-container` 提供
@@ -155,12 +155,11 @@
 > - **nvidia-cdi-hook**：专门处理 `CDI` 规范的钩子程序
 > - **nvidia-container-runtime-hook**：传统的运行时钩子程序
 >
-> **版本演进**：
+> **版本演进**（依据官方 changelog，核对日 2026-11-05）：
 >
-> - **v1.4.0+**：引入 `nvidia-ctk` 命令行工具
-> - **v1.8.0+**：增加 `CDI` 规范生成功能
-> - **v1.11.0+**：添加运行时配置管理功能
-> - **v1.13.0+**：完善系统设备节点创建和配置验证功能
+> - **v1.10.0-rc.1 起**：`nvidia-ctk` CLI 被收进安装包（changelog 条目 "Include nvidia-ctk CLI in installed binaries"）
+> - **v1.12.0 起**：提供 `CDI` 规范生成能力（初版为 `nvidia-ctk info generate-cdi`，rc.2 起定名 `nvidia-ctk cdi generate`）
+> - **v1.16.0-rc.1 起**：`nvidia-ctk hook` 子命令迁移为独立的 `nvidia-cdi-hook` 程序
 
 ### 2.3 包管理与依赖关系
 
@@ -476,8 +475,17 @@ func FromDiscoverer(d discover.Discover) (*cdi.ContainerEdits, error) {
 
 #### 4.1.1 示例命令
 
+GPU 注入有两条互斥的入口路径，下面分开演示，不要在生产环境混用（两者同时指定时的组合行为官方文档没有说明）：
+
 ```bash
-docker run --runtime=nvidia --gpus all -e NVIDIA_VISIBLE_DEVICES=0,1 \
+# 路径一：--gpus（Docker 19.03+ 语法，由 Docker 在构建容器 spec 时写入 NVIDIA_VISIBLE_DEVICES）
+docker run --runtime=nvidia --gpus all \
+  nvidia/cuda:11.8-runtime-ubuntu20.04 nvidia-smi
+```
+
+```bash
+# 路径二：runtime 注入路径，直接通过环境变量声明可见设备
+docker run --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=0,1 \
   nvidia/cuda:11.8-runtime-ubuntu20.04 nvidia-smi
 ```
 
@@ -488,8 +496,8 @@ docker run --runtime=nvidia --gpus all -e NVIDIA_VISIBLE_DEVICES=0,1 \
 当用户执行上述命令时，`Docker` 守护进程首先解析命令参数：
 
 - `--runtime=nvidia`：指定使用 `nvidia` 容器运行时
-- `--gpus all`：请求所有可用 `GPU` (`Docker` 19.03+ 语法)
-- `-e NVIDIA_VISIBLE_DEVICES=0,1`：环境变量指定使用 `GPU 0` 和 `1`
+- 路径一的 `--gpus all`：请求所有可用 `GPU` (`Docker` 19.03+ 语法)，由 Docker 转成对 GPU 的注入指令
+- 路径二的 `-e NVIDIA_VISIBLE_DEVICES=0,1`：环境变量指定使用 `GPU 0` 和 `1`
 
 **步骤2：调用 nvidia-container-runtime**:
 
@@ -1080,11 +1088,8 @@ func NewMountSpecFromLine(line string) (*MountSpec, error) {
 **环境变量控制**：
 
 ```bash
-# 加载所有CSV文件
-NVIDIA_REQUIRE_JETPACK=csv-mounts=all
-
-# 默认只加载基础文件
-# devices.csv, drivers.csv, l4t.csv
+# 默认加载基础文件：devices.csv, drivers.csv, l4t.csv
+# 注：网上流传的 NVIDIA_REQUIRE_JETPACK=csv-mounts=all 写法未在官方文档核实到出处，使用前请以 CSV Mode 官方说明为准
 ```
 
 **适用场景**：
@@ -1232,23 +1237,22 @@ type Interface interface {
 
 `OCI` (`Open Container Initiative`) `Hooks` 是容器运行时规范中定义的扩展机制，允许在容器生命周期的特定阶段执行自定义操作。`NVIDIA Container Toolkit` 广泛使用 `Hooks` 机制来实现 `GPU` 设备的动态注入和配置。
 
-> **版本演进**：
+> **版本演进**（依据官方 changelog，核对日 2026-11-05）：
 >
-> - **v1.0.0+**：引入基础 `Hook` 机制支持
-> - **v1.4.0+**：增强 `Hook` 错误处理和日志记录
-> - **v1.13.0+**：引入 `nvidia-cdi-hook` 独立程序
-> - **v1.14.0+**：优化 `Hook` 执行性能和稳定性
+> - **v1.16.0-rc.1 起**：`nvidia-ctk hook` 子命令迁移为独立的 `nvidia-cdi-hook` 程序，子命令保持不变
 
 #### 5.1.1 Hook 类型与执行时机
 
-根据 `OCI` 规范，`Hooks` 分为以下几种类型：
+根据 `OCI` 运行时规范，`Hooks` 分为以下几种类型，执行时机与容器生命周期操作一一对应：
 
-1. **`prestart`**：在容器进程启动前执行，但在用户指定的进程启动后
-2. **`createRuntime`**：在容器运行时创建后立即执行
-3. **`createContainer`**：在容器创建后但在用户进程启动前执行
-4. **`startContainer`**：在用户进程启动后执行
-5. **`poststart`**：在容器启动后执行
-6. **`poststop`**：在容器停止后执行
+1. **`prestart`**：在 `create` 操作中执行——运行环境创建之后、用户进程启动之前。该 hook 已被规范**弃用**，推荐用 `createRuntime` 替代
+2. **`createRuntime`**：同样在 `create` 操作中、用户进程启动之前执行，运行在运行时（runtime）命名空间；官方推荐以此替代 `prestart`
+3. **`createContainer`**：仍在 `create` 操作中执行，但在 `createRuntime` 之后——此时容器进程已创建、用户程序尚未执行，hook 运行在容器命名空间内
+4. **`startContainer`**：在 `start` 操作中、用户进程执行之前运行（运行在容器命名空间内）
+5. **`poststart`**：在 `start` 操作中、用户进程启动之后、`start` 调用返回之前执行
+6. **`poststop`**：在 `delete` 操作中、容器删除之后、`delete` 调用返回之前执行
+
+也就是说，`createRuntime`、`prestart`、`createContainer` 三者都发生在 `create` 阶段（容器用户进程启动之前），而 `startContainer` 发生在 `start` 调用时、用户进程执行之前。`NVIDIA Container Toolkit` 的设备注入依赖的就是 `create` 阶段的这几个时机。
 
 ```go
 // pkg/config/ocihook/hooks.go
@@ -1332,31 +1336,18 @@ func (m stableRuntimeModifier) Modify(spec *specs.Spec) error {
 
 `nvidia-cdi-hook` 是专门为 `CDI` 模式设计的 `Hook` 程序，负责在容器创建阶段执行设备相关的配置操作。
 
-```go
-// cmd/nvidia-cdi-hook/main.go
-func main() {
-    logger := logrus.New()
+`nvidia-cdi-hook` 不是按 hook 阶段分发，而是按子命令组织——CDI 规范里的每个 hook 条目直接指向一个具体子命令。依据 `cmd/nvidia-cdi-hook/README.md`，当前提供的子命令如下：
 
-    // 解析命令行参数
-    var hookName string
-    var containerID string
-    var bundlePath string
+| 子命令 | 作用 |
+| ------ | ---- |
+| `create-symlinks` | 在挂载进容器的目录里创建符号链接 |
+| `update-ldcache` | 更新挂载目录内的动态链接器缓存 |
+| `enable-cuda-compat` | 需要时把 CUDA compat 库目录加入 ldconfig 搜索路径 |
+| `disable-device-node-modification` | 确保容器内的 `/proc/driver/nvidia/params` 不允许修改设备节点 |
+| `update-application-profile` | 通过 application profile 更新驱动设置（如 `EGLVisibleDGPUDevices`） |
+| `apply-cuda-memory-limits` | 为容器内的 GPU 设备设置 CUDA 内存软/硬限制 |
 
-    // 根据 hook 类型执行相应操作
-    switch hookName {
-    case "createContainer":
-        err = handleCreateContainer(logger, containerID, bundlePath)
-    case "startContainer":
-        err = handleStartContainer(logger, containerID, bundlePath)
-    default:
-        err = fmt.Errorf("unsupported hook: %s", hookName)
-    }
-
-    if err != nil {
-        logger.Fatalf("Hook execution failed: %v", err)
-    }
-}
-```
+> 同一套子命令实现也被 `nvidia-ctk hook` 复用（两者通过 `ConfigureCDIHookCommand` 共享命令注册）；运行时若遇到不认识的 hook 子命令，只会打警告不阻断容器启动。
 
 #### 5.3.2 符号链接创建
 
@@ -1929,6 +1920,8 @@ spec:
         requests:
           nvidia.com/gpu: 1
       env:
+        # 注意：这是手写示例，仅用于演示环境变量语义。在 K8s 生产环境里 NVIDIA_VISIBLE_DEVICES
+        # 由 device plugin 通过 allocation 响应注入，不应在 Pod 里手写
         - name: NVIDIA_VISIBLE_DEVICES
           value: "0"
         - name: NVIDIA_DRIVER_CAPABILITIES
@@ -1962,11 +1955,17 @@ nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 #### 7.3.2 日志分析
 
 ```bash
-# 查看 nvidia-container-runtime 日志
-journalctl -u nvidia-container-runtime
+# nvidia-container-runtime 没有独立的 systemd unit，它由容器运行时拉起，日志随所在运行时输出：
+# containerd 场景下查看 journal 日志
+journalctl -u containerd
 
-# 查看详细调试信息
-export NVIDIA_CONTAINER_RUNTIME_DEBUG=/tmp/nvidia-debug.log
+# Docker 场景下查看 dockerd 日志
+journalctl -u docker
+
+# 开启调试日志：nvidia-container-runtime 没有 NVIDIA_CONTAINER_RUNTIME_DEBUG 这类环境变量，
+# 调试路径需改 config.toml（/etc/nvidia-container-runtime/config.toml），把 debug 项指到文件后重启容器运行时
+# [nvidia-container-runtime]
+# debug = "/tmp/nvidia-container-runtime-debug.log"
 docker run --runtime=nvidia nvidia/cuda:11.8-runtime-ubuntu20.04 nvidia-smi
 ```
 
@@ -2093,23 +2092,19 @@ allowed_annotations = [
 **RuntimeClass 资源定义**：
 
 ```yaml
-# nvidia-runtimeclass.yaml
+# nvidia-runtimeclass.yaml — RuntimeClass 的合法字段只有 handler、overhead、scheduling（scheduling 下仅 nodeSelector 与 tolerations）
 apiVersion: node.k8s.io/v1
 kind: RuntimeClass
 metadata:
   name: nvidia
-handler: nvidia
-overhead:
-  podFixed:
-    memory: "12Mi"
-    cpu: "100m"
-scheduling:
-  nodeClassification:
-    tolerations:
-      - effect: NoSchedule
-        key: nvidia.com/gpu
-        operator: Exists
-  runtimeHandler: nvidia
+handler: nvidia   # 对应 containerd/docker 配置里的 nvidia 低层运行时名；CDI 模式下运行时名可保持 nvidia，与默认运行时共用
+scheduling:       # 可选：限制只有装了 toolkit 的节点可被调度到
+  nodeSelector:
+    nvidia.com/gpu.deploy.container-toolkit: "true"
+  tolerations:
+    - effect: NoSchedule
+      key: nvidia.com/gpu
+      operator: Exists
 ```
 
 **Pod 中使用 RuntimeClass**：
@@ -2394,6 +2389,7 @@ spec:
               memory: "2Gi"
               cpu: "1"
           env:
+            # 手写示例：实际由 device plugin 注入 NVIDIA_VISIBLE_DEVICES，Pod 里不必手写
             - name: NVIDIA_VISIBLE_DEVICES
               value: "all"
             - name: NVIDIA_DRIVER_CAPABILITIES

@@ -1,5 +1,7 @@
 # GPU-Virtual-Service 深度剖析：CUDA 劫持机制、全链路流程与 HAMi-Core 对比
 
+> 来源说明：GPU-Virtual-Service（快手 Flex AI 团队）未公开代码仓库，本文基于内部材料整理；HAMi-Core 部分对照 HAMi 开源仓库（github.com/Project-HAMi/HAMi）。信息截至 2026-11-05。
+
 ## 1. 概述
 
 在云原生环境中，GPU 资源的昂贵稀缺与任务负载的动态变化形成了鲜明矛盾。为了最大化硬件利用率，**GPU 虚拟化**技术应运而生。`GPU-Virtual-Service` 采用 **CUDA 劫持（CUDA Hijacking）** 技术，通过 Linux 的 `LD_PRELOAD` 机制，在用户态实现了对 NVIDIA GPU 资源的细粒度切分与隔离。
@@ -237,7 +239,7 @@ spec:
 
 ## 5. 与 HAMi-Core 的代码级对比分析
 
-`HAMi-Core` (Heterogeneous AI Computing Middleware) 是社区中广泛使用的另一款开源 GPU 虚拟化核心库。尽管两者在设计目标上殊途同归，但在底层实现路径上却存在本质差异。
+`HAMi-Core` (Heterogeneous AI Computing Virtualization Middleware) 是社区中广泛使用的另一款开源 GPU 虚拟化核心库。尽管两者在设计目标上殊途同归，但在底层实现路径上却存在本质差异。
 
 ### 5.1 拦截策略
 

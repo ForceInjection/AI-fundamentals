@@ -2,6 +2,8 @@
 
 本文档深入解析了 NVIDIA KAI Scheduler 的核心架构与关键特性，并将其与异构计算虚拟化中间件 HAMi 进行多维度对比。通过分析两者在系统定位（调度器 vs 中间件）、资源隔离（软隔离 vs 硬隔离）及适用场景（大规模训练 vs 在线推理）上的差异，为构建高效、可靠的 AI 基础设施提供技术选型依据。
 
+> 版本口径：本文基于 KAI Scheduler v0.10.0（2025-10 发布）与 HAMi v2.11.0（2026-11-04 发布）撰写，信息截至 2026-11-05。
+
 ---
 
 ## 1. KAI Scheduler 架构与功能解析
@@ -196,11 +198,9 @@ HAMi 采用 `MutatingWebhook` + `Scheduler Extender` + `Device Plugin` 的非侵
    - 利用 HAMi 处理节点内的细粒度切分与隔离。
    - **注意**: 需精细配置 Resource Name（如 KAI 使用 `nvidia.com/gpu`，HAMi 使用 `nvidia.com/gpumem`），避免资源核算的冲突。
 
-### 3.5 前沿探索：社区融合方案 (Proposed)
+### 3.5 前沿探索：社区融合方案（已合入）
 
-HAMi 社区与 KAI Scheduler 社区正在探讨一种更深度的融合方案（参考 [PR #60](https://github.com/NVIDIA/KAI-Scheduler/pull/60)）。该方案旨在通过解耦的方式，在保留 KAI 调度决策权的同时，引入 HAMi 的底层硬隔离能力。
-
-> **注意**: 该方案目前处于**提案与讨论阶段 (Under Discussion)**，尚未正式合入 KAI Scheduler 主干。
+HAMi 社区与 KAI Scheduler 社区探讨了一种更深度的融合方案（Resource isolation 设计，[PR #60](https://github.com/NVIDIA/KAI-Scheduler/pull/60)），已于 2026-06-09 合入 KAI Scheduler 主干。该方案通过解耦的方式，在保留 KAI 调度决策权的同时，引入 HAMi 的底层硬隔离能力。
 
 **方案架构核心**:
 

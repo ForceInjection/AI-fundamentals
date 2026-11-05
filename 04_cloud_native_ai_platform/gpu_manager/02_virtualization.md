@@ -96,13 +96,7 @@
 
 本章将深入分析传统 GPU 虚拟化技术，重点探讨基于 Hypervisor 的 GPU 透传（GPU Passthrough）和虚拟 GPU（vGPU）技术。这些技术通过软件虚拟化层实现 GPU 资源的分配和管理，为虚拟机环境提供 GPU 计算能力。
 
-**学习目标：**
-
-- 深入理解基于 Hypervisor 的 GPU 虚拟化原理
-- 掌握 GPU 透传（GPU Passthrough）技术的实现机制
-- 掌握虚拟 GPU（vGPU）技术的架构设计和工作原理
-- 了解传统虚拟化技术的性能特点和适用场景
-- 理解虚拟化环境下的 GPU 资源管理和调度机制
+**学习目标：** 本章围绕 Hypervisor 级虚拟化展开：先看 GPU 透传（Passthrough）的实现机制，再看 vGPU 的架构设计与工作原理，最后落到传统虚拟化的性能特点和适用场景。
 
 ### 4.1 GPU 透传（GPU Passthrough）技术
 
@@ -374,14 +368,7 @@ cleanup_cus:
 
 本章将深入分析硬件切分技术，重点探讨 NVIDIA MIG（Multi-Instance GPU）、AMD SR-IOV 等原生硬件级别的资源分割方案。这些技术基于 GPU 硬件原生支持的资源分割，直接在硬件层面进行资源切分，提供硬件级别的强隔离和接近原生的性能表现。
 
-**学习目标：**
-
-- 深入理解 GPU 硬件架构的原生虚拟化支持机制
-- 掌握 NVIDIA MIG 技术的硬件切分原理和实现
-- 掌握 AMD SR-IOV 等硬件级资源分割方案
-- 了解硬件原生切分的技术原理和性能特点
-- 理解异构 GPU 环境的硬件差异和统一管理挑战
-- 对比分析硬件切分技术与传统虚拟化技术的差异
+**学习目标：** 本章聚焦 GPU 硬件架构的原生切分能力：以 NVIDIA MIG 与 AMD SR-IOV 为代表讲清硬件切分的原理与实现，对比其与传统虚拟化技术的差异，并讨论异构 GPU 环境的硬件差异和统一管理挑战。
 
 ### 5.1 GPU 硬件架构切分基础
 
@@ -565,7 +552,7 @@ graph TB
 
 如图所示，硬件切分技术主要包括：
 
-1. **NVIDIA MIG 技术**：通过硬件级资源切分，将单个 GPU 划分为多个独立的 MIG 实例，每个实例拥有专用的 SM 和内存切片，实现完全的硬件级隔离。支持 1g.5gb 、 2g.10gb 、 3g.20gb 、 7g.40gb 等多种配置选项，适用于 AI 训练和推理场景。
+1. **NVIDIA MIG 技术**：通过硬件级资源切分，将单个 GPU 划分为多个独立的 MIG 实例，每个实例拥有专用的 SM 和内存切片，实现完全的硬件级隔离。支持 1g.5gb 、 2g.10gb 、 3g.20gb 、 7g.40gb （ 40GB 卡）及 1g.10gb 、 2g.20gb 、 3g.40gb 、 7g.80gb （ 80GB 卡）等多种配置选项，适用于 AI 训练和推理场景。
 
 2. **AMD SR-IOV 技术**：基于 PCIe SR-IOV 标准，通过物理功能(PF)和虚拟功能(VF)实现 GPU 硬件切分。每个 VF 作为独立的 PCIe 设备，提供硬件级隔离，特别适用于容器化环境和高性能计算场景。
 
@@ -587,7 +574,7 @@ MIG 技术基于 NVIDIA Ampere 架构的硬件设计特性，通过以下核心�
 **MIG 技术核心特性：**
 
 - **硬件级隔离**：每个 MIG 实例拥有独立的硬件资源，实现真正的物理隔离
-- **预定义配置**：支持 1g.5gb 、 2g.10gb 、 3g.20gb 、 7g.40gb 等标准配置
+- **预定义配置**：支持 1g.5gb 、 2g.10gb 、 3g.20gb 、 7g.40gb （ A100/A30 等 40GB 卡）与 1g.10gb 、 2g.20gb 、 3g.40gb 、 7g.80gb （ A100/H100 80GB 卡）等标准配置
 - **完全独立**：每个实例具有独立的错误域和故障隔离能力
 
 ##### 5.2.1.2 GPU 实例的创建和管理
@@ -692,7 +679,7 @@ int create_mig_instance(uint32_t gpu_id,
 **限制：**
 
 - **硬件依赖**：仅支持特定的 GPU 型号（ A100 、 A30 、 A40 等）
-- **配置固定**：实例配置相对固定，动态调整能力有限
+- **配置固定**：实例配置相对固定， A100 更换 MIG 配置需先重置 GPU ； H100 起支持动态重配置，无需整机重置
 - **资源粒度**：切分粒度受硬件设计限制，无法实现任意大小的分割
 - **成本较高**：需要支持 MIG 的高端 GPU ，成本相对较高
 
@@ -705,14 +692,22 @@ int create_mig_instance(uint32_t gpu_id,
 - NVIDIA A40
 - NVIDIA H100
 
-**配置选项：**
+**配置选项（按适用卡型）：**
 
-- **1g.5gb**： 1/7 GPU + 5GB 显存
-- **2g.10gb**： 2/7 GPU + 10GB 显存
-- **3g.20gb**： 3/7 GPU + 20GB 显存
-- **4g.20gb**： 4/7 GPU + 20GB 显存
-- **7g.40gb**：完整 GPU + 40GB 显存（ A100 40GB ）
-- **7g.80gb**：完整 GPU + 80GB 显存（ A100 80GB ）
+| Profile  | 切分   | 显存   | 适用卡型                          |
+| -------- | ------ | ------ | --------------------------------- |
+| 1g.5gb   | 1/7 GPU | 5GB   | A100 40GB / A30 等小容量卡        |
+| 2g.10gb  | 2/7 GPU | 10GB  | A100 40GB / A30                   |
+| 3g.20gb  | 3/7 GPU | 20GB  | A100 40GB / A30                   |
+| 4g.20gb  | 4/7 GPU | 20GB  | A100 40GB                         |
+| 7g.40gb  | 7/7 GPU | 40GB  | A100 40GB                         |
+| 1g.10gb  | 1/7 GPU | 10GB  | A100 80GB / H100 80GB             |
+| 2g.20gb  | 2/7 GPU | 20GB  | A100 80GB / H100 80GB             |
+| 3g.40gb  | 3/7 GPU | 40GB  | A100 80GB / H100 80GB             |
+| 4g.40gb  | 4/7 GPU | 40GB  | A100 80GB / H100 80GB             |
+| 7g.80gb  | 7/7 GPU | 80GB  | A100 80GB / H100 80GB             |
+
+> 80GB 卡最多可切 7 × 1g.10gb 、 3 × 2g.20gb 或 2 × 3g.40gb ，单实例最大为 7g.80gb ； H100 80GB 的 profile 与 A100 80GB 同名同配， H100 NVL（ 94GB ）为 1g.12gb/2g.24gb/3g.47gb 一档。
 
 #### 5.2.2 AMD SR-IOV 硬件切分技术
 
@@ -767,7 +762,7 @@ int configure_sriov_vf(uint16_t vf_id, sriov_vf_config_t *config) {
 - AI 训练和推理工作负载的多租户隔离
 - 需要硬件级安全隔离的容器化环境
 - 资源利用率要求较高的数据中心
-- 支持动态资源调整的弹性计算场景
+- 支持弹性计算的场景（注意： A100 更换 MIG 配置需重置 GPU ， H100 起支持动态重配置）
 - 大规模机器学习平台的资源切分
 
 **AMD SR-IOV 适用场景：**
@@ -793,7 +788,7 @@ int configure_sriov_vf(uint16_t vf_id, sriov_vf_config_t *config) {
 1. **硬件级隔离保障**：两种硬件切分技术都提供了硬件层面的资源隔离，确保了多租户环境的安全性和稳定性
 2. **接近裸机性能**：性能开销均控制在 10%以内，其中 MIG 的开销更是低于 5%
 3. **完整的生态支持**：主流 GPU 厂商都提供了相应的硬件和软件支持
-4. **动态资源调整**：支持运行时的资源重新分配和配置调整
+4. **动态资源调整**： H100 起支持 MIG 运行时动态重配置（ A100 更换配置需先重置 GPU ）
 
 **技术发展趋势：**
 
@@ -818,12 +813,7 @@ GPU 硬件切分技术为现代数据中心提供了强大的 GPU 资源管理�
 
 本章将深入探讨内核态 GPU 虚拟化技术，包括内核级资源管理、虚拟 GPU 驱动架构、上下文切换机制以及性能优化策略。
 
-**学习目标：**
-
-- 理解内核态虚拟化的架构设计和实现原理
-- 掌握虚拟 GPU 驱动的核心技术
-- 了解内核级资源调度和隔离机制
-- 学习内核态虚拟化的性能优化方法
+**学习目标：** 本章拆解内核态虚拟化的架构设计与实现原理，重点在虚拟 GPU 驱动、内核级资源调度与隔离机制，以及相应的性能优化方法。
 
 ### 6.1 内核态 GPU 虚拟化技术架构总览
 
@@ -3337,18 +3327,13 @@ static void performance_monitor_timer_callback(struct timer_list *timer) {
 
 本章将深入探讨用户态 GPU 虚拟化技术，重点分析 CUDA API 拦截机制、 HAMi 的实现原理以及用户态资源管理策略。
 
-**学习目标：**
-
-- 深入理解 CUDA API 拦截的技术原理
-- 掌握 HAMi 等用户态虚拟化方案的实现机制
-- 了解用户态资源配额管理和控制策略
-- 学习用户态虚拟化的性能优化方法
+**学习目标：** 本章从 CUDA API 拦截的技术原理入手，剖析 HAMi 等用户态虚拟化方案的实现机制、用户态资源配额管理，以及性能优化方法。
 
 ### 7.1 CUDA API 拦截技术原理
 
 用户态 GPU 虚拟化技术通过在用户空间实现 GPU 资源的虚拟化管理，在部署简便性和应用兼容性方面具有显著优势。
 
-该技术通过 CUDA API 拦截机制，在应用程序和 GPU 驱动之间插入拦截层，在用户空间实现资源监控和控制，具有无需内核修改、部署简单的特点，主要依赖动态库替换和 API Hook 技术。与内核态虚拟化相比（详见 [5 章 内核态 GPU 虚拟化技术](#5-内核态 gpu 虚拟化技术)），用户态虚拟化具有更好的部署便利性和应用兼容性；与硬件级虚拟化相比（详见 [4 章 硬件级 GPU 虚拟化技术](#4-硬件级 gpu 虚拟化技术)），用户态虚拟化具有更细粒度的资源控制能力。
+该技术通过 CUDA API 拦截机制，在应用程序和 GPU 驱动之间插入拦截层，在用户空间实现资源监控和控制，具有无需内核修改、部署简单的特点，主要依赖动态库替换和 API Hook 技术。与内核态虚拟化相比（详见 [6 章 内核态 GPU 虚拟化技术](#6-内核态-gpu-虚拟化技术)），用户态虚拟化具有更好的部署便利性和应用兼容性；与硬件切分技术相比（详见 [5 章 硬件切分技术](#5-硬件切分技术)），用户态虚拟化具有更细粒度的资源控制能力。
 
 ```mermaid
 graph TB
@@ -3454,7 +3439,7 @@ graph TB
 graph TB
     subgraph "用户态 GPU 虚拟化技术生态"
         subgraph "开源解决方案"
-            HAMI["HAMi (CNCF 沙箱项目)<br/>异构设备管理中间件<br/>支持多厂商 GPU"]
+            HAMI["HAMi (CNCF incubating 项目)<br/>异构设备管理中间件<br/>支持多厂商 GPU"]
             GPUSHARE["GPUShare (阿里云)<br/>Kubernetes GPU 共享<br/>NVIDIA GPU 专用"]
             VOLCANO["Volcano GPU Share<br/>批处理调度系统<br/>GPU 资源池化"]
             VIRTAITECH["VirtAI Tech orion<br/>GPU 虚拟化平台<br/>企业级解决方案"]
@@ -3575,13 +3560,15 @@ spec:
 
 **3. 性能开销对比：**
 
-| 方案        | CPU 开销 | 内存开销 | GPU 性能损失 | 延迟增加 | 吞吐量影响 |
-| ----------- | -------- | -------- | ------------ | -------- | ---------- |
-| HAMi        | <2%      | <50MB    | <5%          | <1ms     | <3%        |
-| GPUShare    | <1%      | <30MB    | <3%          | <0.5ms   | <2%        |
-| Volcano     | <3%      | <100MB   | <8%          | <2ms     | <5%        |
-| Run:AI      | <5%      | <200MB   | <10%         | <3ms     | <8%        |
-| VirtAI Tech | <4%      | <150MB   | <7%          | <2ms     | <6%        |
+用户态拦截的开销取决于负载类型（访存密集 / kernel 发射密集 / 计算密集差异很大），量级估计为个位数百分比到 25%，没有统一的公开实测数据，下表仅为示意性量级：
+
+| 方案        | CPU 开销 | 内存开销 | GPU 性能损失（负载相关） |
+| ----------- | -------- | -------- | ------------------------ |
+| HAMi        | 低       | <50MB    | 个位数百分比到 25%        |
+| GPUShare    | 低       | <30MB    | 个位数百分比              |
+| Volcano     | 低       | <100MB   | 取决于共享策略            |
+| Run:AI      | 低       | <200MB   | 取决于共享策略            |
+| VirtAI Tech | 低       | <150MB   | 取决于拦截层级            |
 
 **4. 功能特性对比：**
 
@@ -3834,7 +3821,7 @@ cudaError_t cudaLaunchKernel(const void *func, dim3 gridDim, dim3 blockDim,
 
 #### 7.2.1 HAMi 项目架构与技术栈
 
-**HAMi （ Heterogeneous AI Computing Virtualization Middleware ）** 是一个专注于用户态 GPU 虚拟化的开源项目，通过 API 拦截技术实现 GPU 资源的细粒度管理和控制。 HAMi 的核心优势在于其纯用户态实现，无需修改内核或驱动程序，具有部署简便、应用兼容性好的特点。
+**HAMi （ Heterogeneous AI Computing Virtualization Middleware ）** 是一个开源的异构算力虚拟化中间件，整体由三层组成：**调度器扩展（ Scheduler Extender ）**负责细粒度资源调度决策，**设备插件（ Device Plugin ）**负责设备上报与容器资源注入，**容器内的 HAMi-core** 以用户态拦截（ LD_PRELOAD 劫持 CUDA API ）方式实现显存与算力的硬限制。下文重点剖析其中纯用户态的 HAMi-core 部分：它无需修改内核或驱动程序，部署简便、应用兼容性好。
 
 **HAMi 用户态虚拟化核心架构：**
 
@@ -3862,7 +3849,7 @@ cudaError_t cudaLaunchKernel(const void *func, dim3 gridDim, dim3 blockDim,
 - 华为昇腾 NPU
 - MetaX GPU
 
-异构 GPU 环境的兼容性挑战详见 [7.2.4 异构 GPU 环境的兼容性](#724-异构 gpu 环境的兼容性)。
+异构 GPU 环境的兼容性挑战详见 [8.2.4 异构 GPU 环境的兼容性](#824-异构-gpu-环境的兼容性)。
 
 **HAMi-core 核心实现机制：**
 
@@ -4793,49 +4780,22 @@ echo "Applying system-level optimizations..."
 echo madvise > /sys/kernel/mm/transparent_hugepage/enabled
 echo 1 > /proc/sys/vm/overcommit_memory
 
-# 2. HAMi-core 配置优化
-cat > /etc/hami/performance.conf << EOF
-# 内存管理优化
-memory.allocation_strategy=best_fit
-memory.fragmentation_threshold=0.25
-memory.defrag_interval=180
+# 2. HAMi-core 通过环境变量配置（没有 /etc/hami/ 之类的集中配置文件）
+export LIBCUDA_LOG_LEVEL=1            # 只记录 ERROR 和 WARN 日志
 
-# 时间片调度优化
-scheduler.time_slice_ms=50
-scheduler.preemption_enabled=true
-scheduler.context_switch_overhead_us=100
-
-# API 拦截优化
-intercept.symbol_cache_size=1024
-intercept.fast_path_enabled=true
-intercept.batch_processing=true
-
-# 监控优化
-monitoring.sample_interval_ms=100
-monitoring.metrics_buffer_size=10000
-monitoring.async_reporting=true
-EOF
-
-# 3. 运行时环境优化
-export HAMI_LOG_LEVEL=1  # 只记录 ERROR 和 WARN
-export HAMI_ENABLE_FAST_PATH=1
-export HAMI_MEMORY_POOL_SIZE=8G
-export HAMI_MAX_TENANTS=64
-
-# 4. GPU 驱动优化
+# 3. GPU 驱动优化
 nvidia-smi -pm 1  # 启用持久模式
-nvidia-smi -acp 0  # 禁用自动加速时钟
-nvidia-smi --auto-boost-default=DISABLED
+# 应用/显存时钟锁定（调频用 -ac，先查询支持档位）：
+# nvidia-smi -q -d SUPPORTED_CLOCKS
+# nvidia-smi -ac 1595,960
 
-# 5. HAMi-core 应用优化示例
+# 4. HAMi-core 应用优化示例
 # 设置资源限制并运行 CUDA 应用
-export CUDA_DEVICE_MEMORY_LIMIT=4096Mi  # 4GB 内存限制
-export CUDA_DEVICE_SM_LIMIT=50          # 50% SM 利用率
+export CUDA_DEVICE_MEMORY_LIMIT=4096Mi  # 4GB 显存硬限制
+export CUDA_DEVICE_SM_LIMIT=50          # 50% SM 利用率限制
 export LD_PRELOAD=/usr/local/hami/libvgpu.so
 export CUDA_CACHE_DISABLE=0
 export CUDA_CACHE_MAXSIZE=268435456     # 256MB 缓存
-export HAMI_ENABLE_MEMORY_POOL=1
-export HAMI_BATCH_SIZE=32
 
 # 运行 CUDA 应用
 ./your_cuda_application
@@ -5402,12 +5362,7 @@ void monitor_quota_usage(uint32_t tenant_id) {
 
 本章将对前面介绍的硬件级、内核态和用户态 GPU 虚拟化技术进行全面对比，分析各种方案的优缺点、适用场景和技术挑战。
 
-**学习目标：**
-
-- 掌握不同 GPU 虚拟化技术的对比分析方法
-- 理解各种虚拟化方案的技术特点和适用场景
-- 了解 GPU 虚拟化面临的共同挑战和解决方案
-- 学习如何根据具体需求选择合适的虚拟化技术
+**学习目标：** 本章横向对比硬件级、内核态与用户态三类虚拟化方案的技术特点和适用场景，梳理 GPU 虚拟化面临的共同挑战，并给出技术选择的判断依据。
 
 ### 8.1 GPU 虚拟化技术对比分析
 
@@ -5417,7 +5372,7 @@ void monitor_quota_usage(uint32_t tenant_id) {
 | -------------- | ------------ | -------------- | --------------- |
 | **实现层次**   | GPU 硬件层   | 操作系统内核层 | 应用程序层      |
 | **隔离强度**   | 强（硬件级） | 中等（内核级） | 弱（软件级）    |
-| **性能开销**   | 最小（<5%）  | 中等（ 5-15%） | 较大（ 10-25%） |
+| **性能开销**   | 最小（<5%）  | 中等（ 5-15%） | 取决于负载（经验量级：个位数百分比到 25%，无统一公开实测） |
 | **部署复杂度** | 高           | 中等           | 低              |
 | **兼容性**     | 依赖硬件支持 | 需要内核模块   | 完全兼容        |
 | **资源粒度**   | 粗粒度       | 细粒度         | 细粒度          |
@@ -5661,7 +5616,7 @@ _注：评分范围为 1-10 ，数值越高表示要求或容忍度越高。_
 - **层次化设计**：硬件 → 内核 → 用户态的完整技术覆盖
 - **标准化接口**：兼容 CUDA 生态和云原生架构
 - **精细化管理**：从 GPU 卡级到计算单元级的资源控制
-- **高性能实现**：虚拟化开销控制在 5%以内
+- **开销与负载相关**：用户态拦截的开销没有统一公开实测，经验量级为个位数百分比到 25%（计算密集型负载接近下限，kernel 发射密集型负载偏向中高段）
 
 **学习路径指引：**
 
@@ -5690,6 +5645,6 @@ _注：评分范围为 1-10 ，数值越高表示要求或容忍度越高。_
 10. VFIO: Virtual Function I/O Linux Kernel Documentation. Linux Kernel Organization. 2024. (<https://www.kernel.org/doc/html/latest/driver-api/vfio.html>)
 11. IOMMU Specifications and Implementation Guide. PCI-SIG. 2024. (<https://pcisig.com/specifications/iommu/>)
 12. SR-IOV Technology White Paper. Intel. 2024. (<https://www.intel.com/content/www/us/en/io/i-o-virtualization-technologies-paper.html>)
-13. Heterogeneous AI Computing Middleware (HAMi) Documentation. HAMi Project. 2024. (<https://github.com/CentaurusInfra/hami>)
+13. Heterogeneous AI Computing Virtualization Middleware (HAMi) Documentation. HAMi Project. 2024. (<https://github.com/Project-HAMi/HAMi>)
 14. CUDA Runtime API Documentation. NVIDIA Developer. 2024. (<https://docs.nvidia.com/cuda/cuda-runtime-api/>)
 15. Linux Kernel GPU Driver Development Guide. Linux Kernel Organization. 2024. (<https://www.kernel.org/doc/html/latest/gpu/index.html>)

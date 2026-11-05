@@ -30,13 +30,14 @@
 
 根据 `Kubernetes` 官方文档，`Device Plugin` 必须实现以下 `gRPC` 服务接口。这些接口构成了设备插件与 `kubelet` 之间的完整通信协议，每个接口都有其特定的职责和调用时机。
 
-**API 规范的演进历程**：
+**API 规范的演进历程**（版本对应关系核对日 2026-11-05）：
 
 - **v1.8 Alpha**：首次引入 `Device Plugin` 概念，提供基础的设备发现和分配能力；
-- **v1.10 Beta**：`API` 稳定化，增加了 `GetPreferredAllocation` 接口，`Device Plugin API` 版本为 `v1beta1`；
-- **v1.26 GA**：框架达到稳定状态，成为 `Kubernetes` 的标准特性；
-- **v1.28 Alpha**：引入 `CDI`（`Container Device Interface`）支持作为 Alpha 特性；
-- **v1.29 Beta**：`CDI` 支持升级为 Beta 特性；
+- **v1.10 Beta**：`API` 稳定化，`Device Plugin API` 版本为 `v1beta1`；
+- **v1.20 前后**：随 device plugin `v1beta1` 加入 `GetPreferredAllocation` 接口（KEP-3378）；
+- **v1.26 GA**：Device Manager 达到稳定状态，成为 `Kubernetes` 的标准特性（官方博客口径）；
+- **v1.29 Alpha**：`CDI`（`Container Device Interface`）支持以 `DevicePluginCDIDevices` 特性门控进入 Alpha；
+- **v1.30 Beta**：`CDI` 支持升级为 Beta 特性；
 - **v1.31 GA**：`CDI` 支持达到 GA 状态。
 
 **规范的核心设计理念**：
@@ -47,7 +48,7 @@
 4. **安全隔离**：通过 `Unix Domain Socket` 确保通信的安全性和性能；
 5. **可扩展性**：为未来的设备类型和特性预留扩展空间。
 
-**重要说明**：`Device Plugin` 框架在 `v1.26` 达到 `GA` 状态，但 `Device Plugin API` 本身仍处于 `v1beta1` 版本。从 `v1.31` 开始，引入了 `ResourceHealthStatus` 特性门控（Alpha 状态，默认关闭），用于报告分配给容器的设备健康状态。
+**重要说明**：`Device Plugin` 框架在 `v1.26` 达到 `GA` 状态，但 `Device Plugin API` 本身仍处于 `v1beta1` 版本。从 `v1.31` 开始，引入了 `ResourceHealthStatus` 特性门控（Alpha 状态，默认关闭），用于报告分配给容器的设备健康状态。（以上版本对应关系截至 2026-11-05）
 
 #### 1.2.1 GetDevicePluginOptions 接口
 
@@ -287,7 +288,7 @@ message RegisterRequest {
   string version = 1;          // API 版本，确保兼容性
   string endpoint = 2;         // 插件的 Socket 文件名
   string resource_name = 3;    // 资源名称，如 nvidia.com/gpu
-  repeated DevicePluginOptions options = 4;  // 插件选项和能力声明
+  DevicePluginOptions options = 4;  // 插件选项和能力声明（kubelet api.proto 中为单数字段）
 }
 ```
 
@@ -1176,14 +1177,16 @@ func (di *DeviceInfo) GetAllMigDevices() ([]resource.Device, error) {
 **MIG 策略类型**：
 
 1. **None 策略**：禁用 `MIG` 支持，只暴露完整 `GPU` 设备；
-2. **Single 策略**：每个 `MIG` 实例作为独立资源暴露；
-3. **Mixed 策略**：同时支持完整 `GPU` 和 `MIG` 实例的混合模式。
+2. **Single 策略**：只上报 MIG 设备，且要求整卡统一使用同一个 MIG profile，全节点通告同一种设备类型；
+3. **Mixed 策略**：只上报 MIG 设备，允许节点上不同 GPU 并存多种 MIG 几何，插件按 UUID 逐个上报 MIG 设备。
+
+需要澄清一点：`Single` 和 `Mixed` 两种策略下，插件**都只上报 MIG 设备、同一时间只通告一种设备类型**（`nvidia.com/mig-1g.5gb` 这类按 profile 命名的资源）。`Mixed` 的"mixed"指的是节点上允许并存多种 MIG 几何（不同卡可以切不同 profile），**不存在「完整 GPU + MIG 实例混合上报」的形态**。
 
 **策略选择原则**：
 
 - **None 策略**：适用于传统工作负载，兼容性最好；
-- **Single 策略**：适用于多租户环境，提供硬件级隔离；
-- **Mixed 策略**：适用于混合工作负载，灵活性最高。
+- **Single 策略**：适用于整卡统一切分的场景，如多租户固定配额，同一节点只能有一种 profile；
+- **Mixed 策略**：适用于不同 GPU 需要不同切分几何的场景，灵活性最高。
 
 ### 5.2 Container Device Interface (CDI) 深度集成
 
@@ -1326,11 +1329,11 @@ func (di *DeviceInfo) GetAllMigDevices() ([]resource.Device, error) {
 - **cdi-annotations**：通过 `Kubernetes` 注解传递 `CDI` 设备信息；
 - **cdi-cri**：直接通过容器运行时接口传递 `CDI` 设备信息。
 
-**策略选择原则**：
+**策略使用说明**：
 
-1. **优先级顺序**：`CDI CRI` > `CDI 注解` > `卷挂载` > `环境变量`；
-2. **运行时兼容性**：根据容器运行时能力选择合适策略；
-3. **配置驱动**：支持通过配置文件自定义策略组合。
+1. **逗号分隔多策略**：`deviceListStrategy` 接受逗号分隔的多个策略值，插件按声明顺序逐一构建注入内容（官方 README：「Multiple device list strategies can be specified (as a comma-separated list)」）；
+2. **运行时兼容性**：实际可行的策略取决于容器运行时能力——`cdi-annotations`/`cdi-cri` 需要容器引擎支持 CDI；
+3. **配置驱动**：通过配置文件或命令行参数指定策略组合，插件不做「某策略失败自动回退另一策略」的隐式处理。
 
 #### 5.4.2 环境变量策略实现
 
@@ -1346,8 +1349,7 @@ func (di *DeviceInfo) GetAllMigDevices() ([]resource.Device, error) {
 
 - `NVIDIA_VISIBLE_DEVICES`：指定可见的 `GPU` 设备；
 - `NVIDIA_DRIVER_CAPABILITIES`：指定驱动能力；
-- `NVIDIA_REQUIRE_*`：指定设备要求和约束；
-- `NVIDIA_DRIVER_MODE`：指定驱动模式。
+- `NVIDIA_REQUIRE_*`：指定设备要求和约束。
 
 **实现特点**：
 
@@ -1402,9 +1404,9 @@ func (di *DeviceInfo) GetAllMigDevices() ([]resource.Device, error) {
    - 需要容器运行时支持 `CDI` 规范。
 
 4. **策略选择和优化**：
-   - 支持基于容器运行时的自动策略选择；
-   - 提供多策略并行支持和回退机制；
-   - 支持运行时策略验证和动态切换；
+   - 多个策略以逗号分隔声明，插件按序逐一应用；
+   - 策略间没有自动回退语义，选错了就要改配置重来；
+   - 策略可行性由容器运行时的 CDI 支持情况决定；
    - 提供丰富的监控和调试能力。
 
 通过对高级特性的分析，我们可以看到 `NVIDIA K8s Device Plugin` 在功能丰富性和技术先进性方面的优势。这些高级特性不仅提升了 `GPU` 资源的利用效率，也为不同的应用场景提供了灵活的解决方案。然而，要在生产环境中稳定高效地运行这些功能，还需要考虑性能优化和最佳实践。

@@ -24,7 +24,7 @@
 
 ### ICMS
 
-- [ICMS 架构解析](inference_context_memory_storage/01_icms_architecture.md) — NVIDIA Rubin 平台的推理上下文存储层 (G3.5)
+- [ICMS 架构解析](inference_context_memory_storage/01_icms_architecture.md) — NVIDIA Rubin 平台的推理上下文存储层 (G3.5)；2026-03 起官方更名为 CMX Context Memory Storage
 
 ## 相关资源
 

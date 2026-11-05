@@ -71,10 +71,10 @@ GPU 在 AI 基础设施中几乎是最昂贵的硬件，但它的设计初衷却
 
 如果说前面讲的是“GPU 共享可以怎么做”，HAMi 就是一个把这些想法真正跑在 Kubernetes 集群里、并且已经在开源社区长期演进的参考实现。它在云原生环境中提供细粒度的 GPU 共享能力，这里专门拿出来讲它的核心机制、可观测性指标以及与其他调度方案的横向对比。
 
-- [HAMi 资源管理使用手册](hami/hmai-gpu-resources-guide.md)：异构算力管理与隔离实战指南。
-- [HAMi Prometheus 监控指标](hami/hami-prometheus-metrics.md)：构建完善的 GPU 虚拟化可观测性体系。
+- [HAMi GPU 资源管理完整指南](hami/hami-gpu-resources-guide.md)：异构算力管理与隔离实战指南。
+- [HAMi-WebUI 的 Prometheus 监控指标](hami/hami-prometheus-metrics.md)：构建完善的 GPU 虚拟化可观测性体系。
 - [KAI vs HAMi 对比分析](hami/KAI_vs_HAMi_Comparison.md)：深度对比原生 Kubernetes AI 调度器与 HAMi 方案。
-- [Flex AI 介绍](hami/flex_ai_intro.md)：探讨灵活异构算力环境下的前沿实践。
+- [GPU-Virtual-Service 与 HAMi-Core 实现对比](hami/flex_ai_intro.md)：CUDA 劫持机制与 LD_PRELOAD 方案的源码级对比。
 
 ---
 

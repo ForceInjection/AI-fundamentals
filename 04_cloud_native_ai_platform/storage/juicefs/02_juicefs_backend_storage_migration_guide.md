@@ -1,4 +1,8 @@
-# JuiceFS 后端存储变更手册
+# JuiceFS 后端存储迁移指南
+
+> 范围声明：本手册只覆盖对象存储（数据层）变更；元数据引擎迁移（`juicefs dump` / `juicefs load`）不在范围内。
+>
+> 时效口径：命令与行为依据 JuiceFS 社区版官方文档（`juicefs sync`、`juicefs config` 等），核对日期 2026-11-05。
 
 ## 1. 背景
 
@@ -33,7 +37,7 @@ JuiceFS 支持热配置切换的核心机制：
 
 **技术限制**：
 
-- 配置生效可能存在延迟（通常 < 30秒）
+- 配置生效可能存在延迟（< 30 秒为经验值，实际取决于客户端重读配置的时机；元数据引擎 heartbeat 默认 12s，配置变更经由该机制传播）
 - 大文件传输过程中不建议执行切换
 - **需要确保新旧存储后端的数据一致性**
 
@@ -139,10 +143,6 @@ mysql -h [mysql_host] -u [username] -p [database_name] < backup_[timestamp].sql
 
 # 方式2：从备份恢复 Secret
 kubectl apply -f secret-backup_[timestamp].yaml
-
-# Juicefs CSI Driver 作者 @zwwhdls：更新 Secret 不需要重启 CSI 相关组件
-# kubectl rollout restart statefulset/juicefs-csi-controller -n juicefs
-# kubectl rollout restart daemonset/juicefs-csi-node -n juicefs
 ```
 
 ### 4.2 常见问题检查
@@ -169,27 +169,15 @@ kubectl get pods -n juicefs -l app.kubernetes.io/name=juicefs-mount
 
 ```bash
 # 全量数据迁移
-juicefs sync \
-  --src-endpoint [OLD_ENDPOINT] \
-  --dst-endpoint [NEW_ENDPOINT] \
-  s3://[OLD_BUCKET]/ \
-  s3://[NEW_BUCKET]/ \
-  --src-access-key [OLD_ACCESS_KEY] \
-  --src-secret-key [OLD_SECRET_KEY] \
-  --dst-access-key [NEW_ACCESS_KEY] \
-  --dst-secret-key [NEW_SECRET_KEY] \
+# 官方语法为内联 URL 形式：s3://ACCESS_KEY:SECRET_KEY@endpoint/bucket
+# （AK/SK 中的特殊字符需 URL 转义，如 # 写作 %23）
+juicefs sync s3://OLD_ACCESS_KEY:OLD_SECRET_KEY@old-minio-endpoint:9000/old-bucket/ \
+  s3://NEW_ACCESS_KEY:NEW_SECRET_KEY@new-minio-endpoint:9000/new-bucket/ \
   --threads 32
 
-# 数据校验
-juicefs sync \
-  --src-endpoint [OLD_ENDPOINT] \
-  --dst-endpoint [NEW_ENDPOINT] \
-  s3://[OLD_BUCKET]/ \
-  s3://[NEW_BUCKET]/ \
-  --src-access-key [OLD_ACCESS_KEY] \
-  --src-secret-key [OLD_SECRET_KEY] \
-  --dst-access-key [NEW_ACCESS_KEY] \
-  --dst-secret-key [NEW_SECRET_KEY] \
+# 数据校验（--check-new / --check-all 对源端与目标端做逐字节比对）
+juicefs sync s3://OLD_ACCESS_KEY:OLD_SECRET_KEY@old-minio-endpoint:9000/old-bucket/ \
+  s3://NEW_ACCESS_KEY:NEW_SECRET_KEY@new-minio-endpoint:9000/new-bucket/ \
   --check-new \
   --check-all
 ```

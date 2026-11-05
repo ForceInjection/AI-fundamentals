@@ -36,7 +36,7 @@
 
 本系列重点解决 GPU 资源管理的三大核心挑战：
 
-1. **资源利用率提升**：通过虚拟化和切分技术，将 GPU 利用率从传统的 20-30%提升至 70-90%
+1. **资源利用率提升**：通过虚拟化和切分技术提升 GPU 利用率——业界经验量级估计可从传统的 20-30% 提升至 70-90%（无统一公开实测，实际提升取决于负载与切分方案）
 2. **多租户安全隔离**：实现硬件级、内核级、用户级的多层次隔离机制，确保企业级安全要求
 3. **成本效益优化**：通过资源池化和智能调度，显著降低 GPU TCO（总拥有成本）
 
@@ -100,10 +100,10 @@
       - [3.2.3 高性能计算集群要求](#323-高性能计算集群要求)
       - [3.2.4 AI 训练与推理场景](#324-ai-训练与推理场景)
       - [3.2.5 GPU 并发机制技术对比](#325-gpu-并发机制技术对比)
-    - [3.5 ROI 计算模型](#35-roi-计算模型)
-      - [3.5.1 成本构成分析](#351-成本构成分析)
-      - [3.5.2 收益量化方法](#352-收益量化方法)
-      - [3.5.3 投资回报评估](#353-投资回报评估)
+    - [3.3 ROI 计算模型](#33-roi-计算模型)
+      - [3.3.1 成本构成分析](#331-成本构成分析)
+      - [3.3.2 收益量化方法](#332-收益量化方法)
+      - [3.3.3 投资回报评估](#333-投资回报评估)
   - [第一部分总结](#第一部分总结)
 
 ---
@@ -114,7 +114,7 @@
 | ------------- | ----------------------------------------------- | -------------------------------------------------------- |
 | GPU           | Graphics Processing Unit                        | 图形处理单元，专门用于并行计算的处理器                   |
 | MIG           | Multi-Instance GPU                              | NVIDIA 的多实例 GPU 技术，支持硬件级 GPU 切分 [1]        |
-| HAMi          | Heterogeneous AI Computing Middleware           | 异构 AI 计算中间件，开源 GPU 资源管理方案 [2,3]          |
+| HAMi          | Heterogeneous AI Computing Virtualization Middleware | 异构 AI 计算虚拟化中间件，开源 GPU 资源管理方案 [10]     |
 | CUDA          | Compute Unified Device Architecture             | NVIDIA 的并行计算平台和编程模型 [4,5]                    |
 | API           | Application Programming Interface               | 应用程序编程接口                                         |
 | cgroup        | Control Groups                                  | Linux 内核功能，用于限制和隔离进程组的资源使用           |
@@ -146,14 +146,14 @@
 | TensorRT      | TensorRT                                        | NVIDIA 的深度学习推理优化库 [8]                          |
 | Triton        | Triton Inference Server                         | NVIDIA 的推理服务器                                      |
 | DRA           | Dynamic Resource Allocation                     | Kubernetes 动态资源分配技术，支持精细化 GPU 资源管理 [9] |
-| CDI           | Container Device Interface                      | 容器设备接口规范，实现容器与设备的无缝对接 [10]          |
+| CDI           | Container Device Interface                      | 容器设备接口规范，实现容器与设备的无缝对接 [9]           |
 | Device Plugin | Kubernetes Device Plugin                        | Kubernetes 设备插件框架，用于硬件设备管理 [11]           |
 | MPS           | Multi-Process Service                           | NVIDIA 多进程服务，支持多进程共享 GPU 资源 [12]          |
 | Docker        | Docker                                          | 容器化平台                                               |
 | Kubernetes    | Kubernetes                                      | 容器编排平台                                             |
 | Prometheus    | Prometheus                                      | 开源监控和告警系统 [13]                                  |
 | Grafana       | Grafana                                         | 开源数据可视化平台 [14]                                  |
-| ROCm          | Radeon Open Compute                             | AMD 的开源 GPU 计算平台 [15]                             |
+| ROCm          | Radeon Open Compute                             | AMD 的开源 GPU 计算平台 [2]                              |
 | HIP           | Heterogeneous-Compute Interface for Portability | AMD 的异构计算接口                                       |
 | HBM           | High Bandwidth Memory                           | 高带宽内存                                               |
 | GDDR          | Graphics Double Data Rate                       | 图形双倍数据速率内存                                     |
@@ -168,7 +168,7 @@
 
 ## 2. 引言
 
-随着人工智能、深度学习、科学计算等领域的快速发展，GPU 计算资源需求呈现指数级增长态势 [9,10]。GPU 已从传统的图形渲染专用处理器演进为现代计算基础设施的核心组件，在大规模机器学习训练和推理任务中发挥关键作用 [11]。然而，传统 GPU 使用模式在资源利用效率、多租户隔离、弹性扩展等方面存在显著局限性 [12,16]。GPU 虚拟化技术作为解决资源利用率问题的关键方案，近年来在学术界和工业界都得到了广泛关注和深入研究 [4,17,18,19,20]。
+随着人工智能、深度学习、科学计算等领域的快速发展，GPU 计算资源需求呈现指数级增长态势 [9,10]。GPU 已从传统的图形渲染专用处理器演进为现代计算基础设施的核心组件，在大规模机器学习训练和推理任务中发挥关键作用 [11]。然而，传统 GPU 使用模式在资源利用效率、多租户隔离、弹性扩展等方面存在显著局限性 [12,16]。GPU 虚拟化技术作为解决资源利用率问题的关键方案，近年来在学术界和工业界都得到了广泛关注和深入研究 [4]。
 
 本文系统性地分析 GPU 管理技术的发展背景、传统使用模式的技术瓶颈、GPU 虚拟化技术的核心价值和发展趋势，并明确研究范围和核心概念，为深入理解后续技术内容构建理论基础。
 
@@ -346,7 +346,7 @@ GPU 通常以整卡为单位分配，无法满足不同应用的精细化资源�
 
 **技术原理：**
 
-GPU 虚拟化通过在硬件和应用之间引入抽象层，实现 GPU 资源的灵活分配、安全隔离和高效利用。现代 GPU 虚拟化技术可分为硬件层、内核态与用户态三个层次，并可通过混合方案结合多层优势[13,14,18]。
+GPU 虚拟化通过在硬件和应用之间引入抽象层，实现 GPU 资源的灵活分配、安全隔离和高效利用。现代 GPU 虚拟化技术可分为硬件层、内核态与用户态三个层次，并可通过混合方案结合多层优势[13,14]。
 
 ![GPU 虚拟化层次结构](images/gpu_virtualization_layers.svg)
 
@@ -460,7 +460,7 @@ NVIDIA Multi-Instance GPU（MIG）技术代表硬件级切分的最高水平，�
 
 - **MIG 性能优化**：新的 Streaming Multiprocessor（SM）架构减少了上下文切换开销，MIG 实例相对于物理 GPU 具有接近原生的性能表现（95-98%）
 
-- **安全隔离增强**：硬件级的 Confidential Computing 支持，为多租户环境提供了更强的安全保障（侧信道攻击防护 > 99.9%）
+- **安全隔离增强**：硬件级的 Confidential Computing 支持，为多租户环境提供了更强的安全保障（侧信道攻击的量化防护率目前没有公开实测数据）
 
 **场景化适用性分析：**
 
@@ -476,7 +476,7 @@ NVIDIA Multi-Instance GPU（MIG）技术代表硬件级切分的最高水平，�
 
 **企业级部署解决方案：**
 
-- **HAMi 与 MIG 集成**：开源 HAMi 中间件与 NVIDIA MIG 技术深度集成，提供统一的资源管理接口 [2,3]
+- **HAMi 与 MIG 集成**：开源 HAMi 中间件与 NVIDIA MIG 技术深度集成，提供统一的资源管理接口 [10]
   - 支持动态切片创建和销毁
   - 提供多级资源配额管理
   - 实现跨厂商 GPU 统一管理
@@ -519,11 +519,11 @@ NVIDIA Multi-Instance GPU（MIG）技术代表硬件级切分的最高水平，�
 
 **技术原理：**
 
-GPU 远程调用技术使应用程序能够透明地访问和使用远程 GPU 资源，突破单机 GPU 数量限制。rCUDA 等研究项目为此领域奠定了重要的技术基础[19]。
+GPU 远程调用技术使应用程序能够透明地访问和使用远程 GPU 资源，突破单机 GPU 数量限制。rCUDA 等研究项目为此领域奠定了重要的技术基础。
 
 **核心技术架构：**
 
-**1. 网络透明的 GPU 访问机制** [19,21]：
+**1. 网络透明的 GPU 访问机制**：
 
 远程 GPU 调用通过 API 拦截机制实现透明性，主要包括：
 
@@ -533,7 +533,7 @@ GPU 远程调用技术使应用程序能够透明地访问和使用远程 GPU �
 - **响应处理**：解析远程服务器响应，转换为标准 CUDA 错误码
 - **类型适配**：支持不同内存拷贝方向的自动路由
 
-**2. 客户端-服务器架构设计** [19,21]：
+**2. 客户端-服务器架构设计**：
 
 远程 GPU 调用采用客户端-服务器架构：
 
@@ -552,7 +552,7 @@ GPU 远程调用技术使应用程序能够透明地访问和使用远程 GPU �
 | NDR400 InfiniBand (ConnectX-7) | 400Gb/s | 0.6μs | 0.008% | NVIDIA DGX H200 集群       |
 | RoCEv2 400Gb                   | 380Gb/s | 1.0μs | 0.12%  | 标准以太网环境             |
 
-> _数据来源：参见 [22]。ConnectX-8 预计于 2025 年 Q2 开始出货；具体数据依测试环境与拓扑而异。_
+> _ConnectX-8 预计于 2025 年 Q2 开始出货；具体数据依测试环境与拓扑而异。_
 
 协议设计包括：
 
@@ -572,7 +572,7 @@ GPU 远程调用技术使应用程序能够透明地访问和使用远程 GPU �
 
 远程 GPU 调用的性能优化是确保系统实用性的关键，主要包括：
 
-**1. 延迟优化技术** [19,22]：
+**1. 延迟优化技术**：
 
 - **请求批处理**：将多个小请求合并为一个大请求，减少网络往返次数，支持动态批处理大小和超时控制
 - **异步处理机制**：非阻塞请求提交，并发处理多个请求，回调机制处理结果
@@ -1164,7 +1164,7 @@ flowchart TD
 | ---------------- | ---------------- | ------ | -------------- | ---------------- | -------------------- |
 | **多租户需求**   | 强隔离需求       | 极高   | 硬件级隔离     | 零干扰、零泄露   | MIG、SR-IOV          |
 |                  | 最大租户数       | 高     | 100-1000 个    | 并发支持能力     | 动态分区、资源池化   |
-|                  | 资源配额强制执行 | 高     | 严格限制       | 配额准确性 99.9% | cgroup、资源控制器   |
+|                  | 资源配额强制执行 | 高     | 严格限制       | 配额严格生效（经验目标，无公开实测准确率） | cgroup、资源控制器   |
 |                  | 计费粒度要求     | 中     | 分钟级计费     | 计费精度、透明度 | 监控系统、计量工具   |
 | **弹性伸缩需求** | 自动扩缩容支持   | 极高   | 秒级响应       | 扩缩容时间<30s   | 容器编排、自动调度   |
 |                  | 扩缩容响应时间   | 高     | <30 秒         | 响应速度         | 预热机制、快速启动   |
@@ -1404,11 +1404,11 @@ flowchart TD
 4. **虚拟化平台**：结合 vGPU 和上层并发技术
 5. **实时系统**：采用时间分片确保响应时间
 
-### 3.5 ROI 计算模型
+### 3.3 ROI 计算模型
 
 建立量化的 ROI 计算模型，为技术选型提供财务决策支持。
 
-#### 3.5.1 成本构成分析
+#### 3.3.1 成本构成分析
 
 **详细成本模型：**
 
@@ -1440,7 +1440,7 @@ flowchart TD
 - **可接受项目：** ROI 50-150%，回收期 3-5 年
 - **需要重新评估：** ROI < 50%，回收期 > 5 年
 
-#### 3.5.2 收益量化方法
+#### 3.3.2 收益量化方法
 
 **收益量化框架：**
 
@@ -1448,7 +1448,7 @@ flowchart TD
 - **间接收益**：业务效率提升、创新能力增强、风险降低
 - **战略收益**：市场竞争力提升、技术领先优势、生态系统价值
 
-#### 3.5.3 投资回报评估
+#### 3.3.3 投资回报评估
 
 **ROI 评估标准：**
 
@@ -1501,16 +1501,10 @@ flowchart TD
 7. AWS. "Amazon EC2 GPU Instances: Technical Deep Dive". AWS Technical Guide, 2023. (<https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/accelerated-computing-instances.html>)
 8. Microsoft. "Azure GPU Virtualization Technologies". Microsoft Azure Documentation, 2023. (<https://docs.microsoft.com/en-us/azure/virtual-machines/sizes-gpu>)
 9. NVIDIA. "NVIDIA Container Toolkit Documentation". NVIDIA Developer Documentation, 2023. (<https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/>)
-10. HAMi Project. "Heterogeneous AI Computing Middleware Architecture". HAMi GitHub Repository, 2023. (<https://github.com/Project-HAMi/HAMi-core>)
+10. HAMi Project. "Heterogeneous AI Computing Virtualization Middleware Architecture". HAMi GitHub Repository, 2023. (<https://github.com/Project-HAMi/HAMi>)
 11. MLPerf Organization. "MLPerf Inference Benchmark Results". MLPerf Official Website, 2023. (<https://mlperf.org/inference-results/>)
 12. Prometheus Authors. "GPU Monitoring with Prometheus". Prometheus Documentation, 2023. (<https://prometheus.io/docs/guides/gpu-monitoring/>)
 13. Grafana Labs. "GPU Monitoring Dashboards and Alerts". Grafana Documentation, 2023. (<https://grafana.com/docs/grafana/latest/dashboards/gpu-monitoring/>)
 14. Kubernetes Authors. "Device Plugin Framework for GPU Management". Kubernetes Documentation, 2023. (<https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/device-plugins/>)
-15. Gartner. "AI Infrastructure Market Guide". Gartner Research Report, 2023. (<https://www.gartner.com/en/documents/4012347>)
-16. IEEE. "GPU Virtualization: State of the Art and Future Directions". IEEE Transactions on Parallel and Distributed Systems, vol. 34, no. 5, pp. 1234-1256, 2023. (<https://ieeexplore.ieee.org/document/9876543>)
-17. ACM. "A Survey of GPU Resource Management Techniques". ACM Computing Surveys, vol. 55, no. 2, pp. 1-35, 2023. (<https://dl.acm.org/doi/10.1145/3542921>)
-18. USENIX. "Performance Isolation in Multi-tenant GPU Environments". USENIX ATC Proceedings, pp. 345-358, 2023. (<https://www.usenix.org/conference/atc23/presentation/zhang-gpu>)
-19. arXiv. "Efficient GPU Sharing for Deep Learning Workloads". arXiv Preprint, arXiv:2301.12345, 2023. (<https://arxiv.org/abs/2301.12345>)
-20. IDC. "Worldwide GPU Market Forecast, 2024-2028". IDC Market Analysis Report, 2023. (<https://www.idc.com/getdoc.jsp?containerId=US50546523>)
 
 ---

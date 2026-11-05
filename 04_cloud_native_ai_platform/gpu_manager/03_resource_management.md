@@ -133,18 +133,13 @@
 
 本章将深入探讨 GPU 切分技术的实现原理，重点以 HAMi 为例说明软件级 GPU 切分在 Kubernetes 环境下的实际应用。关于 GPU 切分技术的基本定义和分类，请参考[2.3.2 节 GPU 切分技术](01_basic_theory.md#232-gpu-切分技术)。
 
-**学习目标：**
-
-- 掌握 NVIDIA MIG 技术的工作原理和配置方法
-- 理解 HAMi 在 Kubernetes 环境下的 GPU 切分实现
-- 了解上层应用如何使用 GPU 切分服务
-- 掌握切分技术与虚拟化技术的结合应用
+**学习目标：** 本章以 NVIDIA MIG 的配置方法与 HAMi 在 Kubernetes 下的 GPU 切分实现为主线，说明上层应用如何使用切分服务，以及切分与虚拟化技术的结合方式。
 
 ### 9.1 HAMi 结合硬件级 GPU 切分技术
 
 #### 9.1.1 HAMi 与 MIG 技术的集成架构
 
-HAMi 通过与 NVIDIA MIG 技术的深度集成，为 Kubernetes 环境提供了硬件级 GPU 切分能力。这种集成架构结合了 MIG 的硬件级隔离优势（详见 @ref 4.2.1 "NVIDIA MIG 技术深度解析"）和 HAMi 的容器化管理能力，为云原生 AI 应用提供了高性能、高隔离的 GPU 资源服务。
+HAMi 通过与 NVIDIA MIG 技术的深度集成，为 Kubernetes 环境提供了硬件级 GPU 切分能力。这种集成架构结合了 MIG 的硬件级隔离优势（详见 [5.2.1 NVIDIA MIG 技术深度解析](02_virtualization.md#521-nvidia-mig--multi-instance-gpu-技术深度解析)）和 HAMi 的容器化管理能力，为云原生 AI 应用提供了高性能、高隔离的 GPU 资源服务。
 
 **集成优势：**
 
@@ -264,15 +259,22 @@ func (p *MIGAwarePlugin) Filter(ctx context.Context,
 }
 
 // getMIGResourceRequest 解析 Pod 中的 MIG 资源请求
+// 动态 MIG 模式下，任务仍以 nvidia.com/gpu + nvidia.com/gpumem 声明资源，
+// 通过注解 nvidia.com/vgpu-mode: "mig" 限定到 MIG 节点；
+// HAMi 不暴露 hami.io/mig-* 形式的资源名，具体切多小的实例由设备插件
+// 按 device-config 中的 MIG 模板自动匹配
 func getMIGResourceRequest(pod *v1.Pod) *MIGResourceRequest {
+    if pod.Annotations["nvidia.com/vgpu-mode"] != "mig" {
+        return nil
+    }
     for _, container := range pod.Spec.Containers {
-        if migProfile, exists := container.Resources.Requests["hami.io/mig-1g.5gb"]; exists {
+        if gpu, exists := container.Resources.Requests["nvidia.com/gpu"]; exists {
+            mem := container.Resources.Requests["nvidia.com/gpumem"]
             return &MIGResourceRequest{
-                Profile: "1g.5gb",
-                Count:   int(migProfile.Value()),
+                Count:       int(gpu.Value()),
+                MemRequestMB: mem.Value(), // 由插件匹配满足该显存需求的 MIG 模板
             }
         }
-        // 支持其他 MIG 配置： 2g.10gb, 3g.20gb, 7g.40gb 等
     }
     return nil
 }
@@ -282,7 +284,7 @@ func getMIGResourceRequest(pod *v1.Pod) *MIGResourceRequest {
 
 #### 9.1.4 HAMi 动态 MIG 切片插件
 
-HAMi 动态 MIG 切片插件扩展了静态 MIG 配置（参见 @ref 4.2.1.2 "GPU 实例的创建和管理"），实现了按需创建和自动管理 MIG 实例的能力。
+HAMi 动态 MIG 切片插件扩展了静态 MIG 配置（参见 [5.2.1.2 GPU 实例的创建和管理](02_virtualization.md#5212-gpu-实例的创建和管理)），实现了按需创建和自动管理 MIG 实例的能力。
 
 **核心特性：**
 
@@ -573,7 +575,7 @@ type NodeGPUStatus struct {
 int adaptive_slicing_decision(dynamic_slicing_engine_t *engine) {
     workload_metrics_t *metrics = &engine->current_metrics;
 
-    // === 第一步：负载模式识别 ===
+    // 第一步：负载模式识别
     workload_pattern_t pattern = classify_workload_pattern(metrics);
 
     switch (pattern) {
@@ -700,23 +702,21 @@ typedef struct {
 
 // 混合切分任务调度算法
 int schedule_hybrid_task(gpu_task_t *task) {
-    // === 第一阶段：空间分区分配 ===
-    // 根据任务的内存需求分配独立的 GPU 分区
+    // 第一阶段：空间分区分配    // 根据任务的内存需求分配独立的 GPU 分区
     int partition = allocate_spatial_partition(task->memory_requirement);
     if (partition < 0) {
         printf("Failed to allocate spatial partition\n");
         return -1;
     }
 
-    // === 第二阶段：时间片分配 ===
-    // 在分配的分区内进行时间调度
+    // 第二阶段：时间片分配    // 在分配的分区内进行时间调度
     int time_slot = allocate_time_slot(partition, task->estimated_duration);
     if (time_slot < 0) {
         release_spatial_partition(partition, task->memory_requirement);
         return -1;
     }
 
-    // === 第三阶段：任务执行 ===
+    // 第三阶段：任务执行
     hybrid_schedule_entry_t entry = {
         .partition_id = partition,
         .time_slice_id = time_slot,
@@ -753,21 +753,21 @@ typedef struct {
 int hybrid_schedule_task(gpu_task_t *task, scheduling_matrix_t *matrix) {
     pthread_mutex_lock(&matrix->matrix_lock);
 
-    // === 第一阶段：空间维度优化分配 ===
+    // 第一阶段：空间维度优化分配
     int best_spatial = find_optimal_spatial_partition(task, matrix);
     if (best_spatial < 0) {
         pthread_mutex_unlock(&matrix->matrix_lock);
         return -ENOMEM; // 空间资源不足
     }
 
-    // === 第二阶段：时间维度优化分配 ===
+    // 第二阶段：时间维度优化分配
     int best_temporal = find_optimal_temporal_slot(task, matrix, best_spatial);
     if (best_temporal < 0) {
         pthread_mutex_unlock(&matrix->matrix_lock);
         return -EBUSY; // 时间资源不足
     }
 
-    // === 第三阶段：资源预留和配置 ===
+    // 第三阶段：资源预留和配置
     schedule_cell_t *cell = &matrix->cells[best_spatial][best_temporal];
     cell->is_occupied = true;
     cell->priority = task->priority;
@@ -861,7 +861,7 @@ int elastic_scaling_decision(dynamic_slicing_engine_t *engine,
     float current_utilization = engine->current_metrics.gpu_utilization;
     uint64_t current_time = get_current_time_us();
 
-    // === 扩容决策 ===
+    // 扩容决策
     if (current_utilization > config->scale_up_threshold) {
         if (is_cooldown_expired(engine->last_scale_up_time,
                                config->scale_up_cooldown_sec)) {
@@ -869,7 +869,7 @@ int elastic_scaling_decision(dynamic_slicing_engine_t *engine,
         }
     }
 
-    // === 缩容决策 ===
+    // 缩容决策
     if (current_utilization < config->scale_down_threshold) {
         if (is_cooldown_expired(engine->last_scale_down_time,
                                config->scale_down_cooldown_sec)) {
@@ -1128,12 +1128,7 @@ flowchart TD
 
 本章将深入探讨 GPU 资源管理的核心技术，包括显存管理、计算资源调度等关键技术的实现原理。
 
-**学习目标：**
-
-- 掌握显存池化和动态分配的实现机制
-- 理解统一内存技术的工作原理和应用场景
-- 学习显存超分技术的风险控制策略
-- 了解计算资源调度的优化方法
+**学习目标：** 本章覆盖显存池化与动态分配、统一内存的工作原理与应用场景、显存超分的风险控制，以及计算资源调度的优化方法。
 
 ### 10.1 显存管理技术
 
@@ -1141,7 +1136,7 @@ flowchart TD
 
 #### 10.1.1 显存池化和动态分配
 
-显存池化是提高 GPU 资源利用率的关键技术，它通过将多个 GPU 卡的显存合并为一个显存池，实现显存的动态分配和管理。
+显存池化是提高 GPU 资源利用率的关键技术。需要说明的是，「将多个 GPU 卡的显存合并为一个显存池」并非 CUDA 的通用能力，只有在特定框架或驱动能力（如 vGPU 池化方案、远程 GPU 调用中间件、支持聚合显存的专有驱动）之下才能实现；实现显存的动态分配和管理后，收益主要体现在分配灵活性与利用率上。
 
 参考实现：`hybrid_slicing.c`
 
@@ -1538,13 +1533,11 @@ void collect_performance_metrics(void) {
     int task_count = 0;         // 活跃任务计数器
     unsigned long flags;        // 中断标志，用于保存/恢复中断状态
 
-    // === 第一步：获取自旋锁并禁用中断 ===
-    // 使用 spin_lock_irqsave 确保在多核环境下的原子性操作
+    // 第一步：获取自旋锁并禁用中断    // 使用 spin_lock_irqsave 确保在多核环境下的原子性操作
     // 同时禁用本地中断，防止中断处理程序干扰数据收集过程
     spin_lock_irqsave(&perf_metrics.metrics_lock, flags);
 
-    // === 第二步：遍历活跃任务列表，收集性能数据 ===
-    // 使用 Linux 内核的 list_for_each_entry 宏遍历链表
+    // 第二步：遍历活跃任务列表，收集性能数据    // 使用 Linux 内核的 list_for_each_entry 宏遍历链表
     // 这是一个高效的链表遍历方式，避免了手动指针操作
     list_for_each_entry(task, &active_tasks, list) {
         // 累加每个任务的执行时间，用于后续计算平均延迟
@@ -1556,24 +1549,20 @@ void collect_performance_metrics(void) {
         update_task_metrics(task);
     }
 
-    // === 第三步：计算平均延迟 ===
-    // 防止除零错误，只有在有活跃任务时才计算平均值
+    // 第三步：计算平均延迟    // 防止除零错误，只有在有活跃任务时才计算平均值
     if (task_count > 0) {
         // 计算所有任务的平均执行延迟
         // 这是系统性能的关键指标，用于性能分析和调优
         perf_metrics.average_latency = total_latency / task_count;
     }
 
-    // === 第四步：原子更新全局指标 ===
-    // 使用原子操作更新活跃任务数，确保多线程环境下的数据一致性
+    // 第四步：原子更新全局指标    // 使用原子操作更新活跃任务数，确保多线程环境下的数据一致性
     atomic_set(&perf_metrics.active_tasks, task_count);
 
-    // === 第五步：释放锁并恢复中断 ===
-    // 恢复之前保存的中断状态，释放自旋锁
+    // 第五步：释放锁并恢复中断    // 恢复之前保存的中断状态，释放自旋锁
     spin_unlock_irqrestore(&perf_metrics.metrics_lock, flags);
 
-    // === 第六步：持久化历史数据 ===
-    // 将当前收集的指标数据记录到历史数据库中
+    // 第六步：持久化历史数据    // 将当前收集的指标数据记录到历史数据库中
     // 用于长期趋势分析、性能基线建立和异常检测
     record_historical_metrics();
 }
@@ -1619,32 +1608,28 @@ struct monitor_event {
 void real_time_monitor(void) {
     struct monitor_event event;  // 监控事件结构体，用于传递事件详细信息
 
-    // === 第一层监控：内存压力检测 ===
-    // 检查 GPU 显存使用率、内存碎片化程度、分配失败率等指标
+    // 第一层监控：内存压力检测    // 检查 GPU 显存使用率、内存碎片化程度、分配失败率等指标
     // 当内存使用率超过阈值(通常 85%)或出现大量分配失败时触发
     if (check_memory_pressure(&event)) {
         // 处理内存压力事件：启动内存回收、降低分配速率、触发告警等
         handle_memory_pressure_event(&event);
     }
 
-    // === 第二层监控：带宽限制检测 ===
-    // 监控 GPU 内存带宽使用情况，检测是否超过 QoS 配置的带宽限制
+    // 第二层监控：带宽限制检测    // 监控 GPU 内存带宽使用情况，检测是否超过 QoS 配置的带宽限制
     // 包括 PCIe 带宽、 HBM 带宽、 NVLink 带宽等多种带宽类型
     if (check_bandwidth_limits(&event)) {
         // 处理带宽限制事件：调整任务优先级、限流、负载重分配等
         handle_bandwidth_limit_event(&event);
     }
 
-    // === 第三层监控：服务质量(QoS)违规检测 ===
-    // 检查各租户/任务的 SLA 指标：响应时间、吞吐量、可用性等
+    // 第三层监控：服务质量(QoS)违规检测    // 检查各租户/任务的 SLA 指标：响应时间、吞吐量、可用性等
     // 当实际性能低于承诺的服务水平时触发违规事件
     if (check_qos_violations(&event)) {
         // 处理 QoS 违规事件：资源重新分配、优先级提升、补偿机制等
         handle_qos_violation_event(&event);
     }
 
-    // === 第四步：更新监控仪表板 ===
-    // 将最新的监控数据推送到可视化仪表板
+    // 第四步：更新监控仪表板    // 将最新的监控数据推送到可视化仪表板
     // 包括实时图表更新、告警状态刷新、趋势分析等
     update_monitoring_dashboard();
 }
@@ -1853,24 +1838,20 @@ typedef struct {
 // 性能数据采样算法 - 多缓冲区滑动窗口监控系统
 // 该函数实现了高效的 GPU 性能指标采样，支持异常检测和实时告警
 int sample_performance_metrics(performance_monitor_t *monitor) {
-    // === 遍历所有监控缓冲区 ===
-    // 每个缓冲区对应不同的 GPU 或不同类型的性能指标
+    // 遍历所有监控缓冲区    // 每个缓冲区对应不同的 GPU 或不同类型的性能指标
     for (int i = 0; i < monitor->buffer_count; i++) {
         metric_buffer_t *buffer = &monitor->metric_buffers[i];
 
-        // === 第一步：采样当前 GPU 性能指标 ===
-        // 收集 GPU 利用率、内存使用率、温度、功耗等关键指标
+        // 第一步：采样当前 GPU 性能指标        // 收集 GPU 利用率、内存使用率、温度、功耗等关键指标
         // 这是一个低开销的操作，通常通过 NVML API 实现
         gpu_metrics_t current_metrics;
         collect_gpu_metrics(&current_metrics);
 
-        // === 第二步：更新滑动窗口缓冲区 ===
-        // 使用滑动窗口算法维护最近 N 个时间点的性能数据
+        // 第二步：更新滑动窗口缓冲区        // 使用滑动窗口算法维护最近 N 个时间点的性能数据
         // 这样可以平滑瞬时波动，提供更稳定的性能趋势分析
         update_sliding_window(buffer, &current_metrics);
 
-        // === 第三步：基于历史数据进行异常检测 ===
-        // 使用统计学方法（如 3-sigma 规则）或机器学习算法检测异常
+        // 第三步：基于历史数据进行异常检测        // 使用统计学方法（如 3-sigma 规则）或机器学习算法检测异常
         // 异常包括：性能突然下降、资源使用率异常飙升、温度过高等
         if (detect_anomaly(buffer, &current_metrics)) {
             // 触发告警机制：发送通知、记录日志、启动自动恢复流程
@@ -1902,8 +1883,7 @@ float predict_performance(performance_predictor_t *predictor,
                          float *input_features) {
     float prediction = 0.0;  // 初始化预测值
 
-    // === 第一步：计算特征的线性组合 ===
-    // 实现线性回归的核心公式： y = w1*x1 + w2*x2 + ... + wn*xn
+    // 第一步：计算特征的线性组合    // 实现线性回归的核心公式： y = w1*x1 + w2*x2 + ... + wn*xn
     // 其中 wi 是特征权重， xi 是输入特征值
     for (int i = 0; i < predictor->feature_count; i++) {
         // 每个特征值乘以对应的权重，累加到预测结果中
@@ -1911,18 +1891,15 @@ float predict_performance(performance_predictor_t *predictor,
         prediction += input_features[i] * predictor->feature_weights[i];
     }
 
-    // === 第二步：应用非线性激活函数 ===
-    // 激活函数可以是 sigmoid 、 ReLU 、 tanh 等，用于引入非线性特性
+    // 第二步：应用非线性激活函数    // 激活函数可以是 sigmoid 、 ReLU 、 tanh 等，用于引入非线性特性
     // 这使得模型能够捕捉更复杂的性能模式和关系
     prediction = apply_activation_function(prediction);
 
-    // === 第三步：计算预测置信度 ===
-    // 基于输入特征与训练数据的相似度计算预测的可信程度
+    // 第三步：计算预测置信度    // 基于输入特征与训练数据的相似度计算预测的可信程度
     // 置信度低的预测可能需要更保守的资源分配策略
     float confidence = calculate_prediction_confidence(predictor, input_features);
 
-    // === 第四步：返回最终预测结果 ===
-    // 预测值通常表示任务执行时间、资源需求量或性能得分
+    // 第四步：返回最终预测结果    // 预测值通常表示任务执行时间、资源需求量或性能得分
     return prediction;
 }
 ```
@@ -1946,46 +1923,41 @@ typedef struct {
 int genetic_algorithm_optimize(adaptive_optimizer_t *optimizer) {
     population_t population;  // 种群：包含多个候选参数配置的集合
 
-    // === 第一步：初始化种群 ===
-    // 在参数空间中随机生成初始种群，每个个体代表一组 GPU 配置参数
+    // 第一步：初始化种群    // 在参数空间中随机生成初始种群，每个个体代表一组 GPU 配置参数
     // 参数可能包括：内存池大小、调度时间片、缓存策略等
     initialize_population(&population, optimizer->param_space);
 
-    // === 主进化循环：模拟自然选择过程 ===
+    // 主进化循环：模拟自然选择过程
     for (int generation = 0; generation < MAX_GENERATIONS; generation++) {
-        // === 第二步：评估每个个体的适应度 ===
-        // 运行 GPU 基准测试，评估每组参数配置的性能表现
+        // 第二步：评估每个个体的适应度        // 运行 GPU 基准测试，评估每组参数配置的性能表现
         // 适应度函数综合考虑吞吐量、延迟、资源利用率等多个目标
         evaluate_fitness(&population, optimizer->targets);
 
-        // === 第三步：选择操作（适者生存）===
+        // 第三步：选择操作（适者生存）
         // 使用轮盘赌选择、锦标赛选择等方法选出优秀个体
         // 适应度高的个体有更大概率被选中进入下一代
         population_t selected = selection(&population);
 
-        // === 第四步：交叉操作（基因重组）===
+        // 第四步：交叉操作（基因重组）
         // 将选中的个体进行配对，交换部分参数生成新的后代
         // 这模拟了生物学中的基因重组过程，产生新的参数组合
         population_t offspring = crossover(&selected);
 
-        // === 第五步：变异操作（引入随机性）===
+        // 第五步：变异操作（引入随机性）
         // 以一定概率随机修改个体的部分参数，防止算法陷入局部最优
         // 变异率通常设置为 1%-5%，平衡探索和利用
         mutation(&offspring, MUTATION_RATE);
 
-        // === 第六步：更新种群 ===
-        // 用新生成的后代替换当前种群，进入下一代进化
+        // 第六步：更新种群        // 用新生成的后代替换当前种群，进入下一代进化
         population = offspring;
 
-        // === 第七步：检查收敛条件 ===
-        // 如果种群适应度不再显著提升，或达到预设精度，则停止进化
+        // 第七步：检查收敛条件        // 如果种群适应度不再显著提升，或达到预设精度，则停止进化
         if (check_convergence(&population)) {
             break;  // 提前终止，避免无效计算
         }
     }
 
-    // === 第八步：应用最优参数配置 ===
-    // 将进化得到的最优参数配置应用到实际的 GPU 系统中
+    // 第八步：应用最优参数配置    // 将进化得到的最优参数配置应用到实际的 GPU 系统中
     apply_optimal_parameters(optimizer, &population);
 
     return 0;  // 优化成功完成
@@ -2010,50 +1982,43 @@ typedef struct {
 // 执行基准测试 - 高精度 GPU 性能基准测试框架
 // 该函数实现了科学严谨的 GPU 性能测试，确保结果的准确性和可重复性
 int run_benchmark_suite(benchmark_suite_t *suite) {
-    // === 遍历所有测试用例 ===
-    // 每个测试用例针对不同的 GPU 工作负载模式（计算密集、内存密集等）
+    // 遍历所有测试用例    // 每个测试用例针对不同的 GPU 工作负载模式（计算密集、内存密集等）
     for (int i = 0; i < suite->case_count; i++) {
         benchmark_case_t *test_case = &suite->test_cases[i];
 
-        // === 第一步： GPU 预热阶段 ===
-        // 预热是基准测试的关键步骤，用于：
+        // 第一步： GPU 预热阶段        // 预热是基准测试的关键步骤，用于：
         // 1. 激活 GPU 的动态频率调节，使其达到稳定的工作状态
         // 2. 预加载必要的数据到 GPU 缓存中
         // 3. 消除冷启动对测试结果的影响
         warmup_gpu(test_case->warmup_iterations);
 
-        // === 第二步：正式性能测试 ===
+        // 第二步：正式性能测试
         benchmark_result_t result;  // 存储测试结果的数据结构
 
         // 执行多次迭代测试以获得统计学上有意义的结果
         for (int j = 0; j < test_case->iterations; j++) {
             struct timespec start, end;  // 高精度时间戳结构
 
-            // === 记录测试开始时间 ===
-            // 使用 CLOCK_MONOTONIC 确保时间测量不受系统时间调整影响
+            // 记录测试开始时间            // 使用 CLOCK_MONOTONIC 确保时间测量不受系统时间调整影响
             // 这是一个单调递增的时钟，适合性能测量
             clock_gettime(CLOCK_MONOTONIC, &start);
 
-            // === 执行实际的 GPU 测试负载 ===
-            // 这里运行具体的 GPU 计算任务（矩阵乘法、卷积、内存拷贝等）
+            // 执行实际的 GPU 测试负载            // 这里运行具体的 GPU 计算任务（矩阵乘法、卷积、内存拷贝等）
             execute_test_workload(test_case);
 
-            // === 记录测试结束时间 ===
+            // 记录测试结束时间
             clock_gettime(CLOCK_MONOTONIC, &end);
 
-            // === 计算精确的执行时间 ===
-            // 将纳秒精度的时间差转换为浮点秒数
+            // 计算精确的执行时间            // 将纳秒精度的时间差转换为浮点秒数
             // 这种计算方式可以达到纳秒级的时间测量精度
             double elapsed = (end.tv_sec - start.tv_sec) +
                            (end.tv_nsec - start.tv_nsec) / 1e9;
 
-            // === 记录单次测试结果 ===
-            // 将执行时间添加到结果集合中，用于后续统计分析
+            // 记录单次测试结果            // 将执行时间添加到结果集合中，用于后续统计分析
             record_measurement(&result, elapsed);
         }
 
-        // === 第三步：统计分析和结果处理 ===
-        // 计算平均值、标准差、置信区间等统计指标
+        // 第三步：统计分析和结果处理        // 计算平均值、标准差、置信区间等统计指标
         // 识别和处理异常值，生成性能报告
         analyze_benchmark_result(&result, &suite->collector);
     }
@@ -2159,32 +2124,27 @@ typedef struct {
 struct resource_estimate estimate_llm_resources(llm_training_config_t *config) {
     struct resource_estimate est = {0};  // 初始化资源估算结果
 
-    // === 第一部分：模型参数显存需求计算 ===
-    // 计算存储模型权重所需的显存大小
+    // 第一部分：模型参数显存需求计算    // 计算存储模型权重所需的显存大小
     // 不同精度类型占用的字节数： FP32=4 字节， FP16/BF16=2 字节， INT8=1 字节
     uint64_t param_memory = config->model_parameters *
                            get_precision_bytes(config->precision);
 
-    // === 第二部分：优化器状态显存需求计算 ===
-    // Adam 优化器需要存储每个参数的一阶矩估计(momentum)和二阶矩估计(variance)
+    // 第二部分：优化器状态显存需求计算    // Adam 优化器需要存储每个参数的一阶矩估计(momentum)和二阶矩估计(variance)
     // 因此需要 2 倍于参数量的额外显存空间
     uint64_t optimizer_memory = param_memory * 2;
 
-    // === 第三部分：梯度显存需求计算 ===
-    // 反向传播过程中需要存储每个参数的梯度
+    // 第三部分：梯度显存需求计算    // 反向传播过程中需要存储每个参数的梯度
     // 梯度的显存需求与参数显存需求相等
     uint64_t gradient_memory = param_memory;
 
-    // === 第四部分：激活值显存需求计算 ===
-    // 前向传播过程中的中间激活值需要保存用于反向传播
+    // 第四部分：激活值显存需求计算    // 前向传播过程中的中间激活值需要保存用于反向传播
     // 激活值大小与序列长度、批次大小、模型大小密切相关
     // 这里使用简化的线性估算公式（实际情况更复杂）
     uint64_t activation_memory = config->sequence_length *
                                 config->batch_size *
                                 config->model_parameters / 1000; // 简化估算
 
-    // === 第五部分：应用内存优化策略 ===
-
+    // 第五部分：应用内存优化策略
     // 梯度检查点优化：重计算激活值以节省内存
     // 通过牺牲计算时间来大幅减少激活值的内存占用
     if (config->use_gradient_checkpointing) {
@@ -2197,13 +2157,11 @@ struct resource_estimate estimate_llm_resources(llm_training_config_t *config) {
         optimizer_memory /= 8; // ZeRO-3 可将优化器状态分片到 8 个 GPU
     }
 
-    // === 第六部分：汇总总内存需求 ===
-    // 将所有组件的内存需求相加得到总的显存需求
+    // 第六部分：汇总总内存需求    // 将所有组件的内存需求相加得到总的显存需求
     est.memory_required = param_memory + optimizer_memory +
                          gradient_memory + activation_memory;
 
-    // === 第七部分：计算所需计算量 ===
-    // 估算训练过程中的浮点运算次数（ FLOPs ）
+    // 第七部分：计算所需计算量    // 估算训练过程中的浮点运算次数（ FLOPs ）
     // 大致为： 6 倍参数量 × 序列长度 × 批次大小
     // 这个公式考虑了前向传播(2 倍)和反向传播(4 倍)的计算开销
     est.compute_required = config->model_parameters *
@@ -2327,15 +2285,7 @@ flowchart TD
 
 本章将详细介绍 CUDA 流（ CUDA Streams ）和 CUDA 多进程服务（ MPS ）技术的实现原理、应用场景和性能优化策略。这些技术作为应用层的并发优化机制，与前面章节介绍的虚拟化技术形成互补，共同构建完整的 GPU 资源管理体系。
 
-**学习目标：**
-
-- 掌握 CUDA 流的基本概念、创建和管理方法
-- 理解 CUDA 流的并发执行模型和同步机制
-- 学会使用多流技术实现 GPU 计算和内存传输的重叠
-- 了解 CUDA 多进程服务（ MPS ）的工作原理和配置方法
-- 掌握 MPS 在容器化环境中的部署和优化策略
-- 能够根据应用场景选择合适的并发优化技术
-- 理解 CUDA 流和 MPS 与 GPU 虚拟化技术的互补关系
+**学习目标：** 本章讲解 CUDA 流的基本概念、并发执行模型与同步机制，多流重叠计算与传输的用法，CUDA MPS 的工作原理、配置与容器化部署，以及两者与 GPU 虚拟化技术的互补关系。
 
 ### 11.1 CUDA 流技术原理
 
@@ -2443,9 +2393,9 @@ nvidia-cuda-mps-control -d
 # 设置 MPS 服务器
 echo "start_server -uid $USER" | nvidia-cuda-mps-control
 
-# 设置客户端限制
+# 设置默认限制（set_default_active_thread_percentage 只接一个百分比参数，不带设备号）
 echo "set_default_device_pinned_mem_limit 0 2G" | nvidia-cuda-mps-control
-echo "set_default_active_thread_percentage 0 50" | nvidia-cuda-mps-control
+echo "set_default_active_thread_percentage 50" | nvidia-cuda-mps-control
 
 # 停止 MPS 服务
 echo "quit" | nvidia-cuda-mps-control
@@ -2645,29 +2595,24 @@ struct mps_resource_monitor {
 // 动态调整客户端资源分配 - MPS 智能资源调度算法
 // 该函数实现了基于负载感知的动态资源分配，优化多客户端 GPU 资源利用率
 int dynamic_resource_adjustment(struct mps_resource_monitor *monitor) {
-    // === 第一步：计算基础资源分配比例 ===
-    // 采用公平分配策略，将 GPU 资源平均分配给所有活跃客户端
+    // 第一步：计算基础资源分配比例    // 采用公平分配策略，将 GPU 资源平均分配给所有活跃客户端
     // 这是资源分配的起始点，后续会根据实际负载进行动态调整
     uint32_t base_thread_percentage = 100 / monitor->active_clients;
 
-    // === 第二步：基于 SM 利用率的负载感知调整 ===
-    // 根据当前 GPU 流式多处理器(SM)的整体利用率动态调整资源分配策略
+    // 第二步：基于 SM 利用率的负载感知调整    // 根据当前 GPU 流式多处理器(SM)的整体利用率动态调整资源分配策略
 
     if (monitor->total_sm_utilization < 70) {
-        // === 低负载场景优化 ===
-        // 当 SM 利用率低于 70%时，说明 GPU 资源充足，可以允许客户端使用更多资源
+        // 低负载场景优化        // 当 SM 利用率低于 70%时，说明 GPU 资源充足，可以允许客户端使用更多资源
         // 这样可以提高单个任务的执行效率，减少任务完成时间
         base_thread_percentage = min(base_thread_percentage * 1.5, 100);
     } else if (monitor->total_sm_utilization > 90) {
-        // === 高负载场景优化 ===
-        // 当 SM 利用率超过 90%时，说明 GPU 资源紧张，需要限制单个客户端的资源使用
+        // 高负载场景优化        // 当 SM 利用率超过 90%时，说明 GPU 资源紧张，需要限制单个客户端的资源使用
         // 防止资源竞争导致的性能下降，确保所有客户端都能获得基本的执行资源
         base_thread_percentage = max(base_thread_percentage * 0.8, 10);
     }
     // 中等负载(70%-90%)时保持基础分配不变，维持系统稳定性
 
-    // === 第三步：应用新的资源分配策略 ===
-    // 遍历所有活跃的 MPS 客户端，为每个客户端设置新的线程百分比
+    // 第三步：应用新的资源分配策略    // 遍历所有活跃的 MPS 客户端，为每个客户端设置新的线程百分比
     for (uint32_t client_id = 0; client_id < monitor->active_clients; client_id++) {
         // 调用 MPS API 设置客户端的活跃线程百分比
         // 这个设置会立即生效，影响客户端后续的 kernel 启动
@@ -2730,18 +2675,17 @@ class MultiModelTrainer:
 nvidia-cuda-mps-control -d
 echo "start_server -uid $(id -u)" | nvidia-cuda-mps-control
 
-# 为不同优先级的推理服务配置资源
+# 为不同优先级的推理服务配置资源。
+# MPS 控制守护进程没有 set_pinned_mem_limit 命令；固定显存限制通过客户端环境变量
+# CUDA_MPS_PINNED_DEVICE_MEM_LIMIT 下发，算力占比用 CUDA_MPS_ACTIVE_THREAD_PERCENTAGE 下发
 # 高优先级服务（实时推理）
-echo "set_active_thread_percentage 0 60" | nvidia-cuda-mps-control
-echo "set_pinned_mem_limit 0 4G" | nvidia-cuda-mps-control
+CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=60 CUDA_MPS_PINNED_DEVICE_MEM_LIMIT='0=4G' ./realtime_inference
 
 # 中优先级服务（批量推理）
-echo "set_active_thread_percentage 1 30" | nvidia-cuda-mps-control
-echo "set_pinned_mem_limit 1 2G" | nvidia-cuda-mps-control
+CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=30 CUDA_MPS_PINNED_DEVICE_MEM_LIMIT='0=2G' ./batch_inference
 
 # 低优先级服务（后台任务）
-echo "set_active_thread_percentage 2 10" | nvidia-cuda-mps-control
-echo "set_pinned_mem_limit 2 1G" | nvidia-cuda-mps-control
+CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=10 CUDA_MPS_PINNED_DEVICE_MEM_LIMIT='0=1G' ./background_task
 ```
 
 ### 11.6 监控与调试
@@ -2756,47 +2700,38 @@ echo "set_pinned_mem_limit 2 1G" | nvidia-cuda-mps-control
 #include <cuda_profiler_api.h>
 
 void profile_stream_performance() {
-    // === 第一步：启动 CUDA 性能分析器 ===
-    // 激活 NVIDIA 性能分析工具，开始收集详细的 GPU 执行数据
+    // 第一步：启动 CUDA 性能分析器    // 激活 NVIDIA 性能分析工具，开始收集详细的 GPU 执行数据
     // 这将启用时间线跟踪、内存使用分析等高级性能监控功能
     cudaProfilerStart();
 
-    // === 第二步：创建 CUDA 事件对象 ===
-    // CUDA 事件是 GPU 端的时间戳，提供比 CPU 时间测量更精确的性能数据
+    // 第二步：创建 CUDA 事件对象    // CUDA 事件是 GPU 端的时间戳，提供比 CPU 时间测量更精确的性能数据
     cudaEvent_t start, stop;
     cudaEventCreate(&start);  // 创建开始时间事件
     cudaEventCreate(&stop);   // 创建结束时间事件
 
-    // === 第三步：记录 kernel 执行开始时间 ===
-    // 在指定的 CUDA 流中插入开始时间戳事件
+    // 第三步：记录 kernel 执行开始时间    // 在指定的 CUDA 流中插入开始时间戳事件
     // 这个事件会在 GPU 执行到此点时被记录，确保时间测量的准确性
     cudaEventRecord(start, stream);
 
-    // === 第四步：执行待测量的 CUDA 操作 ===
-    // 在同一个流中启动 GPU kernel ，所有操作都在 GPU 端异步执行
+    // 第四步：执行待测量的 CUDA 操作    // 在同一个流中启动 GPU kernel ，所有操作都在 GPU 端异步执行
     // grid 和 block 参数定义了 kernel 的并行执行配置
     kernel<<<grid, block, 0, stream>>>(data);
 
-    // === 第五步：记录 kernel 执行结束时间 ===
-    // 在 kernel 执行完成后插入结束时间戳事件
+    // 第五步：记录 kernel 执行结束时间    // 在 kernel 执行完成后插入结束时间戳事件
     cudaEventRecord(stop, stream);
 
-    // === 第六步：等待 GPU 执行完成 ===
-    // 同步等待 stop 事件完成，确保所有 GPU 操作都已执行完毕
+    // 第六步：等待 GPU 执行完成    // 同步等待 stop 事件完成，确保所有 GPU 操作都已执行完毕
     // 这是一个阻塞调用，会等待直到 GPU 端的所有操作完成
     cudaEventSynchronize(stop);
 
-    // === 第七步：计算精确的执行时间 ===
-    // 使用 CUDA 事件 API 计算两个事件之间的时间差
+    // 第七步：计算精确的执行时间    // 使用 CUDA 事件 API 计算两个事件之间的时间差
     // 这种方法比 CPU 端时间测量更准确，因为它完全在 GPU 端进行
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
 
-    // === 第八步：输出性能测量结果 ===
-    printf("Stream execution time: %.2f ms\n", milliseconds);
+    // 第八步：输出性能测量结果    printf("Stream execution time: %.2f ms\n", milliseconds);
 
-    // === 第九步：停止性能分析器 ===
-    // 停止 CUDA 性能分析器，完成性能数据收集
+    // 第九步：停止性能分析器    // 停止 CUDA 性能分析器，完成性能数据收集
     // 分析结果可以通过 NVIDIA Nsight 等工具进行详细查看
     cudaProfilerStop();
 }
@@ -2930,15 +2865,7 @@ fix_common_mps_issues() {
 
 本章将详细介绍 GPU 远程调用技术的实现原理、架构设计、性能优化策略、安全性保障和错误处理机制。关于 GPU 远程调用技术的基本定义和分类，请参考`2.3.3 节 GPU 远程调用技术`。
 
-**学习目标：**
-
-- 理解远程 GPU 调用的基本原理和网络透明机制
-- 掌握客户端-服务器架构的设计要点
-- 学习性能优化的关键技术和最佳实践
-- 掌握安全性保障机制和身份认证
-- 了解错误处理和异常管理策略
-- 学习性能监控和诊断技术
-- 掌握安全配置最佳实践
+**学习目标：** 本章围绕远程 GPU 调用展开：网络透明机制与客户端-服务器架构，性能优化、安全性保障与身份认证，错误处理、性能监控及安全配置最佳实践。
 
 ### 12.1 远程 GPU 调用的基本原理
 
@@ -3064,15 +2991,9 @@ GPU 上下文管理器负责维护本地和远程 GPU 的执行上下文：
 
 #### 12.2.1 延迟优化
 
-| **优化技术**     | **核心机制** | **技术实现**                   | **性能提升**     |
-| ---------------- | ------------ | ------------------------------ | ---------------- |
-| **请求批处理**   | 请求合并     | 将多个小请求合并为一个大请求   | 减少网络往返次数 |
-|                  | 动态控制     | 支持动态批处理大小和超时控制   | 平衡延迟与吞吐量 |
-| **异步处理机制** | 非阻塞提交   | 非阻塞请求提交，避免线程阻塞   | 提高并发处理能力 |
-|                  | 并发处理     | 同时处理多个请求，充分利用资源 | 提升整体吞吐量   |
-|                  | 回调机制     | 异步回调处理结果，避免轮询     | 降低 CPU 开销    |
-| **连接池优化**   | 连接复用     | 复用网络连接，避免重复建立     | 减少连接建立开销 |
-|                  | 预热保活     | 支持连接预热和保活机制         | 降低首次请求延迟 |
+- **请求批处理**：将多个小请求合并为一个大请求，并支持动态批处理大小与超时控制，减少网络往返次数、平衡延迟与吞吐量
+- **异步处理机制**：非阻塞请求提交、并发处理与回调取结果，避免线程阻塞和轮询开销
+- **连接池优化**：复用网络连接避免重复建立，支持预热保活以降低首次请求延迟
 
 详细的优化实现请参考相关代码文件。
 
@@ -3080,17 +3001,9 @@ GPU 上下文管理器负责维护本地和远程 GPU 的执行上下文：
 
 网络带宽的有效利用对于大数据传输场景至关重要：
 
-| **优化技术**   | **核心特性**  | **技术细节**                      | **性能收益**             |
-| -------------- | ------------- | --------------------------------- | ------------------------ |
-| **数据压缩**   | 多算法支持    | LZ4 、 ZSTD 、 Snappy 算法        | 减少传输数据量           |
-|                | 动态策略选择  | 根据数据特征自动选择最优算法      | 提升压缩效率             |
-|                | 智能阈值控制  | 自适应压缩阈值，避免过度压缩      | 平衡 CPU 开销与带宽节省  |
-| **流水线传输** | 多阶段并行    | 读取 → 压缩 → 加密 → 传输并行处理 | 提高整体吞吐量           |
-|                | 数据分块传输  | 大数据分块并行传输                | 降低延迟，提升并发度     |
-|                | 重叠 I/O 操作 | 网络 I/O 与磁盘 I/O 重叠执行      | 隐藏 I/O 延迟            |
-| **自适应传输** | 网络状况感知  | 实时监测带宽、延迟、丢包率        | 动态优化传输策略         |
-|                | 参数动态调整  | 自动调整窗口大小、重传超时等      | 适应网络变化             |
-|                | 拥塞控制机制  | TCP 友好的拥塞控制算法            | 避免网络拥塞，保证公平性 |
+- **数据压缩**：支持 LZ4 、 ZSTD 、 Snappy 等多种算法，按数据特征自动选择并控制压缩阈值，在 CPU 开销与带宽节省之间取得平衡
+- **流水线传输**：读取 → 压缩 → 加密 → 传输多阶段并行，配合数据分块与重叠 I/O 提升整体吞吐、隐藏延迟
+- **自适应传输**：实时感知带宽、延迟、丢包率，动态调整窗口大小与重传超时，采用 TCP 友好的拥塞控制保证公平性
 
 ### 12.3 缓存优化
 
@@ -3134,7 +3047,7 @@ GPU 上下文管理器负责维护本地和远程 GPU 的执行上下文：
 - 服务响应时间监控
 - 异常模式识别
 
-**关键实现代码：**
+**示意实现（接口设计）：**
 
 ```c
 // 心跳包结构
@@ -3149,45 +3062,38 @@ typedef struct {
 // 检查单个连接 - 智能心跳检测与故障诊断算法
 // 该函数实现了基于时间窗口的连接健康状态监控，支持自适应故障检测
 static void check_connection(connection_info_t *conn) {
-    // === 第一步：获取当前精确时间戳 ===
-    // 使用微秒级精度的时间戳，确保心跳间隔控制的准确性
+    // 第一步：获取当前精确时间戳    // 使用微秒级精度的时间戳，确保心跳间隔控制的准确性
     uint64_t now = gpu_get_timestamp_us();
 
-    // === 第二步：计算距离上次心跳的时间间隔 ===
-    // 通过时间差判断是否需要发送新的心跳包
+    // 第二步：计算距离上次心跳的时间间隔    // 通过时间差判断是否需要发送新的心跳包
     uint64_t time_since_last = now - conn->last_heartbeat_sent;
 
-    // === 第三步：基于配置的心跳间隔判断是否需要发送心跳 ===
-    // 将毫秒配置转换为微秒进行比较，确保时间单位一致性
+    // 第三步：基于配置的心跳间隔判断是否需要发送心跳    // 将毫秒配置转换为微秒进行比较，确保时间单位一致性
     if (time_since_last >= g_monitor.config.heartbeat_interval_ms * 1000) {
 
-        // === 第四步：发送心跳包到远程 GPU 服务器 ===
-        // 心跳包包含时间戳、序列号等信息，用于检测网络延迟和连接状态
+        // 第四步：发送心跳包到远程 GPU 服务器        // 心跳包包含时间戳、序列号等信息，用于检测网络延迟和连接状态
         monitor_result_t result = send_heartbeat(conn);
 
-        // === 第五步：等待并接收心跳响应 ===
-        // 只有在心跳发送成功的情况下才等待响应，避免无效等待
+        // 第五步：等待并接收心跳响应        // 只有在心跳发送成功的情况下才等待响应，避免无效等待
         if (result == MONITOR_SUCCESS) {
             // 在指定超时时间内等待服务器的心跳响应
             // 超时时间通常设置为心跳间隔的 1/3 到 1/2
             result = receive_heartbeat_response(conn, g_monitor.config.heartbeat_timeout_ms);
         }
 
-        // === 第六步：处理心跳失败情况 ===
+        // 第六步：处理心跳失败情况
         if (result != MONITOR_SUCCESS) {
             // 累计连续失败次数，用于判断连接是否彻底失效
             // 这种计数机制可以避免偶发网络抖动导致的误判
             conn->consecutive_failures++;
 
-            // === 第七步：检查是否达到故障阈值 ===
-            // 当连续失败次数超过配置的最大值时，判定连接失效
+            // 第七步：检查是否达到故障阈值            // 当连续失败次数超过配置的最大值时，判定连接失效
             // 这个阈值通常设置为 3-5 次，平衡故障检测速度和误判率
             if (conn->consecutive_failures >= g_monitor.config.max_failures) {
                 // 标记连接状态为失败，触发后续的故障处理流程
                 conn->status = CONNECTION_STATUS_FAILED;
 
-                // === 第八步：触发故障回调处理 ===
-                // 通知上层应用连接失败，启动故障恢复机制
+                // 第八步：触发故障回调处理                // 通知上层应用连接失败，启动故障恢复机制
                 // 回调函数可能包括：重连、负载转移、告警通知等
                 if (g_monitor.config.failure_callback) {
                     g_monitor.config.failure_callback(conn->connection_id,
@@ -3195,8 +3101,7 @@ static void check_connection(connection_info_t *conn) {
                 }
             }
         } else {
-            // === 心跳成功时重置失败计数器 ===
-            // 连接恢复正常时，清零失败计数，为下次检测做准备
+            // 心跳成功时重置失败计数器            // 连接恢复正常时，清零失败计数，为下次检测做准备
             conn->consecutive_failures = 0;
             conn->last_successful_heartbeat = now;
         }
@@ -3423,25 +3328,21 @@ typedef struct {
 void propagate_error(error_context_t* error_ctx,
                     const char* component) {
 
-    // === 第一步：记录错误传播路径 ===
-    // 在现有的调用栈追踪信息后追加当前组件名称
+    // 第一步：记录错误传播路径    // 在现有的调用栈追踪信息后追加当前组件名称
     // 这样可以构建完整的错误传播链路： Client -> Network -> Server -> GPU
     snprintf(error_ctx->stack_trace + strlen(error_ctx->stack_trace),
              sizeof(error_ctx->stack_trace) - strlen(error_ctx->stack_trace),
              " -> %s", component);
 
-    // === 第二步：更新错误发生时间戳 ===
-    // 记录错误在当前组件中被处理的精确时间
+    // 第二步：更新错误发生时间戳    // 记录错误在当前组件中被处理的精确时间
     // 这有助于分析错误传播的时间特征和性能影响
     error_ctx->timestamp = get_current_timestamp();
 
-    // === 第三步：持久化错误信息到日志系统 ===
-    // 将完整的错误上下文写入结构化日志
+    // 第三步：持久化错误信息到日志系统    // 将完整的错误上下文写入结构化日志
     // 包括错误码、消息、调用栈、时间戳、用户信息等
     log_error(error_ctx);
 
-    // === 第四步：智能告警触发机制 ===
-    // 根据错误的严重程度和类型决定是否触发告警
+    // 第四步：智能告警触发机制    // 根据错误的严重程度和类型决定是否触发告警
     // 避免告警风暴，只对关键错误进行实时通知
     if (is_critical_error(error_ctx->error_code)) {
         // 触发多渠道告警：邮件、短信、钉钉、 PagerDuty 等
@@ -3518,40 +3419,33 @@ typedef struct {
 void start_trace_span(trace_span_t* span,
                      const char* operation,
                      const char* trace_id) {
-    // === 第一步：设置追踪 ID ===
-    // 追踪 ID 在整个分布式调用链中保持不变，用于关联所有相关的操作
+    // 第一步：设置追踪 ID    // 追踪 ID 在整个分布式调用链中保持不变，用于关联所有相关的操作
     // 这使得我们可以在复杂的分布式系统中追踪单个请求的完整执行路径
     strncpy(span->trace_id, trace_id, sizeof(span->trace_id));
 
-    // === 第二步：生成唯一的跨度 ID ===
-    // 每个操作都有唯一的跨度 ID ，用于标识调用链中的特定操作
+    // 第二步：生成唯一的跨度 ID    // 每个操作都有唯一的跨度 ID ，用于标识调用链中的特定操作
     // 跨度 ID 通常是 64 位的随机数或基于时间戳的唯一标识符
     generate_span_id(span->span_id);
 
-    // === 第三步：记录操作名称 ===
-    // 操作名称描述了当前跨度所代表的具体操作
+    // 第三步：记录操作名称    // 操作名称描述了当前跨度所代表的具体操作
     // 例如："gpu_malloc", "kernel_launch", "memory_copy"等
     strncpy(span->operation, operation, sizeof(span->operation));
 
-    // === 第四步：记录高精度开始时间戳 ===
-    // 使用纳秒级精度的时间戳，确保性能测量的准确性
+    // 第四步：记录高精度开始时间戳    // 使用纳秒级精度的时间戳，确保性能测量的准确性
     // 这对于分析微秒级的 GPU 操作延迟至关重要
     span->start_time = get_high_precision_timestamp();
 }
 
 // 结束性能追踪跨度 - 记录操作完成时间和状态，发送追踪数据
 void end_trace_span(trace_span_t* span, int status_code) {
-    // === 第一步：记录操作结束时间 ===
-    // 捕获操作完成的精确时间点，用于计算总执行时间
+    // 第一步：记录操作结束时间    // 捕获操作完成的精确时间点，用于计算总执行时间
     span->end_time = get_high_precision_timestamp();
 
-    // === 第二步：设置操作状态码 ===
-    // 状态码指示操作是否成功完成： 0=成功，非 0=各种错误类型
+    // 第二步：设置操作状态码    // 状态码指示操作是否成功完成： 0=成功，非 0=各种错误类型
     // 这有助于在追踪数据中快速识别失败的操作
     span->status_code = status_code;
 
-    // === 第三步：发送追踪数据到监控系统 ===
-    // 将完整的跨度信息发送到分布式追踪后端（如 Jaeger 、 Zipkin ）
+    // 第三步：发送追踪数据到监控系统    // 将完整的跨度信息发送到分布式追踪后端（如 Jaeger 、 Zipkin ）
     // 数据包括：执行时间、状态、标签、上下文等，用于性能分析和故障诊断
     send_trace_data(span);
 }

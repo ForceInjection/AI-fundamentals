@@ -1,5 +1,7 @@
 # JuiceFS 文件修改时 chunk/slice/block 更新机制分析
 
+> 口径说明：本文依据 JuiceFS 社区版主分支源码（`pkg/vfs/writer.go`、`pkg/chunk/cached_store.go` 等）核对，成文并核对于 2026-11-05；Chunk 64 MiB、Block 4 MiB 等默认值随版本可能调整。
+
 ## 1. 概述
 
 JuiceFS 采用分层存储架构，将文件数据分解为 Chunk、Slice 和 Block 三个层次。当对文件进行修改时（无论是前部、中间还是尾部），这些存储单元会发生相应的变化。本文详细分析这些变化机制。
@@ -19,9 +21,9 @@ flowchart TD
     A[应用程序写入] --> B[JuiceFS 客户端]
     B --> C{数据分层处理}
     
-    C --> D[Chunk 层<br/>64MB 逻辑分割]
+    C --> D[Chunk 层<br/>64 MiB 逻辑分割]
     D --> E[Slice 层<br/>写入操作单元]
-    E --> F[Block 层<br/>4MB 物理存储]
+    E --> F[Block 层<br/>4 MiB 物理存储]
     
     F --> G[对象存储<br/>不可变对象]
     
@@ -41,9 +43,9 @@ flowchart TD
 1. **应用层写入**：应用程序通过标准的文件系统接口（如 POSIX）向 JuiceFS 发起写入请求
 2. **客户端接收**：JuiceFS 客户端接收写入请求，开始进行数据分层处理
 3. **三层分割处理**：
-   - **Chunk 层**：根据文件偏移量，将数据按 64MB 边界进行逻辑分割
+   - **Chunk 层**：根据文件偏移量，将数据按 64 MiB 边界进行逻辑分割
    - **Slice 层**：将每次写入操作封装为一个 Slice，记录写入的时间和范围
-   - **Block 层**：将 Slice 中的数据按 4MB 大小分割为多个 Block
+   - **Block 层**：将 Slice 中的数据按 4 MiB 大小分割为多个 Block
 4. **对象存储**：将 Block 作为不可变对象上传到对象存储系统
 5. **元数据管理**：在元数据引擎中记录 Chunk、Slice、Block 之间的映射关系
 
@@ -51,21 +53,21 @@ flowchart TD
 
 - **解耦存储和计算**：数据存储在对象存储中，元数据单独管理
 - **支持并发写入**：不同的 Slice 可以并行处理
-- **优化存储效率**：通过 Block 级别的去重和压缩
+- **优化存储效率**：Block 级别支持压缩（lz4/zstd）与加密
 - **简化数据管理**：清晰的层次结构便于理解和维护
 
 ### 2.2 三层存储结构详解
 
 ```mermaid
 graph TD
-    A[文件 File] --> B[Chunk 0<br/>0-64MB]
+    A[文件 File] --> B[Chunk 0<br/>0-64 MiB]
     A --> C[Chunk 1<br/>64-128MB]
     A --> D[Chunk N<br/>...]
     B --> E[Slice A<br/>0-32MB]
     B --> F[Slice B<br/>20-40MB]
-    B --> G[Slice C<br/>35-64MB]
+    B --> G[Slice C<br/>35-64 MiB]
     
-    E --> H[Block A1<br/>0-4MB]
+    E --> H[Block A1<br/>0-4 MiB]
     E --> I[Block A2<br/>4-8MB]
     E --> J[Block A3<br/>8-12MB]
     E --> K[...]
@@ -103,21 +105,20 @@ graph TD
 
 **核心特性**：
 
-- **固定大小**：每个 Chunk 固定为 64MB，这个大小经过优化，既能保证合理的元数据开销，又能支持高效的并行处理
-- **边界对齐**：Chunk 边界严格按照文件偏移量的 64MB 倍数进行划分，例如：
-  - Chunk 0：0-64MB
-  - Chunk 1：64MB-128MB
+- **固定大小**：每个 Chunk 固定为 64 MiB，这个大小经过优化，既能保证合理的元数据开销，又能支持高效的并行处理
+- **边界对齐**：Chunk 边界严格按照文件偏移量的 64 MiB 倍数进行划分，例如：
+  - Chunk 0：0-64 MiB
+  - Chunk 1：64 MiB-128MB
   - Chunk 2：128MB-192MB
 - **完全隔离**：不同 Chunk 之间在逻辑上完全独立，一个 Chunk 的修改不会影响其他 Chunk
 - **稳定性**：只要文件的总长度不变，Chunk 的划分就保持固定，这为缓存和预读提供了稳定的基础
 
-**实际应用场景**：
+举例来说，一个 200MB 的文件会被分割为：
 
 ```text
-示例：一个 200MB 的文件会被分割为：
-- Chunk 0: 0-64MB     (完整的 64MB)
-- Chunk 1: 64-128MB   (完整的 64MB)  
-- Chunk 2: 128-192MB  (完整的 64MB)
+- Chunk 0: 0-64 MiB     (完整的 64 MiB)
+- Chunk 1: 64-128MB   (完整的 64 MiB)
+- Chunk 2: 128-192MB  (完整的 64 MiB)
 - Chunk 3: 192-200MB  (部分的 8MB)
 ```
 
@@ -125,65 +126,69 @@ graph TD
 
 **Slice（片）** 是 JuiceFS 存储架构的第二层，代表一次完整的写入操作。
 
-**核心特性**：
+Slice 有几个关键属性：
 
-- **操作单元**：每个 Slice 对应一次连续的写入操作，记录了写入的时间、范围和数据
-- **大小限制**：单个 Slice 最大不超过 64MB，确保不会跨越 Chunk 边界
-- **时间戳**：每个 Slice 都有创建时间戳，用于处理重叠写入时的优先级判断
+- **操作单元**：每个 Slice 对应一次连续的写入操作，记录了写入的时间和范围
+- **大小限制**：单个 Slice 最大不超过 64 MiB，确保不会跨越 Chunk 边界
+- **顺序即优先级**：同一 Chunk 内的 Slice 按写入顺序追加进列表，读取时最新写入的 Slice 生效
 - **灵活排列**：同一个 Chunk 内的多个 Slice 可以：
   - **重叠**：新的 Slice 覆盖旧的 Slice 的部分或全部范围
   - **间隔**：Slice 之间存在空隙，形成稀疏文件
   - **连续**：Slice 首尾相接，形成连续的数据流
 
-**写时复制机制**：
+**写入与 Slice 的创建**：
 
-- JuiceFS 采用写时复制（Copy-on-Write）策略，每次写入都会创建新的 Slice
-- 原有的 Slice 不会被修改或删除，而是通过时间戳来确定读取优先级
-- 这种机制支持快照、版本控制等高级功能
+- 顺序追加或紧接未冻结 Slice 末尾的连续覆盖，通常会并入当前未冻结的 Slice，并非每次写入都新建 Slice
+- 覆盖已冻结区间、或写入不连续的位置时，才会创建新 Slice；同一范围存在多个 Slice 时，读取以最新写入的 Slice 为准
+- 旧 Slice 不会被就地修改，被覆盖的数据待元数据更新后不再被引用，最终由 gc 回收
 
-**实际应用场景**：
+> JuiceFS 不提供文件级快照或版本控制。最接近的对应物是回收站（trash，保存一段时间内被删除的文件）与元数据备份（`juicefs dump`、`--backup-meta`）。
+
+下面用一个例子演示对同一文件的多次写入：
 
 ```text
-示例：对一个文件进行多次写入操作
 1. 初始写入：创建 Slice A (0-32MB, T1)
 2. 部分覆盖：创建 Slice B (20-40MB, T2) - 覆盖 Slice A 的 20-32MB 部分
-3. 尾部追加：创建 Slice C (35-64MB, T3) - 覆盖 Slice B 的 35-40MB 部分
+3. 尾部追加：创建 Slice C (35-64 MiB, T3) - 覆盖 Slice B 的 35-40MB 部分
 
 最终读取逻辑：
 - 0-20MB: 从 Slice A 读取
-- 20-35MB: 从 Slice B 读取  
-- 35-64MB: 从 Slice C 读取
+- 20-35MB: 从 Slice B 读取
+- 35-64 MiB: 从 Slice C 读取
 ```
 
 #### 2.2.3 Block 层：物理存储的实现单元
 
 **Block（块）** 是 JuiceFS 存储架构的第三层，是实际存储在对象存储中的物理单元。
 
-**核心特性**：
+Block 层的关键设计：
 
-- **固定大小**：默认最大 4MB，这个大小在存储效率和网络传输之间取得了平衡
+- **固定大小**：默认最大 4 MiB，这个大小在存储效率和网络传输之间取得了平衡
 - **不可变性**：Block 一旦创建就不能修改，这简化了并发控制和一致性保证
 - **独立存储**：每个 Block 在对象存储中都是一个独立的对象，支持并行上传和下载
 - **压缩和加密**：Block 级别可以应用压缩和加密算法，优化存储空间和安全性
 
 **存储优化**：
 
-- **去重**：相同内容的 Block 只存储一份，通过哈希值进行识别
-- **压缩**：支持多种压缩算法（LZ4、ZSTD 等），在 Block 级别进行压缩
-- **分层存储**：可以根据访问频率将 Block 存储在不同的存储层级
+- **压缩**：支持 lz4、zstd 等压缩算法，在 Block 级别进行压缩
+- **加密**：静态加密与传输加密在 Block 层面生效
+- **存储类设置**：可经 `--storage-class`（v1.1 起）与 `juicefs config --tier`（v1.4 起，tier 0-3）静态指定对象存储的存储类；JuiceFS 自身没有按访问频率的自动分层
 
-**实际应用场景**：
+> 注意：JuiceFS 没有 Block 级内容去重。对象键按位置（Chunk ID + Block 序号）生成而非内容哈希（见下方命名示例），内容相同的 Block 各自独立存储。
+
+**对象键命名示例**：
 
 ```text
 示例：一个 10MB 的 Slice 会被分割为：
-- Block 1: 0-4MB    (完整的 4MB Block)
-- Block 2: 4-8MB    (完整的 4MB Block)  
+- Block 1: 0-4 MiB    (完整的 4 MiB Block)
+- Block 2: 4-8MB    (完整的 4 MiB Block)
 - Block 3: 8-10MB   (部分的 2MB Block)
 
-每个 Block 在对象存储中都有唯一的标识符，例如：
-- Block 1: juicefs-block-abc123def456...
-- Block 2: juicefs-block-def456ghi789...
-- Block 3: juicefs-block-ghi789jkl012...
+每个 Block 在对象存储中的键形如 <chunkid>_<block序号>_<块大小>，
+存放在按 chunkid 分层的 chunks 目录下（生成逻辑见 pkg/chunk/cached_store.go 的 rSlice.key）：
+- Block 1: chunks/0/0/1_0_4194304
+- Block 2: chunks/0/0/1_1_4194304
+- Block 3: chunks/0/0/1_2_2097152
 ```
 
 #### 2.2.4 三层架构的协同工作
@@ -208,21 +213,6 @@ graph TD
    - **高性能**：缓存友好的分层结构
    - **高扩展**：支持 PB 级别的文件系统
 
-4. **Chunk（块）**：逻辑分割单元，固定 64MB 大小
-   - 根据文件偏移量按 64MB 边界划分
-   - 不同 Chunk 之间完全隔离
-   - 只要文件总长度不变，Chunk 切分保持固定
-
-5. **Slice（片）**：写入操作单元，最大 64MB
-   - 代表一次连续写入操作
-   - 隶属于某个 Chunk，不能跨越 Chunk 边界
-   - 可以重叠、间隔或连续排列
-
-6. **Block（块）**：物理存储单元，默认最大 4MB
-   - 对象存储中的实际存储形式
-   - 不可变对象，不支持就地修改
-   - 是对象存储和磁盘缓存的最小单元
-
 ---
 
 ## 3. 文件修改场景分析
@@ -231,7 +221,7 @@ graph TD
 
 #### 3.1.1 场景描述
 
-文件前部修改是指对文件开头部分数据进行覆盖写入的操作。这种修改模式在日志文件头部信息更新、配置文件前缀修改等场景中较为常见。以一个 64MB 的文件为例，假设我们需要修改文件的前 1MB 内容。
+文件前部修改是指对文件开头部分数据进行覆盖写入的操作。这种修改模式在日志文件头部信息更新、配置文件前缀修改等场景中较为常见。以一个 64 MiB 的文件为例，假设我们需要修改文件的前 1MB 内容。
 
 在 JuiceFS 的存储架构中，这种修改会触发写时复制（Copy-on-Write）机制。系统不会直接修改原有的 Block，而是创建新的 Slice 和 Block 来存储修改后的数据，然后通过元数据更新来建立新的映射关系。
 
@@ -240,15 +230,15 @@ graph TD
 ```mermaid
 graph TD
     subgraph "写入前：原始文件状态"
-        A1[文件: 64MB] --> B1[Chunk 0: 0-64MB]
-        B1 --> C1[Slice A: 0-64MB<br/>创建时间: T1]
+        A1[文件: 64 MiB] --> B1[Chunk 0: 0-64 MiB]
+        B1 --> C1[Slice A: 0-64 MiB<br/>创建时间: T1]
         
-        C1 --> D1[Block A1: 0-4MB]
+        C1 --> D1[Block A1: 0-4 MiB]
         C1 --> D2[Block A2: 4-8MB]
         C1 --> D3[Block A3: 8-12MB]
         C1 --> D4[Block A4: 12-16MB]
         C1 --> D5[...]
-        C1 --> D6[Block A16: 60-64MB]
+        C1 --> D6[Block A16: 60-64 MiB]
     end
     
     style A1 fill:#e3f2fd
@@ -263,10 +253,10 @@ graph TD
 
 在写入前，文件具有简单的存储结构：
 
-- **文件层面**：一个 64MB 的完整文件
-- **Chunk 层面**：由于文件大小为 64MB，恰好对应一个 Chunk（Chunk 0）
-- **Slice 层面**：包含一个完整的 Slice A，覆盖整个 Chunk 的 0-64MB 范围
-- **Block 层面**：Slice A 被分割为 16 个 Block（A1-A16），每个 Block 4MB
+- **文件层面**：一个 64 MiB 的完整文件
+- **Chunk 层面**：由于文件大小为 64 MiB，恰好对应一个 Chunk（Chunk 0）
+- **Slice 层面**：包含一个完整的 Slice A，覆盖整个 Chunk 的 0-64 MiB 范围
+- **Block 层面**：Slice A 被分割为 16 个 Block（A1-A16），每个 Block 4 MiB
 
 #### 3.1.3 写入操作过程
 
@@ -277,7 +267,7 @@ sequenceDiagram
     participant Meta as 元数据引擎
     participant Store as 对象存储
     
-    Note over App,Store: 原始状态：Chunk 0 包含 Slice A (0-64MB)
+    Note over App,Store: 原始状态：Chunk 0 包含 Slice A (0-64 MiB)
     
     App->>JFS: 写入请求：修改前 1MB 数据
     JFS->>JFS: 1. 确定目标 Chunk 0 (0-1MB 范围)
@@ -297,8 +287,8 @@ sequenceDiagram
 
 1. **请求解析**：JuiceFS 客户端接收到修改前 1MB 的写入请求
 2. **Chunk 定位**：确定修改范围（0-1MB）属于 Chunk 0
-3. **Slice 创建**：创建新的 Slice B，范围为 0-1MB，时间戳为 T2
-4. **数据分块**：将 1MB 数据按照 Block 大小进行分割（本例中小于 4MB，形成一个 Block）
+3. **Slice 创建**：创建新的 Slice B，范围为 0-1MB（T2 表示写入顺序晚于 T1）
+4. **数据分块**：将 1MB 数据按照 Block 大小进行分割（本例中小于 4 MiB，形成一个 Block）
 5. **对象上传**：将新 Block B1 上传到对象存储
 6. **元数据更新**：在元数据引擎中更新 Chunk 0 的 Slice 列表，添加 Slice B
 7. **完成确认**：向应用程序返回写入完成的确认
@@ -308,23 +298,23 @@ sequenceDiagram
 ```mermaid
 graph TD
     subgraph "写入后：修改完成状态"
-        A2[文件: 64MB] --> B2[Chunk 0: 0-64MB]
+        A2[文件: 64 MiB] --> B2[Chunk 0: 0-64 MiB]
         
-        B2 --> C2[Slice A: 0-64MB<br/>创建时间: T1<br/>有效范围: 1-64MB]
+        B2 --> C2[Slice A: 0-64 MiB<br/>创建时间: T1<br/>有效范围: 1-64 MiB]
         B2 --> C3[Slice B: 0-1MB<br/>创建时间: T2<br/>有效范围: 0-1MB]
         
-        C2 --> D7[Block A1: 0-4MB<br/>逻辑上被覆盖]
+        C2 --> D7[Block A1: 0-4 MiB<br/>逻辑上被覆盖]
         C2 --> D8[Block A2: 4-8MB]
         C2 --> D9[Block A3: 8-12MB]
         C2 --> D10[...]
-        C2 --> D11[Block A16: 60-64MB]
+        C2 --> D11[Block A16: 60-64 MiB]
         
         C3 --> E1[Block B1: 0-1MB<br/>新创建]
     end
     
     subgraph "读取视图"
         F1[逻辑文件视图] --> G1[0-1MB: 从 Slice B]
-        F1 --> G2[1-64MB: 从 Slice A]
+        F1 --> G2[1-64 MiB: 从 Slice A]
     end
     
     style C3 fill:#ffeb3b
@@ -338,20 +328,20 @@ graph TD
 
 **Slice 层面的变化**：
 
-- **Slice A**：原有 Slice 保持不变，但其有效数据范围在逻辑上调整为 1-64MB
-- **Slice B**：新创建的 Slice，覆盖 0-1MB 范围，时间戳更新（T2 > T1）
+- **Slice A**：原有 Slice 保持不变，但其有效数据范围在逻辑上调整为 1-64 MiB
+- **Slice B**：新创建的 Slice，覆盖 0-1MB 范围，在 Chunk 0 的 Slice 列表中排在 Slice A 之后
 
 **Block 层面的变化**：
 
 - **Block A1**：物理上仍然存在于对象存储中，但在逻辑读取时被 Block B1 覆盖
-- **Block A2-A16**：保持不变，继续提供 1-64MB 范围的数据
+- **Block A2-A16**：保持不变，继续提供 1-64 MiB 范围的数据
 - **Block B1**：新创建的 Block，存储修改后的前 1MB 数据
 
 **读取逻辑**：
 
-- 当应用程序读取文件时，JuiceFS 会根据 Slice 的时间戳确定数据的有效性
-- 0-1MB 范围：读取 Slice B 的 Block B1（时间戳 T2）
-- 1-64MB 范围：读取 Slice A 的 Block A2-A16（时间戳 T1）
+- 当应用程序读取文件时，JuiceFS 按 Chunk 内的 Slice 列表顺序处理，最新写入的 Slice 生效
+- 0-1MB 范围：读取 Slice B 的 Block B1（后写入，优先生效）
+- 1-64 MiB 范围：读取 Slice A 的 Block A2-A16
 
 **存储开销分析**：
 
@@ -359,26 +349,11 @@ graph TD
 - **冗余存储**：Block A1 的前 1MB 部分成为冗余数据
 - **元数据开销**：增加一个 Slice B 的元数据记录
 
-1. **Slice 层面**：
-   - 在 Chunk 0 中创建新的 Slice B（0-1MB）
-   - 原有 Slice A 保持不变
-   - 新 Slice B 覆盖 Slice A 的前 1MB 部分
-
-2. **Block 层面**：
-   - 创建新的 Block B1 存储修改的 1MB 数据
-   - 原有 Block A1、A2 等保持不变（但逻辑上被部分覆盖）
-   - 对象存储中增加一个新的 4MB 以下的对象
-
-3. **元数据更新**：
-   - 更新 Chunk 0 的 Slice 列表，添加 Slice B
-   - 标记 Slice B 的有效数据范围为 0-1MB
-   - 标记 Slice A 的有效数据范围调整为 1MB-64MB
-
 ### 3.2 文件中间修改
 
 #### 3.2.1 场景描述
 
-文件中间修改是 JuiceFS 中最复杂的写入场景，也是最容易导致存储碎片化的操作类型。这种修改模式常见于数据库文件的页面更新、大文件的局部内容修改等场景。以一个 64MB 的文件为例，假设我们需要修改文件第 30-35MB 的内容（共 5MB）。
+文件中间修改是 JuiceFS 中最复杂的写入场景，也是最容易导致存储碎片化的操作类型。这种修改模式常见于数据库文件的页面更新、大文件的局部内容修改等场景。以一个 64 MiB 的文件为例，假设我们需要修改文件第 30-35MB 的内容（共 5MB）。
 
 中间修改的复杂性在于它会在现有 Slice 的中间位置创建新的覆盖层，导致读取时需要从多个不同时间创建的 Slice 中合并数据。这种操作对读取性能的影响最为显著，因为需要进行复杂的 Slice 合并计算。
 
@@ -387,10 +362,10 @@ graph TD
 ```mermaid
 graph TD
     subgraph "写入前：原始文件状态"
-        A1[文件: 64MB] --> B1[Chunk 0: 0-64MB]
-        B1 --> C1[Slice A: 0-64MB<br/>创建时间: T1<br/>完整覆盖]
+        A1[文件: 64 MiB] --> B1[Chunk 0: 0-64 MiB]
+        B1 --> C1[Slice A: 0-64 MiB<br/>创建时间: T1<br/>完整覆盖]
         
-        C1 --> D1[Block A1: 0-4MB]
+        C1 --> D1[Block A1: 0-4 MiB]
         C1 --> D2[Block A2: 4-8MB]
         C1 --> D3[Block A3: 8-12MB]
         C1 --> D4[Block A4: 12-16MB]
@@ -401,7 +376,7 @@ graph TD
         C1 --> D9[Block A9: 32-36MB<br/>将被部分覆盖]
         C1 --> D10[Block A10: 36-40MB]
         C1 --> D11[...]
-        C1 --> D12[Block A16: 60-64MB]
+        C1 --> D12[Block A16: 60-64 MiB]
     end
     
     style A1 fill:#e3f2fd
@@ -426,14 +401,14 @@ sequenceDiagram
     participant Meta as 元数据引擎
     participant Store as 对象存储
     
-    Note over App,Store: 原始状态：Chunk 0 包含单一 Slice A (0-64MB)
+    Note over App,Store: 原始状态：Chunk 0 包含单一 Slice A (0-64 MiB)
     
     App->>JFS: 写入请求：修改 30-35MB 数据
     JFS->>JFS: 1. 确定目标 Chunk 0 (30-35MB 范围)
     JFS->>JFS: 2. 创建新 Slice C (30-35MB, T2)
     JFS->>JFS: 3. 将 5MB 数据分割为 Block
-    Note over JFS: 30-34MB → Block C1 (4MB)<br/>34-35MB → Block C2 (1MB)
-    JFS->>Store: 4. 上传 Block C1 (30-34MB)
+    Note over JFS: 30-34 MiB → Block C1 (4 MiB)<br/>34-35MB → Block C2 (1MB)
+    JFS->>Store: 4. 上传 Block C1 (30-34 MiB)
     JFS->>Store: 5. 上传 Block C2 (34-35MB)
     Store-->>JFS: 6. 确认两个 Block 上传完成
     JFS->>Meta: 7. 更新 Chunk 0 元数据
@@ -447,7 +422,7 @@ sequenceDiagram
 写入操作的关键特点：
 
 1. **跨 Block 修改**：5MB 的修改范围跨越了两个原有 Block 的边界
-2. **Block 分割策略**：新数据被分割为 Block C1（4MB）和 Block C2（1MB）
+2. **Block 分割策略**：新数据被分割为 Block C1（4 MiB）和 Block C2（1MB）
 3. **部分覆盖**：原有的 Block A8 和 A9 只有部分数据被逻辑覆盖
 4. **元数据复杂化**：Chunk 0 现在包含两个重叠的 Slice
 
@@ -456,12 +431,12 @@ sequenceDiagram
 ```mermaid
 graph TD
     subgraph "写入后：修改完成状态"
-        A2[文件: 64MB] --> B2[Chunk 0: 0-64MB]
+        A2[文件: 64 MiB] --> B2[Chunk 0: 0-64 MiB]
         
-        B2 --> C2[Slice A: 0-64MB<br/>创建时间: T1<br/>有效范围: 0-30MB, 35-64MB]
+        B2 --> C2[Slice A: 0-64 MiB<br/>创建时间: T1<br/>有效范围: 0-30MB, 35-64 MiB]
         B2 --> C3[Slice C: 30-35MB<br/>创建时间: T2<br/>有效范围: 30-35MB]
         
-        C2 --> D13[Block A1: 0-4MB]
+        C2 --> D13[Block A1: 0-4 MiB]
         C2 --> D14[Block A2: 4-8MB]
         C2 --> D15[...]
         C2 --> D16[Block A7: 24-28MB]
@@ -469,16 +444,16 @@ graph TD
         C2 --> D18[Block A9: 32-36MB<br/>前3MB被覆盖]
         C2 --> D19[Block A10: 36-40MB]
         C2 --> D20[...]
-        C2 --> D21[Block A16: 60-64MB]
+        C2 --> D21[Block A16: 60-64 MiB]
         
-        C3 --> E1[Block C1: 30-34MB<br/>新创建]
+        C3 --> E1[Block C1: 30-34 MiB<br/>新创建]
         C3 --> E2[Block C2: 34-35MB<br/>新创建]
     end
     
     subgraph "复杂读取视图"
         F1[逻辑文件视图] --> G1[0-30MB: 从 Slice A]
         F1 --> G2[30-35MB: 从 Slice C]
-        F1 --> G3[35-64MB: 从 Slice A]
+        F1 --> G3[35-64 MiB: 从 Slice A]
         
         G1 --> H1[Block A1-A7 + A8前2MB]
         G2 --> H2[Block C1 + C2]
@@ -497,11 +472,11 @@ graph TD
 
 ```mermaid
 graph TD
-    A[读取请求: 0-64MB] --> B{Slice 合并视图}
+    A[读取请求: 0-64 MiB] --> B{Slice 合并视图}
     
     B --> C[0-30MB<br/>从 Slice A<br/>时间戳: T1]
     B --> D[30-35MB<br/>从 Slice C<br/>时间戳: T2]
-    B --> E[35-64MB<br/>从 Slice A<br/>时间戳: T1]
+    B --> E[35-64 MiB<br/>从 Slice A<br/>时间戳: T1]
     
     C --> F[Block A1-A7<br/>+ A8前2MB]
     D --> G[Block C1 + C2]
@@ -523,15 +498,15 @@ graph TD
 
 **Slice 层面的变化**：
 
-- **Slice A**：原有 Slice 保持物理存在，但逻辑有效范围被分割为两段：0-30MB 和 35-64MB
-- **Slice C**：新创建的 Slice，精确覆盖 30-35MB 范围，具有更新的时间戳
+- **Slice A**：原有 Slice 保持物理存在，但逻辑有效范围被分割为两段：0-30MB 和 35-64 MiB
+- **Slice C**：新创建的 Slice，精确覆盖 30-35MB 范围，在 Chunk 0 的 Slice 列表中位于最新位置
 
 **Block 层面的变化**：
 
 - **Block A1-A7**：完全有效，提供 0-28MB 的数据
 - **Block A8**：部分有效，只有前 2MB（28-30MB）仍然有效
 - **Block A9**：部分有效，只有后 1MB（35-36MB）仍然有效
-- **Block A10-A16**：完全有效，提供 36-64MB 的数据
+- **Block A10-A16**：完全有效，提供 36-64 MiB 的数据
 - **Block C1, C2**：新创建的 Block，提供 30-35MB 的修改后数据
 
 **读取性能影响**：
@@ -553,20 +528,20 @@ graph TD
 
 文件尾部修改是相对简单且性能影响较小的写入场景，常见于日志文件的追加写入、数据文件的末尾更新等操作。这种修改模式的特点是只影响文件的末尾部分，不会在文件中间创建复杂的覆盖关系。
 
-以一个 100MB 的文件为例，该文件跨越两个 Chunk（Chunk 0: 0-64MB，Chunk 1: 64-100MB），假设我们需要修改文件的最后 5MB 内容（95-100MB）。这种修改只会影响 Chunk 1，且主要集中在文件的尾部区域。
+以一个 100MB 的文件为例，该文件跨越两个 Chunk（Chunk 0: 0-64 MiB，Chunk 1: 64-100MB），假设我们需要修改文件的最后 5MB 内容（95-100MB）。这种修改只会影响 Chunk 1，且主要集中在文件的尾部区域。
 
 #### 3.3.2 写入前状态
 
 ```mermaid
 graph LR
     subgraph "写入前：原始文件状态"
-        A1[文件: 100MB] --> B1[Chunk 0: 0-64MB]
+        A1[文件: 100MB] --> B1[Chunk 0: 0-64 MiB]
         A1 --> B2[Chunk 1: 64-100MB]
         
-        B1 --> C1[Slice A: 0-64MB<br/>创建时间: T1]
+        B1 --> C1[Slice A: 0-64 MiB<br/>创建时间: T1]
         B2 --> C2[Slice B: 64-100MB<br/>创建时间: T1]
         
-        C1 --> D1[Block A1-A16<br/>每个4MB]
+        C1 --> D1[Block A1-A16<br/>每个4 MiB]
         
         C2 --> D2[Block B1: 64-68MB]
         C2 --> D3[Block B2: 68-72MB]
@@ -590,7 +565,7 @@ graph LR
 - **跨 Chunk 文件**：100MB 文件分布在两个 Chunk 中
 - **目标修改范围**：95-100MB，位于 Chunk 1 的尾部
 - **影响范围有限**：只影响 Chunk 1，Chunk 0 完全不受影响
-- **Block 影响分析**：Block B8 的最后 1MB 和 Block B9 的全部 4MB 将被覆盖
+- **Block 影响分析**：Block B8 的最后 1MB 和 Block B9 的全部 4 MiB 将被覆盖
 
 #### 3.3.3 写入操作过程
 
@@ -608,7 +583,7 @@ sequenceDiagram
     Note over JFS: 相对 Chunk 1 偏移：31-36MB
     JFS->>JFS: 2. 创建新 Slice D (95-100MB, T2)
     JFS->>JFS: 3. 将 5MB 数据分割为 Block
-    Note over JFS: 95-99MB → Block D1 (4MB)<br/>99-100MB → Block D2 (1MB)
+    Note over JFS: 95-99MB → Block D1 (4 MiB)<br/>99-100MB → Block D2 (1MB)
     JFS->>Store: 4. 上传 Block D1 (95-99MB)
     JFS->>Store: 5. 上传 Block D2 (99-100MB)
     Store-->>JFS: 6. 确认两个 Block 上传完成
@@ -632,10 +607,10 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "写入后：修改完成状态"
-        A2[文件: 100MB] --> B3[Chunk 0: 0-64MB<br/>保持不变]
+        A2[文件: 100MB] --> B3[Chunk 0: 0-64 MiB<br/>保持不变]
         A2 --> B4[Chunk 1: 64-100MB<br/>包含修改]
         
-        B3 --> C3[Slice A: 0-64MB<br/>创建时间: T1<br/>完全有效]
+        B3 --> C3[Slice A: 0-64 MiB<br/>创建时间: T1<br/>完全有效]
         
         B4 --> C4[Slice B: 64-100MB<br/>创建时间: T1<br/>有效范围: 64-95MB]
         B4 --> C5[Slice D: 95-100MB<br/>创建时间: T2<br/>有效范围: 95-100MB]
@@ -654,7 +629,7 @@ graph LR
     end
     
     subgraph "读取视图"
-        F2[逻辑文件视图] --> G4[0-64MB: 从 Chunk 0]
+        F2[逻辑文件视图] --> G4[0-64 MiB: 从 Chunk 0]
         F2 --> G5[64-95MB: 从 Slice B]
         F2 --> G6[95-100MB: 从 Slice D]
     end
@@ -669,36 +644,6 @@ graph LR
 
 #### 3.3.5 尾部修改的优势分析
 
-```mermaid
-graph TD
-    A[尾部修改优势] --> B[局部影响]
-    A --> C[简单读取]
-    A --> D[缓存友好]
-    A --> E[扩展性好]
-    
-    B --> B1[只影响一个 Chunk]
-    B --> B2[不影响文件前部]
-    B --> B3[元数据变化最小]
-    
-    C --> C1[读取路径清晰]
-    C --> C2[Slice 合并简单]
-    C --> C3[顺序访问优化]
-    
-    D --> D1[前部缓存保持有效]
-    D --> D2[预读策略不受影响]
-    D --> D3[热点数据分离]
-    
-    E --> E1[支持文件增长]
-    E --> E2[追加写入优化]
-    E --> E3[日志场景友好]
-    
-    style A fill:#4caf50
-    style B fill:#81c784
-    style C fill:#81c784
-    style D fill:#81c784
-    style E fill:#81c784
-```
-
 写入完成后的状态分析：
 
 **Chunk 层面的影响**：
@@ -708,7 +653,7 @@ graph TD
 
 **Slice 层面的变化**：
 
-- **Slice A**：完全不变，继续提供 0-64MB 的数据
+- **Slice A**：完全不变，继续提供 0-64 MiB 的数据
 - **Slice B**：逻辑有效范围调整为 64-95MB
 - **Slice D**：新创建的 Slice，覆盖 95-100MB 范围
 
@@ -729,47 +674,28 @@ graph TD
 **存储开销分析**：
 
 - **新增存储**：5MB 的新 Block（D1 + D2）
-- **冗余存储**：Block B8 的后 1MB 和 Block B9 的 4MB 成为冗余数据
+- **冗余存储**：Block B8 的后 1MB 和 Block B9 的 4 MiB 成为冗余数据
 - **元数据开销**：相对较小，只在 Chunk 1 中增加一个 Slice
 - **碎片化程度**：低，只有一个 Chunk 受到影响
 
 ---
 
-## 4. 性能影响分析
+## 4. 性能影响对比
 
-### 4.1 写入性能影响
+三种修改场景的机制已在第 3 节逐一分析，这里集中对比它们对性能的影响：
 
-**前部修改**：
+| 维度 | 前部修改 | 中间修改 | 尾部修改 |
+| ---- | -------- | -------- | -------- |
+| 新增数据量 | 小（如 1MB） | 视修改范围而定（如 5MB） | 小（如 5MB） |
+| 碎片化程度 | 轻微 | 严重，Chunk 内出现重叠 Slice | 轻微 |
+| 读取合并 | 最多涉及 2 个 Slice | 多段范围来自不同 Slice，合并最复杂 | 最多涉及 2 个 Slice |
+| 元数据开销 | 增加 1 个 Slice 记录 | 增加 1 个 Slice 记录及覆盖关系 | 只在尾部 Chunk 增加 1 个 Slice |
+| 缓存影响 | 修改处所在 Block 缓存失效 | 修改区附近多个 Block 缓存失效 | 文件前部缓存完全不受影响 |
 
-- 影响相对较小，只涉及第一个 Chunk
-- 需要创建新的 Slice 和 Block
-- 元数据更新开销较小
+补充两点：
 
-**中间修改**：
-
-- 性能影响最大，可能导致严重的碎片化
-- 每次修改都创建新的 Slice，增加元数据复杂度
-- 读取时需要合并多个 Slice 的视图
-
-**尾部修改**：
-
-- 影响相对较小，类似追加写入
-- 如果是扩展文件，性能较好
-- 如果是覆盖写入，会产生新的 Slice
-
-### 4.2 读取性能影响
-
-**碎片化程度**：
-
-- 前部修改：轻微碎片化
-- 中间修改：严重碎片化，需要查找多个 Slice
-- 尾部修改：轻微碎片化
-
-**缓存效率**：
-
-- 修改会使相关的缓存失效
-- 新创建的 Block 需要重新缓存
-- 小的修改可能导致整个 Block 缓存失效
+- 缓存以 Block 为单位，小块修改也会使所在 Block 的缓存整体失效，新 Block 需要重新缓存。
+- 如果尾部写入是扩展文件（追加）而非覆盖，效果接近纯顺序写，性能最好。
 
 ---
 
@@ -777,16 +703,29 @@ graph TD
 
 ### 5.1 碎片整理（Compaction）
 
-当 Chunk 内 Slice 过多时，JuiceFS 会自动触发碎片整理：
+写入路径上，客户端会限制未冻结 Slice 的数量；当 Chunk 内已提交的 Slice 过多时，JuiceFS 会在后台触发碎片整理，把多个 Slice 合并重写为连续数据。可写 Slice 的查找与冻结逻辑集中在 `findWritableSlice`（来源：`pkg/vfs/writer.go`，juicedata/juicefs 主分支）：
 
 ```go
-// 来源：pkg/vfs/writer.go
 func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
-    // 当 Slice 数量过多时，冻结旧的 Slice
-    if i > 3 {
-        s.freezed = true
-        go s.flushData()
-    }
+	blockSize := uint32(c.file.w.blockSize)
+	for i := range c.slices {
+		s := c.slices[len(c.slices)-1-i] // 从最新写入的 Slice 反向遍历
+		if !s.freezed {
+			flushoff := s.slen / blockSize * blockSize
+			if pos >= s.off+flushoff && pos <= s.off+s.slen {
+				return s // 续写位置在该 Slice 已 flush 区间之后，可直接复用
+			} else if i > 3 {
+				s.freezed = true // 冻结逻辑：仅保留最近 4 个未冻结 Slice
+				go s.flushData()
+			}
+		}
+		if pos < s.off+s.slen && s.off < pos+size {
+			// overlaped
+			// TODO: write into multiple slices
+			return nil // 与已有 Slice 重叠且不可续写，交由上层新建 Slice
+		}
+	}
+	return nil
 }
 ```
 
@@ -801,21 +740,7 @@ func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
 
 **Slice 复用**：
 
-```go
-// 查找可写入的 Slice
-func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
-    for i := range c.slices {
-        s := c.slices[len(c.slices)-1-i]
-        if !s.freezed {
-            flushoff := s.slen / blockSize * blockSize
-            if pos >= s.off+flushoff && pos <= s.off+s.slen {
-                return s  // 复用现有 Slice
-            }
-        }
-    }
-    return nil  // 需要创建新 Slice
-}
-```
+续写位置的查找与 Slice 的冻结都发生在 `findWritableSlice`（见 5.1 节）：从最新写入的 Slice 反向查找可续写的未冻结 Slice，找到即复用；找不到或与已有 Slice 重叠时，由调用方新建 Slice 加入列表。
 
 **缓冲区管理**：
 
@@ -834,8 +759,8 @@ func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
 **Slice 合并视图**：
 
 - 读取时动态合并多个 Slice 的数据
-- 按时间顺序确定数据的有效性
-- 缓存合并后的结果提升后续读取性能
+- 按 Slice 列表顺序，最新写入的 Slice 生效
+- 合并按需进行，配合 Block 缓存减少对象存储的重复下载
 
 ---
 
@@ -851,7 +776,7 @@ func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
 
 **大块写入**：
 
-- 单次写入尽量达到 Block 大小（4MB）
+- 单次写入尽量达到 Block 大小（4 MiB）
 - 减少小块写入导致的碎片化
 - 合理设置缓冲区大小
 
@@ -879,7 +804,7 @@ func (c *chunkWriter) findWritableSlice(pos uint32, size uint32) *sliceWriter {
 
 **定期维护**：
 
-- 定期运行 `juicefs gc` 进行碎片整理
+- `juicefs gc` 默认只检查泄漏对象（真正删除需加 `--delete`）；碎片压缩需显式运行 `juicefs gc --compact`
 - 监控对象存储的空间使用
 - 清理无用的 Block 对象
 

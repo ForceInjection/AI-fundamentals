@@ -394,4 +394,6 @@ LMCache 提供了丰富的存储后端以应对不同的硬件环境和业务需
 
 > 详细的场景分析、后端组合方案及优劣势对比，请参阅 **[存储架构概览 - 典型部署场景与选型指南](./lmcache_storage_overview.md#4-典型部署场景与后端组合)**。
 
+> 在 Kubernetes 侧基于 LMCache 做 KV 分层的编排方案，参见 [云原生高性能分布式 LLM 推理框架 llm-d 介绍](../../../../04_cloud_native_ai_platform/k8s/05_llm_d_intro.md)。
+
 ---

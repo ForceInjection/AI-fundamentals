@@ -55,7 +55,7 @@ NVIDIA Container Toolkit 是实现容器使用 GPU 的关键组件（旧称 `nvi
 
 1. **nvidia-container-runtime**: 一个轻量级的 Wrapper，它包裹了系统的原生运行时（如 runC）。它并不直接运行容器，而是拦截容器启动请求，注入 `prestart hook`。
 2. **nvidia-container-toolkit (Hook)**: 作为 prestart hook 被调用，它读取容器配置（如环境变量、Mounts），并调用 CLI 工具。
-3. **nvidia-ctk**: (v1.11.0+ 引入) 新一代命令行工具，用于配置生成和 CDI (Container Device Interface) 规范管理，逐步取代部分旧组件功能。
+3. **nvidia-ctk**: (v1.10.0+ 引入) 新一代命令行工具，用于配置生成和 CDI (Container Device Interface) 规范管理，逐步取代部分旧组件功能。
 4. **libnvidia-container / nvidia-container-cli**: 核心执行组件。它负责与操作系统内核交互，执行具体的设备挂载和库文件注入。
 
 **NVIDIA Container Runtime 的内部机制：**

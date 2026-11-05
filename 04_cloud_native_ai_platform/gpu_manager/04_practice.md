@@ -96,37 +96,30 @@
 
 **快速部署脚本：**
 
-详细的环境配置脚本请参考：[gpu-environment-setup.sh](configs/scripts/gpu-environment-setup.sh)
-
-该脚本包含：
-
-- NVIDIA 驱动安装
-- Container Toolkit 配置
-- Docker GPU 支持启用
-- 系统环境验证
+环境配置脚本见 [gpu-environment-setup.sh](configs/scripts/gpu-environment-setup.sh)，覆盖 NVIDIA 驱动安装、Container Toolkit 配置、Docker GPU 支持启用与系统环境验证。
 
 #### 13.1.2 MIG 配置要点
 
 **MIG 实例规格对照：**
 
-| 实例类型 | GPU 内存 | SM 数量 | 适用场景   |
-| -------- | -------- | ------- | ---------- |
-| 1g.5gb   | 5GB      | 14      | 轻量推理   |
-| 2g.10gb  | 10GB     | 28      | 中等训练   |
-| 3g.20gb  | 20GB     | 42      | 大模型推理 |
-| 4g.20gb  | 20GB     | 56      | 重度训练   |
-| 7g.40gb  | 40GB     | 98      | 全功能     |
+| 实例类型 | GPU 内存 | SM 数量 | 适用卡型                 | 适用场景   |
+| -------- | -------- | ------- | ------------------------ | ---------- |
+| 1g.5gb   | 5GB      | 14      | A100 40GB                | 轻量推理   |
+| 2g.10gb  | 10GB     | 28      | A100 40GB                | 中等训练   |
+| 3g.20gb  | 20GB     | 42      | A100 40GB                | 大模型推理 |
+| 4g.20gb  | 20GB     | 56      | A100 40GB                | 重度训练   |
+| 7g.40gb  | 40GB     | 98      | A100 40GB                | 全功能     |
+| 1g.10gb  | 10GB     | 14      | A100 80GB / H100 80GB    | 轻量推理   |
+| 2g.20gb  | 20GB     | 28      | A100 80GB / H100 80GB    | 中等训练   |
+| 3g.40gb  | 40GB     | 42      | A100 80GB / H100 80GB    | 大模型推理 |
+| 4g.40gb  | 40GB     | 56      | A100 80GB / H100 80GB    | 重度训练   |
+| 7g.80gb  | 80GB     | 98      | A100 80GB / H100 80GB    | 全功能     |
+
+> A100-80GB 上限：7 × 1g.10gb 、 3 × 2g.20gb 或 2 × 3g.40gb ，最大单实例 7g.80gb ； H100 80GB 的 profile 与 A100 80GB 同名（ SM 数随架构不同，上表 SM 列按 A100 计）。
 
 **核心配置命令：**
 
-详细的 MIG 配置脚本请参考：[mig-setup.sh](configs/scripts/mig-setup.sh)
-
-该脚本包含：
-
-- MIG 模式启用和禁用
-- GPU 实例创建和管理
-- 计算实例配置
-- 状态验证和故障排查
+MIG 配置脚本见 [mig-setup.sh](configs/scripts/mig-setup.sh)，覆盖 MIG 模式启停、GPU 实例创建与管理、计算实例配置和状态验证。
 
 ### 13.2 容器生态集成
 
@@ -134,14 +127,7 @@
 
 **GPU Operator 一键部署：**
 
-详细的 GPU Operator 部署脚本请参考：[gpu-operator-deploy.sh](configs/scripts/gpu-operator-deploy.sh)
-
-该脚本包含：
-
-- Helm 仓库配置
-- GPU Operator 安装
-- 部署状态验证
-- 常见问题修复
+GPU Operator 部署脚本见 [gpu-operator-deploy.sh](configs/scripts/gpu-operator-deploy.sh)，覆盖 Helm 仓库配置、安装、部署状态验证与常见问题修复。
 
 **GPU 资源调度策略：**
 
@@ -154,27 +140,13 @@
 
 **Pod 配置模板：**
 
-详细的 GPU Pod 配置模板请参考：[gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)
-
-该文件包含：
-
-- 基础 GPU Pod 模板
-- TensorFlow/PyTorch 训练模板
-- 多 GPU 并行训练配置
-- GPU 推理服务模板
+GPU Pod 配置模板见 [gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)，含基础模板、TensorFlow/PyTorch 训练模板、多 GPU 并行训练与推理服务模板。
 
 #### 13.2.2 Docker 集成要点
 
 **GPU 容器运行模式：**
 
-详细的 Docker GPU 使用示例请参考：[docker-gpu-examples.sh](configs/scripts/docker-gpu-examples.sh)
-
-该脚本包含：
-
-- 基础 GPU 容器运行模式
-- 指定 GPU 设备分配
-- MIG 实例容器配置
-- 资源限制和约束设置
+Docker GPU 使用示例见 [docker-gpu-examples.sh](configs/scripts/docker-gpu-examples.sh)，覆盖基础运行模式、指定 GPU 分配、MIG 实例容器配置与资源限制。
 
 ### 13.3 监控和运维
 
@@ -214,14 +186,7 @@
 
 **自动化故障恢复：**
 
-详细的故障排查和恢复脚本请参考：[gpu-troubleshoot.sh](configs/scripts/gpu-troubleshoot.sh)
-
-该脚本包含：
-
-- GPU 健康状态检查
-- 驱动故障自动修复
-- 温度和功耗监控
-- 详细诊断报告生成
+故障排查和恢复脚本见 [gpu-troubleshoot.sh](configs/scripts/gpu-troubleshoot.sh)，覆盖 GPU 健康检查、驱动故障自动修复、温度功耗监控与诊断报告生成。
 
 ### 13.4 技术选型指南
 
@@ -270,14 +235,7 @@
 
 **网络优化配置：**
 
-详细的网络优化脚本请参考：[network-optimization.sh](configs/scripts/network-optimization.sh)
-
-该脚本包含：
-
-- 高性能网络参数调优
-- RDMA/InfiniBand 配置
-- 网络延迟优化
-- 带宽利用率提升
+网络优化脚本见 [network-optimization.sh](configs/scripts/network-optimization.sh)，覆盖高性能网络参数调优、RDMA/InfiniBand 配置与延迟、带宽优化。
 
 ### 13.6 CUDA 流和 MPS 实践应用
 
@@ -293,14 +251,7 @@ CUDA 流是 GPU 上的任务执行队列，支持异步操作和并发执行。�
 
 **核心配置示例：**
 
-详细的 CUDA 流配置代码请参考：[cuda-streams-example.cu](configs/scripts/cuda-streams-example.cu)
-
-该示例包含：
-
-- 优先级流创建和管理
-- 异步并发执行模式
-- 内存传输与计算重叠
-- 流同步和事件处理
+CUDA 流配置代码见 [cuda-streams-example.cu](configs/scripts/cuda-streams-example.cu)，覆盖优先级流创建、异步并发执行、传输与计算重叠及流同步。
 
 **性能优化要点：**
 
@@ -310,6 +261,8 @@ CUDA 流是 GPU 上的任务执行队列，支持异步操作和并发执行。�
 | 流并发     | 多流异步执行                     | 1.5-2x 吞吐量 |
 | 优先级调度 | `cudaStreamCreateWithPriority()` | 减少延迟 50%  |
 | 事件同步   | `cudaEvent_t`                    | 精确控制依赖  |
+
+> 表中倍数与百分比为经验量级估计，随负载与硬件代际变化较大，无统一公开实测。
 
 #### 13.6.2 CUDA MPS 多进程服务
 
@@ -323,14 +276,7 @@ MPS （ Multi-Process Service ）允许多个 CUDA 进程共享单个 GPU ，实
 
 **快速部署配置：**
 
-详细的 MPS 配置脚本请参考：[cuda-mps-setup.sh](configs/scripts/cuda-mps-setup.sh)
-
-该脚本包含：
-
-- MPS 服务启动和配置
-- 默认资源限制设置
-- 进程级资源控制
-- 状态监控和管理
+MPS 配置脚本见 [cuda-mps-setup.sh](configs/scripts/cuda-mps-setup.sh)，覆盖 MPS 服务启动配置、默认资源限制、进程级资源控制与状态监控。
 
 **MPS vs 时间切片对比：**
 
@@ -354,25 +300,11 @@ MPS （ Multi-Process Service ）允许多个 CUDA 进程共享单个 GPU ，实
 
 **快速监控命令：**
 
-详细的性能监控脚本请参考：[gpu-performance-monitor.sh](configs/scripts/gpu-performance-monitor.sh)
-
-该脚本包含：
-
-- 实时 GPU 状态监控
-- CUDA 流并发监控
-- MPS 客户端状态检查
-- 性能分析和报告生成
+性能监控脚本见 [gpu-performance-monitor.sh](configs/scripts/gpu-performance-monitor.sh)，覆盖实时 GPU 状态、CUDA 流并发、MPS 客户端状态检查与报告生成。
 
 **常见性能问题及解决方案：**
 
-详细的性能优化脚本请参考：[gpu-performance-tuning.sh](configs/scripts/gpu-performance-tuning.sh)
-
-该脚本包含：
-
-- GPU 利用率优化
-- 内存碎片化处理
-- MPS 客户端冲突解决
-- 温度和功耗控制
+性能优化脚本见 [gpu-performance-tuning.sh](configs/scripts/gpu-performance-tuning.sh)，覆盖 GPU 利用率优化、内存碎片化处理、MPS 客户端冲突解决与温度功耗控制。
 
 #### 13.6.4 故障排查和调试
 
@@ -387,25 +319,11 @@ MPS （ Multi-Process Service ）允许多个 CUDA 进程共享单个 GPU ，实
 
 **MPS 故障诊断脚本：**
 
-详细的 MPS 故障诊断脚本请参考：[mps-troubleshoot.sh](configs/scripts/mps-troubleshoot.sh)
-
-该脚本包含：
-
-- MPS 服务状态检查
-- 环境变量验证
-- 客户端连接诊断
-- 自动修复功能
+MPS 故障诊断脚本见 [mps-troubleshoot.sh](configs/scripts/mps-troubleshoot.sh)，覆盖服务状态检查、环境变量验证、客户端连接诊断与自动修复。
 
 **CUDA 调试工具：**
 
-详细的 CUDA 调试脚本请参考：[cuda-debug-tools.sh](configs/scripts/cuda-debug-tools.sh)
-
-该脚本包含：
-
-- CUDA 环境检查
-- 内存错误检测
-- 性能分析工具
-- 流同步调试方法
+CUDA 调试脚本见 [cuda-debug-tools.sh](configs/scripts/cuda-debug-tools.sh)，覆盖 CUDA 环境检查、内存错误检测、性能分析工具与流同步调试。
 
 ### 13.7 安全配置要点
 
@@ -421,24 +339,17 @@ MPS （ Multi-Process Service ）允许多个 CUDA 进程共享单个 GPU ，实
 
 **快速权限配置：**
 
-详细的安全配置脚本请参考：[gpu-security-setup.sh](configs/scripts/gpu-security-setup.sh)
-
-该脚本包含：
-
-- GPU 用户组权限配置
-- 容器安全上下文设置
-- 网络安全规则
-- 审计日志配置
+安全配置脚本见 [gpu-security-setup.sh](configs/scripts/gpu-security-setup.sh)，覆盖 GPU 用户组权限、容器安全上下文、网络安全规则与审计日志配置。
 
 #### 13.7.2 网络安全要点
 
 **安全配置检查清单：**
 
-- ✅ **TLS 加密**：启用端到端加密通信
-- ✅ **证书管理**：定期轮换和更新证书
-- ✅ **防火墙规则**：限制 GPU 服务端口访问
-- ✅ **身份验证**：实施双向认证机制
-- ✅ **审计日志**：记录所有 GPU 访问操作
+- **TLS 加密**：启用端到端加密通信
+- **证书管理**：定期轮换和更新证书
+- **防火墙规则**：限制 GPU 服务端口访问
+- **身份验证**：实施双向认证机制
+- **审计日志**：记录所有 GPU 访问操作
 
 ### 13.8 故障排查手册
 
@@ -519,28 +430,13 @@ docker run --rm --gpus all nvidia/cuda:12.4-runtime-ubuntu22.04 nvidia-smi
 
 **快速验证命令：**
 
-详细的部署验证脚本请参考：[gpu-deployment-verify.sh](configs/scripts/gpu-deployment-verify.sh)
-
-该脚本包含：
-
-- GPU 设备检测
-- 容器 GPU 访问验证
-- MIG 功能检查
-- 性能基准测试
-- 完整性验证报告
+部署验证脚本见 [gpu-deployment-verify.sh](configs/scripts/gpu-deployment-verify.sh)，覆盖 GPU 设备检测、容器 GPU 访问验证、MIG 功能检查与完整性验证报告。
 
 #### 13.9.3 配置模板
 
 **标准 GPU 工作负载：**
 
-详细的 GPU 工作负载配置模板请参考：[gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)
-
-该文件包含：
-
-- 标准 GPU Pod 模板
-- 资源限制和请求配置
-- 节点选择器设置
-- 多种工作负载类型
+GPU 工作负载配置模板见 [gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)，含标准 Pod 模板、资源限制配置、节点选择器与多种工作负载类型。
 
 ### 13.10 发展趋势与最佳实践
 
@@ -550,8 +446,8 @@ docker run --rm --gpus all nvidia/cuda:12.4-runtime-ubuntu22.04 nvidia-smi
 
 | 技术方向     | 当前状态               | 未来发展            | 对虚拟化影响                 |
 | ------------ | ---------------------- | ------------------- | ---------------------------- |
-| **GPU 架构** | H100 Hopper, L40S Ada  | Blackwell B100/B200 | 更细粒度 MIG ，支持更多实例  |
-| **内存技术** | HBM3 80GB/188GB        | HBM3e/HBM4 更大容量 | 虚拟化开销<1%                |
+| **GPU 架构** | H100 Hopper, L40S Ada ；Blackwell（ B200/GB200/GB300 ）已量产部署（截至 2026-11） | Rubin 及后续架构 | 更细粒度 MIG ，支持更多实例  |
+| **内存技术** | HBM3 80GB/188GB （ NVL 为双卡桥接合计口径） | HBM3e/HBM4 更大容量 | 虚拟化开销<1%（厂商口径，无公开实测） |
 | **互联技术** | NVLink 4.0/5.0         | NVLink-C2C          | 多 GPU 虚拟化，跨节点扩展    |
 | **异构计算** | Grace Hopper 超级芯片  | CPU-GPU-DPU 融合    | 统一内存管理，硬件加速虚拟化 |
 | **AI 加速**  | Transformer Engine 2.0 | FP4 精度，稀疏计算  | 硬件级隔离，专用 AI 虚拟化   |
@@ -617,49 +513,21 @@ docker run --rm --gpus all nvidia/cuda:12.4-runtime-ubuntu22.04 nvidia-smi
 
 **AWS EKS GPU 集群：**
 
-详细的 AWS EKS GPU 集群配置请参考：[aws-eks-gpu-cluster.yaml](configs/cloud/aws-eks-gpu-cluster.yaml)
-
-该配置包含：
-
-- EKS 集群基础配置
-- GPU 节点组设置
-- IAM 角色和策略
-- 网络和安全配置
+AWS EKS GPU 集群配置见 [aws-eks-gpu-cluster.yaml](configs/cloud/aws-eks-gpu-cluster.yaml)，含集群基础配置、GPU 节点组、IAM 角色策略与网络安全配置。
 
 **Azure AKS GPU 节点池：**
 
-详细的 Azure AKS GPU 配置脚本请参考：[azure-aks-gpu-setup.sh](configs/cloud/azure-aks-gpu-setup.sh)
-
-该脚本包含：
-
-- AKS 集群创建
-- GPU 节点池配置
-- NVIDIA GPU Operator 安装
-- 验证和测试步骤
+Azure AKS GPU 配置脚本见 [azure-aks-gpu-setup.sh](configs/cloud/azure-aks-gpu-setup.sh)，覆盖 AKS 集群创建、GPU 节点池配置、GPU Operator 安装与验证测试。
 
 **GCP GKE GPU 集群：**
 
-详细的 GCP GKE GPU 配置脚本请参考：[gcp-gke-gpu-setup.sh](configs/cloud/gcp-gke-gpu-setup.sh)
-
-该脚本包含：
-
-- GKE GPU 集群创建
-- GPU 驱动安装
-- 自动扩缩容配置
-- 工作负载部署示例
+GCP GKE GPU 配置脚本见 [gcp-gke-gpu-setup.sh](configs/cloud/gcp-gke-gpu-setup.sh)，覆盖 GKE 集群创建、GPU 驱动安装、自动扩缩容配置与工作负载部署示例。
 
 #### 14.1.2 GPU 工作负载配置
 
 **通用 GPU Pod 模板：**
 
-详细的通用 GPU Pod 配置请参考：[gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)
-
-该文件包含：
-
-- 基础 GPU Pod 模板
-- 容忍度和节点选择器
-- 资源限制配置
-- 多云平台兼容性
+通用 GPU Pod 配置见 [gpu-pod-templates.yaml](configs/kubernetes/gpu-pod-templates.yaml)，含基础模板、容忍度与节点选择器、资源限制配置，各云平台兼容。
 
 ### 14.2 私有云 GPU 管理
 
@@ -687,6 +555,8 @@ systemctl restart nova-compute
 
 ```bash
 # 启用 vGPU 支持
+# 注意：NVreg_* 是 Linux 内核模块参数，ESXi 侧无此模块参数，
+# ESXi 对应的 vGPU 相关设置请查 VMware 官方文档
 esxcli system module parameters set -m nvidia -p "NVreg_EnableGpuFirmware=1"
 esxcli system module load -m nvidia
 ```
@@ -707,20 +577,13 @@ esxcli system module load -m nvidia
 
 **调度算法核心逻辑：**
 
-详细的多云 GPU 调度脚本请参考：[multicloud-gpu-scheduler.sh](configs/scripts/multicloud-gpu-scheduler.sh)
-
-该脚本包含：
-
-- 多云成本计算
-- 性能评估算法
-- 最优平台选择
-- 自动化工作负载部署
+多云 GPU 调度脚本见 [multicloud-gpu-scheduler.sh](configs/scripts/multicloud-gpu-scheduler.sh)，覆盖多云成本计算、性能评估、最优平台选择与工作负载部署。
 
 #### 14.3.2 HAMi 云原生 GPU 管理
 
 **HAMi 架构特点：**
 
-HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱项目，提供异构 GPU 统一管理。
+HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF incubating 项目，提供异构 GPU 统一管理。
 
 **核心能力对比：**
 
@@ -740,25 +603,11 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **HAMi 快速部署：**
 
-详细的 HAMi 部署脚本请参考：[hami-quick-deploy.sh](configs/scripts/hami-quick-deploy.sh)
-
-该脚本包含：
-
-- HAMi 组件安装
-- 配置验证
-- 功能测试
-- 故障排查
+HAMi 部署脚本见 [hami-quick-deploy.sh](configs/scripts/hami-quick-deploy.sh)，覆盖组件安装、配置验证、功能测试与故障排查。
 
 **HAMi 调度器配置：**
 
-详细的 HAMi 配置请参考：[hami-deployment.yaml](configs/hami/hami-deployment.yaml)
-
-该配置包含：
-
-- 调度器策略设置
-- 设备插件配置
-- 资源配额管理
-- 多厂商支持
+HAMi 配置见 [hami-deployment.yaml](configs/hami/hami-deployment.yaml)，含调度器策略设置、设备插件配置、资源配额管理与多厂商支持。
 
 **HAMi 异构设备支持：**
 
@@ -770,18 +619,13 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **HAMi 工作负载示例：**
 
-详细的 HAMi 工作负载配置请参考：[hami-workload-examples.yaml](configs/hami/hami-workload-examples.yaml)
-
-该文件包含：
-
-- GPU 切分工作负载
-- 多 GPU 并行任务
-- 异构 GPU 调度
-- 资源配额示例
+HAMi 工作负载配置见 [hami-workload-examples.yaml](configs/hami/hami-workload-examples.yaml)，含 GPU 切分工作负载、多 GPU 并行任务、异构 GPU 调度与资源配额示例。
 
 ### 14.4 成本优化策略
 
 **多云 GPU 成本对比：**
+
+> 价格快照口径： us-east-1 区域，厂商挂牌价（约 2025 年采集口径）。云 GPU 价格变动快，使用前请以各云控制台实时价格复核。
 
 | 云平台    | GPU 类型 | 实例类型      | 按需价格/小时 | Spot 价格/小时 | 节省比例 |
 | --------- | -------- | ------------- | ------------- | -------------- | -------- |
@@ -798,24 +642,20 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **HAMi 监控指标：**
 
-| 指标类型       | 指标名称                     | 阈值 | 告警级别 |
-| -------------- | ---------------------------- | ---- | -------- |
-| **GPU 利用率** | hami_gpu_utilization_percent | >90% | Warning  |
-| **GPU 内存**   | hami_gpu_memory_usage_ratio  | >95% | Critical |
-| **调度器状态** | hami_scheduler_up            | =0   | Critical |
-| **设备插件**   | hami_device_plugin_up        | =0   | Warning  |
-| **任务队列**   | hami_pending_jobs            | >10  | Warning  |
+HAMi 暴露的 Prometheus 指标以 `hami_` 为前缀，常用的有：
+
+| 指标名称                     | 含义                     | 建议关注点                     |
+| ---------------------------- | ------------------------ | ------------------------------ |
+| `hami_core_util`             | vGPU 算力利用率          | 持续高于 90% 考虑扩容或限流    |
+| `hami_memory_util`           | vGPU 显存利用率          | 接近上限时警惕 OOM             |
+| `hami_vgpu_count`            | 节点上 vGPU 数量         | 与节点实际负载对照排查         |
+| `hami_system_component_health` | HAMi 组件健康状态      | 值为 0 时组件异常，需介入      |
+
+完整指标清单与标签说明见 [hami-prometheus-metrics.md](hami/hami-prometheus-metrics.md)。
 
 **快速监控配置：**
 
-详细的 HAMi 监控配置请参考：[prometheus-gpu-config.yaml](configs/monitoring/prometheus-gpu-config.yaml)
-
-该配置包含：
-
-- HAMi 组件监控
-- GPU 指标收集
-- 告警规则设置
-- Grafana 仪表板
+HAMi 监控配置见 [prometheus-gpu-config.yaml](configs/monitoring/prometheus-gpu-config.yaml)，含 HAMi 组件监控、GPU 指标收集、告警规则与 Grafana 仪表板。
 
 **HAMi 运维要点：**
 
@@ -830,14 +670,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **常用运维命令：**
 
-详细的 HAMi 运维脚本请参考：[hami-ops.sh](configs/scripts/hami-ops.sh)
-
-该脚本包含：
-
-- HAMi 状态检查
-- GPU 资源查看
-- 组件重启操作
-- 配置备份恢复
+HAMi 运维脚本见 [hami-ops.sh](configs/scripts/hami-ops.sh)，覆盖状态检查、GPU 资源查看、组件重启操作与配置备份恢复。
 
 ## 15. 性能评估与基准测试
 
@@ -869,14 +702,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **快速性能检测命令：**
 
-详细的 GPU 性能检测脚本请参考：[gpu-performance-test.sh](configs/scripts/gpu-performance-test.sh)
-
-该脚本包含：
-
-- GPU 基础信息检测
-- 内存带宽测试
-- 计算性能基准
-- AI 推理性能测试
+GPU 性能检测脚本见 [gpu-performance-test.sh](configs/scripts/gpu-performance-test.sh)，覆盖基础信息检测、内存带宽测试、计算性能基准与 AI 推理性能测试。
 
 ### 15.2 基准测试工具
 
@@ -887,7 +713,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 | **nvidia-smi**     | 基础监控   | 实时状态查看     | 驱动自带                    |
 | **bandwidthTest**  | 内存带宽   | 内存性能评估     | CUDA Samples                |
 | **matrixMul**      | 计算性能   | GEMM 性能测试    | CUDA Samples                |
-| **MLPerf**         | AI 推理    | 标准化 AI 基准   | pip install mlperf          |
+| **MLPerf**         | AI 推理    | 标准化 AI 基准   | 按 MLPerf 官方 repo 的推理基准运行方式 |
 | **FP16/FP32 GEMM** | 混合精度   | Tensor Core 测试 | cuBLAS                      |
 | **Nsight Systems** | 性能分析   | 详细性能剖析     | NVIDIA 官网                 |
 | **GPU-Burn**       | 压力测试   | 稳定性验证       | GitHub 下载                 |
@@ -897,14 +723,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **快速基准测试脚本：**
 
-详细的 GPU 基准测试脚本请参考：[gpu-benchmark-suite.sh](configs/scripts/gpu-benchmark-suite.sh)
-
-该脚本包含：
-
-- GPU 基础信息收集
-- 内存带宽测试
-- 计算性能测试
-- AI 推理基准测试
+GPU 基准测试脚本见 [gpu-benchmark-suite.sh](configs/scripts/gpu-benchmark-suite.sh)，覆盖基础信息收集、内存带宽、计算性能与 AI 推理基准测试。
 
 ### 15.3 AI 工作负载基准测试
 
@@ -923,14 +742,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **快速 AI 性能测试：**
 
-详细的 AI 基准测试脚本请参考：[ai-benchmark.py](configs/scripts/ai-benchmark.py)
-
-该脚本包含：
-
-- 推理延迟测试
-- 吞吐量基准
-- 内存使用分析
-- 多模型性能对比
+AI 基准测试脚本见 [ai-benchmark.py](configs/scripts/ai-benchmark.py)，覆盖推理延迟、吞吐量基准、内存使用分析与多模型性能对比。
 
 ### 15.4 性能分析工具
 
@@ -946,14 +758,7 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 
 **快速性能分析命令：**
 
-详细的性能分析脚本请参考：[gpu-profiling.sh](configs/scripts/gpu-profiling.sh)
-
-该脚本包含：
-
-- 系统级监控命令
-- 应用性能分析
-- 内核级详细分析
-- 自定义监控工具
+性能分析脚本见 [gpu-profiling.sh](configs/scripts/gpu-profiling.sh)，覆盖系统级监控、应用性能分析、内核级详细分析与自定义监控。
 
 ### 15.5 性能优化策略
 
@@ -967,17 +772,11 @@ HAMi （ Heterogeneous AI Computing Virtualization Middleware ）是 CNCF 沙箱
 | **批处理优化** | 动态批次、填充优化   | 10-30%   | 中等     |
 | **模型优化**   | 量化、剪枝、蒸馏     | 50-80%   | 高       |
 
+> 「性能提升」一列为经验量级估计（无统一公开实测），实际收益取决于模型结构与负载特征。
+
 **快速优化检查清单：**
 
-详细的性能优化脚本请参考：[gpu-optimization-checklist.sh](configs/scripts/gpu-optimization-checklist.sh)
-
-该脚本包含：
-
-- 内存使用检查
-- GPU 利用率监控
-- 混合精度配置
-- 批次大小优化建议
-- 数据加载优化
+优化检查脚本见 [gpu-optimization-checklist.sh](configs/scripts/gpu-optimization-checklist.sh)，覆盖内存使用检查、GPU 利用率监控、混合精度配置、批次大小与数据加载优化建议。
 
 ### 15.6 性能监控与报告
 

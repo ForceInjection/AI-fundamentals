@@ -39,18 +39,15 @@
 `LWS` 将 `Super Pod` 作为原子单元进行扩缩容和更新，确保组内状态一致性。例如：
 
 - 扩缩容时以组为单位增减资源池。
-- 滚动更新采用两阶段机制（预热 + 流量切换）。
-- 故障时优先局部恢复，必要时整组重建。
+- 滚动更新以组为单位逐组替换，`maxUnavailable`/`maxSurge` 控制节奏，一个组只有 Leader 和全部 Worker 都 Ready 才算就绪。
+- 故障时优先局部恢复，必要时整组重建（`restartPolicy: RecreateGroupOnPodRestart`，组内任一 Pod 重启即整组重建）。
 
 ### 2. 拓扑感知的调度
 
-通过 `Kubernetes` 原生的 `Pod Topology Spread Constraints` 和厂商扩展实现：
+`LWS` 自身依赖 `Kubernetes` 原生的 `Pod Topology Spread Constraints`，配合厂商各自的拓扑注解使用（`LWS` 没有内置厂商拓扑注解，不同环境用各自的扩展）：
 
 ```yaml
-# NVIDIA DGX 系统
-annotations:
-  nvidia.com/gpu.topology: "single-node-socket"
-# Google TPU 集群
+# Google TPU 集群（GKE 注解）
 annotations:
   cloud.google.com/gke-tpu-topology: "4x4x4"
 ```
@@ -197,7 +194,7 @@ spec:
 
 `vLLM` 对推理性能高度敏感，部署时通常采用多机多卡结构（GPU/TPU），以实现模型并行和吞吐优化。以下是某企业在生产环境中的部署经验总结：
 
-- **模型规模**：使用 `Mixtral` 模型（12.9B），量化后模型大小约 `48GB`。
+- **模型规模**：使用 `Mixtral 8x7B`（约 46.7B 参数），AWQ 量化后模型大小约 `26GB`。
 - **部署结构**：1 个 `Leader` + 3 个 `Worker`，每个 `Worker` 节点分配 2 块 `GPU`，采用张量并行机制。
 - **核心参数调优示例**：
 
@@ -212,8 +209,7 @@ spec:
     --enforce-eager \
     --max-num-batched-tokens 8192 \
     --max-num-seqs 256 \
-    --disable-log-stats \
-    --enable-prefetch
+    --disable-log-stats
   ```
 
 - **调优要点说明**：
@@ -221,13 +217,13 @@ spec:
   - `--gpu-memory-utilization`：控制每张 `GPU` 的显存使用上限，避免 `OOM`。
   - `--quantization`：使用 `awq` 量化以减小模型加载体积。
   - `--max-num-batched-tokens` 与 `--max-num-seqs`：控制批处理规模，提升吞吐性能。
-  - `--enable-prefetch` 与 `--enforce-eager`：优化执行计划以降低延迟。
+  - `--enforce-eager`：跳过 CUDA Graph 构建，降低启动延迟（以部分吞吐为代价）。
 
 该配置可在保持高吞吐的同时，兼顾大模型的响应延迟需求。
 
 ## 未来趋势与能力展望
 
-`LWS` 仍处于 `Alpha` 阶段，但其所提供的分布式调度原语被越来越多模型推理系统采纳。在未来，以下方向可能成为演进重点：
+`LWS` 已发布 v1.0，API 进入 v1（`leaderworkerset.x-k8s.io/v1`，与本文示例一致），其组级调度原语已被 `vLLM`、`llm-d` 等推理系统采纳为多机编排的运行基座。在未来，以下方向可能成为演进重点：
 
 - **更强的异构资源调度表达能力**：引入 `GPU` 型号、`TPU topology-aware` 等特征调度；
 - **与 Service Mesh 结合**：`Worker` 动态加入统一负载平衡服务；
@@ -240,5 +236,3 @@ spec:
 - [LWS 官方文档](https://lws.sigs.k8s.io)
 - [Kubernetes 拓扑调度指南](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
 - [vLLM 多节点部署实践](https://www.cecg.io/blog/multinode-llm-serving/)
-
-通过整合 Kubernetes 原生能力与分布式推理优化，LWS 正在重新定义云原生 AI 基础设施的构建范式。其设计理念与实现细节为大规模模型部署提供了重要参考，值得开发者深入探索。

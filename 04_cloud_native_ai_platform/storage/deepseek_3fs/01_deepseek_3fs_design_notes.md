@@ -1,6 +1,8 @@
 # 设计笔记
 
 > 原文：`https://github.com/deepseek-ai/3FS/blob/main/docs/design_notes.md`
+>
+> 翻译对照上游：`docs/design_notes.md` 最后变更为 commit `be57462`（"fix minor format issue (#196)"，2025-03-20），本文翻译对照该版本；核对日期 2026-11-05。
 
 ## 设计与实现
 
