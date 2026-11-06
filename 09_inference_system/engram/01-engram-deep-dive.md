@@ -1,6 +1,6 @@
 # 条件记忆：DeepSeek V4.1 Engram 如何用 O(1) 查表换掉一层计算
 
-> 2026-09-26 | 源码深读。机制出处：DeepSeek 论文 _Conditional Memory via Scalable Lookup_（arXiv:2601.07372，2026-01）；实现出处两份——官方参考实现 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram)（`fb7f84a`，422 行 demo）与 SGLang 推理侧实现（main `0967a013c2`，2026-09-26 拉取）。全部行号以本地代码为准；V4.1-Flash 的层号与参数为 checkpoint config 口径（核对见 [02 篇](../kv_compression/02-deepseek-v41-flash.md)）；「189 GiB」为 LMSYS 博客口径，代码中无此数。
+> 2026-09-26 | 源码深读。机制出处：DeepSeek 论文 _Conditional Memory via Scalable Lookup_（arXiv:2601.07372，2026-01）；实现出处两份——官方参考实现 [deepseek-ai/Engram](https://github.com/deepseek-ai/Engram)（`fb7f84a`，422 行 demo）与 SGLang 推理侧实现（main `0967a013c2`，2026-09-26 拉取）。全部行号以本地代码为准；V4.1-Flash 的层号与参数为 checkpoint config 口径（核对见 [02 篇](../kv_cache/07_kv_compression/06-deepseek-v41-flash.md)）；「189 GiB」为 LMSYS 博客口径，代码中无此数。
 
 DeepSeek V4.1-Flash 有四分之一的参数不在 GPU 上：552B 骨干驻留 HBM，196B 的 Engram 记忆表驻留主机内存。舆论都在讲跑分，但这张表才是这代架构里最反直觉的决定——把参数从最快的显存搬到便宜的主存，性能反而没掉。
 
@@ -125,7 +125,7 @@ Engram 的表可以离开 GPU，根本原因是 2.4 节的确定性寻址——�
 ## 七、边界与诚实声明
 
 - 本文机制描述以论文为准（预取-重叠、Zipf 多级缓存含 NVMe 层、U 型缩放律均为论文口径）；SGLang 代码中未见 prefetch 与 NVMe 层，巨页 + 同步查表是当前的工程答案；
-- V4.1-Flash 的 `engram_layer_ids=[1, 14]`、`max_ngram_size=4`、`n_heads=8`、196.6B = (384,006,168 + 384,016,682) × 256 为 checkpoint config 口径（核对见 [02 篇](../kv_compression/02-deepseek-v41-flash.md)）；官方 demo 的默认是 `[1, 15]`、3-gram、8 头（`engram_demo_v1.py:41-45`），那是教学配置——论文记载的 Engram-27B 实配为第 2、15 层、3-gram、8 头、维度 1280。两套数字都不要与 Flash 的混用；
+- V4.1-Flash 的 `engram_layer_ids=[1, 14]`、`max_ngram_size=4`、`n_heads=8`、196.6B = (384,006,168 + 384,016,682) × 256 为 checkpoint config 口径（核对见 [02 篇](../kv_cache/07_kv_compression/06-deepseek-v41-flash.md)）；官方 demo 的默认是 `[1, 15]`、3-gram、8 头（`engram_demo_v1.py:41-45`），那是教学配置——论文记载的 Engram-27B 实配为第 2、15 层、3-gram、8 头、维度 1280。两套数字都不要与 Flash 的混用；
 - 「钉住且不释放」为代码口径（`_HostTable` 文档，`engram.py:549-552`）；「189 GiB」为 LMSYS 博客口径（196.6B×fp8 折算约 183 GiB），代码中只能读到加载后的 resident/huge-page 日志（`engram.py:649-652`）；
 - SGLang 的 Engram 路径强制 eager、不支持 CUDA graph（BCG 场景，`deepseek_v4.py:734-740`），吞吐代价未量化；
 - host 表是 opt-in：`SGLANG_ENABLE_DSV41_ENGRAM_HOST_TABLE` 默认 False，默认布局下表按行分片驻 HBM。
@@ -150,7 +150,7 @@ Engram 的表可以离开 GPU，根本原因是 2.4 节的确定性寻址——�
 
 - 论文：Cheng et al., [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372)（arXiv:2601.07372）
 - 官方实现：[deepseek-ai/Engram](https://github.com/deepseek-ai/Engram)（demo 参考实现，`fb7f84f`）
-- 本站 [DeepSeek-V4.1-Flash 精读](../kv_compression/02-deepseek-v41-flash.md)——Engram 参数与配置的 checkpoint 核对
-- 本站 [多级缓存](../kv_compression/03-multilevel-cache.md)——Engram 内存不进池清单的上下文
+- 本站 [DeepSeek-V4.1-Flash 精读](../kv_cache/07_kv_compression/06-deepseek-v41-flash.md)——Engram 参数与配置的 checkpoint 核对
+- 本站 [多级缓存](../kv_cache/07_kv_compression/07-multilevel-cache.md)——Engram 内存不进池清单的上下文
 - LMSYS 博客（2026-09-10，SGLang 团队）——189 GiB 与两种 host 布局的部署取舍（转引，代码中无该数字）
 - 智猩猩AI 转载文《用 LPDDR 取代 HBM》（2026-09-11）——本文写作的线索来源；行业横向部分的模型卡表述为二手转引

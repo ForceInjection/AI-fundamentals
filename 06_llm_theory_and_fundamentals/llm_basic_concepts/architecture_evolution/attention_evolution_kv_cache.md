@@ -4,7 +4,7 @@
 >
 > **口径说明**：文中「每 token KV」均按训练精度 2 字节/元素（fp16/bf16）计算，公式随各节给出；2026 年模型的池结构数字为 config + 池代码公式推算，未跑引擎实测。GPT-3 精度论文未声明（按 2 字节假设），单独标注。
 >
-> 相关文章：[七张图讲透 KV Cache](kv_cache_seven_charts.md)——本文的图解传播版；[注意力算力账](attention_compute_fifteen_charts.md)——计算侧演进的十五张图；[GPT-2 到 Kimi K3 的注意力机制演进](from_gpt2_to_kimi_k3_attention_evolution.md)——同一时间线上注意力**计算侧**的演进，本文专注**存储侧**的那笔账；[KV 压缩推到极限三部曲](../../../09_inference_system/kv_compression/README.md)——2026 年序列压缩路线的深挖。
+> 相关文章：[七张图讲透 KV Cache](kv_cache_seven_charts.md)——本文的图解传播版；[注意力算力账](attention_compute_fifteen_charts.md)——计算侧演进的十五张图；[GPT-2 到 Kimi K3 的注意力机制演进](from_gpt2_to_kimi_k3_attention_evolution.md)——同一时间线上注意力**计算侧**的演进，本文专注**存储侧**的那笔账；[KV 压缩推到极限三部曲](../../../09_inference_system/kv_cache/07_kv_compression/README.md)——2026 年序列压缩路线的深挖。
 
 ---
 
@@ -255,7 +255,7 @@ V1 389,120 B → V3.2 48,068 B → V4-Flash 3,514 B → V4.1 890 B
 
 模型侧每省一段账，引擎侧就多一类问题。这条因果链在 2026 年的三条路线上各留了一处印记：
 
-1. 池的异构化。序列压缩把「一个 token 一段连续 KV」打碎成七个池（V4）、八个池（V4.1），其中混着不是 KV 的 indexer 与压缩器状态。前缀缓存的命中判定、备份粒度、逐出策略都要按池重写（SGLang HiCache 的应对见[分层缓存一篇](../../../09_inference_system/kv_compression/03-multilevel-cache.md)）。
+1. 池的异构化。序列压缩把「一个 token 一段连续 KV」打碎成七个池（V4）、八个池（V4.1），其中混着不是 KV 的 indexer 与压缩器状态。前缀缓存的命中判定、备份粒度、逐出策略都要按池重写（SGLang HiCache 的应对见[分层缓存一篇](../../../09_inference_system/kv_cache/07_kv_compression/07-multilevel-cache.md)）。
 2. 命中判定的多边界化。滑窗与压缩并存后，Full 可复用的范围与 SWA 可复用的范围出现差值，前缀缓存第一次要维护两个边界——SGLang 的 SWA 分叉点缓存（v0.5.20，命中率 43.8%→60.8%，官方口径）正是为这个缺口而生（源码解析见[分叉点缓存一篇](../../../09_inference_system/sglang/sglang-swa-branching-point-cache.md)）。
 3. 并发上限的迁移。线性混合路线的状态按请求计费，GLM-5.3-Flash 官方文档明确「KDA 状态池会先于 KV 池限制并发」——容量规划的公式从「上下文 × 每 token KV」变成两条公式取小。
 
@@ -288,7 +288,7 @@ V1 389,120 B → V3.2 48,068 B → V4-Flash 3,514 B → V4.1 890 B
 - Falcon：`tiiuae/falcon-7b` config `multi_query: true`（40B config 无此字段，HF FalconConfig 默认值为 true，即同样 MQA）
 - DeepSeek-V2：arXiv:2405.04434（§2.1.1/2.1.3 MLA 缓存式；Table 1 及 caption）
 - DeepSeek-V3：arXiv:2412.19437（§2.1.1）
-- DeepSeek-V4 / V4.1-Flash：arXiv:2606.19348 及 V4.1 报告（config 双向核对见[本地 02 篇](../../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)）
+- DeepSeek-V4 / V4.1-Flash：arXiv:2606.19348 及 V4.1 报告（config 双向核对见[本地 02 篇](../../../09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md)）
 - Kimi K3：arXiv:2607.24653
 - GLM-5 系：arXiv:2602.15763；SGLang cookbook `GLM-5.3.mdx`、`GLM-5.3-Flash.mdx`、`Qwen3.8-Flash-Next.mdx`
 
@@ -304,5 +304,5 @@ V1 389,120 B → V3.2 48,068 B → V4-Flash 3,514 B → V4.1 890 B
 ### 本地关联文章
 
 - [GPT-2 到 Kimi K3 的注意力机制演进](from_gpt2_to_kimi_k3_attention_evolution.md)——计算侧同时间线
-- [KV 压缩推到极限三部曲](../../../09_inference_system/kv_compression/README.md)——序列压缩路线的深挖（V4/V4.1 七池八池、多级缓存）
+- [KV 压缩推到极限三部曲](../../../09_inference_system/kv_cache/07_kv_compression/README.md)——序列压缩路线的深挖（V4/V4.1 七池八池、多级缓存）
 - [SGLang 分叉点缓存源码解析](../../../09_inference_system/sglang/sglang-swa-branching-point-cache.md)——滑窗与压缩并存后，引擎侧的命中判定改造

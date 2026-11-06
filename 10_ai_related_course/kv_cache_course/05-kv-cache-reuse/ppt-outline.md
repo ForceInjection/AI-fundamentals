@@ -270,7 +270,7 @@ UnifiedRadixCache
 - 参考资料：
   - [第 5 讲实验](hands-on-exercise.md)
   - [第 5 讲教学大纲](syllabus.md)
-  - [Prefix Caching 技术详解](../../../09_inference_system/kv_cache/01_concepts/prefix_caching/prefix_caching.md)
+  - [Prefix Caching 技术详解](../../../09_inference_system/kv_cache/01_concepts/02_prefix_caching/02_prefix_caching.md)
   - [HiCache 深入详解](../../../09_inference_system/sglang/hicache_deep_dive.md)
   - `python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py`
   - `python/sglang/srt/mem_cache/radix_cache.py`

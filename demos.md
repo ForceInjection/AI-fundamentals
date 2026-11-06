@@ -17,7 +17,7 @@
 
 | Demo                                                                         | 主题                                                         | 依赖                         | 对应文章                                                                                                                                                                    | 验证状态                      |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| [09_inference_system/memory_calc](09_inference_system/memory_calc/README.md) | 模型显存与 KV Cache 计算器（Qwen3/DeepSeek-V4，含 GQA 分析） | 纯 Python 标准库，无三方依赖 | [KV Cache 原理](09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md) · [B300 部署与 KV Cache](09_inference_system/deployment/b300-deployment-and-kv-cache.md) | ✅ 2026-10-11（纯标准库直跑） |
+| [09_inference_system/memory_calc](09_inference_system/memory_calc/README.md) | 模型显存与 KV Cache 计算器（Qwen3/DeepSeek-V4，含 GQA 分析） | 纯 Python 标准库，无三方依赖 | [KV Cache 原理](09_inference_system/kv_cache/01_concepts/01_basic/01_kv_cache_basics.md) · [B300 部署与 KV Cache](09_inference_system/deployment/b300-deployment-and-kv-cache.md) | ✅ 2026-10-11（纯标准库直跑） |
 
 ## 三、RAG 与知识图谱
 

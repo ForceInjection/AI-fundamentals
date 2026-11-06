@@ -92,13 +92,13 @@ GPU HBM → CPU RAM → (可选) ReadWriteMany 共享文件系统
 
 ### 3.3 LMCache 一节
 
-`LMCache` 是三种 offloader 中社区认知度最高的一个，也是 [本仓库 KV Cache 系列文章](../../09_inference_system/kv_cache/02_systems/lmcache/lmcache_overview.md) 单独深析过的组件，这里只讲它与 `llm-d` 的接口关系：
+`LMCache` 是三种 offloader 中社区认知度最高的一个，也是 [本仓库 KV Cache 系列文章](../../09_inference_system/kv_cache/02_systems/01_lmcache/01_lmcache_overview.md) 单独深析过的组件，这里只讲它与 `llm-d` 的接口关系：
 
 - `llm-d` 通过 `CONNECTOR=lmcache-connector` 启用 `LMCache` 作为 offloader，覆盖 `cpu` 与 `fs` 两层；
 - `CPU` 层容量按 `LMCACHE_MAX_LOCAL_CPU_SIZE` 配置（单位 GiB，按张量并行 rank 计）；
 - 指标走 `LMCache` 自己的导出项，如 `lmcache:retrieve_hit_rate`（检索命中率）和 `lmcache:local_cache_usage`（本地缓存占用）。
 
-`LMCache` 本身的多层级存储架构、`CacheGen` 压缩、`NIXL` 传输后端等细节，见 [LMCache 架构概览](../../09_inference_system/kv_cache/02_systems/lmcache/lmcache_overview.md)。
+`LMCache` 本身的多层级存储架构、`CacheGen` 压缩、`NIXL` 传输后端等细节，见 [LMCache 架构概览](../../09_inference_system/kv_cache/02_systems/01_lmcache/01_lmcache_overview.md)。
 
 ## 4. 模型服务编排：基于 LWS
 
@@ -152,4 +152,4 @@ GPU HBM → CPU RAM → (可选) ReadWriteMany 共享文件系统
 - [Tiered Prefix Cache 官方指南](https://github.com/llm-d/llm-d/blob/main/guides/tiered-prefix-cache/README.md)
 - [LeaderWorkerSet 官方文档](https://lws.sigs.k8s.io)
 - [LMCache 官网](https://lmcache.ai)
-- 本仓库相关文章：[vLLM + LWS 多机多卡推理](./04_lws_intro.md) · [LMCache 架构概览](../../09_inference_system/kv_cache/02_systems/lmcache/lmcache_overview.md)
+- 本仓库相关文章：[vLLM + LWS 多机多卡推理](./04_lws_intro.md) · [LMCache 架构概览](../../09_inference_system/kv_cache/02_systems/01_lmcache/01_lmcache_overview.md)

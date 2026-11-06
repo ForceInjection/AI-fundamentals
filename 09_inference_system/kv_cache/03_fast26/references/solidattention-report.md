@@ -31,4 +31,4 @@ AI PC 本地部署 LLM 受内存制约：市售 PC 多为 8–16 GB DRAM + iGPU 
 
 ## 六、关联
 
-与 KV 生态（精读员注）：FlexGen/InfLLM 是其直接对照与继承对象——采用 InfLLM 的代表向量块选择与「sink+local」分类（对应 StreamingLLM 的 attention sink）；FlexGen 的吞吐导向 zigzag 思路被论证不适配 batch=1。与 vLLM PagedAttention 同以「块」为管理单位，但目的不同：PagedAttention 解显存碎片，SolidAttention 的块是 SSD 传输粒度。与 Mooncake/LMCache 方向相反：后者面向集群、以吞吐/命中率/复用为目标、依赖请求级并发；SolidAttention 证明低并发端侧必须改走「稀疏算法 × 存储粒度 × 调度时序」协同设计路线，这对端侧 KV 分层存储（如 LMCache 的本地 tier）是有参照价值的设计约束。同系列另三篇单篇精读（[AITURBO](../aiturbo.md) · [Bidaw](../bidaw.md) · [CacheSlide](../cacheslide.md)）与本文的对照见[系列总纲](../fast26-kv-storage-five-scenarios.md)。
+与 KV 生态（精读员注）：FlexGen/InfLLM 是其直接对照与继承对象——采用 InfLLM 的代表向量块选择与「sink+local」分类（对应 StreamingLLM 的 attention sink）；FlexGen 的吞吐导向 zigzag 思路被论证不适配 batch=1。与 vLLM PagedAttention 同以「块」为管理单位，但目的不同：PagedAttention 解显存碎片，SolidAttention 的块是 SSD 传输粒度。与 Mooncake/LMCache 方向相反：后者面向集群、以吞吐/命中率/复用为目标、依赖请求级并发；SolidAttention 证明低并发端侧必须改走「稀疏算法 × 存储粒度 × 调度时序」协同设计路线，这对端侧 KV 分层存储（如 LMCache 的本地 tier）是有参照价值的设计约束。同系列另三篇单篇精读（[AITURBO](../05_aiturbo.md) · [Bidaw](../04_bidaw.md) · [CacheSlide](../03_cacheslide.md)）与本文的对照见[系列总纲](../01_fast26-kv-storage-five-scenarios.md)。

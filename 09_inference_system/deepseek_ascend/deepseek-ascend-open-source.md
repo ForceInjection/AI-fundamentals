@@ -123,6 +123,6 @@ FlashMLA 仓库当日随代码附了一篇中文文档《Ascend Sparse Attention
 
 - 深度求索公众号《DeepSeek 开源昇腾基础组件》（2026-09-30）——官宣原文
 - 本站 [Ascend950 稀疏注意力 Forward 算子与优化技术简析](../../01_hardware_architecture/ascend/Ascend950_稀疏注意力Forward算子与优化技术简析.md)、[Ascend950 微架构速查](../../01_hardware_architecture/ascend/Ascend950_微架构速查.md)——950 微架构一手资料存档与速查
-- 本站 [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../kv_compression/02-deepseek-v41-flash.md)——V4.1 的 DSA、Engram 背景阅读
+- 本站 [把 KV Cache 压缩推到极限：DeepSeek-V4.1-Flash 技术报告精读](../kv_cache/07_kv_compression/06-deepseek-v41-flash.md)——V4.1 的 DSA、Engram 背景阅读
 - 本站 [从 MLA 到 CSA + HCA：DeepSeek 注意力架构的进化之路](../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md)——注意力演进前篇
 - 本站 [华为 NPU 编程入门](../../02_npu_programming/README.md)——昇腾软件栈编程侧系列

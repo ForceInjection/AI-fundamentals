@@ -103,7 +103,7 @@
 - **与另外两篇的对照点**（写作时按各篇精读报告落定细节）：
   - **vs I Know What You Asked（NDSS '25）**：那篇在自建/多租户 vLLM 环境里利用 APC 共享恢复 prompt；本篇是在**真实商业 API** 上先证明"共享确实存在、且多数没有文档说明"，是攻击面的现实性背书——两篇合起来是"机制可行 × 现实存在"。
   - **vs Shadow in the Cache（NDSS '26）**：那篇要求拿到 KV 张量数据（前提较强），从数据本身重建输入；本篇反而证明**看都不用看数据**，时序差就够探测。
-- **与本仓已有文章可勾连处（候选）**：`01_concepts/prefix_caching/prefix_caching.md`（前缀缓存机制）、`01_concepts/prefix_caching/claude_prompt_caching.md`（Anthropic API 的缓存功能与文档口径）、`01_concepts/prefix_caching/radix_attention.md`（SGLang RadixAttention 的共享实现）、`01_concepts/prefix_caching/rope_and_prefix_caching.md`（复用为何会失败——与"命中即泄露"互为表里：正是复用判定逻辑决定了 oracle 的灵敏度）、`reference_design/09-安全性与合规性.md`（系统侧安全设计）。
+- **与本仓已有文章可勾连处（候选）**：`01_concepts/02_prefix_caching/02_prefix_caching.md`（前缀缓存机制）、`01_concepts/02_prefix_caching/03_claude_prompt_caching.md`（Anthropic API 的缓存功能与文档口径）、`01_concepts/02_prefix_caching/01_radix_attention.md`（SGLang RadixAttention 的共享实现）、`01_concepts/02_prefix_caching/04_rope_and_prefix_caching.md`（复用为何会失败——与"命中即泄露"互为表里：正是复用判定逻辑决定了 oracle 的灵敏度）、`reference_design/09-安全性与合规性.md`（系统侧安全设计）。
 - **适合文章开头的"反差/场景"素材**：
   - **表 7 三档时延**：同 prompt 连发 25 次 → 0.03–0.04 s（命中）/ 0.08–0.13 s（未命中）/ 0.2 s+（第三种，疑跨 GPU），且命中档 embedding 与正常档差 10⁻⁵ 量级（p.17、p.8）——"响应时间的两档分布 + 数值的第三种值"是全文最具体的一个现场。
   - **"最好的审计结果是审计自己的失败"**：论文对 Anthropic 与 GPT-4o mini 的 per-org 检出与官方文档吻合，被当作**审计有效性的自我验证**（p.6）——统计工具先对已知答案校准，再报未知答案，这个方法学点值得写。

@@ -141,5 +141,5 @@
 - **机制解说可用的两个"图案"描述**：dummy 夹心（pre-dummy 灌满运行批 → 命中候选被 LPM 提到 post-dummy 之前）；等长保序（"Requests with equal match lengths retain their original order"，p.6）。
 - **与姊妹篇的对读点**：本篇原始机制是**返回次序**的结构化信号（不测延迟值；LPM 重排 + 等长保序）——与 Auditing 的"响应时间 oracle"是两种不同口径，系列行文统一为"调度行为 / 返回顺序"。
 - **与二手调研报告（references/reuse-security-report.md）的核对结论**：团队（SUSTech + ByteDance，Guanlong Wu 等）、NDSS 2025 正式录用、"首篇系统论证多租户 KV 共享侧信道、可恢复他人 prompt"的定位，均与 PDF 核实一致；"被 PrefixWall 等防御工作引为攻击基线"属外部事实，本次未核（未核实）。
-- **与本仓已有内容的勾连候选**：`01_concepts/prefix_caching/prefix_caching.md`、`radix_attention.md`、`claude_prompt_caching.md`（共享机制与商业 prompt caching 的原理侧）；`01_concepts/scheduling/`（调度策略侧）；`02_systems/`（vLLM/SGLang 系统篇，若有）；`04_memory_tiering/` 系列讲"KV 放哪"的账，本篇讲"KV 共享"的险，可互文。
+- **与本仓已有内容的勾连候选**：`01_concepts/02_prefix_caching/02_prefix_caching.md`、`radix_attention.md`、`claude_prompt_caching.md`（共享机制与商业 prompt caching 的原理侧）；`01_concepts/03_scheduling/`（调度策略侧）；`02_systems/`（vLLM/SGLang 系统篇，若有）；`04_memory_tiering/` 系列讲"KV 放哪"的账，本篇讲"KV 共享"的险，可互文。
 - **伦理与时代注脚**：论文附录 B 提到 2023-03-24 ChatGPT 下线事故（开源库 Redis 连接池复用导致用户看到他人会话标题）作为"共享资源风险"的旁证（pp.14–15），写"共享即风险"的主题段可用。

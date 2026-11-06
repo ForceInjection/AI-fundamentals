@@ -5,7 +5,7 @@
 ## 本讲额外要求
 
 - vLLM 位于 `~/Project/ai-infra/vLLM`，HEAD `8b365ff949`；
-- 预读文章：`09_inference_system/kv_compression/02-deepseek-v41-flash.md`；
+- 预读文章：`09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md`；
 - 只用 Python 标准库，不需要安装 vLLM，也不需要模型权重；
 - 不把 V4-Pro / V4-Flash / V4.1-Flash 的数字混用，每个容量数字注明变体和统计范围。
 

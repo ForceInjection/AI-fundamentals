@@ -7,7 +7,7 @@
 ## 本讲材料
 
 - `code/kv_estimator.py`：本讲主计算器，只用标准库。
-- `09_inference_system/kv_cache/01_concepts/basic/kv_cache_calc.py`：仓库里的参考计算器，可核对 DeepSeek-V3 MLA 等预设；它没有 Qwen3-0.6B / Qwen2.5-7B / Qwen2.5-72B 预设，Qwen 三档用本讲 `code/kv_estimator.py`。
+- `09_inference_system/kv_cache/01_concepts/01_basic/01_kv_cache_calc.py`：仓库里的参考计算器，可核对 DeepSeek-V3 MLA 等预设；它没有 Qwen3-0.6B / Qwen2.5-7B / Qwen2.5-72B 预设，Qwen 三档用本讲 `code/kv_estimator.py`。
 - `~/Project/study/ai-infra-course/06-kvcache-optimization/code/calculate_qwen3_memory.py`：讲师环境的外部旧版参考，Qwen3-0.6B 默认 `head_dim=64`，会算出 56 KiB；本讲以 `head_dim=128`、112 KiB 为准。学生没有该仓库时可跳过。
 
 ## 运行

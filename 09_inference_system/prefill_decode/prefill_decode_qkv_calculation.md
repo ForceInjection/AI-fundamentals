@@ -374,7 +374,7 @@ PD 分离架构把这俩人分到不同的房间：
 
 ## 七、相关资源
 
-- [KV Cache 原理简介](../kv_cache/01_concepts/basic/kv_cache_basics.md) — 本文的姊妹篇，侧重 KV Cache 的工作机制、显存公式和工程实践。
+- [KV Cache 原理简介](../kv_cache/01_concepts/01_basic/01_kv_cache_basics.md) — 本文的姊妹篇，侧重 KV Cache 的工作机制、显存公式和工程实践。
 - [Transformer 架构详解](../../06_llm_theory_and_fundamentals/llm_basic_concepts/transformer/transformer_architecture.md) — Q/K/V 投影和自注意力的完整数学推导。
 - [GQA: Training Generalized Multi-Query Transformer Models](https://arxiv.org/abs/2305.13245) — GQA 原始论文。
 - [vLLM: PagedAttention](https://arxiv.org/abs/2309.06180) — 分页 KV Cache 管理的原始论文。

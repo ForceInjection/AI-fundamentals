@@ -23,4 +23,4 @@
 1. **选择脚本**：通用 Dense / GQA 模型 → `calculate_qwen3_memory.py`；DeepSeek V4 系列 → `calculate_deepseek_v4_memory.py`
 2. **准备 config（DeepSeek V4 脚本）**：`--config` 指向从 HuggingFace 下载的目标模型 `config.json`；不指定时自动加载目录中的 `deepseek_v4_pro_config.json` 样例，样例缺失则回退在线拉取
 3. **运行估算**：通用 Dense 模型 `python calculate_qwen3_memory.py [--gpu-mem-gib 40] [--scenarios 512 4096 32768]`；DeepSeek V4 `python calculate_deepseek_v4_memory.py [--config path/to/config.json] [--gpu-mem-gib 80] [--num-gpus 8]`
-4. **规划部署**：结合 [KV Cache 容量规划](../kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md) 与 [性能评估指标体系](../reference_design/05-性能评估指标体系.md) 转化为并行策略与硬件清单
+4. **规划部署**：结合 [KV Cache 容量规划](../kv_cache/01_concepts/10_capacity_planning/03_glm5_kv_cache_capacity_planning.md) 与 [性能评估指标体系](../reference_design/05-性能评估指标体系.md) 转化为并行策略与硬件清单

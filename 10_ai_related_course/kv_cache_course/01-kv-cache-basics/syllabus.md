@@ -68,7 +68,7 @@
 
 - [第 1 讲实验脚本](code/kv_estimator.py)
 - [AI-fundamentals KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)
-- [KV Cache 基本概念](../../../09_inference_system/kv_cache/01_concepts/basic/)
+- [KV Cache 基本概念](../../../09_inference_system/kv_cache/01_concepts/01_basic/)
 - `~/Project/study/ai-infra-course/06-kvcache-optimization/code/calculate_qwen3_memory.py`
 - `~/Project/study/ai-infra-course/06-kvcache-optimization/visuals/kv-cache-formula.html`
 

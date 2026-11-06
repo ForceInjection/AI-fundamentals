@@ -183,7 +183,7 @@ TTFT 变化：……
 
 主参考：
 
-- [Prefix Caching 技术详解](../../../09_inference_system/kv_cache/01_concepts/prefix_caching/prefix_caching.md)：第 5.1 节的简化模型给出 P=2000、Q=200 时约 5.5× 的 TTFT 加速比，作业按这个模型算，不按命中 token 线性折算。
+- [Prefix Caching 技术详解](../../../09_inference_system/kv_cache/01_concepts/02_prefix_caching/02_prefix_caching.md)：第 5.1 节的简化模型给出 P=2000、Q=200 时约 5.5× 的 TTFT 加速比，作业按这个模型算，不按命中 token 线性折算。
 - [HiCache 深入详解](../../../09_inference_system/sglang/hicache_deep_dive.md)：L1 / L2 / L3 的划分、prefetch 三阶段与三种写策略。
 
 源码（SGLang `f4de6abee6`）：
@@ -196,5 +196,5 @@ TTFT 变化：……
 
 延伸：
 
-- [KV Cache 复用系列](../../../09_inference_system/kv_cache/06_kv_reuse/kv-reuse-overview.md)：KVLink 与 DroidSpeak，跨出同前缀、同模型之后的复用路线。
-- [RadixAttention 技术详解](../../../09_inference_system/kv_cache/01_concepts/prefix_caching/radix_attention.md)：适合建立树结构直觉。文中的 `RadixNode.ref_count` 是教学示意，与 HEAD 有四处差异：字段实际叫 `lock_ref`；锁沿路径累加且 root 不参与释放；`inc_lock_ref` 的 delta 是 token 数，不是节点数；节点的 `value` 是 KV pool 槽位索引张量，不是 block 对象列表。
+- [KV Cache 复用系列](../../../09_inference_system/kv_cache/06_kv_reuse/01_kv-reuse-overview.md)：KVLink 与 DroidSpeak，跨出同前缀、同模型之后的复用路线。
+- [RadixAttention 技术详解](../../../09_inference_system/kv_cache/01_concepts/02_prefix_caching/01_radix_attention.md)：适合建立树结构直觉。文中的 `RadixNode.ref_count` 是教学示意，与 HEAD 有四处差异：字段实际叫 `lock_ref`；锁沿路径累加且 root 不参与释放；`inc_lock_ref` 的 delta 是 token 数，不是节点数；节点的 `value` 是 KV pool 槽位索引张量，不是 block 对象列表。

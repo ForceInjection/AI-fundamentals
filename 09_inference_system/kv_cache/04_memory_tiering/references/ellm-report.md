@@ -122,13 +122,13 @@
   - **vs NEO（计算下移）**：NEO 把 attention 计算搬到 CPU，使 KV 不必回传；eLLM 选择把 KV 直接搬回 GPU，靠 prefill 计算量级差藏传输。一个消去搬运，一个让搬运可被藏住，是同一成本项的两条对抗路线。
   - **vs Strata（分层调度）**：Strata 建 GPU→CPU→SSD 的层级与缓存感知调度并进入 SGLang；eLLM 在层内做弹性重分配、改动点更靠下（VMM 映射层）。两者正交、可叠加：eLLM 的池内弹性解决「同一层内的账」，Strata 解决「层与层之间的账」。
 - **与本仓已有文章可勾连处（候选）**：
-  - [paged_attention.md](../../01_concepts/basic/paged_attention.md)：eLLM 的前提与批判对象——PagedAttention 解了 KV 碎片，同时造出「activation 静态抽象 vs KV 页表虚拟化」两层割裂；eLLM 的 Figure 1(b)→(c) 就是接着这篇文章往下讲。
-  - [hbm_kv_pool_concurrency.md](../../01_concepts/capacity_planning/hbm_kv_pool_concurrency.md)：「L1 KV Pool 是并发上限」的现象，eLLM 给出了一条互补解法——激活池闲置时把它借给 KV；两篇合读可写「KV pool 上限的两种解题方向」。
-  - [01_kv_offloading.md](../../01_concepts/offloading/01_kv_offloading.md) 与 [02_layerwise_pipeline.md](../../01_concepts/offloading/02_layerwise_pipeline.md)：eLLM 的 GPU-CPU 弹性本质是一种 offload（逻辑 buffer 缩放 vs LMCache 的存储分层），且其「技术依据之二」就是 layer-wise pipelining。
-  - [01_vllm_chunked_prefill.md](../../01_concepts/scheduling/01_vllm_chunked_prefill.md)：eLLM 把 vLLM-CP 当基线之一，并直接引用其 read amplification 缺点（p.2）。
-  - [01_disaggregated_prefill_kv_transfer.md](../../01_concepts/pd_transfer/01_disaggregated_prefill_kv_transfer.md)：DistServe 对照（eLLM 在动机与多卡实验两处逐条回应论文列出的 PD 分离限制，p.2/p.6）。
-  - [glm5_kv_cache_capacity_planning.md](../../01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)：容量规划视角——「给 activation 的预留如何蚕食可用 KV 容量」正是 eLLM 要抹掉的账。
-  - [kv_cache_roi.md](../../01_concepts/capacity_planning/kv_cache_roi.md)：把「20% 的吞没在碎片里」翻译成 ROI 语言的材料。
+  - [paged_attention.md](../../01_concepts/01_basic/02_paged_attention.md)：eLLM 的前提与批判对象——PagedAttention 解了 KV 碎片，同时造出「activation 静态抽象 vs KV 页表虚拟化」两层割裂；eLLM 的 Figure 1(b)→(c) 就是接着这篇文章往下讲。
+  - [hbm_kv_pool_concurrency.md](../../01_concepts/10_capacity_planning/01_hbm_kv_pool_concurrency.md)：「L1 KV Pool 是并发上限」的现象，eLLM 给出了一条互补解法——激活池闲置时把它借给 KV；两篇合读可写「KV pool 上限的两种解题方向」。
+  - [01_kv_offloading.md](../../01_concepts/07_offloading/01_kv_offloading.md) 与 [02_layerwise_pipeline.md](../../01_concepts/07_offloading/02_layerwise_pipeline.md)：eLLM 的 GPU-CPU 弹性本质是一种 offload（逻辑 buffer 缩放 vs LMCache 的存储分层），且其「技术依据之二」就是 layer-wise pipelining。
+  - [01_vllm_chunked_prefill.md](../../01_concepts/03_scheduling/01_vllm_chunked_prefill.md)：eLLM 把 vLLM-CP 当基线之一，并直接引用其 read amplification 缺点（p.2）。
+  - [01_disaggregated_prefill_kv_transfer.md](../../01_concepts/08_pd_transfer/01_disaggregated_prefill_kv_transfer.md)：DistServe 对照（eLLM 在动机与多卡实验两处逐条回应论文列出的 PD 分离限制，p.2/p.6）。
+  - [glm5_kv_cache_capacity_planning.md](../../01_concepts/10_capacity_planning/03_glm5_kv_cache_capacity_planning.md)：容量规划视角——「给 activation 的预留如何蚕食可用 KV 容量」正是 eLLM 要抹掉的账。
+  - [kv_cache_roi.md](../../01_concepts/10_capacity_planning/02_kv_cache_roi.md)：把「20% 的吞没在碎片里」翻译成 ROI 语言的材料。
 - **适合放文章开头的「反差/场景」素材**：
   - 反差数字组：为 200K 上下文预留的 activation 空间占 30.8% GPU 显存（p.2），但 99% 的 ShareGPT prompt 在 2K 以内、decode 阶段激活利用率约 1%——「预留按最坏情况，使用按典型情况」。
   - 场景：vLLM 显存快满时新请求只能排队等 KV 释放（p.2 开头），同一时刻 activation 池里躺着大块按 max context 预留、实际闲置的空间——两池之间「不能互相借」（Figure 2a 标着 "Isolated!"，快照对比标着 "20% Speedup!"）。

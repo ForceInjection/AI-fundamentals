@@ -117,9 +117,9 @@
   - **vs eLLM（抽象虚拟化）**：eLLM 的路线是在内存管理层引入弹性抽象（其具体机制以该篇精读报告为准，本报告不做断言）；DirectKV 相反，不新增抽象层、不改调度与 KV 管理接口——"leaving the scheduler, model execution graph, and frontend API unchanged"（p.50）。对照句可以这么写：**一边靠抽象让 CPU 内存"看起来像"显存，一边靠 kernel 直接寻址让它"不必被搬运"。**
   - **vs Strata（分层调度，同为 OSDI '26）**：两篇都在解"KV 躺在 CPU 内存里怎么被高效用到"，但切法相反。Strata 保留 copy 语义、修的是 I/O 路径与调度本身（GPU-assisted I/O kernel、GPU/host 布局解耦、把 CPU-GPU 带宽当一等资源），其测量给出反面证据：SGLang 常规配置下 74% 的 prefill 时间阻塞在 KV 传输、page size 32 时 8192 token 的 KV 传输只跑到 PCIe 5.0 理论带宽的 ≈22%（Strata pp.1–4）；DirectKV 干脆取消搬运，并刻意把访问做成粗粒度以免撞上小传输低效——"∼100 KB KV blocks accessed concurrently by over 100 SMs—creates MB-scale aggregate transfers"（p.50）。可提的对照问题：**取消搬运 vs 优化搬运，各自的边界条件是什么**（前者要 NVLink-C2C 级带宽，后者要能把传输做大、把停顿排掉）。
 - **与本仓已有文章可勾连处（候选）**：
-  - `01_concepts/offloading/01_kv_offloading.md`（offload 全景）、`02_layerwise_pipeline.md`（layer-by-layer swap 正是 DirectKV §2.2.1 批评的对象，p.41）、`sparse_attention_driven_offloading_problems.md`（offload 粒度与被访问模式绑定的问题）
-  - `02_systems/lmcache/local_cpu_backend.md`、`lmcache_storage_overview.md`（CPU 内存 tier 的工程实况；论文 §8.1 引 LMCache [24] 作为 hierarchical KV caching 的既有机制）、`cachegen.md`（KV 流式传输的另一条路，论文引为 [39]）
-  - `01_concepts/basic/attention_kv_cache_formats.md`（head dim / KV 布局）、`01_concepts/capacity_planning/hbm_kv_pool_concurrency.md`、`kv_cache_roi.md`（"KV 该放哪一层"的成本账）
+  - `01_concepts/07_offloading/01_kv_offloading.md`（offload 全景）、`02_layerwise_pipeline.md`（layer-by-layer swap 正是 DirectKV §2.2.1 批评的对象，p.41）、`sparse_attention_driven_offloading_problems.md`（offload 粒度与被访问模式绑定的问题）
+  - `02_systems/01_lmcache/06_local_cpu_backend.md`、`lmcache_storage_overview.md`（CPU 内存 tier 的工程实况；论文 §8.1 引 LMCache [24] 作为 hierarchical KV caching 的既有机制）、`cachegen.md`（KV 流式传输的另一条路，论文引为 [39]）
+  - `01_concepts/01_basic/05_attention_kv_cache_formats.md`（head dim / KV 布局）、`01_concepts/10_capacity_planning/01_hbm_kv_pool_concurrency.md`、`kv_cache_roi.md`（"KV 该放哪一层"的成本账）
   - `03_fast26/` 系列（SolidAttention 把这条账链延伸到 SSD；可作为"再下一层"的对照）
   - `04_memory_tiering/` 本篇 + NEO/eLLM/Strata 三篇 + 总纲；`02_systems/mooncake`、`nixl`（跨节点/传输层对照）
 - **适合放文章开头的"反差/场景"素材**：

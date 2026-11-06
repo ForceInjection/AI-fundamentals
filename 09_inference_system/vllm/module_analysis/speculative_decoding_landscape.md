@@ -252,4 +252,4 @@ vLLM 的六种投机解码方法覆盖了从"零成本模式匹配"到"训练时
 
 - [图解投机解码](../../model_optimization/illustrated-speculative-decoding.md) — 投机解码的完整原理、算法家族与性能模型
 - [MTP 深度解析：把投机能力训进模型里](../../model_optimization/mtp-multi-token-prediction.md) — MTP 的训练架构、推理机制与投机解码的深层对比
-- [投机解码与 KV Cache 交互](../../kv_cache/01_concepts/scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程实现细节
+- [投机解码与 KV Cache 交互](../../kv_cache/01_concepts/03_scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程实现细节

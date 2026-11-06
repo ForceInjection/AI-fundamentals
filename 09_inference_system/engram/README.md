@@ -8,5 +8,5 @@
 
 ## 相关
 
-- [KV 压缩推到极限三部曲](../kv_compression/README.md) — Engram 在 V4.1-Flash 上的载体：CED/CSA2/FP4 KV 与多级缓存
+- [KV 压缩推到极限三部曲](../kv_cache/07_kv_compression/README.md) — Engram 在 V4.1-Flash 上的载体：CED/CSA2/FP4 KV 与多级缓存
 - LMSYS 博客（2026-09-10）— SGLang 侧 Engram 的 189 GiB 钉住内存（博客口径，转引）与两种 host 布局部署取舍

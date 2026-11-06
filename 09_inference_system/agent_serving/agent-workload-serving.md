@@ -99,7 +99,7 @@ vLLM Router 的 `cache_aware` 策略在每个 worker 侧维护近似 radix 树�
 
 - `cache_aware` 解决的是**前缀维度的亲和**：系统提示词、工具 schema 这类稳定前缀收益最大；
 - **会话维度的粘性**（同一会话的 N 轮请求尽量落同一实例）没有内建：radix 树追踪的是「哪些前缀在哪个节点上」，不是「哪个会话属于哪个节点」。生产路由层的现状是「有意识、无标准」：Dynamo 维护跨 worker 的 KV block 全局索引（Flash Indexer），llm-d 的 EPP 把 session-affinity 路由列为社区议题，但都未成为跨引擎的通用机制。实践中仍靠应用层网关按 session id 做一致性哈希，或接受外置 KV 层来解耦（见 4.3）；
-- 多引擎混合部署时，路由层无法感知 LMCache/Mooncake 里的 KV 分布，KV 感知路由目前停留在各自体系内（分布式 KV 层见 [LMCache 架构概览](../kv_cache/02_systems/lmcache/lmcache_overview.md)、[Mooncake 架构详解](../kv_cache/02_systems/mooncake/mooncake_architecture.md)）。
+- 多引擎混合部署时，路由层无法感知 LMCache/Mooncake 里的 KV 分布，KV 感知路由目前停留在各自体系内（分布式 KV 层见 [LMCache 架构概览](../kv_cache/02_systems/01_lmcache/01_lmcache_overview.md)、[Mooncake 架构详解](../kv_cache/02_systems/04_mooncake/01_mooncake_architecture.md)）。
 
 ### 3.4 容量：把规划公式从 QPS 换成会话三要素
 
@@ -112,7 +112,7 @@ Agent： 并发会话成本 ≈ Σ (活跃请求数 × 请求 KV)
         + Σ (每轮新增 token × (1 − 会话命中率) 的重算峰值)
 ```
 
-方法论层面的支撑已经齐备：KV 容量推演的框架见 [GLM-5 KV Cache 容量规划](../kv_cache/01_concepts/capacity_planning/glm5_kv_cache_capacity_planning.md)，服务产能与承诺的 Goodput 框架见 [Token 工厂的产能怎么算？](../../99_misc/token_factory_talk/cluster-capacity-measurement.md)。新的工作是把 Goodput 的「成功」从请求级改成 turn 级：一个工具调用失败重试 3 次的 turn，Goodput 该怎么记？现有框架没有答案。
+方法论层面的支撑已经齐备：KV 容量推演的框架见 [GLM-5 KV Cache 容量规划](../kv_cache/01_concepts/10_capacity_planning/03_glm5_kv_cache_capacity_planning.md)，服务产能与承诺的 Goodput 框架见 [Token 工厂的产能怎么算？](../../99_misc/token_factory_talk/cluster-capacity-measurement.md)。新的工作是把 Goodput 的「成功」从请求级改成 turn 级：一个工具调用失败重试 3 次的 turn，Goodput 该怎么记？现有框架没有答案。
 
 ---
 
@@ -131,7 +131,7 @@ Agent： 并发会话成本 ≈ Σ (活跃请求数 × 请求 KV)
 重算成本 = 历史 token 数 / prefill 吞吐 × 等待时间价值
 ```
 
-变量是保留时长。Agent 会话的工具间隔（秒到分钟）恰好落在「显存租金不可忽略、重算又不便宜」的区间。新架构把天平进一步推向重算：CSA 把 KV 压到 1/4，KDA 干脆不产生 token 级 KV（见 [01-post-kv-cache-era.md](../kv_compression/01-post-kv-cache-era.md)），重算成本在快速通缩。今天按 H100+MHA 口径设计的粘性/外置 KV 方案，换到新架构模型上可能突然不划算。会话基础设施的设计要把「重算变便宜」当作一阶趋势来对冲。
+变量是保留时长。Agent 会话的工具间隔（秒到分钟）恰好落在「显存租金不可忽略、重算又不便宜」的区间。新架构把天平进一步推向重算：CSA 把 KV 压到 1/4，KDA 干脆不产生 token 级 KV（见 [01-post-kv-cache-era.md](../kv_cache/07_kv_compression/05-post-kv-cache-era.md)），重算成本在快速通缩。今天按 H100+MHA 口径设计的粘性/外置 KV 方案，换到新架构模型上可能突然不划算。会话基础设施的设计要把「重算变便宜」当作一阶趋势来对冲。
 
 ### 4.3 会话状态放哪：三层选型
 

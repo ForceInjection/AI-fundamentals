@@ -4,7 +4,7 @@
 
 ## 步骤
 
-1. 复算 890（10 分钟）。按 `09_inference_system/kv_compression/02-deepseek-v41-flash.md` 与 README 的算式，写出：2.5 个 entry 从哪四层来、main KV 288 B 怎么组成、indexer K 68 B 怎么组成。
+1. 复算 890（10 分钟）。按 `09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md` 与 README 的算式，写出：2.5 个 entry 从哪四层来、main KV 288 B 怎么组成、indexer K 68 B 怎么组成。
 2. 读源码（12 分钟）。在本地 vLLM 里找到：
    - `vllm/config/cache.py` 的 `swa_bounded_replay` 字段；
    - `vllm/v1/core/sched/scheduler.py` 的 `_mark_prefix_replay`，看它返回什么、把 `request.replay_start` 设成什么；

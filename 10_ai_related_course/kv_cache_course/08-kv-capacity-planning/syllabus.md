@@ -166,7 +166,7 @@ DRAM 容量按对象和复用率算，不按 HBM 全量镜像算。
 
 - [AI-fundamentals KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)
 - [GLM-5.3-Flash KV 布局](../../../09_inference_system/sglang/glm53-flash-kv-layout.md)
-- [DeepSeek-V4.1-Flash 精读](../../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)
+- [DeepSeek-V4.1-Flash 精读](../../../09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md)
 - [nano-vllm](https://github.com/ForceInjection/nano-vllm)
 - [vLLM](https://github.com/vllm-project/vllm)
 - [SGLang](https://github.com/sgl-project/sglang)

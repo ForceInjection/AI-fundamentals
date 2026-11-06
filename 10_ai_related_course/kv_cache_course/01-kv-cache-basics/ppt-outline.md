@@ -344,6 +344,6 @@ per_token_bytes = b_kv × L × (kv_lora_rank + qk_rope_head_dim)
   - [BertViz](https://github.com/jessevig/bertviz)（只看 attention 模式，与 KV 存储无关）
 - **本地参考**：
   - [AI-fundamentals KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)
-  - [KV Cache 基本概念](../../../09_inference_system/kv_cache/01_concepts/basic/)
+  - [KV Cache 基本概念](../../../09_inference_system/kv_cache/01_concepts/01_basic/)
 - **版权**：Alammar 图只放链接或重绘；Transformer Explainer 保留 MIT 出处；视频和 3D 工具只放官方链接
 - Q&A：留 3 分钟，重点检查 `H_kv`、`head_dim`、per-token/total、`T_prompt`/`T_total` 四个易错点

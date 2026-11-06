@@ -36,4 +36,4 @@
 
 这笔账还在变。下一篇讲系统侧怎么接招：PagedAttention、前缀复用与淘汰——同样的卡，为什么 vLLM 出来之后吞吐翻倍。
 
-想往深处走：完整技术版是 [Attention 演进与 KV Cache 之变](attention_evolution_kv_cache.md)（17 个模型逐一对照 config 的长文）；2026 年序列压缩路线的深挖在 [KV 压缩推到极限三部曲](../../../09_inference_system/kv_compression/README.md)。
+想往深处走：完整技术版是 [Attention 演进与 KV Cache 之变](attention_evolution_kv_cache.md)（17 个模型逐一对照 config 的长文）；2026 年序列压缩路线的深挖在 [KV 压缩推到极限三部曲](../../../09_inference_system/kv_cache/07_kv_compression/README.md)。

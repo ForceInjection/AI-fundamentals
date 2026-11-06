@@ -139,12 +139,12 @@ T ≈ Ttr = L × ( max{Tpo0 + Tpr0, Tca1} + max{Tpo1 + Tpr1 + Tga0, Tca0} )
 
 - 系列定位（四种"内存账"之一：NEO=计算下移；DirectKV=零拷贝去搬运；eLLM=抽象虚拟化；Strata=分层调度）：NEO 是四篇里唯一**把计算本身搬下 GPU**的一篇——CPU 不只是 KV 的仓库，而是承担一部分 decoding attention；因此它的对照物是"数据不动、算力动"。叙事锚点：论文对 FastDecode 的成本批评（8 颗 32 核 EPYC 伺候 1 张 A10G，CPU 比 GPU 贵，p.1）与本文只用"随卡白送"的主机 CPU、且**部分**卸载的取舍，正好构成"下移多少算力才划算"这条轴。
 - 与另外三篇的对照点：① 搬运路径：NEO 仍走 PCIe 传 QKV/输出（传的是小张量而非整份 KV），DirectKV 则靠在 GH200/GB200 的 NVLink-C2C 上让 GPU kernel 直接解引用 CPU 内存、把搬运彻底消掉——一个是"传得少"，一个是"不用传"；② 抽象层级：NEO 在运行时决定请求归谁（请求级卸载），eLLM 用 Virtual Tensor Abstraction 把内存管理虚拟化（分配级），Strata 用分层缓存 + 缓存感知调度组织跨层数据流（缓存级）；③ 场景：NEO 瞄准在线低时延（"while maintaining the same latency"，p.1）与"显存卡死 batch 的低端卡"（T4/A10G，p.10 的 usage 段），Strata/DirectKV 更偏高端平台与长上下文吞吐；④ 共同前提都有"两侧总线带宽差远小于算力差"，可作总纲的横切观察。
-- 与本仓已有文章可勾连处（01_concepts/offloading/、01_concepts/pd_transfer/、03_fast26/ 等，列候选即可）：
-  - `01_concepts/offloading/01_kv_offloading.md`（vLLM 原生 offload / LMCacheConnector 只卸数据）——NEO 是最直接的反面参照："卸数据"与"卸计算"的分野；
-  - `01_concepts/offloading/02_layerwise_pipeline.md`——NEO 的 layer-wise swapping 是同一思路在单机内的系统化，可对照 PD 分离里的逐层流水线；
-  - `01_concepts/offloading/03_kv_cache_prefetching.md`、`01_concepts/offloading/sparse_attention_driven_offloading_problems.md`——预取/信号质量问题里 NEO 只做静态估算，可作"在线系统不依赖重要性信号"的对照样本；
-  - `01_concepts/scheduling/01_vllm_chunked_prefill.md`——NEO §6（p.10）专门讨论了与 chunked-prefill 的关系（对方更耗 GPU 带宽、在显存受限卡上失效）；
-  - `01_concepts/basic/paged_attention.md`——PACPU 沿用 paged KV cache（p.6）；
+- 与本仓已有文章可勾连处（01_concepts/07_offloading/、01_concepts/08_pd_transfer/、03_fast26/ 等，列候选即可）：
+  - `01_concepts/07_offloading/01_kv_offloading.md`（vLLM 原生 offload / LMCacheConnector 只卸数据）——NEO 是最直接的反面参照："卸数据"与"卸计算"的分野；
+  - `01_concepts/07_offloading/02_layerwise_pipeline.md`——NEO 的 layer-wise swapping 是同一思路在单机内的系统化，可对照 PD 分离里的逐层流水线；
+  - `01_concepts/07_offloading/03_kv_cache_prefetching.md`、`01_concepts/07_offloading/04_sparse_attention_driven_offloading_problems.md`——预取/信号质量问题里 NEO 只做静态估算，可作"在线系统不依赖重要性信号"的对照样本；
+  - `01_concepts/03_scheduling/01_vllm_chunked_prefill.md`——NEO §6（p.10）专门讨论了与 chunked-prefill 的关系（对方更耗 GPU 带宽、在显存受限卡上失效）；
+  - `01_concepts/01_basic/02_paged_attention.md`——PACPU 沿用 paged KV cache（p.6）；
   - `03_fast26/`（FAST'26 五场景，SSD/端侧层级）——存储侧层级，与本篇的内存侧层级互补。
 - 适合放文章开头的"反差/场景"素材：
   - "低端卡上 GPU 算力在挨饿"：T4 + LLaMa-2-7B 上 vLLM 的 batch 被显存卡死，"NEO could offload the KV cache to the CPU, achieving a much larger batch size"，吞吐近 6×（p.7）；

@@ -51,7 +51,7 @@
 
 ## 参考材料
 
-- [DeepSeek-V4.1-Flash 技术报告精读](../../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)
+- [DeepSeek-V4.1-Flash 技术报告精读](../../../09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md)
 - [vLLM DeepSeek-V4.1-Flash](https://vllm-project.github.io/2026/10/07/deepseek-v41-flash.html)
 - `~/Project/ai-infra/vLLM/vllm/config/cache.py`（`swa_bounded_replay`）
 - `~/Project/ai-infra/vLLM/vllm/v1/core/sched/scheduler.py`（`_mark_prefix_replay`）

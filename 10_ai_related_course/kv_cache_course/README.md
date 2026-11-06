@@ -173,7 +173,7 @@ KV Cache 是推理系统里随上下文和并发增长的那部分显存开销�
 
 - [AI-fundamentals KV Cache 技术体系](../../09_inference_system/kv_cache/README.md)
 - [三层状态：图解 GLM-5.3-Flash 的 KV Cache 布局](../../09_inference_system/sglang/glm53-flash-kv-layout.md)
-- [DeepSeek-V4.1-Flash 技术报告精读](../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)
+- [DeepSeek-V4.1-Flash 技术报告精读](../../09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md)
 - [nano-vllm](https://github.com/ForceInjection/nano-vllm)
 - [vLLM DeepSeek-V4.1-Flash](https://vllm-project.github.io/2026/10/07/deepseek-v41-flash.html)
 - [SGLang GLM-5.3-Flash cookbook](https://github.com/sgl-project/sglang/blob/0bcd822377da7b5718e674eaf9c870d349424dd1/docs/cookbook/autoregressive/GLM/GLM-5.3-Flash.mdx)

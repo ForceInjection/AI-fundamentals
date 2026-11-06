@@ -55,6 +55,6 @@
 - `~/Project/study/nano-vllm/docs/llm-inference-visual/scripts/L02_sequence.py`
 - `~/Project/study/nano-vllm/docs/llm-inference-visual/scripts/L04_block_manager.py`
 - [AI-fundamentals KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)
-- [AI-fundamentals PagedAttention](../../../09_inference_system/kv_cache/01_concepts/basic/paged_attention.md)
+- [AI-fundamentals PagedAttention](../../../09_inference_system/kv_cache/01_concepts/01_basic/02_paged_attention.md)
 
 源码行号按 nano-vllm `b9dd55a` 标注，不同版本会漂移。

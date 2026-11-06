@@ -103,6 +103,6 @@ DSA（DeepSeek V3.2 起在 MLA 上叠加 indexer 选块的稀疏注意力）与�
 
 - [SGLang](https://github.com/sgl-project/sglang) 仓库，commit `f4de6abee6`（2026-09-28）——本文所有源码引用的基准版本
 - [SGLang 文档：Decode Context Parallelism](https://github.com/sgl-project/sglang/blob/main/docs/docs/advanced_features/dcp.mdx)、[DP Attention / SMG 指南](https://github.com/sgl-project/sglang/blob/main/docs/docs/advanced_features/dp_dpa_smg_guide.mdx)——动机与组合条件
-- 本站 [DeepSeek-V4.1-Flash 精读](../kv_compression/02-deepseek-v41-flash.md)——DCP 服务的模型侧背景
+- 本站 [DeepSeek-V4.1-Flash 精读](../kv_cache/07_kv_compression/06-deepseek-v41-flash.md)——DCP 服务的模型侧背景
 - 本站 [大模型推理并行策略](../parallelism/parallelism_strategies.md)——DP/TP/PP/EP/SP 五种基础并行策略的统一拆解，本文两条轴的概念底座
 - 本站 [Engram 条件记忆源码深读](../engram/01-engram-deep-dive.md)——同一批 MoE/长上下文模型里的参数外置路线

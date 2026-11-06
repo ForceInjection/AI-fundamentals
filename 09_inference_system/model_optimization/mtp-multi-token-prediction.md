@@ -255,6 +255,6 @@ MTP 把「预测未来 token」的能力从外部 draft model 搬到模型内部
 ## 相关阅读
 
 - [图解投机解码](illustrated-speculative-decoding.md) — 投机解码的完整原理与性能模型，本文多处对比的基础
-- [投机解码与 KV Cache 交互](../kv_cache/01_concepts/scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程细节
+- [投机解码与 KV Cache 交互](../kv_cache/01_concepts/03_scheduling/02_vllm_spec_decode.md) — Placeholder、回滚、草稿 KV 的工程细节
 - [DeepSeek V4 长上下文注意力支持解析](../vllm/module_analysis/deepseek_v4_attention_support.md) — V4 的注意力架构与 MTP 的 vLLM 集成
 - [DeepSeek 注意力架构进化：从 MLA 到 CSA/HCA](../vllm/module_analysis/deepseek_attention_evolution_mla_to_csa_hca.md) — 注意力机制的演进脉络，MTP 运行其上的注意力基础

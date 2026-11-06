@@ -278,7 +278,7 @@ pool_blocks     = available_kv_bytes // block_bytes
 - 参考资料：
   - [第 2 讲实验脚本](code/block_table_demo.py)
   - [AI-fundamentals KV Cache 技术体系](../../../09_inference_system/kv_cache/README.md)
-  - [PagedAttention 技术详解](../../../09_inference_system/kv_cache/01_concepts/basic/paged_attention.md)
+  - [PagedAttention 技术详解](../../../09_inference_system/kv_cache/01_concepts/01_basic/02_paged_attention.md)
   - `~/Project/study/nano-vllm/nanovllm/engine/block_manager.py`
   - `~/Project/study/nano-vllm/docs/llm-inference-visual/scripts/L02_sequence.py`
   - `~/Project/study/nano-vllm/docs/llm-inference-visual/scripts/L04_block_manager.py`

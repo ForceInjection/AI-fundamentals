@@ -104,10 +104,10 @@
   - 统一分析框架候选：Little's Law X = C·S/L（Strata 用它论证抬 S；DirectKV 减拷贝次数；NEO 换 C 的来源，值得在总纲里统一成一张表）。
 - **与本仓已有文章可勾连处（候选）**：
   - `09_inference_system/sglang/hicache_deep_dive.md`：HiRadixTree / page-first / 零拷贝 / prefetch-backup 与本文同线；Strata「已集成进 SGLang」的工程形态可用它作实况对照（注意区分论文的自实现基线 SGLang-HiCache 与发行版 HiCache，见 §五精读员注）。
-  - `09_inference_system/kv_cache/02_systems/lmcache/`（lmcache_overview.md、local_cpu_backend.md、local_disk_backend.md、gds_backend.md 等）：论文头号基线 vLLM-LMCache 即 LMCache 社区版（v0.2.1，chunk 256，p.8）——「被超越方」的机制细节在本仓。
+  - `09_inference_system/kv_cache/02_systems/01_lmcache/`（lmcache_overview.md、local_cpu_backend.md、local_disk_backend.md、gds_backend.md 等）：论文头号基线 vLLM-LMCache 即 LMCache 社区版（v0.2.1，chunk 256，p.8）——「被超越方」的机制细节在本仓。
   - `09_inference_system/kv_cache/03_fast26/`：Bidaw（多轮对话复用）、CacheSlide（agent 复用）与 delay hit 问题同题不同解；solidattention.md 的「块粒度 vs 传输效率」两难是其端侧 batch=1 版本，可与本文「页大小两难」并读；fast26-kv-storage-five-scenarios.md 可作本系列总纲的写法范式。
-  - `09_inference_system/kv_cache/01_concepts/offloading/`（01_kv_offloading.md、02_layerwise_pipeline.md、03_kv_cache_prefetching.md）：layer-wise overlap 正是 Strata 要超越的假设（「层 N+1 加载被层 N 计算盖住」），可作「旧方案」锚点。
-  - `09_inference_system/kv_cache/02_systems/mooncake/mooncake_architecture.md`：delay hit 的 38% 数据来自 Mooncake agent trace；Mooncake 也是远端 KV 池代表。
+  - `09_inference_system/kv_cache/01_concepts/07_offloading/`（01_kv_offloading.md、02_layerwise_pipeline.md、03_kv_cache_prefetching.md）：layer-wise overlap 正是 Strata 要超越的假设（「层 N+1 加载被层 N 计算盖住」），可作「旧方案」锚点。
+  - `09_inference_system/kv_cache/02_systems/04_mooncake/01_mooncake_architecture.md`：delay hit 的 38% 数据来自 Mooncake agent trace；Mooncake 也是远端 KV 池代表。
   - `09_inference_system/kv_cache/README.md`：门户的「内存层级专题」入口收录本系列四篇（含本篇），可作对外入口的坐标。
 - **反差/场景素材（文章开头候选）**：
   - 「40 GB HBM 只装得下约 0.3M token（Llama-8B）——几份文档、几百轮对话就见底」（p.1）。

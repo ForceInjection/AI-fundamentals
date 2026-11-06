@@ -36,7 +36,7 @@ MLA 的 latent + RoPE 口径放在第 6 讲；INT4/FP4 的 scale 与打包开销
 1. decode 在什么条件下受带宽限制？batch 增大、上下文较短时，它什么时候可能转向 compute-bound？用“算术强度 = FLOPs / 读取字节”解释，并说明为什么序列变长通常会把 decode 推回 memory-bound。
 2. 同一模型把 KV 精度从 BF16 降到 FP8，哪些量会变，哪些量不变？分别列出每 token KV、总 KV、权重，以及在固定 KV 显存下能多放多少 token；block/page 留到第 2 讲。
 3. TTFT 和 TPOT 分别受什么影响？各举一个长 prompt 短输出、短 prompt 长输出的例子。
-4. 读 `09_inference_system/kv_cache/01_concepts/basic/kv_cache_basics.md`，列出文中一个隐含假设，并说明它在长上下文下是否仍成立。示例：它假设 attention 是全注意力，长上下文下是否仍成立？
+4. 读 `09_inference_system/kv_cache/01_concepts/01_basic/01_kv_cache_basics.md`，列出文中一个隐含假设，并说明它在长上下文下是否仍成立。示例：它假设 attention 是全注意力，长上下文下是否仍成立？
 
 ## 提交
 
