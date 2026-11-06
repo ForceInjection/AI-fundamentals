@@ -68,7 +68,7 @@ Star 数只会告诉你「有什么功能、怎么启动」。它不回答的是
 
 ## 参考资料
 
-- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](deepseek-harness-deep-dive.md)——DSH 源码核对深文，本文概念解释的依据
-- 本站 [驾驭工程：为什么你的 AI 编程助手总在失控？](../../../98_llm_programming/Harness_Engineering.md)——Harness Engineering 方法论
-- 本站 [DeepSeek-V4.1-Flash 深扒](../../../09_inference_system/kv_compression/02-deepseek-v41-flash.md)——scaffold 消融数字出处（§5.3.4，厂商口径）
-- 本站 [Claude Skills 指南](../../agent_skills/docs/claude_skills_guide.md)——Skill / Tool / Hook 辨析
+- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](05_deepseek-harness-deep-dive.md)——DSH 源码核对深文，本文概念解释的依据
+- 本站 [驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)——Harness Engineering 方法论
+- 本站 [DeepSeek-V4.1-Flash 深扒](../../09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md)——scaffold 消融数字出处（§5.3.4，厂商口径）
+- 本站 [Claude Skills 指南](../agent_skills/01_claude_skills_guide.md)——Skill / Tool / Hook 辨析

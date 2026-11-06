@@ -1,6 +1,6 @@
 # 多智能体 AI 系统培训材料
 
-本培训围绕多智能体系统的理论基础与企业级落地展开，配套两份核心文档：[part1_multi_agent_ai_fundamentals.md](../../../08_agentic_system/multi_agent/docs/part1_multi_agent_ai_fundamentals.md) 提供理论框架与 LangGraph、LangSmith 解析，[part2_enterprise_multi_agent_system_implementation.md](../../../08_agentic_system/multi_agent/docs/part2_enterprise_multi_agent_system_implementation.md) 给出架构设计、技术实现与部署实践。培训材料将这两份文档拆解为五天可教学的结构化课程。
+本培训围绕多智能体系统的理论基础与企业级落地展开，配套两份核心文档：[part1_multi_agent_ai_fundamentals.md](../../../08_agentic_system/multi_agent/02_part1_multi_agent_ai_fundamentals.md) 提供理论框架与 LangGraph、LangSmith 解析，[part2_enterprise_multi_agent_system_implementation.md](../../../08_agentic_system/multi_agent/03_part2_enterprise_multi_agent_system_implementation.md) 给出架构设计、技术实现与部署实践。培训材料将这两份文档拆解为五天可教学的结构化课程。
 
 ## 培训目标
 

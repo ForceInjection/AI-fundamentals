@@ -79,7 +79,7 @@
 
 **本仓库关联**：
 
-- [企业级多智能体 AI 系统构建实战](../multi_agent/docs/part2_enterprise_multi_agent_system_implementation.md)，LangGraph 生产级落地
+- [企业级多智能体 AI 系统构建实战](../multi_agent/03_part2_enterprise_multi_agent_system_implementation.md)，LangGraph 生产级落地
 - [All Agentic Architectures 深入详解](../agent_design/docs/all-agentic-architectures-deep-dive.md)，17 种架构全景
 
 **验收标志**：用 LangGraph 做出一个带状态、能中断恢复的多轮 Agent 应用。
@@ -107,7 +107,7 @@
 - [上下文工程原理](../context/context-engineering-principles.md)，动态组装、压缩与检索（[上下文工程原理简介](../context/context-engineering-intro.md)先看）
 - [AI 智能体记忆系统](../memory/README.md)，MemoryOS/Mem0/Claude Code 记忆机制解析
 - [深度解析 MCP 与 AI 工具化的未来](../mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md)，协议原理与实战
-- [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](../agent_skills/docs/claude_skills_guide.md)，技能定义规范
+- [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](../agent_skills/01_claude_skills_guide.md)，技能定义规范
 - [awesome-skills](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)），优秀 Agent Skill 实例合集；[mmx-cli](https://github.com/MiniMax-AI/cli)，遵循 agentskills.io 标准的官方技能实例
 
 > 延伸阅读（按兴趣深挖）：[Claude Code 上下文压缩机制深度解析](../context/claude-code-context-compression.md) · [MemoryOS 智能记忆系统架构设计与开发指南（2026-03）](../memory/research/systems/memoryos-architecture-guide.md) · [Claude Code 源码解析：基于 Markdown 文件的持久化记忆机制](../memory/research/case-studies/claude-code-memory-analysis.md)
@@ -126,11 +126,11 @@
 
 **本仓库关联**：
 
-- [多智能体AI系统基础：理论与框架](../multi_agent/docs/part1_multi_agent_ai_fundamentals.md)，BDI 架构与协作机制
+- [多智能体AI系统基础：理论与框架](../multi_agent/02_part1_multi_agent_ai_fundamentals.md)，BDI 架构与协作机制
 - [多智能体 AI 系统培训材料](../../10_ai_related_course/multi_agent_system/multi_agent_training/README.md)，五天结构化课程，配套理论+实战两篇文档
 - [数据智能体：是重塑生产力的“自动驾驶”，还是换壳的平庸炒作？](../data_agent/data-agent-survey.md)，Data Agent 是当下最容易变现的方向（配套 [企业级 Data Agent 产品需求文档](../data_agent/enterprise-data-agent-prd.md) 与 [企业级 Data Agent 敏捷落地规划：存量数据资产的 AI 智能化盘活](../data_agent/data-agent-skill-mvp.md)）
 
-> 延伸阅读（按兴趣深挖）：[技术博客撰写 Agentic RAG Agent 系统设计](../agent_design/docs/writing-agentic-agent.md) · [TradingAgents-CN 多智能体设计与交互分析](../agent_design/docs/trading-agents-cn.md) · [深度解析 Kagent：从零打造 Kubernetes 运维智能体](../agent_infra/docs/deep-dive-kagent-k8s-ops-agent.md) · [A Survey on Agent Workflow – Status and Future - 速览](../papers/agent-workflow-survey.md)
+> 延伸阅读（按兴趣深挖）：[技术博客撰写 Agentic RAG Agent 系统设计](../agent_design/docs/writing-agentic-agent.md) · [TradingAgents-CN 多智能体设计与交互分析](../agent_design/docs/trading-agents-cn.md) · [深度解析 Kagent：从零打造 Kubernetes 运维智能体](../agent_infra/09_deep-dive-kagent-k8s-ops-agent.md) · [A Survey on Agent Workflow – Status and Future - 速览](../papers/agent-workflow-survey.md)
 
 **验收标志**：复刻或自创一个完整项目（智能客服、Data Agent、Deep Research 三选一）。
 
@@ -153,13 +153,13 @@
 
 - [驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)，如何构建驾驭系统的深度解析（必读）
 - [Agent First：软件工程的下一个范式转移](../../98_llm_programming/Agent_First.md)，范式认知
-- [OpenHarness 深入浅出：解密开源智能体基础设施](../agent_infra/docs/openharness-deep-dive.md)，开源智能体基础设施全景
-- [Agent Sandbox 的演进与设计范式](../agent_infra/docs/agent-sandbox-design.md)，沙箱隔离从硬件级到策略优先
+- [OpenHarness 深入浅出：解密开源智能体基础设施](../agent_infra/03_openharness-deep-dive.md)，开源智能体基础设施全景
+- [Agent Sandbox 的演进与设计范式](../agent_infra/08_agent-sandbox-design.md)，沙箱隔离从硬件级到策略优先
 - [确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](../agent_design/docs/open-code-review-deep-dive.md)，以确定性约束超越自由 Agent
-- [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](../agent_infra/docs/deepseek-tui-in-practice.md)，从安装到 Plan/Agent/YOLO 审批模式完整实战
+- [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](../agent_infra/12_deepseek-tui-in-practice.md)，从安装到 Plan/Agent/YOLO 审批模式完整实战
 - [OpenSpec 实战指南](https://github.com/ForceInjection/OpenSpec-practise)，Spec 驱动开发：意图 → Spec → AI → 代码 & 验证
 
-> 延伸阅读（按兴趣深挖）：[AI Agent 基础设施——三个决定性层次：工具、数据、编排](../agent_infra/docs/ai-agent-infra-stack.md) · [Claude Code Sandbox 安全隔离机制解析](../agent_infra/docs/claude-code-sandbox.md) · [扩展托管智能体：让决策与执行解耦，各行其职](../agent_infra/docs/scaling-managed-agents.md) · [AI Agent 基础设施的崛起](../agent_infra/docs/the-rise-of-ai-agent-infrastructure.md)
+> 延伸阅读（按兴趣深挖）：[AI Agent 基础设施——三个决定性层次：工具、数据、编排](../agent_infra/01_ai-agent-infra-stack.md) · [Claude Code Sandbox 安全隔离机制解析](../agent_infra/11_claude-code-sandbox.md) · [扩展托管智能体：让决策与执行解耦，各行其职](../agent_infra/13_scaling-managed-agents.md) · [AI Agent 基础设施的崛起](../agent_infra/02_the-rise-of-ai-agent-infrastructure.md)
 
 **验收标志**：日常开发由 Harness 类工具完成 30% 以上，且能说清它们的设计取舍。
 

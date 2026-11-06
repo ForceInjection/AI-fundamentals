@@ -1,6 +1,6 @@
 # assets
 
-本目录存放《[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../claude-code-multi-session-playbook.md)》的配图。
+本目录存放《[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../01_claude-code-multi-session-playbook.md)》的配图。
 
 - 三张手绘图（`collab-01` … `collab-03`），rough.js + 霞鹜文楷程序化生成，1080 逻辑宽 2x 渲染 PNG
 - 图 1（`collab-01-shared-vs-independent`）：共享上下文 vs 独立上下文，对应正文 §1.1 的多会话理由

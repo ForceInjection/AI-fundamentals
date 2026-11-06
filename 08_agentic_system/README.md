@@ -14,9 +14,9 @@
 
 聚焦于多个智能体如何通过通信与协作解决单一智能体难以处理的复杂问题，涵盖 BDI（信念-愿望-意图）架构、通信总线机制及企业级落地框架。
 
-- [多智能体AI系统基础：理论与框架](./multi_agent/docs/part1_multi_agent_ai_fundamentals.md) - 深入解析多智能体系统的核心理论，包括 BDI 架构、多 Agent 协作与通信机制，以及 LangGraph 框架的底层原理。
-- [企业级多智能体 AI 系统构建实战](./multi_agent/docs/part2_enterprise_multi_agent_system_implementation.md) - 基于 LangGraph 的架构设计与企业级代码落地，涵盖状态管理、消息总线设计以及系统监控等生产级需求。
-- [评审、修改、测试、裁决：Claude Code 多会话协作实践手册](./multi_agent/docs/claude-code-multi-session-playbook.md) - Claude Code 原生多会话协作的操作手册：从上下文隔离与多视角评审出发，覆盖跨窗口消息、Agent Teams 编队与 Dynamic Workflow 三条路线，附消息模板、审批规则、故障排查与评判者（judge）设计。配三张手绘图；其 skill 化与端到端实测见[《一个人调度四个角色》](./agent_skills/docs/multi-role-agent-skill.md)。
+- [多智能体AI系统基础：理论与框架](./multi_agent/02_part1_multi_agent_ai_fundamentals.md) - 深入解析多智能体系统的核心理论，包括 BDI 架构、多 Agent 协作与通信机制，以及 LangGraph 框架的底层原理。
+- [企业级多智能体 AI 系统构建实战](./multi_agent/03_part2_enterprise_multi_agent_system_implementation.md) - 基于 LangGraph 的架构设计与企业级代码落地，涵盖状态管理、消息总线设计以及系统监控等生产级需求。
+- [评审、修改、测试、裁决：Claude Code 多会话协作实践手册](./multi_agent/01_claude-code-multi-session-playbook.md) - Claude Code 原生多会话协作的操作手册：从上下文隔离与多视角评审出发，覆盖跨窗口消息、Agent Teams 编队与 Dynamic Workflow 三条路线，附消息模板、审批规则、故障排查与评判者（judge）设计。配三张手绘图；其 skill 化与端到端实测见[《一个人调度四个角色》](./agent_skills/02_multi-role-agent-skill.md)。
 
 ### 1.2 智能体设计模式 (Agent Design Patterns)
 
@@ -81,29 +81,29 @@ Agent 的能力边界很大程度上由它能调用哪些工具决定。以 MCP 
 
 - [深度解析 MCP 与 AI 工具化的未来](./mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md) - Anthropic 推出的 Model Context Protocol (MCP) 原理与实战，探讨 AI 工具链的未来。
 - [用 agent 逆向一个 agent：REA 拆解 Codex.app 实战](./mcp/docs/02_reverse_engineer_anything_in_practice.md) - 27 万 star 的逆向工程 MCP（REA）本机实测：用 ollama 与 Codex.app 三层目标走通 fail-closed 三道闸门、预算对照实验与视图投影阶梯，提炼可迁移的六条 agent 工具设计纪律。配三张手绘图。
-- [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](./agent_skills/docs/claude_skills_guide.md) - 扩展智能体能力的工具定义规范、调试方法与最佳实践。
-- [一个人调度四个角色：多会话协作 Skill 的实测与边界](./agent_skills/docs/multi-role-agent-skill.md) - 把《[评审、修改、测试、裁决](./multi_agent/docs/claude-code-multi-session-playbook.md)》装进一个用户级 skill：四个角色各开一个会话、一个人调度与拍板的实践，含三层结构、端到端实测、四个缺口与设计边界。配三张手绘图。
-- [12 小时、636 个测试：自驱型 Skill 能走多远](./agent_skills/docs/self-driving-skill-for-complex-projects.md) - 从 Simon Willison 的 SPARQLite 实验切入，区分 Skill 的策略层与运行时：Skill 单独适合单会话有界任务，跨 session 的复杂项目需要 Workflow 或 Agent SDK harness。含协作层、编排层、运行时三层路径与最小骨架。配三张手绘图。
-- [Claude Skills 构建完整指南 (PDF)](./agent_skills/docs/the_complete_guide_to_building_skill_for_claude.pdf) - 官方提供的高阶指导手册，详细说明如何为 Claude 扩展自定义技能。
+- [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](./agent_skills/01_claude_skills_guide.md) - 扩展智能体能力的工具定义规范、调试方法与最佳实践。
+- [一个人调度四个角色：多会话协作 Skill 的实测与边界](./agent_skills/02_multi-role-agent-skill.md) - 把《[评审、修改、测试、裁决](./multi_agent/01_claude-code-multi-session-playbook.md)》装进一个用户级 skill：四个角色各开一个会话、一个人调度与拍板的实践，含三层结构、端到端实测、四个缺口与设计边界。配三张手绘图。
+- [12 小时、636 个测试：自驱型 Skill 能走多远](./agent_skills/03_self-driving-skill-for-complex-projects.md) - 从 Simon Willison 的 SPARQLite 实验切入，区分 Skill 的策略层与运行时：Skill 单独适合单会话有界任务，跨 session 的复杂项目需要 Workflow 或 Agent SDK harness。含协作层、编排层、运行时三层路径与最小骨架。配三张手绘图。
+- [Claude Skills 构建完整指南 (PDF)](./agent_skills/01_the_complete_guide_to_building_skill_for_claude.pdf) - 官方提供的高阶指导手册，详细说明如何为 Claude 扩展自定义技能。
 
 ### 2.4 基础设施 (Agent Infrastructure)
 
 Agent Infra 是「让 Agent 能真正可靠运行、能操作真实世界、能被规模化托管」的那层底座——沙箱隔离、执行环境、编排引擎、运维接入等环节决定了系统能否从 demo 走向生产。本节盘点了 DeepSeek Harness、OpenHarness、Kagent、Agent Sandbox 等主流方案的架构思路。
 
-- [AI Agent 基础设施——三个决定性层次：工具、数据、编排](./agent_infra/docs/ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
-- [AI Agent 基础设施的崛起](./agent_infra/docs/the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
-- [OpenHarness 深入浅出：解密开源智能体基础设施](./agent_infra/docs/openharness-deep-dive.md) ([配套 PPT](./agent_infra/docs/openharness-deep-dive.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
-- [4 个工具、42 家供应商、11 万 star：Pi 的极简 harness，与 DeepSeek Harness、OpenHarness 的路线对比](./agent_infra/docs/pi-agent-deep-dive.md) - 极简 Agent harness 源码深读（Pi @ `a276dabe5`）：默认 4 个工具、系统提示实测 677 token、41 个事件与「内置实现可被撞名整体接管」的可替换协议、42 家供应商的统一层；并与 DeepSeek Harness（「一切皆插件」——其 LLM 层用的正是 Pi 的 pi-ai 包）、OpenHarness（43+ 工具、大而全）做路线对比，附六条诚实边界。配两张手绘图。
-- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](./agent_infra/docs/deepseek-harness-deep-dive.md) - 拆解 DeepSeek 开源的 Agent 框架 dsh：基于 Cordis 的「一切皆插件」架构（连 agent loop 本身都是插件）、profile/bundle 分层组装、事件溯源会话日志、四个内置预设与能力 seam，以及它在开发者预览阶段必须正视的四条边界；文末推荐《Harness工程实战》一书。
-- [DeepSeek Harness：一本书讲透 Agent 怎么组织](./agent_infra/docs/deepseek-harness-book-charts.md) - 书介与概念图解（图解《DeepSeek Harness 技术入门与架构原理》）：以同模型换 Harness 差 8.6 分的评测数字切入，用五张手绘图讲清 Harness 的位置、「一切皆插件」、Skill/Tool/Hook 与 Guard/Approval/Sandbox、四套 Preset；概念解释对照 dsh 源码核对结果，并评点全书「先跑起来、再拆开、最后动手」的认知阶梯。
-- [一天 300 万个沙盒：DeepSeek 怎么给 Agent 造环境](./agent_infra/docs/dsec-deep-dive.md) - 深度解读梁文锋署名的 DSec 论文（arXiv:2609.22978）：单单元 160 节点、日 300 万沙盒的生产平台，如何用分层组合、按需镜像加载与高密度资源管理撑起 Agent RL 的执行环境，以及 Agent 钻训练环境漏洞的生产实录。
-- [Agent Sandbox 的演进与设计范式](./agent_infra/docs/agent-sandbox-design.md) ([配套 PPT](./agent_infra/docs/agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
-- [深度解析 Kagent：从零打造 Kubernetes 运维智能体](./agent_infra/docs/deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/docs/deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
-- [云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析](./agent_infra/docs/openclaw-operator-deep-dive.md) - 深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践，涵盖从 Server-Side Apply 的冲突解决到 StatefulSet 的持久化绑定，以及容器级软隔离与进程级沙箱的安全边界设计。
-- [Claude Code Sandbox 安全隔离机制解析](./agent_infra/docs/claude-code-sandbox.md) - 从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界，深度剖析基于 Bubblewrap 的底层隔离架构与工程实现。
-- [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](./agent_infra/docs/deepseek-tui-in-practice.md) - 以 DeepSeek V4 的 1M 超长上下文与前缀缓存为切入点，走通从安装、配置到 Plan/Agent/YOLO 审批模式的完整实战闭环，并通过“发现 Bug → 修复 → 验证”演示 Coding Agent 的典型工作流。
-- [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/docs/scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
-- [在 Elasticsearch 之上实现一个虚拟文件系统](./agent_infra/docs/virtual-filesystem-elasticsearch_zh.md) ([Implementing a virtual filesystem over Elasticsearch](./agent_infra/docs/virtual-filesystem-elasticsearch.md)) - 以 Mintlify 的虚拟文件系统设计为蓝本，在 Elasticsearch Serverless 之上实现 `ElasticsearchFs`，通过 DLS 做访问控制、在内存中支撑 `ls`/`cd`/`find`，并用两阶段检索优化 `grep`，为 Agent 暴露一层形似 POSIX 的只读文件接口。
+- [AI Agent 基础设施——三个决定性层次：工具、数据、编排](./agent_infra/01_ai-agent-infra-stack.md) - 全面梳理工具层、数据层与编排层的三层架构体系。
+- [AI Agent 基础设施的崛起](./agent_infra/02_the-rise-of-ai-agent-infrastructure.md) - 分析基础设施生态的演进趋势、核心玩家与未来投资方向。
+- [OpenHarness 深入浅出：解密开源智能体基础设施](./agent_infra/03_openharness-deep-dive.md) ([配套 PPT](./agent_infra/03_openharness-deep-dive.pptx)) - 大型语言模型 (LLM) 在推理与生成能力上取得了突破性进展，但它们本身受限于静态的上下文窗口，无法直接与真实世界进行交互。要让模型成为能够自主解决复杂任务的工程化智能体 (Agent) ，必须为其配备执行动作的工具、持久化的记忆以及安全隔离的运行边界。这就是“智能体基础设施” (Agent Harness) 的核心使命。
+- [4 个工具、42 家供应商、11 万 star：Pi 的极简 harness，与 DeepSeek Harness、OpenHarness 的路线对比](./agent_infra/04_pi-agent-deep-dive.md) - 极简 Agent harness 源码深读（Pi @ `a276dabe5`）：默认 4 个工具、系统提示实测 677 token、41 个事件与「内置实现可被撞名整体接管」的可替换协议、42 家供应商的统一层；并与 DeepSeek Harness（「一切皆插件」——其 LLM 层用的正是 Pi 的 pi-ai 包）、OpenHarness（43+ 工具、大而全）做路线对比，附六条诚实边界。配两张手绘图。
+- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](./agent_infra/05_deepseek-harness-deep-dive.md) - 拆解 DeepSeek 开源的 Agent 框架 dsh：基于 Cordis 的「一切皆插件」架构（连 agent loop 本身都是插件）、profile/bundle 分层组装、事件溯源会话日志、四个内置预设与能力 seam，以及它在开发者预览阶段必须正视的四条边界；文末推荐《Harness工程实战》一书。
+- [DeepSeek Harness：一本书讲透 Agent 怎么组织](./agent_infra/06_deepseek-harness-book-charts.md) - 书介与概念图解（图解《DeepSeek Harness 技术入门与架构原理》）：以同模型换 Harness 差 8.6 分的评测数字切入，用五张手绘图讲清 Harness 的位置、「一切皆插件」、Skill/Tool/Hook 与 Guard/Approval/Sandbox、四套 Preset；概念解释对照 dsh 源码核对结果，并评点全书「先跑起来、再拆开、最后动手」的认知阶梯。
+- [一天 300 万个沙盒：DeepSeek 怎么给 Agent 造环境](./agent_infra/07_dsec-deep-dive.md) - 深度解读梁文锋署名的 DSec 论文（arXiv:2609.22978）：单单元 160 节点、日 300 万沙盒的生产平台，如何用分层组合、按需镜像加载与高密度资源管理撑起 Agent RL 的执行环境，以及 Agent 钻训练环境漏洞的生产实录。
+- [Agent Sandbox 的演进与设计范式](./agent_infra/08_agent-sandbox-design.md) ([配套 PPT](./agent_infra/08_agent-sandbox-design.pptx)) - 探讨 Agent Sandbox 的核心设计理念，对比 OpenShell、Sandlock 等沙箱方案，揭示从“硬件级隔离”向“策略优先”演进的技术趋势。
+- [深度解析 Kagent：从零打造 Kubernetes 运维智能体](./agent_infra/09_deep-dive-kagent-k8s-ops-agent.md) ([配套 PPT](./agent_infra/09_deep-dive-kagent-k8s-ops-agent.pptx)) - 深度解析 Kagent 的核心架构与工作机制，并以“构建阿里云 ACK 运维智能体”为实战案例，展示大模型与运维工具的编排。
+- [云原生 AI Agent 基础设施：OpenClaw Operator 架构深度解析](./agent_infra/10_openclaw-operator-deep-dive.md) - 深入探讨 OpenClaw Kubernetes Operator 的核心架构设计与工程实践，涵盖从 Server-Side Apply 的冲突解决到 StatefulSet 的持久化绑定，以及容器级软隔离与进程级沙箱的安全边界设计。
+- [Claude Code Sandbox 安全隔离机制解析](./agent_infra/11_claude-code-sandbox.md) - 从 Claude Code 的实际运行环境切入，系统性地探讨其面临的安全挑战及核心防护边界，深度剖析基于 Bubblewrap 的底层隔离架构与工程实现。
+- [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](./agent_infra/12_deepseek-tui-in-practice.md) - 以 DeepSeek V4 的 1M 超长上下文与前缀缓存为切入点，走通从安装、配置到 Plan/Agent/YOLO 审批模式的完整实战闭环，并通过“发现 Bug → 修复 → 验证”演示 Coding Agent 的典型工作流。
+- [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/13_scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
+- [在 Elasticsearch 之上实现一个虚拟文件系统](./agent_infra/14_virtual-filesystem-elasticsearch_zh.md) ([Implementing a virtual filesystem over Elasticsearch](./agent_infra/15_virtual-filesystem-elasticsearch.md)) - 以 Mintlify 的虚拟文件系统设计为蓝本，在 Elasticsearch Serverless 之上实现 `ElasticsearchFs`，通过 DLS 做访问控制、在内存中支撑 `ls`/`cd`/`find`，并用两阶段检索优化 `grep`，为 Agent 暴露一层形似 POSIX 的只读文件接口。
 
 ---
 

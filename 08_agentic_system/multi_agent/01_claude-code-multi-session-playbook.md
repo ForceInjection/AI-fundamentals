@@ -2,7 +2,7 @@
 
 > 2026-10-18 | 实践手册。能力与参数对照 Claude Code 官方文档（code.claude.com，2026-10-18 核对）：跨会话消息需 v2.1.224+（macOS / Linux / WSL 2）或 v2.1.234+（原生 Windows），Agent Teams 为实验特性。文中的会话发现部分来自本机 `ListAgents` 实测；送达语义、审批规则与限制来自官方文档，未做跨会话收发演练（避免打扰本机既有会话），读者可按第三、四章自测。
 >
-> 配套实践：本手册的操作流程已封装为 skill `multi-session-collab`（仓库副本在 `08_agentic_system/agent_skills/multi-session-collab/`，复制到 `~/.claude/skills/` 即可使用）；从手册到 skill 的设计、三层结构与一次端到端实测（评审→测试→裁决→修改→复测），见《[一个人调度四个角色：多会话协作 Skill 的实测与边界](../../agent_skills/docs/multi-role-agent-skill.md)》。
+> 配套实践：本手册的操作流程已封装为 skill `multi-session-collab`（仓库副本在 `08_agentic_system/agent_skills/multi-session-collab/`，复制到 `~/.claude/skills/` 即可使用）；从手册到 skill 的设计、三层结构与一次端到端实测（评审→测试→裁决→修改→复测），见《[一个人调度四个角色：多会话协作 Skill 的实测与边界](../agent_skills/02_multi-role-agent-skill.md)》。
 
 从一个具体需求开始：系统要上一个复杂功能，横跨数据模型、接口和后端逻辑，改动面大，评审、修改、测试都得排上。手边最顺手的做法是开四个 Claude Code 窗口，各管一摊，需要传话时人肉复制粘贴。
 

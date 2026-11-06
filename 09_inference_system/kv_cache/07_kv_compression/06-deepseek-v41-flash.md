@@ -473,7 +473,7 @@ CSA2 的三个乘性维度也是同一路数：先搭一个坐标系，再找出
 - [vLLM 中的 DeepSeek V4：高效长上下文注意力](../../vllm/module_analysis/deepseek_v4_attention_support.md)：混合 KV 缓存、算子融合与多流编排
 - [不同注意力类型的 KV Cache 到底长什么样](../01_concepts/01_basic/05_attention_kv_cache_formats.md)：CSA/HCA 的存储形态与逐 token 字节数
 - [稀疏注意力分类学](../01_concepts/01_basic/06_sparse_attention_taxonomy.md)：CSA/HCA 在稀疏注意力三条路线中的位置
-- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../../../08_agentic_system/agent_infra/docs/deepseek-harness-deep-dive.md)：V4.1 评测所用的 harness
+- [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../../../08_agentic_system/agent_infra/05_deepseek-harness-deep-dive.md)：V4.1 评测所用的 harness
 
 ---
 

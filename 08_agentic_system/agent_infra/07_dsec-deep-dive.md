@@ -2,7 +2,7 @@
 
 > 2026-09-24 | 论文：_DeepSeek Elastic Compute (DSec): A Sandbox Infrastructure for Effective Agentic Training at Scale_，arXiv:2609.22978，2026-09-19 提交，31 页。本文所有数字直接出自论文原文（标注节号），未做二次转述；评测部分为论文自测，不含端到端 Agent 基准分数——这一限制论文自己在 §8 声明，本文沿用。PDF 存于本目录 [references/](references/dsec-arxiv-2609.22978.pdf)。
 >
-> 相关文章：[一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](deepseek-harness-deep-dive.md)——DSec 服务的正是 DSH 这类 Harness；[Agent Sandbox 的演进与设计范式](agent-sandbox-design.md)——沙箱设计视角的对照篇。
+> 相关文章：[一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](05_deepseek-harness-deep-dive.md)——DSec 服务的正是 DSH 这类 Harness；[Agent Sandbox 的演进与设计范式](08_agent-sandbox-design.md)——沙箱设计视角的对照篇。
 
 Agent 的强化学习，光堆 GPU 不够。普通大模型可以在 GPU 集群里喂数据、算梯度，Agent 却要真正进入环境执行任务：打开代码仓库、改文件、装依赖、跑测试，每一步都改变环境，下一步又依赖前面的状态。强化学习的规模一上来，训练系统不光要批量产出轨迹，还得批量造出能真正干活的环境。
 
@@ -169,6 +169,6 @@ DSec 的价值不在「又一个沙盒」（§9 把与 serverless、E2B 一类�
 ## 参考资料
 
 - 论文原文：[DeepSeek Elastic Compute (DSec)](https://arxiv.org/abs/2609.22978)（arXiv:2609.22978），PDF 存本目录 [references/](references/dsec-arxiv-2609.22978.pdf)
-- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](deepseek-harness-deep-dive.md)——DSec 沙盒里跑的 Harness，Cordis 可组合性同源
-- 本站 [Agent Sandbox 的演进与设计范式](agent-sandbox-design.md)、[Claude Code Sandbox 安全隔离机制解析](claude-code-sandbox.md)——沙箱隔离机制的横向对照
+- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](05_deepseek-harness-deep-dive.md)——DSec 沙盒里跑的 Harness，Cordis 可组合性同源
+- 本站 [Agent Sandbox 的演进与设计范式](08_agent-sandbox-design.md)、[Claude Code Sandbox 安全隔离机制解析](11_claude-code-sandbox.md)——沙箱隔离机制的横向对照
 - DeepSeek-AI, [3FS](https://github.com/deepseek-ai/3fs)——镜像存储底座；[AgentENV/storage/overlaybd](https://github.com/kvcache-ai/AgentENV/tree/main/storage/overlaybd)——论文开源的 Rust OverlayBD/ublk 组件

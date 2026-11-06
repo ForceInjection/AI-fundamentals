@@ -278,19 +278,19 @@ harness 假设会过期。本仓库对 Anthropic Managed Agents 的拆解里提�
 - Cognition：[Don't Build Multi-Agents](https://cognition.com/blog/dont-build-multi-agents)，2025-06
 - Cognition：[Multi-Agents: What's Actually Working](https://cognition.com/blog/multi-agents-working)
 - HumanLayer：[12-Factor Agents](https://github.com/humanlayer/12-factor-agents)
-- 本仓库：[给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](claude_skills_guide.md)
-- 本仓库：[一个人调度四个角色：多会话协作 Skill 的实测与边界](multi-role-agent-skill.md)
-- 本仓库：[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../../multi_agent/docs/claude-code-multi-session-playbook.md)
-- 本仓库：[驾驭工程：为什么你的 AI 编程助手总在失控？](../../../98_llm_programming/Harness_Engineering.md)
-- 本仓库：[别让写代码的 Agent 评审自己：AI 代码评审的三道闸门](../../../11_ai_native_everything/vibe_coding/docs/ai-code-review-three-gates.md)
+- 本仓库：[给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](01_claude_skills_guide.md)
+- 本仓库：[一个人调度四个角色：多会话协作 Skill 的实测与边界](02_multi-role-agent-skill.md)
+- 本仓库：[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../multi_agent/01_claude-code-multi-session-playbook.md)
+- 本仓库：[驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)
+- 本仓库：[别让写代码的 Agent 评审自己：AI 代码评审的三道闸门](../../11_ai_native_everything/vibe_coding/docs/ai-code-review-three-gates.md)
 
 ## 源文件索引
 
 | 文件                                                                       | 关键内容                                         | 引用点                  |
 | -------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------- |
-| `08_agentic_system/agent_skills/docs/claude_skills_guide.md`               | Skill 的定位、渐进式披露、执行上下文与并发边界   | `:261-272`、`:325-346`  |
-| `08_agentic_system/agent_skills/docs/multi-role-agent-skill.md`            | 四角色协作 skill 的 269 行结构与实测缺口         | `:34`、`:46-54`、`:160` |
-| `08_agentic_system/multi_agent/docs/claude-code-multi-session-playbook.md` | Dynamic Workflow 的用法、限制与 judge 设计       | `:189-241`              |
+| `08_agentic_system/agent_skills/01_claude_skills_guide.md`               | Skill 的定位、渐进式披露、执行上下文与并发边界   | `:261-272`、`:325-346`  |
+| `08_agentic_system/agent_skills/02_multi-role-agent-skill.md`            | 四角色协作 skill 的 269 行结构与实测缺口         | `:34`、`:46-54`、`:160` |
+| `08_agentic_system/multi_agent/01_claude-code-multi-session-playbook.md` | Dynamic Workflow 的用法、限制与 judge 设计       | `:189-241`              |
 | `98_llm_programming/Harness_Engineering.md`                                | Harness 三支柱、6 小时长任务、OpenAI 组织级案例  | `:5`、`:144`            |
 | `11_ai_native_everything/vibe_coding/docs/ai-code-review-three-gates.md`   | vibe coding 与 vibe engineering 的分界、评审闸门 | `:105-109`              |
-| `08_agentic_system/agent_infra/docs/scaling-managed-agents.md`             | 长任务 harness 的假设会随模型迭代过期            | `:9-11`                 |
+| `08_agentic_system/agent_infra/13_scaling-managed-agents.md`             | 长任务 harness 的假设会随模型迭代过期            | `:9-11`                 |

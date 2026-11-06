@@ -136,7 +136,7 @@ skills 是目录 + `SKILL.md`（frontmatter：name ≤64 字符、description �
 
 ## 五、三种路线：同一个问题，三种答案
 
-「怎么给模型配一个运行时」这个问题，2026 年给出了三种很不一样的答案。下面的事实分别出自 Pi 源码（本文核对）、本仓已发布的 [DeepSeek Harness 深读](deepseek-harness-deep-dive.md)（基于 `5dda764e`）与 [OpenHarness 深读](openharness-deep-dive.md)（基于 `2b1c16d`），以及 [Claude Code 沙箱解析](claude-code-sandbox.md)。
+「怎么给模型配一个运行时」这个问题，2026 年给出了三种很不一样的答案。下面的事实分别出自 Pi 源码（本文核对）、本仓已发布的 [DeepSeek Harness 深读](05_deepseek-harness-deep-dive.md)（基于 `5dda764e`）与 [OpenHarness 深读](03_openharness-deep-dive.md)（基于 `2b1c16d`），以及 [Claude Code 沙箱解析](11_claude-code-sandbox.md)。
 
 | 维度          | **Pi**                                   | **DeepSeek Harness**                          | **OpenHarness**                               | **Claude Code**                        |
 | ------------- | ---------------------------------------- | --------------------------------------------- | --------------------------------------------- | -------------------------------------- |
@@ -200,14 +200,14 @@ Pi（`earendil-works/pi` @ `a276dabe5`，路径省略 `packages/coding-agent/src
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `deepseek-harness` `5dda764e`       | `packages/llm/llm-pi-ai/`（依赖 `@earendil-works/pi-ai ^0.85.1`，`adapter.ts:29`）；`packages/core/agent-loop/src/index.ts:359-360`（loop 即插件） |
 | `OpenHarness` `2b1c16d`             | `src/openharness/permissions/checker.py`（四级权限）；`tools/`（43+ 工具）                                                                         |
-| `claude-code-source-code` `de14c0a` | 沙箱适配器 `src/utils/sandbox/sandbox-adapter.ts`（经本仓 [Claude Code 沙箱解析](claude-code-sandbox.md) 整理）                                    |
+| `claude-code-source-code` `de14c0a` | 沙箱适配器 `src/utils/sandbox/sandbox-adapter.ts`（经本仓 [Claude Code 沙箱解析](11_claude-code-sandbox.md) 整理）                                    |
 
 ## 参考资料
 
 - [Pi 官网 pi.dev](https://pi.dev) 与 [GitHub 仓库](https://github.com/earendil-works/pi)（commit `a276dabe5`，2026-10-03）
 - Mario Zechner 演讲整理稿（InfoQ 编译，[36Kr 转载](https://eu.36kr.com/zh/p/3784634069277961)）——设计动机与「反臃肿」论证的出处
-- 本站 [DeepSeek Harness 源码深读](deepseek-harness-deep-dive.md)（基准 `5dda764e`）与 [OpenHarness 深入浅出](openharness-deep-dive.md)（基准 `2b1c16d`）
-- 本站 [Claude Code Sandbox 安全隔离机制解析](claude-code-sandbox.md)
+- 本站 [DeepSeek Harness 源码深读](05_deepseek-harness-deep-dive.md)（基准 `5dda764e`）与 [OpenHarness 深入浅出](03_openharness-deep-dive.md)（基准 `2b1c16d`）
+- 本站 [Claude Code Sandbox 安全隔离机制解析](11_claude-code-sandbox.md)
 - [OpenClaw 仓库](https://github.com/OpenClaw/OpenClaw)（Pi 的下游应用，39.1 万 star，2026-10-03 快照）
 
 > 时效性提醒：Pi 迭代极快（累计 267 个 release，近 30 天 10 个），文中所有数字与行为均以 2026-10-03 的 `a276dabe5` 为准；引用前建议对目标 commit 重新核对。

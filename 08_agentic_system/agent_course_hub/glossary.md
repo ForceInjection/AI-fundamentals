@@ -12,7 +12,7 @@
 | ------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Agent（智能体）     | 以 LLM 为大脑、能自主决策并调用工具完成任务的程序               | [hello-agents](https://github.com/datawhalechina/hello-agents) 第 1–3 章（外部课程）                 |
 | Workflow vs Agent   | Anthropic 的核心区分：workflow 是预设路径，agent 是模型自主决策 | [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents)（官方） |
-| 多智能体系统（MAS） | 多个 Agent 通信协作，解决单个 Agent 搞不定的任务（如 BDI 架构） | [多智能体AI系统基础：理论与框架](../multi_agent/docs/part1_multi_agent_ai_fundamentals.md)           |
+| 多智能体系统（MAS） | 多个 Agent 通信协作，解决单个 Agent 搞不定的任务（如 BDI 架构） | [多智能体AI系统基础：理论与框架](../multi_agent/02_part1_multi_agent_ai_fundamentals.md)           |
 | Agent First         | 软件设计的范式转移：软件不只服务人类，更要先服务 AI Agent       | [Agent First：软件工程的下一个范式转移](../../98_llm_programming/Agent_First.md)                     |
 | 12-Factor Agents    | 借鉴 12-Factor App 的 12 条构建可靠 LLM 应用的原则              | [12-Factor Agents - 构建可靠 LLM 应用的原则](../concepts/12-factor-agents-intro.md)                  |
 
@@ -41,7 +41,7 @@
 | ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | MCP（Model Context Protocol） | Agent 连接外部工具与数据的开放标准协议              | [深度解析 MCP 与 AI 工具化的未来](../mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md)     |
 | A2A（Agent2Agent）            | Agent 之间通信与互操作的开放协议（Google 发起）     | [A2A 项目官网](https://a2aproject.org)（官方）                                                           |
-| Agent Skills                  | 把能力、指令与资源打包成可复用技能，2026 年事实标准 | [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](../agent_skills/docs/claude_skills_guide.md) |
+| Agent Skills                  | 把能力、指令与资源打包成可复用技能，2026 年事实标准 | [给 Claude 写本“标准操作手册”：Agent Skills 实战与深度解析](../agent_skills/01_claude_skills_guide.md) |
 
 ## 五、上下文与记忆
 
@@ -56,8 +56,8 @@
 | 术语                          | 一句话解释                                                | 深读入口                                                                                            |
 | ----------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | Harness（驾驭工程）           | 围绕 LLM 的运行时/工作环境，让 Agent 在真实环境自主干活   | [驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)       |
-| Agent Sandbox                 | 给 Agent 提供安全隔离执行环境的沙箱，隔离从硬件级到策略级 | [Agent Sandbox 的演进与设计范式](../agent_infra/docs/agent-sandbox-design.md)                       |
-| Agent Infra（智能体基础设施） | 工具、数据、编排三层底座，让 Agent 可靠运行、规模化托管   | [AI Agent 基础设施——三个决定性层次：工具、数据、编排](../agent_infra/docs/ai-agent-infra-stack.md)  |
+| Agent Sandbox                 | 给 Agent 提供安全隔离执行环境的沙箱，隔离从硬件级到策略级 | [Agent Sandbox 的演进与设计范式](../agent_infra/08_agent-sandbox-design.md)                       |
+| Agent Infra（智能体基础设施） | 工具、数据、编排三层底座，让 Agent 可靠运行、规模化托管   | [AI Agent 基础设施——三个决定性层次：工具、数据、编排](../agent_infra/01_ai-agent-infra-stack.md)  |
 | SDD（Spec 驱动开发）          | 先写 Spec 再让 AI 实现与验证的工程范式                    | [ForceInjection/OpenSpec-practise](https://github.com/ForceInjection/OpenSpec-practise)（开源项目） |
 
 ## 七、延伸相关

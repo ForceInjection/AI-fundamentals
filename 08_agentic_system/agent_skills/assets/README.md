@@ -1,6 +1,6 @@
 # assets
 
-本目录存放《[一个人调度四个角色：多会话协作 Skill 的实测与边界](../multi-role-agent-skill.md)》与《[12 小时、636 个测试：自驱型 Skill 能走多远](../self-driving-skill-for-complex-projects.md)》的配图。
+本目录存放《[一个人调度四个角色：多会话协作 Skill 的实测与边界](../02_multi-role-agent-skill.md)》与《[12 小时、636 个测试：自驱型 Skill 能走多远](../03_self-driving-skill-for-complex-projects.md)》的配图。
 
 - 多会话协作 skill：三张手绘图（`skill-01` … `skill-03`），rough.js + 霞鹜文楷程序化生成，1080 逻辑宽 2x 渲染 PNG
   - 图 1：skill 三层结构（决策 / 协议 / 动作，`skill-01-three-layers`）；图 2：实测暴露的四个缺口（`skill-02-four-gaps`）；图 3：一次端到端闭环（`skill-03-closed-loop`）

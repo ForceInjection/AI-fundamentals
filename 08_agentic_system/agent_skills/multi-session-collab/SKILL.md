@@ -66,5 +66,5 @@ description: 组织 Claude Code 多会话协作（评审者/修改者/测试者 
 - 任务卡 / 回报模板 / findings schema / rubric：[references/protocol.md](references/protocol.md)
 - 版本要求、命名、权限矩阵、故障排查：[references/setup.md](references/setup.md)
 - 启动清单脚本：`bash scripts/print-setup.sh`
-- 背景读物（手册全文）：https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/multi_agent/docs/claude-code-multi-session-playbook.md
-- 设计说明与实测记录：https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_skills/docs/multi-role-agent-skill.md
+- 背景读物（手册全文）：https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/multi_agent/01_claude-code-multi-session-playbook.md
+- 设计说明与实测记录：https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_skills/02_multi-role-agent-skill.md

@@ -23,7 +23,7 @@
 
 tester 还多报了一条：串行执行的 `__main__` 在首个失败处中止，后两个用例根本没执行，逐例结果得单独调用才拿得到。这条不在任何任务卡里，是它自己看出来的。
 
-流程本身不难，麻烦都在跑之前：谁先说话、消息长什么样、被拒绝了怎么办。这些原则在[手册](../../multi_agent/docs/claude-code-multi-session-playbook.md)里已经写成操作流程。剩下的问题是，要让 agent 照着执行，还得把流程封装成可加载的 skill。
+流程本身不难，麻烦都在跑之前：谁先说话、消息长什么样、被拒绝了怎么办。这些原则在[手册](../multi_agent/01_claude-code-multi-session-playbook.md)里已经写成操作流程。剩下的问题是，要让 agent 照着执行，还得把流程封装成可加载的 skill。
 
 ## 二、为什么是 skill
 
@@ -35,7 +35,7 @@ skill 不提供新机制，只负责编排：把口头约定换成可执行的�
 
 | 载体                                                                 | 读者  | 写什么                                         |
 | -------------------------------------------------------------------- | ----- | ---------------------------------------------- |
-| [手册](../../multi_agent/docs/claude-code-multi-session-playbook.md) | 人    | 操作流程：四窗口、消息矩阵、模板、rubric、排错 |
+| [手册](../multi_agent/01_claude-code-multi-session-playbook.md) | 人    | 操作流程：四窗口、消息矩阵、模板、rubric、排错 |
 | skill                                                                | agent | 触发条件、协议形状、约束、只读脚本             |
 | 本文                                                                 | 两者  | 为什么这样拆分、一次实测补了哪些缺口           |
 
@@ -121,11 +121,11 @@ judge 的裁决单据此打回：F-001 除数改为 `len(values)`，F-002 空列
 
 ### 5.1 worker 怎么起
 
-手册默认开终端窗口，但无人值守时更顺手的是后台会话。`claude --bg --name reviewer --add-dir <目标目录> --settings <配置>` 能起一个可寻址的 worker，它会出现在 `/list-agents` 里（kind 为 `bg`），用 `claude agents` / `claude logs <id>` / `claude stop <id>` 管理。第一次在 `/tmp/collab-e2e` 直接启动时被拒，报错是「Workspace not trusted」；改成在已受信任的仓库启动、用 `--add-dir` 授权目标目录才通过。这条补进了 skill 的 `references/setup.md:10-23` 与[手册 §3.1](../../multi_agent/docs/claude-code-multi-session-playbook.md)。
+手册默认开终端窗口，但无人值守时更顺手的是后台会话。`claude --bg --name reviewer --add-dir <目标目录> --settings <配置>` 能起一个可寻址的 worker，它会出现在 `/list-agents` 里（kind 为 `bg`），用 `claude agents` / `claude logs <id>` / `claude stop <id>` 管理。第一次在 `/tmp/collab-e2e` 直接启动时被拒，报错是「Workspace not trusted」；改成在已受信任的仓库启动、用 `--add-dir` 授权目标目录才通过。这条补进了 skill 的 `references/setup.md:10-23` 与[手册 §3.1](../multi_agent/01_claude-code-multi-session-playbook.md)。
 
 ### 5.2 回信会被扣留
 
-双方权限模式不同类时，接收方会扣下跨会话消息。实测里 reviewer 的第一条就绪消息一直没送到；后续的回报多次出现「扣留→放行」，日志原文是 released after approval。把接收方的 `crossSessionInbound` 设为 `accept` 可以稳定收信；消息被扣住时，`claude logs <id>` 能从后台会话的日志里读回内容，这次 tester 的完整 JSON 就是靠它捞回来的。[手册 §3.2](../../multi_agent/docs/claude-code-multi-session-playbook.md) 与 skill 的入站矩阵都补了这一条。
+双方权限模式不同类时，接收方会扣下跨会话消息。实测里 reviewer 的第一条就绪消息一直没送到；后续的回报多次出现「扣留→放行」，日志原文是 released after approval。把接收方的 `crossSessionInbound` 设为 `accept` 可以稳定收信；消息被扣住时，`claude logs <id>` 能从后台会话的日志里读回内容，这次 tester 的完整 JSON 就是靠它捞回来的。[手册 §3.2](../multi_agent/01_claude-code-multi-session-playbook.md) 与 skill 的入站矩阵都补了这一条。
 
 ### 5.3 只读约束是硬约束
 
@@ -157,7 +157,7 @@ skill 写多了会僵化，写少了不顶用。这次实践里，边界大致�
 
 ## 七、收尾
 
-现在这个 skill 是 269 行、4 个文件：70 行的决策层、146 行的协议与环境参考、53 行的只读脚本。一次实测跑了 6 个回合、4 个角色、十来条跨会话消息，暴露出 4 个缺口，全部补回去了。仓库里对应的是那篇[手册](../../multi_agent/docs/claude-code-multi-session-playbook.md)；这篇记录两者之间的转换与实测，三者的分工见 §二 的表格。
+现在这个 skill 是 269 行、4 个文件：70 行的决策层、146 行的协议与环境参考、53 行的只读脚本。一次实测跑了 6 个回合、4 个角色、十来条跨会话消息，暴露出 4 个缺口，全部补回去了。仓库里对应的是那篇[手册](../multi_agent/01_claude-code-multi-session-playbook.md)；这篇记录两者之间的转换与实测，三者的分工见 §二 的表格。
 
 ## 源文件索引
 
@@ -167,7 +167,7 @@ skill 写多了会僵化，写少了不顶用。这次实践里，边界大致�
 | `08_agentic_system/agent_skills/multi-session-collab/references/protocol.md` | 任务卡、回报模板、schema、rubric、裁决三档     | `:3-70`                         |
 | `08_agentic_system/agent_skills/multi-session-collab/references/setup.md`    | 后台会话（实测）、入站策略、故障排查           | `:10-23`、`:37-53`、`:61-70`    |
 | `08_agentic_system/agent_skills/multi-session-collab/scripts/print-setup.sh` | tmux 四窗与配置清单                            | `:23-44`                        |
-| `08_agentic_system/multi_agent/docs/claude-code-multi-session-playbook.md`   | 配套手册：多会话理由、四窗口剧本、入站实测补充 | `:13-21`、`:85-115`、`:243-278` |
+| `08_agentic_system/multi_agent/01_claude-code-multi-session-playbook.md`   | 配套手册：多会话理由、四窗口剧本、入站实测补充 | `:13-21`、`:85-115`、`:243-278` |
 | `/tmp/collab-e2e/calc.py`                                                    | 终态实现（修复后）                             | `:9-11`                         |
 | `/tmp/collab-e2e/test_calc.py`                                               | 三个用例                                       | `:4-18`                         |
 
@@ -175,5 +175,5 @@ skill 写多了会僵化，写少了不顶用。这次实践里，边界大致�
 
 - [Claude Code 文档：跨会话消息](https://code.claude.com/docs/en/cross-session-messaging) · [Agent Teams](https://code.claude.com/docs/en/agent-teams) · [Dynamic Workflow](https://code.claude.com/docs/en/workflows)
 - [Claude Code 文档：工具参考（ListAgents / SendMessage）](https://code.claude.com/docs/en/tools-reference) · [Settings 参考](https://code.claude.com/docs/en/settings-reference)
-- 配套手册（本仓库）：[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../../multi_agent/docs/claude-code-multi-session-playbook.md)
+- 配套手册（本仓库）：[评审、修改、测试、裁决：Claude Code 多会话协作实践手册](../multi_agent/01_claude-code-multi-session-playbook.md)
 - skill 仓库副本：`08_agentic_system/agent_skills/multi-session-collab/`；安装到用户级目录：`cp -R 08_agentic_system/agent_skills/multi-session-collab ~/.claude/skills/`

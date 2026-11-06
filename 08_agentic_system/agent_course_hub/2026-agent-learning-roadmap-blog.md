@@ -95,7 +95,7 @@ Harness 爆发。让 Agent 自主干活的"驾驭系统"成为主战场：Cursor
 能跑的单体 Agent 还缺两样东西："感官"与"记忆"。生产级和 demo 的差距就在这里。生产级需要：标准化的工具接口（MCP）、可复用的能力单元（Agent Skills）、跨会话的记忆系统，以及决定"哪些内容装进上下文窗口"的上下文工程。窗口是 Agent 的工作记忆，也是成本和性能的最大变量。
 
 - 参考：[modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)（89.8K），先跑通一个 MCP server；[anthropics/skills](https://github.com/anthropics/skills)（171.2K），读懂 SKILL.md 格式并写一个自己的技能；[anthropics/courses](https://github.com/anthropics/courses)（22.7K），Agent Skills 与上下文工程的官方实操课。
-- 深度阅读：[深度解析 MCP 与 AI 工具化的未来](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md)，协议原理与实战；[给 Claude 写本"标准操作手册"：Agent Skills 实战与深度解析](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_skills/docs/claude_skills_guide.md)，技能定义规范；[上下文工程原理](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/context/context-engineering-principles.md)，动态组装、压缩与检索。
+- 深度阅读：[深度解析 MCP 与 AI 工具化的未来](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/mcp/docs/01_deep_dive_into_mcp_and_the_future_of_ai_tooling.md)，协议原理与实战；[给 Claude 写本"标准操作手册"：Agent Skills 实战与深度解析](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_skills/01_claude_skills_guide.md)，技能定义规范；[上下文工程原理](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/context/context-engineering-principles.md)，动态组装、压缩与检索。
 - 找灵感：[awesome-skills](https://github.com/ForceInjection/awesome-skills)，优秀 Agent Skill 实例合集。
 
 **验收标志**：给你的 Agent 接上 3 个 MCP 工具 + 跨会话记忆，再写一个自己的 Agent Skill。
