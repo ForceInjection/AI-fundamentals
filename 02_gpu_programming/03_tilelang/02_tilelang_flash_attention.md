@@ -290,7 +290,7 @@ autotune 侧两个例子走了两条路：gqa bshd 挂了 `FlashAttentionTuneSpa
 
 - dtype 只有 fp16 计算 + fp32 累加一种组合，目录里没有 bf16。TileLang 语言层面支持 bfloat16（gemm 例子里在用），要换得自己改声明并重新过精度检查。
 - 五个前向例子都没有架构 gate：不检查 compute capability，行为完全交给编译器按 target 决定。目录里唯一一处架构判断在测试文件（`requires_cuda_compute_version_eq(9, 0)`，`test_example_flash_attention.py:15`），也只罩着 gqa 反向的 tma_reduce 变体。
-- autotune 空间比看起来保守：bshd 的 `get_configs()`（:11-13）只有一组 64×64/1/128，默认路径实际显式传 128×128/1/128（:125）。手工调 config 的空间存在，例子没替你调。
+- autotune 空间比看起来保守：bshd 的 `get_configs()`（:11-13）只有一组 64×64/1/128，默认路径实际显式传 128×128/1/128（:125）。手工调 config 的空间存在，例子没替读者调。
 - 仓库 README（`examples/flash_attention/README.md`）的教学伪代码与真实代码有四处刻意差异，照抄进生产会出错：
   1. README:44 的 causal `loop_range` 缺 `T.min` 上界保护（真实代码 bshd :55-57 有）；
   2. README:55 非 causal 分支用 `T.clear(acc_s)`，真实代码统一走 `if_then_else` 预填（非 causal 也要处理 seq_len 越界）；

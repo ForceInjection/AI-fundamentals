@@ -1,12 +1,13 @@
 # CUDA 示例代码
 
-本目录包含 02_gpu_programming/02_cuda/ 下各文章的配套可运行代码。每个 `.cu` 文件对应一篇文章，均可独立编译运行。
+本目录包含 02_gpu_programming/02_cuda/ 下各文章的配套可运行代码。每个 `.cu` 文件对应一篇文章，均可独立编译运行；`21_attention_versions.py` 为 numpy 教学脚本，CPU 即可运行。
 
 ## 前置要求
 
 - **CUDA Toolkit** ≥ 11.0（推荐 12.x）
 - **GPU**：CC 8.0+（A100/H100/RTX 30xx+）。部分 demo 可在更低 CC 上运行，但实测数据以 A100 (CC 8.0) 为基准
 - **系统**：Linux（05_numa_demo 需 `numactl`）
+- **21_attention_versions.py**：仅需 Python ≥ 3.8 与 numpy，无需 GPU
 
 ## 快速编译全部
 
@@ -37,6 +38,7 @@ done
 | `15_multi_gpu_bench.cu`           | 15_multi_gpu_programming.md       | 多 GPU 四项测试：Peer Access、P2P 带宽、跨 GPU 同步、NCCL AllReduce                 | `nvcc -arch=sm_80 -O3 -DWITH_NCCL -o multi_gpu_bench 15_multi_gpu_bench.cu -lnccl` | `./multi_gpu_bench`                                                                               |
 | `16_async_copy_bench.cu`          | 16_async_copy_pipeline.md         | Async Copy 对比：1-stage sync vs 2-stage double buffer tile 处理                    | `nvcc -arch=sm_80 -O3 -o async_copy_bench 16_async_copy_bench.cu`                  | `./async_copy_bench`                                                                              |
 | `18_debug_demo.cu`                | 18_cuda_debugging.md              | 5 种故意 Bug（SMEM 越界/Race/未初始化/NaN/NullPtr），练习 compute-sanitizer 各模式  | `nvcc -lineinfo -arch=sm_80 -o debug_demo 18_debug_demo.cu`                        | `compute-sanitizer ./debug_demo` / `compute-sanitizer --tool racecheck ./debug_demo`              |
+| `21_attention_versions.py`        | 21_write_attention_from_scratch.md | attention 四版实现（三重循环/矩阵化/减 max/分块/online softmax）与一致性、溢出验证 | 无需编译（`pip install numpy`）                                                    | `python 21_attention_versions.py`                                                                 |
 
 ## 使用 Nsight Compute 分析
 

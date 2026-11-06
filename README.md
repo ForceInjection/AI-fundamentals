@@ -139,6 +139,7 @@
 - [GPU 访问系统内存：MMU、IOMMU、MMIO、mmap、ioremap 五种机制对照](./02_gpu_programming/02_cuda/19_gpu_system_memory_access.md)：GPU 页表、IOMMU、BAR、CUDA VMM 与 zero-copy / managed memory 的机制对照
 - [GPU 显存互访：同进程 P2P、跨进程 IPC 与 VMM Fabric](./02_gpu_programming/02_cuda/20_gpu_peer_memory_access.md)：跨 GPU 访问的地址机制、性能边界，以及 FlashAttention 与 SGLang KV Cache 的选择
 - [Multi-GPU CUDA 编程：从 P2P 到 NCCL](./02_gpu_programming/02_cuda/15_multi_gpu_programming.md)：Peer Access、P2P 带宽、跨 GPU 同步与 NCCL 集合通信
+- [手搓 Attention：从三行循环到看懂 FlashAttention](./02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)：小白入门向，四版递进实跑验证，含 6 张手绘图
 
 **Tile-Based 编程**：
 

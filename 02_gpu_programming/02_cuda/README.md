@@ -1,6 +1,6 @@
 # CUDA 编程 (CUDA Programming)
 
-这个目录覆盖了从零开始系统学习 CUDA 编程的完整路径：执行模型 → 核心架构 → 异步流 → 编程范式 → 内存管理 → 性能调优 → 调试。20 篇文章外加 12 个可运行 benchmark，大部分配有 A100 实测验证。
+这个目录覆盖了从零开始系统学习 CUDA 编程的完整路径：执行模型 → 核心架构 → 异步流 → 编程范式 → 内存管理 → 性能调优 → 调试。21 篇文章外加 12 个可运行 benchmark，大部分配有 A100 实测验证。
 
 ## 1. [GPU 编程导论](01_gpu_programming_introduction.md)
 
@@ -133,6 +133,12 @@ _GPU Architecture and Programming — An Introduction_：
 - 说明 P2P 的顺序、IOMMU/ACS、带宽口径，以及 SGLang Engram `peer_read` 与 KV Cache 分片聚合的区别。
 - 从 FlashAttention 的 tiling 和 paged KV 看 kernel 为什么默认 K/V 在本地 HBM，以及远端 K/V 会改变哪些假设。
 - 含 5 张手绘图，以及 CUDA Runtime / Driver API、PTX 内存模型和 SGLang 上游源码索引。
+
+## 21. [手搓 Attention：从三行循环到看懂 FlashAttention](21_write_attention_from_scratch.md)
+
+- 小白入门向：从三重循环、矩阵化、减 max 到分块与 online softmax，四个版本递进，每版都能跑。
+- 数值溢出边界（fp16 分数 11.1 / fp32 分数 88.7）与四版一致性全部实测验证；含 6 张手绘图。
+- 与第 20 篇和 [TileLang FlashAttention 拆解](../03_tilelang/02_tilelang_flash_attention.md)互为对照。
 
 ## 参考资料
 
