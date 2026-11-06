@@ -1,22 +1,6 @@
 # AI 智能体记忆系统
 
-上下文窗口再大也有边界，一旦 Agent 需要跨会话记住用户偏好、业务知识和历史决策，独立的长程记忆系统就从「错也不错」变成必选项。本目录按「理论 → 架构 → 案例 → 代码」四层组织内容，完整梳理从底层机制、分层记忆模式，到 MemoryOS / Mem0 / LangChain Memory 等主流方案的工程落地路径。
-
----
-
-## 目录
-
-- [AI 智能体记忆系统](#ai-智能体记忆系统)
-  - [目录](#目录)
-  - [1. 记忆系统架构与内容导览](#1-记忆系统架构与内容导览)
-    - [1.1 通用架构总览](#11-通用架构总览)
-    - [1.2 核心文档索引](#12-核心文档索引)
-  - [2. 主流记忆系统横向对比](#2-主流记忆系统横向对比)
-    - [2.1 架构与特性对比](#21-架构与特性对比)
-    - [2.2 性能基准对比](#22-性能基准对比)
-  - [3. 参考资源](#3-参考资源)
-    - [3.1 官方与开源项目](#31-官方与开源项目)
-    - [3.2 核心学术文献](#32-核心学术文献)
+上下文窗口再大也有边界，一旦 Agent 需要跨会话记住用户偏好、业务知识和历史决策，独立的长程记忆系统就从可有可无变成必选项。本目录按「理论 → 架构 → 案例 → 代码」四层组织内容，完整梳理从底层机制、分层记忆模式，到 MemoryOS / Mem0 / LangChain Memory 等主流方案的工程落地路径。
 
 ---
 
@@ -39,7 +23,7 @@
 
 ### 1.2 核心文档索引
 
-记忆系统的学习资料数量很多，但写作视角差异明显——有人从理论模型出发，有人从框架实现拆解，有人则贴着真实产品（如 Claude Code、SuperMemory）的落地细节。下面这张表按「理论 / 架构 / 案例 / 代码」分类了本目录的文献，让你根据自己的阅读偏好快速穿越。
+记忆系统的学习资料数量很多，写作视角差异明显：有人从理论模型出发，有人从框架实现拆解，有人贴着真实产品（如 Claude Code、SuperMemory）的落地细节。下面这张表按「理论 / 架构 / 案例 / 代码」分类了本目录的文献，按自己的阅读偏好选读即可。
 
 | 分类           | 文档链接                                                                                  | 核心内容与适用对象                                      |
 | -------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -47,14 +31,14 @@
 |                | [大模型 Agent 记忆系统：理论基础与交互机制](./research/theory/llm-agent-memory-survey.md)                     | 梳理记忆系统的数学模型与研究背景，适合研究人员 [2, 6]。 |
 |                | [记忆系统已死，而记忆管理永存](./research/theory/memory-systems-are-dead.md)                          | 探讨独立记忆系统向 Agent 框架内化的结构性演进趋势。     |
 | **系统与架构** | [MemoryOS 智能记忆系统架构设计与开发指南（2026-03）](./research/systems/memoryos-architecture-guide.md)                    | 模块化架构设计、系统配置及调优建议。                    |
-|                | [从硅谷杀出的 AI 记忆革命：MemMachine 如何重新定义智能体交互体验](./research/systems/memmachine-deep-dive.md)                         | 重新定义智能体交互体验与长程记忆管理。                  |
+|                | [从硅谷杀出的 AI 记忆革命：MemMachine 如何重新定义智能体交互体验](./research/systems/memmachine-deep-dive.md)                         | 开源记忆层项目（Charles Fan 出品），面向 Agent 的长程记忆管理。          |
 |                | [AI 记忆系统 Mem0 快速入门](./research/systems/mem0-quickstart.md)                                    | 托管平台与自建版本的快速集成指南，适合应用开发者。      |
 |                | [Hermes Agent 内存管理架构：源码解析与设计哲学](./research/systems/hermes-agent-memory-management.md)               | 深度解析 Hermes Agent 的四层内存栈架构与设计哲学。      |
 | **案例与分析** | [Claude Code 源码解析：基于 Markdown 文件的持久化记忆机制](./research/case-studies/claude-code-memory-analysis.md)            | 基于 Markdown 文件的极简本地持久化记忆生态。            |
 |                | [Claude Code 源码解析：基于 ReAct 循环与精准上下文捕获的智能体执行流程详解](./research/case-studies/claude-code-agent-execution-flow.md)         | Agent 核心循环与深度 AST 结构感知的代码库探索。         |
 |                | [Supermemory 架构与 Agent 集成解析](./research/case-studies/supermemory-agent-integration-analysis.md) | 针对第二大脑应用的外部记忆集成方案剖析。                |
 |                | [Claude-Mem: 为 Claude Code 构建持久化记忆系统](./research/case-studies/claude-mem-system-analysis.md)              | 探讨从临时上下文向项目级长期记忆的知识演化路径。        |
-| **实战代码**   | [使用 LangChain 实现智能对话机器人的记忆功能（LangChain 0.3+ / LangGraph 版）](./langchain/langchain_memory.md)                                     | 核心 API 详解及 LangGraph 状态管理应用。                |
+| **实战代码**   | [使用 LangChain 实现智能对话机器人的记忆功能（LangChain 1.x / LangGraph 版）](./langchain/langchain_memory.md)                                     | 核心 API 详解及 LangGraph 状态管理应用。                |
 |                | [LangChain 记忆功能演示（LangChain 0.3+）](./langchain/code/README.md)                                                | 包含指代消解对话系统与微服务部署的完整演示项目。        |
 
 ---

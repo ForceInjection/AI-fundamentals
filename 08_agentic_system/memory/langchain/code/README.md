@@ -1,8 +1,8 @@
-# LangChain 记忆功能演示（LangChain 0.3+）
+# LangChain 记忆功能演示（LangChain 1.x）
 
 大模型本身无状态，每一轮请求都要把「历史会话 + 用户画像 + 业务知识」重新组装到 prompt 里。本项目以 **LangGraph 短期记忆（MessagesState + checkpointer + thread_id）** 为主线，同时保留一套经典 `ConversationXxxMemory + ConversationChain` 的 demo 作为迁移参考，覆盖从完整缓冲到摘要+窗口的几种常见记忆策略，帮助开发者直观理解不同模式的取舍与迁移路径。
 
-## 1. LangChain 0.3+ 迁移说明
+## 1. LangChain 1.x 迁移说明
 
 从 **LangChain 0.3** 起，`ConversationBufferMemory` / `ConversationSummaryMemory` / `ConversationBufferWindowMemory` / `ConversationSummaryBufferMemory` 以及 `ConversationChain` 均已被标记为 **deprecated**；官方推荐迁移到 **LangGraph 持久化**。本项目的代码已完成迁移，每个经典 API 都能在 LangGraph 中找到等价实现：
 
@@ -22,7 +22,7 @@
 ```bash
 code/
 ├── README.md                    # 项目说明文档
-├── requirements.txt             # Python 依赖（LangChain 0.3+ / LangGraph 0.2+）
+├── requirements.txt             # Python 依赖（LangChain 1.x / LangGraph 1.x）
 ├── config.example.py            # 配置文件模板
 ├── config.py                    # 实际配置文件（需要创建）
 ├── llm_factory.py               # LLM 工厂类

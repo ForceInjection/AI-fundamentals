@@ -1,6 +1,7 @@
 # LangChain 0.3+ 核心包（LangGraph 短期记忆方案所需）
 # 上限约束是保守的防御性设置，避免未来 LangChain 2.x 破坏性更新意外引入。
-# 已验证版本组合：langchain 1.2.17 / langchain-core 0.3.x–1.x / langgraph 1.1.10。
+# 已验证版本组合：langchain 1.4.9 / langchain-core 1.7.6 / langgraph 1.2.20 /
+# langchain-classic 1.0.8（2026-11-06 实测，三篇 demo 与全部核心示例通过）。
 langchain>=0.3.0,<2.0.0
 langchain-core>=0.3.0,<2.0.0
 langchain-community>=0.3.0,<2.0.0

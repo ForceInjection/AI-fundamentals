@@ -1,14 +1,14 @@
-# 使用 LangChain 实现智能对话机器人的记忆功能（LangChain 0.3+ / LangGraph 版）
+# 使用 LangChain 实现智能对话机器人的记忆功能（LangChain 1.x / LangGraph 版）
 
 在人工智能快速发展的今天，构建能够记住对话历史、理解上下文的智能对话机器人已成为一个重要需求。传统的大语言模型虽然具备强大的语言理解和生成能力，但在多轮对话中往往缺乏持续的记忆能力，无法有效维护对话的连贯性和个性化体验。
 
-本文将深入探讨如何使用 LangChain 框架实现智能对话机器人的记忆功能，从 AI Agent 记忆系统的理论基础到 **LangChain 0.3+ 推荐的 LangGraph 记忆方案**，再到实际应用案例，为开发者提供完整的技术指南和可运行的代码示例。
+本文将深入探讨如何使用 LangChain 框架实现智能对话机器人的记忆功能，从 AI Agent 记忆系统的理论基础到 **LangChain 1.x 官方推荐的 LangGraph 记忆方案**，再到实际应用案例，为开发者提供完整的技术指南和可运行的代码示例。
 
-> **重要更新（LangChain 0.3+ / 1.x）**
+> **重要更新（LangChain 1.x；2026-11-06 实测于 langchain 1.4.9 / langgraph 1.2.20 / langchain-core 1.7.6）**
 >
 > 从 LangChain 0.3 起，`ConversationBufferMemory` / `ConversationSummaryMemory` / `ConversationBufferWindowMemory` / `ConversationSummaryBufferMemory` 以及 `ConversationChain` 均已被官方标记为 **deprecated**；从 LangChain **1.0** 起，这几个类已从主包 `langchain` 所在的命名空间整体迁出，转移至独立的 `langchain-classic` 包（导入路径由 `langchain.memory` / `langchain.chains` 变为 `langchain_classic.memory` / `langchain_classic.chains`）。官方推荐迁移到 **LangGraph 持久化**：以 `MessagesState` 定义对话状态，以 `MemorySaver` / `SqliteSaver` 作为 checkpointer，以 `thread_id` 实现会话隔离。
 >
-> 本文将旧 API 作为"迁移参考"保留一节，其余内容以 LangGraph 方案为主线重写，并在第 2.3 节给出逐项迁移对照。
+> 本文将旧 API 作为"迁移参考"保留一节，其余内容以 LangGraph 方案为主线重写，并在第 2.3 节给出逐项迁移对照。实测补充：在 langchain 1.4.9 上，即使已安装 `langchain-classic`，旧的 `from langchain.memory import ...` 路径也已彻底失效（ModuleNotFoundError）——Legacy 示例只能用 `langchain_classic.memory` 路径运行。
 
 ---
 
@@ -226,7 +226,7 @@ with SqliteSaver.from_conn_string("./sessions/checkpoints.sqlite") as checkpoint
 | LangGraph + `SqliteSaver`           | 单机生产、工具型应用   | 跨进程、轻量、可审计     | 受单机容量限制           | ★★★★★（生产首选） |
 | LangGraph + `trim_messages`         | 多轮任务、成本敏感     | 上下文可控、不丢历史     | 窗口之外的信息需摘要兜底 | 搭配使用          |
 | LangGraph + 摘要节点                | 长对话、客服、教练场景 | 保留关键事实、消息数可控 | 摘要生成本身需 LLM 调用  | 搭配使用          |
-| ConversationBufferMemory 等经典 API | 已有老系统的维护       | 迁移成本低               | **已弃用**，0.3+ 会告警  | 仅维护期          |
+| ConversationBufferMemory 等经典 API | 已有老系统的维护       | 迁移成本低               | **已移出主包**，1.x 需 langchain-classic | 仅维护期          |
 
 ---
 
@@ -419,7 +419,7 @@ def cleanup_inactive_sessions(self, hours: int = 24) -> None:
 # 进入代码目录
 cd /path/to/AI-fundamentals/08_agentic_system/memory/langchain/code/
 
-# 安装依赖（LangChain 0.3+ / LangGraph 0.2+）
+# 安装依赖（LangChain 1.x / LangGraph 1.x）
 pip install -r requirements.txt
 
 # 配置 LLM（二选一）
@@ -638,7 +638,7 @@ python main.py --demo all
 
 ### 6.1 技术要点回顾
 
-- **经典 `ConversationXxxMemory` 已全部弃用**：在 0.3+ 的新项目里不要再新增这类代码；
+- **经典 `ConversationXxxMemory` 已全部弃用**：1.x 的新项目里不要再新增这类代码；
 - **LangGraph 短期记忆是官方迁移终点**：`MessagesState + checkpointer + thread_id` 是一个最小而完备的组合，几行代码就能把会话隔离、状态回溯、持久化一次性解决；
 - **`trim_messages` 负责"喂给模型多少"**：纯函数、无副作用，可以随时调参；
 - **`RemoveMessage` 负责"从 checkpointer 删掉什么"**：显式优于隐式，摘要节点配合它可以写出稳定的摘要策略；
