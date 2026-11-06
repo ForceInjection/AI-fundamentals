@@ -154,5 +154,5 @@ Datawhale 9 月发布的这本《FDE 案例 100》恰好补上了这一环。24 
 - Datawhale 公众号《Datawhale FDE 100案例集发布！245页下载》（2026-09-07）——发布信息线索
 - 本站 [模型不稀缺了，稀缺的是把模型塞进业务的人](forward-deployed-engineer.md)——FDE 概念与 80/95/99 规律的出处文，本文的论点底座
 - 本站 [《FDE：AI落地实战指南》导读](fde-ai-landing-guide.md)——方法论骨架的姊妹篇（樊中恺著，人民邮电出版社 2026-10）
-- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../../08_agentic_system/agent_infra/docs/deepseek-harness-deep-dive.md)——FDE 工具箱的技术底座视角
+- 本站 [一切皆插件：DeepSeek Harness 是怎么把 Agent 装起来的](../../08_agentic_system/agent_infra/05_deepseek-harness-deep-dive.md)——FDE 工具箱的技术底座视角
 - 本站 [驾驭工程：为什么你的 AI 编程助手总在失控？](../../98_llm_programming/Harness_Engineering.md)——Harness 工程方法论
