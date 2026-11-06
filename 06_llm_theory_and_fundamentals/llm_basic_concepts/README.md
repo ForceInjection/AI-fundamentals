@@ -5,7 +5,7 @@
 ## 1. 核心概念与理论
 
 - **[思维链 (CoT)](cot/chain_of_thought_cot_intro.md)** — 通过显式书写中间推理步骤提升复杂任务准确率的机制，及其与 few-shot / zero-shot / self-consistency 的关系。
-- **[Token 机制](token/README.md)** — 长度估算工具（tiktoken / transformers）的使用与 Token-based 成本控制实战，配套 `token_estimation.py` 脚本与 Dockerfile。
+- **[Token 机制](token/README.md)** — 长度估算工具（tiktoken / transformers）的使用与 Token-based 成本控制实战，配套 `token_estimation.py` 脚本与 Dockerfile；另有[手搓 BPE](token/hand_roll_bpe_tokenizer.md)实现篇。
 - **[模型幻觉 (Hallucination)](hallucination/llm_hallucination_and_mitigation.md)** — 幻觉成因的分层解释（数据层 / 训练层 / 推理层）及检索、约束、校验三类缓解手段。
 
 ## 2. 嵌入（Embedding）

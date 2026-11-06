@@ -1,6 +1,6 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 67 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 68 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
 > **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划；五个专题（FAST'26 / 内存层级 / 安全 / 复用 / 压缩）见 §6–§10。每篇文章独立可读，前后交叉引用。
 
@@ -10,6 +10,7 @@
 
 - **[KV Cache 原理简介](01_concepts/basic/kv_cache_basics.md)** ([配套 PPT](01_concepts/basic/kv_cache_basics.pptx))：详细解析了自回归生成的挑战、KV Cache 的工作机制（Prefill 与 Decode 阶段）以及显存占用分析。
 - **[PagedAttention 原理介绍](01_concepts/basic/paged_attention.md)** — OS 分页思想 → GPU 显存管理：block table、按需分配、碎片率从 60-80% 降至 <4%。
+- **[手搓 KV Cache：从静态预留到 PagedAttention 的页表](01_concepts/basic/hand_roll_kv_cache.md)** — 用可运行模拟器实测三种显存管理策略：静态预留利用率 20%、连续分配外部碎片入住失败、分页 5 倍容量与 2.7% 页内浪费；[配套脚本](01_concepts/basic/hand_roll_kv_cache.py)复现全部数字。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/basic/why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
 - **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/basic/attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA / CSA-HCA 五种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
 - **[稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少](01_concepts/basic/sparse_attention_taxonomy.md)** — 按决策时机将稀疏注意力方法分为三条路线：固定模式（Sliding Window、Longformer）、动态选择（StreamingLLM、Vegas、NSA/DSA）、压缩近似（CSA/HCA、Linformer）。每条路线的设计取舍不同，但共享同一个被普遍忽视的约束——减少 KV 读取量（省计算）不等于减少 KV 存储量（省显存）。

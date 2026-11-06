@@ -7,10 +7,12 @@ Token 是大模型看世界的最小单位——既决定了模型能一次处�
 ### 1.1 核心文档
 
 - **[llm_token_intro.md](llm_token_intro.md)** — 介绍 Token 的定义、BPE / WordPiece 等主流切分算法、与成本/上下文窗口的关系，以及常见的长度估算陷阱。
+- **[手搓 Tokenizer：从字符级到 BPE](hand_roll_bpe_tokenizer.md)** — 一百行 Python 手搓三个版本的 tokenizer：字符级、BPE 训练与压缩曲线、词表过拟合演示，最后与 tiktoken cl100k 同语料对照。
 
 ### 1.2 实用工具
 
 - **[token_estimation.py](token_estimation.py)** — 命令行 Token 数量估算脚本，支持多种主流 tokenizer。
+- **[hand_roll_bpe.py](hand_roll_bpe.py)** — 手搓 BPE 文章的配套脚本：字符级 / BPE / tiktoken 对照三段全部可跑。
 - **[Dockerfile](Dockerfile)** — 容器化构建文件，将估算脚本打包为可部署镜像，便于在 CI / 内部服务中调用。
 
 ### 1.3 Token 化过程
