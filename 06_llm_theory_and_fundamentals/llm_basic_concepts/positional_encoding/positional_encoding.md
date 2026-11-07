@@ -149,6 +149,7 @@ RoPE 的成功不在于它比之前的方案更复杂——恰恰相反，它用
 ## 四、相关资源
 
 - [Transformer 架构详解](../transformer/transformer_architecture.md) — 本文的前置阅读，自注意力机制的完整拆解。
+- [手搓 RoPE：一百行 numpy 讲透旋转位置编码](hand_roll_rope.md) — 本文的动手篇：把旋转不变性、约定分歧与外推谱全部变成可复现的 numpy 实验。
 - [LLM 架构演进史](../architecture_evolution/llm_architecture_evolution.md) — 上下文窗口如何从 512 扩展到 1M 的军备竞赛。
 - 苏剑林，[Transformer 升级之路：RoPE](https://kexue.fm/archives/8265) — RoPE 的原始中文推导，包含完整的数学细节。
 - [YaRN: Efficient Context Window Extension](https://arxiv.org/abs/2309.00071) — 将 RoPE 外推到 128K+ 的系统方法。
