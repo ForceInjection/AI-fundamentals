@@ -388,6 +388,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 - [当 KV Cache 跨过信任边界：三篇论文给出的三种泄露面，与一个「共享层级 + 默认加密」的设想](09_inference_system/kv_cache/05_kv_security/01_kv-security-overview.md) - 读行为 / 读数据 / 读时延三种取证位置：PromptPeek / Shadow in the Cache / Auditing Prompt Caching，附按角色选路的对号表，以及取证距离与防御动作同轴的成本账
 - [当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](09_inference_system/kv_cache/06_kv_reuse/01_kv-reuse-overview.md) - KVLink（文档级预计算 + link token）与 DroidSpeak（跨微调变体共享 + 关键层重算）两条路径与「数字怎么读」口径清单
 - [当压缩表示被继续使用：三篇论文给出的三种二次决策](09_inference_system/kv_cache/07_kv_compression/01_kv-compression-overview.md) - Self-Indexing KVCache / SALS / EchoKV 把压缩产物继续用作检索索引、token 选择场与重建素材
+- [TTFT 多了 15 毫秒之后：一套实证过的 KV Cache 性能分析方法论](09_inference_system/kv_cache/08_methodology/01_kv-cache-perf-methodology.md) - 真机排查总结的六件工具与六类问题：时钟链闭合、排除链判死、仪器纪律、native 对齐，配操作清单与脱敏后的实测数字
 - [当 Agent 流量成为推理系统的主要负载](09_inference_system/agent_serving/agent-workload-serving.md) - KV 生命周期错配、调度语义失真、会话粘性与容量公式失效：Agent 负载下的四连锁问题与两引擎源码级现状
 - [约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](09_inference_system/agent_serving/constrained-decoding-engines.md) - 结构化输出的编译账/每步账/交互账：双引擎实现逐项对照与 jump-forward 差异
 - [线性注意力与推理系统](09_inference_system/linear_attention/README.md) - delta-rule 一脉（KDA/Gated DeltaNet）落地后的系统挑战：prefill 串行化、状态检查点缓存、状态语义深水区——总览 + 机制/调度/状态语义四篇

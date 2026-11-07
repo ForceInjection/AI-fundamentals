@@ -1,8 +1,8 @@
 # KV Cache 技术体系
 
-一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 71 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
+一个 32K token 的 prompt，80 层 LLaMA-2 70B，batch=32——KV Cache 吃掉 320 GB 显存，是模型权重本身的 2 倍以上。**KV Cache 是 LLM 推理最大的显存消费者，也是几乎所有推理优化的主战场。** 72 篇文章，从"KV Cache 到底是什么"到"如何在数十节点的集群上高效传输和复用"，覆盖了这一技术栈的完整纵深。
 
-> **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划；五个专题（FAST'26 / 内存层级 / 安全 / 复用 / 压缩）见 §6–§10。每篇文章独立可读，前后交叉引用。
+> **建议阅读路径**：§1 基础原理 → §2 核心优化技术 → §3 进阶架构与系统 → §4 容量规划；五个专题（FAST'26 / 内存层级 / 安全 / 复用 / 压缩）见 §6–§10；实践方法论（性能排查）见 §11。每篇文章独立可读，前后交叉引用。
 
 ## 1. 基础原理
 
@@ -246,3 +246,11 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[Self-Indexing](07_kv_compression/references/self-indexing-report.md) · [SALS](07_kv_compression/references/sals-report.md) · [EchoKV](07_kv_compression/references/echokv-report.md)；论文原文 PDF 在 `07_kv_compression/references/papers/`
 - 调研报告（筛选期 venue 核实与评级记录）：[compression-report](07_kv_compression/references/compression-report.md)（压缩 / 驱逐类候选论文）
 - **架构侧姊妹系列（05–07）**：[KV 压缩推到极限：从架构改造到分层缓存](07_kv_compression/README.md) — V4 与 K3 架构重写后的 KV 体积账（1M 上下文 250GB 量级 → 个位数 GB）、V4.1-Flash 技术报告精读（CED / CSA2 / FP4 KV）与 HiCache 七池八池的系统后果，三篇互为时间线；目录[README](07_kv_compression/README.md)含与引擎侧手段的分工说明。
+
+---
+
+## 11. 实践方法论：性能问题怎么查
+
+> 前面十个部分回答「机制是什么、怎么设计」；这一篇回答「慢了怎么查」。来自给生产级推理引擎（vLLM/SGLang）接入远端 KV Cache 层的真机实战，方法论与案例数字均经脱敏与核实。
+
+- **[TTFT 多了 15 毫秒之后：一套实证过的 KV Cache 性能分析方法论](08_methodology/01_kv-cache-perf-methodology.md)** — 六件分析工具（时钟链分解+闭合校验、排除链+判别实验、同轮对照+锚点归一、观测口径纪律、native 对齐清单、微基准先行）与六类问题（介质与拷贝几何、宿主侧 Python 税、同步与放行契约、步级管线、布局与寻址、观测元层），附七步操作清单与十四个脱敏案例；配两张手绘图。
