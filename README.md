@@ -147,6 +147,10 @@
 - [57 行代码的 FlashAttention](./02_gpu_programming/03_tilelang/02_tilelang_flash_attention.md)：TileLang 前向算子源码级拆解，online softmax 与软件流水演进，附 H100 实测
 - [把权重压到 4-bit](./02_gpu_programming/03_tilelang/03_dequant_gemm_lowprecision.md)：反量化 GEMM 的两条路径与快速解码指令族，wgmma/TMA 发射形态实测
 
+**Kernel 编译器与 Megakernel**：
+
+- [launch、occupancy、overlap：什么时候手写 kernel，什么时候交给编译器](./02_gpu_programming/05_compiler/01_kernel-compiler-megakernel.md)：TVM（schedule 分离）、Mirage（三层联合超优）、MPK（整模型 megakernel）三级递进，配三 regime 决策轴与 launch-bound 微基准
+
 **性能分析与调优**：
 
 - [nvbandwidth 最佳实践](./02_gpu_programming/04_profiling/01_nvbandwidth_best_practices.md)：显存带宽与 PCIe 传输带宽测量指南

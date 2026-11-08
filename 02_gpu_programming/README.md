@@ -85,7 +85,16 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 
 ---
 
-## 5. 学习资源库
+## 5. [Kernel 编译器与 Megakernel](05_compiler/README.md)
+
+手写 kernel 到顶之后，性能还藏在三个地方：层级之间的联合重排、kernel 之间的边界、算子与硬件的乘积空间。三篇论文各攻一处，抽象层级一级比一级高：TVM 把「每个硬件手写一遍」变成 schedule 搜索，Mirage 把「逐层手调」变成三层联合超优，MPK 把整个模型推理编译成单一 megakernel。
+
+- [launch、occupancy、overlap：什么时候手写 kernel，什么时候交给编译器](05_compiler/01_kernel-compiler-megakernel.md) - 三篇论文递进拆解 + launch/屋顶/overlap 三种 regime 的决策轴，配单卡 launch-bound 微基准（eager 2.35 μs/op → CUDA Graph 1.05 → fused 0.004）。
+- [launch_overhead_bench.cu](05_compiler/01_launch_overhead_bench.cu) - 微基准源码，eager / CUDA Graph / fused 三模式等量工作对比，可复现。
+
+---
+
+## 6. 学习资源库
 
 这里的资料大致按 **快速入门 → 进阶实战 → 权威参考** 三个梯度组织，适合不同阶段按需取用：
 
@@ -94,19 +103,19 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 - **优化范例**：CUDA-Learn-Notes 收集了 200+ 个 Tensor Core / CUDA Core 的极致优化内核，适合“照着拆解”。
 - **活跃社区**：GPU Mode、CUDA Reading Group 等，能看到最新的工程讨论。
 
-### 5.1 快速入门
+### 6.1 快速入门
 
 - [并行计算、费林分类法和 CUDA 基本概念](https://mp.weixin.qq.com/s/NL_Bz8JB-LdAtrQake7EdA)
 - [CUDA 编程模型入门](https://mp.weixin.qq.com/s/IUYzzgt6DUYhfaDnbxoZuQ)
 - [CUDA 并发编程之 Stream 介绍](./02_cuda/03_cuda_streams.md)
 
-### 5.2 进阶实战
+### 6.2 进阶实战
 
 进阶阶段的重心通常放在 Tensor Core MMA、CuTe 布局、寄存器复用，以及 Warp-Specialized 流水这类深度优化技巧上，适合已经熟悉 CUDA 基础、想再抓一点性能的开发者。
 
 - [CUDA-Learn-Notes](https://github.com/xlite-dev/CUDA-Learn-Notes) - 涵盖 200+ 个 Tensor Core/CUDA Core 极致优化内核示例 (HGEMM, FA2 via MMA and CuTe)。
 
-### 5.3 参考资料大全
+### 6.3 参考资料大全
 
 以 NVIDIA 官方 Programming Guide 为权威基准，再配上经典中文教材、开源范例仓库和学术/社区讲座，如下几类资源可以按需组合，形成自己的参考矩阵。
 
