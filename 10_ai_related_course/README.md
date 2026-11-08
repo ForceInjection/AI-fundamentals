@@ -4,13 +4,14 @@ AI Fundamentals 课程资源库汇集了人工智能领域的系统性课程、�
 
 ## 1. 课程模块概览
 
-以下五大核心模块梳理了 AI 学习的基础设施与实战应用，为学习者构建了清晰的知识导航体系。
+以下六大核心模块梳理了 AI 学习的基础设施与实战应用，为学习者构建了清晰的知识导航体系。
 
 - **[AI 编程入门](ai_coding/README.md)**：包含 AI 辅助编程的基础概念与实战演示课件。
 - **[Token Factory 讲座](ai_infra_lecture/入门级/README.md)**：AI 推理成本革命——四层杠杆（模型架构/硬件/推理引擎/基础设施与生态）如何让每 token 成本四年下降 100 倍。
 - **[多智能体系统](multi_agent_system/multi_agent_training/README.md)**：深入讲解多智能体架构设计、LangGraph 框架应用及企业级落地实践。
 - **[Trae 编程实战](trae/README.md)**：围绕 Trae 智能 IDE 展开的从基础到高级的全流程实战开发教程。
 - **[KV Cache 八讲](kv_cache_course/README.md)**：从 token 账本、page/slot 到 nano-vllm / vLLM / SGLang 源码，再到 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的容量分析。
+- **[哈佛 CS2680 Modern AI Systems](cs2680_modern_ai_systems/README.md)**：哈佛 SEAS 2026 秋季课程课件存档，从 Agent 循环讲到 LLM serving 与底层 GPU 硬件。
 
 ## 2. 核心课程详情
 
@@ -55,7 +56,11 @@ Trae 智能编程实战教程采用循序渐进的五阶结构，系统讲解从
 - **前置材料**：`ai-infra-course` 模块 5/6；课程不重复 vLLM 入门，只做 KV Cache 纵深。
 - **产出**：token/state 容量表、源码映射、Agent 长会话选型备忘；术语见 [术语表](kv_cache_course/glossary.md)。
 
-### 2.6 独立学习资料
+### 2.6 哈佛 CS2680 Modern AI Systems
+
+哈佛 SEAS 课程 CS2680（Fall 2026，Juncheng Yang / MaDSys 组主讲）的课件存档，课程沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：I「Intro to LLM」（Transformer / Llama 3 / MoE / KV cache）、II「Intro to GPUs」（roofline、内存层级、nsys/ncu 剖分析、FlashAttention 谱系，上下两份 deck）、III「scheduling, paging and parallelism」（TTFT/TPOT/SLO 口径、batching、PagedAttention、五种并行策略）。详见 [cs2680_modern_ai_systems/README.md](cs2680_modern_ai_systems/README.md)。
+
+### 2.7 独立学习资料
 
 独立的技术专题文档提供了特定领域的知识纵深，为完整的课程体系补充了具备商业实战价值的延展阅读材料。
 

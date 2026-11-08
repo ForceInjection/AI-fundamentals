@@ -807,6 +807,10 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](10_ai_related_course/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md) - 涵盖 AI Agent 基础概念、开发框架、设计模式与应用场景。
 
+### 12.7 哈佛 CS2680 Modern AI Systems
+
+哈佛 SEAS 2026 秋季课程（Juncheng Yang / MaDSys 组主讲），沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：Intro to LLM、Intro to GPUs（roofline、nsys/ncu、FlashAttention 谱系）与 scheduling/paging/parallelism（TTFT/TPOT 口径、batching、PagedAttention、五种并行）。详见 [哈佛 CS2680 课件存档](10_ai_related_course/cs2680_modern_ai_systems/README.md)。
+
 ---
 
 ## 13. AI Native 全栈实践
