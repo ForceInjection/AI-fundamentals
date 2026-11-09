@@ -24,6 +24,7 @@
 - **[Transformer 架构详解](transformer/transformer_architecture.md)** — 从自注意力、多头注意力、FFN 到完整 Decoder Block 的逐组件拆解，包含 Q/K/V 数学原理与 SwiGLU / RMSNorm 等现代变体。
 - **[位置编码](positional_encoding/positional_encoding.md)** — 从 Sinusoidal 到 RoPE 的演进路径，深入 RoPE 的旋转数学原理与 NTK/YaRN 外推技术。
 - **[手搓 RoPE：一百行 numpy 讲透旋转位置编码](positional_encoding/hand_roll_rope.md)** — 四个实验全部可复现：两种配对约定实测差 3.385、相对不变性波动 3e-13、随机向量无衰减的澄清、PI/NTK/YaRN 三种外推策略的频率谱，配 5 张手绘图。
+- **[手搓系列导航](../hand_roll_series.md)** — 系列 5 篇的阅读顺序与实测产出汇总：Tokenizer / RoPE / Attention / KV Cache / MLA，跨三个主题区的唯一入口。
 - **[LLM 架构演进史](architecture_evolution/llm_architecture_evolution.md)** — 从 GPT-1 到 DeepSeek-V3 的 7 个关键拐点，Decoder-only 如何成为标准配方，以及 MoE 与推理 Scaling 的新趋势。
 - **[GPT-2 到 Kimi K3 的注意力机制演进](architecture_evolution/from_gpt2_to_kimi_k3_attention_evolution.md)** — 注意力**计算侧**的演进线：MHA 的多头分工、稀疏与滑窗的取舍、Delta 规则线性化，直到 K3 的 KDA + Gated MLA 混合架构；机制逐段对照论文与源码。
 - **[当记忆成为模型状态：MemT-1.0 的架构、训练与边界](memory_native/memt_1_0_memory_native.md)** — 记忆原生基础模型：local/hyper memory、GDN-2、MoS、34B token 训练与 11 项记忆基准，附源码核对与 release 边界。

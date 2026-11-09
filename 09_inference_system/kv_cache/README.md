@@ -13,6 +13,7 @@
 - **[手搓 KV Cache：从静态预留到 PagedAttention 的页表](01_concepts/01_basic/03_hand_roll_kv_cache.md)** — 用可运行模拟器实测三种显存管理策略：静态预留利用率 20%、连续分配外部碎片入住失败、分页 5 倍容量与 2.7% 页内浪费；[配套脚本](01_concepts/01_basic/03_hand_roll_kv_cache.py)复现全部数字。
 - **[KV Cache 为什么叫 KV Cache？——Q 去哪了](01_concepts/01_basic/04_why_only_kv.md)** — 检索类比解释 Q 的一次性与 K/V 的持久性，因果掩码的数学约束。
 - **[不同注意力类型的 KV Cache 到底长什么样](01_concepts/01_basic/05_attention_kv_cache_formats.md)** — MHA / GQA / MQA / MLA / CSA-HCA 五种注意力类型下 KV Cache 的精确形状、显存占用和 vLLM 支持状态。
+- **[手搓 MLA：从 MHA 到 weight absorption](01_concepts/01_basic/07_hand_roll_mla.md)** — 用 numpy 把 MHA→MQA→GQA→MLA 四版搓出来并加载真实权重验证吸收等价（fp32 逐位一致）；KV 压到同形状 MHA 的约 1/57，三个流行口径（93.3% / 5.76× / 71×）逐一辨析；[配套脚本](01_concepts/01_basic/07_hand_roll_mla.py)与[系列导航](../../hand_roll_series.md)复现全部数字。
 - **[稀疏注意力分类学：读什么、不读什么、以及为什么读得少不等于存得少](01_concepts/01_basic/06_sparse_attention_taxonomy.md)** — 按决策时机将稀疏注意力方法分为三条路线：固定模式（Sliding Window、Longformer）、动态选择（StreamingLLM、Vegas、NSA/DSA）、压缩近似（CSA/HCA、Linformer）。每条路线的设计取舍不同，但共享同一个被普遍忽视的约束——减少 KV 读取量（省计算）不等于减少 KV 存储量（省显存）。
 - **[为什么 GPU 生成每个 token 时利用率不到 5%？——Prefill 与 Decode 深度拆解](../prefill_decode/prefill_decode_qkv_calculation.md)**（[交互可视化](../prefill_decode/prefill_decode_visual.html) · [校验脚本](../prefill_decode/prefill_decode_validate.py)）：从一个具体例子出发，逐步标注 Prefill 和 Decode 每一步的矩阵形状与计算量变化，从 compute-bound vs memory-bound 的根本差异出发，推导出 GQA、量化、PagedAttention、Offloading、PD 分离等优化方向的必然性。
 
