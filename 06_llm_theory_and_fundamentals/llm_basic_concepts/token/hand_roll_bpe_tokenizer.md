@@ -33,11 +33,11 @@ def decode_v0(ids):
 
 两行编码、两行解码，往返实测无损。词表 59 个字符，覆盖全部语料。看起来已经能用，问题藏在序列长度里：语料编成 1089 个 UTF-8 字节，字符级就是 1089 个 token。
 
-token 数量不是免费的事。本站[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)那篇算过：attention 的分数矩阵是 n×m，序列长度直接决定显存和算力。同样的文本，token 越少，推理越便宜。所以要有更粗的粒度。
+token 数量不是免费的事。[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)那篇算过：attention 的分数矩阵是 n×m，序列长度直接决定显存和算力。同样的文本，token 越少，推理越便宜。所以要有更粗的粒度。
 
 ## 三、版本 1：词级的诱惑与 OOV
 
-最自然的想法是按词切：英文按空格，一个词一个 token。压缩率立刻上去，但两个新问题跟着来。中文没有空格，分词本身就是个难题；更致命的是词表封闭：今天的语料里没有「DeepSeek」，明天用户就要问它，词级方案直接抓瞎（out-of-vocabulary，OOV）。
+最自然的想法是按词切：英文按空格，一个词一个 token。压缩率立刻上去，但两个新问题跟着来。中文没有空格，分词本身就是个难题；更致命的是词表封闭：今天的语料里没有「DeepSeek」，明天用户就要问它，词级方案直接失灵（out-of-vocabulary，OOV）。
 
 需要一种介于字符和词之间的粒度：常见组合合并成 token，没见过的组合退回字符也还能编码。这就是子词（subword），BPE（Byte Pair Encoding）是最主流的实现。思想一句话：统计语料里最高频的相邻符号对，把它合并成一个新符号，反复做，直到词表够大。
 
@@ -121,7 +121,7 @@ emoji 那 3 个 token 是字节级回退（byte fallback）：🤖 的 UTF-8 编
 
 什么时候轮到自己训：领域语料压缩率敏感（代码、医疗、小语种），通用 tokenizer 的压缩率不合算时，可以在自己的语料上训一个领域词表。平时一律用现成的：tokenizer 与预训练绑定，换 tokenizer 等于换输入分布，模型要重训。
 
-接得上的几篇：本站 [Token 机制](README.md)目录下的[介绍文](llm_token_intro.md)讲 BPE/WordPiece 的策略差异；[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)解释了为什么 token 数直接决定显存；[token_estimation.py](token_estimation.py)是现成的成本估算工具。
+相关几篇文章：[Token 机制](README.md)目录下的[介绍文](llm_token_intro.md)讲 BPE/WordPiece 的策略差异；[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)解释了为什么 token 数直接决定显存；[token_estimation.py](token_estimation.py)是现成的成本估算工具。
 
 ## 源文件索引
 

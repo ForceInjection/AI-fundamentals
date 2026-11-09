@@ -173,7 +173,7 @@ def attention_v4(Q, K, V, block=16):
 | v3（朴素分块）             | 2.1                       | 错：块间各自归一化         |
 | v4（online softmax）       | 1.2e-07                   | 正确，且显存里只有一块的 S |
 
-这就是 FlashAttention 的心脏。论文（arXiv:2205.14135）做的事，是把 v4 的思想搬到 GPU 上并把工程细节做满：Q 常驻片上寄存器、K/V 块异步搬运、滚动状态全不落显存、causal 时跳过整个三角块。所以它叫「IO-aware」，省的是读写而不是乘法。本站的[TileLang FlashAttention 拆解](../03_tilelang/02_tilelang_flash_attention.md)里能看到这套递推在真实 kernel 里的样子（五个 fp32 fragment，就是这里的 m、l 和 acc）。
+这就是 FlashAttention 的心脏。论文（arXiv:2205.14135）做的事，是把 v4 的思想搬到 GPU 上并把工程细节做满：Q 常驻片上寄存器、K/V 块异步搬运、滚动状态全不落显存、causal 时跳过整个三角块。所以它叫「IO-aware」，省的是读写而不是乘法。[TileLang FlashAttention 拆解](../03_tilelang/02_tilelang_flash_attention.md)里能看到这套递推在真实 kernel 里的样子（五个 fp32 fragment，就是这里的 m、l 和 acc）。
 
 ## 八、总评
 
@@ -189,7 +189,7 @@ def attention_v4(Q, K, V, block=16):
 
 生产环境直接用现成实现，它们比手写的版本快得多也稳得多。自己写一遍的价值在别处：S 为什么不能落显存、减 max 为什么是标配、分块之后 softmax 的分母为什么难拿、online softmax 又是怎么把这笔账滚对的，这四件事我们都亲手跑过一遍。往后读任何 attention 优化的文章（FlashAttention、PagedAttention 一类的缓存设计、TileLang 算子），第一步都是把它的做法对应到这四版里的某一版上。
 
-想往下一步走，有两篇接得上：本站[TileLang FlashAttention 前向拆解](../03_tilelang/02_tilelang_flash_attention.md)是本文 v4 的 GPU 实体版；[CUDA 调试实战](18_cuda_debugging.md)和[性能调优方法论](17_roofline_optimization.md)覆盖把 demo 变成生产 kernel 途中会遇到的工具与瓶颈分析。
+想往下一步走，有两篇接得上：[TileLang FlashAttention 前向拆解](../03_tilelang/02_tilelang_flash_attention.md)是本文 v4 的 GPU 实体版；[CUDA 调试实战](18_cuda_debugging.md)和[性能调优方法论](17_roofline_optimization.md)覆盖把 demo 变成生产 kernel 途中会遇到的工具与瓶颈分析。
 
 ## 源文件索引
 
@@ -205,4 +205,4 @@ def attention_v4(Q, K, V, block=16):
 - Vaswani et al., 2017, _Attention Is All You Need_（arXiv:1706.03762）：Q/K/V 与缩放点积的出处
 - Dao et al., 2022, _FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness_（arXiv:2205.14135）：分块 + online softmax 的 GPU 实现
 - Milakov & Gimelshein, 2018, _Online normalizer calculation for softmax_（arXiv:1805.02867）：滚动 max 技巧的早期文献
-- 本站[TileLang FlashAttention 前向拆解](../03_tilelang/02_tilelang_flash_attention.md)：同一递推的源码级版本
+- [TileLang FlashAttention 前向拆解](../03_tilelang/02_tilelang_flash_attention.md)：同一递推的源码级版本

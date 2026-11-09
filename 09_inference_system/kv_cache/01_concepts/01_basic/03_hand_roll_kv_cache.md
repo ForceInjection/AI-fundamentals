@@ -1,6 +1,6 @@
 # 手搓 KV Cache：从静态预留到 PagedAttention 的页表
 
-本站[手搓 Attention](../../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)那篇算的是 attention 的**计算账**：分数矩阵为什么不能落显存、online softmax 怎么滚。这篇算另一本账，存储账：算过的 K/V 得留在显存里给后续 token 用，而这些中间状态怎么放，直接决定一块卡同时能伺候多少条请求。同样的显存预算，管理策略从「按最大长度预留」换成「按页分配」，容量实测差 5 倍。这也是手搓系列的第四篇，阅读顺序见[手搓系列导航](../../../../hand_roll_series.md)。三个版本递进，每一笔账都是模拟器实跑出来的。
+[手搓 Attention](../../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)那篇算的是 attention 的**计算账**：分数矩阵为什么不能落显存、online softmax 怎么滚。这篇算另一本账，存储账：算过的 K/V 得留在显存里给后续 token 用，而这些中间状态怎么放，直接决定一块卡同时能伺候多少条请求。同样的显存预算，管理策略从「按最大长度预留」换成「按页分配」，容量实测差 5 倍。这也是手搓系列的第四篇，阅读顺序见[手搓系列导航](../../../../hand_roll_series.md)。三个版本递进，每一组数字都是真机实跑出来的。
 
 > 核对基准：PagedAttention（arXiv:2309.06180）的利用率口径；页大小 16 取 vLLM GPU 默认（本地 vLLM 快照 commit `8b365ff9`，`vllm/_custom_ops.py:55` 核对）。离散事件模拟器为纯标准库 Python（脚本已入库同目录 [hand_roll_kv_cache.py](03_hand_roll_kv_cache.py)）：显存预算 8528 个 token 槽位（恰好装下第一批入驻序列，消除尾部空白干扰）；60 条序列长度按高斯分布生成（seed 42，均值 228，最长 593）；页 16 token/页。模拟器只管「token 槽位怎么分配」，不模拟张量本身的计算。核对日期 2026-11-06。
 
@@ -8,7 +8,7 @@
 
 自回归生成时，每生成一个 token，它的 K 和 V 就要留在一个可查询的地方：后续每个新 token 的 attention 都要读全部历史的 K/V。这笔缓存的增长是线性的：序列越长、批次越多，占用越大。具体的「每 token 多大」公式与真实模型数字（如 Llama-2 70B 每 token 约 320 KB），[KV Cache 原理简介](01_kv_cache_basics.md)和[PagedAttention 讲解](02_paged_attention.md)都算过，不重复。
 
-这篇关心的是更底层的一个问题：这些 K/V 在显存里**怎么摆放**。它看起来是个工程细节，实际决定了同样的卡能同时跑几条请求。手搓一个管理器，三种策略各跑一遍模拟，用同一组预算和负载对照。
+本文关心的是更底层的一个问题：这些 K/V 在显存里**怎么摆放**。它看起来是个工程细节，实际决定了同样的卡能同时跑几条请求。手搓一个管理器，三种策略各跑一遍模拟，用同一组预算和负载对照。
 
 ![KV Cache 随生成逐 token 追加](img/kv-01-append.png)
 
@@ -77,18 +77,18 @@ capacity = TOTAL_SLOTS // MAX_LEN      # 8528 // 1024 = 8 条
 
 生产环境用 vLLM、SGLang 的现成实现，它们的 BlockSpaceManager 还处理了页共享、写时复制、驱逐与换出，都是这篇模拟器没有的。手搓的价值在于：现在读 vLLM 的 `block_table`、`num_gpu_blocks` 这些字段，对应关系是清楚的：每条请求的 block table 就是模拟器里那张页表，`num_gpu_blocks` 就是那个总预算。
 
-接得上的几篇：[KV Cache 原理简介](01_kv_cache_basics.md)讲缓存为什么必须存在；[PagedAttention 讲解](02_paged_attention.md)有完整的 OS 类比与交互可视化；前缀共享的展开见 [KV 复用](../../06_kv_reuse/)目录；[手搓 Attention](../../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)是配套的计算账。
+相关几篇文章：[KV Cache 原理简介](01_kv_cache_basics.md)讲缓存为什么必须存在；[PagedAttention 讲解](02_paged_attention.md)有完整的 OS 类比与交互可视化；前缀共享的展开见 [KV 复用](../../06_kv_reuse/)目录；[手搓 Attention](../../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)是配套的计算账。
 
 ## 源文件索引
 
-| 来源 | 引用点 |
-| --- | --- |
-| Kwon et al., 2023（arXiv:2309.06180） | 有效利用率口径（§五对账） |
-| vLLM `vllm/_custom_ops.py:55`（快照 `8b365ff9`） | 页大小 16 的默认口径（§五） |
-| 本仓：`03_hand_roll_kv_cache.py` | 三种策略的模拟器实现与全部实测数字 |
+| 来源                                                           | 引用点                             |
+| -------------------------------------------------------------- | ---------------------------------- |
+| Kwon et al., 2023（arXiv:2309.06180）                          | 有效利用率口径（§五对账）          |
+| vLLM `vllm/_custom_ops.py:55`（快照 `8b365ff9`）               | 页大小 16 的默认口径（§五）        |
+| 本仓：[`03_hand_roll_kv_cache.py`](./03_hand_roll_kv_cache.py) | 三种策略的模拟器实现与全部实测数字 |
 
 ## 参考资料
 
 - Kwon et al., 2023, _Efficient Memory Management for Large Language Model Serving with PagedAttention_（arXiv:2309.06180）：分页管理的原始论文
 - vLLM 仓库：<https://github.com/vllm-project/vllm>（页大小 16 的实现见 `vllm/_custom_ops.py`）
-- 本站[KV Cache 目录](../../README.md)：从原理到分布式管理的 60+ 篇进阶内容
+- [KV Cache 全集](../../README.md)：从原理到分布式管理的 60+ 篇进阶内容

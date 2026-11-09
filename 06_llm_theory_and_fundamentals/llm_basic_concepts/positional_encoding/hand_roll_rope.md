@@ -137,7 +137,7 @@ RoPE 直接外推（训练 4K、推理 16K）会失败，问题集中在频率�
 - 「换实现必须连权重换」在 numpy 两实现上验证（§四）；3.385 是特定输入的实测差，不是普适常数
 - 全部波动结论都是 float64（§五）；bf16/fp16 训练精度下未测
 
-接得上的几篇：同目录的[位置编码演进总览](positional_encoding.md)梳理 Sinusoidal 到 RoPE 的时间线；[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)是本篇的上游（attention 机制本身的手搓）；[手搓 KV Cache](../../../09_inference_system/kv_cache/01_concepts/01_basic/03_hand_roll_kv_cache.md)是下游（缓存了 K/V 之后的管理账）。
+相关几篇文章：同目录的[位置编码演进总览](positional_encoding.md)梳理 Sinusoidal 到 RoPE 的时间线；[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)是本篇的上游（attention 机制本身的手搓）；[手搓 KV Cache](../../../09_inference_system/kv_cache/01_concepts/01_basic/03_hand_roll_kv_cache.md)是下游（缓存了 K/V 之后的管理账）。
 
 ## 源文件索引
 
@@ -153,4 +153,4 @@ RoPE 直接外推（训练 4K、推理 16K）会失败，问题集中在频率�
 - Su et al., 2021, _RoFormer: Enhanced Transformer with Rotary Position Embedding_（arXiv:2104.09864）：RoPE 原始论文
 - Peng et al., 2023, _YaRN: Efficient Context Window Extension of Large Language Models_（arXiv:2309.00071）
 - EleutherAI 博客 _Rotary Embeddings: A Relative Revolution_：interleaved 与 rotate_half 两种约定的来源讨论（<https://blog.eleuther.ai/rotary-embeddings/>）
-- 本站[位置编码演进总览](positional_encoding.md)与[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)
+- [位置编码演进总览](positional_encoding.md)与[手搓 Attention](../../../02_gpu_programming/02_cuda/21_write_attention_from_scratch.md)
