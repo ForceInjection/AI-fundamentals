@@ -89,7 +89,7 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 
 手写 kernel 到顶之后，性能还藏在三个地方：层级之间的联合重排、kernel 之间的边界、算子与硬件的乘积空间。三篇论文各攻一处，抽象层级一级比一级高：TVM 把「每个硬件手写一遍」变成 schedule 搜索，Mirage 把「逐层手调」变成三层联合超优，MPK 把整个模型推理编译成单一 megakernel。
 
-- [launch、occupancy、overlap：什么时候手写 kernel，什么时候交给编译器](05_compiler/01_kernel-compiler-megakernel.md) - 三篇论文递进拆解 + launch/屋顶/overlap 三种 regime 的决策轴，配单卡 launch-bound 微基准（eager 2.35 μs/op → CUDA Graph 1.05 → fused 0.004）。
+- [launch、occupancy、overlap：什么时候手写 kernel，什么时候交给编译器](05_compiler/01_kernel-compiler-megakernel.md) - 三篇论文递进拆解 + launch/天花板/overlap 三种 regime 的决策轴，配单卡 launch-bound 微基准（eager 2.35 μs/op → CUDA Graph 1.05 → fused 0.004）。
 - [launch_overhead_bench.cu](05_compiler/01_launch_overhead_bench.cu) - 微基准源码，eager / CUDA Graph / fused 三模式等量工作对比，可复现。
 
 ---
