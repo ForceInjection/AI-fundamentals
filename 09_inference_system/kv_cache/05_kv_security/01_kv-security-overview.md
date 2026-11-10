@@ -143,7 +143,7 @@ KV Cache 是推理的中间状态，也是 prompt 的近明文表示：它由用
 
 **复用的扩展边界**（共享跨出同实例之后）：
 
-- [当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](../06_kv_reuse/01_kv-reuse-overview.md) · [把 14B 的 KV 交给 32B：跨模型复用的可能与代价](../01_concepts/09_cross_model/01_cross_model_kv_transfer.md)
+- [当复用跨出同前缀与同模型：四条路线与四种对齐开销](../06_kv_reuse/01_kv-reuse-overview.md) · [把 14B 的 KV 交给 32B：跨模型复用的可能与代价](../01_concepts/09_cross_model/01_cross_model_kv_transfer.md)
 
 **缓存外置的层级与存储**（KV 落在谁的地盘）：
 

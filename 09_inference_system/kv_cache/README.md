@@ -231,7 +231,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 
 > 从 2026 KV Cache 专题调研的录用论文里选出的第三条深读线——复用条件的两次放宽：文档级预计算与任意拼接（同模型）、同一基座微调变体的 KV 互借（异权重）。
 
-- **[当复用跨出同前缀与同模型：两篇论文给出的两条扩展路径](06_kv_reuse/01_kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）与 DroidSpeak（NSDI '26）两条路径、按条件选路的对号表，以及两篇的「数字怎么读」口径清单。
+- **[当复用跨出同前缀与同模型：四条路线与四种对齐开销](06_kv_reuse/01_kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）、DroidSpeak（NSDI '26）与 CacheBlend（LMCache 实现）四条路线、按条件选路的对号表，以及「数字怎么读」口径清单。
 - 单篇精读：[KVLink](06_kv_reuse/02_kvlink.md)（NeurIPS 2025，文档级预计算 + link token）· [DroidSpeak](06_kv_reuse/03_droidspeak.md)（NSDI '26，跨微调变体共享 + 关键层重算）
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[KVLink](06_kv_reuse/references/kvlink-report.md) · [DroidSpeak](06_kv_reuse/references/droidspeak-report.md)；论文原文 PDF 在 `06_kv_reuse/references/papers/`
 - 调研报告（筛选期 venue 核实与评级记录）：[reuse-security-report](05_kv_security/references/reuse-security-report.md)（复用 / 共享 / 安全类候选论文，与安全专题共用）
