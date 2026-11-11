@@ -18,6 +18,8 @@
 >
 > **条件记忆**：稀疏有了第二根轴——V4.1-Flash 把 196B 参数从 HBM 搬进主机内存（LPDDR），靠 O(1) 查表替代多层对静态知识的重建。系列入口：**[Engram：条件记忆与主机内存参数](engram/README.md)**（首篇源码深读：官方 demo + SGLang 巨页手术，LPDDR 的优势与代价逐项算账）。
 >
+> **超节点**：把推理系统当 token 工厂看产能，华为这座工厂的厂房很特别——384 张昇腾 910 与 192 颗鲲鹏 CPU 经 UB 连成逻辑上的一台机器，跨节点带宽损失 <3%，EP 因此可以开到 320（每 die 一个专家）。配套服务栈 CloudMatrix-Infer 做 PDC 三池分离、FusedDispatch/FusedCombine 融合通信算子、UB 直连内存池；prefill 6,688 / decode 1,943 tokens/s/NPU 的数字附五条口径声明。详见 **[一座 384 卡的 TokenFactory：CloudMatrix384 论文精读](cloudmatrix_infer/cloudmatrix384-tokenfactory.md)**（arXiv 2506.12708 v3 逐章核对，厂商口径已标注）。
+>
 > **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 昇腾开源栈](deepseek_ascend/README.md)**（六个组件、三种双端模式与 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
 
 ---
