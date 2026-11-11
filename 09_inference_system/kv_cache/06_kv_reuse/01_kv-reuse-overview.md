@@ -105,6 +105,7 @@
 
 - [缓存不必同前缀：NeurIPS 2025 KVLink 把 RAG 首 token 延迟最高降 96%](02_kvlink.md)——**文档级复用**（NeurIPS 2025）
 - [借来的 KV 不能全借：NSDI'26 DroidSpeak 只重算约一成层，预填充最高快 3.1×](03_droidspeak.md)——**跨变体复用**（NSDI '26）
+- [四条路线，一条落地：vLLM 与 SGLang 的 KV 复用支持现状](04_framework-kv-reuse-support.md)——**引擎落地盘点**（路线 1 已卷到跨实例纵深，路线 2 只剩 LMCache 独木桥，路线 3/4 零实现；以三仓 HEAD 源码核对）
 - 精读报告（逐条页码核对版）：[KVLink](references/kvlink-report.md) · [DroidSpeak](references/droidspeak-report.md)；论文原文 PDF 在 `references/papers/`
 
 ## 诚实声明

@@ -28,7 +28,7 @@
 
 在讨论任何优化之前，先理解推理的两阶段（Prefill/Decode）、KV Cache 为什么存在、以及并行策略如何把大模型塞进多张 GPU。
 
-- **[KV Cache 技术体系](kv_cache/README.md)** — 从 KV Cache 基础到分布式管理的完整导航；含五个专题精读：FAST'26「KV Cache × 存储」（五场景）、内存层级（四种内存账）、安全（三种泄露面）、复用（四条路线）、压缩（三种二次决策）；另有实践方法论一篇——真机排查总结的性能分析框架（[TTFT 多了 15 毫秒之后](kv_cache/08_methodology/01_kv-cache-perf-methodology.md)）。
+- **[KV Cache 技术体系](kv_cache/README.md)** — 从 KV Cache 基础到分布式管理的完整导航；含五个专题精读：FAST'26「KV Cache × 存储」（五场景）、内存层级（四种内存账）、安全（三种泄露面）、复用（四条路线与引擎落地现状）、压缩（三种二次决策）；另有实践方法论一篇——真机排查总结的性能分析框架（[TTFT 多了 15 毫秒之后](kv_cache/08_methodology/01_kv-cache-perf-methodology.md)）。
   - 基础：KV Cache 原理、PagedAttention、五种注意力存储格式
   - 优化：Prefix Caching、跨模型复用、压缩量化、淘汰策略、Chunked Prefill、PD 分离传输、Prefetching、CUDA Graph
   - 系统：LMCache、Mooncake、KVBM、HiCache、Tair KVCache

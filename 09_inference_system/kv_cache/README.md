@@ -233,6 +233,7 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 
 - **[当复用跨出同前缀与同模型：四条路线与四种对齐开销](06_kv_reuse/01_kv-reuse-overview.md)**：两篇正式录用论文的横切总纲——KVLink（NeurIPS 2025）、DroidSpeak（NSDI '26）与 CacheBlend（LMCache 实现）四条路线、按条件选路的对号表，以及「数字怎么读」口径清单。
 - 单篇精读：[KVLink](06_kv_reuse/02_kvlink.md)（NeurIPS 2025，文档级预计算 + link token）· [DroidSpeak](06_kv_reuse/03_droidspeak.md)（NSDI '26，跨微调变体共享 + 关键层重算）
+- 引擎落地盘点：[四条路线，一条落地：vLLM 与 SGLang 的 KV 复用支持现状](06_kv_reuse/04_framework-kv-reuse-support.md)——以三仓 HEAD 源码核对两引擎的支持面：路线 1 原生默认开且跨实例纵深，路线 2 仅 LMCache 接线且与前缀缓存互斥，路线 3/4 零实现，LoRA 被两家同构隔离
 - 精读报告（Agent 全文逐条页码核对，口径限定集中标注）：[KVLink](06_kv_reuse/references/kvlink-report.md) · [DroidSpeak](06_kv_reuse/references/droidspeak-report.md)；论文原文 PDF 在 `06_kv_reuse/references/papers/`
 - 调研报告（筛选期 venue 核实与评级记录）：[reuse-security-report](05_kv_security/references/reuse-security-report.md)（复用 / 共享 / 安全类候选论文，与安全专题共用）
 
