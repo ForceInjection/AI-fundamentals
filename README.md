@@ -392,7 +392,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 剖析现代推理系统的底层架构创新，重点解构 Mooncake 等以 KV Cache 为中心的高效 LLM 调度系统设计模式与性能调优策略。
 
 - [手搓 KV Cache：从静态预留到 PagedAttention 的页表](09_inference_system/kv_cache/01_concepts/01_basic/03_hand_roll_kv_cache.md) - 可运行模拟器实测三种显存管理策略：碎片入住失败与 5 倍容量的数字来源。
-- [手搓 MLA：从 MHA 到 weight absorption](09_inference_system/kv_cache/01_concepts/01_basic/07_hand_roll_mla.md) - 四版注意力递进 + 真实权重验证吸收等价（fp32 逐位一致），KV 压缩三口径辨析。
+- [手搓 MLA：从 MHA 到 weight absorption](09_inference_system/kv_cache/01_concepts/01_basic/07_hand_roll_mla.md) - 四种注意力变体递进 + 真实权重验证吸收等价（fp32 逐位一致），KV 压缩三口径辨析。
 - [手搓系列导航](hand_roll_series.md) - 手搓系列 5 篇的阅读顺序与实测产出汇总。
 - [Mooncake 架构详解：以 KV Cache 为中心的高效 LLM 推理系统设计](09_inference_system/kv_cache/02_systems/04_mooncake/01_mooncake_architecture.md) - 新一代推理系统的架构创新与性能优化策略
 - [当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案](09_inference_system/kv_cache/03_fast26/01_fast26-kv-storage-five-scenarios.md) - FAST'26「AI and LLMs」九篇论文中五篇精读的五象限汇总：端侧/智能体/对话/数据中心/冷启动各自的核心矛盾、招式与数字，共同支点是可复现的 I/O 特征；附 4 篇 Agent 精读报告
