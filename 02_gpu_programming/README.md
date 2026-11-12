@@ -94,7 +94,18 @@ GPU 性能分析不宜只看一个指标，实践上一般从三个视角交叉�
 
 ---
 
-## 6. 学习资源库
+## 6. [量化 GEMM 算子：从 Marlin 到 Humming](06_quant_gemm/)
+
+量化推理的算力主力是反量化 GEMM。本系列从经典拆到 JIT：Marlin（W4A16 的教科书设计：repack 布局、lop3 位技巧、双缓冲流水）与 Humming（蚂蚁 + vLLM 社区的 JIT kernel 库，组合爆炸的路线解）。与 3.2 的 TileLang 反量化篇互为对读。
+
+- [Marlin 深拆：反量化不是免费，但可以藏进访存里](06_quant_gemm/01_marlin-deep-dive.md) - W4A16 记号体系 + repack 布局/lop3 位技巧/流水线三设计深拆，配套 numpy CPU 语义复现（四组自验证），论文口径最高 ~3.87×。
+- [marlin_toy.py](06_quant_gemm/marlin_toy.py) - 配套复现代码：repack 纯置换追踪、nibble 打包序、0x6400 魔数位技巧、GPU 存储序 GEMM 等价性，仅依赖 numpy。
+- [Humming 深拆：不预制 kernel，把组合爆炸交给 JIT](06_quant_gemm/02_humming-arch-jit.md) - JIT 链路七环节源码走读（签名缓存/NVRTC/SASS 位补丁/cuModuleLoad）、隐藏浮点格式 E0M3/E3M4 的解锁与守卫、性能数字均为博客口径。
+- [UMMA 深拆：tcgen05 上，反量化结果写进 TMEM](06_quant_gemm/03_umma-deep-dive.md) - SM100 系 kernel 内部：五类线程分工、TMEM 512 列布局账本、单 warp 异步发射、反量化 warpgroup 直写操作数、DP+Stream-K 混合调度。系列收官篇。
+
+---
+
+## 7. 学习资源库
 
 这里的资料大致按 **快速入门 → 进阶实战 → 权威参考** 三个梯度组织，适合不同阶段按需取用：
 

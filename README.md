@@ -151,6 +151,12 @@
 
 - [launch、occupancy、overlap：什么时候手写 kernel，什么时候交给编译器](./02_gpu_programming/05_compiler/01_kernel-compiler-megakernel.md)：TVM（schedule 分离）、Mirage（三层联合超优）、MPK（整模型 megakernel）三级递进，配三 regime 决策轴与 launch-bound 微基准
 
+**量化 GEMM 算子**：
+
+- [Marlin 深拆](./02_gpu_programming/06_quant_gemm/01_marlin-deep-dive.md)：W4A16 反量化三笔税与三个设计（repack 布局/lop3 位技巧/双缓冲流水），配套 numpy CPU 语义复现
+- [Humming 深拆](./02_gpu_programming/06_quant_gemm/02_humming-arch-jit.md)：蚂蚁 + vLLM 社区 JIT kernel 库，500 KB wheel 的按需编译链路与 SASS 位补丁解锁隐藏格式
+- [UMMA 深拆](./02_gpu_programming/06_quant_gemm/03_umma-deep-dive.md)：tcgen05 时代 kernel 内部，五类线程分工与 TMEM 中央舞台，反量化结果直写操作数地盘
+
 **性能分析与调优**：
 
 - [nvbandwidth 最佳实践](./02_gpu_programming/04_profiling/01_nvbandwidth_best_practices.md)：显存带宽与 PCIe 传输带宽测量指南

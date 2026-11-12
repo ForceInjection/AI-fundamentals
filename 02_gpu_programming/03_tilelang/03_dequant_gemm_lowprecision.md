@@ -261,3 +261,4 @@ tolerance 各不相同，都有原因。gemv 的断言是 `atol=1e3, rtol=1e-1`�
 - tilelang 仓库：<https://github.com/tile-ai/tilelang>，本文锚定 tag v0.1.15（a35f8ddf）
 - PR #494（首个 example_dequant_gemm.py 删除）、#725（mxfp4 旧版重写）、#766（Scale 的 1D TMA 加载）、#1509（TMA 变体回并，TMA 转为编译器决策）、#2013（grouped MoE 例删除）、#2761（quantize 包迁出为本地包）、#3140（interleave_weight 1/2-bit 分支修复）
 - Triton hopper_value.py（mxfp.py twiddling 的参考来源）：<https://github.com/triton-lang/triton/blob/main/python/triton_kernels/triton_kernels/tensor_details/layout_details/hopper_value.py>
+- 本仓对读：[量化 GEMM 算子系列](../06_quant_gemm/)（[Marlin 深拆](../06_quant_gemm/01_marlin-deep-dive.md)与本文的 LOP3/twiddling 写法互为对读，续篇拆 Humming JIT 路线与 tcgen05 kernel 内部）
