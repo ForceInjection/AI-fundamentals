@@ -80,7 +80,7 @@ SGLang 走得更远，把状态检查点做成了独立的缓存子系统：`mem
 
 **chunk 大小**。步数与 chunk 内计算量的乘积固定，但延迟特性不同：chunk 小则串行步数多（每步一次状态依赖等待），chunk 大则块内 O(C²) 的因果矩阵乘变大。FLA 缺省 64 是工程折中，而引擎侧还要把模型 chunk 大小与页大小取 max 并要求整除（`server_args.py:9092` 起），说明缓存对齐与计算效率对 chunk 的诉求并不一致。
 
-**状态池硬顶 vs KV 弹性**。KV 池可以靠逐出、压缩、分层腾挪，状态池的并发上限是刚性的：每个活跃会话占一份固定大小的状态，池满就是不能接新会话。容量规划时线性模型的并发上限要按状态池算，不能沿用「KV 可压缩」的直觉。这是对 [Agent 负载一篇 §2.4](../agent_serving/agent-workload-serving.md) 容量公式的补充：混合架构下两本账都要算，且状态这本没有弹性。
+**状态池硬顶 vs KV 弹性**。KV 池可以靠逐出、压缩、分层腾挪，状态池的并发上限是刚性的：每个活跃会话占一份固定大小的状态，池满就是不能接新会话。容量规划时线性模型的并发上限要按状态池算，不能沿用「KV 可压缩」的直觉。这是对 [Agent 负载一篇 §2.4](../agent_serving/01_agent-workload-serving.md) 容量公式的补充：混合架构下两本账都要算，且状态这本没有弹性。
 
 ---
 
@@ -90,7 +90,7 @@ SGLang 走得更远，把状态检查点做成了独立的缓存子系统：`mem
 
 - **prefill 串行**（§2.1）→ [02 · chunkwise 串行 prefill 的调度](02-chunkwise-scheduling.md)：区分模型级串行与调度级切块。结论是轮间插 decode 两引擎早已解决，真正缺的是三个调度原语：串行权重、完成时限、检查点感知切块。
 - **状态检查点**（§2.2）→ [01 · KDA 机制拆解](01-kda-mechanism.md) 讲串行的机制来源，[03 · 状态语义深水区](03-state-semantics.md) 讲检查点在回滚、分叉、重放一致性上的语义代价。
-- **双账本与容量**（§2.3、§4.3）→ [03](03-state-semantics.md) 的 COW 关闭与状态独占分析，以及它对 [Agent 负载篇 §2.4](../agent_serving/agent-workload-serving.md) 容量公式的补充。
+- **双账本与容量**（§2.3、§4.3）→ [03](03-state-semantics.md) 的 COW 关闭与状态独占分析，以及它对 [Agent 负载篇 §2.4](../agent_serving/01_agent-workload-serving.md) 容量公式的补充。
 
 三篇之后仍然开放的问题：**状态感知的准入**（池满时拒绝新会话还是驱逐旧检查点？SGLang 的 per-path 限额只管「存多少」，不管「谁进来」）；**ReplaySSM 的覆盖面**（缓冲刷写限定 Triton 后端 + 非投机 decode）；**chunk 间隙的调度原语**（见 [02 篇 §四](02-chunkwise-scheduling.md) 的三点设计空间）。
 

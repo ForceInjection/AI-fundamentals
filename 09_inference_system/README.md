@@ -8,9 +8,9 @@
 
 > **KV 压缩推到极限**：DeepSeek-V4 与 Kimi K3 从架构层面重写了 attention，1M 上下文下 KV 从 250GB 量级降到个位数 GB，旧叙事随之作废；一个月后 V4.1-Flash 又把全局 KV 压到 V4-Flash 的 1/4，并推翻前篇三处判断。但压缩只是把问题换了位置：单层的绝对量小到极点之后，杠杆从「每层压多少」转向「几层共用一份」，而一个 token 的状态不再是连续张量，变成了一组异构池，其中还混着不是 KV 的压缩器状态。系列入口：**[KV 压缩推到极限：从架构改造到分层缓存](kv_cache/07_kv_compression/README.md)**（体积账 → 报告精读 → 分层缓存三篇深挖；核对口径各不相同：源码验证、报告章节与 `config.json` 对照、`文件:行号` 逐条复验）。
 >
-> **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，以及两引擎源码级现状与「保留 vs 重算」的系数变化。系列入口：**[Agent 推理服务](agent_serving/README.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
+> **新负载**：Agent 流量正在取代 Chat 成为主要负载——KV 生命周期错配、调度语义失真、会话粘性、容量公式失效四个连锁问题，两引擎源码级现状，以及基础设施侧的回应：Evolving Infra 论文精读（branch count 目录、在线 PD split、对称引擎 6.2 秒换相）与四连锁映射、PD 适配方案对照地图、SGLang role-switch 源码核对。系列入口：**[Agent 推理服务](agent_serving/README.md)**（vLLM `43d691ec6b` / SGLang `f7101b0ae6` 源码验证）。
 >
-> **输出合法性税**：同系列姊妹篇——[约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](agent_serving/constrained-decoding-engines.md)，编译/每步/交互三笔账单 + 双引擎逐项对照 + jump-forward 重分词差异。
+> **输出合法性税**：同系列姊妹篇——[约束解码的性能账单：vLLM 与 SGLang 的结构化输出实现拆解](agent_serving/04_constrained-decoding-engines.md)，编译/每步/交互三笔账单 + 双引擎逐项对照 + jump-forward 重分词差异。
 >
 > **线性注意力**：没有 KV Cache 的模型来了——delta-rule 一脉（KDA/Gated DeltaNet，Qwen3-Next 与 Kimi K3 都在其中）落地后，prefill 串行化、前缀缓存重写为状态检查点、状态池成硬并发上限。系列入口：[线性注意力与推理系统](linear_attention/README.md)（总览 + 机制/调度/状态语义三篇深挖）。
 >

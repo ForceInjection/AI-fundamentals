@@ -10,7 +10,7 @@
 
 ## 一、从可选到必选
 
-Chat 时代，结构化输出是个锦上添花的功能：输出格式歪了，人看得懂就行。Agent 时代它变成硬约束：一次工具调用要过 JSON 解析器，输出缺个引号，工具执行失败，Agent 重试，流量翻倍。AgentSysBench 的测量显示工具定义与系统指令最高占上下文窗口的 84.3%（见 [Agent 负载一篇](agent-workload-serving.md)），与之对应，输出侧的合法性靠的就是本文的主角：约束解码（constrained decoding）。
+Chat 时代，结构化输出是个锦上添花的功能：输出格式歪了，人看得懂就行。Agent 时代它变成硬约束：一次工具调用要过 JSON 解析器，输出缺个引号，工具执行失败，Agent 重试，流量翻倍。AgentSysBench 的测量显示工具定义与系统指令最高占上下文窗口的 84.3%（见 [Agent 负载一篇](01_agent-workload-serving.md)），与之对应，输出侧的合法性靠的就是本文的主角：约束解码（constrained decoding）。
 
 两引擎的默认后端都是 xgrammar（SGLang 的 `grammar_backend` 缺省 None，`_handle_grammar_backend` 将其解析为 `"xgrammar"`；vLLM 的 V1 结构化输出以 xgrammar 为首选后端，另备 outlines/guidance/lm_format_enforcer）。下文所有机制均以 xgrammar 后端为准，版本号见文首。
 
@@ -30,7 +30,7 @@ decode 的每一步，引擎要为当前 batch 生成 token bitmask，形状约 
 
 ### 2.3 交互账（组合税）
 
-约束解码不单独存在，和三个热门特性叠加时各有故事：投机解码要在验证后回滚 FSM 状态（SGLang 的 `rollback(k)`，`xgrammar_backend.py:107`）；reasoning 模型要先自由思考、到输出段才施加约束（vLLM 的 `trim_reasoning_for_advance`，`__init__.py:462`；SGLang 有 `ReasonerGrammarBackend` 和 thinking budget 联动，`grammar_manager.py:124`）；PD/PP 分离下编译状态要跨进程同步（SGLang 的 `_drain_pp_sync_work`，`grammar_manager.py:72`）。
+约束解码不单独存在，和三个热门特性叠加时各有故事：投机解码要在验证后回滚 FSM 状态（SGLang 的 `rollback(k)`，`xgrammar_backend.py:107`）；reasoning 模型要先自由思考、到输出段才施加约束（vLLM 的 `trim_reasoning_for_advance`，`__init__.py:462`；SGLang 有 `ReasonerGrammarBackend` 和 thinking budget 联动，`grammar_manager.py:124`）；PP 分离下编译状态要跨进程同步（SGLang 的 `_drain_pp_sync_work`，`grammar_manager.py:72`）。
 
 ## 三、双引擎实现
 
@@ -91,7 +91,7 @@ SGLang 把这套逻辑做成显式的 `GrammarManager`（`grammar_manager.py:26`
 - **监控编译队列**：SGLang 看 waiting grammars 深度，vLLM 看 ready 位翻转时长；队列堆积说明 schema 太复杂或并发太高；
 - **大 schema 拆解**：枚举值越全、嵌套越深，编译越慢；把不稳定部分移到输出后校验，比硬塞进 schema 便宜。
 
-值得一提的是，XGrammar 团队已经把「Agentic 场景的动态结构化生成」做成了独立方向（XGrammar-2，ACM 2026）——约束解码正在从「一个功能」长成「一个子系统」，值得持续观察。
+值得一提的是，XGrammar 团队已经把「Agentic 场景的动态结构化生成」做成了独立方向（XGrammar-2，ACM 2026）：约束解码正在从「一个功能」长成「一个子系统」，值得持续观察。
 
 ---
 
