@@ -175,6 +175,8 @@ PagedAttention:
 
 **同样的硬件，同样的模型，吞吐翻了 2.5 倍。** 没有 GPU 升级，没有量化压缩，没有模型修改——仅仅改变了"怎么存"。
 
+![HBM KV Pool：并发上限 = KV Pool 容量 ÷ 每请求 KV 占用](img/kv-06-hbm-kv-pool.png)
+
 ### 4.3 Block 抽象之上自然生长的能力
 
 分页带来的不只是碎片消除。**写时复制（Copy-on-Write）**、**共享内存**、**按需调页**——这些 OS 特性都是在分页抽象上自然生长的。PagedAttention 也一样。

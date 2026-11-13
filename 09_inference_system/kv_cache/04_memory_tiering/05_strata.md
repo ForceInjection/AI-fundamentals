@@ -42,6 +42,8 @@ GPU 干搬运的老问题是和计算 kernel 抢 SM、抢寄存器、污染 cach
 
 ### 4.1 delay hit：把重复的 miss 推迟到即将命中
 
+![KV Cache 分层 Offload 与 Loadback：Radix Tree 只记 HBM 与 L2 DRAM 两层，L3 账本在 storage backend](../01_concepts/01_basic/img/kv-07-offload-radix.png)
+
 Strata 在 HiRadixTree（SGLang RadixTree 的扩展，兼任页表与逐页元数据）（p.5）里引入 transient node：不指向内存索引，只标 in-queue（有请求引用了该新上下文）或 in-flight（该上下文正在计算）（p.6–7）。队列迭代时，匹配到 transient node 的请求推迟到下一轮调度，但插回等待队首——等首请求算完，它直接吃「即将变热」的缓存，对 TTFT 影响最小（p.7）。防误伤靠阈值：匹配 token 数超过默认值 100 才推迟，短前缀的偶然撞车直接放行（p.7）。
 
 ### 4.2 均衡批：load/compute 比与 bundle hit

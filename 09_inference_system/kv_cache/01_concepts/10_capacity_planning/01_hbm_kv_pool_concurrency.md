@@ -30,6 +30,8 @@ MLA 系好得多：DeepSeek-V3 每层 576 元素的压缩 latent，61 层 bf16 �
 
 算力不够，请求可以慢慢跑；Pool 装不下，请求是进不来的。KV Pool 是并发容量唯一的硬约束——而它就是 L1。
 
+![HBM KV Pool：并发上限 = KV Pool 容量 ÷ 每请求 KV 占用](../01_basic/img/kv-06-hbm-kv-pool.png)
+
 ### 1.2 引擎实际怎么准入：两条只认 L1 的预算线
 
 物理公式是天花板，引擎的准入是逐 token 的精细账。
