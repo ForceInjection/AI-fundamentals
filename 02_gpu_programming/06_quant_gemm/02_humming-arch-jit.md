@@ -97,7 +97,7 @@ Blackwell 的 tensor core 硬件其实支持两个浮点格式，PTX 类型系�
 | 编译时长（单 W4A16 kernel，缓存禁用）  | CUTLASS+NVCC 23.35 s → Humming+NVCC 1.82 s / NVRTC 1.88 s                                             |
 | warmup（单层全部 M 档，并行编译）      | 约 2–4 秒                                                                                             |
 
-端到端口径（DeepSeek-V4.1-Flash，8×H20，TP=8，MoE 后端从 Marlin W4A16 换 Humming W4A8）：并发 1 到 64，输出吞吐 +14.1% 到 +43.3%，均值 TTFT −25% 到 −32%，并发 64 时输出吞吐 442.37 到 633.94 tokens/s、TPOT 约 −31%。这是拿 W4A8 对 W4A16 的代差收益，不只来自 kernel，也包含激活流量减半的贡献，引用时别全记在 kernel 头上。
+端到端口径（DeepSeek-V4.1-Flash，8×H20，TP=8，MoE 后端从 Marlin W4A16 换 Humming W4A8）：并发 1 到 64，输出吞吐 +14.1% 到 +43.3%，均值 TTFT −25% 到 −32%，并发 64 时输出吞吐 442.37 到 633.94 tokens/s、TPOT 约 −31%。这是拿 W4A8 对 W4A16 的代差收益，其中既有 kernel 的贡献，也有激活流量减半的贡献，引用时需要把两者区分开。
 
 | 并发 | 输出吞吐（tokens/s）      | TTFT（ms）        | TPOT（ms）     |
 | ---- | ------------------------- | ----------------- | -------------- |
