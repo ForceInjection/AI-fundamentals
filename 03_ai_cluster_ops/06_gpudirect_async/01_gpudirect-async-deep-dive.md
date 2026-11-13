@@ -8,7 +8,7 @@ GPUDirect Async 是围绕这个环节的十年演进：从 2016 年把门铃寄�
 
 ## 一、正名：GPUDirect 家族里，Async 管的是控制面
 
-NVIDIA 的 [GPUDirect](https://developer.nvidia.com/gpudirect) 官网页面列了四件套：RDMA、P2P、Storage、Video，甚至没有 Async 的专页。它们解决的是同一个问题的不同半边：
+NVIDIA 的 [GPUDirect](https://developer.nvidia.com/gpudirect) 官网页面列了四件套：RDMA、P2P、Storage、Video，没有给 Async 单独的页面。四件套管的是数据怎么搬，Async 管的是谁来发起搬运：
 
 - **数据面**：字节从哪条路走。RDMA 让网卡 DMA 直达 GPU 显存，P2P 让 GPU 之间走 PCIe/NVLink，Storage 让 NVMe 直达显存。这条路 2013 年（RDMA）修通后，字节不再绕道 CPU 内存。
 - **控制面**：谁决定发起传输、谁填传输描述符、谁触发网卡。这一面长期归 CPU：GPU kernel 把数据备好，退出或同步，CPU 上的代理线程填 Work Queue Element（WQE，描述「搬什么、从哪到哪」的队列项），再写网卡的 doorbell 寄存器（俗称踢门铃），网卡才开工。
@@ -69,16 +69,113 @@ GIN 的三层架构：NCCL Core 管 host 侧（通信器初始化、集合内存
 
 ![mKernel：一个持久内核里的四种 SM 角色](img/gda-02-mkernel-kernel.png)
 
-[mKernel](https://github.com/uccl-project/mKernel)（uccl-project，`db74982`）是 UCCL 团队的多机多卡融合 kernel 库，它的口号是把计算、节点内 NVLink 传输、跨节点 RDMA 放进同一个持久内核，让三者在 tile 粒度上彼此重叠，而不是各跑各的。以 AllReduce 为例（`src/gemm_ar.cu`，1433 行）：
+[mKernel](https://github.com/uccl-project/mKernel)（uccl-project，`db74982`）是 UCCL 团队的多机多卡融合 kernel 库，它的口号是把计算、节点内 NVLink 传输、跨节点 RDMA 放进同一个持久内核，让三者在 tile 粒度上彼此重叠，而不是各跑各的。以 AllReduce 为例（`src/gemm_ar.cu`），本节把这个交互过程从头到尾走一遍：tile 怎么算完、完成怎么传递、命令怎么进 FIFO、CPU 代理怎么发、远端怎么收、归约怎么发布。
 
-一次 launch 里，CTA 按 `blockIdx.x` 认领四种角色之一（`gemm_ar.cu:65-73`）：compute SM 跑 GEMM tile（TMA + warp 特化的标准流水）；intra-AR SM 在节点内做 NVLink 归约；inter-send SM 盯着自己负责的输出 tile，tile 一算完就推给跨节点通道；inter-reduce SM 收远端分片、归约、发布。四种角色在同一个 kernel 里常驻，输出 tile 的生产、节点内归约、跨节点发送彼此交错，粒度是 tile（不是层、不是整个集合操作）。NCCL GIN 跑 DeepEP 的 HT kernel 时也用 SM 分角色（Sender/Forwarder/NVLink Receiver），mKernel 的不同在于把这套分工做进了 GEMM 融合 kernel。
+### 5.1 一次 launch，角色各就各位
 
-控制路径上，README 说的「GPU-driven networking, built from scratch」容易读成 GPU 直踢门铃；源码给出的答案更精确（本文已逐行核对）：
+主 kernel 固定 132 个 CTA（`gemm_ar.cuh:59` 的 `NUM_BLOCKS = 132`），按 `blockIdx.x` 的连续区间分发角色（`gemm_ar.cu:1344-1358`）。源码注释写的是四种角色（`gemm_ar.cu:64-74`），dispatch 链实际有五段：compute 跑 GEMM tile（TMA + warp 特化流水）；intra-AR 在节点内做 NVLink 归约；inter-send 盯着自己负责的输出 chunk，就绪即推跨节点通道；第四段 inter-recv-progress 默认不占 SM（host 侧默认分 0 个，`gemm_ar.cuh:1091`），到达队列由 inter-reduce 的 CTA 兼职排空；最后一段 inter-reduce 收远端分片、归约、发布。各角色的 SM 数量在 host 侧由 `gemm_ar_compute_role_split` 一次算定（`gemm_ar.cuh:1060-1098`），inter-send 可用环境变量 `GEMM_AR_INTER_SEND_SMS` 覆盖。
 
-- GPU 侧：inter-send SM 把 RDMA 发送命令 push 进设备到主机的 FIFO（`gemm_ar.cuh:238` 的 `D2HFifoDeviceBundle`，`gemm_ar.cuh:363-391` 按 lane 选 FIFO）；
-- CPU 侧：Proxy 线程（`proxy.h`）从 FIFO 批量取命令，`BATCH_SIZE = 8` 条合并成一次 `ibv_post_send`（`proxy.h:115-121`）；每 chunk 发 2–3 个 WR：数据 WR + 到达 flag WR（可选远端 tail 计数 WR），「Two WRs posted atomically via one ibv_post_send, only the flag WR is signaled」（`rdma_transport.h:236`）；SQ 深度 2048，按每 chunk 的 WR 数倒推限流，防 `Cannot allocate memory`（`proxy.h:133-145`）；代理线程 pin 到 GPU 的 NUMA 节点。
+角色之间的完成传递没有用 TMA 完成事件或 scoreboard，全靠显存里的 u32 原子计数，两级接力。compute 侧每个 chunk 的最后一个 tile 发 per-chunk barrier（`gemm_ar.cu:140-155`）：
 
-也就是说，mKernel 的控制路径与 NCCL GIN 的 Proxy 后端是同一族：**GPU 驱动决策、CPU 代理执行**，而不是 GDAKI 式的 GPU 直发。README 里的「GPU-driven」指的是重叠的发起与推进由 kernel 内逻辑驱动（tile 算完立刻推、远端 flag 一到立刻算），并非描述符构造下放到了 GPU。远端数据到达的同步用 flag WR 实现：数据 WR 不产生完成事件，flag WR 到达对端后由对端逻辑确认。这与 GIN 的 signal 排序语义是同一个思想在 verbs 层的手工实现。
+```cpp
+uint32_t prev = atomicAdd(G.comp_chunk_tiles_done + flat_chunk, 1u);
+if (prev == (uint32_t)(tiles_this_chunk - 1)) {
+    ...
+    comm::atomic_u32::release_store_sys(
+        &G.barrier[G.dev_idx][{row_idx, chunk_col}], G.epoch);
+}
+```
+
+intra-AR 归约完一个 chunk 的全部 tile 后置完成 flag，归约结果双写 `C_local` 与 staging buffer（后者是 RDMA 发送的源，`gemm_ar.cu:405-423`）：
+
+```cpp
+uint32_t prev = atomicAdd(G.intra_chunk_tiles_done + chunk_id, 1u);
+if (prev + 1u == (uint32_t)tiles_this_chunk) {
+    ...
+    gemm_ar_release_store_u32(G.local_done_flag + chunk_id, 1u);
+```
+
+inter-send 的 0 号线程自旋等这个 flag（`gemm_ar.cu:497-503`）：
+
+```cpp
+while (gemm_ar_acquire_load_u32(G.local_done_flag + cc) == 0u) {
+    __nanosleep(50);
+}
+```
+
+acquire/release 是 PTX 级的显式排序（`ld.acquire.gpu` / `st.release.gpu`，`include/comm/atomic_u32.cuh`）。到这里为止一切都在 GPU 显存内，CPU 还没出场。
+
+### 5.2 命令与 FIFO：GPU 侧把决策变成 48 字节
+
+inter-send 等到 chunk 就绪，填一条 48 字节的 packed 命令（`types.h:28-56` 的 `TransferCmd`），push 进设备到主机的 FIFO（`gemm_ar.cuh:238` 的 `D2HFifoDeviceBundle`，`gemm_ar.cu:548-561` 逐字段填充）：
+
+```cpp
+struct TransferCmd {
+    CmdType  cmd_type;       // WRITE or FENCE，最后提交
+    uint8_t  dst_rank;       // 目标节点
+    uint16_t lane_id;        // lane → QP 路由
+    uint32_t tile_id;        // 本次传输的第一个 tile（到达元数据）
+    uint64_t remote_offset;  // 远端 RDMA 注册缓冲内的字节偏移
+    uint64_t local_offset;   // 本端 RDMA 注册缓冲内的字节偏移
+    uint32_t bytes;          // 传输大小
+    ...
+    uint64_t enqueue_device_ns; // push 前的 GPU 时间戳
+};
+static_assert(sizeof(TransferCmd) == 48, "TransferCmd must be exactly 48 bytes");
+```
+
+地址全部用「注册缓冲内偏移」而不是绝对地址，基址与 rkey 在建连时交换；flag 的远端槽位 GPU 侧也不用填，由 proxy 从 `tile_id` 和 `lane_id` 推导（见 5.4）。
+
+![D2H FIFO：GPU 写，CPU 排空](img/gda-03-d2h-fifo.png)
+
+FIFO 本体是 mscclpp 风格的四件套（`include/comm/internode/d2h_fifo.cuh`）：`triggers[]` 是 `cudaHostAlloc(Mapped)` 的钉住内存（GPU 直写走 PCIe），`head` 在显存由 GPU `atomicAdd` 抢槽，`tail` 在钉住内存由 CPU 排空后推进，`tail_cache` 是 GPU 侧的缓存副本。`push()` 先抢槽，FIFO 满就自旋刷新 tail_cache（GPU 侧唯一的反压点，`d2h_fifo.cuh:56-72`），然后写命令体、最后用 release store 提交首字段 cmd_type。
+
+这里有个能看出取舍的细节：提交用的是 `release.gpu` 而不是 `release.sys`，注释原话（`d2h_fifo.cuh:83-95`）：
+
+> Use release.gpu (cheaper than release.sys) — sys-scope release on H100 forces a kernel-wide L2/HBM drain that serializes with hot-spinning compute CTAs and adds ~ms per push.
+
+跨 CPU 可见性反而选了更弱的 scope，因为 sys-scope 的全 kernel 缓存冲刷在热自旋的 compute CTA 旁边代价是毫秒级；proxy 只需要对 cmd_type 做 acquire 就能安全拷出整条命令。同一个系统里，跨节点 stage_barrier 用的又是 `ld.acquire.sys`（`gemm_ar.cuh:557-562`，等 NIC 参与写入的 barrier）：scope 按路径代价逐处挑，不是一刀切。
+
+### 5.3 CPU proxy：凑批、链式 WR、一批只 signal 一次
+
+Proxy 线程（`proxy.h`，pin 在 GPU 的 NUMA 节点）的主循环每轮四步（`proxy.h:818-1221`）。
+
+第一步凑批：非阻塞地从 FIFO 取命令，最多 `BATCH_SIZE = 8` 条（`proxy.h:115-116`）。批内命令必须走同一个 QP（lane→QP 路由的约束），碰到跨 QP 的命令就存起来下轮先发；凑不满不等，有几条发几条，一条没有也会去收完成队列。
+
+![一次 ibv_post_send 的 WR 链](img/gda-04-wr-chain.png)
+
+第二步构造 WR 并一次 `ibv_post_send`：每条命令链两个 WR。数据 WR 用 `IBV_WR_RDMA_WRITE`，把 staging buffer 里的数据写到远端 `remote_data_addr + cmd.remote_offset`（lkey 来自建连时注册的 MR）；flag WR 是 4 字节 INLINE 写，把打包的到达元数据写进远端 arrival_flags 数组。顺序依据注释写得很清楚（`proxy.h:1032-1038`）："IB ordering guarantees the metadata is visible only after data." flag WR 用 `IBV_SEND_INLINE` 把 4 字节嵌进 WQE 本体，省掉一次 PCIe DMA 读 staging buffer（注释估 ~500ns）。整批只有最后一个 WR 置 `IBV_SEND_SIGNALED`，`wr_id` 编码 `(qp << 32) | count`，一次 CQE 对账一批命令。
+
+第三步收完成：每轮 `ibv_poll_cq` 最多取 32 个 CQE，按 `wr_id` 里的计数递减 `inflight_`。
+
+第四步推进 FIFO tail（`proxy.h:1207-1210`）：`count > 0` 才写。GPU 侧 push 的自旋，等的就是这个 tail。
+
+### 5.4 远端：flag 落到哪，归约怎么发布
+
+两个 WR 在远端的落点是两类内存。数据 WR 直接写进对端的 recv_buf：`cudaMalloc` 的 GPU 显存，建连时经 GPUDirect RDMA 注册（`session.h:414-428`），NIC 的 DMA 经 PCIe 直达对端 HBM，对端 CPU 不参与。flag WR 写对端的 arrival_flags 数组（4 字节槽）：IB 后端这块数组也在显存里，靠 nvidia_peermem 让 NIC 直写（`arrival.cuh:63-64`："Allocate in device memory (GPU HBM) for fast polling"）；EFA 后端才落钉住内存（`arrival.cuh:82-98`）。双方的地址与 rkey 在 TCP bootstrap 阶段交换（`types.h:146-186` 的 `ConnectionInfo`）。
+
+flag 的值不是简单的 1：arrival-queue 布局下打包成 `(first_tile + 1) | ((num_tiles - 1) << 24)`（`types.h:79-90`），0 是「未到」哨兵，一个 flag 能携带一段连续 tile 的到达信息。
+
+远端 GPU 侧，reduce CTA 兼职排空到达队列（`gemm_ar.cuh:703-737`）：volatile 读顺序扫描 `arrival_flags[q][head]`，解码出 tile 区间，`__threadfence_system()` 保证数据可见先于元数据发布，再 release-store 置 `remote_arrived_flag[chunk] = 1`。inter-reduce 等两个 flag 齐了才动手（`gemm_ar.cu:1128-1135`）：
+
+```cpp
+const bool remote_done =
+    (gemm_ar_acquire_load_u32(G.remote_arrived_flag + chunk_id) != 0u);
+const bool local_done =
+    gemm_ar_acquire_load_u32(G.local_done_flag + chunk_id) == 1u;
+if (remote_done && local_done) { break; }
+__nanosleep(50);
+```
+
+归约是 uint4 向量的 `__hadd2`：本地分片加远端分片，结果经 NVSwitch multimem store 发布到 multicast 支撑的 `C_final`，本节点 8 卡同步可见（`gemm_ar.cuh:816-829`）。超过 16 个 chunk 的形状还会 launch 一个 epilogue kernel（`gemm_ar.cuh:1458-1479`），与主 kernel 同 stream 顺序执行，负责 multicast 收尾、到达 flag 重置和跨节点迭代 barrier；小形状为省 launch 开销，这些收尾留在主 kernel 内完成。
+
+### 5.5 流控：SQ 深度倒推的限流
+
+QP 的 SQ 深度硬编码 2048（`session.h:367`）。每个在途 chunk 消耗 `kWrsPerChunk` 个 SQ 槽（2 个起步，打开 remote-tail / forward-notify 选项时 3–4 个），proxy 按「深度 ÷ 每 chunk WR 数 − 64 个 CQE 余量」倒推每 QP 的在途 chunk 上限，再乘 QP 数得总上限（`proxy.h:130-152` 的注释逐项演算了这笔账，防的正是 `ibv_post_send: Cannot allocate memory`）。在途上限同时是 FIFO 的出队闸门：proxy 不取命令，FIFO 就涨满，GPU 侧 push 自旋等待。GPU 与网卡之间没有 SQ credit 协议，反压完全靠 FIFO 这一层。
+
+### 5.6 控制路径的定性：同族于 GIN Proxy，而非 GDAKI
+
+把这套机制摆回 §六 的谱里：mKernel 的控制路径与 NCCL GIN 的 Proxy 后端是同一族，**GPU 驱动决策、CPU 代理执行**，而不是 GDAKI 式的 GPU 直发。README 里的「GPU-driven networking, built from scratch」指重叠的发起与推进由 kernel 内逻辑驱动（tile 算完立刻推、远端 flag 一到立刻算），描述符构造仍在 CPU。远端同步用 flag WR 实现的做法，与 GIN 的 signal 排序语义是同一个思想在 verbs 层的手工实现。
 
 为什么不直发？先看硬件覆盖面：mKernel 同时支持 ConnectX-7（IB/RoCE 的 RC 传输）与 AWS EFA（SRD 传输），两个后端共享同一份 GPU kernel，只有 proxy/session 实现不同（`session.h` 与 `session_efa.h`）。CPU 代理路径不挑网卡代际、不挑 CUDA 版本，调试时还能在 host 侧插桩。对一个大范围适配硬件的库，这是比极限延迟更重要的工程约束。
 
@@ -108,16 +205,19 @@ GIN 的三层架构：NCCL Core 管 host 侧（通信器初始化、集合内存
 
 ## 源文件索引
 
-| 来源                                                        | 关键内容                                                                                              | 本文引用       |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------- |
-| GIN 论文（arXiv 2511.15076 v2）                             | GDA 窄义限定、三代演进、双后端、signal 排序语义、全部性能数字                                         | 一、二、三、四 |
-| mKernel `src/gemm_ar.cu`                                    | 4 CTA 角色分发（:65-73）、`fused_inter_send_sm`（:466）、`fused_inter_reduce_and_publish_sm`（:1332） | 五             |
-| mKernel `include/comm/internode/proxy.h`                    | BATCH_SIZE=8 合批、2–3 WR/chunk、SQ 限流（:115-145）                                                  | 五             |
-| mKernel `include/comm/internode/rdma_transport.h`           | `ibv_post_send`、双 WR 原子提交（:231-281）                                                           | 五             |
-| mKernel `include/operators/gemm_ar/gemm_ar.cuh`             | `D2HFifoDeviceBundle`、按 lane 选 FIFO push（:238、:363-391）                                         | 五             |
-| DOCA GPUNetIO 文档                                          | GDAKI 定义、CX-6 Dx+ 门槛                                                                             | 三、四         |
-| libgdsync 仓库                                              | 窄义 GPUDirect Async 的 IB Verbs 实现                                                                 | 一             |
-| 本仓 NCCL 文档（cuda-knowledge 技能 references/nccl-docs/） | NCCL 代理线程架构与 device API 背景                                                                   | 二、四         |
+| 来源                                                        | 关键内容                                                                                                                                                                                        | 本文引用       |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| GIN 论文（arXiv 2511.15076 v2）                             | GDA 窄义限定、三代演进、双后端、signal 排序语义、全部性能数字                                                                                                                                   | 一、二、三、四 |
+| mKernel `src/gemm_ar.cu`                                    | 角色注释与 dispatch（:64-74、:1344-1358）、两级完成计数（:140-155、:405-423）、inter-send 自旋（:497-503）、cmd 填充（:548-561）、双 flag 等待与归约（:1128-1172）、epilogue（:1380-1397）      | 五             |
+| mKernel `include/operators/gemm_ar/gemm_ar.cuh`             | `NUM_BLOCKS=132`（:59）、`D2HFifoDeviceBundle`（:238）、stage_barrier（:557-562）、到达队列排空（:703-737）、multimem 发布（:816-829）、role_split（:1060-1098）、epilogue launch（:1458-1479） | 五             |
+| mKernel `include/comm/internode/proxy.h`                    | `BATCH_SIZE=8`（:115-116）、SQ 限流注释（:130-152）、WR 模板与 signaling（:568-583、:1032-1080）、主循环（:818-1221）、tail 推进（:1207-1210）                                                  | 五             |
+| mKernel `include/comm/internode/types.h`                    | `TransferCmd` 48 字节（:28-56）、`pack_arrival_work`（:79-90）、`ConnectionInfo`（:146-186）                                                                                                    | 五             |
+| mKernel `include/comm/internode/d2h_fifo.cuh`               | FIFO 四件套与 `push`（:56-95）、`poll`/`advance_tail`（:204-254）、分配与容量（:275-305）                                                                                                       | 五             |
+| mKernel `include/comm/internode/arrival.cuh`                | 到达 flag 落点：IB 显存 peermem / EFA 钉住内存（:63-98）                                                                                                                                        | 五             |
+| mKernel `include/comm/internode/session.h` 等               | recv_buf 注册（:414-428）、SQ depth 2048（:366-367）、FIFO 容量（:435）；`session.cuh` max_inflight 与 arrival-queue（:39-52）；`rdma_transport.h:105` `create_rc_qp`                           | 五             |
+| DOCA GPUNetIO 文档                                          | GDAKI 定义、CX-6 Dx+ 门槛                                                                                                                                                                       | 三、四         |
+| libgdsync 仓库                                              | 窄义 GPUDirect Async 的 IB Verbs 实现                                                                                                                                                           | 一             |
+| 本仓 NCCL 文档（cuda-knowledge 技能 references/nccl-docs/） | NCCL 代理线程架构与 device API 背景                                                                                                                                                             | 二、四         |
 
 ## 参考资料
 
