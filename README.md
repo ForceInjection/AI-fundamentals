@@ -56,6 +56,8 @@
 - **NCCL 分布式通信测试**
   - [理论基础：NCCL 教程](./03_ai_cluster_ops/03_nccl/01_nccl_theory.md)
   - [实战指南：基准测试与多节点部署](./03_ai_cluster_ops/03_nccl/README.md)
+- **GPUDirect Async**
+  - [GPUDirect Async 深拆：把通信的控制权从 CPU 手里拿回来](./03_ai_cluster_ops/06_gpudirect_async/01_gpudirect-async-deep-dive.md) - 控制面十年演进：GDA → IBGDA → GDAKI 三代机制、NCCL 2.28 GIN 双后端、mKernel 持久内核三路重叠与控制路径三路线对比
 
 ---
 

@@ -78,3 +78,11 @@ GPU 池化与共享的引擎侧实现（MIG/MPS/HAMi 设备插件）见 [04_clou
 GPU 调度之上还有一层更物理的问题：**这些集群所在的数据中心本身**，中国市场有多大、建在哪、谁在租。SemiAnalysis 用逐栋模型回答了这件事，本节是该报告的精读存档。
 
 - **市场全景**：[中国数据中心有多大、建在哪、谁在租：SemiAnalysis 模型精读](05_datacenter/china-dc-boom-semianalysis.md)：高空置与 AI 容量短缺并存的双速市场、四阶段史、「东数西算」的配额传导机制、12 个月交付 100MW 的速度账，以及需求侧五家（字节/阿里/腾讯/百度/华为）的多套打法；全部数字为 SemiAnalysis 模型口径。
+
+---
+
+## 7. [GPUDirect Async：把通信的控制权从 CPU 手里拿回来](06_gpudirect_async/01_gpudirect-async-deep-dive.md)
+
+GPUDirect RDMA 修通了数据面之后，瓶颈挪到了控制面：每发一次 RDMA，都要 CPU 代理线程填描述符、踢门铃、盯完成。这一节拆这条十年的演进线，以及它在 MoE 融合 kernel 里的落点。
+
+- **深拆正文**：[GPUDirect Async 深拆](06_gpudirect_async/01_gpudirect-async-deep-dive.md)：窄义（2016 门铃半卸载）与广义（GPU 发起通信家族）的正名、GDA → IBGDA → GDAKI 三代演进、NCCL 2.28 GIN 的双后端设计与论文数字（arXiv 2511.15076 口径），以及 mKernel 的持久内核三路重叠与「GPU 决策、CPU 代理执行」控制路径（`db74982` 源码逐行核对）；控制路径三条路线对比收束全文。
