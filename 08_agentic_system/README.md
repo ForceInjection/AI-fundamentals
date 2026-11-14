@@ -105,6 +105,7 @@ Agent Infra 是「让 Agent 能真正可靠运行、能操作真实世界、能�
 - [DeepSeek-TUI 实战：榨干 DeepSeek V4 长上下文红利的命令行编程 Agent 实战指南](./agent_infra/12_deepseek-tui-in-practice.md) - 以 DeepSeek V4 的 1M 超长上下文与前缀缓存为切入点，走通从安装、配置到 Plan/Agent/YOLO 审批模式的完整实战闭环，并通过“发现 Bug → 修复 → 验证”演示 Coding Agent 的典型工作流。
 - [扩展托管智能体：让决策与执行解耦，各行其职](./agent_infra/13_scaling-managed-agents.md) - 探讨 AI 原生基础设施的“POSIX 时刻”，通过定义通用接口解耦智能体应用与底层模型，实现长周期任务智能体的灵活托管与扩展。
 - [在 Elasticsearch 之上实现一个虚拟文件系统](./agent_infra/14_virtual-filesystem-elasticsearch_zh.md) ([Implementing a virtual filesystem over Elasticsearch](./agent_infra/15_virtual-filesystem-elasticsearch.md)) - 以 Mintlify 的虚拟文件系统设计为蓝本，在 Elasticsearch Serverless 之上实现 `ElasticsearchFs`，通过 DLS 做访问控制、在内存中支撑 `ls`/`cd`/`find`，并用两阶段检索优化 `grep`，为 Agent 暴露一层形似 POSIX 的只读文件接口。
+- [Agent Substrate 深拆：Google 给百万级 Agent 造的沙箱底座](./agent_infra/16_substrate-deep-dive.md) - Google 主导、捐入 CNCF 生态的 K8s Agent 沙箱运行时深拆（@ `cf5768a0`）：Actor/Worker 快照复用实现 10-30x 超售、双层资源模型绕开 apiserver 规模瓶颈、请求停车吸收池饱和抖动、沙箱内零凭证的零信任安全模型；性能数字均为官方口径并附安全 In Progress 诚实清单，配手绘机制图。
 
 ---
 
