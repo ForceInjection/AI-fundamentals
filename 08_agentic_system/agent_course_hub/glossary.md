@@ -30,9 +30,9 @@
 
 | 术语           | 一句话解释                                            | 深读入口                                                                                          |
 | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| ReAct          | 「推理—行动」循环：边想边调用工具，Agent 最经典的范式 | [Cursor IDE ReAct Agent 技术架构深度分析](../agent_design/docs/react-agent.md)                    |
-| Plan-and-Solve | 先让模型做完整计划，再按计划逐步执行                  | [All Agentic Architectures 深入详解](../agent_design/docs/all-agentic-architectures-deep-dive.md) |
-| Reflection     | 生成结果后自我反思批评、迭代改进                      | [All Agentic Architectures 深入详解](../agent_design/docs/all-agentic-architectures-deep-dive.md) |
+| ReAct          | 「推理—行动」循环：边想边调用工具，Agent 最经典的范式 | [Cursor IDE ReAct Agent 技术架构深度分析](../agent_design/deep-dives/01_react-agent.md)                    |
+| Plan-and-Solve | 先让模型做完整计划，再按计划逐步执行                  | [All Agentic Architectures 深入详解](../agent_design/deep-dives/02_all-agentic-architectures-deep-dive.md) |
+| Reflection     | 生成结果后自我反思批评、迭代改进                      | [All Agentic Architectures 深入详解](../agent_design/deep-dives/02_all-agentic-architectures-deep-dive.md) |
 | Handoff        | 把对话与上下文交接给另一个更合适的 Agent              | [openai/openai-agents-python](https://github.com/openai/openai-agents-python)（官方 SDK）         |
 
 ## 四、协议与技能

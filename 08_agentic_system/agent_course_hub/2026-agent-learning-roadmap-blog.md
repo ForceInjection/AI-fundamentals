@@ -75,7 +75,7 @@ Harness 爆发。让 Agent 自主干活的"驾驭系统"成为主战场：Cursor
 这一步是整条路线图里最关键的一步：**它决定了你以后是"库的使用者"还是"系统的构建者"**。很多人想跳过它直接上框架，我的建议是别。手写过一次 ReAct，你才知道 LangGraph 的节点和边在替你做什么；没手写过，框架永远是个黑盒。面试能讲原理、看得懂框架源码、有能力自研系统，都从这一步开始。
 
 - 参考：[hello-agents](https://github.com/datawhalechina/hello-agents) 第 4–7 章，专门带你把三个范式用原生 API 写一遍，并自研一个迷你框架 HelloAgents。
-- 深度阅读：[Cursor IDE ReAct Agent 技术架构深度分析](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/docs/react-agent.md)，手搓完再看：同一范式在真实产品 Cursor 中的工程实现（分层架构、工具调用、上下文管理与性能优化）。
+- 深度阅读：[Cursor IDE ReAct Agent 技术架构深度分析](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/deep-dives/01_react-agent.md)，手搓完再看：同一范式在真实产品 Cursor 中的工程实现（分层架构、工具调用、上下文管理与性能优化）。
 
 **验收标志**：不依赖任何框架，手写出一个能查天气 + 算数 + 失败重试的 ReAct Agent。
 
@@ -86,7 +86,7 @@ Harness 爆发。让 Agent 自主干活的"驾驭系统"成为主战场：Cursor
 选型建议是"先精通一个，再触类旁通"：快速出 demo 用 [crewAI](https://github.com/crewAIInc/crewAI)（角色扮演，最易上手）或 [smolagents](https://github.com/huggingface/smolagents)（代码极简）；企业级主攻 [LangGraph](https://github.com/langchain-ai/langgraph)（有状态图，生态最全，市场岗位需求最大）；对照理解 [openai-agents-python](https://github.com/openai/openai-agents-python)（handoff 模式）与 [google/adk-python](https://github.com/google/adk-python)。
 
 - 参考：[huggingface/agents-course](https://github.com/huggingface/agents-course)，一门口课横跨 smolagents/LlamaIndex/LangGraph，有结业证书；[NirDiamant/GenAI_Agents](https://github.com/NirDiamant/GenAI_Agents)（24.0K），45+ 个可运行 Notebook 跟练。
-- 深度阅读：[All Agentic Architectures 深入详解](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/docs/all-agentic-architectures-deep-dive.md)，17 种可运行架构全景，从 Reflection 到 Tree of Thoughts，选型对照表。
+- 深度阅读：[All Agentic Architectures 深入详解](https://github.com/ForceInjection/AI-fundamentals/blob/main/08_agentic_system/agent_design/deep-dives/02_all-agentic-architectures-deep-dive.md)，17 种可运行架构全景，从 Reflection 到 Tree of Thoughts，选型对照表。
 
 **验收标志**：用 LangGraph 做出一个带状态、能中断恢复的多轮 Agent 应用。
 

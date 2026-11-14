@@ -622,13 +622,13 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
 
 **智能体设计模式**：
 
-- [ReAct Agent 模式详解](08_agentic_system/agent_design/docs/react-agent.md) - 推理与行动深度协同的经典机制
-- [写作 Agent 设计](08_agentic_system/agent_design/docs/writing-agentic-agent.md) - 针对复杂长文本内容创作的架构设计
-- [指代消解系统设计](08_agentic_system/agent_design/docs/coreference-resolution-dialogue-system.md) - 高级对话状态管理与多轮交互技术
+- [ReAct Agent 模式详解](08_agentic_system/agent_design/deep-dives/01_react-agent.md) - 推理与行动深度协同的经典机制
+- [写作 Agent 设计](08_agentic_system/agent_design/deep-dives/03_writing-agentic-agent.md) - 针对复杂长文本内容创作的架构设计
+- [指代消解系统设计](08_agentic_system/agent_design/deep-dives/04_coreference-resolution-dialogue-system.md) - 高级对话状态管理与多轮交互技术
 - [12-Factor Agents](08_agentic_system/concepts/12-factor-agents-intro.md) - 构建高可靠、可扩展 LLM 应用的 12 要素原则
-- [TradingAgents-CN 设计](08_agentic_system/agent_design/docs/trading-agents-cn.md) - 交易领域的智能体设计与交互分析
-- [AI Agent 设计模式](08_agentic_system/agent_design/docs/ai-agent-design-patterns.pptx) - 企业级智能体架构设计模式
-- [All Agentic Architectures 深入详解](08_agentic_system/agent_design/docs/all-agentic-architectures-deep-dive.md) - 17 种 Agent 架构深度对比与实现解析
+- [TradingAgents-CN 设计](08_agentic_system/agent_design/deep-dives/05_trading-agents-cn.md) - 交易领域的智能体设计与交互分析
+- [AI Agent 设计模式](08_agentic_system/agent_design/deep-dives/ai-agent-design-patterns.pptx) - 企业级智能体架构设计模式
+- [All Agentic Architectures 深入详解](08_agentic_system/agent_design/deep-dives/02_all-agentic-architectures-deep-dive.md) - 17 种 Agent 架构深度对比与实现解析
 
 **数据智能体 (Data Agents)**：
 

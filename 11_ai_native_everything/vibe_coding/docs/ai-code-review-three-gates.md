@@ -92,7 +92,7 @@ Agent 的数量不是越多越好。有 ICML 2026 的研究报道（媒体转述
 
 **Context Swap 有一个容易读过头的推论：评审者的上下文是不是越少越好？不是，关键是分清隔离什么、带足什么。** 上下文里混着两种性质不同的东西：一种是生成者的主观过程——推理链、自我辩解、「我为什么这么写」——它污染判断，必须隔离；另一种是代码库的客观结构——调用方、被调方、类型定义、并发模型——它是判断的原料，缺了就会瞎。
 
-开源项目 OpenCodeReview 的源码深读（见[《确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析》](../../../08_agentic_system/agent_design/docs/open-code-review-deep-dive.md)）把这两个方向的问题都点名了。通用评审 Agent 有两个结构性弱点：一是**非确定性**，同一份 diff 跑两次结果不同，评审作为质量活动最难接受这个；二是**上下文局部性**，评审者被限制在 diff 里，而真实缺陷往往藏在调用方和被调方。它的解法不是「多喂上下文」，而是**有界的探索**：每个文件的评审 Agent 只拿到六个受控工具，可以跳出 diff 查调用关系，但每一步有界、评论行号有三级回退校验，探索不会膨胀成全库漫游。
+开源项目 OpenCodeReview 的源码深读（见[《确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析》](../../../08_agentic_system/agent_design/deep-dives/06_open-code-review-deep-dive.md)）把这两个方向的问题都点名了。通用评审 Agent 有两个结构性弱点：一是**非确定性**，同一份 diff 跑两次结果不同，评审作为质量活动最难接受这个；二是**上下文局部性**，评审者被限制在 diff 里，而真实缺陷往往藏在调用方和被调方。它的解法不是「多喂上下文」，而是**有界的探索**：每个文件的评审 Agent 只拿到六个受控工具，可以跳出 diff 查调用关系，但每一步有界、评论行号有三级回退校验，探索不会膨胀成全库漫游。
 
 同一个项目还给出了「正反面评审」最精致的一手实现。它的阶段三叫 Independent Reflection：独立反思者只看到 diff 和评论列表，看不到评审 Agent 通过工具获得的仓库上下文。它无法验证一条评论的正确性（没有那个上下文），但可以、也只需要**证伪**：diff 里存在直接反证的评论，删；引用了 diff 之外上下文的，不标记（因为它无法证伪）。反思阶段只能删评论、不能生成评论，反思模型调用失败时保留全部评论（fail-open，优先保召回）。用那篇深读里的话说：**判断的独立性，取决于它看到什么，而不是它是什么。** 不需要另一个更强的模型，同一个模型在更少的信息下天然具备不同的视角。这正是「别让写代码的 Agent 评审自己」的架构化表达：分离的本质是信息边界，不是模型身份。
 
@@ -116,7 +116,7 @@ Agent 的数量不是越多越好。有 ICML 2026 的研究报道（媒体转述
 
 ## 参考资料
 
-- 本仓库深读：[确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](../../../08_agentic_system/agent_design/docs/open-code-review-deep-dive.md)
+- 本仓库深读：[确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](../../../08_agentic_system/agent_design/deep-dives/06_open-code-review-deep-dive.md)
 - METR, _Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity_, 2025-07, [arXiv:2507.09089](https://arxiv.org/abs/2507.09089)
 - GitClear, _AI Copilot Code Quality_ 系列研究（2025-02 发布）；报道与核心数据见 DevClass: [AI is eroding code quality, states new in-depth report](https://devclass.com/2025/02/20/ai-is-eroding-code-quality-states-new-in-depth-report/)（GitClear 官网有反爬限制）
 - Owain Lewis, _How I Use AI to Review AI Code_, [AI Engineer newsletter](https://newsletter.aiengineer.co/p/how-i-use-ai-to-review-ai-code)

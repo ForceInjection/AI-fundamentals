@@ -22,15 +22,15 @@
 
 单个 Agent 内部到底如何组织「思考→行动→反思」？这里汇总了业界经过验证的主流模式，包括推理-行动交织的 ReAct、面向复杂长文本创作的写作工作流、对话系统中的指代消解，以及在真实业务中落地的 TradingAgents 等案例。
 
-- [Cursor IDE ReAct Agent 技术架构深度分析](./agent_design/docs/react-agent.md) - 以 Cursor IDE 为标本，深度解析 ReAct 推理-行动循环在真实产品中的工程落地：分层架构、工具调用、上下文管理与性能优化。
-- [确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](./agent_design/docs/open-code-review-deep-dive.md) - 基于阿里开源项目源码与论文的原理分析：规则引导调度、有界工具审查循环、信息边界反思如何以确定性约束超越自由 Agent（SEM-F1 25.1% vs 11.6%），并提炼可迁移的 Agent 设计原则。
-- [技术博客撰写 Agentic RAG Agent 系统设计](./agent_design/docs/writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
-- [支持多轮对话指代消解的 ChatBot 系统：架构设计与实现详解](./agent_design/docs/coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
+- [Cursor IDE ReAct Agent 技术架构深度分析](./agent_design/deep-dives/01_react-agent.md) - 以 Cursor IDE 为标本，深度解析 ReAct 推理-行动循环在真实产品中的工程落地：分层架构、工具调用、上下文管理与性能优化。
+- [确定性工程驯服不确定的 Agent：OpenCodeReview 三阶段架构深度解析](./agent_design/deep-dives/06_open-code-review-deep-dive.md) - 基于阿里开源项目源码与论文的原理分析：规则引导调度、有界工具审查循环、信息边界反思如何以确定性约束超越自由 Agent（SEM-F1 25.1% vs 11.6%），并提炼可迁移的 Agent 设计原则。
+- [技术博客撰写 Agentic RAG Agent 系统设计](./agent_design/deep-dives/03_writing-agentic-agent.md) - 针对复杂长文本内容创作领域的智能体工作流架构设计与实践优化。
+- [支持多轮对话指代消解的 ChatBot 系统：架构设计与实现详解](./agent_design/deep-dives/04_coreference-resolution-dialogue-system.md) - 探讨高级对话状态管理、上下文理解以及多轮交互中的指代消解技术。
 - [12-Factor Agents - 构建可靠 LLM 应用的原则](./concepts/12-factor-agents-intro.md) - 借鉴云原生应用设计理念，提出构建高可靠、可扩展 LLM 应用的 12 要素原则。
 - [七张图看懂 Jev：Agent 的每一步都需要大模型吗](./concepts/jev-seven-charts.md) - 手绘图解 TypeSafe 的决策模型 Jev（System One Models）：三种接口零幻觉、判断与生成的分工、confidence ≠ 准确率、三档置信度门禁与成本账；数字对照官方 docs 与 Browser Use 实测记录。
-- [TradingAgents-CN 多智能体设计与交互分析](./agent_design/docs/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
-- [All Agentic Architectures 深入详解](./agent_design/docs/all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
-- [DeepSeek 把整个 App 开放成了 API：全家桶应用 API 深拆](./agent_design/docs/deepseek-app-api-deep-dive.md) - 基于官方文档与开源 Demo 源码（chat-demo v0.1.1）拆解 2026-11-13 发布的全家桶应用 API：三协议服务端工具与内容块协议、深度思考搜索的 20 步工具循环、signature 多轮记忆边界、被托管参数清单、工具计费口径（按查询词条数计费、被拦截网页照常计费），以及纯前端 Demo 如何直连官方 API 复刻 App 体验。含作者独立测量（默认开思考、safety_tokens 字段、计费双字段实证）与三张手绘机制图。
+- [TradingAgents-CN 多智能体设计与交互分析](./agent_design/deep-dives/05_trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
+- [All Agentic Architectures 深入详解](./agent_design/deep-dives/02_all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
+- [DeepSeek 把整个 App 开放成了 API：全家桶应用 API 深拆](./agent_design/deep-dives/07_deepseek-app-api-deep-dive.md) - 基于官方文档与开源 Demo 源码（chat-demo v0.1.1）拆解 2026-11-13 发布的全家桶应用 API：三协议服务端工具与内容块协议、深度思考搜索的 20 步工具循环、signature 多轮记忆边界、被托管参数清单、工具计费口径（按查询词条数计费、被拦截网页照常计费），以及纯前端 Demo 如何直连官方 API 复刻 App 体验。含作者独立测量（默认开思考、safety_tokens 字段、计费双字段实证）与三张手绘机制图。
 
 ### 1.3 数据智能体 (Data Agents)
 
