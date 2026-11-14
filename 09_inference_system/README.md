@@ -22,7 +22,7 @@
 >
 > **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 昇腾开源栈](deepseek_ascend/README.md)**（六个组件、三种双端模式与 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
 >
-> **SOSP 2026 论文精读**：OS 顶会怎么收 AI 系统——本届约 65 篇中选 9 篇全文精读，三条线：推理服务（Janus 多 LLM 双时间尺度调度、Bedrock 全球多区域 WLM、LLM-42 按请求计费的确定性推理、ACDC 离线推理刻画与在离线混合调度）、GPU 系统（StreamEP 无屏障 MoE 解码、CrystalLLM 少卡仿真万卡训练、Ave 用数据流不变量做 agent 优化内核的过程奖励）、Agent × OS（YoloFS 的 290 份事故研究与 Agent 原生文件系统、Skill VM 把技能当源码编译）。综述入口：**[系统的边界在移动](sosp2026/sosp2026-ai-systems-review.md)**（负载假设 → 三条线综述 → 三条主线与折扣清单；分篇笔记与 PDF 归档见 [目录门户](sosp2026/README.md)，生产系统数字均标厂商口径）。
+> **SOSP 2026 论文精读**：OS 顶会怎么收 AI 系统——本届约 65 篇中选 13 篇全文精读（AI 相关 9 篇 + CXL 内存介质层 4 篇），四条线：推理服务（Janus 多 LLM 双时间尺度调度、Bedrock 全球多区域 WLM、LLM-42 按请求计费的确定性推理、ACDC 离线推理刻画与在离线混合调度）、GPU 系统（StreamEP 无屏障 MoE 解码、CrystalLLM 少卡仿真万卡训练、Ave 用数据流不变量做 agent 优化内核的过程奖励）、Agent × OS（YoloFS 的 290 份事故研究与 Agent 原生文件系统、Skill VM 把技能当源码编译）、CXL 与内存（与 AI 负载无关的介质层：Borges 共享日志、Disk-Based LSMs 可更新表面积、StarfishOS 状态分区单系统映像、XTRA 一致性域缩到有界目录）。综述入口：**[系统的边界在移动](sosp2026/sosp2026-systems-review.md)**（负载假设 → 四条线综述 → 四条主线与折扣清单；分篇笔记与 PDF 归档见 [目录门户](sosp2026/README.md)，生产系统数字均标厂商口径）。
 
 ---
 
