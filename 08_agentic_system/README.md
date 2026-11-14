@@ -30,6 +30,7 @@
 - [七张图看懂 Jev：Agent 的每一步都需要大模型吗](./concepts/jev-seven-charts.md) - 手绘图解 TypeSafe 的决策模型 Jev（System One Models）：三种接口零幻觉、判断与生成的分工、confidence ≠ 准确率、三档置信度门禁与成本账；数字对照官方 docs 与 Browser Use 实测记录。
 - [TradingAgents-CN 多智能体设计与交互分析](./agent_design/docs/trading-agents-cn.md) - 探讨大模型技术如何创造商业价值，以及交易领域的智能体设计与交互分析。
 - [All Agentic Architectures 深入详解](./agent_design/docs/all-agentic-architectures-deep-dive.md) - 系统梳理 17 种可运行的 LangChain + LangGraph 智能体架构（Reflection、ReAct、Planning、Blackboard、Ensemble、Tree of Thoughts、Graph World-Model、Metacognitive 等），覆盖从单 Agent 到多 Agent、从记忆推理到安全可靠的完整设计谱系。
+- [DeepSeek 把整个 App 开放成了 API：全家桶应用 API 深拆](./agent_design/docs/deepseek-app-api-deep-dive.md) - 基于官方文档与开源 Demo 源码（chat-demo v0.1.1）拆解 2026-11-13 发布的全家桶应用 API：三协议服务端工具与内容块协议、深度思考搜索的 20 步工具循环、signature 多轮记忆边界、被托管参数清单、工具计费口径（按查询词条数计费、被拦截网页照常计费），以及纯前端 Demo 如何直连官方 API 复刻 App 体验。含作者独立测量（默认开思考、safety_tokens 字段、计费双字段实证）与三张手绘机制图。
 
 ### 1.3 数据智能体 (Data Agents)
 
