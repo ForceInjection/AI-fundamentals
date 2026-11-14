@@ -81,24 +81,24 @@ Strata 在 HiRadixTree（SGLang RadixTree 的扩展，兼任页表与逐页元�
 
 ## 论文结构索引
 
-| 论文位置（§/页码） | 内容 |
-| ------------------ | ---- |
-| §1 / p.1–2 | 动机与贡献：长上下文趋势、40 GB HBM ≈ 0.3M token、74% prefill 阻塞 / 4×、SGLang 集成与生产部署声明 |
-| §2 / p.2–3 | 背景：PagedAttention 页大小（TensorRT-LLM/vLLM/SGLang 为 32/16/1）、跨请求前缀缓存与分层存储 |
-| §3.1 / p.3–4 | I/O 效率：Little's Law X=C·S/L、75–80% PCIe 5.0 需 1–2MB、页 1→512 的命中率与 TTFT 代价（Fig.2）、8192 token ≈22%、GH200 低至 5%（Fig.3） |
-| §3.2 / p.4 | 调度盲区：layer-wise 重叠假设失效、仍剩最高 24% 停顿、delay hit（SIGCOMM '20 [8]）、Mooncake trace 38%、异步调度放大 |
-| §4.1 / p.4–5 | 架构总览：Scheduler + Cache Controller、HiRadixTree、P-D co-location、CUDA events 逐层同步（Fig.4） |
-| §4.2 / p.5 | GPU-assisted I/O：CUDA kernel 千线程寄存器中转、128B 粒度、少量大 block 压 SM、默认 2/1 block 配额（Fig.5：48 GB/s、干扰 <5%/10%） |
-| §4.2.1 / p.6 | 存储层预取（best-effort / wait-complete / timeout）与 layer-first↔page-first 布局解耦（Fig.6，一次算术完成转换） |
-| §4.3.1 / p.6–7 | delay hit 规避：transient node（in-queue/in-flight）、推迟至队首、默认 100 token 阈值 |
-| §4.3.2–4.3.3 / p.7 | 均衡批（loading_bound 默认 100、bundle hit、反饥饿，Alg.1）与气泡填充（解码批填加载空档） |
-| §4.4 / p.7–8 | 缓存控制器：三档写策略（write-back / write-through / selective-write-through，默认阈值 2）、LRU 驱逐 |
-| §5.1 / p.8–9 | 评估配置：三平台（H200 / H20-storage / GH200）、四基线版本、三模型、四数据集（Table 1） |
-| §5.2 / p.9–10 | 端到端：约 95% 命中率；最高 3.2×/2.6×/1.9× 至 5×/5×/3.75×；ReviewMT 1.7×/2.3×/2.3×；暖缓存 2.3×/2.6×/2.5×；ShareGPT 可比 |
-| §5.3.1–5.3.3 / p.10–11 | 分解：调度最高 1.8×、I/O 最高 2.3×；页大小 93%/2.4%；cache distance 42%/76%/95%/11%/12%/8%/3%（Fig.9–11） |
-| §5.3.4–5.3.5 / p.11–12 | delay hit 成因（resolve time 数百 ms–数秒，模拟）；磁盘 page-first：TTFT 5.03→2.42 s、吞吐 1.3×（Fig.12/13） |
-| §5.4 / p.12 | GH200：持续带宽 40.30→150.50 GB/s、SGLang-HiCache 19.43、Strata-GH 近 Oracle（Fig.14/15） |
-| §6–8 / p.13 | 讨论（kernel 干扰 / 公平性 / 模型覆盖）、相关工作、结论；致谢与参考文献 pp.14–16 |
+| 论文位置（§/页码）     | 内容                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| §1 / p.1–2             | 动机与贡献：长上下文趋势、40 GB HBM ≈ 0.3M token、74% prefill 阻塞 / 4×、SGLang 集成与生产部署声明                                        |
+| §2 / p.2–3             | 背景：PagedAttention 页大小（TensorRT-LLM/vLLM/SGLang 为 32/16/1）、跨请求前缀缓存与分层存储                                              |
+| §3.1 / p.3–4           | I/O 效率：Little's Law X=C·S/L、75–80% PCIe 5.0 需 1–2MB、页 1→512 的命中率与 TTFT 代价（Fig.2）、8192 token ≈22%、GH200 低至 5%（Fig.3） |
+| §3.2 / p.4             | 调度盲区：layer-wise 重叠假设失效、仍剩最高 24% 停顿、delay hit（SIGCOMM '20 [8]）、Mooncake trace 38%、异步调度放大                      |
+| §4.1 / p.4–5           | 架构总览：Scheduler + Cache Controller、HiRadixTree、P-D co-location、CUDA events 逐层同步（Fig.4）                                       |
+| §4.2 / p.5             | GPU-assisted I/O：CUDA kernel 千线程寄存器中转、128B 粒度、少量大 block 压 SM、默认 2/1 block 配额（Fig.5：48 GB/s、干扰 <5%/10%）        |
+| §4.2.1 / p.6           | 存储层预取（best-effort / wait-complete / timeout）与 layer-first↔page-first 布局解耦（Fig.6，一次算术完成转换）                          |
+| §4.3.1 / p.6–7         | delay hit 规避：transient node（in-queue/in-flight）、推迟至队首、默认 100 token 阈值                                                     |
+| §4.3.2–4.3.3 / p.7     | 均衡批（loading_bound 默认 100、bundle hit、反饥饿，Alg.1）与气泡填充（解码批填加载空档）                                                 |
+| §4.4 / p.7–8           | 缓存控制器：三档写策略（write-back / write-through / selective-write-through，默认阈值 2）、LRU 驱逐                                      |
+| §5.1 / p.8–9           | 评估配置：三平台（H200 / H20-storage / GH200）、四基线版本、三模型、四数据集（Table 1）                                                   |
+| §5.2 / p.9–10          | 端到端：约 95% 命中率；最高 3.2×/2.6×/1.9× 至 5×/5×/3.75×；ReviewMT 1.7×/2.3×/2.3×；暖缓存 2.3×/2.6×/2.5×；ShareGPT 可比                  |
+| §5.3.1–5.3.3 / p.10–11 | 分解：调度最高 1.8×、I/O 最高 2.3×；页大小 93%/2.4%；cache distance 42%/76%/95%/11%/12%/8%/3%（Fig.9–11）                                 |
+| §5.3.4–5.3.5 / p.11–12 | delay hit 成因（resolve time 数百 ms–数秒，模拟）；磁盘 page-first：TTFT 5.03→2.42 s、吞吐 1.3×（Fig.12/13）                              |
+| §5.4 / p.12            | GH200：持续带宽 40.30→150.50 GB/s、SGLang-HiCache 19.43、Strata-GH 近 Oracle（Fig.14/15）                                                 |
+| §6–8 / p.13            | 讨论（kernel 干扰 / 公平性 / 模型覆盖）、相关工作、结论；致谢与参考文献 pp.14–16                                                          |
 
 ## 与系列其他篇目
 
