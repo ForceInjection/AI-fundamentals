@@ -1,0 +1,28 @@
+[project]
+name = "coref-dialogue-system"
+version = "2.0.0"
+description = "多轮指代消解对话系统 v2：LLM 结构化输出 + schema 全量重建 + 可选 spaCy 本地预处理"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.40",
+    "pydantic>=2.7",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "httpx>=0.27",
+    "spacy>=3.7,<3.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv]
+# 中文 NER 模型无法经 pip 声明，安装后手动执行：
+#   python -m spacy download zh_core_web_sm
+# demo.py 在模型缺失时会自动降级为纯规则路径。
