@@ -21,6 +21,8 @@
 > **超节点**：把推理系统当 token 工厂看产能，华为这座工厂的厂房很特别——384 张昇腾 910 与 192 颗鲲鹏 CPU 经 UB 连成逻辑上的一台机器，跨节点带宽损失 <3%，EP 因此可以开到 320（每 die 一个专家）。配套服务栈 CloudMatrix-Infer 做 PDC 三池分离、FusedDispatch/FusedCombine 融合通信算子、UB 直连内存池；prefill 6,688 / decode 1,943 tokens/s/NPU 的数字附五条口径声明。详见 **[一座 384 卡的 TokenFactory：CloudMatrix384 论文精读](cloudmatrix_infer/cloudmatrix384-tokenfactory.md)**（arXiv 2506.12708 v3 逐章核对，厂商口径已标注）。
 >
 > **双栈开源**：DeepSeek 把生产栈搬上了昇腾——六个组件（TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect）与英伟达版一一对应，TileLang 昇腾后端合入主线 0.1.15，全线绑定 Ascend 950（`dav-3510`），910 存量卡不支持；GEMM 自报 99%+ 硬件上限，复现依赖 10 月中才公开的商用 HDK。逐仓拆解见 **[DeepSeek 昇腾开源栈](deepseek_ascend/README.md)**（六个组件、三种双端模式与 950 微架构要点；硬件信息另整理有 [Ascend950 微架构速查](../01_hardware_architecture/ascend/Ascend950_微架构速查.md)）。
+>
+> **SOSP 2026 论文精读**：OS 顶会怎么收 AI 系统——本届约 65 篇中选 9 篇全文精读，三条线：推理服务（Janus 多 LLM 双时间尺度调度、Bedrock 全球多区域 WLM、LLM-42 按请求计费的确定性推理、ACDC 离线推理刻画与在离线混合调度）、GPU 系统（StreamEP 无屏障 MoE 解码、CrystalLLM 少卡仿真万卡训练、Ave 用数据流不变量做 agent 优化内核的过程奖励）、Agent × OS（YoloFS 的 290 份事故研究与 Agent 原生文件系统、Skill VM 把技能当源码编译）。综述入口：**[系统的边界在移动](sosp2026/sosp2026-ai-systems-review.md)**（负载假设 → 三条线综述 → 三条主线与折扣清单；分篇笔记与 PDF 归档见 [目录门户](sosp2026/README.md)，生产系统数字均标厂商口径）。
 
 ---
 

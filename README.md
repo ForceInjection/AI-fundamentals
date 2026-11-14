@@ -418,6 +418,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
   - [Continuous Batching 深度解析](09_inference_system/prefill_decode/continuous_batching.md) - 静态批处理的三重浪费、vLLM V1 的 token-level 统一调度与 SGLang prefill-first 主动驱逐
 - [大模型推理并行策略](09_inference_system/parallelism/parallelism_strategies.md)（[交互可视化](09_inference_system/parallelism/parallelism_visual.html)） - DP、TP、PP、EP、SP 五种策略的统一拆解与混合部署案例
   - [专家并行（EP）深度解析](09_inference_system/parallelism/expert_parallelism_deep_dive.md) - EP 独立深度文章：DP/TP/PP 为什么解决不了 MoE、All-to-All 通信模式、EP+DP 耦合、DeepEP 低延迟后端、EPLB 负载均衡、选型决策
+- [系统的边界在移动：SOSP 2026 九篇 AI 系统论文精读](09_inference_system/sosp2026/sosp2026-ai-systems-review.md) - OS 顶会 9 篇综述：Janus 多 LLM 调度、Bedrock 全球多区域服务、LLM-42 确定性推理、ACDC 离线推理刻画、StreamEP 无屏障 MoE 解码、CrystalLLM 训练仿真、Ave agentic 内核优化、YoloFS Agent 原生文件系统、Skill VM，三条主线 + 折扣清单，分篇笔记与 PDF 同目录归档
 
 ### 9.2 核心框架与平台
 
