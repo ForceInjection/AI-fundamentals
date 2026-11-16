@@ -1,6 +1,6 @@
 # Humming 深拆：不预制 kernel，把组合爆炸交给 JIT
 
-> **元信息**：源码基线为 [vllm-project/humming](https://github.com/vllm-project/humming) `c62330a`（2026-11-11），发布博客 [Announcing Humming](https://vllm.ai/blog/2026-10-21-humming)（2026-10-21，蚂蚁集团 + vLLM 社区）。核对日期 2026-11-12；本仓无 NVIDIA GPU，kernel 与编译时长均未实测，性能数字全部为博客口径（作者方自报，microbench 由 vLLM 社区跑），引用时注意口径。系列第 2 篇，[篇 1（Marlin 深拆）](01_marlin-deep-dive.md)拆了手写极致 kernel 的三个设计，本篇回答篇 1 判断二留下的问题：组合爆炸来了怎么办。
+> **元信息**：源码基线为 [vllm-project/humming](https://github.com/vllm-project/humming) `c62330a`（2026-11-11），发布博客 [Announcing Humming](https://vllm.ai/blog/2026-10-21-humming)（2026-10-21，蚂蚁集团 + vLLM 社区）。核对日期 2026-11-12，2026-11-16 补核 v0.1.17（tag 相对基线再走 32 个提交，见第五节版本注脚）；本仓无 NVIDIA GPU，kernel 与编译时长均未实测，性能数字全部为博客与 PR 作者口径（作者方自报，microbench 由 vLLM 社区跑），引用时注意口径。系列第 2 篇，[篇 1（Marlin 深拆）](01_marlin-deep-dive.md)拆了手写极致 kernel 的三个设计，本篇回答篇 1 判断二留下的问题：组合爆炸来了怎么办。
 
 Marlin 的答案停在 2024 年：为 FP16×INT4 这一种组合手写一个极致 kernel。2026 年的量化世界已经复杂得多：权重有 INT1 到 INT8、FP8、FP6、FP4，scale 有 tensor/channel/group/block 四种粒度和五种类型，硬件从 Turing 一路铺到 Blackwell 的 SM103/SM120/SM121，还有平头哥的 CUDA 兼容卡。为每个组合各写一个 kernel 再各自维护优化，是篇 1 判断二说的那条走不通的路。
 
@@ -108,6 +108,15 @@ Blackwell 的 tensor core 硬件其实支持两个浮点格式，PTX 类型系�
 
 工程口径：`pip install humming-kernels`（wheel 约 500 KB），无系统 CUDA 编译器时装 `humming-kernels[cu12]` 或 `[cu13]`；原则上能跑 PyTorch 2.7 的环境就能跑。vLLM 0.29.0 起 CUDA 安装自带 Humming 依赖，`--linear-backend humming` 与 `--moe-backend humming` 分别选它做 dense 与 MoE 后端；`--quantization humming` 只是兼容通道（vLLM 已不支持或尚未原生支持的格式，如 GPTQ INT3）。
 
+**版本注脚：基线之后 Humming 在做什么（v0.1.17，42 个 PR）**。基线 `c62330a` 已包含其中 9–10 月合入的部分，tag 相对基线再走 32 个提交。把这 42 个 PR 按改动对象归类，能看到四条清晰的工作方向，正好逐一压在本文第三、四节的架构上（PR 性能数字均为作者口径，H20 实测，端到端跑 DeepSeek-V4.1-Flash 4×H20）：
+
+- **方向一：MoE grouped 路线做深，这是生产负载的主战场**。[#91](https://github.com/vllm-project/humming/pull/91) 修掉 grouped-contiguous GEMM 的一个调度缺陷：未用满的输入容量被当作最后一个 expert 的 token 参与计算。96 experts、12,288 有效行对 49,152 分配行的场景，W13/W2 kernel 从 17.47/8.89 ms 降到 5.16/2.62 ms（约 3.4×），端到端吞吐 1.06 → 1.70 req/s。同期还有 [#95](https://github.com/vllm-project/humming/pull/95) / [#115](https://github.com/vllm-project/humming/pull/115)（Hopper MXFP4×FP8_BLOCK 的 grouped/indexed MoE prefill）、[#108](https://github.com/vllm-project/humming/pull/108)（partial K tile 的 repack 不得跨 expert）、[#126](https://github.com/vllm-project/humming/pull/126)（M-major W4A8 grouped 的 issue/wait 恢复）。一个正确性修复拿 3.4×，说明这条 vLLM 生产主路径的调度与启发式都还在早期。
+- **方向二：UMMA 铺向 Blackwell 全家族，扩展与守卫同框**。[#105](https://github.com/vllm-project/humming/pull/105) 给 UMMA 加 FP8/FP4/INT8，[#118](https://github.com/vllm-project/humming/pull/118) 用上 SM107 双 K 的 FP4/FP8 指令，[#136](https://github.com/vllm-project/humming/pull/136) 调优 sm12x 流水线与寄存器，[#127](https://github.com/vllm-project/humming/pull/127) 补 SM100 启发式；同一段里 [#116](https://github.com/vllm-project/humming/pull/116) 在 Rubin（SM107）上拒绝 E3M4/E0M3 硬件操作数。第二节「四路 MMA 按代际选边」的表，就是这样一条条 PR 填出来的。
+- **方向三：格式系统继续扩张，「隐藏格式」向上游化**。[#112](https://github.com/vllm-project/humming/pull/112) 优化 FP8 scale 转换并新增 E5M3，[#135](https://github.com/vllm-project/humming/pull/135) 把 e0mx 零指数位类型与混合精度 GEMM 做进类型系统，[#145](https://github.com/vllm-project/humming/pull/145) 补 E0Mx 权重 × 整数激活的转换，[#139](https://github.com/vllm-project/humming/pull/139) 新增 ldmatrix 整数反量化，[#103](https://github.com/vllm-project/humming/pull/103) 把 FP 权重指数偏移折进 group scales。第四节「PTX 不存在的格式」那条线，正在从 SASS 位补丁变成类型系统的一等公民：判断三说的「红利带截止日期」，截止的方式是被官方化，对使用者是好消息。
+- **方向四：微架构功夫沉淀在共享组件层**。[#133](https://github.com/vllm-project/humming/pull/133) 优化 stage 流水线与 warpgroup epilogue，[#137](https://github.com/vllm-project/humming/pull/137) 让 MMA stage 更早释放，[#144](https://github.com/vllm-project/humming/pull/144) 在 TMA stage 复用前补 shared load 的 fence，[#121](https://github.com/vllm-project/humming/pull/121) / [#134](https://github.com/vllm-project/humming/pull/134) 调 WGMMA 的 issue-wait 与寄存器 fence。这些「手写 kernel 时代」的功课全部改在共享组件与模板层，一处改动惠及所有格式 × 所有硬件组合的生成结果，是 JIT 路线「维护矩阵」优势的持续兑现。
+
+四个方向没有一个动到第三、四节的抽象骨架（配置系统、共享组件、启发式层），演进全部发生在框架之内。对「这套架构选得对不对」的疑问，这 42 个 PR 是基线之后最有说服力的回答。
+
 ## 六、总评与适用边界
 
 判断一：JIT 路线没有推翻篇 1 的设计纪律，而是把它的适用范围又推了一层。Marlin 的公式是「预处理换运行期」：repack 把布局税挪到加载时。Humming 保留 repack（预处理仍在加载时做 pad + 重排），再把另一笔税挪进编译期：布局选择、分支消减、指令选择全在生成 `kernel.cu` 时做掉，运行期没有废分支。代价从「每次推理都在」变成「每份 (配置 × 硬件) 组合只付一次，约 2 秒」。
@@ -134,5 +143,6 @@ Blackwell 的 tensor core 硬件其实支持两个浮点格式，PTX 类型系�
 ## 参考资料
 
 - [Announcing Humming: Fast, Flexible Kernels for Quantized Inference](https://vllm.ai/blog/2026-10-21-humming)（性能数字与编译时长均出自此博客）· [vllm-project/humming](https://github.com/vllm-project/humming)
+- [v0.1.17 Release](https://github.com/vllm-project/humming/releases/tag/v0.1.17)（42 个 PR 的版本记录）· [PR #91](https://github.com/vllm-project/humming/pull/91)（grouped tail blocks 修复）· [PR #132](https://github.com/vllm-project/humming/pull/132)（SM90 MXFP4 MoE 调优），H20 数字均为 PR 作者口径，见第五节版本注脚
 - 本仓：[篇 1 Marlin 深拆](01_marlin-deep-dive.md)（手写路线与其遗产）· [launch、occupancy、overlap：什么时候手写 kernel](../05_compiler/01_kernel-compiler-megakernel.md)（编译器路线谱系）· [把权重压到 4-bit：TileLang 反量化 GEMM](../03_tilelang/03_dequant_gemm_lowprecision.md)
 - 下一篇：[UMMA 深拆：tcgen05 上，反量化结果写进 TMEM](03_umma-deep-dive.md)（系列收官篇）
