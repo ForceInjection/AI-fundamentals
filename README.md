@@ -665,6 +665,7 @@ DeepSeek 模型极致性能优化实战，深度解析 vLLM 宽端点 (Wide Endp
   - [构建完整指南 (PDF)](08_agentic_system/agent_skills/01_the_complete_guide_to_building_skill_for_claude.pdf)
   - [一个人调度四个角色：多会话协作 Skill 的实测与边界](08_agentic_system/agent_skills/02_multi-role-agent-skill.md) - 四个角色各开一个会话：三层结构 + 端到端实测与边界
   - [12 小时、636 个测试：自驱型 Skill 能走多远](08_agentic_system/agent_skills/03_self-driving-skill-for-complex-projects.md) - 从 SPARQLite 实验切入，拆 Skill 的策略层与运行时：单会话有界任务可只用 Skill，跨 session 复杂项目要 Workflow 或 Agent SDK harness
+  - [四分之一的 Agent Skill 有漏洞：NVIDIA 把安装前的扫描器开源了](08_agentic_system/agent_skills/04_skillspector-security-scanner.md) - SkillSpector 源码拆解：LangGraph 流水线 + 27 个分析器，静态打底、LLM 复核只升不降，含供应链与 MCP 投毒检测、退出码门禁合同与信任模型
 - [Agent Skill 开发指南](https://github.com/ForceInjection/awesome-skills)（[在线版](https://forceinjection.github.io/awesome-skills/)）- 由原力注入博主维护的优秀认知技能（Agent Skill）合集，包含深度代码阅读、架构分析、文档评审等自动化工作流。
 - [CUDA Code Skill](https://github.com/ForceInjection/cuda-code-skill) - 面向 AI IDE（Claude Code、Trae 等）的 CUDA 知识增强代码生成与性能分析技能库。
 - [mmx-cli](https://github.com/MiniMax-AI/cli) - MiniMax AI 平台的 CLI 技能，支持文本、图片、视频、语音、音乐生成与 Web 搜索，遵循 agentskills.io 标准。

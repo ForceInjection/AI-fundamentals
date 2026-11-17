@@ -1,12 +1,13 @@
 # Agent Skills（智能体技能）
 
-Skill 是把成熟工作流装进模型能力包的最小单元：一个 SKILL.md 描述何时用、怎么用，配上脚本与参考资料就是可分发的能力包。本目录收三篇方法论文章（编号即阅读顺序）与两个可安装的 Skill 项目。
+Skill 是把成熟工作流装进模型能力包的最小单元：一个 SKILL.md 描述何时用、怎么用，配上脚本与参考资料就是可分发的能力包。本目录收四篇方法论文章（编号即阅读顺序）与两个可安装的 Skill 项目。
 
 ## 文章
 
 - **[01 · 给 Claude 写本「标准操作手册」：Agent Skills 实战与深度解析](01_claude_skills_guide.md)** — 扩展智能体能力的工具定义规范、调试方法与最佳实践。配套阅读：[The Complete Guide to Building Skills for Claude](01_the_complete_guide_to_building_skill_for_claude.pdf)。
 - **[02 · 一个人调度四个角色：多会话协作 Skill 的实测与边界](02_multi-role-agent-skill.md)** — 把《[评审、修改、测试、裁决](../multi_agent/01_claude-code-multi-session-playbook.md)》装进一个用户级 skill：四个角色各开一个会话、一个人调度与拍板的实践，含三层结构、端到端实测、四个缺口与设计边界。配三张手绘图（见 [assets/](assets/README.md)）。
 - **[03 · 12 小时、636 个测试：自驱型 Skill 能走多远](03_self-driving-skill-for-complex-projects.md)** — 从 Simon Willison 的 SPARQLite 实验切入，区分 Skill 的策略层与运行时：Skill 单独适合单会话有界任务，跨 session 的复杂项目需要 Workflow 或 Agent SDK harness。含协作层、编排层、运行时三层路径与最小骨架。配三张手绘图。
+- **[04 · 四分之一的 Agent Skill 有漏洞：NVIDIA 把安装前的扫描器开源了](04_skillspector-security-scanner.md)** — SkillSpector（v2.12.0）源码拆解：LangGraph 流水线上 27 个分析器并行扫描，静态打底 + LLM 复核只升不降，供应链 / MCP 投毒 / rug pull 检测与退出码门禁合同；含信任模型、数据出网路径与折扣清单。配一张手绘架构图。
 
 ## 可安装的 Skill 项目
 
