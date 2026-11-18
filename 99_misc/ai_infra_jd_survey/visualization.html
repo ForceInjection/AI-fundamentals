@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 岗位技能版图</title>
+<style>
+:root{
+  --paper:#FBF8F1; --ink:#2b2b2b; --blue:#3D6DB5; --yellow:#F7D154; --red:#D9483B;
+  --ink-soft:rgba(43,43,43,.62); --bar:rgba(43,43,43,.13); --line:rgba(43,43,43,.18);
+  --kai:"LXGW WenKai","LXGW WenKai GB","Kaiti SC",STKaiti,KaiTi,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+a{color:var(--blue)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── 头部 ── */
+header{padding:56px 0 40px}
+.brand{margin-bottom:26px}
+.brand img{height:46px;display:block}
+.brand a{display:inline-block}
+.brand a:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+h1{font-family:var(--kai);font-weight:700;font-size:clamp(38px,6vw,58px);letter-spacing:.04em;line-height:1.22}
+.sub{margin-top:14px;color:var(--ink-soft);font-size:15px}
+.rule{border:none;border-top:3px solid var(--ink);margin:34px 0 0}
+
+/* ── 第一幕：岗位版图（堆叠条）── */
+.sec{margin-top:72px}
+.sec-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.sec-title{font-family:var(--kai);font-size:30px;font-weight:700;letter-spacing:.03em}
+.sec-note{color:var(--ink-soft);font-size:13.5px}
+.stack{margin-top:30px}
+.stack-bar{display:flex;height:64px;overflow:hidden;border:2px solid var(--ink)}
+.seg{position:relative;cursor:default;transition:flex-grow .45s cubic-bezier(.6,0,.2,1);min-width:64px;overflow:hidden}
+.seg + .seg{border-left:2px solid var(--ink)}
+.seg .lab{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 12px;
+  color:var(--ink);white-space:nowrap}
+.seg .lab b{font-size:20px;line-height:1.3}
+.seg .lab span{font-size:12.5px;color:var(--ink-soft)}
+.seg.hot .lab b{color:var(--blue)}
+.seg-detail{margin-top:0;max-height:0;overflow:hidden;transition:max-height .4s ease}
+.seg-detail.open{max-height:220px}
+.seg-detail .inner{border:2px solid var(--ink);border-top:none;padding:14px 18px;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px}
+.seg-detail .inner span{white-space:nowrap}
+.seg-detail .inner b{color:var(--blue)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:16px;font-size:13px;color:var(--ink-soft)}
+
+/* ── 第二幕头部之间的非对称两栏 ── */
+.asym{display:grid;grid-template-columns:220px 1fr;gap:40px;margin-top:44px;align-items:start}
+.howto{font-size:13.5px;color:var(--ink-soft);position:sticky;top:24px}
+.howto p{margin-bottom:10px}
+.howto b{color:var(--ink)}
+table.firms{width:100%;border-collapse:collapse;font-size:14px}
+table.firms th{font-weight:600;text-align:left;border-bottom:2px solid var(--ink);padding:8px 10px 8px 0}
+table.firms td{border-bottom:1px solid var(--line);padding:8px 10px 8px 0;vertical-align:baseline}
+table.firms td.n{text-align:right;font-variant-numeric:tabular-nums}
+table.firms .mini{color:var(--ink-soft);font-size:12.5px}
+
+/* ── 第三幕：技能树 ── */
+.tree{margin-top:34px;border-top:3px solid var(--ink)}
+.line-h{cursor:pointer;user-select:none;padding:20px 4px;border-bottom:1px solid var(--line);
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 18px}
+.line-h:hover{background:rgba(61,109,181,.06)}
+.line-h .caret{font-size:13px;color:var(--blue);width:1.2em;display:inline-block;transition:transform .25s ease}
+.line-h.open .caret{transform:rotate(90deg)}
+.line-h .name{font-family:var(--kai);font-size:24px;font-weight:700;letter-spacing:.02em}
+.line-h .cnt{color:var(--ink-soft);font-size:13.5px}
+.line-h .tops{margin-left:auto;font-size:13px;color:var(--ink-soft);max-width:56%;}
+.line-h .tops b{color:var(--ink);font-weight:600}
+.line-body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.line-body.open{max-height:3600px}
+.dir{border-bottom:1px solid var(--line);padding:14px 4px 14px 34px}
+.dir-h{cursor:pointer;user-select:none;display:flex;align-items:baseline;gap:12px}
+.dir-h:hover .dir-name{color:var(--blue)}
+.dir-h .caret{font-size:12px;color:var(--blue);width:1em;display:inline-block;transition:transform .25s ease}
+.dir.open > .dir-h .caret{transform:rotate(90deg)}
+.dir-name{font-weight:600;font-size:15.5px}
+.dir-h .cnt{color:var(--ink-soft);font-size:12.5px}
+.skills{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.dir.open > .skills{max-height:700px}
+.skill-row{display:grid;grid-template-columns:200px 1fr 44px;gap:14px;align-items:center;
+  padding:5px 0 5px 26px;font-size:13.5px}
+.skill-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skill-row .track{height:13px;background:var(--bar);position:relative}
+.skill-row .fill{position:absolute;inset:0 auto 0 0;background:var(--ink);transition:width .5s cubic-bezier(.6,0,.2,1),background .2s}
+.skill-row:hover .fill{background:var(--blue)}
+.skill-row .v{text-align:right;color:var(--blue);font-variant-numeric:tabular-nums}
+.hint{margin-top:14px;font-size:13px;color:var(--ink-soft)}
+
+/* ── 学习路线 ── */
+.path-tabs{display:flex;gap:8px;margin-top:28px;flex-wrap:wrap}
+.path-tab{font-family:var(--kai);font-size:17px;padding:7px 20px;border:2px solid var(--ink);
+  background:transparent;cursor:pointer;color:var(--ink)}
+.path-tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.path-tab:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.stage{margin-top:30px}
+.stage-label{font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+.stage-label b{color:var(--ink);font-weight:600}
+.base-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:baseline;gap:8px;border:2px solid var(--ink);background:var(--paper);
+  padding:8px 16px;font-size:15px}
+.chip .n{color:var(--blue);font-size:13px;font-variant-numeric:tabular-nums}
+.lanes{display:grid;gap:18px;margin-top:8px}
+@media (min-width:900px){.lanes{grid-template-columns:1fr 1fr}}
+.lane{border:1.5px solid var(--line);padding:16px 18px 14px;overflow-x:auto}
+.lane-h{font-family:var(--kai);font-weight:700;font-size:17px;margin-bottom:4px}
+.lane-sub{font-size:12px;color:var(--ink-soft);margin-bottom:12px}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;row-gap:10px}
+.step{display:flex;align-items:center}
+.node{border:2px solid var(--ink);background:var(--bar);padding:7px 13px;font-size:13.5px;white-space:nowrap;
+  display:inline-flex;align-items:baseline;gap:7px}
+.node.f-lang{background:#EAF0FA}
+.node.f-eng{background:#F9E9A0}
+.node.f-infra{background:#F6DEDB}
+.node.f-ai{background:#E3EFE3}
+.node .n{color:var(--blue);font-size:12px;font-variant-numeric:tabular-nums}
+.node:hover{outline:2px solid var(--blue);outline-offset:-1px}
+.fam-legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0 4px;font-size:13px;color:var(--ink-soft)}
+.fam-legend .sw{display:inline-block;width:13px;height:13px;border:1.5px solid var(--ink);vertical-align:-2px;margin-right:7px}
+.fam-legend .sw.lang{background:#EAF0FA}
+.fam-legend .sw.eng{background:#F9E9A0}
+.fam-legend .sw.infra{background:#F6DEDB}
+.fam-legend .sw.ai{background:#E3EFE3}
+.fam-legend .sw.meth{background:var(--bar)}
+.joint{width:26px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+  font-size:14px}
+.dir-minor{padding:10px 4px 10px 34px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-soft)}
+.mx-corner{background:var(--paper)}
+.mx-cell:hover{outline:2px solid var(--blue);outline-offset:-1px}
+#tip{position:fixed;z-index:9;background:var(--ink);color:var(--paper);padding:6px 10px;font-size:12.5px;
+  pointer-events:none;opacity:0;transition:opacity .15s;max-width:280px}
+.cooc-read{font-size:14px}
+.cooc-read h3{font-family:var(--kai);font-size:19px;margin-bottom:12px;letter-spacing:.02em}
+.cooc-read p{margin-bottom:12px;color:var(--ink-soft)}
+.cooc-read p b{color:var(--ink)}
+.warn{margin-top:18px;padding:10px 14px;border-left:3px solid var(--red);font-size:13px;color:var(--ink-soft)}
+.warn b{color:var(--red);font-weight:600}
+
+/* ── 页脚 ── */
+footer{margin-top:88px;border-top:3px solid var(--ink);padding-top:22px;font-size:13px;color:var(--ink-soft)}
+footer .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:34px}
+footer p{margin:0}
+.copyright{margin-top:20px !important;font-size:12.5px}
+footer a{color:var(--blue)}
+@media (max-width:860px){footer .cols{grid-template-columns:1fr;gap:14px}}
+
+@media (max-width:860px){
+  .asym{grid-template-columns:1fr;gap:24px}
+  .howto{position:static}
+  .cooc-wrap{grid-template-columns:1fr}
+  .skill-row{grid-template-columns:130px 1fr 36px}
+  .line-h .tops{max-width:100%;margin-left:0;flex-basis:100%}
+  header{padding-top:56px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><a href="https://github.com/ForceInjection" title="ForceInjection on GitHub" target="_blank" rel="noopener"><img src="../../img/AI原力注入-logo.png" alt="AI 原力注入"></a></div>
+  <h1>AI Infra 岗位技能版图</h1>
+  <p class="sub">从 <span class="num" id="k-total"></span> 条在招岗位说明（JD）中提炼的分类与技能谱系。数据全部来自公开发布的招聘页面，逐条留有出处，数字以采集日（2026-11-18）为准。</p>
+  <hr class="rule">
+</header>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">一、岗位从哪来</span>
+    <span class="sec-note">宽度即条数，悬停查看公司构成</span></div>
+  <div class="stack">
+    <div class="stack-bar" id="stack"></div>
+    <div id="seg-detail" class="seg-detail"><div class="inner" id="seg-inner"></div></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="asym">
+    <div class="howto">
+      <p><b>怎么读这张页。</b>条形与数字都是「要求该技能的 JD 条数」。</p>
+      <p>计数单位是岗位，不是出现次数：一条 JD 写三遍 Python 也只算一次。</p>
+      <p>每条线、每个方向都可以点开。样本少于 5 条的方向只做参考。</p>
+    </div>
+    <div>
+      <table class="firms" id="firms">
+        <thead><tr><th>公司</th><th style="text-align:right">JD 条数</th><th>类别构成</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">二、技能谱系树</span>
+    <span class="sec-note">点线名展开；叶长 = JD 条数</span></div>
+  <div class="tree" id="tree"></div>
+  <p class="hint">技能名做过归一化（Kubernetes/K8s 合并、LLM 与大模型合并等）；每方向展示前 18 个技能，完整清单见 <a href="analysis/skill-tree.md">skill-tree.md</a>。</p>
+</section>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">三、按岗位的学习路线</span>
+    <span class="sec-note">块色 = 技能家族（见下方图例）；块上数字 = 要求该技能的 JD 条数</span></div>
+  <div class="path-tabs" id="path-tabs"></div>
+  <div id="path-view"></div>
+  <p class="hint">路线的先后顺序是编辑判断：依据 JD 频次（数字大小）与技能间的依赖关系（底层语言先于框架，框架先于调优），JD 原文本身没有顺序。技能共现分析见 <a href="analysis/skill-tree.md">skill-tree.md</a>。计数口径：方向 JD 提及的技能按方向计，其余按整条线计。</p>
+</section>
+
+<footer><div class="cols">
+  <p><b>口径。</b>full <span class="num">263</span> 条（JD 全文）参与技能计数；partial <span class="num">49</span> 条（聚合平台搜索快照）只填了快照可见字段，未参与词频统计。职责与要求逐条照抄原文，未做概括。</p>
+  <p><b>来源。</b>国内官网招聘接口 179 条、HN「Who is hiring」 74 条、BOSS快照 20 条、猎聘快照 18 条、脉脉快照 17 条、公开文章 4 条。每条记录的 source_url 可追溯到原页。完整方法见 <a href="README.md">README</a>。</p>
+  <p><b>时效。</b>数字为采集日（2026-11-18）快照。学习路线的先后顺序是编辑判断，技能计数随数据更新。</p>
+</div>
+<p class="copyright">© 2026 公众号「AI 原力注入」 · 数据可视化基于 ai_infra_jd_survey 数据集生成 · 转载请保留出处与数据口径</p>
+</footer>
+</div>
+
+<script>
+const D = {"total": 312, "n_firms": 116, "n_skills": 431, "cat_n": {"研发": 225, "测试": 35, "SRE": 24, "运维": 24, "算法": 3, "其他": 1}, "companies": {"腾讯": 46, "字节跳动": 43, "蚂蚁集团": 20, "美团": 13, "月之暗面": 11, "百度": 10, "阿里巴巴": 10, "智谱": 10, "快手": 10, "（未显示）": 9, "寒武纪": 9, "华为": 7}, "cat_company": {"研发": {"字节跳动": 24, "腾讯": 15, "美团": 13, "百度": 10, "阿里巴巴": 10, "月之暗面": 10}, "测试": {"腾讯": 15, "蚂蚁集团": 10, "字节跳动": 9, "京东": 1}, "SRE": {"腾讯": 13, "蚂蚁集团": 5, "字节跳动": 4, "月之暗面": 1, "智谱": 1}, "运维": {"字节跳动": 6, "蚂蚁集团": 5, "腾讯": 2, "（未显示）": 2, "京东": 1, "赛意信息": 1}, "算法": {"京东科技": 1, "奥尼电子": 1, "（未显示）": 1}, "其他": {"腾讯": 1}}, "tree": {"研发": {"训练框架": {"Python": 9, "PyTorch": 6, "C++": 6, "分布式训练": 5, "模型量化": 4, "CUDA": 4, "Megatron": 4, "NCCL": 3, "Linux": 3, "DeepSpeed": 3, "vLLM": 2, "Triton": 1, "TensorRT": 1, "TensorFlow": 1, "Rust": 1, "高性能计算": 1, "模型压缩": 1, "KV Cache": 1}, "Agent平台": {"Python": 22, "TypeScript": 13, "RAG": 11, "Agent框架": 9, "Go": 8, "MCP": 7, "大模型/LLM": 7, "Kubernetes": 6, "React": 6, "Evals": 6, "Function Calling": 5, "LangChain": 5, "Docker": 5, "Postgres": 5, "AWS": 4, "LangGraph": 4, "Rust": 3, "C++": 3}, "GPU调度": {"Kubernetes": 5, "Docker": 4, "Python": 3, "Linux": 3, "TensorFlow": 2, "PyTorch": 2, "CUDA": 2, "高性能计算": 2, "NCCL": 1, "Java": 1, "分布式训练": 1, "Rust": 1, "C++": 1}, "ML平台": {"Python": 22, "C++": 14, "PyTorch": 13, "Kubernetes": 9, "分布式训练": 9, "TensorFlow": 7, "Java": 6, "vLLM": 6, "Ray": 4, "Docker": 4, "SGLang": 4, "模型量化": 4, "CUDA": 4, "高性能计算": 4, "DeepSpeed": 4, "React": 4, "Linux": 3, "Megatron": 3}, "推理引擎": {"C++": 17, "Python": 15, "vLLM": 12, "CUDA": 11, "模型量化": 10, "SGLang": 10, "PyTorch": 6, "Linux": 5, "高性能计算": 5, "TensorRT-LLM": 5, "Triton": 5, "TensorRT": 5, "TensorFlow": 4, "模型压缩": 4, "Nsight/profiling": 3, "KV Cache": 3, "昇腾Ascend": 2, "NCCL": 1}, "高性能计算": {"C++": 8, "高性能计算": 7, "CUDA": 6, "Python": 6, "Triton": 5, "vLLM": 5, "SGLang": 5, "模型量化": 4, "Megatron": 4, "NCCL": 4, "TensorRT": 3, "KV Cache": 3, "分布式训练": 3, "DeepSpeed": 3, "Linux": 3, "CUTLASS": 2, "PagedAttention": 2, "TVM": 2}, "AI Infra": {"Kubernetes": 3, "GPU": 3, "Go": 3, "Rust": 2, "CUDA": 2, "ML": 2, "Ray": 1, "Computer Vision": 1, "VLM": 1, "Serverless": 1, "Python": 1, "Inference": 1, "Datacenter software": 1, "C/C++ firmware": 1, "PyTorch": 1, "大模型/LLM": 1, "Triton": 1, "FPGA": 1}, "Inference": {"TPU": 1, "Speech (TTS/STT)": 1, "Inference benchmarking": 1, "LLM evaluations": 1, "GPU": 1, "Kubernetes": 1, "Python": 1, "seccomp": 1, "Linux namespaces": 1, "Go": 1, "TensorRT-LLM": 1, "vLLM": 1, "containerd": 1, "SGLang": 1}, "DevTools": {"Agent框架": 3, "MCP": 2, "Rust": 2, "GenAI": 1, "Developer experience": 1, "Code search": 1, "AI evals": 1, "Full-stack": 1, "Red-teaming": 1, "Kubernetes": 1, "AWS": 1, "Python": 1, "Scala": 1, "Terraform": 1, "TypeScript": 1, "Enterprise platforms": 1, "AI governance": 1, "Agent infrastructure": 1}, "其他": {"AWS": 2, "React": 2, "大模型/LLM": 2, "Python": 2, "Kubernetes": 1, "Agent框架": 1, "Rust": 1, "Anthropic": 1, "OpenAI API": 1, "Gemini": 1, "LangChain": 1, "LlamaIndex": 1, "RAG": 1, "iOS": 1, "On-device AI": 1, "Android": 1, "Applied AI": 1, "Nix": 1}, "推理系统": {"CUDA": 1, "cProfile/perf": 1, "TensorRT-LLM": 1, "PD分离": 1, "Speculative Decoding": 1, "vLLM": 1, "Prefix Caching": 1, "SGLang": 1}, "推理引擎优化": {"CUDA": 2, "Triton": 2, "vLLM": 2, "SGLang": 2, "量化/稀疏化": 1, "TileLang": 1, "Transformer": 1, "AscendC": 1, "模型量化": 1}, "NPU适配与算子优化": {"MLIR": 1, "PagedAttention": 1, "模型量化": 1, "Continuous Batching": 1, "Nsight": 1, "GEMM优化": 1, "投机采样": 1, "TVM": 1, "CUDA/Triton Kernel": 1, "NPU": 1}, "推理性能优化": {"Kubernetes": 1, "FP8/INT8/INT4/GPTQ/AWQ": 1, "PagedAttention": 1, "Nsight Systems/Compute": 1, "PD分离": 1, "投机解码": 1, "NCCL": 1, "KV Cache": 1, "TensorRT LLM": 1, "vLLM": 1, "SGLang": 1}, "推理引擎与国产算力适配": {"Continuous Batching": 1, "算子开发": 1, "KV Cache卸载": 1, "昇腾/寒武纪/海光": 1, "图编译": 1, "TensorRT-LLM": 1, "PD分离": 1, "vLLM": 1, "SGLang": 1}, "GPU软件栈适配": {"PyTorch": 1, "CUDA": 1, "算子开发": 1, "ROCm": 1, "vLLM": 1, "Llama.cpp": 1, "SGLang": 1}, "训练框架与推理基础设施": {"Kubernetes": 1, "C++/Python": 1, "PyTorch": 1, "推理优化": 1, "训练调度": 1, "InfiniBand/RDMA": 1}, "推理平台": {"Prometheus/Grafana/eBPF": 1, "PagedAttention": 1, "Kubernetes Operator/CRD": 1, "nvprof/perf/flamegraph": 1, "Go/Python/C++": 1, "KV Cache": 1, "Speculative Decoding": 1, "vLLM/SGLang": 1, "InfiniBand/RoCE": 1}, "推理调度与KV Cache存储": {"Prefill/Decode分离": 1, "连续批处理": 1, "Kubernetes Operator/CRD": 1, "Go/Python/C++": 1, "异构GPU调度": 1, "KV Cache": 1, "vLLM": 1, "TTFT/TPOT/P95/P99": 1, "SGLang": 1}, "端侧大模型推理": {"ncnn": 1, "量化(AWQ/GPTQ)": 1, "端侧推理": 1, "CUDA": 1, "投机采样": 1, "onnx": 1, "QNN": 1, "剪枝蒸馏": 1, "vLLM": 1, "off-loading": 1, "TensorRT": 1}, "AI存储": {"NVMe": 1, "分布式一致性协议": 1, "RDMA": 1, "HBM": 1}, "云原生与GPU调度": {"沙箱": 1, "云原生": 1, "GPU调度优化": 1}, "AI研发工具链": {"Context Engineering": 1, "Codex": 1, "Claude Code": 1}, "高性能推理": {"AIGC": 1, "大模型/LLM": 1, "CUDA": 1, "NVIDIA/AMD GPU调优": 1}, "CUDA算法实现": {"C++": 1, "CUDA": 1}, "量化HPC": {"HPC": 1, "指令级优化": 1}, "算子库优化": {"算子库": 1, "模型量化": 1, "计算图优化": 1, "分布式推理": 1}, "CUDA内核优化": {"算子融合": 1, "CUDA": 1, "GPU体系结构": 1}, "推理加速": {"推理加速": 1}, "推理Runtime": {"模型执行引擎": 1, "推理Runtime": 1}, "训练优化": {"多模态": 1, "DeepSpeed": 1, "Megatron": 1, "强化学习": 1}, "推理优化": {"Python": 8, "分布式系统": 6, "vLLM": 5, "训练框架": 5, "容器": 4, "TensorRT": 3, "模型量化": 3, "CUDA": 3, "SGLang": 3, "Kubernetes": 3, "Java": 3, "GPU": 3, "CUDA Kernel": 2, "Go": 2, "DevOps": 2, "Rust": 2, "推理引擎": 2, "C++": 2}, "算力调度": {"调度系统": 1, "GPU资源管理": 1}, "AI编译器": {"MLIR": 1, "图优化": 1}, "算子开发": {"算子开发": 1}, "系统软件": {"固件": 1, "驱动": 1}, "预训练框架": {"分布式训练": 1, "PyTorch": 1, "CUDA profiling": 1, "Megatron": 1, "MoE": 1}, "训练系统": {"CUDA": 2, "Python": 2, "训练框架": 2, "C/C++": 1, "veScale": 1, "DeepSpeed": 1, "AI编译器": 1, "国产硬件调优": 1, "Megatron": 1, "PPO/GRPO/DAPO": 1, "veRL/OpenRLHF": 1, "FSDP": 1, "Kubernetes": 1, "Go": 1, "可观测": 1, "GPU": 1, "PyTorch": 1, "分布式训练": 1}, "大模型底层基建": {"弹性训练": 1, "多机推理": 1, "MLOps/SRE": 1, "MFU优化": 1, "RL系统": 1, "算子编译": 1}, "训练/推理基础架构": {"AllReduce": 1, "DeepSpeed": 1, "Megatron": 1, "RDMA": 1, "NCCL": 1, "KV Cache": 1, "PyTorch分布式": 1}, "集群调度": {"Kubernetes": 2, "高并发系统": 1, "NVLink": 1, "eBPF": 1, "Go": 1, "分布式系统": 1, "RDMA": 1, "集群调度": 1, "InfiniBand": 1, "GPU": 1, "性能优化": 1, "内核": 1}, "推理服务": {"稀疏量化": 1, "AI编译": 1}, "AI基建": {"Kubernetes": 1, "Ray": 1, "MLflow": 1, "MLOps": 1, "GPU调度": 1}, "存储系统": {"eBPF": 1, "Go": 1, "RDMA": 1, "Rust": 1, "C++": 1}, "强化学习基础设施": {"RLHF": 1, "模型量化": 1, "CUDA": 1, "训练框架": 1, "Megatron": 1, "Triton": 1, "GPU": 1, "KV Cache": 1, "vLLM": 1, "算子": 1, "SGLang": 1}, "MaaS 平台": {"Kubernetes": 1, "gRPC": 1, "Java": 1, "eBPF": 1, "Prometheus": 1, "Go": 1, "分布式系统": 1, "可观测": 1, "容器": 1, "性能优化": 1, "微服务": 1, "C++": 1}, "Agent 研发": {"Kubernetes": 2, "Go": 2, "Rust": 2, "Python": 2, "Ray": 1, "Slurm": 1, "分布式训练": 1, "可观测": 1, "分布式系统": 1, "Linux": 1, "容器": 1, "GPU": 1, "模型量化": 1, "Java": 1, "eBPF": 1, "Docker": 1, "gVisor": 1, "Kata": 1}, "训推系统": {"PyTorch": 1, "CUDA": 1, "Python": 1, "DeepSpeed": 1, "Megatron": 1, "GPU": 1, "昇腾": 1, "C++": 1, "vLLM": 1, "MindSpore": 1, "SGLang": 1, "TensorRT": 1}, "未标注": {"PyTorch": 2, "Python": 2, "DeepSpeed": 2, "Go": 2, "Megatron": 2, "C++": 2, "vLLM": 2, "推理引擎": 1, "CUDA": 1, "Java": 1, "GPU": 1, "SGLang": 1, "TensorRT": 1, "NVLink": 1, "RDMA": 1, "TVM": 1, "InfiniBand": 1, "Rust": 1}, "网络系统": {"分布式训练": 1, "训练框架": 1, "分布式系统": 1, "GPU": 1, "性能优化": 1}, "编译器": {"MLIR": 1, "LLVM": 1, "高性能计算": 1, "Python": 1, "Triton": 1, "编译器": 1, "GPU": 1, "性能优化": 1, "C++": 1, "算子": 1}, "系统工程": {"算子": 2, "模型量化": 1, "分布式训练": 1, "PyTorch": 1, "混合精度": 1, "GPU": 1, "昇腾": 1, "性能优化": 1}, "软硬件加速": {"分布式训练": 1, "推理引擎": 1, "Python": 1, "训练框架": 1, "Megatron": 1, "编译器": 1, "GPU": 1, "性能优化": 1, "C++": 1, "vLLM": 1, "算子": 1}, "基础设施": {"Kubernetes": 1, "Python": 1, "Prometheus": 1, "可观测": 1, "Go": 1, "DevOps": 1, "Linux": 1, "容器": 1, "SRE": 1, "性能优化": 1}}, "测试": {"测试开发": {"Python": 19, "大模型/LLM": 17, "Java": 11, "运维自动化": 10, "Agent框架": 10, "Linux": 8, "Shell": 6, "RAG": 5, "性能优化": 5, "CI/CD": 5, "C/C++": 5, "Kubernetes": 5, "监控告警": 4, "Go": 4, "Prompt工程": 3, "CUDA": 3, "GPU运维": 3, "Docker": 3}, "大模型评测": {"大模型/LLM": 11, "Agent框架": 10, "Python": 8, "Java": 3, "RAG": 3, "故障排查": 3, "MCP": 2, "运维自动化": 2, "性能优化": 2, "Kubernetes": 1, "Shell": 1, "GPU运维": 1, "Docker": 1, "Linux": 1, "容器": 1, "vLLM": 1, "SGLang": 1, "C/C++": 1}, "其他": {"监控告警": 1, "故障排查": 1, "Linux": 1}}, "SRE": {"稳定性": {"Python": 10, "故障排查": 9, "运维自动化": 7, "Kubernetes": 7, "Agent框架": 7, "Shell": 6, "大模型/LLM": 6, "Linux": 6, "分布式存储": 6, "SLA/SLO": 6, "监控告警": 6, "可观测性": 5, "Docker": 4, "性能优化": 4, "Go": 3, "容器": 3, "Java": 3, "限流熔断": 3}, "推理服务运维": {"GPU运维": 5, "大模型/LLM": 5, "性能优化": 5, "Agent框架": 4, "Python": 4, "SGLang": 4, "SLA/SLO": 4, "故障排查": 4, "vLLM": 3, "KV Cache": 3, "Kubernetes": 3, "可观测性": 3, "CUDA": 2, "分布式存储": 2, "运维自动化": 2, "Shell": 2, "NCCL": 2, "监控告警": 2}, "GPU运维": {"Python": 5, "GPU运维": 5, "Shell": 4, "Linux": 4, "性能优化": 4, "故障排查": 4, "Kubernetes": 4, "容器": 3, "大模型/LLM": 3, "分布式存储": 2, "运维自动化": 2, "Java": 2, "Go": 2, "Docker": 2, "NCCL": 2, "监控告警": 1, "C/C++": 1, "PyTorch": 1}, "稳定性保障": {"Kubernetes": 2, "Python": 2, "Prometheus": 2, "Go": 2, "可观测": 2, "SRE": 2, "GPU": 2, "eBPF": 1, "分布式系统": 1, "Rust": 1, "Docker": 1, "DevOps": 1, "Linux": 1, "容器": 1}}, "运维": {"GPU运维": {"故障排查": 7, "GPU运维": 6, "监控告警": 5, "性能优化": 3, "大模型/LLM": 3, "Python": 3, "C/C++": 2, "Agent框架": 2, "Linux": 2, "vLLM": 2, "SGLang": 2, "CUDA": 2, "Kubernetes": 1, "Java": 1, "RAG": 1, "容器": 1, "MCP": 1, "PyTorch": 1}, "推理服务运维": {"GPU运维": 3, "Kubernetes": 2, "Shell": 2, "Python": 2, "Prometheus": 2, "大模型/LLM": 2, "Linux": 2, "监控告警": 2, "Grafana": 2, "故障排查": 2, "Agent框架": 1, "Go": 1, "大模型推理": 1, "扩缩容": 1, "故障复盘": 1}, "其他": {"Agent框架": 1, "大模型/LLM": 1, "RAG": 1, "AIOps": 1, "MCP": 1}, "稳定性": {"Kubernetes": 1, "Java": 1, "Python": 1, "GPU运维": 1, "大模型/LLM": 1, "SLA/SLO": 1, "监控告警": 1, "故障排查": 1}, "算力集群交付运维": {"Kubernetes": 1, "IB/RoCE组网": 1, "Prometheus/Grafana": 1, "RDMA": 1, "Linux": 1, "GPU集群交付": 1, "昇腾910B": 1, "DCGM": 1}, "GPU服务器硬件运维": {"固件升级": 1, "NVLink": 1, "PCIe": 1, "GPU服务器装机": 1, "Linux": 1, "RAID": 1, "nvidia-smi": 1, "IPMI": 1}, "算力网络组网与调优": {"千卡/万卡集群组网": 1, "VXLAN": 1, "NVLink/NVSwitch": 1, "RDMA": 1, "fat-Tree": 1, "InfiniBand": 1, "Mellanox": 1, "Dragonfly": 1, "RoCEv2": 1, "BGP": 1}, "GPU算力集群运维": {"GPU集群运维": 1, "资源监控": 1, "负载调度": 1, "故障排查": 1, "集群组网": 1}, "智算中心运维（外协岗位）": {"Kubernetes": 1, "CUDA": 1, "NVLink": 1, "OpenStack": 1, "RDMA": 1, "ipmi/redfish": 1, "DGX/SuperPOD": 1, "ceph": 1, "DeepSpeed/Megatron-LM": 1, "vLLM": 1, "Ansible": 1}, "智算集群网络运维": {"SHARP": 1, "Prometheus/Grafana": 1, "Python": 1, "PFC/ECN": 1, "RDMA": 1, "ibstat/perfquery": 1, "InfiniBand": 1, "NCCL": 1, "RoCE": 1, "Ansible": 1}, "算力交付": {"压测": 1, "CUDA": 1, "GPU服务器部署": 1, "Docker": 1, "集群调试": 1, "MaaS": 1}, "训练平台运维": {"Linux": 1, "脚本": 1}, "机房运维": {"精密空调": 1, "动环监控": 1, "UPS": 1, "GPU服务器运维": 1}, "Agent 研发": {"Kubernetes": 1, "可观测": 1, "Go": 1, "分布式系统": 1, "容器": 1, "性能优化": 1}}, "算法": {"推理引擎": {"MoE": 1, "GPU优化": 1, "CUDA": 1, "推理引擎": 1}, "端侧模型优化": {"Jetson Thor": 1, "模型量化": 1, "剪枝": 1, "沐曦": 1, "AMD": 1, "蒸馏": 1}, "大模型训练与应用": {"模型评估": 1, "提示工程": 1, "微调": 1}}, "其他": {"技术产品经理": {"云原生": 1}}}, "sub_jd": {"研发": {"Agent平台": 45, "ML平台": 30, "推理引擎": 21, "推理优化": 14, "训练框架": 11, "高性能计算": 11, "AI Infra": 10, "DevTools": 7, "其他": 7, "训练系统": 6, "GPU调度": 5, "未标注": 5, "Agent 研发": 3, "Inference": 2, "推理引擎优化": 2, "训练优化": 2, "集群调度": 2, "系统工程": 2, "推理系统": 1, "NPU适配与算子优化": 1, "推理性能优化": 1, "推理引擎与国产算力适配": 1, "GPU软件栈适配": 1, "训练框架与推理基础设施": 1, "推理平台": 1, "推理调度与KV Cache存储": 1, "端侧大模型推理": 1, "AI存储": 1, "云原生与GPU调度": 1, "AI研发工具链": 1, "高性能推理": 1, "CUDA算法实现": 1, "量化HPC": 1, "算子库优化": 1, "CUDA内核优化": 1, "推理加速": 1, "推理Runtime": 1, "算力调度": 1, "推理框架": 1, "分布式训练系统": 1, "全链路性能优化": 1, "模型编译": 1, "AI编译器": 1, "算子开发": 1, "系统软件": 1, "预训练框架": 1, "大模型底层基建": 1, "训练/推理基础架构": 1, "推理服务": 1, "AI基建": 1, "存储系统": 1, "强化学习基础设施": 1, "MaaS 平台": 1, "训推系统": 1, "网络系统": 1, "编译器": 1, "软硬件加速": 1, "基础设施": 1}, "测试": {"测试开发": 23, "大模型评测": 11, "其他": 1}, "SRE": {"稳定性": 11, "GPU运维": 6, "推理服务运维": 5, "稳定性保障": 2}, "运维": {"GPU运维": 9, "推理服务运维": 3, "其他": 1, "稳定性": 1, "算力集群交付运维": 1, "GPU服务器硬件运维": 1, "算力网络组网与调优": 1, "GPU算力集群运维": 1, "智算中心运维（外协岗位）": 1, "智算集群网络运维": 1, "算力交付": 1, "训练平台运维": 1, "机房运维": 1, "Agent 研发": 1}, "算法": {"推理引擎": 1, "端侧模型优化": 1, "大模型训练与应用": 1}, "其他": {"技术产品经理": 1}}, "cat_skills": {"研发": {"Python": 100, "C++": 61, "CUDA": 45, "vLLM": 44, "Kubernetes": 42, "PyTorch": 40, "SGLang": 34, "模型量化": 32, "Go": 30, "分布式训练": 25, "Linux": 22, "高性能计算": 21, "Megatron": 21, "GPU": 20, "Triton": 19, "Docker": 19, "TypeScript": 19, "Rust": 18, "DeepSpeed": 16, "TensorRT": 16, "TensorFlow": 15, "Java": 15, "RAG": 14, "KV Cache": 14, "NCCL": 13, "大模型/LLM": 13, "Agent框架": 13, "React": 12, "TensorRT-LLM": 11, "AWS": 11, "训练框架": 10, "分布式系统": 10, "Ray": 9, "MCP": 9, "性能优化": 9, "Function Calling": 8, "模型压缩": 8, "Postgres": 8, "LangChain": 7, "RDMA": 7, "容器": 7, "算子": 7, "PagedAttention": 6, "Evals": 6, "TVM": 5, "Terraform": 5, "ML": 5, "推理引擎": 5, "FlashAttention": 4, "Nsight/profiling": 4, "昇腾Ascend": 4, "MLIR": 4, "LangGraph": 4, "PD分离": 4, "可观测": 4, "eBPF": 4, "昇腾": 4, "Prompt工程": 3, "多智能体编排": 3, "MPI": 3, "LlamaIndex": 3, "Distributed systems": 3, "Slurm": 3, "GCP": 3, "FastAPI": 3, "OpenAI API": 3, "CI/CD": 3, "Node.js": 3, "IaC": 3, "InfiniBand": 3, "Claude Code": 3, "算子开发": 3, "DevOps": 3, "Prometheus": 3, "CUTLASS": 2, "XLA": 2, "MindSpore": 2, "Agent harnesses": 2, "JavaScript": 2, "Semantic Kernel": 2, "PydanticAI": 2, "Vector search": 2, "Vector DB": 2, "LLM APIs": 2, "AWS Bedrock": 2, "Memory": 2, "Tracing": 2, "Anthropic": 2, ".NET": 2, "Knowledge graphs": 2, "C#": 2, "Agentic AI": 2, "MLOps": 2, "AI governance": 2, "MLflow": 2, "GenAI": 2, "Full-stack": 2, "PostgreSQL": 2, "Observability": 2, "Platform engineering": 2, "Data engineering": 2, "Azure": 2, "Speculative Decoding": 2, "Continuous Batching": 2, "投机采样": 2, "投机解码": 2, "Kubernetes Operator/CRD": 2, "Go/Python/C++": 2, "HPC": 2, "推理加速": 2, "MoE": 2, "CUDA Kernel": 2, "NVLink": 2, "编译器": 2, "Mooncake": 1, "ONNX": 1, "OpenMP": 1, "Modal": 1, "Next.js": 1, "Temporal": 1, "Computer Vision": 1, "VLM": 1, "Serverless": 1, "Inference": 1, "Datacenter software": 1, "Local inference": 1, "P2P": 1, "Identity and access": 1, "Security": 1, "Infrastructure": 1, "LangFuse": 1, "Bedrock": 1, "GraphRAG": 1, "LangSmith": 1, "A2A": 1, "TPU": 1, "Speech (TTS/STT)": 1, "Inference benchmarking": 1, "LLM evaluations": 1, "seccomp": 1, "Linux namespaces": 1, "containerd": 1, "Claude API": 1, "Azure AI (Document Intelligence)": 1, "SQL": 1, "LiteLLM": 1, "pgvector": 1, "MongoDB": 1, "Mastra": 1, "Google ADK": 1, "Claude Agent SDK": 1, "GCP Vertex AI": 1, "CrewAI": 1, "Restate": 1, "C/C++ firmware": 1, "FPGA": 1, "Azure DevOps": 1, "Azure AI Foundry": 1, "Azure OpenAI": 1, "GitHub Actions": 1, "Distributed training": 1, "Payments": 1, "VLM evaluation": 1, "SkyPilot": 1, "Developer experience": 1, "Code search": 1, "AI evals": 1, "Red-teaming": 1, "LLM systems": 1, "Vue.js": 1, "Scala": 1, "Open-weight models": 1, "Arabic NLP": 1, "Evaluations": 1, "GraphQL": 1, "Phoenix": 1, "Elixir": 1, "Agentic coding": 1, "Langfuse": 1, "Enterprise platforms": 1, "CAD": 1, "Agent infrastructure": 1, "Coding agents": 1, "Tool use": 1, "Orchestration": 1, "Simulation": 1, "Azure AI": 1, "Embeddings": 1, "Legal engineering": 1, "Lustre": 1, "VAST": 1, "GPU scheduling": 1, "MIG": 1, "WEKA": 1, "PXE": 1, "Frontier models": 1, "Document parsing": 1, "Cortex": 1, "Snowpark": 1, "Graph data modeling": 1, "IAM": 1, "Knowledge systems": 1, "LD_PRELOAD": 1, "GPU virtualization": 1, "Retrieval": 1, "Model/provider abstraction": 1, "LLM orchestration": 1, "Backend": 1, "LLM observability": 1, "Autonomy": 1, "Gemini": 1, "Networking": 1, "Datacenter": 1, "Storage": 1, "Training throughput": 1, "GPU clusters": 1, "CUDA kernels": 1, "Knowledge graph": 1, "Pulumi": 1, "GPU orchestration": 1, "AWS CDK": 1, "Voice agents": 1, "Cursor": 1, "Computer-use agents": 1, "Claude": 1, "Playwright": 1, "Structured extraction": 1, "Agents SDK": 1, "DynamoDB": 1, "React Native": 1, "Braintrust": 1, "MQTT": 1, "TimescaleDB": 1, "Gradle": 1, "JVM": 1, "Enterprise AI": 1, "Reliability engineering": 1, "scikit-learn": 1, "Federated learning": 1, "Differential privacy": 1, "JAX": 1, "Training": 1, "Cloud": 1, "Serving": 1, "Monitoring": 1, "LLM post-training": 1, "RL": 1, "GB300 cluster": 1, "LLM pre-training": 1, "iOS": 1, "On-device AI": 1, "Android": 1, "Applied AI": 1, "Nix": 1, "LLM evaluation": 1, "Data extraction": 1, "LLM tooling": 1, "cProfile/perf": 1, "Prefix Caching": 1, "量化/稀疏化": 1, "TileLang": 1, "Transformer": 1, "AscendC": 1, "Nsight": 1, "GEMM优化": 1, "CUDA/Triton Kernel": 1, "NPU": 1, "FP8/INT8/INT4/GPTQ/AWQ": 1, "Nsight Systems/Compute": 1, "TensorRT LLM": 1, "KV Cache卸载": 1, "昇腾/寒武纪/海光": 1, "图编译": 1, "ROCm": 1, "Llama.cpp": 1, "C++/Python": 1, "推理优化": 1, "训练调度": 1, "InfiniBand/RDMA": 1, "Prometheus/Grafana/eBPF": 1, "nvprof/perf/flamegraph": 1, "vLLM/SGLang": 1, "InfiniBand/RoCE": 1, "Prefill/Decode分离": 1, "连续批处理": 1, "异构GPU调度": 1, "TTFT/TPOT/P95/P99": 1, "ncnn": 1, "量化(AWQ/GPTQ)": 1, "端侧推理": 1, "onnx": 1, "QNN": 1, "剪枝蒸馏": 1, "off-loading": 1, "NVMe": 1, "分布式一致性协议": 1, "HBM": 1, "沙箱": 1, "云原生": 1, "GPU调度优化": 1, "Context Engineering": 1, "Codex": 1, "异构AI芯片": 1, "AIGC": 1, "NVIDIA/AMD GPU调优": 1, "训练/推理优化": 1, "指令级优化": 1, "算子库": 1, "计算图优化": 1, "分布式推理": 1, "算子融合": 1, "GPU体系结构": 1, "模型执行引擎": 1, "推理Runtime": 1, "多模态": 1, "强化学习": 1, "通信优化": 1, "调度系统": 1, "GPU资源管理": 1, "图优化": 1, "固件": 1, "驱动": 1, "CUDA profiling": 1, "C/C++": 1, "veScale": 1, "AI编译器": 1, "国产硬件调优": 1, "PPO/GRPO/DAPO": 1, "veRL/OpenRLHF": 1, "FSDP": 1, "弹性训练": 1, "多机推理": 1, "MLOps/SRE": 1, "MFU优化": 1, "RL系统": 1, "算子编译": 1, "AllReduce": 1, "PyTorch分布式": 1, "高并发系统": 1, "稀疏量化": 1, "AI编译": 1, "GPU调度": 1, "EAGLE": 1, "集群调度": 1, "内核": 1, "RLHF": 1, "gRPC": 1, "微服务": 1, "SFT": 1, "LLVM": 1, "混合精度": 1, "虚拟化": 1, "Kafka": 1, "gVisor": 1, "Kata": 1, "Firecracker": 1, "WASM": 1, "SRE": 1}, "测试": {"大模型/LLM": 28, "Python": 27, "Agent框架": 20, "Java": 14, "运维自动化": 12, "Linux": 10, "RAG": 8, "Shell": 7, "性能优化": 7, "故障排查": 7, "监控告警": 6, "Kubernetes": 6, "CI/CD": 6, "C/C++": 6, "Prompt工程": 4, "GPU运维": 4, "Docker": 4, "Go": 4, "CUDA": 3, "MCP": 2, "容器": 2, "vLLM": 2, "SGLang": 2, "分布式存储": 2, "KV Cache": 2, "LLM-as-a-Judge": 1, "可观测性": 1, "PyTorch": 1, "TensorRT-LLM": 1, "NCCL": 1, "性能压测": 1, "稳定性测试": 1, "监控日志": 1, "GPU集群": 1}, "SRE": {"Python": 21, "故障排查": 17, "Kubernetes": 16, "大模型/LLM": 14, "性能优化": 13, "Shell": 12, "Linux": 11, "运维自动化": 11, "Agent框架": 11, "GPU运维": 11, "分布式存储": 10, "SLA/SLO": 10, "监控告警": 9, "Go": 8, "可观测性": 8, "Docker": 8, "容器": 8, "Java": 7, "SGLang": 5, "NCCL": 5, "Prometheus": 5, "vLLM": 4, "限流熔断": 4, "KV Cache": 3, "Grafana": 3, "AIOps": 2, "CUDA": 2, "CI/CD": 2, "OpenTelemetry": 2, "可观测": 2, "SRE": 2, "GPU": 2, "TensorRT-LLM": 1, "Prompt工程": 1, "C/C++": 1, "PyTorch": 1, "流式服务": 1, "eBPF": 1, "分布式系统": 1, "Rust": 1, "DevOps": 1}, "运维": {"故障排查": 11, "GPU运维": 10, "监控告警": 8, "Kubernetes": 7, "大模型/LLM": 7, "Linux": 7, "Python": 7, "性能优化": 4, "Agent框架": 4, "CUDA": 4, "RDMA": 4, "vLLM": 3, "Prometheus": 3, "Grafana": 3, "Go": 3, "C/C++": 2, "Java": 2, "RAG": 2, "容器": 2, "MCP": 2, "SGLang": 2, "Shell": 2, "Prometheus/Grafana": 2, "NVLink": 2, "InfiniBand": 2, "Ansible": 2, "PyTorch": 1, "ClickHouse": 1, "AIOps": 1, "SLA/SLO": 1, "大模型推理": 1, "扩缩容": 1, "故障复盘": 1, "IB/RoCE组网": 1, "GPU集群交付": 1, "昇腾910B": 1, "DCGM": 1, "固件升级": 1, "PCIe": 1, "GPU服务器装机": 1, "RAID": 1, "nvidia-smi": 1, "IPMI": 1, "千卡/万卡集群组网": 1, "VXLAN": 1, "NVLink/NVSwitch": 1, "fat-Tree": 1, "Mellanox": 1, "Dragonfly": 1, "RoCEv2": 1, "BGP": 1, "GPU集群运维": 1, "资源监控": 1, "负载调度": 1, "集群组网": 1, "OpenStack": 1, "ipmi/redfish": 1, "DGX/SuperPOD": 1, "ceph": 1, "DeepSpeed/Megatron-LM": 1, "SHARP": 1, "PFC/ECN": 1, "ibstat/perfquery": 1, "NCCL": 1, "RoCE": 1, "压测": 1, "GPU服务器部署": 1, "Docker": 1, "集群调试": 1, "MaaS": 1, "脚本": 1, "精密空调": 1, "动环监控": 1, "UPS": 1, "GPU服务器运维": 1, "可观测": 1, "分布式系统": 1}, "算法": {"MoE": 1, "GPU优化": 1, "CUDA": 1, "推理引擎": 1, "Jetson Thor": 1, "模型量化": 1, "剪枝": 1, "沐曦": 1, "AMD": 1, "蒸馏": 1, "模型评估": 1, "提示工程": 1, "微调": 1}, "其他": {"云原生": 1}}, "cooc": {"skills": ["Python", "C++", "CUDA", "vLLM", "Kubernetes", "PyTorch", "SGLang", "模型量化", "Go", "分布式训练", "Linux", "高性能计算"], "matrix": [[100, 51, 29, 29, 24, 28, 20, 22, 19, 17, 14, 15], [51, 61, 29, 27, 15, 19, 20, 20, 11, 14, 13, 17], [29, 29, 46, 25, 6, 17, 19, 20, 3, 6, 7, 14], [29, 27, 25, 44, 9, 15, 33, 14, 5, 9, 3, 9], [24, 15, 6, 9, 42, 7, 7, 3, 16, 5, 9, 6], [28, 19, 17, 15, 7, 40, 10, 12, 3, 12, 7, 3], [20, 20, 19, 33, 7, 10, 34, 11, 3, 5, 4, 7], [22, 20, 20, 14, 3, 12, 11, 33, 2, 6, 5, 9], [19, 11, 3, 5, 16, 3, 3, 2, 30, 2, 4, 1], [17, 14, 6, 9, 5, 12, 5, 6, 2, 25, 5, 5], [14, 13, 7, 3, 9, 7, 4, 5, 4, 5, 22, 6], [15, 17, 14, 9, 6, 3, 7, 9, 1, 5, 6, 21]], "n_dev": 228}};
+
+/* ── KPI ── */
+document.getElementById('k-total').textContent = D.total;
+
+/* ── 堆叠条 ── */
+const CATS = ["研发","测试","SRE","运维","算法","其他"].filter(c => D.cat_n[c]);
+const stack = document.getElementById('stack');
+const detail = document.getElementById('seg-detail');
+const segInner = document.getElementById('seg-inner');
+let opened = null;
+CATS.forEach((c, i) => {
+  const seg = document.createElement('div');
+  seg.className = 'seg';
+  seg.style.flexGrow = D.cat_n[c];
+  seg.style.background = i % 2 ? 'rgba(43,43,43,.16)' : 'rgba(43,43,43,.07)';
+  seg.innerHTML = `<div class="lab"><b class="num">${D.cat_n[c]}</b><span>${c} ${Math.round(D.cat_n[c]/D.total*100)}%</span></div>`;
+  seg.addEventListener('mouseenter', () => { seg.classList.add('hot'); openDetail(c); });
+  seg.addEventListener('mouseleave', () => seg.classList.remove('hot'));
+  seg.addEventListener('click', () => openDetail(c));
+  stack.appendChild(seg);
+  const lg = document.createElement('span');
+  lg.textContent = `${c} ${D.cat_n[c]}`;
+  document.getElementById('legend').appendChild(lg);
+});
+function openDetail(c){
+  if (opened === c) return; opened = c;
+  const items = D.cat_company[c] || {};
+  segInner.innerHTML = `<b>${c}线 · 公司构成</b>` +
+    Object.entries(items).map(([k,v]) => `<span>${k} <b class="num">${v}</b></span>`).join('');
+  detail.classList.add('open');
+}
+
+/* ── 公司表 ── */
+const tbody = document.querySelector('#firms tbody');
+Object.entries(D.companies).forEach(([k,v]) => {
+  const parts = CATS.map(c => (D.cat_company[c]||{})[k] ? `${c}${D.cat_company[c][k]}` : null).filter(Boolean).join('/');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${k}</td><td class="n num">${v}</td><td class="mini">${parts}</td>`;
+  tbody.appendChild(tr);
+});
+
+/* ── 技能树 ── */
+const tree = document.getElementById('tree');
+const LINES = CATS.filter(c => (D.sub_jd[c] && Object.keys(D.sub_jd[c]).length));
+LINES.forEach((c, li) => {
+  const line = document.createElement('div');
+  const tops = Object.entries(D.cat_skills[c] || {}).slice(0, 6)
+    .map(([s,n]) => `<b>${s}</b>(${n})`).join('、');
+  line.innerHTML = `<div class="line-h" role="button" tabindex="0" aria-expanded="false">
+      <span class="caret">▶</span><span class="name">${c}线</span>
+      <span class="cnt num">${D.cat_n[c]} 条 JD</span>
+      <span class="tops">${tops}</span></div>
+    <div class="line-body"></div>`;
+  const body = line.querySelector('.line-body');
+  // 方向排序：JD 数降序；<3 条的方向合并成一行次要条目
+  const subs = Object.entries(D.sub_jd[c]).sort((a,b) => b[1]-a[1]);
+  const minor = [];
+  subs.forEach(([sub, nSub]) => {
+    if (nSub < 3) { minor.push(`${sub}(${nSub})`); return; }
+    const skills = (D.tree[c] && D.tree[c][sub]) || {};
+    const mx = Math.max(1, ...Object.values(skills));
+    const dir = document.createElement('div');
+    dir.className = 'dir';
+    dir.innerHTML = `<div class="dir-h" role="button" tabindex="0" aria-expanded="false">
+        <span class="caret">▶</span><span class="dir-name">${sub}</span>
+        <span class="cnt num">${nSub} 条</span></div>
+      <div class="skills">${Object.entries(skills).map(([s,n]) =>
+        `<div class="skill-row"><span class="nm">${s}</span>
+         <span class="track"><span class="fill" data-w="${(n/mx*100).toFixed(1)}" style="width:0"></span></span>
+         <span class="v num">${n}</span></div>`).join('')}</div>`;
+    const dh = dir.querySelector('.dir-h');
+    const toggleDir = () => {
+      const on = dir.classList.toggle('open');
+      dh.setAttribute('aria-expanded', on);
+      if (on) dir.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
+    };
+    dh.addEventListener('click', toggleDir);
+    dh.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggleDir(); } });
+    body.appendChild(dir);
+  });
+  if (minor.length) {
+    const mrow = document.createElement('div');
+    mrow.className = 'dir-minor';
+    mrow.textContent = `其余方向：${minor.join('、')}`;
+    body.appendChild(mrow);
+  }
+  const lh = line.querySelector('.line-h');
+  const toggleLine = () => {
+    const on = line.classList.toggle('open') !== undefined ? line.classList.contains('open') : false;
+    lh.classList.toggle('open', on);
+    lh.setAttribute('aria-expanded', on);
+    body.classList.toggle('open', on);
+  };
+  lh.addEventListener('click', toggleLine);
+  lh.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggleLine(); } });
+  tree.appendChild(line);
+  if (li === 0 || new URLSearchParams(location.search).get('expand') === 'all') {
+    if (!line.classList.contains('open')) toggleLine();
+  }
+});
+// ?expand=all 同时展开全部方向
+if (new URLSearchParams(location.search).get('expand') === 'all') {
+  document.querySelectorAll('.dir-h').forEach(dh => dh.click());
+}
+
+/* ── 学习路线 ── */
+const ROADMAPS = {"研发": {"base": ["Python", "Linux", "Docker"], "lanes": [{"name": "推理引擎", "sub": "推理引擎", "skills": ["C++", "CUDA", "vLLM", "SGLang", "模型量化", "KV Cache", "Triton"]}, {"name": "Agent 平台", "sub": "Agent平台", "skills": ["TypeScript", "LangChain", "LangGraph", "RAG", "MCP", "Evals"]}, {"name": "训练框架", "sub": "训练框架", "skills": ["PyTorch", "Megatron", "DeepSpeed", "NCCL", "分布式训练"]}, {"name": "ML 平台 / 调度", "sub": "ML平台", "skills": ["Go", "Java", "Kubernetes", "Ray"]}]}, "测试": {"base": ["Python", "Java", "Linux"], "lanes": [{"name": "AI 测试 / 评测", "sub": null, "skills": ["运维自动化", "CI/CD", "大模型/LLM", "Agent框架", "RAG", "Prompt工程", "性能优化"]}]}, "SRE": {"base": ["Linux", "Shell", "Python"], "lanes": [{"name": "平台稳定性", "sub": "稳定性", "skills": ["Kubernetes", "监控告警", "可观测性", "SLA/SLO", "故障排查", "分布式存储"]}, {"name": "AI 基础设施专项", "sub": null, "skills": ["GPU运维", "NCCL", "vLLM", "SGLang", "KV Cache"]}]}, "运维": {"base": ["Linux", "Python"], "lanes": [{"name": "GPU 与智算中心", "sub": "GPU运维", "skills": ["GPU运维", "CUDA", "故障排查", "监控告警", "RDMA", "Grafana", "Prometheus"]}, {"name": "推理服务运维", "sub": "推理服务运维", "skills": ["vLLM", "SGLang", "大模型/LLM", "Kubernetes"]}]}};
+const FAMILIES = {"lang": ["C++", "CUDA", "Go", "Java", "Python", "Rust", "Shell", "TypeScript"], "eng": ["DeepSpeed", "LangChain", "LangGraph", "Megatron", "PyTorch", "SGLang", "TensorFlow", "TensorRT", "TensorRT-LLM", "Triton", "vLLM"], "infra": ["Docker", "GPU运维", "Grafana", "Kubernetes", "NCCL", "Prometheus", "RDMA", "Ray", "SLA/SLO", "分布式存储"], "ai": ["Agent框架", "Evals", "Function Calling", "KV Cache", "MCP", "Prompt工程", "RAG", "大模型/LLM", "模型量化"]};
+const famOf = {};
+Object.entries(FAMILIES).forEach(([f, names]) => names.forEach(n => famOf[n] = f));
+const FAM_LABEL = {lang: '语言', eng: '引擎与框架', infra: '平台与设施', ai: 'AI 专项', meth: '实践方法'};
+const tabs = document.getElementById('path-tabs');
+const view = document.getElementById('path-view');
+const LINE_NAMES = Object.keys(ROADMAPS);
+let curLine = null;
+
+// 计数查找：方向树优先（该方向的 JD 数），方向内未提及则回退线级
+function skillCount(line, sub, name) {
+  if (sub && D.tree[line] && D.tree[line][sub] && D.tree[line][sub][name]) return D.tree[line][sub][name];
+  return (D.cat_skills[line] || {})[name] || 0;
+}
+function nodeHTML(line, sub, name) {
+  const n = skillCount(line, sub, name);
+  const f = famOf[name];
+  return `<span class="node${f ? ' f-' + f : ''}">${name}<span class="n num">${n}</span></span>`;
+}
+
+function renderPath(line) {
+  curLine = line;
+  view.innerHTML = '';
+  const R = ROADMAPS[line];
+  // 图例
+  const legend = document.createElement('div');
+  legend.className = 'fam-legend';
+  legend.innerHTML = Object.entries(FAM_LABEL).map(([f, lab]) =>
+    `<span><span class="sw ${f}"></span>${lab}</span>`).join('');
+  view.appendChild(legend);
+  // 底座层
+  const base = document.createElement('div');
+  base.className = 'stage';
+  base.innerHTML = `<div class="stage-label"><b>第 0 层 · 底座</b>—— ${line}线几乎所有 JD 都要求</div>
+    <div class="base-row">${R.base.map(s => nodeHTML(line, null, s)).join('<span class="joint">+</span>')}</div>`;
+  view.appendChild(base);
+  // 分支泳道
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  stage.innerHTML = `<div class="stage-label"><b>分方向路线</b>——每个方向从左到右是建议的学习顺序</div>`;
+  const lanes = document.createElement('div');
+  lanes.className = 'lanes';
+  R.lanes.forEach(L => {
+    const nSub = (D.sub_jd[line] && D.sub_jd[line][L.sub]) || D.cat_n[line];
+    const lane = document.createElement('div');
+    lane.className = 'lane';
+    lane.innerHTML = `<div class="lane-h">${L.name}</div>
+      <div class="lane-sub num">${nSub} 条 JD</div>
+      <div class="flow">${L.skills.map((s, i) =>
+        (i ? '<span class="joint">→</span>' : '') + nodeHTML(line, L.sub, s)
+      ).join('')}</div>`;
+    lanes.appendChild(lane);
+  });
+  stage.appendChild(lanes);
+  view.appendChild(stage);
+}
+
+LINE_NAMES.forEach(line => {
+  const b = document.createElement('button');
+  b.className = 'path-tab';
+  b.textContent = line + '线';
+  b.setAttribute('role', 'tab');
+  b.addEventListener('click', () => {
+    tabs.querySelectorAll('.path-tab').forEach(t => t.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    renderPath(line);
+  });
+  tabs.appendChild(b);
+});
+if (LINE_NAMES.length) tabs.firstChild.click();
+</script>
+</body>
+</html>

@@ -574,6 +574,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
 - [DeepSeek 推理集群单卡经济学](09_inference_system/cost_analysis/deepseek_inference_cluster_unit_economics.md) — 155 万亿 tokens/天、96% 缓存命中、38 美元/卡时：单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性
 - **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料）见 [项目 README](99_misc/token_factory_talk/README.md)
+- **[312 条 JD 里的 AI Infra 技能版图](99_misc/ai_infra_jd_survey/01-岗位技能版图.md)** — 抓取 312 条在招岗位说明（官网接口 + HN + 聚合快照，逐条留出处）：研发/测试/SRE/运维四类分布、公司画像、技能 Top10 与共现、推导出四条分岗位学习路线。交互版[技能版图](99_misc/ai_infra_jd_survey/visualization.html)与[项目说明](99_misc/ai_infra_jd_survey/README.md)同目录。
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
 

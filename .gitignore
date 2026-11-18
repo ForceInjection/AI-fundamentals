@@ -200,3 +200,8 @@ Gemfile.lock
 
 # markdownlint config (personal preference, not enforced)
 .markdownlint.yaml
+
+# AI Infra JD 数据集：采集数据本地保留，不入库（schema 与方法见 99_misc/ai_infra_jd_survey/README.md）
+99_misc/ai_infra_jd_survey/data/
+99_misc/ai_infra_jd_survey/analysis/
+99_misc/ai_infra_jd_survey/scripts/
