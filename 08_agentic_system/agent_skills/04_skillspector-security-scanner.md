@@ -2,7 +2,7 @@
 
 > 版本：SkillSpector 2.12.0（commit `a09091e0`，2026-11-16）｜核对日期：2026-11-18｜许可证 Apache-2.0。仓库迭代很快，引用的模式数量、分析器数量以文内标注的 as-of 日期为准，复核时以代码实测为准。
 
-2026 年 1 月，NVIDIA 研究团队把主流市场上能抓到的 Agent Skill 抓了下来，凑成一个 42,447 个样本的数据集。论文《Agent Skills in the Wild: An Empirical Study of Security Vulnerabilities at Scale》（arXiv:2601.10338）统计了其中 31,132 个可分析样本：26.1% 至少含一个漏洞，5.2% 呈现明确的恶意意图；带可执行脚本的 skill，漏洞概率是无脚本版本的 2.12 倍。
+2026 年 1 月，NVIDIA 研究团队把主流市场上能抓到的 Agent Skill 抓了下来，凑成一个 42,447 个样本的数据集。论文《Agent Skills in the Wild: An Empirical Study of Security Vulnerabilities at Scale》（[arXiv:2601.10338](https://arxiv.org/abs/2601.10338)，[中文总结](references/01-agent-skills-in-the-wild.md)）统计了其中 31,132 个可分析样本：26.1% 至少含一个漏洞，5.2% 呈现明确的恶意意图；带可执行脚本的 skill，漏洞概率是无脚本版本的 2.12 倍。
 
 Skill 就是一份 SKILL.md 加一组脚本和参考文件，Claude Code、Codex CLI、Gemini CLI 这些 agent 运行时装上它就照做。装一个 skill 等于把一段没读过的代码放进有文件、shell 和网络权限的执行环境，而安装环节到今天也没有一个像样的检查动作。NVIDIA 为这个环节做了一个开源的扫描器：SkillSpector。这篇文章基于 v2.12.0 的源码，拆它的架构、检测方式和边界。
 
@@ -30,7 +30,7 @@ SkillSpector 是 NVIDIA Verified Skills pipeline 的扫描环节。这条 pipeli
 
 SkillSpector 的核心是一个 LangGraph workflow（`src/skillspector/graph.py`），五个环节一条线：
 
-```
+```text
 resolve_input → build_context → inspect_dependencies → [27 个分析器并行] → meta_analyzer → report
 ```
 
@@ -98,30 +98,30 @@ SkillSpector 把「装 skill 前先扫一遍」变成了一条可以跑的命令
 
 ## 源文件索引
 
-| 文件 | 关键内容 | 引用点 |
-| --- | --- | --- |
-| `src/skillspector/graph.py` | LangGraph workflow 构建，`add_edge` 全部无条件边 | `graph.py:85-95` |
-| `src/skillspector/nodes/analyzers/__init__.py` | pkgutil 动态发现注册表，27 个唯一分析器 ID | `:20-52` |
-| `src/skillspector/nodes/report.py` | 评分权重、1.3× 乘数、score_floor、min(100) | `:621-626, 759-761, 782` |
-| `src/skillspector/scan_policy.py` | `RISK_THRESHOLD = 50` | `:7` |
-| `src/skillspector/cli.py` | exit 1/2 合同、依赖检查不执行包代码 | `:847-848, 648` |
-| `src/skillspector/nodes/meta_analyzer.py` | 每文件 LLM 复核、findings 只升不降 | `:502-504` |
-| `src/skillspector/nodes/analyzers/behavioral_ast.py` | AST1–AST10 规则表 | `:194-216` |
-| `src/skillspector/nodes/analyzers/behavioral_taint_tracking.py` | TT1–TT6 污点跟踪 | `:16, 197-202` |
-| `src/skillspector/nodes/analyzers/osv_client.py` | OSV.dev 批量查询、1h 缓存、离线回退 | `:42, 60, 214` |
-| `src/skillspector/nodes/analyzers/mcp_rug_pull.py` | RP1–RP3，manifest diff | `:927-928` |
-| `src/skillspector/dependency_inspection.py` | npm tarball SHA-512 校验 | `:611-613` |
-| `src/skillspector/dependency_sandbox.py` | Linux seccomp 白名单、非 Linux 拒绝 | `:19-22` |
-| `src/skillspector/suppression.py` | 基线版本 2、指纹绑定扫描器版本 | `:81, 233-235` |
-| `src/skillspector/providers/codex_cli/provider.py` | codex_cli 禁用原因 | `:16-18` |
-| `src/skillspector/mcp_server.py` | FastMCP stdio / loopback HTTP | `:326-350` |
-| `src/skillspector/unicode_confusables.py` | UTS #39 confusables 数据（Unicode 17.0.0） | `:4-11` |
-| `src/skillspector/artifacts.py` | bidi 控制字符区段检测（U+202A–U+202E） | `:302` |
-| `CHANGELOG.md` | 0.1.3（2026-01-30）至 2.12.0 共 65 个版本 | 全文件 |
+| 文件                                                            | 关键内容                                         | 引用点                   |
+| --------------------------------------------------------------- | ------------------------------------------------ | ------------------------ |
+| `src/skillspector/graph.py`                                     | LangGraph workflow 构建，`add_edge` 全部无条件边 | `graph.py:85-95`         |
+| `src/skillspector/nodes/analyzers/__init__.py`                  | pkgutil 动态发现注册表，27 个唯一分析器 ID       | `:20-52`                 |
+| `src/skillspector/nodes/report.py`                              | 评分权重、1.3× 乘数、score_floor、min(100)       | `:621-626, 759-761, 782` |
+| `src/skillspector/scan_policy.py`                               | `RISK_THRESHOLD = 50`                            | `:7`                     |
+| `src/skillspector/cli.py`                                       | exit 1/2 合同、依赖检查不执行包代码              | `:847-848, 648`          |
+| `src/skillspector/nodes/meta_analyzer.py`                       | 每文件 LLM 复核、findings 只升不降               | `:502-504`               |
+| `src/skillspector/nodes/analyzers/behavioral_ast.py`            | AST1–AST10 规则表                                | `:194-216`               |
+| `src/skillspector/nodes/analyzers/behavioral_taint_tracking.py` | TT1–TT6 污点跟踪                                 | `:16, 197-202`           |
+| `src/skillspector/nodes/analyzers/osv_client.py`                | OSV.dev 批量查询、1h 缓存、离线回退              | `:42, 60, 214`           |
+| `src/skillspector/nodes/analyzers/mcp_rug_pull.py`              | RP1–RP3，manifest diff                           | `:927-928`               |
+| `src/skillspector/dependency_inspection.py`                     | npm tarball SHA-512 校验                         | `:611-613`               |
+| `src/skillspector/dependency_sandbox.py`                        | Linux seccomp 白名单、非 Linux 拒绝              | `:19-22`                 |
+| `src/skillspector/suppression.py`                               | 基线版本 2、指纹绑定扫描器版本                   | `:81, 233-235`           |
+| `src/skillspector/providers/codex_cli/provider.py`              | codex_cli 禁用原因                               | `:16-18`                 |
+| `src/skillspector/mcp_server.py`                                | FastMCP stdio / loopback HTTP                    | `:326-350`               |
+| `src/skillspector/unicode_confusables.py`                       | UTS #39 confusables 数据（Unicode 17.0.0）       | `:4-11`                  |
+| `src/skillspector/artifacts.py`                                 | bidi 控制字符区段检测（U+202A–U+202E）           | `:302`                   |
+| `CHANGELOG.md`                                                  | 0.1.3（2026-01-30）至 2.12.0 共 65 个版本        | 全文件                   |
 
 ## 参考资料
 
 1. NVIDIA SkillSpector 仓库：https://github.com/NVIDIA/SkillSpector
-2. Liu et al., *Agent Skills in the Wild: An Empirical Study of Security Vulnerabilities at Scale*, arXiv:2601.10338, 2026：https://arxiv.org/pdf/2601.10338
+2. Liu et al., _Agent Skills in the Wild: An Empirical Study of Security Vulnerabilities at Scale_, arXiv:2601.10338, 2026：https://arxiv.org/pdf/2601.10338（[本地 PDF](references/2601.10338-agent-skills-in-the-wild.pdf)｜[中文总结](references/01-agent-skills-in-the-wild.md)）
 3. NVIDIA Verified Agent Skills 文档：https://docs.nvidia.com/skills/
 4. NVIDIA skills catalog：https://github.com/NVIDIA/skills
