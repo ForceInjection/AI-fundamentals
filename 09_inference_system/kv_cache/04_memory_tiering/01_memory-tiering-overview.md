@@ -1,19 +1,22 @@
-# 当 KV 装不进显存：四篇论文的四种内存账，与一个「统一命名空间 + 成本旋钮」的设想
+# 当 KV 装不进显存：五篇论文的五种内存账，与一个「统一命名空间 + 成本旋钮」的设想
 
-> **元信息**：本文是「KV Cache 内存层级」系列总纲。系列含四篇单篇精读：[DirectKV](02_directkv.md)（OSDI '26，零拷贝去搬运）· [NEO](03_neo.md)（MLSys 2025，计算下移）· [eLLM](04_ellm.md)（DAC 2026，抽象虚拟化）· [Strata](05_strata.md)（OSDI '26，分层调度），每篇都附逐条页码核对的精读报告（`references/`），论文原文 PDF 在 `references/papers/`。本文只做横向组织与口径提示，机制细节与数字以单篇为准。整理日期 2026-10-12。
+> **元信息**：本文是「KV Cache 内存层级」系列总纲。系列含五篇单篇精读：[DirectKV](02_directkv.md)（OSDI '26，零拷贝去搬运）· [NEO](03_neo.md)（MLSys 2025，计算下移）· [eLLM](04_ellm.md)（DAC 2026，抽象虚拟化）· [Strata](05_strata.md)（OSDI '26，分层调度）· [FlatCake](06_flatcake.md)（arXiv 2610.38355，写时定位不迁移——对分层前提本身的反思），前四篇附逐条页码核对的精读报告（`references/`），论文原文 PDF 在 `references/papers/`。本文只做横向组织与口径提示，机制细节与数字以单篇为准。整理日期 2026-10-12，2026-11-18 增补 FlatCake。
 
 两个数字放在一起，能看出这个交叉点的分裂。DirectKV 的图 2(a)：同一个 10240 方阵乘法，用 200 MB 显存缓冲把 CPU 内存里的数据换进来（swap），PCIe 上 65 ms；换成零拷贝、让 GPU 直接读 CPU 内存，1122 ms，慢 17 倍（p.42）。而 NEO 在 T4 上把 decoding attention 连同 KV 一起卸给 CPU，吞吐反而最高涨 7.5 倍（合成负载扫描峰值，§5.4，pp.8–9）。
 
 同一个总前提——KV 装不下显存——一边是「别碰这套搬运」，一边是「搬出去反而赢」。两个答案都只在特定条件下成立：DirectKV 的小前提是 NVLink-C2C，NEO 的小前提是小显存 GPU 加上大容量本地 CPU。把四篇论文并排看，看的不是谁更好，而是每种账本各自记在什么条件下。这些条件里，哪些是物理的（带宽与容量的台阶），哪些只是接口的（访问方式差异、成本不可见），决定了这四笔账接下来会怎么走。§五 把这条线展开。
 
-## 一、同一个问题，四个拆法
+还有第三个答案，走得更远：生产 Claude Code trace 上，Mooncake 的缓存命中率从低载 87.9% 跌到高载 64.26%（手握 4 TiB SSD），FlatCake 却把命中率按在 94.2% 以上——它证明的不是「怎么搬得更好」，而是「分层的前两个前提（DRAM 时间过滤、staging 合并）在 agentic 负载下同时破产」，于是把 DRAM 和 SSD 拉平成对等介质，写入时直接定位、永不迁移（§2.5）。四篇在优化「怎么搬」，第五篇质疑「为什么要搬」。
 
-KV cache 按序列长度线性增长，HBM 装不下之后，每一层外部内存都在拿三样东西做交换：带宽（搬得动吗）、延迟（藏得住吗）、容量与利用率（放着划算吗）。四篇论文在四个不同位置动手：
+## 一、同一个问题，五个拆法
+
+KV cache 按序列长度线性增长，HBM 装不下之后，每一层外部内存都在拿三样东西做交换：带宽（搬得动吗）、延迟（藏得住吗）、容量与利用率（放着划算吗）。五篇论文在五个不同位置动手：
 
 - **DirectKV 动的是搬运这个动作本身**：既然最贵的是「先搬进 HBM 再算」，就把 staging buffer 删掉，让 attention kernel 直接读 CPU 侧 KV；
 - **NEO 动的是被搬的对象**：KV 之所以要搬回 GPU，是因为计算在 GPU 上；那就把 decoding attention 的计算一起挪到 CPU，KV 干脆不回来；
 - **eLLM 动的是账本的边界**：activation 和 KV cache 分属两套内存抽象、两个池子，一边爆满一边闲置；把物理层并成一本账，互相借；
-- **Strata 动的是搬运的路径与调度**：搬运保留，但把 I/O 从 DMA 引擎换到 GPU 数千线程手里、把布局解耦、再把搬运藏进 cache-aware 调度。
+- **Strata 动的是搬运的路径与调度**：搬运保留，但把 I/O 从 DMA 引擎换到 GPU 数千线程手里、把布局解耦、再把搬运藏进 cache-aware 调度；
+- **FlatCake 动的是「迁移」这个前提**：KV block 写入一次永不修改、以 session 为粒度整组复用——写入时理想盘上布局已知，那就直接落到目标介质（DRAM 或 SSD），此后不搬。
 
 | 论文（单位）                    | 场景定位                                | 核心矛盾                                    | 招式                                            | 代表账本                                       |
 | ------------------------------- | --------------------------------------- | ------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
@@ -21,12 +24,13 @@ KV cache 按序列长度线性增长，HBM 装不下之后，每一层外部内�
 | NEO（UC Berkeley + Harvard）    | 小显存 GPU + 在线服务                   | decode attention 的 KV 卡死 batch、CPU 空转 | decoding attention 下移 CPU + 非对称流水线      | T4 合成峰值 7.5× · 在线最高 +563%              |
 | eLLM（上海交大 + 期智研究院等） | vLLM 单机 · activation 与 KV 互挤       | 两套内存抽象互不借账（空间内部碎片）        | eTensor 统一池 + inflation / deflation          | 解码吞吐 2.32× · goodput 2.5×                  |
 | Strata（Stanford + NVIDIA）     | SGLang 系分层缓存 · agent/长上下文负载  | 小页喂不饱互联、调度看不见搬运              | GPU-assisted I/O + cache-aware 三件套           | 同 TTFT 峰值 5× · GH200 带宽 40.3 → 150.5 GB/s |
+| FlatCake（复旦 + 北大 + 沐曦等）| SGLang 系 · agentic 大 session 负载     | 分层两前提破产：命中率 87.9% → 64.26%、SSD 读放大 6.5× | 写时定位 + 64 位 GVA 地址即介质标签 + layer-major 盘上布局 | Claude Code trace 命中率 94.2%–94.6% · TTFT 1.6× · 读放大归零 |
 
 口径说明：数字均为论文自测，对照基线各不相同，引用前先过 §六「数字怎么读」。
 
-![同一个问题，四个拆法：四篇论文的四个动手位置](../../assets/mtier-panorama-four-takes.svg)
+![同一个问题，五个拆法：五篇论文的五个动手位置](../../assets/mtier-panorama-five-takes.png)
 
-## 二、四条路线
+## 二、五条路线
 
 ### 2.1 去搬运：DirectKV（OSDI '26）
 
@@ -68,6 +72,14 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 
 ![Strata：GPU-assisted I/O 与 cache-aware 调度三件套](../../assets/mtier-strata-io-schedule.svg)
 
+### 2.5 不迁移：FlatCake（arXiv 2026）
+
+前四篇都接受「分层」这个前提，优化跨层的那一跳；FlatCake 先检查前提本身。它剖析 8 条生产 trace（Mooncake、Qwen Bailian、Claude Code）：对话/API 类负载 53.2%–94.0% 的 block 只被访问一次、可复用前缀的复用距离是重尾（均值 2,550、P99 54,728 个请求），DRAM 缓存被 one-shot block 持续污染；agentic coding 负载复用极密集（理想命中率 98.31%）但单请求 FP8 history KV 达 0.52 GiB/rank（中位），多会话并发吃穿 DRAM。两个 regime 的结论相同：大部分命中必须由 SSD 供给。此时分层的两个机制反过来成为瓶颈——staging buffer 按 O(上下文 × 并发) 增长，并发一高就撤销 prefetch 转重算（Mooncake 命中率 87.9% → 64.26% 的根因）；淘汰序写入把同一 session 的 block 散布在盘上，恢复要 O(层数 × block 数) 次小读（读放大 6.5×–6.7×）。
+
+破局点是一个领域性质：KV block **写入一次、永不修改、以 session 为粒度整组复用**——写入时理想盘上布局已知。FlatCake 把 DRAM 与 SSD 拉平为对等介质，三个组件各答一问：FC-GVA 写时定位（64 位 GVA 把介质、节点、偏移编码进地址，介质段数值不重叠，一次比较即分类；SSD 回收按 session extent 整体零写回）；FC-MAS 双队列调度（DRAM 就绪与 SSD 预备分离，size-aware HRRN 防大队头阻塞，按原始到达时间重排防饿死）；FC-CIO 写时 layer-major 盘上布局 + 读时 sort-merge 合并 + 双缓冲 GPU 窗口直流通入（读次数 O(层数 × block 数) → O(层数)，staging 内存 O(1)）。
+
+账本（Claude Code trace，DeepSeek-V4-Flash，8×B200）：命中率 94.16%–94.57%（理论上限 94.72%，Mooncake 高载 64.26%）；mean TTFT 1.6×、吞吐 1.6× 于 Mooncake；SSD 读放大归零（Mooncake 6.5×–6.7×）、SSD 读带宽 1.9×、prefetch 延迟在负载 10× 增长下保持水平。前提与边界：单机 8-GPU 评估、负载谱偏向高复用 agentic 场景、写时分类阈值（τ、L_agent）未披露且无放置消融、实现未开源（详见[单篇](06_flatcake.md)）。
+
 ## 三、对号入座：你手上是什么条件
 
 | 你的条件                                                              | 该看哪篇 | 先决条件与口径提示                                                                                                     | 开源入口                                                  |
@@ -76,24 +88,25 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 | 小显存 GPU（T4/A10G 一类）、本地 CPU 内存大、要在线服务               | NEO      | 前提是「随卡白送」的本地 CPU 与大 host 内存；峰值倍数看合成扫描，真实收益看固定时延点（563% 对 7.5× 是两组账）         | [NEO](https://github.com/NEO-MLSys25/NEO)（论文承诺开源） |
 | vLLM 上长上下文跑满、activation 与 KV 互相挤                          | eLLM     | 单机 + PCIe；收益最大的形状是长序列 + 高 activation-to-KV 比；代价是 TPOT 让步；未开源，先学思路                       | 论文未开源                                                |
 | SGLang 系 + 大 host DRAM + agent/长上下文负载，分层缓存已开但搬运浪费 | Strata   | 单实例范围；主力基线的 HiCache 是自实现版；「5×/3.75×」是 "up to" 最优点，多轮负载收敛到 1.7×/2.3×                     | 论文未提及                                                |
+| SGLang 系 + agentic 大 session（高复用、多 GiB 前缀）+ NVMe 在关键路径 | FlatCake | 单机 8-GPU 评估；arXiv 预印本未开源，复现依赖论文机制描述；写时分类阈值未披露；负载谱偏向高复用 agentic 场景           | 论文未开源                                                |
 
-四条路线互不排斥：DirectKV 的零拷贝消除的是 eLLM 仍要付的 PCIe 账单；NEO 的 CPU attention 与 Strata 的 CPU↔GPU 传输是两个方向；eLLM 的池内弹性与 Strata 的层级调度正交。混用的边界，四篇的「局限与边界」小节里都有各自的答案。
+五条路线互不排斥，但 FlatCake 与前四条存在层级差：前四条在分层内部优化搬运，可以与 FlatCake 的写时定位组合（比如 Strata 的 GPU-assisted I/O 依然适用于 FlatCake 的 DRAM 段搬运）；DirectKV 的零拷贝消除的是 eLLM 仍要付的 PCIe 账单；NEO 的 CPU attention 与 Strata 的 CPU↔GPU 传输是两个方向；eLLM 的池内弹性与 Strata 的层级调度正交。混用的边界，五篇的「局限与边界」小节里都有各自的答案。
 
 ## 四、共同的支点与边界
 
-先量缺口，再对数字设计。四篇的机制都能回指一组事先被测出来的数字：DirectKV 量出朴素零拷贝把 B 的流量放大到 33.5 GB、L2 命中率掉到 32.3%，三招各自对着这两笔账修；NEO 量出带宽差约 3×、算力差约 100×，才敢把 bandwidth-bound 的 decoding attention 搬走；eLLM 量出预留占比 30.8% 对实际利用率约 1% 的错位，才有了互借的池；Strata 量出 22% 的带宽利用率、最高 24% 的加载停顿与 38% 的 delay hit 撞车率，才去换 I/O 机制与调度。
+先量缺口，再对数字设计。五篇的机制都能回指一组事先被测出来的数字：DirectKV 量出朴素零拷贝把 B 的流量放大到 33.5 GB、L2 命中率掉到 32.3%，三招各自对着这两笔账修；NEO 量出带宽差约 3×、算力差约 100×，才敢把 bandwidth-bound 的 decoding attention 搬走；eLLM 量出预留占比 30.8% 对实际利用率约 1% 的错位，才有了互借的池；Strata 量出 22% 的带宽利用率、最高 24% 的加载停顿与 38% 的 delay hit 撞车率，才去换 I/O 机制与调度；FlatCake 量出双峰复用（one-shot 占比 53%–94% 对 Claude Code 的 16.6%）与 Mooncake 的 6.5× 读放大，才敢把迁移整个删掉。
 
 第二个交叉点：把搬运藏起来的四种配对手法。四篇走的都是同一条路：把传输藏进另一份资源面的计算里（DirectKV 消掉的也只是 staging 这一个动作），配对方式各不相同：kernel 内藏（DirectKV 的 warp 级流水，producer 预取下一 tile 与 consumer 的计算同 kernel 掩护）、两侧互藏（NEO 的双 batch，CPU attention 与 GPU 线性段互为掩护，调度约束落成 `Tl0 ≥ Tca1` 这样的不等式）、层间藏（eLLM 的 layer-wise pipelining，O(N) 的 KV 传输藏进 O(N²) 的 prefill）、批间藏（Strata 的气泡填充，加载吃 PCIe、解码吃 HBM，资源面错开）。手法不同、约束相同：掩护窗口要盖得下传输，且两份负载不能抢同一种资源。
 
-都建立在当代硬件的某道新缝隙上。DirectKV 赌 NVLink-C2C 把互联和 HBM 的差距缩进一个数量级；NEO 赌 CPU 带宽与 GPU 只差约 3 倍；eLLM 赌 GPU VMM 支持映射转手；Strata 赌数千个 GPU 线程搬 KB 级数据的效率。硬件前提变了，账就要重算。四篇论文各自的局限章节都在谈硬件，原因就在这里。
+都建立在当代硬件的某道新缝隙上。DirectKV 赌 NVLink-C2C 把互联和 HBM 的差距缩进一个数量级；NEO 赌 CPU 带宽与 GPU 只差约 3 倍；eLLM 赌 GPU VMM 支持映射转手；Strata 赌数千个 GPU 线程搬 KB 级数据的效率；FlatCake 赌 GDS 让 NVMe 对 GPU 直接可读、大容量 NVMe 阵列把 SSD 推上了关键路径——「误判成本不对称」才有了成立的物理基础。硬件前提变了，账就要重算。五篇论文各自的局限章节都在谈硬件，原因就在这里。
 
-精度账普遍缺席。DirectKV 全文没有 accuracy/perplexity 实验；eLLM 是纯内存管理、理论上不影响精度但没报告；NEO 也没有质量数据。内存层级重构在数值上"免费"到什么程度，四篇里没有一篇测完。
+精度账普遍缺席。DirectKV 全文没有 accuracy/perplexity 实验；eLLM 是纯内存管理、理论上不影响精度但没报告；NEO 也没有质量数据；FlatCake 同样没有（KV 管理不影响输出内容的理论成立，但未验证）。内存层级重构在数值上"免费"到什么程度，五篇里没有一篇测完。
 
-与 FAST'26 系列的分工。那边的五篇是「KV × 存储的五个场景」（端侧、智能体、多轮对话、分离式、冷启动），对象是 SSD 与文件系统；这边四篇的对象是显存之外的第一层：DRAM、互联、内存抽象与调度。串起来读的顺序是：先把内存层级用对（本系列），再和存储打交道（[FAST'26 系列](../03_fast26/01_fast26-kv-storage-five-scenarios.md)）。
+与 FAST'26 系列的分工。那边的五篇是「KV × 存储的五个场景」（端侧、智能体、多轮对话、分离式、冷启动），对象是 SSD 与文件系统；这边五篇的对象是显存之外的第一层：DRAM、互联、内存抽象、调度与介质关系。串起来读的顺序是：先把内存层级用对（本系列），再和存储打交道（[FAST'26 系列](../03_fast26/01_fast26-kv-storage-five-scenarios.md)）。
 
 ## 五、未来方向：统一命名空间与成本旋钮
 
-四篇有个共同处境：每个团队都在应用层手搓一层「翻译」：把两种内存的物理成本差（带宽 4× 到 60×、延迟、访问方式）翻译成显式策略（DirectKV 的三招、NEO 的流水线平衡、eLLM 的借调规则、Strata 的调度三件套）。翻译层之所以存在，是因为接口只提供了两种形态：「两个地址空间 + 显式拷贝」，或「统一地址空间 + 自动迁移」（Unified Memory 式的缺页加页迁移；主流推理栈的 KV 热路径基本不用它：页粒度迁移对 token 粒度、带 stride 的 KV 访问并不合身）。
+前四篇有个共同处境：每个团队都在应用层手搓一层「翻译」：把两种内存的物理成本差（带宽 4× 到 60×、延迟、访问方式）翻译成显式策略（DirectKV 的三招、NEO 的流水线平衡、eLLM 的借调规则、Strata 的调度三件套）。翻译层之所以存在，是因为接口只提供了两种形态：「两个地址空间 + 显式拷贝」，或「统一地址空间 + 自动迁移」（Unified Memory 式的缺页加页迁移；主流推理栈的 KV 热路径基本不用它：页粒度迁移对 token 粒度、带 stride 的 KV 访问并不合身）。
 
 如果硬件补上另外两件东西，这层翻译可以整体收敛成一个调度器：
 
@@ -101,6 +114,8 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 - **成本旋钮**：每段空间有确定、可分档、可预测的带宽与延迟档位（带宽 QoS、显式预取、不触发缺页的访问），供调度器查询与规划。
 
 有这两样，搬运从「正确性要求」降级为「性能策略」：staging buffer、双缓冲、`cudaMemcpyAsync` 动态地址造成的 CUDA Graph 重放问题这些管道代码都会消失。软件不必再为了「能读」而搬，只需为了「够快」而搬。eLLM 已经给了同速层内的小样板：activation 池与 KV 池并账后，借调只转所有权、不搬数据，约 20% 吞吐几乎白得。反过来看，四篇里最重的部分恰好全是跨过成本台阶的那部分，一件都省不掉。
+
+这组设想在 KV 场景已经有了纯软件的实现：FlatCake 的 64 位 GVA 把介质标签编码进地址段本身（「地址段即层级标签」的字面形态），用 KV block write-once 的领域性质替代硬件统一页表——地址创建后不变，位置即地址，无需任何迁移元数据。它的边界同样印证了总纲的判断：「统一命名空间改变的是软件的结构（少写管道），不改变瓶颈的数学（带宽比还在）」——FlatCake 消灭的是 staging 与迁移的管道，DRAM 与 SSD 的 5× 带宽差依然在，只是它选择不再假装 DRAM 能过滤掉这个差。
 
 反面教材也现成：数据库几十年来宁可自建 buffer pool，也不把页缓存交给虚拟内存的缺页逻辑；Apple 的统一内存让推理软件变简单，是因为它只有一层。统一在同速层内几乎免费，跨了层就重新变成策略问题。 GH200 的统一页表与 CXL 是最接近这组设想的硬件，而经验事实是：GH200 上 DirectKV、Strata 依然要自建整套机制。统一命名空间改变的是软件的结构（少写管道），不改变瓶颈的数学（带宽比还在）。这也正是 vLLM KV Connector、LMCache 分层与 HiCache 预取正在走的路：把「怎么搬」从各系统的私有实现，收敛成可替换的策略层。
 
@@ -112,6 +127,7 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 - **NEO**：7.5×/26%/14% 是合成负载扫描的峰值（对 GPU-only 的 SwiftLLM）；真实在线是 14.3%/6.40%/563%（对 vLLM、固定时延点）；79.3% 由 CPU 带宽决定、论文未逐一点名实例型号；2 卡实验的 CPU 资源被限在 1/4 NUMA 节点。
 - **eLLM**：2.32× 是 128k-4k 离线最优配置（Jamba-Mini，2 GPU）；「128K batch 扩约 3×」是 Figure 7 读图值、正文没有；295×/140× 的 TTFT 倍数取自 vLLM 排队崩溃区，不是稳态对比。
 - **Strata**：5×/3.75× 均为 "up to"，对应 Llama-70B + LooGLE + H200 的同 TTFT 最优点；主力基线 SGLang-HiCache 是作者自实现，与 SGLang 发行版功能的关系论文未说明；22%/5% 两个带宽利用率是同为「搬 KV、页大小 32、Llama-3.1-8B」条件下的测量（p.3–4）。
+- **FlatCake**：94.2% 命中率与 1.6× 的对照均为 Mooncake v0.3.13（FAST '25 版本）在单机 8×B200 上的表现，负载为 Claude Code agentic trace（高复用场景，对扁平架构最有利）；SolidAttention/KVDrive/Bidaw 等 FAST '26 更近期工作未进实验对比；arXiv 预印本、未开源；写时分类阈值（τ、L_agent）未披露、放置决策无消融。详见[单篇的边界节](06_flatcake.md)。
 
 ## 系列篇目
 
@@ -119,13 +135,15 @@ Strata 的起点是一组「搬运效率」的实测：8192 个 token 的 KV 从
 - [显存卡死 batch 的 GPU 上：NEO 把 decoding attention 搬给了随卡白送的 CPU](03_neo.md)——挪计算（MLSys 2025）
 - [30.8% 的显存按 200K 上下文预留，实际只用 1%：eLLM 让 Activation 与 KV Cache 互相借内存](04_ellm.md)——并账本（DAC 2026）
 - [8192 个 token 的 KV 只跑出 22% PCIe 带宽：Strata 重做分层缓存的搬运与调度](05_strata.md)——重排调度（OSDI '26）
-- 精读报告（逐条页码核对版）：[DirectKV](references/directkv-report.md) · [NEO](references/neo-report.md) · [eLLM](references/ellm-report.md) · [Strata](references/strata-report.md)；论文原文 PDF 在 `references/papers/`（已核页数与首末页）
+- [分层存储的两个前提同时破产：FlatCake 把 DRAM 和 SSD 放到同一层](06_flatcake.md)——不迁移（arXiv 2610.38355，反思篇）
+- 精读报告（逐条页码核对版）：[DirectKV](references/directkv-report.md) · [NEO](references/neo-report.md) · [eLLM](references/ellm-report.md) · [Strata](references/strata-report.md)；论文原文 PDF 在 `references/papers/`（已核页数与首末页；FlatCake 精读基于 arXiv HTML 全文，PDF 同目录存档）
 
 ## 诚实声明
 
-- 四篇的数字均为论文自测，本仓未复现；本文的横向比较跨论文、跨硬件、跨负载，除注明外**不可直接互比**。
-- 本文每个数字都取自对应单篇精读；各单篇的「诚实声明」列出了自己的口径限定与未核实项（如 DirectKV 的精度实验缺席、Strata 的自实现基线、NEO 的 NUMA 限制、eLLM 的读图值）。
-- 「未来方向」一节是展望性论述：由四篇的实测经验与公开的硬件背景（Unified Memory、GH200 统一页表、CXL 等）并读推演而来，不是任一论文的主张，其中的硬件侧细节未按本系列的逐条核对标准核验。
+- 五篇的数字均为论文自测，本仓未复现；本文的横向比较跨论文、跨硬件、跨负载，除注明外**不可直接互比**。
+- 本文每个数字都取自对应单篇精读；各单篇的「诚实声明」列出了自己的口径限定与未核实项（如 DirectKV 的精度实验缺席、Strata 的自实现基线、NEO 的 NUMA 限制、eLLM 的读图值、FlatCake 的 arXiv 预印本状态与未开源实现）。
+- FlatCake 与前四篇的分量不同：前四篇是正式录用论文的逐页核对精读，FlatCake 是 arXiv 预印本的 HTML 全文通读（无印刷页码可核），且其定位是「对分层前提的反思」而非又一种搬运优化——并排呈现是为了让「分层内优化」与「质疑分层」两条线互相照亮，不是判定孰优孰劣。
+- 「未来方向」一节是展望性论述：由四篇的实测经验与公开的硬件背景（Unified Memory、GH200 统一页表、CXL 等）并读推演而来，不是任一论文的主张，其中的硬件侧细节未按本系列的逐条核对标准核验。FlatCake 的 GVA 是该设想在 KV 场景的软件实现这一判断为本仓观点，论文原文只陈述自身设计。
 
 ## 延伸阅读：本仓相关（按主题）
 
@@ -157,4 +175,5 @@ KV × 存储的五个场景（本系列的下一层：SSD 与文件系统）：
 - Xuanlin Jiang et al. _NEO: Saving GPU Memory Crisis with CPU Offloading for Online LLM Inference_. MLSys 2025. [arXiv:2411.01142](https://arxiv.org/abs/2411.01142)
 - Jiale Xu et al. _eLLM: Elastic Memory Management Framework for Efficient LLM Serving_. DAC '26. [arXiv:2506.15155](https://arxiv.org/abs/2506.15155)
 - Zhiqiang Xie et al. _Strata: Hierarchical Context Caching for Long Context Language Model Serving_. OSDI '26. [USENIX 论文页](https://www.usenix.org/conference/osdi26/presentation/xie-zhiqiang)
+- Xin Huang et al. _FlatCake: A Flat KVCache Storage Architecture for LLM Serving_. arXiv:2610.38355（预印本）. [arXiv 页面](https://arxiv.org/abs/2610.38355)
 - 本仓相关：[FAST'26 KV × 存储五场景](../03_fast26/01_fast26-kv-storage-five-scenarios.md) · [SGLang HiCache 深读](../../sglang/hicache_deep_dive.md)
