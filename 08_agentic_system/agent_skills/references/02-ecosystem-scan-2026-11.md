@@ -16,9 +16,9 @@
 
 ### 工程与评测线
 
-6. **How Agent Skills Evolve: A Large-Scale Empirical Study of Skills on GitHub** — arXiv:2611.04456（2026-11-03），HKUST + 浙江大学（通讯 Zhongxin Liu）。8.42 万 skill、75 万 commit：组件/变更模式/动因三套人工 taxonomy；五条含义中最关键的一条是「安全动机的改动实际降险有限」，冗余与可靠性问题被低估。
-7. **SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks** — arXiv:2602.12670（2026-02-13，v4 至 2026-06-14），77 位作者社区共建（BenchFlow、OSU、Amazon、UC Berkeley、UC Santa Cruz，含 Dawn Song、Terry Yue Zhuo）。87 任务 × 8 领域配对评测：skill 平均把 pass rate 从 33.9% 提到 50.5%（+16.6pp）；反直觉：3 模块以内的紧凑 skill 胜过大而全，小模型挂 skill 可匹敌大模型。
-8. **A First Measurement Study on Authentication Security in Real-World Remote MCP Servers** — arXiv:2605.22333（2026-05-21），复旦大学 + 中南大学。7,973 个在线 remote MCP 服务器实测：40.55% 无鉴权直接暴露；119 个可测 OAuth 服务器全部至少 1 个缺陷（共 325 个），动态客户端注册缺陷影响 96.6%；9 个 CVE。归纳 4 类 9 种缺陷可复用为清单。
+1. **How Agent Skills Evolve: A Large-Scale Empirical Study of Skills on GitHub** — arXiv:2611.04456（2026-11-03），HKUST + 浙江大学（通讯 Zhongxin Liu）。8.42 万 skill、75 万 commit：组件/变更模式/动因三套人工 taxonomy；五条含义中最关键的一条是「安全动机的改动实际降险有限」，冗余与可靠性问题被低估。
+2. **SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks** — arXiv:2602.12670（2026-02-13，v4 至 2026-06-14），77 位作者社区共建（BenchFlow、OSU、Amazon、UC Berkeley、UC Santa Cruz，含 Dawn Song、Terry Yue Zhuo）。87 任务 × 8 领域配对评测：skill 平均把 pass rate 从 33.9% 提到 50.5%（+16.6pp）；反直觉：3 模块以内的紧凑 skill 胜过大而全，小模型挂 skill 可匹敌大模型。
+3. **A First Measurement Study on Authentication Security in Real-World Remote MCP Servers** — arXiv:2605.22333（2026-05-21），复旦大学 + 中南大学。7,973 个在线 remote MCP 服务器实测：40.55% 无鉴权直接暴露；119 个可测 OAuth 服务器全部至少 1 个缺陷（共 325 个），动态客户端注册缺陷影响 96.6%；9 个 CVE。归纳 4 类 9 种缺陷可复用为清单。
 
 ### 备选池（已核实存在与主题，仅核到摘要页）
 
