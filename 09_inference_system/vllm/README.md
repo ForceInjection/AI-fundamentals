@@ -42,3 +42,4 @@
 - [DeepSeek 与 Blackwell 架构扩展性分析](./hardware_optimization/scaling_deepseek_blackwell.pptx)：关于如何在 NVIDIA Blackwell 架构上扩展 DeepSeek 模型推理的演示文稿。
 - [DeepSeek Blackwell Wide EP 优化](./hardware_optimization/deepseek_blackwell_wide_ep.md)：探讨针对 DeepSeek 模型在 Blackwell 架构下利用宽泛的专家并行（Expert Parallelism）进行的特定优化策略。
 - [GB200 性能优化](./hardware_optimization/gb200_optimization.pptx)：针对 NVIDIA GB200 超级芯片的 vLLM 推理优化实践及性能评估演示。
+- [一行 do_not_specialize，9% TTFT：vLLM fused MoE 的低成本 kernel 优化](./hardware_optimization/vllm_fused_moe_hopper_optimization.md)：AWS 上游的三项 Hopper 优化源码精读——Swap-AB 布局交换、FP8 后端路由、Triton JIT 重编译消除，含启用条件与版本口径核对。

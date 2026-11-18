@@ -54,7 +54,7 @@
   - 系统机制：[CUDA Graph](vllm/module_analysis/cuda_graph_deep_dive.md)、[Hybrid KV Cache Manager](vllm/module_analysis/hybrid_kv_cache_manager_deep_dive.md)、[投机解码方法全景](vllm/module_analysis/speculative_decoding_landscape.md)、[原生 KV Offloading](vllm/module_analysis/native_kv_offloading.md)、[PagedAttention 退役](vllm/module_analysis/pagedattention_retirement.md)、[gpu-memory-utilization 谢幕](vllm/module_analysis/gpu-memory-utilization-retirement.md)、[MLA 的 TP 切分](vllm/module_analysis/mla_tp_kv_redundancy.md)
   - 端到端走读：[DeepSeek-V3](vllm/module_analysis/deepseek_v3_inference_pipeline.md) / [DeepSeek-V4](vllm/module_analysis/deepseek_v4_inference_pipeline.md)
   - 路由：[Router 架构](vllm/routing/router.md)、[Semantic Router](vllm/routing/semantic_router_deep_dive.md)
-  - 硬件：[WideEP](vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)、[Blackwell 扩展性](vllm/hardware_optimization/scaling_deepseek_blackwell.pptx)、[GB200 优化](vllm/hardware_optimization/gb200_optimization.pptx)
+  - 硬件：[WideEP](vllm/hardware_optimization/deepseek_blackwell_wide_ep.md)、[Blackwell 扩展性](vllm/hardware_optimization/scaling_deepseek_blackwell.pptx)、[GB200 优化](vllm/hardware_optimization/gb200_optimization.pptx)、[fused MoE Hopper 优化](vllm/hardware_optimization/vllm_fused_moe_hopper_optimization.md)
 
 ### 2.2 SGLang
 
