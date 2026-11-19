@@ -573,7 +573,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [推理成本分析](09_inference_system/cost_analysis/llm_api_pricing_analysis.md) — 基于 OpenRouter 的多模型成本测算与动态抓取脚本
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
 - [DeepSeek 推理集群单卡经济学](09_inference_system/cost_analysis/deepseek_inference_cluster_unit_economics.md) — 155 万亿 tokens/天、96% 缓存命中、38 美元/卡时：单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性
-- **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料）见 [项目 README](99_misc/token_factory_talk/README.md)
+- **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料 + GPU/CPU 对比演示视频）见 [项目 README](99_misc/token_factory_talk/README.md)
 - **[312 条 JD 里的 AI Infra 技能版图](99_misc/ai_infra_jd_survey/01-岗位技能版图.md)** — 抓取 312 条在招岗位说明（官网接口 + HN + 聚合快照，逐条留出处）：研发/测试/SRE/运维四类分布、公司画像、技能 Top10 与共现、推导出四条分岗位学习路线。交互版[技能版图](99_misc/ai_infra_jd_survey/visualization.html)与[项目说明](99_misc/ai_infra_jd_survey/README.md)同目录。
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
@@ -779,22 +779,7 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 - [推理优化](https://github.com/chenzomi12/AISystem/tree/main/04Inference) - 模型推理加速技术、性能调优与部署策略。
 - [框架设计](https://github.com/chenzomi12/AISystem/tree/main/05Framework) - AI 框架架构设计、分布式计算与并行优化。
 
-### 12.2 AI Infra 基础课程（入门）
-
-面向初学者的 AI 基础设施普及讲座（90 分钟），围绕一条主线：**一切 AI 基础设施优化的最终目标，都是降低每 token 成本**。沿"模型架构 → 硬件 → 推理引擎 → 基础设施与生态"四层杠杆展开，覆盖 2026 年最新格局（DeepSeek-V4、Kimi K3、开源价格战、1M 上下文、Agentic 编程）。
-
-- [大模型原理与最新进展](10_ai_related_course/ai_coding/index.html) - 交互式在线课程平台。
-- [AI 编程入门](10_ai_related_course/ai_coding/AI%20编程入门.md) - AI 编程基础知识与应用入门。
-- [Token Factory 讲座大纲与讲稿](10_ai_related_course/ai_infra_lecture/%E5%85%A5%E9%97%A8%E7%BA%A7/) - 40 页 PPT 大纲（单一数据源）+ 552 行完整演讲逐字稿 + 自制 PPT 成品。
-- **学习目标**：理解 AI 推理成本四年下降 100 倍背后的四层杠杆（架构/硬件/引擎/生态）。
-- **核心内容**：
-  - **Token 工厂概念**：token 作为 AI 经济基本单位，四年价格下降 100 倍（对数坐标曲线）。
-  - **第一层杠杆·模型架构**：MLA（KV Cache -93.3%）、MoE（激活 5.5%）、CSA/HCA（DeepSeek V4 成本 -73%）、KDA（Kimi K3 线性注意力）。
-  - **第二层杠杆·硬件**：Blackwell FP4、HBM3e 8 TB/s、NVLink-C2C、CUDA 优化、GPU 虚拟化共享。
-  - **第三层杠杆·推理引擎**：KV Cache 四层解法、连续批处理、DSpark 投机解码、FP8/FP4 量化。
-  - **第四层杠杆·基础设施与生态**：PD 分离、开源价格战（28 倍价差）、成本下降打开 AI 编程/长上下文/Agent 三大应用形态。
-
-### 12.3 Trae 编程实战课程
+### 12.2 Trae 编程实战课程
 
 系统掌握 AI 辅助开发工作流，从 IDE 环境配置与交互模式，进阶至 Web 开发、数据库设计与 DevOps 微服务架构等复杂场景的实战演练。
 
@@ -830,7 +815,7 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 
 ### 12.7 哈佛 CS2680 Modern AI Systems
 
-哈佛 SEAS 2026 秋季课程（Juncheng Yang / MaDSys 组主讲），沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：Intro to LLM、Intro to GPUs（roofline、nsys/ncu、FlashAttention 谱系）与 scheduling/paging/parallelism（TTFT/TPOT 口径、batching、PagedAttention、五种并行）。详见 [哈佛 CS2680 课件存档](10_ai_related_course/cs2680_modern_ai_systems/README.md)。
+哈佛 SEAS 2026 秋季课程（Juncheng Yang / MaDSys 组主讲），沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：Intro to LLM、Intro to GPUs（roofline、nsys/ncu、FlashAttention 谱系）与 scheduling/paging/parallelism（TTFT/TPOT 口径、batching、PagedAttention、五种并行）。详见 [哈佛 CS2680 课件存档](10_ai_related_course/university_courses/harvard-cs2680/README.md)。
 
 ---
 
