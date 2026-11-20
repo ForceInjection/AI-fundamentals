@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>页面已迁移 · AI Infra JD 数据集</title>
+<meta http-equiv="refresh" content="3; url=skill-map-society.html">
+<style>
+body{margin:0;background:#FBF8F1;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI","Microsoft YaHei",sans-serif;line-height:1.75}
+.wrap{max-width:640px;margin:0 auto;padding:96px 28px}
+h1{font-size:26px;font-weight:700;letter-spacing:.03em}
+p{margin:14px 0 0;color:rgba(43,43,43,.75)}
+ul{margin:18px 0 0;padding:0;list-style:none}
+li{margin:8px 0}
+a{color:#3D6DB5}
+.tag{display:inline-block;font-size:12px;color:rgba(43,43,43,.6);border:1px solid rgba(43,43,43,.2);
+  padding:1px 8px;border-radius:3px;margin-right:8px;vertical-align:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>可视化页面已拆分迁移</h1>
+<p>原「可视化」页已按招聘渠道拆分为四个独立页面。<span id="countdown">3</span> 秒后自动跳转到「社招 · 技能地图」，也可以直接选择：</p>
+<ul>
+  <li><span class="tag">社招</span><a href="skill-map-society.html">技能地图</a> · <a href="jobs-society.html">岗位版图</a></li>
+  <li><span class="tag">校招</span><a href="skill-map-campus.html">技能地图</a> · <a href="jobs-campus.html">岗位版图</a></li>
+  <li><span class="tag">说明</span><a href="README.md">数据集与口径（README）</a></li>
+</ul>
+<p>数据集共 6,819 条在招岗位说明（JD），采集于 2026-11-19。</p>
+</div>
+<script>
+(function () {
+  var n = 3;
+  var el = document.getElementById('countdown');
+  setInterval(function () { n = Math.max(0, n - 1); if (el) el.textContent = n; }, 1000);
+  setTimeout(function () { location.replace('skill-map-society.html'); }, 3000);
+})();
+</script>
+</body>
+</html>
