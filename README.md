@@ -574,7 +574,7 @@ SGLang 以 RadixAttention 前缀缓存和高效调度器著称，涵盖 KV Cache
 - [Coding Plan 订阅对比](09_inference_system/cost_analysis/coding_plan/coding_plan_report.md) — 11 款 AI 编程工具订阅成本与隐藏条款解析
 - [DeepSeek 推理集群单卡经济学](09_inference_system/cost_analysis/deepseek_inference_cluster_unit_economics.md) — 155 万亿 tokens/天、96% 缓存命中、38 美元/卡时：单卡年收入 33 万美元、93–96% 运营利润率，附价格/成本假设与敏感性
 - **[Token Factory：AI 推理的成本革命（图文讲解）](99_misc/token_factory_talk/talk-illustrated.md)** — 对外演讲的 PPT 24 页逐页配图讲解：AI 白菜化与 Token 单位化 → 从「算力房东」到「产品制造商」→ 提升产能的成本革命 → 让 token 更值钱，附国产算力差距的现场互动。配套素材库（可排练提纲 + 产能度量文档 + 12 份参考资料 + GPU/CPU 对比演示视频）见 [项目 README](99_misc/token_factory_talk/README.md)
-- **[312 条 JD 里的 AI Infra 技能版图](99_misc/ai_infra_jd_survey/01-岗位技能版图.md)** — 抓取 312 条在招岗位说明（官网接口 + HN + 聚合快照，逐条留出处）：研发/测试/SRE/运维四类分布、公司画像、技能 Top10 与共现、推导出四条分岗位学习路线。交互版[技能版图](99_misc/ai_infra_jd_survey/visualization.html)与[项目说明](99_misc/ai_infra_jd_survey/README.md)同目录。
+- **[6819 条 JD 里的 AI Infra 技能版图](99_misc/ai_infra_jd_survey/01-岗位技能版图.md)** — 抓取国内 12 家 AI 公司官方渠道的 6819 条在招岗位说明（逐条留出处）：算法/研发/测试/SRE/运维/产品与运营六类分布、公司画像、16 个方向（行业通用岗位名）、技能三视角谱系（主题覆盖率 / 技术栈 / 工作内容）、社招与校招双版图、六条分岗位学习路线。校招专册[02-校招岗位与技能](99_misc/ai_infra_jd_survey/02-校招岗位与技能.md)拆方向可及性与实习入口，技能分类体系设计见[设计文档](99_misc/ai_infra_jd_survey/docs/技能分类体系设计.md)。交互版[技能地图](99_misc/ai_infra_jd_survey/skill-map-society.html)、[岗位版图](99_misc/ai_infra_jd_survey/jobs-society.html)与[项目说明](99_misc/ai_infra_jd_survey/README.md)同目录，校招版[技能地图](99_misc/ai_infra_jd_survey/skill-map-campus.html)与[岗位版图](99_misc/ai_infra_jd_survey/jobs-campus.html)另册。
 
   <img src="./99_misc/token_factory_talk/img/cover.jpg" width="600" alt="Token Factory：AI 推理的成本革命 — 演讲封面"/>
 

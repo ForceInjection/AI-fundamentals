@@ -7,4 +7,4 @@
 - **[动手跑大模型](./mac-deepseek-r1.md)**：Mac 本地部署 DeepSeek-R1 的手把手实践。
 - **[Ollama 推理框架详解](./ollama/README.md)**：Ollama 的架构原理与进阶配置。
 - **[Token Factory 演讲项目](./token_factory_talk/README.md)**：对外演讲《Token Factory: AI 推理的成本革命》素材库——可排练版提纲 + 对外图文讲解（PPT 逐页配图）+ 产能度量对外文档 + 12 份分类资料（成本构成 / 财报证据 / 产能评估框架 / 模型性价比等）。
-- **[AI Infra 岗位 JD 数据集与技能版图](./ai_infra_jd_survey/01-岗位技能版图.md)**：312 条在招岗位说明的分类与技能谱系——研发/测试/SRE/运维四类分布、公司画像、技能 Top10 与共现、四条分岗位学习路线；交互版[技能版图](./ai_infra_jd_survey/visualization.html)同目录。
+- **[AI Infra 岗位 JD 数据集与技能版图](./ai_infra_jd_survey/01-岗位技能版图.md)**：国内 12 家 AI 公司的 6,819 条在招岗位说明——算法/研发/测试/SRE/运维/产品与运营六类分布、公司画像、16 个方向（行业通用岗位名）、技能三视角谱系（主题覆盖率 / 技术栈 / 工作内容）、六条分岗位学习路线；校招专册 [02-校招岗位与技能](./ai_infra_jd_survey/02-校招岗位与技能.md)拆方向可及性与实习入口；技能分类体系设计见 [docs/技能分类体系设计](./ai_infra_jd_survey/docs/技能分类体系设计.md)；交互版[技能地图](./ai_infra_jd_survey/skill-map-society.html)（社招）/ [岗位版图](./ai_infra_jd_survey/jobs-society.html)（社招）/ [校招技能地图](./ai_infra_jd_survey/skill-map-campus.html) / [校招岗位版图](./ai_infra_jd_survey/jobs-campus.html)同目录。

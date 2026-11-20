@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Infra 技能地图</title>
+<style>
+
+:root{
+  --paper:#FBF8F1; --ink:#2b2b2b; --blue:#3D6DB5; --yellow:#F7D154; --red:#D9483B;
+  --ink-soft:rgba(43,43,43,.62); --bar:rgba(43,43,43,.13); --line:rgba(43,43,43,.18);
+  --kai:"LXGW WenKai","LXGW WenKai GB","Kaiti SC",STKaiti,KaiTi,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+a{color:var(--blue)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── 头部 / 幕结构 / 页脚（两页共用）── */
+header{padding:56px 0 40px}
+.brand{margin-bottom:26px}
+.brand img{height:46px;display:block}
+.brand a{display:inline-block}
+.brand a:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+h1{font-family:var(--kai);font-weight:700;font-size:clamp(38px,6vw,58px);letter-spacing:.04em;line-height:1.22}
+.sub{margin-top:14px;color:var(--ink-soft);font-size:15px}
+.rule{border:none;border-top:3px solid var(--ink);margin:34px 0 0}
+.sec{margin-top:72px}
+.sec-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.sec-title{font-family:var(--kai);font-size:30px;font-weight:700;letter-spacing:.03em}
+.sec-note{color:var(--ink-soft);font-size:13.5px}
+.hint{margin-top:14px;font-size:13px;color:var(--ink-soft)}
+footer{margin-top:88px;border-top:3px solid var(--ink);padding-top:22px;font-size:13px;color:var(--ink-soft)}
+footer .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:34px}
+footer p{margin:0}
+.copyright{margin-top:20px !important;font-size:12.5px}
+footer a{color:var(--blue)}
+@media (max-width:860px){footer .cols{grid-template-columns:1fr;gap:14px} header{padding-top:56px}}
+
+
+
+/* ── 一、技能谱系树 ── */
+.tree{margin-top:34px;border-top:3px solid var(--ink)}
+.line-h{cursor:pointer;user-select:none;padding:20px 4px;border-bottom:1px solid var(--line);
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 18px}
+.line-h:hover{background:rgba(61,109,181,.06)}
+.line-h .caret{font-size:13px;color:var(--blue);width:1.2em;display:inline-block;transition:transform .25s ease}
+.line-h.open .caret{transform:rotate(90deg)}
+.line-h .name{font-family:var(--kai);font-size:24px;font-weight:700;letter-spacing:.02em}
+.line-h .cnt{color:var(--ink-soft);font-size:13.5px}
+.line-h .tops{margin-left:auto;font-size:13px;color:var(--ink-soft);max-width:56%;}
+.line-h .tops b{color:var(--ink);font-weight:600}
+.line-body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.line-body.open{max-height:3600px}
+.dir{border-bottom:1px solid var(--line);padding:14px 4px 14px 34px}
+.dir-h{cursor:pointer;user-select:none;display:flex;align-items:baseline;gap:12px}
+.dir-h:hover .dir-name{color:var(--blue)}
+.dir-h .caret{font-size:12px;color:var(--blue);width:1em;display:inline-block;transition:transform .25s ease}
+.dir.open > .dir-h .caret{transform:rotate(90deg)}
+.dir-name{font-weight:600;font-size:15.5px}
+.dir-h .cnt{color:var(--ink-soft);font-size:12.5px}
+.skills{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.dir.open > .skills{max-height:700px}
+.skill-row{display:grid;grid-template-columns:200px 1fr 44px;gap:14px;align-items:center;
+  padding:5px 0 5px 26px;font-size:13.5px}
+.skill-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skill-row .track{height:13px;background:var(--bar);position:relative}
+.skill-row .fill{position:absolute;inset:0 auto 0 0;background:var(--ink);transition:width .5s cubic-bezier(.6,0,.2,1),background .2s}
+.skill-row:hover .fill{background:var(--blue)}
+.skill-row .v{text-align:right;color:var(--blue);font-variant-numeric:tabular-nums}
+
+/* ── 二、按岗位的学习路线 ── */
+.path-tabs{display:flex;gap:8px;margin-top:28px;flex-wrap:wrap}
+.path-tab{font-family:var(--kai);font-size:17px;padding:7px 20px;border:2px solid var(--ink);
+  background:transparent;cursor:pointer;color:var(--ink)}
+.path-tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.path-tab:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.stage{margin-top:30px}
+.stage-label{font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+.stage-label b{color:var(--ink);font-weight:600}
+.base-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.lanes{display:grid;gap:18px;margin-top:8px}
+@media (min-width:900px){.lanes{grid-template-columns:1fr 1fr}}
+.lane{border:1.5px solid var(--line);padding:16px 18px 14px;overflow-x:auto}
+.lane-h{font-family:var(--kai);font-weight:700;font-size:17px;margin-bottom:4px}
+.lane-sub{font-size:12px;color:var(--ink-soft);margin-bottom:12px}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;row-gap:10px}
+.node{border:2px solid var(--ink);background:var(--bar);padding:7px 13px;font-size:13.5px;white-space:nowrap;
+  display:inline-flex;align-items:baseline;gap:7px}
+.node.f-agent,.fam-legend .sw.agent{background:#E3EFE3}
+.node.f-data,.fam-legend .sw.data{background:#EDF0DC}
+.node.f-gpu,.fam-legend .sw.gpu{background:#E0EEF0}
+.node.f-inference,.fam-legend .sw.inference{background:#FDEBDD}
+.node.f-kernel,.fam-legend .sw.kernel{background:#EFE3D5}
+.node.f-lang,.fam-legend .sw.lang{background:#EAF0FA}
+.node.f-model,.fam-legend .sw.model{background:#EFE6F7}
+.node.f-ops,.fam-legend .sw.ops{background:#E8E8E2}
+.node.f-platform,.fam-legend .sw.platform{background:#F6DEDB}
+.node.f-training,.fam-legend .sw.training{background:#F9E9A0}
+.node .n{color:var(--blue);font-size:12px;font-variant-numeric:tabular-nums}
+.node:hover{outline:2px solid var(--blue);outline-offset:-1px}
+.fam-legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin:16px 0 4px;font-size:13px;color:var(--ink-soft)}
+.fam-legend .sw{display:inline-block;width:13px;height:13px;border:1.5px solid var(--ink);vertical-align:-2px;margin-right:7px}
+.joint{width:26px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+  font-size:14px}
+.dir-minor{padding:10px 4px 10px 34px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-soft)}
+.skill-heat{display:grid;gap:3px;font-size:13px;margin-top:8px}
+.skill-heat .s-row{font-weight:600;text-align:right;padding:5px 10px 5px 0;white-space:nowrap}
+.skill-heat .s-col{font-weight:600;text-align:center;padding:4px}
+.skill-heat .s-cell{display:flex;align-items:center;justify-content:flex-end;padding:5px 8px;
+  font-variant-numeric:tabular-nums;border-radius:2px;min-height:30px}
+.skill-heat .s-cell:hover{outline:2px solid var(--blue);outline-offset:-1px}
+.skill-heat .s-cell.z{background:rgba(43,43,43,.04)}
+.heatmap{display:grid;gap:3px;font-size:13px;margin-top:8px}
+.heatmap .s-row{font-weight:600;text-align:right;padding:5px 10px 5px 0;white-space:nowrap}
+.heatmap .s-col{font-weight:600;text-align:center;padding:4px}
+.heatmap .s-cell{display:flex;align-items:center;justify-content:flex-end;padding:5px 8px;
+  font-variant-numeric:tabular-nums;border-radius:2px;min-height:30px}
+.heatmap .s-cell:hover{outline:2px solid var(--blue);outline-offset:-1px}
+.heatmap .s-cell.z{background:rgba(43,43,43,.04)}
+.heatmap .h-col{font-weight:600;text-align:center;padding:4px}
+.heatmap .h-sum{color:var(--ink-soft)}
+.heatmap .s-row .row-tag{font-weight:400;color:var(--ink-soft);font-size:11px;margin-left:5px;white-space:nowrap}
+.heat-legend{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink-soft)}
+.heat-legend .sw{width:22px;height:14px;border:1px solid var(--line)}
+
+/* ── kind 徽标（主题黄 / 技术蓝 / 工作红，谱系树与三视角共用色系）── */
+.kd{display:inline-block;font-size:10.5px;line-height:1;padding:2px 5px;border-radius:2px;
+  vertical-align:1.5px;margin-right:5px;font-weight:600;letter-spacing:.05em}
+.kd-topic{background:var(--yellow);color:var(--ink)}
+.kd-technique{background:var(--blue);color:#fff}
+.kd-work{background:var(--red);color:#fff}
+
+/* ── 谱系树 kind/scope 过滤条 ── */
+.tree-filter{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:18px 0 4px;font-size:13px}
+.tree-filter .tf-label{color:var(--ink-soft);margin-right:2px}
+.tf-btn{padding:3px 12px;border:1.5px solid var(--ink);background:transparent;cursor:pointer;
+  font-size:12.5px;color:var(--ink);font-family:inherit}
+.tf-btn.on{background:var(--ink);color:var(--paper)}
+.tf-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.tf-sub{display:none;align-items:center;gap:6px}
+.tf-sub.show{display:flex}
+.skill-row.hidden{display:none}
+
+/* ── 三视角总览 ── */
+.kv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.kv-tab{padding:5px 14px;border:1.5px solid var(--ink);cursor:pointer;font-size:13px;background:transparent;color:var(--ink);font-family:inherit}
+.kv-tab.on{background:var(--ink);color:var(--paper)}
+.kv-tab:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.kv-view{margin-top:12px}
+.kv-h{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--ink)}
+.kv-base{border:1.5px solid var(--ink);background:rgba(247,209,84,.16);padding:10px 14px;
+  margin-bottom:12px;font-size:13.5px}
+.kv-base b{font-size:15px}
+.kv-base .n{color:var(--blue);font-weight:600;font-variant-numeric:tabular-nums}
+.kv-base .note{color:var(--ink-soft);font-size:12.5px;margin-left:8px}
+.kv-row{display:grid;grid-template-columns:160px 1fr 64px;gap:8px;align-items:center;padding:3px 0}
+.kv-name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv-bar{height:14px;background:var(--bar);position:relative}
+.kv-bar .kv-fill{position:absolute;inset:0 auto 0 0;background:var(--blue);transition:width .5s cubic-bezier(.6,0,.2,1)}
+.kv-num{text-align:right;color:var(--blue);font-variant-numeric:tabular-nums;font-weight:600}
+.kv-block{margin-top:14px;padding:12px;border:1.5px solid var(--line);background:rgba(43,43,43,.02)}
+.kv-block-h{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--ink)}
+.kv-scope-row{display:flex;gap:10px;align-items:baseline;margin:5px 0;flex-wrap:wrap}
+.kv-scope-label{flex:none;width:78px;font-size:12px;color:var(--ink-soft);font-weight:600}
+.kv-scope-row .kv-chips{flex:1;min-width:0}
+.kv-chips{display:flex;flex-wrap:wrap;gap:4px}
+.kv-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border:1px solid var(--line);
+  border-radius:3px;font-size:12.5px;background:var(--paper)}
+.kv-chip b{font-weight:600;color:var(--ink)}
+.kv-chip .kv-chip-n{color:var(--blue);font-variant-numeric:tabular-nums;font-size:11.5px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><a href="https://github.com/ForceInjection" title="ForceInjection on GitHub" target="_blank" rel="noopener"><img src="../../img/AI原力注入-logo.png" alt="AI 原力注入"></a></div>
+  <h1>AI Infra 技能地图 · 社招</h1>
+  <p class="sub">从 <span class="num" id="k-total"></span> 条社招在招岗位说明（JD）中提炼的分类与技能谱系。数据全部来自公开发布的招聘页面，逐条留有出处，采集于 2026-11-19，数据来自国内 AI 公司官方招聘渠道。</p>
+  <hr class="rule">
+</header>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">〇、三视角总览</span>
+    <span class="sec-note">主题覆盖率 / 技术栈 / 工作内容分布——三视角各自成榜，不互相比较</span></div>
+  <div id="kind-views"></div>
+</section>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">一、技能谱系树</span>
+    <span class="sec-note">点线名展开；叶长 = JD 条数；徽标 = 主题 / 技术 / 工作，支持按性质与应用域过滤</span></div>
+  <div class="tree" id="tree"></div>
+  <p class="hint">技能名做过归一化（Kubernetes/K8s 合并、LLM 与大模型合并等）；徽标标注技能性质：主题（黄）/ 技术（蓝）/ 工作（红）。每方向展示前 18 个技能，全量清单与计数基准见本地分析报告 skill-tree.md 及分渠道 skill-tree-society.md / skill-tree-campus.md（analysis/ 目录，本页计数为当前渠道口径）。</p>
+</section>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">二、按岗位的学习路线</span>
+    <span class="sec-note">块色 = 技能家族（见下方图例）；块上数字 = 要求该技能的 JD 条数</span></div>
+  <div class="path-tabs" id="path-tabs"></div>
+  <div id="path-view"></div>
+  <p class="hint">路线的先后顺序是编辑判断：以技能间的依赖关系为主（底层语言先于框架，框架先于调优）、JD 频次为参考，个别低频技能按岗位常识排序，JD 原文本身没有顺序。技能共现分析见本地分析报告 skill-tree.md（analysis/ 目录）。计数口径：方向 JD 提及的技能按方向计，其余按整条线计。</p>
+</section>
+
+<section class="sec">
+  <div class="sec-head"><span class="sec-title">三、技术栈 × 岗位类别</span>
+    <span class="sec-note">格色深浅 = 要求该技术栈词的 JD 条数；仅统计 technique 词</span></div>
+  <div id="skill-heat"></div>
+  <p class="hint">技术栈词取本渠道要求频次 Top 25（主题词与工作内容词不进本表，见三视角总览），行名旁小字为学习单元类型与应用域，横轴按类别展开（一条 JD 多技能分别计入）。同一技术栈词在不同类别中的位次差异，就是岗位对它要求程度的直接对比。</p>
+</section>
+
+<footer><div class="cols">
+  <p><b>口径。</b>全部记录为 JD 全文（full）。岗位职责逐条照抄原文拆分，未做概括。</p>
+  <p><b>来源。</b>12 家公司官网/官方 ATS（华为、百度无公开数据） 3407 条。每条记录的 source_url 可追溯到原页。完整方法见 <a href="README.md">README</a>。</p>
+  <p><b>时效。</b>数字为采集日（2026-11-19）快照。学习路线的先后顺序是编辑判断，技能计数随数据更新。</p>
+</div>
+<p class="copyright">© 2026 公众号「AI 原力注入」 · 数据可视化基于 ai_infra_jd_survey 数据集生成 · 转载请保留出处与数据口径</p>
+</footer>
+</div>
+
+<script>
+const D = {"total": 3407, "n_skills": 101, "cat_n": {"研发": 2224, "算法": 796, "运维": 33, "测试": 247, "SRE": 69, "产品与运营": 38}, "tree": {"研发": {"推理系统": {"模型推理": 171, "大模型/LLM": 142, "推理优化": 95, "GPU": 80, "性能优化": 71, "多模态": 70, "模型量化": 60, "模型训练": 52, "KV Cache": 44, "芯片": 44, "Agent框架": 37, "模型部署": 37, "机器学习": 32, "MoE": 21, "CUDA": 20, "vLLM": 20, "可观测性": 19, "SGLang": 19}, "Agent 应用": {"Agent框架": 868, "大模型/LLM": 457, "评测": 336, "模型推理": 204, "模型训练": 179, "多模态": 160, "RAG": 144, "提示词工程": 142, "微调 / SFT": 120, "MCP": 87, "强化学习": 74, "可观测性": 64, "性能优化": 59, "RLHF": 53, "模型量化": 44, "Python": 38, "数据库": 29, "机器学习": 25}, "算子与高性能计算": {"性能优化": 32, "模型推理": 29, "芯片": 25, "模型训练": 21, "大模型/LLM": 21, "GPU": 18, "编译器": 17, "CUDA": 8, "模型量化": 8, "多模态": 8, "Triton": 7, "机器学习": 7, "KV Cache": 7, "C++": 6, "Agent框架": 6, "MoE": 6, "RoCE": 5, "NCCL": 5}, "通用研发": {"大模型/LLM": 424, "Agent框架": 311, "模型推理": 217, "模型训练": 200, "评测": 156, "多模态": 151, "RAG": 94, "性能优化": 92, "提示词工程": 91, "GPU": 76, "微调 / SFT": 74, "机器学习": 60, "芯片": 58, "数据库": 57, "模型量化": 57, "模型部署": 50, "MCP": 35, "Python": 31}, "训练系统": {"模型训练": 83, "大模型/LLM": 69, "多模态": 30, "分布式训练": 27, "性能优化": 25, "机器学习": 23, "GPU": 22, "微调 / SFT": 21, "模型推理": 20, "Agent框架": 16, "Megatron": 13, "强化学习": 13, "预训练": 12, "PyTorch": 12, "可观测性": 10, "MoE": 9, "DeepSpeed": 8, "模型量化": 7}, "平台与调度": {"大模型/LLM": 73, "模型推理": 64, "模型训练": 48, "GPU": 40, "Agent框架": 35, "Kubernetes": 35, "评测": 25, "机器学习": 24, "性能优化": 21, "SLA/SLO": 17, "模型部署": 13, "数据库": 12, "可观测性": 10, "RDMA": 10, "微调 / SFT": 9, "Linux": 8, "Go": 8, "提示词工程": 7}, "Infra 工程": {"模型推理": 87, "大模型/LLM": 86, "模型训练": 80, "Agent框架": 53, "GPU": 52, "芯片": 37, "性能优化": 35, "多模态": 25, "模型量化": 25, "数据中心": 23, "模型部署": 18, "分布式训练": 17, "数据库": 16, "可观测性": 14, "Kubernetes": 14, "评测": 14, "机器学习": 13, "虚拟化": 13}, "存储系统": {"大模型/LLM": 19, "模型推理": 17, "数据库": 17, "模型训练": 15, "KV Cache": 10, "GPU": 9, "Agent框架": 9, "性能优化": 8, "RDMA": 7, "多模态": 6, "NVMe": 5, "vLLM": 5, "SGLang": 5, "强化学习": 4, "可观测性": 3, "TTFT": 3, "机器学习": 2, "SLA/SLO": 2}, "网络系统": {"模型推理": 29, "模型训练": 28, "大模型/LLM": 24, "NCCL": 15, "RDMA": 13, "性能优化": 12, "数据中心": 12, "芯片": 10, "GPU": 8, "分布式训练": 7, "虚拟化": 7, "RoCE": 5, "Triton": 4, "数据库": 4, "Agent框架": 4, "故障排查": 3, "可观测性": 3, "Kubernetes": 2}}, "算法": {"大模型算法": {"大模型/LLM": 673, "多模态": 466, "模型训练": 444, "Agent框架": 375, "微调 / SFT": 291, "模型推理": 259, "评测": 203, "强化学习": 203, "预训练": 155, "机器学习": 108, "RAG": 95, "RLHF": 95, "数据合成": 71, "模型量化": 68, "模型蒸馏": 66, "推理优化": 54, "提示词工程": 45, "模型部署": 35}, "推荐算法": {"大模型/LLM": 46, "模型推理": 26, "多模态": 25, "模型训练": 20, "机器学习": 11, "Agent框架": 11, "强化学习": 10, "推理优化": 8, "微调 / SFT": 6, "RAG": 4, "模型蒸馏": 3, "模型量化": 3, "评测": 3, "模型部署": 2, "预训练": 2, "GPU": 2, "TensorFlow": 1, "PyTorch": 1}}, "运维": {"模型运维": {"大模型/LLM": 12, "模型训练": 8, "微调 / SFT": 5, "提示词工程": 4, "RAG": 4, "Agent框架": 4, "模型部署": 3, "机器学习": 3, "GPU": 2, "模型推理": 2, "评测": 2, "Linux": 1, "InfiniBand": 1, "Python": 1, "Shell": 1, "TensorFlow": 1, "SRE": 1, "NCCL": 1}, "GPU/IDC 运维": {"数据中心": 15, "大模型/LLM": 10, "芯片": 7, "数据库": 6, "GPU": 5, "模型训练": 4, "模型推理": 4, "Agent框架": 3, "评测": 3, "虚拟化": 2, "性能优化": 2, "CUDA": 2, "Python": 2, "强化学习": 2, "机器学习": 2, "数据合成": 2, "C++": 2, "服务器硬件": 1}}, "测试": {"测试/评测": {"评测": 206, "大模型/LLM": 167, "Agent框架": 150, "模型训练": 66, "多模态": 60, "模型推理": 43, "微调 / SFT": 26, "提示词工程": 21, "Python": 17, "RLHF": 16, "模型量化": 14, "数据合成": 11, "预训练": 10, "CI/CD": 10, "RAG": 9, "模型部署": 9, "数据标注": 8, "芯片": 7}}, "SRE": {"SRE": {"SRE": 40, "大模型/LLM": 35, "模型推理": 29, "Agent框架": 27, "GPU": 25, "模型训练": 22, "SLA/SLO": 21, "评测": 11, "性能优化": 11, "可观测性": 10, "机器学习": 9, "Kubernetes": 9, "故障排查": 6, "芯片": 6, "数据库": 5, "多模态": 5, "RAG": 5, "Python": 5}}, "产品与运营": {"产品与运营": {"大模型/LLM": 23, "模型训练": 15, "Agent框架": 15, "多模态": 15, "模型推理": 11, "评测": 9, "模型部署": 4, "微调 / SFT": 4, "虚拟化": 3, "GPU": 3, "芯片": 3, "提示词工程": 2, "预训练": 2, "模型量化": 2, "可观测性": 2, "RAG": 1, "强化学习": 1, "RLHF": 1}}}, "sub_jd": {"研发": {"Agent 应用": 876, "通用研发": 635, "Infra 工程": 190, "推理系统": 182, "平台与调度": 130, "训练系统": 83, "算子与高性能计算": 51, "网络系统": 40, "存储系统": 37}, "算法": {"大模型算法": 749, "推荐算法": 47}, "运维": {"GPU/IDC 运维": 21, "模型运维": 12}, "测试": {"测试/评测": 247}, "SRE": {"SRE": 69}, "产品与运营": {"产品与运营": 38}}, "cat_skills": {"研发": {"Agent框架": 1339, "大模型/LLM": 1315, "模型推理": 838, "模型训练": 706, "评测": 558, "多模态": 457, "性能优化": 355, "GPU": 318, "RAG": 255, "提示词工程": 245, "微调 / SFT": 234, "模型量化": 207, "芯片": 197, "机器学习": 186, "推理优化": 146, "可观测性": 145, "模型部署": 143, "数据库": 141, "MCP": 129, "强化学习": 125, "Kubernetes": 102, "KV Cache": 99, "Python": 93, "分布式训练": 92, "RLHF": 82, "SLA/SLO": 77, "Go": 69, "数据中心": 68, "RDMA": 66, "vLLM": 59, "模型蒸馏": 58, "MoE": 56, "编译器": 52, "Linux": 49, "SGLang": 47, "CUDA": 45, "预训练": 45, "PyTorch": 44, "NCCL": 44, "CI/CD": 43, "虚拟化": 42, "数据合成": 41, "C++": 39, "Java": 38, "Triton": 37, "SRE": 37, "Function Calling": 34, "Megatron": 29, "TTFT": 25, "知识图谱": 24, "数据标注": 23, "Spark": 23, "TypeScript": 23, "RoCE": 22, "Rust": 20, "故障排查": 20, "TensorRT-LLM": 19, "InfiniBand": 18, "Ray": 18, "LangGraph": 18, "Flink": 16, "DeepSpeed": 16, "TPOT": 15, "Docker": 14, "Git": 12, "TensorFlow": 12, "Prometheus": 10, "OpenAI API": 10, "LangChain": 10, "MySQL": 10, "CUTLASS": 8, "NVMe": 8, "Redis": 8, "CDN": 7, "XPU": 7, "Elasticsearch": 6, "TensorRT": 6, "FlashAttention": 5, "PostgreSQL": 5, "gRPC": 5, "Grafana": 4, "ClickHouse": 4, "Kafka": 3, "服务器硬件": 3, "Shell": 3, "Milvus": 3, "AWS": 3, "JAX": 3, "MongoDB": 3, "WASM": 2, "MIG": 2, "FAISS": 2, "JavaScript": 2, "Terraform": 2, "ELK": 2, "Ansible": 2, "Protobuf": 1, "Slurm": 1, "Azure": 1, "GPU池化": 1, "nvidia-smi": 1}, "算法": {"大模型/LLM": 719, "多模态": 491, "模型训练": 464, "Agent框架": 386, "微调 / SFT": 297, "模型推理": 285, "强化学习": 213, "评测": 206, "预训练": 157, "机器学习": 119, "RAG": 99, "RLHF": 96, "数据合成": 71, "模型量化": 71, "模型蒸馏": 69, "推理优化": 62, "提示词工程": 45, "模型部署": 37, "性能优化": 34, "MoE": 30, "GPU": 24, "知识图谱": 22, "Python": 21, "PyTorch": 21, "分布式训练": 21, "芯片": 15, "vLLM": 13, "Megatron": 13, "数据标注": 12, "DeepSpeed": 12, "KV Cache": 11, "TensorFlow": 7, "编译器": 7, "数据库": 6, "C++": 6, "MCP": 6, "SLA/SLO": 6, "Linux": 6, "Spark": 5, "Ray": 5, "Triton": 5, "CUDA": 5, "TensorRT-LLM": 4, "CI/CD": 4, "可观测性": 3, "TensorRT": 3, "数据中心": 3, "Kubernetes": 3, "JAX": 3, "Function Calling": 3, "Rust": 2, "TTFT": 2, "虚拟化": 2, "NCCL": 2, "FlashAttention": 2, "SGLang": 2, "Docker": 2, "故障排查": 2, "TPOT": 1, "RoCE": 1, "RDMA": 1, "Flink": 1, "Java": 1, "Git": 1, "Go": 1, "Shell": 1, "OpenAI API": 1}, "运维": {"大模型/LLM": 22, "数据中心": 15, "模型训练": 12, "GPU": 7, "Agent框架": 7, "芯片": 7, "模型推理": 6, "微调 / SFT": 6, "数据库": 6, "评测": 5, "机器学习": 5, "提示词工程": 4, "RAG": 4, "模型部署": 4, "Python": 3, "Linux": 2, "Shell": 2, "TensorFlow": 2, "PyTorch": 2, "多模态": 2, "虚拟化": 2, "性能优化": 2, "RLHF": 2, "CUDA": 2, "强化学习": 2, "数据合成": 2, "C++": 2, "InfiniBand": 1, "SRE": 1, "NCCL": 1, "Kubernetes": 1, "Docker": 1, "RDMA": 1, "Go": 1, "服务器硬件": 1, "SLA/SLO": 1, "模型蒸馏": 1, "MCP": 1, "可观测性": 1, "推理优化": 1, "nvidia-smi": 1, "CI/CD": 1}, "测试": {"评测": 206, "大模型/LLM": 167, "Agent框架": 150, "模型训练": 66, "多模态": 60, "模型推理": 43, "微调 / SFT": 26, "提示词工程": 21, "Python": 17, "RLHF": 16, "模型量化": 14, "数据合成": 11, "预训练": 10, "CI/CD": 10, "RAG": 9, "模型部署": 9, "数据标注": 8, "芯片": 7, "性能优化": 5, "Java": 5, "MCP": 4, "推理优化": 4, "数据库": 4, "数据中心": 4, "可观测性": 4, "C++": 4, "Go": 4, "机器学习": 3, "LangChain": 3, "知识图谱": 3, "GPU": 3, "编译器": 3, "强化学习": 2, "TypeScript": 2, "Function Calling": 2, "Linux": 2, "KV Cache": 1, "LangGraph": 1, "NVMe": 1, "Kubernetes": 1, "XPU": 1, "OpenAI API": 1, "Docker": 1, "模型蒸馏": 1}, "SRE": {"SRE": 40, "大模型/LLM": 35, "模型推理": 29, "Agent框架": 27, "GPU": 25, "模型训练": 22, "SLA/SLO": 21, "评测": 11, "性能优化": 11, "可观测性": 10, "机器学习": 9, "Kubernetes": 9, "故障排查": 6, "芯片": 6, "数据库": 5, "多模态": 5, "RAG": 5, "Python": 5, "模型量化": 5, "KV Cache": 5, "TTFT": 5, "TPOT": 5, "vLLM": 5, "虚拟化": 5, "推理优化": 4, "XPU": 4, "Prometheus": 4, "Go": 4, "CI/CD": 4, "模型部署": 3, "Linux": 3, "Grafana": 3, "Java": 3, "SGLang": 3, "数据中心": 2, "ELK": 2, "TensorRT-LLM": 2, "NCCL": 2, "RDMA": 2, "CDN": 1, "MySQL": 1, "AWS": 1, "Redis": 1, "Shell": 1, "Rust": 1, "提示词工程": 1, "服务器硬件": 1, "Slurm": 1, "MCP": 1, "Ray": 1, "Function Calling": 1, "知识图谱": 1, "C++": 1, "CUDA": 1, "Megatron": 1, "PyTorch": 1}, "产品与运营": {"大模型/LLM": 23, "模型训练": 15, "Agent框架": 15, "多模态": 15, "模型推理": 11, "评测": 9, "模型部署": 4, "微调 / SFT": 4, "虚拟化": 3, "GPU": 3, "芯片": 3, "提示词工程": 2, "预训练": 2, "模型量化": 2, "可观测性": 2, "RAG": 1, "强化学习": 1, "RLHF": 1, "SLA/SLO": 1, "SRE": 1, "数据合成": 1, "推理优化": 1, "Linux": 1, "数据标注": 1, "Go": 1, "模型蒸馏": 1, "编译器": 1, "vLLM": 1, "CI/CD": 1, "SGLang": 1, "DeepSpeed": 1, "MCP": 1, "Python": 1, "TensorFlow": 1, "PyTorch": 1}}};
+const CAT_DISPLAY_ORDER = ["算法", "研发", "测试", "SRE", "运维", "产品与运营"];
+/* ── KPI ── */
+document.getElementById('k-total').textContent = D.total;
+
+/* ── 大类清单（技能树与路线计数共用）── */
+const CATS = CAT_DISPLAY_ORDER.filter(c => D.cat_n[c]);
+
+/* ── 〇、三视角总览（topic / technique / work 三榜不互相比较）── */
+const KV = {"total": 3407, "topic": {"base": [{"name": "大模型/LLM", "count": 2281, "pct": 67.0}], "items": [{"name": "Agent框架", "count": 1924, "pct": 56.5}, {"name": "模型训练", "count": 1285, "pct": 37.7}, {"name": "模型推理", "count": 1212, "pct": 35.6}, {"name": "多模态", "count": 1030, "pct": 30.2}, {"name": "强化学习", "count": 343, "pct": 10.1}, {"name": "机器学习", "count": 322, "pct": 9.5}, {"name": "芯片", "count": 235, "pct": 6.9}, {"name": "预训练", "count": 214, "pct": 6.3}, {"name": "数据中心", "count": 92, "pct": 2.7}, {"name": "知识图谱", "count": 50, "pct": 1.5}]}, "technique": [{"type": "language", "label": "编程/建模语言", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "Triton", "count": 42, "scope": "ai-infra"}]}, {"scope": "general", "label": "通用底座", "items": [{"name": "Python", "count": 140, "scope": "general"}, {"name": "Go", "count": 80, "scope": "general"}, {"name": "C++", "count": 52, "scope": "general"}, {"name": "Java", "count": 47, "scope": "general"}, {"name": "TypeScript", "count": 25, "scope": "general"}, {"name": "Rust", "count": 23, "scope": "general"}, {"name": "Shell", "count": 7, "scope": "general"}, {"name": "JavaScript", "count": 2, "scope": "general"}]}]}, {"type": "framework", "label": "开发框架与库", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "vLLM", "count": 78, "scope": "ai-infra"}, {"name": "PyTorch", "count": 69, "scope": "ai-infra"}, {"name": "CUDA", "count": 53, "scope": "ai-infra"}, {"name": "SGLang", "count": 53, "scope": "ai-infra"}, {"name": "NCCL", "count": 49, "scope": "ai-infra"}, {"name": "Megatron", "count": 43, "scope": "ai-infra"}, {"name": "DeepSpeed", "count": 29, "scope": "ai-infra"}, {"name": "TensorRT-LLM", "count": 25, "scope": "ai-infra"}, {"name": "Ray", "count": 24, "scope": "ai-infra"}, {"name": "TensorFlow", "count": 22, "scope": "ai-infra"}, {"name": "TensorRT", "count": 9, "scope": "ai-infra"}, {"name": "CUTLASS", "count": 8, "scope": "ai-infra"}, {"name": "FlashAttention", "count": 7, "scope": "ai-infra"}, {"name": "JAX", "count": 6, "scope": "ai-infra"}]}, {"scope": "agent-infra", "label": "Agent Infra", "items": [{"name": "LangGraph", "count": 19, "scope": "agent-infra"}, {"name": "LangChain", "count": 13, "scope": "agent-infra"}]}]}, {"type": "platform-tool", "label": "工具、平台与协议", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "Slurm", "count": 2, "scope": "ai-infra"}, {"name": "nvidia-smi", "count": 2, "scope": "ai-infra"}, {"name": "GPU池化", "count": 1, "scope": "ai-infra"}]}, {"scope": "agent-infra", "label": "Agent Infra", "items": [{"name": "MCP", "count": 142, "scope": "agent-infra"}, {"name": "Function Calling", "count": 40, "scope": "agent-infra"}, {"name": "OpenAI API", "count": 12, "scope": "agent-infra"}]}, {"scope": "general", "label": "通用底座", "items": [{"name": "Kubernetes", "count": 116, "scope": "general"}, {"name": "CI/CD", "count": 63, "scope": "general"}, {"name": "Linux", "count": 63, "scope": "general"}, {"name": "编译器", "count": 63, "scope": "general"}, {"name": "虚拟化", "count": 54, "scope": "general"}, {"name": "Docker", "count": 18, "scope": "general"}, {"name": "Prometheus", "count": 14, "scope": "general"}, {"name": "Git", "count": 13, "scope": "general"}, {"name": "CDN", "count": 8, "scope": "general"}, {"name": "Grafana", "count": 7, "scope": "general"}, {"name": "gRPC", "count": 5, "scope": "general"}, {"name": "AWS", "count": 4, "scope": "general"}, {"name": "ELK", "count": 4, "scope": "general"}, {"name": "Ansible", "count": 2, "scope": "general"}, {"name": "Terraform", "count": 2, "scope": "general"}, {"name": "WASM", "count": 2, "scope": "general"}, {"name": "Azure", "count": 1, "scope": "general"}, {"name": "Protobuf", "count": 1, "scope": "general"}]}]}, {"type": "hardware-interface", "label": "物理硬件与互联接口", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "GPU", "count": 380, "scope": "ai-infra"}, {"name": "RDMA", "count": 70, "scope": "ai-infra"}, {"name": "RoCE", "count": 23, "scope": "ai-infra"}, {"name": "InfiniBand", "count": 19, "scope": "ai-infra"}, {"name": "XPU", "count": 12, "scope": "ai-infra"}, {"name": "NVMe", "count": 9, "scope": "ai-infra"}, {"name": "服务器硬件", "count": 5, "scope": "ai-infra"}, {"name": "MIG", "count": 2, "scope": "ai-infra"}]}]}, {"type": "data-system", "label": "数据存储与处理系统", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "Milvus", "count": 3, "scope": "ai-infra"}, {"name": "FAISS", "count": 2, "scope": "ai-infra"}]}, {"scope": "general", "label": "通用底座", "items": [{"name": "数据库", "count": 162, "scope": "general"}, {"name": "Spark", "count": 28, "scope": "general"}, {"name": "Flink", "count": 17, "scope": "general"}, {"name": "MySQL", "count": 11, "scope": "general"}, {"name": "Redis", "count": 9, "scope": "general"}, {"name": "Elasticsearch", "count": 6, "scope": "general"}, {"name": "PostgreSQL", "count": 5, "scope": "general"}, {"name": "ClickHouse", "count": 4, "scope": "general"}, {"name": "Kafka", "count": 3, "scope": "general"}, {"name": "MongoDB", "count": 3, "scope": "general"}]}]}, {"type": "method", "label": "具名方法与范式", "scope_blocks": [{"scope": "ai-infra", "label": "AI Infra", "items": [{"name": "模型量化", "count": 299, "scope": "ai-infra"}, {"name": "RLHF", "count": 197, "scope": "ai-infra"}, {"name": "模型蒸馏", "count": 130, "scope": "ai-infra"}, {"name": "KV Cache", "count": 116, "scope": "ai-infra"}, {"name": "分布式训练", "count": 113, "scope": "ai-infra"}, {"name": "MoE", "count": 86, "scope": "ai-infra"}]}, {"scope": "agent-infra", "label": "Agent Infra", "items": [{"name": "RAG", "count": 373, "scope": "agent-infra"}, {"name": "提示词工程", "count": 318, "scope": "agent-infra"}]}]}], "work": [{"work_type": "action", "label": "岗位动作", "items": [{"name": "评测", "count": 995}, {"name": "微调 / SFT", "count": 567}, {"name": "性能优化", "count": 407}, {"name": "推理优化", "count": 218}, {"name": "模型部署", "count": 200}, {"name": "数据合成", "count": 126}, {"name": "数据标注", "count": 44}, {"name": "故障排查", "count": 28}]}, {"work_type": "role", "label": "角色", "items": [{"name": "SRE", "count": 79}]}, {"work_type": "metric", "label": "指标", "items": [{"name": "SLA/SLO", "count": 106}, {"name": "TTFT", "count": 32}, {"name": "TPOT", "count": 21}]}, {"work_type": "capability", "label": "能力保障", "items": [{"name": "可观测性", "count": 165}]}]};
+const TAX = {"多模态": {"kind": "topic"}, "大模型/LLM": {"kind": "topic", "base": true}, "强化学习": {"kind": "topic"}, "数据中心": {"kind": "topic"}, "机器学习": {"kind": "topic"}, "模型推理": {"kind": "topic"}, "模型训练": {"kind": "topic"}, "知识图谱": {"kind": "topic"}, "芯片": {"kind": "topic"}, "预训练": {"kind": "topic"}, "ClickHouse": {"kind": "technique", "type": "data-system", "scope": "general"}, "Elasticsearch": {"kind": "technique", "type": "data-system", "scope": "general"}, "FAISS": {"kind": "technique", "type": "data-system", "scope": "ai-infra"}, "Flink": {"kind": "technique", "type": "data-system", "scope": "general"}, "Kafka": {"kind": "technique", "type": "data-system", "scope": "general"}, "Milvus": {"kind": "technique", "type": "data-system", "scope": "ai-infra"}, "MongoDB": {"kind": "technique", "type": "data-system", "scope": "general"}, "MySQL": {"kind": "technique", "type": "data-system", "scope": "general"}, "PostgreSQL": {"kind": "technique", "type": "data-system", "scope": "general"}, "Redis": {"kind": "technique", "type": "data-system", "scope": "general"}, "Spark": {"kind": "technique", "type": "data-system", "scope": "general"}, "数据库": {"kind": "technique", "type": "data-system", "scope": "general"}, "Agent框架": {"kind": "topic"}, "CUDA": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "CUTLASS": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "DeepSpeed": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "FlashAttention": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "JAX": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "LangChain": {"kind": "technique", "type": "framework", "scope": "agent-infra"}, "LangGraph": {"kind": "technique", "type": "framework", "scope": "agent-infra"}, "Megatron": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "NCCL": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "PyTorch": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "Ray": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "SGLang": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "TensorFlow": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "TensorRT": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "TensorRT-LLM": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "vLLM": {"kind": "technique", "type": "framework", "scope": "ai-infra"}, "BDSL": {"kind": "technique", "type": "data-system", "scope": "ai-infra"}, "GPU": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "IBoF": {"kind": "technique", "type": "data-system", "scope": "ai-infra"}, "InfiniBand": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "MIG": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "NVMe": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "RDMA": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "RoCE": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "XPU": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "服务器硬件": {"kind": "technique", "type": "hardware-interface", "scope": "ai-infra"}, "C++": {"kind": "technique", "type": "language", "scope": "general"}, "Go": {"kind": "technique", "type": "language", "scope": "general"}, "Java": {"kind": "technique", "type": "language", "scope": "general"}, "JavaScript": {"kind": "technique", "type": "language", "scope": "general"}, "Python": {"kind": "technique", "type": "language", "scope": "general"}, "Rust": {"kind": "technique", "type": "language", "scope": "general"}, "Shell": {"kind": "technique", "type": "language", "scope": "general"}, "Triton": {"kind": "technique", "type": "language", "scope": "ai-infra"}, "TypeScript": {"kind": "technique", "type": "language", "scope": "general"}, "KV Cache": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "MoE": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "RAG": {"kind": "technique", "type": "method", "scope": "agent-infra"}, "RLHF": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "分布式训练": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "提示词工程": {"kind": "technique", "type": "method", "scope": "agent-infra"}, "模型蒸馏": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "模型量化": {"kind": "technique", "type": "method", "scope": "ai-infra"}, "AWS": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "Ansible": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Azure": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "CDN": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "CI/CD": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "DCGM": {"kind": "technique", "type": "platform-tool", "scope": "ai-infra"}, "Docker": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "ELK": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "Envoy": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Function Calling": {"kind": "technique", "type": "platform-tool", "scope": "agent-infra"}, "GCP": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "GPU池化": {"kind": "technique", "type": "platform-tool", "scope": "ai-infra"}, "Git": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Grafana": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "Istio": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Kubernetes": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "Linux": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "MCP": {"kind": "technique", "type": "platform-tool", "scope": "agent-infra"}, "OpenAI API": {"kind": "technique", "type": "platform-tool", "scope": "agent-infra"}, "Prometheus": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "Protobuf": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Slurm": {"kind": "technique", "type": "platform-tool", "scope": "ai-infra"}, "Terraform": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "VMware": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "WASM": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "Zabbix": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "gRPC": {"kind": "technique", "type": "platform-tool", "scope": "general"}, "nvidia-smi": {"kind": "technique", "type": "platform-tool", "scope": "ai-infra"}, "编译器": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "虚拟化": {"kind": "technique", "type": "platform-tool", "scope": "general", "sf": ["ai-infra"]}, "SLA/SLO": {"kind": "work", "wt": "metric"}, "SRE": {"kind": "work", "wt": "role"}, "TPOT": {"kind": "work", "wt": "metric"}, "TTFT": {"kind": "work", "wt": "metric"}, "可观测性": {"kind": "work", "wt": "capability"}, "微调 / SFT": {"kind": "work", "wt": "action"}, "性能优化": {"kind": "work", "wt": "action"}, "推理优化": {"kind": "work", "wt": "action"}, "故障排查": {"kind": "work", "wt": "action"}, "数据合成": {"kind": "work", "wt": "action"}, "数据标注": {"kind": "work", "wt": "action"}, "模型部署": {"kind": "work", "wt": "action"}, "评测": {"kind": "work", "wt": "action"}};
+const TYPE_CN = {language: '语言', framework: '框架', 'platform-tool': '工具', 'hardware-interface': '硬件', 'data-system': '数据', 'method': '方法'};
+const SCOPE_CN = {'ai-infra': 'AI Infra', 'agent-infra': 'Agent Infra', 'general': '通用底座'};
+const WORK_CN = {action: '岗位动作', role: '角色', metric: '指标', capability: '能力保障'};
+(function renderKindViews() {
+  const root = document.getElementById('kind-views');
+  if (!root || !KV) return;
+  const KIND_LABEL = {topic: '主题覆盖率', technique: '技术栈', work: '工作内容分布'};
+  const KIND_DESC = {
+    topic: 'JD 中提及该主题的占比（分母 = 全部 JD）。行业默认词置顶单列，不参与下方排名',
+    technique: '按学习单元类型分组，组内按应用域分块，块内按提及 JD 数排名，组间不比较',
+    work: '按岗位动作 / 角色 / 指标 / 能力保障分组，组内按提及 JD 数排名，组间不比较',
+  };
+  const tabs = ['topic', 'technique', 'work'];
+  const bar = document.createElement('div'); bar.className = 'kv-tabs';
+  const view = document.createElement('div'); view.className = 'kv-view';
+  let active = 'topic';
+  const btns = {};
+  tabs.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'kv-tab'; b.textContent = KIND_LABEL[t];
+    b.setAttribute('role', 'tab');
+    b.onclick = () => {
+      active = t;
+      tabs.forEach(x => btns[x].classList.toggle('on', x === t));
+      render();
+    };
+    btns[t] = b; bar.appendChild(b);
+  });
+  btns.topic.classList.add('on');
+  root.appendChild(bar); root.appendChild(view);
+  const maxOf = arr => Math.max(1, ...arr.map(x => x.count));
+  const barRow = (x, mx) =>
+    `<div class="kv-row"><span class="kv-name">${x.name}</span>` +
+    `<span class="kv-bar"><span class="kv-fill" style="width:${(x.count / mx * 100).toFixed(1)}%"></span></span>` +
+    `<span class="kv-num">${x.count}</span></div>`;
+  function render() {
+    view.innerHTML = '';
+    const h = document.createElement('div'); h.className = 'kv-h';
+    h.textContent = KIND_DESC[active] || '';
+    view.appendChild(h);
+    if (active === 'topic') {
+      (KV.topic.base || []).forEach(x => {
+        const card = document.createElement('div'); card.className = 'kv-base';
+        card.innerHTML = `行业默认词：<b>${x.name}</b> <span class="n num">${x.count}</span>` +
+          `<span class="note">覆盖率 ${x.pct}%——绝大多数 JD 默认提及，只说明「这是 AI 行业」，不参与下方排名</span>`;
+        view.appendChild(card);
+      });
+      const mx = maxOf(KV.topic.items);
+      KV.topic.items.forEach(x => { view.insertAdjacentHTML('beforeend', barRow(x, mx)); });
+    } else if (active === 'technique') {
+      KV.technique.forEach(g => {
+        const blk = document.createElement('div'); blk.className = 'kv-block';
+        blk.innerHTML = `<div class="kv-block-h">${g.label}</div>`;
+        g.scope_blocks.forEach(sb => {
+          const chips = sb.items.map(it =>
+            `<span class="kv-chip"><b>${it.name}</b><span class="kv-chip-n">${it.count}</span></span>`).join('');
+          blk.insertAdjacentHTML('beforeend',
+            `<div class="kv-scope-row"><span class="kv-scope-label">${sb.label}</span><span class="kv-chips">${chips}</span></div>`);
+        });
+        view.appendChild(blk);
+      });
+    } else {
+      KV.work.forEach(g => {
+        const blk = document.createElement('div'); blk.className = 'kv-block';
+        blk.innerHTML = `<div class="kv-block-h">${g.label}</div>`;
+        const mx = maxOf(g.items);
+        g.items.forEach(x => { blk.insertAdjacentHTML('beforeend', barRow(x, mx)); });
+        view.appendChild(blk);
+      });
+    }
+  }
+  render();
+})();
+
+/* ── 一、技能谱系树（kind 徽标 + 性质/应用域过滤；子树保留全部词，作索引）── */
+const tree = document.getElementById('tree');
+const KIND_META = {
+  topic:     {label: '主题', cls: 'kd-topic'},
+  technique: {label: '技术', cls: 'kd-technique'},
+  work:      {label: '工作', cls: 'kd-work'},
+};
+const kindOf = s => (TAX[s] || {}).kind || '';
+const scopeOf = s => (TAX[s] || {}).scope || '';
+
+// 过滤条：性质（kind）× 应用域（scope，仅在技术栈时生效）
+let fKind = '', fScope = '';
+const tfBar = document.createElement('div'); tfBar.className = 'tree-filter';
+tfBar.innerHTML = '<span class="tf-label">按性质过滤：</span>';
+[['', '全部'], ['topic', '主题'], ['technique', '技术栈'], ['work', '工作内容']].forEach(([k, label]) => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.className = 'tf-btn' + (k === '' ? ' on' : ''); b.textContent = label;
+  b.onclick = () => {
+    fKind = k;
+    if (fKind !== 'technique') fScope = '';
+    tfBar.querySelectorAll(':scope > .tf-btn').forEach(x => x.classList.toggle('on', x.textContent === label));
+    subBar.classList.toggle('show', fKind === 'technique');
+    if (fKind !== 'technique') subBar.querySelectorAll('.tf-btn').forEach((x, i) => x.classList.toggle('on', i === 0));
+    applyFilter();
+  };
+  tfBar.appendChild(b);
+});
+const subBar = document.createElement('div'); subBar.className = 'tf-sub';
+subBar.innerHTML = '<span class="tf-label">应用域：</span>';
+[['', '全部'], ['ai-infra', 'AI Infra'], ['agent-infra', 'Agent Infra'], ['general', '通用底座']].forEach(([k, label]) => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.className = 'tf-btn' + (k === '' ? ' on' : ''); b.textContent = label;
+  b.onclick = () => {
+    fScope = k;
+    subBar.querySelectorAll('.tf-btn').forEach(x => x.classList.toggle('on', x.textContent === label));
+    applyFilter();
+  };
+  subBar.appendChild(b);
+});
+tfBar.appendChild(subBar);
+tree.parentNode.insertBefore(tfBar, tree);
+
+function applyFilter() {
+  document.querySelectorAll('#tree .dir').forEach(dir => {
+    let vis = 0, tot = 0;
+    dir.querySelectorAll('.skill-row').forEach(row => {
+      tot++;
+      const ok = (!fKind || row.dataset.kind === fKind) &&
+                 (!fScope || fKind !== 'technique' || row.dataset.scope === fScope);
+      row.classList.toggle('hidden', !ok);
+      if (ok) vis++;
+    });
+    const cnt = dir.querySelector('.dir-h .cnt');
+    if (cnt && cnt.dataset.base) cnt.textContent = cnt.dataset.base + (vis < tot ? ` · 匹配 ${vis}/${tot}` : '');
+  });
+}
+
+const LINES = CATS.filter(c => (D.sub_jd[c] && Object.keys(D.sub_jd[c]).length));
+LINES.forEach((c, li) => {
+  const line = document.createElement('div');
+  const tops = Object.entries(D.cat_skills[c] || {}).slice(0, 6)
+    .map(([s,n]) => `<b>${s}</b>(${n})`).join('、');
+  line.innerHTML = `<div class="line-h" role="button" tabindex="0" aria-expanded="false">
+      <span class="caret">▶</span><span class="name">${c}线</span>
+      <span class="cnt num">${D.cat_n[c]} 条 JD</span>
+      <span class="tops">${tops}</span></div>
+    <div class="line-body"></div>`;
+  const body = line.querySelector('.line-body');
+  // 方向排序：JD 数降序；<3 条的方向合并成一行次要条目
+  const subs = Object.entries(D.sub_jd[c]).sort((a,b) => b[1]-a[1]);
+  const minor = [];
+  subs.forEach(([sub, nSub]) => {
+    if (nSub < 3) { minor.push(`${sub}(${nSub})`); return; }
+    const skills = (D.tree[c] && D.tree[c][sub]) || {};
+    const mx = Math.max(1, ...Object.values(skills));
+    const dir = document.createElement('div');
+    dir.className = 'dir';
+    dir.innerHTML = `<div class="dir-h" role="button" tabindex="0" aria-expanded="false">
+        <span class="caret">▶</span><span class="dir-name">${sub}</span>
+        <span class="cnt num" data-base="${nSub} 条">${nSub} 条</span></div>
+      <div class="skills">${Object.entries(skills).map(([s,n]) => {
+        const k = kindOf(s), km = KIND_META[k];
+        const badge = km ? `<span class="kd ${km.cls}">${km.label}</span>` : '';
+        return `<div class="skill-row" data-kind="${k}" data-scope="${scopeOf(s)}">
+         <span class="nm">${badge}${s}</span>
+         <span class="track"><span class="fill" data-w="${(n/mx*100).toFixed(1)}" style="width:0"></span></span>
+         <span class="v num">${n}</span></div>`;
+      }).join('')}</div>`;
+    const dh = dir.querySelector('.dir-h');
+    const toggleDir = () => {
+      const on = dir.classList.toggle('open');
+      dh.setAttribute('aria-expanded', on);
+      if (on) dir.querySelectorAll('.fill').forEach(f => f.style.width = f.dataset.w + '%');
+    };
+    dh.addEventListener('click', toggleDir);
+    dh.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggleDir(); } });
+    body.appendChild(dir);
+  });
+  if (minor.length) {
+    const mrow = document.createElement('div');
+    mrow.className = 'dir-minor';
+    mrow.textContent = `其余方向：${minor.join('、')}`;
+    body.appendChild(mrow);
+  }
+  const lh = line.querySelector('.line-h');
+  const toggleLine = () => {
+    const on = line.classList.toggle('open') !== undefined ? line.classList.contains('open') : false;
+    lh.classList.toggle('open', on);
+    lh.setAttribute('aria-expanded', on);
+    body.classList.toggle('open', on);
+  };
+  lh.addEventListener('click', toggleLine);
+  lh.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggleLine(); } });
+  tree.appendChild(line);
+  if (li === 0 || new URLSearchParams(location.search).get('expand') === 'all') {
+    if (!line.classList.contains('open')) toggleLine();
+  }
+});
+// ?expand=all 同时展开全部方向
+if (new URLSearchParams(location.search).get('expand') === 'all') {
+  document.querySelectorAll('.dir-h').forEach(dh => dh.click());
+}
+
+/* ── 二、按岗位的学习路线 ── */
+const ROADMAPS = {"算法": {"base": ["Python", "PyTorch"], "lanes": [{"name": "大模型算法", "sub": "大模型算法", "skills": ["大模型/LLM", "多模态", "模型量化", "RLHF", "推理优化"]}, {"name": "推荐算法", "sub": "推荐算法", "skills": ["大模型/LLM", "多模态", "推理优化", "PyTorch", "模型量化"]}]}, "研发": {"base": ["Python", "Linux", "Docker"], "lanes": [{"name": "Agent 应用", "sub": "Agent 应用", "skills": ["Agent框架", "RAG", "MCP", "多模态"]}, {"name": "推理系统", "sub": "推理系统", "skills": ["模型量化", "KV Cache", "推理优化", "vLLM", "SGLang", "CUDA", "Triton"]}, {"name": "训练系统", "sub": "训练系统", "skills": ["PyTorch", "分布式训练", "RLHF", "MoE", "模型量化"]}, {"name": "平台与调度", "sub": "平台与调度", "skills": ["Kubernetes", "可观测性", "Ray", "Go", "Docker"]}, {"name": "算子与高性能计算", "sub": "算子与高性能计算", "skills": ["CUDA", "Triton", "CUTLASS", "性能优化", "GPU"]}, {"name": "网络系统", "sub": "网络系统", "skills": ["RDMA", "InfiniBand", "RoCE", "NCCL"]}, {"name": "存储系统", "sub": "存储系统", "skills": ["NVMe", "KV Cache", "性能优化", "GPU"]}]}, "测试": {"base": ["Python", "Linux"], "lanes": [{"name": "AI 测试 / 评测", "sub": "测试/评测", "skills": ["CI/CD", "大模型/LLM", "Agent框架", "模型量化", "性能优化"]}]}, "SRE": {"base": ["Linux", "Python"], "lanes": [{"name": "平台稳定性", "sub": "SRE", "skills": ["SLA/SLO", "可观测性", "GPU", "故障排查", "RDMA"]}]}, "运维": {"base": ["Linux", "Python"], "lanes": [{"name": "GPU/IDC 运维", "sub": "GPU/IDC 运维", "skills": ["大模型/LLM", "GPU", "Kubernetes", "模型部署", "SLA/SLO"]}, {"name": "模型运维", "sub": "模型运维", "skills": ["大模型/LLM", "Agent框架", "RAG", "模型部署", "GPU"]}]}, "产品与运营": {"base": [], "lanes": [{"name": "产品与运营", "sub": "产品与运营", "skills": ["大模型/LLM", "Agent框架", "多模态", "模型量化", "模型部署"]}]}};
+const FAMILY_DEF = {"agent": {"label": "Agent 与应用", "skills": ["Agent框架", "Function Calling", "LangChain", "LangGraph", "MCP", "OpenAI API", "RAG", "提示词工程", "知识图谱"]}, "data": {"label": "数据与存储介质", "skills": ["BDSL", "ClickHouse", "Elasticsearch", "FAISS", "Flink", "IBoF", "Kafka", "Milvus", "MongoDB", "MySQL", "NVMe", "PostgreSQL", "Redis", "Spark", "数据合成", "数据库", "数据标注"]}, "gpu": {"label": "GPU 硬件与监控", "skills": ["DCGM", "GPU", "MIG", "XPU", "nvidia-smi", "数据中心", "服务器硬件", "芯片"]}, "inference": {"label": "推理", "skills": ["KV Cache", "SGLang", "TPOT", "TTFT", "TensorRT", "TensorRT-LLM", "vLLM", "推理优化", "模型推理", "模型蒸馏", "模型部署", "模型量化"]}, "kernel": {"label": "算子与内核", "skills": ["CUDA", "CUTLASS", "FlashAttention", "Triton", "编译器"]}, "lang": {"label": "编程语言", "skills": ["C++", "Go", "Java", "JavaScript", "Python", "Rust", "Shell", "TypeScript"]}, "model": {"label": "大模型", "skills": ["MoE", "多模态", "大模型/LLM", "机器学习"]}, "ops": {"label": "稳定性与运维", "skills": ["SLA/SLO", "SRE", "可观测性", "性能优化", "故障排查", "评测"]}, "platform": {"label": "平台与工具链", "skills": ["AWS", "Ansible", "Azure", "CDN", "CI/CD", "Docker", "ELK", "Envoy", "GCP", "GPU池化", "Git", "Grafana", "InfiniBand", "Istio", "Kubernetes", "Linux", "NCCL", "Prometheus", "Protobuf", "RDMA", "Ray", "RoCE", "Slurm", "Terraform", "VMware", "WASM", "Zabbix", "gRPC", "虚拟化"]}, "training": {"label": "训练", "skills": ["DeepSpeed", "JAX", "Megatron", "PyTorch", "RLHF", "TensorFlow", "分布式训练", "强化学习", "微调 / SFT", "模型训练", "预训练"]}};
+const FAMILIES = {};
+const FAM_LABEL = {};
+Object.entries(FAMILY_DEF).forEach(([f, v]) => { FAMILIES[f] = v.skills; FAM_LABEL[f] = v.label; });
+const famOf = {};
+Object.entries(FAMILIES).forEach(([f, names]) => names.forEach(n => famOf[n] = f));
+const tabs = document.getElementById('path-tabs');
+const view = document.getElementById('path-view');
+const LINE_NAMES = Object.keys(ROADMAPS);
+let curLine = null;
+
+// 计数查找：方向树优先（该方向的 JD 数），方向内未提及则回退线级
+function skillCount(line, sub, name) {
+  if (sub && D.tree[line] && D.tree[line][sub] && D.tree[line][sub][name]) return D.tree[line][sub][name];
+  return (D.cat_skills[line] || {})[name] || 0;
+}
+function nodeHTML(line, sub, name) {
+  const n = skillCount(line, sub, name);
+  const f = famOf[name];
+  return `<span class="node${f ? ' f-' + f : ''}">${name}<span class="n num">${n}</span></span>`;
+}
+
+function renderPath(line) {
+  curLine = line;
+  view.innerHTML = '';
+  const R = ROADMAPS[line];
+  // 图例
+  const legend = document.createElement('div');
+  legend.className = 'fam-legend';
+  legend.innerHTML = Object.entries(FAM_LABEL).map(([f, lab]) =>
+    `<span><span class="sw ${f}"></span>${lab}</span>`).join('');
+  view.appendChild(legend);
+  // 底座层（非技术线 base 为空，整段不渲染）
+  if (R.base && R.base.length) {
+    const base = document.createElement('div');
+    base.className = 'stage';
+    base.innerHTML = `<div class="stage-label"><b>第 0 层 · 底座</b>——编辑推荐的公共底座（数字为 JD 显式提及条数；Linux / Python 属行业默认技能，多数 JD 不再显式写出，提及少不代表不需要）</div>
+      <div class="base-row">${R.base.map(s => nodeHTML(line, null, s)).join('<span class="joint">+</span>')}</div>`;
+    view.appendChild(base);
+  }
+  // 分支泳道
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  stage.innerHTML = `<div class="stage-label"><b>分方向路线</b>——每个方向从左到右是建议的学习顺序</div>`;
+  const lanes = document.createElement('div');
+  lanes.className = 'lanes';
+  R.lanes.forEach(L => {
+    const nSub = (D.sub_jd[line] && D.sub_jd[line][L.sub]) || D.cat_n[line];
+    const lane = document.createElement('div');
+    lane.className = 'lane';
+    lane.innerHTML = `<div class="lane-h">${L.name}</div>
+      <div class="lane-sub num">${nSub} 条 JD</div>
+      <div class="flow">${L.skills.map((s, i) =>
+        (i ? '<span class="joint">→</span>' : '') + nodeHTML(line, L.sub, s)
+      ).join('')}</div>`;
+    lanes.appendChild(lane);
+  });
+  stage.appendChild(lanes);
+  view.appendChild(stage);
+}
+
+LINE_NAMES.forEach(line => {
+  const b = document.createElement('button');
+  b.className = 'path-tab';
+  b.textContent = line + '线';
+  b.setAttribute('role', 'tab');
+  b.addEventListener('click', () => {
+    tabs.querySelectorAll('.path-tab').forEach(t => t.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    renderPath(line);
+  });
+  tabs.appendChild(b);
+});
+if (LINE_NAMES.length) tabs.firstChild.click();
+/* ── 三、技术栈 × 岗位类别热力矩阵（仅 technique 词）── */
+(function () {
+  const box = document.getElementById('skill-heat');
+  const cats = CAT_DISPLAY_ORDER.filter(c => D.cat_n[c]);
+  const skCats = D.cat_skills || {};
+  // 只取 technique 词，按全类别合计提及数取 Top N（主题词与工作内容词不进本表）
+  const merged = {};
+  Object.values(skCats).forEach(m => Object.entries(m).forEach(([s, n]) => merged[s] = (merged[s] || 0) + n));
+  const skills = Object.entries(merged)
+    .filter(([s]) => kindOf(s) === 'technique')
+    .sort((a, b) => b[1] - a[1]).slice(0, 25).map(x => x[0]);
+  if (!skills.length) { box.textContent = '（无数据）'; return; }
+  const grid = document.createElement('div');
+  grid.className = 'heatmap';
+  grid.style.gridTemplateColumns = `170px repeat(${cats.length}, 1fr) 64px`;
+  const mk = (cls, txt) => { const e = document.createElement('div'); e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  grid.appendChild(mk('h-col', ''));
+  cats.forEach(c => grid.appendChild(mk('h-col', c)));
+  grid.appendChild(mk('h-col h-sum', '合计'));
+  let max = 1;
+  const cellVal = (s, c) => ((skCats[c] || {})[s] || 0);
+  skills.forEach(s => cats.forEach(c => { const v = cellVal(s, c); if (v > max) max = v; }));
+  skills.forEach(s => {
+    const tx = TAX[s] || {};
+    const rowHead = mk('s-row', '');
+    rowHead.innerHTML = `${s}<span class="row-tag">${TYPE_CN[tx.type] || ''} · ${SCOPE_CN[tx.scope] || ''}</span>`;
+    grid.appendChild(rowHead);
+    let sum = 0;
+    cats.forEach(c => {
+      const v = cellVal(s, c);
+      sum += v;
+      const cell = mk('s-cell', v ? v : '');
+      if (v) {
+        cell.style.background = `rgba(61,109,181,${(0.08 + 0.52 * v / max).toFixed(3)})`;
+        cell.title = `${s} × ${c}：${v} 条`;
+      } else { cell.classList.add('z'); }
+      grid.appendChild(cell);
+    });
+    const t = mk('s-cell h-sum', sum);
+    t.style.fontWeight = '600';
+    grid.appendChild(t);
+  });
+  box.appendChild(grid);
+  const lg = document.createElement('div');
+  lg.className = 'heat-legend';
+  lg.appendChild(mk('span', '浅'));
+  for (const a of [0.10, 0.28, 0.46, 0.60]) { const sw = mk('span', ''); sw.className = 'sw'; sw.style.background = `rgba(61,109,181,${a})`; lg.appendChild(sw); }
+  lg.appendChild(mk('span', '深 = 条数多（每格最大值 ' + max + '）'));
+  box.appendChild(lg);
+})();
+
+</script>
+</body>
+</html>
