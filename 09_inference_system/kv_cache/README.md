@@ -257,3 +257,4 @@ FAST '26（2026-02）的「AI and LLMs」两个 session 用九篇论文回答了
 > 前面十个部分回答「机制是什么、怎么设计」；这一篇回答「慢了怎么查」。来自给生产级推理引擎（vLLM/SGLang）接入远端 KV Cache 层的真机实战，方法论与案例数字均经脱敏与核实。
 
 - **[TTFT 多了 15 毫秒之后：一套实证过的 KV Cache 性能分析方法论](08_methodology/01_kv-cache-perf-methodology.md)** — 六件分析工具（时钟链分解+闭合校验、排除链+判别实验、同轮对照+锚点归一、观测口径纪律、native 对齐清单、微基准先行）与六类问题（介质与拷贝几何、宿主侧 Python 税、同步与放行契约、步级管线、布局与寻址、观测元层），附七步操作清单与十四个脱敏案例；配两张手绘图。
+- **[从 TTFT 到 goodput：官方基准工具的口径与六个陷阱](08_methodology/02_inference-benchmark-methodology.md)** — vLLM serve.py 与 SGLang benchmark/serving.py 的指标口径对照（TTFT/TPOT/ITL/E2EL 定义、百分位默认差异、goodput 判定）、agentic-rollout 会话仿真器的 turn 级指标与三层命中率，以及六个源码级测错点：非流式 TTFT 不可比、默认百分位缺列、ignore_eos 两边默认相反、缓存污染不设防、token 计数双轨、客户端排队混入 TTFT。

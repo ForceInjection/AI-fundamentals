@@ -404,6 +404,7 @@ SFT 之后把推理能力推上去要靠 RL，而 RL 的 rollout 由推理引擎
 - [四条路线，一条落地：vLLM 与 SGLang 的 KV 复用支持现状](09_inference_system/kv_cache/06_kv_reuse/04_framework-kv-reuse-support.md) - 三仓 HEAD 源码核对：路线 1 原生默认开且跨实例纵深（vLLM 18 connector / SGLang HiCache L3），路线 2 仅 LMCache 接线且与前缀缓存互斥（TODO 未解），路线 3/4 零实现，LoRA 被两家同构隔离
 - [当压缩表示被继续使用：三篇论文给出的三种二次决策](09_inference_system/kv_cache/07_kv_compression/01_kv-compression-overview.md) - Self-Indexing KVCache / SALS / EchoKV 把压缩产物继续用作检索索引、token 选择场与重建素材
 - [TTFT 多了 15 毫秒之后：一套实证过的 KV Cache 性能分析方法论](09_inference_system/kv_cache/08_methodology/01_kv-cache-perf-methodology.md) - 真机排查总结的六件工具与六类问题：时钟链闭合、排除链判死、仪器纪律、native 对齐，配操作清单与脱敏后的实测数字
+- [从 TTFT 到 goodput：官方基准工具的口径与六个陷阱](09_inference_system/kv_cache/08_methodology/02_inference-benchmark-methodology.md) - vLLM serve.py 与 SGLang benchmark/serving.py 的指标口径对照、agentic-rollout 会话仿真器与 turn 级指标，六个源码级测错点：非流式 TTFT、百分位缺列、ignore_eos 默认相反、缓存污染、token 双轨、排队混入 TTFT
 - [当 Agent 流量成为推理系统的主要负载](09_inference_system/agent_serving/01_agent-workload-serving.md) - KV 生命周期错配、调度语义失真、会话粘性与容量公式失效：Agent 负载下的四连锁问题与两引擎源码级现状
 - [Phase 切换从 681 秒到 6.2 秒：Evolving Infra 论文精读](09_inference_system/agent_serving/02_evolving-infra.md) - 第一个 agent-adaptive serving 框架：对称引擎原地换相、共享 L2 池 RDMA 直读、KV 目录按活跃分支计数驱逐，对 Dynamo 吞吐 1.10–2.73×、E2E 延迟降最高 4.12×，附七条口径声明
 - [基础设施的回应：当 serving 开始读懂 harness](09_inference_system/agent_serving/03_infra-response.md) - 四连锁与三件套逐项映射、SGLang role-switch 源码核对（opt-in/须排空/翻转清缓存）、九种 PD 适配方案的对照地图
