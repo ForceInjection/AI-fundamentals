@@ -33,6 +33,7 @@
 | ----------------------------------- | ---------------------------------------------------------- | ---- | --------------------------------------------------------------- |
 | `assignment3_sharing_protected.pdf` | Student sharing II: Harness optimization（2026-10-26）     | 49   | 学生 Assignment 3（agent harness 优化）分享，图片型页面无文本层 |
 | `feedback_assignment.pdf`           | Assignments feedback（2026-11-02）                         | 58   | 作业复盘：更好地使用 agent、GPU 编程补充、LLM serving III 延伸  |
+| `assignment3_feedback_protected.pdf` | Assignment 3 feedback（受密码保护，2026-11-21 新挂出）    | 17   | 与另外两份 protected 文件同为打开密码保护，无法提取文本与渲染；按命名归入 Assignment 3 反馈场次，具体日期以课程为准 |
 | `assignment4_sharing_protected.pdf` | Student sharing III: serving engine showcase（2026-11-18） | 64   | 学生 Assignment 4（serving engine）展示，图片型页面无文本层     |
 
 课程主线两段衔接：Part I 从「用 agent」到「设计 agent」（loop → context 与工具 → 多智能体 → 记忆与可靠性 → 评测 → 成本），Part II 从模型账本落到 GPU 与 kernel，再回到系统层（调度、分页、并行、投机解码）。Basics I 的 readings 是 Transformer / Llama 3 / Mixtral 原始论文；Basics II 覆盖 CUDA 编程指南、roofline、FlashAttention 谱系、FlashInfer、TVM / Mirage / MPK、CUDA graph 与 PyTorch 2；Speculative Decoding 的 readings 按猜想来源（EAGLE 谱系 / 检索式 / 块扩散）、验证树与接受规则、serving 系统集成、drafter 训练四组展开，收录论文 40+ 篇。
@@ -41,4 +42,4 @@
 
 - 课程主页（schedule 含全部 slide 链接）：<https://cs2680.com>
 - Readings：[Basics I](https://cs2680.seas.harvard.edu/readings/oct-19) · [Basics II](https://cs2680.seas.harvard.edu/readings/oct-21) · [Speculative Decoding](https://cs2680.seas.harvard.edu/readings/nov-11)
-- 下载日期：2026-11-08（Basics I–III）；2026-11-19（补收 Speculative Decoding 与全课程已发布课件）。课件仍在随课程更新（schedule 标注 tentative，后续待发：KV cache、剪枝与量化、agentic systems 两讲），引用其中数字前建议核对最新版本。
+- 下载日期：2026-11-08（Basics I–III）；2026-11-19（补收 Speculative Decoding 与全课程已发布课件）；2026-11-21（补收 Assignment 3 feedback，其余 16 个文件经 Content-Length 与线上逐一核对无版本变化）。课件仍在随课程更新（schedule 标注 tentative；截至 2026-11-21，scheduling/prefix caching、剪枝与量化、KV cache 优化三讲的 slide 尚未挂出，后续还有 routing 与 load balancing、agentic systems 两讲），引用其中数字前建议核对最新版本。
