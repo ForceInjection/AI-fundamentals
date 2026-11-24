@@ -10,6 +10,7 @@ AI Fundamentals 课程资源库汇集了人工智能领域的系统性课程、�
 - **[多智能体系统](multi_agent_system/multi_agent_training/README.md)**：深入讲解多智能体架构设计、LangGraph 框架应用及企业级落地实践。
 - **[Trae 编程实战](trae/README.md)**：围绕 Trae 智能 IDE 展开的从基础到高级的全流程实战开发教程。
 - **[KV Cache 八讲](kv_cache_course/README.md)**：从 token 账本、page/slot 到 nano-vllm / vLLM / SGLang 源码，再到 GLM-5.3-Flash 与 DeepSeek-V4.1-Flash 的容量分析。
+- **[vLLM 十讲](vllm_course/README.md)**：从 nano-vllm 到生产推理引擎——按主题对照引擎架构、调度、KV 管理、注意力后端、CUDA Graph、并行、投机解码、量化、KV 分载与生产运维的演进与现状。
 - **[哈佛 CS2680 Modern AI Systems](university_courses/harvard-cs2680/README.md)**：哈佛 SEAS 2026 秋季课程课件存档，从 Agent 循环讲到 LLM serving 与底层 GPU 硬件。
 - **[大学公开课档案](university_courses/README.md)**：CS336（大模型本身，从 tokenizer 造到 RL）、CMU 11-868（LLM Systems serving 单线）、Berkeley LLM Agents（agent 工作流与安全）三门公开课的定位、资源地图与学习建议。
 
@@ -49,15 +50,23 @@ Trae 智能编程实战教程采用循序渐进的五阶结构，系统讲解从
 - **前置材料**：`ai-infra-course` 模块 5/6；课程不重复 vLLM 入门，只做 KV Cache 纵深。
 - **产出**：token/state 容量表、源码映射、Agent 长会话选型备忘；术语见 [术语表](kv_cache_course/glossary.md)。
 
-### 2.5 哈佛 CS2680 Modern AI Systems
+### 2.5 vLLM 十讲
+
+10 讲 × 120 分钟的 vLLM 实战课，先修 nano-vllm 实战课程（8 课）。每讲四层递进：nano 已学形态回顾 → V0 → V1 → Model Runner V2 演进 → 当前版本（基线 vLLM `1acec5c009`，v0.34.0rc0）源码走读 → 上手实验。十讲覆盖引擎总架构、调度器、KV cache 管理（含 PagedAttention 退役）、注意力后端、CUDA Graph 与编译、并行与 EP、投机解码、量化、KV 分载与 PD 分离、生产运维与生态。详见 [vllm_course/README.md](vllm_course/README.md)。
+
+- **先修**：[nano-vllm 实战课程](https://github.com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md)。
+- **互补**：KV 容量账本与对象图细节在 [KV Cache 八讲](kv_cache_course/README.md)（两课互相导流，不重复）。
+- **撰写状态**：第 1 讲优先成稿，各讲导读先行。
+
+### 2.6 哈佛 CS2680 Modern AI Systems
 
 哈佛 SEAS 课程 CS2680（Fall 2026，Juncheng Yang / MaDSys 组主讲）的课件存档，课程沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：I「Intro to LLM」（Transformer / Llama 3 / MoE / KV cache）、II「Intro to GPUs」（roofline、内存层级、nsys/ncu 剖分析、FlashAttention 谱系，上下两份 deck）、III「scheduling, paging and parallelism」（TTFT/TPOT/SLO 口径、batching、PagedAttention、五种并行策略）。详见 [harvard-cs2680/README.md](university_courses/harvard-cs2680/README.md)。
 
-### 2.6 大学公开课档案
+### 2.7 大学公开课档案
 
 三门公开课各补一块能力版图：Stanford CS336 讲大模型本身（从 tokenizer、Transformer 到 scaling laws 与 RLHF 全部从零实现，作业与交互式讲义全公开），补全模型构建基础；CMU 11-868 讲 LLM Systems（serving 单线动手作业，vLLM/SGLang 内核与 CUDA/Triton，slides 未公开仅做资源记录），加强推理系统；Berkeley LLM Agents MOOC 把 agent 线展开成独立体系（12 讲录像与 slides 全公开，agentic 工作流、tool use、评测与安全），加强 Agent 系统。详见 [university_courses/README.md](university_courses/README.md)。
 
-### 2.7 独立学习资料
+### 2.8 独立学习资料
 
 独立的技术专题文档提供了特定领域的知识纵深，为完整的课程体系补充了具备商业实战价值的延展阅读材料。
 

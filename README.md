@@ -808,13 +808,21 @@ ZOMI 酱主导的高分开源 AI 基础设施架构体系，从底层 AI 芯片�
 - **课程产出**：token/state 容量表、源码映射、Agent 长会话选型备忘。
 - **术语与实验**：[术语表](10_ai_related_course/kv_cache_course/glossary.md)、[实验环境](10_ai_related_course/kv_cache_course/lab-environment.md)。
 
-### 12.6 微软 AI Agents for Beginners 课程
+### 12.6 vLLM 十讲：从 nano-vllm 到生产推理引擎
+
+nano-vllm 实战课程（8 课）的进阶篇：按主题对照推理机制从最小实现到生产形态的演进，最终目标是上手 vLLM 这类生产推理框架。详见 [vLLM 十讲](10_ai_related_course/vllm_course/README.md)。
+
+- **课程结构**：10 讲 × 120 分钟；引擎总架构（单进程到三进程）、调度器、KV cache 管理（含 PagedAttention 退役）、注意力后端、CUDA Graph 与编译、并行与 EP、投机解码、量化、KV 分载与 PD 分离、生产运维与生态。
+- **递进方式**：每讲四层——nano 已学形态回顾 → V0/V1/Model Runner V2 演进 → 当前版本源码走读（基线 vLLM `1acec5c009`，v0.34.0rc0）→ 上手实验。
+- **撰写状态**：第 1 讲优先成稿，各讲导读先行。
+
+### 12.7 微软 AI Agents for Beginners 课程
 
 由微软提供的初学者课程，旨在帮助学习者全面了解 AI Agent 的构建与应用。
 
 - [AI Agents for Beginners 课程之 AI Agent及使用场景简介](10_ai_related_course/AI%20Agents%20for%20Beginners%20课程之%20AI%20Agent及使用场景简介.md) - 涵盖 AI Agent 基础概念、开发框架、设计模式与应用场景。
 
-### 12.7 哈佛 CS2680 Modern AI Systems
+### 12.8 哈佛 CS2680 Modern AI Systems
 
 哈佛 SEAS 2026 秋季课程（Juncheng Yang / MaDSys 组主讲），沿「Agent 循环 → LLM serving → 底层硬件」一条线讲 AI 系统优化。已收录 Efficient LLM serving basics 三讲：Intro to LLM、Intro to GPUs（roofline、nsys/ncu、FlashAttention 谱系）与 scheduling/paging/parallelism（TTFT/TPOT 口径、batching、PagedAttention、五种并行）。详见 [哈佛 CS2680 课件存档](10_ai_related_course/university_courses/harvard-cs2680/README.md)。
 

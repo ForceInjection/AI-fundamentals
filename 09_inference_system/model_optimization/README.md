@@ -52,6 +52,13 @@ Agent 负载的上下文持续增长，draft 模型自己维护历史既拖低�
 | 提升吞吐（tokens/s） | 投机解码（vanilla / EAGLE） | + Continuous Batching、PD 分离 |
 | 降低端到端延迟       | 投机解码 + FP8 量化         | + CUDA Graphs、TensorRT-LLM    |
 | 压缩模型部署体积     | 蒸馏 + INT4 量化            | + 结构化剪枝                   |
+| 参数不变提升智能上限 | 循环深度（Loop）            | + KV 滑窗共享、算子融合        |
+
+## 5. 架构改造：循环深度
+
+压缩与解码协议之外，模型优化出现了第三条路：不动参数量、不动解码协议，把已有模型的中间层改成共享权重的循环结构，用每 token 多过的层数换智能上限。GLM-5.4 是首个在旗舰规模落地的案例，配套三项改动（门控渐进更新、KV 全局共享 + 滑窗独立、稀疏注意力索引复用）把多一轮循环的显存、检索、输出三笔额外成本分别压平。
+
+- **[Loop Transformer:当「多想一轮」的边际成本趋近零——智谱 GLM-5.4 机制与成本拆解](loop-transformer-glm54.md)**：GLM-5.4 发布文与官方英文博客逐段核对——改造路线为何绕开「从头训不如不共享」的七年包袱、三项工程改动的机制与代价、30B 同参数对照的两个发现（输出长度降 10–14%）、与 MoE 的「少算/深算」对照，以及权重开源前的六条折扣清单
 
 > 相关阅读：KV Cache 层面的优化参见 [KV Cache 压缩技术](../kv_cache/01_concepts/06_compression/01_kv_cache_compression.md)；CUDA Graph 层面的解码优化参见 [vLLM CUDA Graphs 深度解析](../vllm/module_analysis/cuda_graph_deep_dive.md)。
 >
