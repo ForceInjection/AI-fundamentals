@@ -25,7 +25,7 @@
 | vllm bench      | 15 min  | 七子命令；13 种 dataset；输出字段；与 metrics 互补                       |
 | 故障容忍与生态  | 20 min  | EngineCoreSentinel 显式协议；worker monitor；生态三层；arXiv 综述        |
 | 实验            | 25 min  | 运维面巡检 + 基线压测（见 hands-on-exercise.md）                        |
-| 答疑与收官      | 10 min  | 生产十条清单；课程总结                                                  |
+| 答疑与收官      | 20 min  | 生产十条清单；课程总结                                                  |
 
 ## 函数级阅读清单（课前预读）
 

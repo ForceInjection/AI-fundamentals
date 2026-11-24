@@ -99,15 +99,15 @@
 ### 第 10 页：环节② AsyncLLM 装配
 
 - **上稿**（`vllm/v1/engine/async_llm.py`）:
-  - `__init__`（`:97-249`）装配三件：InputProcessor（`:178`）、OutputProcessor（`:183-189`，**tokenizer 在这**）、`EngineCoreClient.make_async_mp_client`（`:195-202`）
+  - `__init__`（`:97-249`）装配三件：InputProcessor（`:171`）、OutputProcessor（`:181-187`，**tokenizer 在这**）、`EngineCoreClient.make_async_mp_client`（`:194-201`）
   - `generate`（`:740-868`）四步：建流 → EngineCoreRequest → 注册 detokenizer → `_add_request`（`:581-602`）
-  - 跨进程落点：`:600` `await self.engine_core.add_request_async(request)`
+  - 跨进程落点：`:598` `await self.engine_core.add_request_async(request)`
 - **一张图**:AsyncLLM 内部框图，三个装配件与输出后台任务（`_run_output_handler`，`:870-966`）
 
 ### 第 11 页：输出回流
 
 - **上稿**:
-  - 常驻 asyncio 任务 `_run_output_handler`（`:870-966`）：循环 `get_output_async()`（`:911`）→ 按块送 OutputProcessor（`:939-945`）
+  - 常驻 asyncio 任务 `_run_output_handler`（`:870-966`）：循环 `get_output_async()`（`:894`）→ 按块送 OutputProcessor（`:919` 起）
   - 每请求一个 `RequestOutputCollector` 信箱（`output_processor.py:54-127`）:DELTA 模式生产快于消费时合并（`add(output, aggregate=...)`）
 - **一张图**:collector 信箱队列图（生产者 output_handler / 消费者 generate 循环）
 - **口播**:tokenizer 在这层——这就是上一页说「EngineCore 没有 tokenizer」的另一半
@@ -123,9 +123,9 @@
 ### 第 13 页：环节④ EngineCore 初始化
 
 - **上稿**（`EngineCore.__init__`，`core.py:133-286`），初始化顺序（箭头图）:
-  1. `model_executor = executor_class(vllm_config)`（`:162`）
+  1. `model_executor = executor_class(vllm_config)`（`:165`）
   2. `_initialize_kv_caches`（`:288`，profile 显存后分配）
-  3. StructuredOutputManager（`:174`）
+  3. StructuredOutputManager（`:187`）
   4. Scheduler（`:190-206`）
 - **口播**：顺序即依赖——调度器要吃 KV cache 配置，所以排最后；这个顺序在第 3 讲还会见到
 
@@ -133,10 +133,10 @@
 
 - **一张图**:step 流程横条（`core.py:714-745`）
   1. `scheduler.schedule()`（`:724`）
-  2. `model_executor.execute_model(scheduler_output, non_block=True)`（`:721`，拿 Future）
-  3. `get_grammar_bitmask`（`:722`）
+  2. `model_executor.execute_model(scheduler_output, non_block=True)`（`:727`，拿 Future）
+  3. `get_grammar_bitmask`（`:728`）
   4. `_wait_for_output`(`:746`，future.result())
-  5. `scheduler.update_from_output`（`:733`）→ `EngineCoreOutputs`
+  5. `scheduler.update_from_output`（`:738`）→ `EngineCoreOutputs`
 - **口播**:②和④之间就是「CPU 等\_GPU」——第 2 讲的 async scheduling 会把这个空隙填上
 - **易错澄清**:EngineCore 上没有自己的 `execute_model` 方法，也没有 `poll()`——旧教程说法已失效
 
@@ -164,7 +164,7 @@
 
 ### 第 17 页：环节⑥ 第二套 IPC
 
-- **一张图**:MultiprocExecutor 与 N 个 WorkerProc 之间的 shm MessageQueue（`multiproc_executor.py:188-193`）
+- **一张图**:MultiprocExecutor 与 N 个 WorkerProc 之间的 shm MessageQueue（`multiproc_executor.py:203-209`）
 - **上稿**:
   - 广播：`rpc_broadcast_mq` 发 `SchedulerOutput`；回传：`worker_response_mq` 收 `ModelRunnerOutput`（`:750-782`）
   - Worker 是纯 RPC 循环：`worker_busy_loop`（`:1189-1197`）dequeue → 反射方法名或 cloudpickle 闭包 → 执行 → 入队

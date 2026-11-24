@@ -44,7 +44,7 @@ def collect_processes() -> list[tuple[int, str]]:
     return procs
 
 
-def build_parent_map(procs: list[tuple[int, str]]) -> dict[int, int]:
+def build_parent_map() -> dict[int, int]:
     """ps -eo pid,ppid,command 在部分平台才有 ppid;这里退化用命令特征判断父子不可靠,
     改为二次调用 ps 取 ppid,失败则返回空表。"""
     out = subprocess.run(["ps", "-eo", "pid,ppid"], capture_output=True, text=True).stdout
@@ -66,7 +66,7 @@ def classify(cmd: str) -> tuple[str, str] | None:
 
 def main() -> int:
     procs = collect_processes()
-    parents = build_parent_map(procs)
+    parents = build_parent_map()
     # 噪音过滤:grep/分页器等一次性命令的 cmdline 也可能含 vllm 字样
     noise = re.compile(r"\b(grep|less|more|tail|head|cat|tee|vi|vim|nvim)\b")
     hits: list[tuple[int, str, str, str]] = []

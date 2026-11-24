@@ -3,8 +3,8 @@
 ## 设计说明
 
 - **总页数**：约 23 页
-- **演讲时长**:120 分钟（nano 回顾 10 min + 轴全景 15 min + 现状走读 45 min + 实验 25 min + 答疑 10 min）
-- **核心视觉**：六轴全景图（本讲锚点，第 6 页）;EP 组 rank 布局图（第 10 页，DP×PCP×TP,PP 不参与）；部署台阶图（第 15 页，单机 EP → 2 机 Wide-EP）；八条失效对照表（第 19 页）
+- **演讲时长**:120 分钟（nano 回顾 10 min + 轴全景 15 min + 现状走读 55 min + 实验 35 min + 答疑 10 min）
+- **核心视觉**：六轴全景图（本讲锚点，第 4 页）;EP 组 rank 布局图（第 10 页，DP×PCP×TP,PP 不参与）；部署台阶图（第 15 页，单机 EP → 2 机 Wide-EP）；八条失效对照表（第 18 页）
 - **教学策略**：从 nano「TP 之外什么都没有」切入；轴全景先立公式再讲语义；EP 部分用「三个反直觉」组织（整只专家/无 all2all/PP 不参与）；部署用台阶图（单卡 → 单机 TP → 单机 EP → 2 机 Wide-EP）
 - **配色**:nano 橙色系、六轴图蓝色系（每轴一色）、EP 通信绿色系、失效表红色系
 - **边界**:NCCL/custom allreduce kernel 实现一行带过；MoE 路由数学不展开；PD 分离只点名（第 9 讲）
@@ -90,24 +90,24 @@
   - 放置：`determine_expert_map`（linear / round_robin;deepep_ll/nixl 强制轮转，`:137-139`）;EPLB 动态重平衡（`vllm/distributed/eplb/`）
 - **口播**:「TP 切专家是切每只专家的宽度；EP 切专家是分专家的只数」——两种粒度，EP 走了后者
 
-### 第 13 页：dispatch/combine 抽象
+### 第 13 页：环节⑤ dispatch/combine 抽象
 
 - **一张图**:MoE 层 forward 的 token 往返（dispatch → experts → combine，`moe_runner.py:878/914`）与抽象接口（`FusedMoEPrepareAndFinalize`，`modular_kernel.py:241`）
 - **上稿**：后端实现族在 `fused_moe/prepare_finalize/`(deepep_ht/ll/v2、flashinfer_nvlink×2、moonep、mori、nixl_ep、passthrough、batched…)；通信实体 = EP 组上的 all2all manager（`all2all.py:57/257/316`）
 
-### 第 14 页：all2all 后端族与触发条件
+### 第 14 页：环节⑤ all2all 后端族与触发条件
 
 - **一张表**：后端 × 场景（deepep_high_throughput=多节点 prefill / deepep_low_latency=多节点 decode+CUDA graph / flashinfer_nvlink=MNNVL / mori=ROCm / passthrough=FlashInfer megakernel / allgather_reducescatter=兜底；`expert_parallel_deployment.md:32-46`）
 - **红色反直觉框**:**纯 TP-EP（无 DP）不产生 all2all**——`use_all2all_kernels` 要求 dp/pcp/sp>1（`fused_moe/config.py:1088`）;token 本在 TP 组冗余，输出靠 TP allreduce 汇总
 - **口播**:「all2all 的现象要在 DP>1 的部署里才看得到」——这决定实验设计
 
-### 第 15 页：部署台阶图
+### 第 15 页：环节⑤ 部署台阶图
 
 - **一张台阶图**（四级）：单卡 → 单机 TP（`--tensor-parallel-size 8`）→ 单机 EP（`-t 1 -dp 8 --enable-expert-parallel`，`expert_parallel_deployment.md:85-96`）→ 2 机 Wide-EP（16 卡，`--all2all-backend deepep_low_latency --data-parallel-size 16 --headless`，`:166-193`）
 - **上稿**:EP_SIZE=TP×DP 自动计算；EPLB 配置（`:210-332`）;PD 分离形态(prefill HT / decode LL)第 9 讲回收
 - **性能口径行**：博客「2.2k tok/s/H200」(2025-12-17)对应 2 机形态；仓库文档无此数字，引用注明厂商口径
 
-### 第 16 页：DP attention 与 DCP
+### 第 16 页：环节⑤ DP attention 与 DCP
 
 - **上稿**:
   - DP attention **不是独立实现**:DP replica 复制 attention,MoE 层 EP 打通（`data_parallel_deployment.md:5-16`）；同步靠 `dispatch_cg_and_sync_dp` + 每 16 步 gloo（`dp_sync_interval`）
@@ -147,9 +147,11 @@
 
 ### 第 23 页：结课与预告
 
+- 课后作业：题 1（部署决策报告 ×3）与题 2（失效说法考古），见 homework.md。
+
 - **本讲你应能**：写三公式；选 TP/DP/EP 组合并写部署命令；认八条失效说法
-- **预告**：并行把算力摊开了，但 KV 在多实例间还是孤岛——第 9 讲：KV 分载与 PD 分离（你 fork 的 swap 与 vLLM 三代 offloading 的对照）
-- **下节材料**：第 9 讲 syllabus 阅读清单（第 7、8 讲之后）
+- **预告**：并行把算力摊开了，但 KV 在多实例间还是孤岛——第 7 讲：投机解码；第 8 讲：量化；第 9 讲：KV 分载与 PD 分离（你 fork 的 swap 与 vLLM 三代 offloading 的对照）
+- **下节材料**：第 7 讲 syllabus 阅读清单
 
 ---
 

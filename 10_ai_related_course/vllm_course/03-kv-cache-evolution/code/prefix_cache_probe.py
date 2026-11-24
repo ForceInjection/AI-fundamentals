@@ -85,7 +85,8 @@ async def main() -> int:
     # 预热:串行发 2 个请求,让公共前缀的块进入缓存并提交
     print(f"公共前缀约 {len(PREFIX_TEMPLATE)} 字(≈token 数,中文近似)……")
     warm: list = []
-    for q in QUESTIONS[:2]:
+    warm_questions = ["这份文档的作者是谁?", "这份文档面向哪些读者?"]  # 预热问题不与计时轮重复
+    for q in warm_questions:
         await run_one(client, args.model, q, warm)
     print(f"预热完成:{sum(1 for r in warm if r['ttft'] is not None)} 条成功")
 
