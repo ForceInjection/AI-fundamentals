@@ -9,6 +9,7 @@
 > | `ascend/`      | 华为昇腾 950 微架构、DSA 稀疏注意力算子优化             | Cube + Vector, FixPipe       | §2.4               |
 > | `pcie/`        | PCIe 协议、拓扑层次、P2PDMA、BAR1、AER、CXL             | Gen1–Gen7, Root Complex      | §3.1               |
 > | `nvlink/`      | NVLink / NVSwitch 高速互连                              | 1.8 TB/s, GPU-to-GPU         | §3.2               |
+| `ucie/`        | UCIe 4.0 芯粒互连：mem 协议、安全管理、与 PCIe/NVLink 对照 | Die-to-Die, FLIT, pJ/bit     | §3.2               |
 > | `dma/`         | DMA engine、copy engine、设备直连 DMA                   | Descriptor, Doorbell         | §3.3               |
 > | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)                    | Zero-copy, Bounce Buffer     | §4                 |
 > | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构                      | Chip-to-Chip, Rack-Scale     | §5.1               |

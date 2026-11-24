@@ -7,6 +7,10 @@ NVLink 是 NVIDIA 专为 GPU 间通信设计的私有高速链路，NVSwitch 将
 - [**NVLink 技术入门**](nvlink_intro.md)：NVLink 1.0→6.0 版本演进、物理层与协议层原理、NVSwitch/SHARP/NVL72 架构、与 PCIe 协议对比、应用场景决策。
 - [**NVLink 诊断与实操**](nvlink_diagnostics.md)：`nvidia-smi nvlink` 完整命令集（status/capabilities/errorcounters/topo）、A100 实测验证（12 links × 25 GB/s × 2 = 600 GB/s 双向）、GPU 7 NVLink 故障案例排查。
 
+## 相关目录
+
+- [**UCIe（芯粒互连）**](../ucie/README.md)：封装内 die-to-die 互连标准 UCIe 4.0 解读，含三层互连版图（封装内/板级/机柜）与 NVLink Fusion、UCIe PHY 互操作的对照。
+
 ## 关键数字速查
 
 | GPU  | NVLink 版本 | Links | 单链路单向 | 总双向带宽 |

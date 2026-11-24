@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect width="1080" height="620" fill="#FBF8F1"/>
+  <text x="70" y="66" font-size="34" font-weight="bold" fill="#2b2b2b">AMD MI455X:24 颗裸片的功能分区</text>
+  <text x="70" y="100" font-size="18" fill="#7a7368">8 XCD(计算)+ 2 FCD(互连与缓存)+ 2 IOD(I/O)+ 12 HBM 堆栈;FCD 向内、IOD 向外</text>
+
+  <!-- 封装外框 -->
+  <rect x="140" y="140" width="800" height="400" rx="14" fill="#EFEDE8" stroke="#2b2b2b" stroke-width="2.5"/>
+
+  <!-- 8 XCD -->
+  <g>
+    <rect x="180" y="180" width="330" height="180" rx="8" fill="#EAF2FA" stroke="#3D6DB5" stroke-width="2"/>
+    <text x="345" y="210" font-size="19" font-weight="bold" fill="#3D6DB5" text-anchor="middle">XCD × 8(纯计算)</text>
+    <g fill="#DCE8F6" stroke="#3D6DB5" stroke-width="1.2">
+      <rect x="200" y="228" width="70" height="50" rx="4"/><rect x="280" y="228" width="70" height="50" rx="4"/>
+      <rect x="360" y="228" width="70" height="50" rx="4"/><rect x="440" y="228" width="60" height="50" rx="4"/>
+      <rect x="200" y="288" width="70" height="50" rx="4"/><rect x="280" y="288" width="70" height="50" rx="4"/>
+      <rect x="360" y="288" width="70" height="50" rx="4"/><rect x="440" y="288" width="60" height="50" rx="4"/>
+    </g>
+    <text x="345" y="345" font-size="14" fill="#5b5344" text-anchor="middle">只留计算逻辑</text>
+  </g>
+
+  <!-- 2 FCD -->
+  <g>
+    <rect x="540" y="180" width="180" height="180" rx="8" fill="#FBE9E7" stroke="#C0574F" stroke-width="2"/>
+    <text x="630" y="212" font-size="19" font-weight="bold" fill="#C0574F" text-anchor="middle">FCD × 2</text>
+    <text x="630" y="245" font-size="15" fill="#2b2b2b" text-anchor="middle">Infinity Fabric 交换</text>
+    <text x="630" y="270" font-size="15" fill="#2b2b2b" text-anchor="middle">L2 缓存阵列</text>
+    <text x="630" y="295" font-size="15" fill="#2b2b2b" text-anchor="middle">6 组内存控制器</text>
+    <text x="630" y="330" font-size="15" fill="#8a4a44" text-anchor="middle">「向内」枢纽 Base Die</text>
+  </g>
+
+  <!-- 2 IOD -->
+  <g>
+    <rect x="750" y="180" width="160" height="180" rx="8" fill="#EAF0F1" stroke="#4a8a6a" stroke-width="2"/>
+    <text x="830" y="212" font-size="19" font-weight="bold" fill="#2b6b4a" text-anchor="middle">IOD × 2</text>
+    <text x="830" y="245" font-size="15" fill="#2b2b2b" text-anchor="middle">SerDes PHY</text>
+    <text x="830" y="270" font-size="15" fill="#2b2b2b" text-anchor="middle">协议层 + DMA</text>
+    <text x="830" y="330" font-size="15" fill="#2b6b4a" text-anchor="middle">「向外」唯一闸门</text>
+  </g>
+
+  <!-- 12 HBM -->
+  <g>
+    <rect x="180" y="390" width="730" height="110" rx="8" fill="#F4EFF7" stroke="#7a5a9a" stroke-width="2"/>
+    <text x="545" y="425" font-size="19" font-weight="bold" fill="#7a5a9a" text-anchor="middle">HBM 堆栈 × 12</text>
+    <g fill="#EFE6F7" stroke="#7a5a9a" stroke-width="1.2">
+      <rect x="200" y="440" width="80" height="42" rx="4"/><rect x="290" y="440" width="80" height="42" rx="4"/>
+      <rect x="380" y="440" width="80" height="42" rx="4"/><rect x="470" y="440" width="80" height="42" rx="4"/>
+      <rect x="560" y="440" width="80" height="42" rx="4"/><rect x="650" y="440" width="80" height="42" rx="4"/>
+      <rect x="200" y="492" width="80" height="42" rx="4"/><rect x="290" y="492" width="80" height="42" rx="4"/>
+      <rect x="380" y="492" width="80" height="42" rx="4"/><rect x="470" y="492" width="80" height="42" rx="4"/>
+      <rect x="560" y="492" width="80" height="42" rx="4"/><rect x="650" y="492" width="80" height="42" rx="4"/>
+    </g>
+  </g>
+
+  <!-- 右侧注解 -->
+  <text x="960" y="230" font-size="16" fill="#2b2b2b">XCD 经 FCD</text>
+  <text x="960" y="254" font-size="16" fill="#2b2b2b">访问内存;</text>
+  <text x="960" y="278" font-size="16" fill="#2b2b2b">FCD 是向内</text>
+  <text x="960" y="302" font-size="16" fill="#2b2b2b">枢纽;</text>
+  <text x="960" y="326" font-size="16" fill="#2b2b2b">IOD 向外。</text>
+
+  <text x="140" y="575" font-size="16" fill="#5b5344">功能分区+芯粒化后,互连能力(芯粒之间怎么连)成为与算力同级的设计变量——UCIe 要标准化的正是这一段。</text>
+</svg>

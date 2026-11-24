@@ -10,6 +10,10 @@ PCIe 是异构计算系统中最基础的互连标准：CPU↔GPU、GPU↔NIC、
 - [**CXL 互联协议全景解读**](08_cxl_interconnect_overview.md)：基于 arXiv 2306.11227 综述，以 C-I-S-T 叙事拆解 CXL 1.1/2.0/3.0 三代协议（一致性、内存语义、池化、Fabric）与延迟/带宽实测数据，含 Linux 下 CPU 访问 CXL 内存的设备形态源码分析。
 - [**CXL 命令行工具链全景**](09_cxl_cli_tools.md)：cxl / daxctl / ndctl 三工具的分工、命令序列与 CXL 内存形态转换实操。
 
+## 相关目录
+
+- [**UCIe（芯粒互连）**](../ucie/README.md)：封装内 die-to-die 互连标准 UCIe 4.0 解读，含 UCIe.mem 与 CXL.mem 的路线对比、与 NVLink 的层级分工。
+
 ## 拓扑与可视化
 
 - [**PCIe 拓扑层次**](06_pcie_topology_hierarchy.md)：Root Complex → Bridge/Switch → Device 四层模型，sysfs 识别方法，本环境 24 domain 完整拓扑。

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="620" viewBox="0 0 1080 620" font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect width="1080" height="620" fill="#FBF8F1"/>
+  <text x="70" y="66" font-size="34" font-weight="bold" fill="#2b2b2b">UCIe.mem:计算与内存控制解耦</text>
+  <text x="70" y="100" font-size="18" fill="#7a7368">内存 PHY 与控制器从计算 Die 剥离,交给可复用的内存逻辑 Die;256B FLIT 承载请求与应答</text>
+
+  <!-- 左:传统紧耦合 -->
+  <g>
+    <rect x="80" y="150" width="380" height="180" rx="10" fill="#F2EFEA" stroke="#8a8378" stroke-width="2"/>
+    <text x="270" y="185" font-size="22" font-weight="bold" fill="#6b6558" text-anchor="middle">传统:紧耦合</text>
+    <rect x="110" y="205" width="150" height="50" rx="6" fill="#EAF2FA" stroke="#3D6DB5" stroke-width="1.6"/>
+    <text x="185" y="236" font-size="17" fill="#2b2b2b" text-anchor="middle">计算 Die</text>
+    <rect x="110" y="262" width="150" height="50" rx="6" fill="#FBE9E7" stroke="#C0574F" stroke-width="1.6"/>
+    <text x="185" y="293" font-size="16" fill="#8a4a44" text-anchor="middle">内存 PHY + 控制器</text>
+    <text x="290" y="236" font-size="16" fill="#8a4a44">HBM 堆栈</text>
+    <line x1="262" y1="230" x2="285" y2="230" stroke="#C0574F" stroke-width="2"/>
+    <text x="100" y="345" font-size="16" fill="#8a4a44">内存接口占满 Die 边缘周长;周长是常数,</text>
+    <text x="100" y="368" font-size="16" fill="#8a4a44">可挂内存容量无法随 KV Cache 线性增长</text>
+  </g>
+
+  <!-- 中间箭头 -->
+  <path d="M 490 250 L 560 250" stroke="#3D6DB5" stroke-width="3"/>
+  <path d="M 560 250 L 546 243 L 546 257 Z" fill="#3D6DB5"/>
+  <text x="500" y="235" font-size="17" fill="#3D6DB5">UCIe 4.0</text>
+
+  <!-- 右:UCIe.mem 解耦 -->
+  <g>
+    <rect x="590" y="150" width="410" height="230" rx="10" fill="#EAF2FA" stroke="#3D6DB5" stroke-width="2"/>
+    <text x="795" y="185" font-size="22" font-weight="bold" fill="#3D6DB5" text-anchor="middle">UCIe.mem:解耦后</text>
+    <rect x="620" y="210" width="170" height="60" rx="6" fill="#FFFFFF" stroke="#3D6DB5" stroke-width="1.8"/>
+    <text x="705" y="235" font-size="17" fill="#2b2b2b" text-anchor="middle">计算 Die</text>
+    <text x="705" y="257" font-size="15" fill="#7a7368" text-anchor="middle">不再集成内存 PHY</text>
+    <line x1="790" y1="240" x2="860" y2="240" stroke="#3D6DB5" stroke-width="2.4"/>
+    <text x="822" y="228" font-size="15" fill="#3D6DB5" text-anchor="middle">UCIe</text>
+    <rect x="862" y="210" width="120" height="60" rx="6" fill="#EAF0F1" stroke="#4a8a6a" stroke-width="1.8"/>
+    <text x="922" y="235" font-size="16" fill="#2b6b4a" text-anchor="middle">内存逻辑 Die</text>
+    <text x="922" y="257" font-size="14" fill="#7a7368" text-anchor="middle">PHY+控制器,可复用</text>
+    <text x="700" y="305" font-size="16" fill="#2b2b2b">读写请求 → 对端控制器翻译为内存时序</text>
+    <text x="700" y="330" font-size="16" fill="#2b2b2b">双向可异构工艺(成本/良率解耦)</text>
+    <text x="700" y="355" font-size="16" fill="#2b2b2b">~2.5 TB/s / mm 边缘(官方口径)</text>
+  </g>
+
+  <!-- 底部:FLIT 格式条 -->
+  <g>
+    <text x="80" y="445" font-size="20" font-weight="bold" fill="#2b2b2b">256 字节 FLIT:</text>
+    <rect x="240" y="425" width="690" height="46" rx="4" fill="#FFFFFF" stroke="#2b2b2b" stroke-width="1.6"/>
+    <rect x="240" y="425" width="44" height="46" fill="#FBE9E7" stroke="#2b2b2b" stroke-width="1.2"/>
+    <text x="262" y="454" font-size="15" fill="#8a4a44" text-anchor="middle">16B</text>
+    <rect x="284" y="425" width="646" height="46" fill="#EAF2FA" stroke="#2b2b2b" stroke-width="1.2"/>
+    <text x="607" y="454" font-size="15" fill="#2b5b8a" text-anchor="middle">240B 数据载荷</text>
+    <text x="940" y="454" font-size="15" fill="#3D6DB5">效率 93.75%</text>
+  </g>
+  <text x="80" y="520" font-size="16" fill="#5b5344">16 字节头部与流控 + 240 字节数据;读密集场景接近 93.75% 上限。内存请求与应答均按此封装。</text>
+  <text x="80" y="548" font-size="16" fill="#5b5344">计算 Die 的边缘周长从此留给 I/O 与互连——内存容量的扩展不再受它约束。</text>
+</svg>
