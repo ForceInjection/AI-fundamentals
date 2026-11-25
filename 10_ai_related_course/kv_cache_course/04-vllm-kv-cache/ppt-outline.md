@@ -46,7 +46,7 @@
 - `KVCacheManager` 是对外 façade；`KVCacheCoordinator` 按 KV group 协调
 - `SingleTypeKVCacheManager` 维护每个请求的 `req_to_blocks`
 - `BlockPool` 管物理块、哈希映射和空闲队列
-- Worker 侧 `InputBatch.block_table: MultiGroupBlockTable` 是同一份映射的张量表示
+- Worker 侧 `InputBatch.block_table: BlockTables` 是同一份映射的张量表示
 - **一句话**：先分清 Scheduler、Worker、BlockPool 三层，后面的调用才不会串
 
 ### 第 4 页：`allocate_slots` 的主路径
@@ -101,7 +101,7 @@
 
 - 三个视角：
   - Scheduler 侧：`req_to_blocks[request_id]` 记录请求的块列表
-  - Worker 侧：`MultiGroupBlockTable` 把块号拷成张量
+  - Worker 侧：`BlockTables` 把块号拷成张量
   - BlockPool：物理块、哈希和空闲队列
 - 一次分配串起查询、块数计算、分配、缓存登记
 - 下一部分：看分配失败后的抢占，以及 offload 为什么不是 swap
@@ -115,7 +115,7 @@
 
 - 触发点：`allocate_slots()` 返回 `None`
 - Scheduler 抢占 `running` 队尾（默认 FCFS），再重试当前请求
-- `_preempt_request()`（`scheduler.py:1539`）：
+- `_preempt_request()`（`scheduler.py:1829`）：
   - 释放请求的块
   - 状态置为 `PREEMPTED`
   - `num_computed_tokens = 0`
@@ -133,7 +133,7 @@
 
 ### 第 11 页：CPU offload 不是抢占
 
-- `kv_offloading_size` 开启 KV offloading connector（`config/cache.py:256`）
+- `kv_offloading_size` 开启 KV offloading connector（`config/cache.py:406`）
 - 已算好的 KV 存 CPU，后续命中时取回，属于 KV transfer 层
 - 不改变请求状态，也不负责腾出 `running` 请求的块
 - 不要把 offload 映射成 nano-vllm 的 SWAP
@@ -178,7 +178,7 @@
 - 按对象图读入口：
   - `KVCacheManager.get_computed_blocks`（`kv_cache_manager.py:264`）
   - `KVCacheManager.allocate_slots`（L371）
-  - `KVCacheCoordinator.get_num_blocks_to_allocate`（L169）
+  - `KVCacheCoordinator.get_num_blocks_to_allocate`（L146）
   - `SingleTypeKVCacheManager.allocate_new_blocks`（L366）
   - `BlockPool.get_new_blocks` / `free_blocks`（L668 / L776）
 - 目标：填出 prefill 阶段的 mapping 行

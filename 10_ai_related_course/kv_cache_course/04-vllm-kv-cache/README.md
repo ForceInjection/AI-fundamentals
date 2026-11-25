@@ -42,7 +42,7 @@ Worker 侧是另一套表示：
 
 ```text
 GPUModelRunner
-└── InputBatch.block_table: MultiGroupBlockTable
+└── InputBatch.block_table: BlockTables
     └── BlockTable × kv_cache_group（vllm/v1/worker/block_table.py）
 ```
 
@@ -53,7 +53,7 @@ Scheduler 侧每个请求的块表在 `SingleTypeKVCacheManager.req_to_blocks[re
 prefill / admission 先从 prefix cache 查命中：
 
 - `get_computed_blocks()` 调用 `find_longest_cache_hit()`，返回命中块、命中 token 数，以及混合模型用的 `shared_prefix_boundary`。
-- `max_cache_hit_length = request.num_tokens - 1`，最后一个 token 必须重算，用于拿 logits。
+- 命中上限由 `Request.get_max_cache_hit_length()`（`request.py:357`）计算：最后一个 token 必须重算，用于拿 logits。
 - 因为 `num_computed_tokens` 要块对齐，最后 token 的重算可能扩展成整个块的重算。
 
 然后进入 `allocate_slots()`：
@@ -82,7 +82,7 @@ decode 阶段调用 `allocate_slots(num_new_tokens=1)`；只有跨块边界时�
 和 nano-vllm 的差别在末块：
 
 - nano-vllm 的 `can_allocate()` 只查到 `num_blocks - 1`，满的末块也不复用。
-- vLLM 用 `max_cache_hit_length = num_tokens - 1` 保证最后一个 token 重算；按块对齐后，可能整块重算。
+- vLLM 的命中上限保证最后一个 token 重算（`Request.get_max_cache_hit_length()`，`request.py:357`）；按块对齐后，可能整块重算。
 
 ## BlockPool：三种块状态
 
@@ -98,7 +98,7 @@ decode 阶段调用 `allocate_slots(num_new_tokens=1)`；只有跨块边界时�
 
 ## 抢占：V1 只有 RECOMPUTE
 
-基线 `8b365ff949` 的 V1 抢占只有 RECOMPUTE 一条路。`Scheduler._preempt_request`（`vllm/v1/core/sched/scheduler.py:1539`）的核心是四步：
+基线 `2f5d8a2b1` 的 V1 抢占只有 RECOMPUTE 一条路。`Scheduler._preempt_request`（`vllm/v1/core/sched/scheduler.py:1829`）的核心是四步：
 
 1. 释放请求的块；
 2. 把状态置为 `RequestStatus.PREEMPTED`；
@@ -111,7 +111,7 @@ recompute 的代价是重新 prefill。prefix cache 可能仍然帮上忙，但�
 
 ## CPU offload 不是抢占
 
-CPU offload 是独立的 KV offloading connector，由 `kv_offloading_size` 开启（`vllm/config/cache.py:256`、`vllm/config/vllm.py:1123`）。它把已经算好的 KV 存到 CPU，后续命中时再取回，属于 KV transfer 层。
+CPU offload 是独立的 KV offloading connector，由 `kv_offloading_size` 开启（`vllm/config/cache.py:406`、`vllm/config/vllm.py:1258-1259`）。它把已经算好的 KV 存到 CPU，后续命中时再取回，属于 KV transfer 层。
 
 它不改变请求状态，也不负责腾出 `running` 请求占用的块。不要把 offload 映射成 nano-vllm 的 SWAP，也不要把 connector 的命中率当成 scheduler 的 swap 命中率。
 
@@ -124,15 +124,15 @@ Scheduler 侧：
 
 Worker 侧：
 
-- `InputBatch.block_table` 是 `MultiGroupBlockTable`，每个 KV group 一个 `BlockTable`。
-- 单 group 模型取 `block_table[0]`；`get_numpy_array()` 返回 `(max_num_reqs, max_blocks_per_req)` 的预分配 buffer。
-- `num_blocks_per_row[row]` 才是有效长度；未使用列是 0，0 号块是 null block，不是有效块。
+- `InputBatch.block_table` 是 `BlockTables`（基线的 `MultiGroupBlockTable` + `BlockTable` 已合并，文件迁至 `gpu/block_table.py`）。
+- 表体是 `UvaBackedTensor`：GPU 侧 `block_table` 张量 + host 侧 `num_blocks.np`（`max_num_reqs × max_num_blocks` 预分配，每 group 一张）。
+- `num_blocks.np[row]` 才是有效长度；未使用列是 0，0 号块是 null block，不是有效块。
 
 ## Prefix 统计
 
-`KVCacheManager.make_prefix_cache_stats()`（`kv_cache_manager.py:236`）返回 `PrefixCacheStats`，包含 `requests`、`queries`、`hits` 等字段。命中率按 `hits / queries` 计算。
+`KVCacheManager.make_prefix_cache_stats()`（`kv_cache_manager.py:228`）返回 `PrefixCacheStats`，包含 `requests`、`queries`、`hits` 等字段。命中率按 `hits / queries` 计算。
 
-`log_stats=False` 时返回 `None`。`VLLM_LOG_STATS_INTERVAL=1` 只控制日志频率，不改变统计口径。示例日志和字段表见 [code/README.md](code/README.md)。
+`collect_stats=False` 时返回 `None`。`VLLM_LOG_STATS_INTERVAL=1` 只控制日志频率，不改变统计口径。示例日志和字段表见 [code/README.md](code/README.md)。
 
 ## 本讲边界
 
@@ -140,7 +140,7 @@ Worker 侧：
 - CPU offload 是 connector，不改变请求状态，也不是抢占路径。
 - 最后一个 token 必重算；按块对齐后，可能整块重算。
 - `BlockPool` 的非缓存块走 LIFO，缓存块走 FIFO（表现为 LRU）；没有通用 pin API。
-- Worker block table 的 0 是 null block，有效长度看 `num_blocks_per_row`。
+- Worker block table 的 0 是 null block，有效长度看 `num_blocks.np`。
 - `make_prefix_cache_stats()` 会读取并重置统计；instrumentation 不能改变正常日志的调用顺序。
 
 ## 本讲产出

@@ -75,7 +75,7 @@
   - `num_blocks = available_memory // bytes_per_block`（（`kv_cache_planning.py:675`，公式主体在 `get_kv_cache_configs`，`:1476` 起））；跨 rank 取 min（`:1577-1588`）
   - `_auto_fit_max_model_len` 二分搜索最大可容纳长度（`:1283` 起）
   - 平台可替换：`KVCacheConfigBuilder`（`kv_cache_config_builder.py:19-105`）
-- **口播**：`--gpu-memory-utilization` 打进来的是这里，不是调度器——容量账本的完整推导是 KV 八讲第 2 讲
+- **口播**：`--gpu-memory-utilization` 打进来的是这里，不是调度器——容量账本的完整推导在 KV 八讲第 8 讲（每 token 公式在第 1 讲）
 
 ### 第 9 页：Coordinator 三选一
 
@@ -91,7 +91,7 @@
 
 - **一张图**：三层下探路径图（scheduler `:897`/`:1487` → `KVCacheManager.allocate_slots`（`kv_cache_manager.py:391-639`）→ coordinator → BlockPool）
 - **上稿**（三阶段，`:478-486` docstring）：①释放滑窗外冗余块并查余量 ②前缀命中块 touch+外部块 ③新 token 分配
-- **两处 None 判定**：`:557-559`（准入门 `full_sequence_must_fit`）与 `:595-599`（常规路径）——第 2 讲的「返回 None 触发抢占」就发生在这
+- **两处 None 判定**：`:560-563`（准入门 `full_sequence_must_fit`）与 `:607-614`（常规路径）——第 2 讲的「返回 None 触发抢占」就发生在这
 
 ### 第 11 页：BlockPool：唯一池与一条 LRU 链
 
@@ -103,7 +103,7 @@
 ### 第 12 页：touch 与 free 的双语义
 
 - **上稿**（`block_pool.py`）：
-  - `touch`（`:774-792`）：命中块 `ref_cnt` 0→1，从 free 队列摘除
+  - `touch`（`:788-810`）：命中块 `ref_cnt` 0→1，从 free 队列摘除
   - `free_blocks`（`:798-839`）：`ref_cnt` 归 0 入队——**无哈希块 prepend 队首（LIFO 复用，利好 GPU 局部性）**，**有哈希块 append 队尾(FIFO ⇒ LRU)**
 - **口播**：一条链两种入队方向，是两条淘汰策略的合流；nano 的 free/used 集合没有这个区分
 

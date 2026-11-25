@@ -37,7 +37,7 @@
 - **退役证据链**：自研 PagedAttention CUDA kernel 已删除（`csrc/attention/` 无 `attention_kernels`.cu）；`paged_attn.py` 瘦身成 53 行布局辅助；分页思想下沉为 `block_table`/BlockPool，读取交给 FA/Triton/FlashInfer 的原生 page-table API。
 - **现状走读**：`vllm/v1/core/kv_cache_manager.py:131`、`kv_cache_coordinator.py:828`（工厂三分支）、`block_pool.py:107`（唯一池+LRU 链）、`kv_cache_interface.py:682`（KVCacheGroup；**KVCacheGroupId 已不存在**）、`kv_cache_planning.py:1476`（容量换算）。
 - **实验**：同前缀请求的命中观察(`prefix_cache_probe`)；混合注意力模型(Gemma-2/gpt-oss)的分组日志；`--kv-cache-dtype` 对照。
-- **边界**：KVCacheManager 对象图细节、容量账本 → [KV Cache 八讲](../kv_cache_course/README.md)第 4-5 讲。
+- **边界**：KVCacheManager 对象图细节 → [KV Cache 八讲](../kv_cache_course/README.md)第 4 讲；容量账本 → 同课第 1-2/8 讲。
 - **演进素材**：`09_inference_system/vllm/module_analysis/pagedattention_retirement.md`（双版本对比）、`attention_mha_mla_nsa.md`、`hybrid_kv_cache_manager_deep_dive.md`（HMA 口径）。
 
 ### 第 4 讲 · 注意力后端：从 if-else 到后端矩阵

@@ -143,7 +143,7 @@ nano-vllm 教会你机制，生产环境要求你面对真实约束：模型形�
 
 ## 四、课程边界
 
-- 本课不做 KV 容量账本教学。算一个 token 多少 KV、给 Agent 长会话做容量规划，是 [KV Cache 八讲](../kv_cache_course/README.md)的事；两门课在第 3、9 讲互相导流。
+- 本课不做 KV 容量账本教学。算一个 token 多少 KV、给 Agent 长会话做容量规划，是 [KV Cache 八讲](../kv_cache_course/README.md)的事；第 3 讲向它单向导流（对方的前置是 ai-infra-course）。
 - 不做论文串讲。论文（SOSP'23、Sarathi-Serve 等）用来补机制背景，课堂时间花在源码与实操。
 - 以本地代码为准。nano-vllm 与 vLLM 各钉一个 commit(见[实验环境](lab-environment.md))；课上 `file:line` 按这些版本讲，换版本要重新核对。
 - 性能数字一律带口径（模型变体、精度、硬件、统计范围）；厂商口径与独立测量分开标注。

@@ -167,7 +167,7 @@ layer 24 / 28 / 32 / 36（Reindex）
 | `CacheConfig.swa_bounded_replay` | `vllm/config/cache.py:242` | 字段，默认 True；CLI 是 `--swa-bounded-replay`（`vllm/engine/arg_utils.py:1337`） |
 | `_mark_prefix_replay` | `vllm/v1/core/sched/scheduler.py:3018` | 调度器里的真正触发点；调用点在 `:1081`（新请求准入）和 `:3070`（异步 KV 加载完成） |
 | `DeepseekV4SWACache` | `vllm/v1/attention/backends/mla/sparse_swa.py:72` | SWA KV 的 paged cache，`block_size=32` |
-| `SlidingWindowMLASpec.prefix_cacheable` | `vllm/v1/kv_cache_interface.py:933` | 返回 `not bounded_replay` |
+| `SlidingWindowMLASpec.prefix_cacheable` | `vllm/v1/kv_cache_interface.py:929` | 返回 `not bounded_replay` |
 
 `swa_bounded_replay` 不是函数名，也不是某个 replay 函数的开关。它是配置字段，调度器读到之后在 `_mark_prefix_replay` 里把命中尾部标成待重放。
 

@@ -4,21 +4,21 @@
 
 ## 本讲额外要求
 
-- vLLM 位于 `~/Project/ai-infra/vLLM`，HEAD `8b365ff949`；
+- vLLM 位于 `~/Project/ai-infra/vLLM`，HEAD `2f5d8a2b1`；
 - 预读文章：`09_inference_system/kv_cache/07_kv_compression/06-deepseek-v41-flash.md`；
 - 只用 Python 标准库，不需要安装 vLLM，也不需要模型权重；
 - 不把 V4-Pro / V4-Flash / V4.1-Flash 的数字混用，每个容量数字注明变体和统计范围。
 
 ## 源码阅读清单
 
-| 文件 | 看什么 |
-| --- | --- |
-| `vllm/config/cache.py` | `swa_bounded_replay` 字段与默认值 |
-| `vllm/engine/arg_utils.py` | `--swa-bounded-replay` flag 怎么映射到配置字段 |
-| `vllm/v1/core/sched/scheduler.py` | `_mark_prefix_replay` 的调用点与 `replay_start` |
-| `vllm/v1/attention/backends/mla/sparse_swa.py` | `DeepseekV4SWACache`、`block_size` |
-| `vllm/v1/kv_cache_interface.py` | `prefix_cacheable` 与 `bounded_replay` 的关系 |
-| `vllm/models/deepseek_v41/attention.py` | `swa_bytes_per_token`、`compressed_bytes_per_token` 的取值 |
+| 文件                                           | 看什么                                                     |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| `vllm/config/cache.py`                         | `swa_bounded_replay` 字段与默认值                          |
+| `vllm/engine/arg_utils.py`                     | `--swa-bounded-replay` flag 怎么映射到配置字段             |
+| `vllm/v1/core/sched/scheduler.py`              | `_mark_prefix_replay` 的调用点与 `replay_start`            |
+| `vllm/v1/attention/backends/mla/sparse_swa.py` | `DeepseekV4SWACache`、`block_size`                         |
+| `vllm/v1/kv_cache_interface.py`                | `prefix_cacheable` 与 `bounded_replay` 的关系              |
+| `vllm/models/deepseek_v41/attention.py`        | `swa_bytes_per_token`、`compressed_bytes_per_token` 的取值 |
 
 行号会随 commit 漂移，按符号名搜索，不按行号硬找。
 

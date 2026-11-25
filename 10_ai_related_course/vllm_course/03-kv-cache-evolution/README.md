@@ -75,7 +75,7 @@ prefix caching 默认开（`enable_prefix_caching: bool = True`，`config/cache.
 
 | 内容                                                                       | 本讲                                  | 去处                                                      |
 | -------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------- |
-| KVCacheManager/BlockPool 对象图逐字段、容量账本（每 token 多少、并发上限） | 只看结构与演进                        | [KV Cache 八讲](../../kv_cache_course/README.md)第 4-5 讲 |
+| KVCacheManager/BlockPool 对象图逐字段、容量账本（每 token 多少、并发上限） | 只看结构与演进                        | [KV Cache 八讲](../../kv_cache_course/README.md)第 4 讲（对象图）/第 1-2、8 讲（账本） |
 | 注意力 kernel 数学（MLA/NSA 怎么算）                                       | 不展开                                | 第 4 讲                                                   |
 | offloading(cpu/fs/tiering)                                                 | 不展开（第 2 讲已交代「移出调度器」） | 第 9 讲                                                   |
 

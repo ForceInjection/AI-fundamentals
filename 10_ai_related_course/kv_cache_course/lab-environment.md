@@ -19,7 +19,7 @@
 | 仓库            | 本地路径                           | 版本           |
 | --------------- | ---------------------------------- | -------------- |
 | nano-vllm       | `~/Project/study/nano-vllm`        | `b9dd55a`      |
-| vLLM            | `~/Project/ai-infra/vLLM`          | `8b365ff949`   |
+| vLLM            | `~/Project/ai-infra/vLLM`          | `2f5d8a2b1`   |
 | SGLang          | `~/Project/ai-infra/sglang`        | `f4de6abee6`   |
 | ai-infra-course | `~/Project/study/ai-infra-course`  | 作为前置材料   |
 | 本仓库          | `~/Project/wechat/AI-fundamentals` | 课程资料与文章 |

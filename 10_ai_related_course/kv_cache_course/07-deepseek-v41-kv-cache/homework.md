@@ -12,7 +12,7 @@
 
 ## 源码题
 
-读本地 vLLM（HEAD `8b365ff949`）：
+读本地 vLLM（HEAD `2f5d8a2b1`）：
 
 - `vllm/config/cache.py`：`swa_bounded_replay` 是字段还是函数？默认值是什么？对应的 CLI flag 在哪？
 - `vllm/v1/core/sched/scheduler.py`：`_mark_prefix_replay` 在哪些路径被调用？它如何设置 `request.replay_start`？

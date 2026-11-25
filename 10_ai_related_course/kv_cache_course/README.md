@@ -157,7 +157,7 @@ KV Cache 是推理系统里随上下文和并发增长的那部分显存开销�
 | 材料            | 版本 / 路径                                         | 用途                                               |
 | --------------- | --------------------------------------------------- | -------------------------------------------------- |
 | nano-vllm       | 本地 `~/Project/study/nano-vllm`，HEAD `b9dd55a`    | 第 2–3 讲实验；第 4 讲用 `BlockManager` 做对照阅读 |
-| vLLM            | 本地 `~/Project/ai-infra/vLLM`，HEAD `8b365ff949`   | 第 4、7 讲源码                                     |
+| vLLM            | 本地 `~/Project/ai-infra/vLLM`，HEAD `2f5d8a2b1`   | 第 4、7 讲源码                                     |
 | SGLang          | 本地 `~/Project/ai-infra/sglang`，HEAD `f4de6abee6` | 第 5、6 讲源码                                     |
 | AI-fundamentals | 本仓库 `09_inference_system/`                       | 概念、GLM-5.3-Flash、DeepSeek-V4.1-Flash 预读      |
 | ai-infra-course | 本地 `~/Project/study/ai-infra-course`              | 模块 5/6 作为前置；复用公式图、计算器和 trace 脚本 |
@@ -168,6 +168,11 @@ KV Cache 是推理系统里随上下文和并发增长的那部分显存开销�
 - 课程里的 `MB` 按 `10^6 B` 计，不用 MiB；换算成 MiB 时另标单位。
 - `page/slot` 是 token 池的分配粒度，不是独立的容量池；DRAM 副本属于 host cache，不参与“可用并发”上限。
 - 课程中出现的 `nanovllm` 只作为 Python 包名或路径；展示名统一写 `nano-vllm`。
+- 本课程 vLLM 锚点钉 `2f5d8a2b1`；姊妹课程 vLLM 十讲（`../vllm_course/`）钉 `2f5d8a2b1`（v0.34.1rc0-84）。对照阅读时注意四个已知漂移，一律以代码为准：
+  1. `DEFAULT_BLOCK_SIZE` 16 → 64（第 8 讲算例按 16 推导，在旧版成立）；
+  2. `gpu_memory_utilization` 默认 0.92 → 改为 None 条件解析（1.0 / 0.92）；
+  3. `vllm/v1/worker/gpu_model_runner.py` 更名为 `vllm/v1/worker/gpu/model_runner.py`（第 4 讲插桩点随之迁移）；
+  4. `SlidingWindowMLASpec` 等符号已删（`prefix_cacheable` 语义移至 `single_type_kv_cache_manager.py:1083`），`kv_cache_planning.py` 为十讲侧新增——两处都以符号名搜索定位。
 
 ### 参考材料
 

@@ -6,7 +6,7 @@
 
 ## 任务 0：准备（5 min）
 
-- vLLM 本地 checkout，HEAD `8b365ff949`，只读，不复制源码到课程仓库；
+- vLLM 本地 checkout，HEAD `2f5d8a2b1`，只读，不复制源码到课程仓库；
 - 先读 [code/README.md](code/README.md) 的字段表和 instrumentation 片段；
 - 选择一条轨道：
   - CPU / 只读源码：文本编辑器 + Python 3.10+（可选，用于跑日志解析）；

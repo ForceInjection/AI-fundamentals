@@ -34,14 +34,14 @@
 | `vllm/v1/core/kv_cache_planning.py`        | `get_kv_cache_configs`     | 1456-1600         | `num_blocks` 换算(1566-1569)；跨 rank 取 min;auto-fit |
 | `vllm/v1/kv_cache_interface.py`            | `KVCacheGroup`             | 681-742           | 组 = 共享 block table 的一组层；同组同 page size      |
 | `vllm/v1/kv_cache_interface.py`            | `KVCacheTensor`            | 628-655           | 组间 overlay 同一 allocation（639-640 注释）          |
-| `vllm/v1/kv_cache_interface.py`            | `KVCacheConfig`            | 829-850           | 引擎级产物：`num_blocks` / groups / `hash_block_size`     |
+| `vllm/v1/kv_cache_interface.py`            | `KVCacheConfig`            | 838           | 引擎级产物：`num_blocks` / groups / `hash_block_size`     |
 | `vllm/v1/core/kv_cache_manager.py`         | `KVCacheManager.__init__`  | 131-216           | 门面装配；watermark（`:200`）                         |
 | `vllm/v1/core/kv_cache_coordinator.py`     | `get_kv_cache_coordinator` | 850-904           | 工厂三分支：NoPrefixCache / Unitary / Hybrid          |
-| `vllm/v1/core/kv_cache_manager.py`         | `allocate_slots`           | 391-639           | 三阶段；None 判定（557-559 准入门 / 595-599 常规）    |
+| `vllm/v1/core/kv_cache_manager.py`         | `allocate_slots`           | 391-639           | 三阶段；None 判定（560-563 准入门 / 607-614 常规）    |
 | `vllm/v1/core/block_pool.py`               | `BlockPool.__init__`       | 107-173           | 唯一池；`free_block_queue`(153)；哈希 map(156)          |
 | `vllm/v1/core/block_pool.py`               | `get_new_blocks`           | 681-750           | 分配即逐出候选（712-713 `_maybe_evict_cached_block`） |
-| `vllm/v1/core/block_pool.py`               | `touch` / `free_blocks`    | 774-792 / 798-839 | 命中引用；LIFO（无哈希）/LRU（有哈希）双语义          |
-| `vllm/v1/core/kv_cache_utils.py`           | `hash_block_tokens`        | 697-724           | 链式哈希（父哈希+本块 token+`extra_keys`）；默认 sha256 |
+| `vllm/v1/core/block_pool.py`               | `touch` / `free_blocks`    | 788-810 / 812-850 | 命中引用；LIFO（无哈希）/LRU（有哈希）双语义          |
+| `vllm/v1/core/kv_cache_utils.py`           | `hash_block_tokens`        | 747-774           | 链式哈希（父哈希+本块 token+`extra_keys`）；默认 sha256 |
 | `vllm/v1/core/kv_cache_utils.py`           | `BlockHashWithGroupId`     | 50                | 哈希+group 联合键（对照 nano 的 hash→block）          |
 | `vllm/v1/request.py`                       | `Request.__init__`         | 243-248           | 哈希前移：构造即算全前缀哈希                          |
 | `vllm/v1/attention/ops/paged_attn.py`      | 全文                       | 1-53              | 退役证据：只剩布局辅助；唯一使用方 ROCm               |
