@@ -5,14 +5,14 @@
 | 项目     | 内容                                                   |
 | -------- | ------------------------------------------------------ |
 | 课时     | 120 分钟                                               |
-| 基线     | nano-vllm `b9dd55a`；vLLM `1acec5c009`(v0.34.0rc0-1153) |
+| 基线     | nano-vllm `b9dd55a`；vLLM `2f5d8a2b1`(v0.34.1rc0-84) |
 | 先修     | nano-vllm 实战课程第 1 课                              |
 | 授课形式 | 演进对照 + 源码走读 + 上手实验                         |
 
 ## 教学目标
 
 - **知识目标**：说出三类进程(API server / EngineCore / Worker)各自持有与不持有什幺（如 tokenizer 只在前端）；说清两套 IPC（前端 ZMQ、Executor↔Worker 共享内存）各自为什么。
-- **能力目标**：沿 `file:line` 追踪一次请求的全链路；用进程公式 `A + DP + N` 解释自己机器上的进程数；判断一个网络教程是否用了过时入口(api_server.py shim)。
+- **能力目标**：沿 `file:line` 追踪一次请求的全链路；用进程公式 `A + DP + N` 解释自己机器上的进程数；判断一个网络教程是否用了过时入口(`api_server`.py shim)。
 - **素养目标**：建立「文档说的要拿代码验证」的核对习惯（本讲给出三个真实滞后案例）。
 
 ## 时间安排
@@ -29,15 +29,15 @@
 
 | 文件                                                 | 函数 / 类                                          | 行号                  | 看什么                                                                |
 | ---------------------------------------------------- | -------------------------------------------------- | --------------------- | --------------------------------------------------------------------- |
-| `vllm/entrypoints/launchers/api_server/entry.py`     | `build_async_engine_client_from_engine_args`       | 69-112                | AsyncLLM 在哪实例化（不在旧 api_server.py）                             |
-| `vllm/entrypoints/openai/chat_completion/serving.py` | `OpenAIServingChat.create_chat_completion`         | 290（调用点 411）       | 请求落到 engine_client.generate 的位置                                |
+| `vllm/entrypoints/launchers/api_server/entry.py`     | `build_async_engine_client_from_engine_args`       | 69-112                | AsyncLLM 在哪实例化（不在旧 `api_server`.py）                             |
+| `vllm/entrypoints/openai/chat_completion/serving.py` | `OpenAIServingChat.create_chat_completion`         | 290（调用点 411）       | 请求落到 `engine_client`.generate 的位置                                |
 | `vllm/v1/engine/async_llm.py`                        | `AsyncLLM.__init__`                                | 97-249                | 三件装配：InputProcessor / OutputProcessor / EngineCoreClient          |
 | `vllm/v1/engine/async_llm.py`                        | `generate`                                         | 740-868               | 请求四步；`_add_request:581` 的跨进程落点                              |
 | `vllm/v1/engine/async_llm.py`                        | `_run_output_handler`                              | 870-966               | 输出如何回流到每请求 collector                                        |
 | `vllm/v1/engine/core_client.py`                      | `MPClient.__init__`                                | 630 附近              | 前端 bind ROUTER / PULL(688-701)                                      |
-| `vllm/v1/engine/core.py`                             | `process_input_sockets` / `process_output_sockets` | 2222-2231 / 2325-2327 | 引擎侧 DEALER / PUSH connect;IO 线程解耦(1434-1449)                   |
-| `vllm/v1/engine/core.py`                             | `EngineCore.__init__`                              | 133-286               | 初始化顺序：executor → KV → structured output → scheduler；无 tokenizer |
-| `vllm/v1/engine/core.py`                             | `step`                                             | 714-745               | schedule → execute_model(non_block)→ update_from_output               |
+| `vllm/v1/engine/core.py`                             | `process_input_sockets` / `process_output_sockets` | 2200-2203 / 2311-2318 | 引擎侧 DEALER / PUSH connect;IO 线程解耦(1420-1449)                   |
+| `vllm/v1/engine/core.py`                             | `EngineCore.__init__`                              | 131-288               | 初始化顺序：executor → KV → structured output → scheduler；无 tokenizer |
+| `vllm/v1/engine/core.py`                             | `step`                                             | 714-745               | schedule → `execute_model`(`non_block`)→ `update_from_output`               |
 | `vllm/v1/engine/core.py`                             | `run_busy_loop`                                    | 1814-1824             | busy loop 两件事；无活阻塞输入队列                                     |
 | `vllm/v1/executor/abstract.py`                       | `Executor.get_class`                               | 66-107                | executor 后端选择逻辑                                                 |
 | `vllm/v1/executor/multiproc_executor.py`             | `_init_executor` / `worker_busy_loop`              | 157-316 / 1189-1197   | 共享内存 MessageQueue;worker 纯 RPC 循环                              |
@@ -49,7 +49,7 @@
 ## 重点与难点
 
 - **重点**：三类进程各自持有什么（尤其 tokenizer 只在前端）；`EngineCore.step` 的五步；两套 IPC 的分工。
-- **难点**:ROUTER/DEALER 多对多路由（多 API server × 多 EngineCore）;Executor↔Worker 为什么用共享内存而不是 ZMQ（SchedulerOutput 大，避免序列化拷贝）。
+- **难点**：ROUTER/DEALER 多对多路由（多 API server × 多 EngineCore）；Executor↔Worker 为什么用共享内存而不是 ZMQ（SchedulerOutput 大，避免序列化拷贝）。
 - **易错点**：从 `api_server.py` 或 `LLMEngine` shim 开始读源码；以为 MRV2 是要打开的开关（HEAD 上它是唯一实现）。
 
 ## 参考材料

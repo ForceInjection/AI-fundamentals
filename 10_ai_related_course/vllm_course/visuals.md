@@ -10,7 +10,7 @@
 | `09_inference_system/vllm/module_analysis/assets/decode-path.svg`         | decode 路径 | 第 2、6 讲 |
 | `09_inference_system/vllm/module_analysis/assets/c4a_animation.gif`       | —            | 第 3 讲      |
 | `09_inference_system/vllm/module_analysis/assets/kimi_k3_attention_visual.html` | Kimi K3 篇 | 第 4 讲    |
-| `09_inference_system/prefill_decode/` 交互可视化                            | prefill_decode 系列 | 第 2 讲 |
+| `09_inference_system/prefill_decode/` 交互可视化                            | `prefill_decode` 系列 | 第 2 讲 |
 | `09_inference_system/assets/` 各 svg                                        | 按主题检索   | 按需         |
 
 ## nano-vllm 仓（先修课）

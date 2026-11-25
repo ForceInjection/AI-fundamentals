@@ -5,7 +5,7 @@
 ## 准备（5 min，课前完成）
 
 ```bash
-cd ~/Project/ai-infra/vLLM && git checkout 1acec5c009
+cd ~/Project/ai-infra/vLLM && git checkout 2f5d8a2b1
 pip list | grep -E '^(vllm|openai) '   # openai 客户端随 vLLM 依赖安装
 ```
 
@@ -20,13 +20,13 @@ pip list | grep -E '^(vllm|openai) '   # openai 客户端随 vLLM 依赖安装
 
 目的：复现「长 prompt 拖累短请求」以及 chunked prefill 的缓解效果。
 
-1. 跑本讲脚本（见 `code/README.md`）:
+1. 跑本讲脚本（见 `code/README.md`）：
 
-```bash
-python3 code/mixed_load_probe.py --host localhost --port 8000
-```
+   ```bash
+   python3 code/mixed_load_probe.py --host localhost --port 8000
+   ```
 
-脚本行为：交错发送 4 条长 prompt（约 2K token）与 4 条短 prompt（约 40 token），流式接收，记录每条请求的 TTFT 与总耗时，输出对照表。
+   脚本行为：交错发送 4 条长 prompt（约 2K token）与 4 条短 prompt（约 40 token），流式接收，记录每条请求的 TTFT 与总耗时，输出对照表。
 
 2. 在配置 A 下跑一次，记录：短请求 TTFT 是否被长请求拉高、长请求自身 TTFT 是多少。
 3. 切配置 B 重启，再跑一次，对照两组数字。
@@ -39,7 +39,7 @@ python3 code/mixed_load_probe.py --host localhost --port 8000
 
 1. 配置 B 的 threshold 分别取 `512`、`2048`、`100000` 各跑一次脚本。
 2. 记录三个数字：短请求 TTFT 均值、长请求 TTFT 均值、总墙钟时间。
-3. 思考题（写进产出）:threshold 越小，长请求自身 TTFT 怎么变?为什么这个旋钮不是越大越好也不是越小越好?
+3. 思考题（写进产出）：threshold 越小，长请求自身 TTFT 怎么变？为什么这个旋钮不是越大越好也不是越小越好？
 
 **产出**：三档 threshold 的三个数字 + 思考题答案。
 
@@ -48,14 +48,14 @@ python3 code/mixed_load_probe.py --host localhost --port 8000
 目的：把 README 六环节映射到真实日志。
 
 1. 用 `VLLM_LOGGING_LEVEL=DEBUG` 重启（任一配置），跑实验 1 脚本。
-2. 在日志中找并标注（按关键词搜）:
-   - chunked prefill 生效：同一请求分多步 prefill 的调度记录（搜 `chunk` / 多次 `Received request` 后的增量 prefill 行）;
-   - 抢占事件（若触发）：搜 `preempt`（对应 `_preempt_request` 的日志与计数）;
+2. 在日志中找并标注（按关键词搜）：
+   - chunked prefill 生效：同一请求分多步 prefill 的调度记录（搜 `chunk` / 多次 `Received request` 后的增量 prefill 行）；
+   - 抢占事件（若触发）：搜 `preempt`（对应 `_preempt_request` 的日志与计数）；
    - cache-aware 准入（若配置了 `--cache-aware-admission-window`）：准入顺序变化；
    - async scheduling：启动日志里 `async_scheduling` 的解析结果（默认自动 True）。
 3. 每条日志对应回环节号，写进标注表。
 
-**产出**:「日志行 ↔ 环节号」标注表（至少覆盖 chunked prefill 与 async scheduling 两项）。
+**产出**：「日志行 ↔ 环节号」标注表（至少覆盖 chunked prefill 与 async scheduling 两项）。
 
 ## 常见问题
 

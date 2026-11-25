@@ -6,14 +6,14 @@
 
 另复用第 2 讲 `mixed_load_probe.py`（`cp ../02-scheduler/code/mixed_load_probe.py .`）做三态 TPOT 对照（实验 1）。
 
-## capture_log_parser.py
+## `capture_log_parser`.py
 
 ```bash
 vllm serve Qwen/Qwen3-1.7B 2>&1 | tee /tmp/vllm-capture.log
 python3 capture_log_parser.py /tmp/vllm-capture.log
 ```
 
-输出：capture 总耗时/显存(「Graph capturing finished in X secs, took Y GiB」,
+输出：capture 总耗时/显存(「Graph capturing finished in X secs, took Y GiB」，
 官方注通常 5~20 秒)、图模式、后端选择行、编译完成行；无匹配时提示排查方向
 （是否误加 --enforce-eager）。
 

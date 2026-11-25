@@ -5,7 +5,7 @@
 ## 准备（课前完成）
 
 ```bash
-cd ~/Project/ai-infra/vLLM && git checkout 1acec5c009
+cd ~/Project/ai-infra/vLLM && git checkout 2f5d8a2b1
 nvidia-smi -L   # 记下本机 GPU 数(实验报错预期依赖它)
 ```
 
@@ -13,11 +13,11 @@ nvidia-smi -L   # 记下本机 GPU 数(实验报错预期依赖它)
 
 目的：`_validate_parallel_config`（`parallel.py:681-770`）的错误信息就是学习材料。
 
-三个必试组合（`vllm serve <小模型或任意模型名>` 均可，报错发生在配置层，不需要真的加载模型；必要时加 `--model Qwen/Qwen3-0.6B` 走完整解析）:
+三个必试组合（`vllm serve <小模型或任意模型名>` 均可，报错发生在配置层，不需要真的加载模型；必要时加 `--model Qwen/Qwen3-0.6B` 走完整解析）：
 
-1. **超卡数**：`--tensor-parallel-size 8`（单机不足 8 卡时）→ 预期：world_size 超过本机 GPU 数的报错（对照 `parallel.py:1284-1296` 的条件）;
-2. **DCP 不整除**：`--decode-context-parallel-size 3 --tensor-parallel-size 4` → 预期：TP 必须被 DCP 整除的报错（`:756-758`）;
-3. **EPLB 前置缺失**：`--enable-eplb`（不带 `--enable-expert-parallel`）→ 预期：EPLB 需要 enable_expert_parallel 的报错（`:723-748`）。
+1. **超卡数**：`--tensor-parallel-size 8`（单机不足 8 卡时）→ 预期：`world_size` 超过本机 GPU 数的报错（对照 `parallel.py:1284-1296` 的条件）；
+2. **DCP 不整除**：`--decode-context-parallel-size 3 --tensor-parallel-size 4` → 预期：TP 必须被 DCP 整除的报错（`:756-758`）；
+3. **EPLB 前置缺失**：`--enable-eplb`（不带 `--enable-expert-parallel`）→ 预期：EPLB 需要 `enable_expert_parallel` 的报错（`:723-748`）。
 
 每条记录：完整报错信息 + 对应的校验代码行 + 一句「怎么改才对」。
 
@@ -33,15 +33,15 @@ nvidia-smi -L   # 记下本机 GPU 数(实验报错预期依赖它)
 VLLM_LOGGING_LEVEL=INFO vllm serve Qwen/Qwen3-0.6B --enforce-eager 2>&1 | tee /tmp/vllm-par.log
 ```
 
-2. 在日志里找 init 阶段的 group 分配输出（搜 `DP rank` / `TP rank` / `EP rank`，对照 `parallel_state.py:2462-2476` 的打印）；数一数出现了几种 group、EP 组在不在（dense 模型预期缺席，`parallel_state.py:2402` 的 `is_moe` 判定）。
+2. 在日志里找 init 阶段的 group 分配输出（搜 `DP rank` / `TP rank` / `EP rank`，对照 `parallel_state.py:2462-2476` 的打印）；数一数出现了几种 group、EP 组在不在（dense 模型预期缺席，`parallel_state.py:2403` 的 `is_moe` 判定）。
 3. 找 executor 选择日志(uni/mp)，对照第 1 讲。
 
-**产出**:group 分配标注表（出现了哪些、EP 为何缺席）。
+**产出**：group 分配标注表（出现了哪些、EP 为何缺席）。
 
 ## 实验 3:DP attention 观察（10 min，可选，需 ≥2 卡）
 
 1. 双卡起 MoE 或普通模型：`--data-parallel-size 2`（观察：进程数翻倍；coordinator 进程出现；DP 组日志）。
-2. 在日志里找：`dp_sync_interval` 相关同步行（每 16 步）、coordinator 的 finish-sync;
+2. 在日志里找：`dp_sync_interval` 相关同步行（每 16 步）、coordinator 的 finish-sync；
 3. 对照 `docs/serving/data_parallel_deployment.md:5-16` 的动机描述，写一句「DP rank 之间什么共享、什么独立」。
 
 **产出**：进程拓扑观察 + DP 共享/独立清单。

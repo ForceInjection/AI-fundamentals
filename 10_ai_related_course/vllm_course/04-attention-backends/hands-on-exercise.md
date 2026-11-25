@@ -5,7 +5,7 @@
 ## 准备（课前完成）
 
 ```bash
-cd ~/Project/ai-infra/vLLM && git checkout 1acec5c009
+cd ~/Project/ai-infra/vLLM && git checkout 2f5d8a2b1
 nvidia-smi --query-gpu=compute_cap --format=csv   # 记下你的算力代际(如 8.9)
 ```
 
@@ -20,8 +20,8 @@ nvidia-smi --query-gpu=compute_cap --format=csv   # 记下你的算力代际(如
    # 启动日志里找:平台优先级列表与最终选择(搜 attention / backend 关键词)
    ```
 
-2. 合法强切（对照吞吐）：重启时加 `--attention-backend TRITON_ATTN`，跑第 2 讲的 `mixed_load_probe.py`，对比默认（TRITON_ATTN 机器上即 FLASH_ATTN/FLASHINFER）的吞吐差。
-3. 非法强切之「名字不存在」:
+2. 合法强切（对照吞吐）：重启时加 `--attention-backend TRITON_ATTN`，跑第 2 讲的 `mixed_load_probe.py`，对比默认（`TRITON_ATTN` 机器上即 `FLASH_ATTN`/FLASHINFER）的吞吐差。
+3. 非法强切之「名字不存在」：
 
    ```bash
    vllm serve Qwen/Qwen3-1.7B --attention-backend FLASH_ATTN_V99
@@ -42,14 +42,14 @@ nvidia-smi --query-gpu=compute_cap --format=csv   # 记下你的算力代际(如
 目的：验证你能手推五层决策树。
 
 1. 纸面推演（不看日志）：你的机器（算力代际 **）+ Qwen3-1.7B（GQA，非 MLA，无滑窗）→ 走非 MLA 分支第 ** 段 → 抄优先级列表：** → 逐项校验，第一个通过者：**。
-2. 起服务对答案：日志中的实际选择与你推的是否一致?
+2. 起服务对答案：日志中的实际选择与你推的是否一致？
 3. 换假想硬件再推两次：B200（SM100，因果 GQA）首选应为 FLASHINFER；假想 SM120 非因果混合批——注意两个 composite 分别要求 major==9/10,SM120 两者都不满足（预期答案：无 composite 命中，走优先级列表尾部）
 
 **产出**：复算过程照 + 与日志的对照结论（一致/不一致及原因）。
 
 ## 实验 3:Gemma-2 滑窗观察（5 min，可选，显存许可）
 
-1. 起 `google/gemma-2-2b-it`，日志确认后端（应为 FLASH_ATTN 或 FLASHINFER——两者都支持滑窗，`flash_attn.py:483-484` / `flashinfer.py:761-762`）;
+1. 起 `google/gemma-2-2b-it`，日志确认后端（应为 `FLASH_ATTN` 或 FLASHINFER——两者都支持滑窗，`flash_attn.py:483-484` / `flashinfer.py:761-762`）；
 2. 强切一个不支持滑窗的后端，观察报错理由中的 sliding window 项（`backend.py:350-351`）。
 
 **产出**：滑窗拒绝理由截图（若触发）。
@@ -57,5 +57,5 @@ nvidia-smi --query-gpu=compute_cap --format=csv   # 记下你的算力代际(如
 ## 常见问题
 
 - 默认后端日志找不到选择过程：自动选择无冲突时不打印理由列表，只打最终结果；想看理由就用非法强切逼出来。
-- TRITON_ATTN 吞吐明显低：正常，Triton 是兜底实现；实验目的是看机制差异，不是评优。
+- `TRITON_ATTN` 吞吐明显低：正常，Triton 是兜底实现；实验目的是看机制差异，不是评优。
 - 强切后服务起不来：读报错理由列表——这正是本讲教的技能。

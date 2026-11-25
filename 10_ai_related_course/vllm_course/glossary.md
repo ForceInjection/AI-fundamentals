@@ -1,6 +1,6 @@
 # 术语表
 
-按讲次首次出现的顺序排列。定义以课程基线（nano-vllm `b9dd55a`；vLLM `1acec5c009`）代码为准。
+按讲次首次出现的顺序排列。定义以课程基线（nano-vllm `b9dd55a`；vLLM `2f5d8a2b1`）代码为准。
 
 ## 引擎与架构（第 1 讲）
 
@@ -42,8 +42,8 @@
 | attention backend       | 按模型架构 × 硬件选择的注意力实现（FlashAttention / FlashInfer / Triton / FlashMLA 等） |
 | `VLLM_ATTENTION_BACKEND`| **已删除**(PR #32812)；强制指定后端现行写法为 `--attention-backend` |
 | piecewise CUDA Graph    | 只 capture attention 外分段、attention 走 kernel 的图捕获策略       |
-| `CUDAGraphMode`         | 五值：NONE / PIECEWISE / FULL / FULL_DECODE_ONLY / FULL_AND_PIECEWISE（默认 -O2 即最后者）；`config/compilation.py:165-222` |
-| `-O0/-O1/-O2/-O3`       | torch.compile 优化级别四档；默认 O2，当前 O3 == O2（`vllm.py:176-188`）|
+| `CUDAGraphMode`         | 五值：NONE / PIECEWISE / FULL / `FULL_DECODE_ONLY` / `FULL_AND_PIECEWISE`（默认 -O2 即最后者）；`config/compilation.py:163-220` |
+| `-O0/-O1/-O2/-O3`       | torch.compile 优化级别四档；默认 O2，当前 O3 == O2（`vllm.py:178-190`）|
 | `--enforce-eager`       | 关闭 CUDA Graph 与编译，直接 eager 执行                             |
 
 ## 并行（第 6 讲）
@@ -59,9 +59,9 @@
 | 术语                | 含义                                                             |
 | ------------------- | ---------------------------------------------------------------- |
 | acceptance length   | 投机解码每步被接受的平均 token 数（含 bonus token,= 1 + accepted/drafts），决定收益上限 |
-| ngram / suffix / EAGLE / EAGLE3 / draft_model / MTP | HEAD 在职的投机解码方法；Medusa 已移除（历史方法） |
+| ngram / suffix / EAGLE / EAGLE3 / `draft_model` / MTP | HEAD 在职的投机解码方法；Medusa 已移除（历史方法） |
 | LLM Compressor      | 官方量化工作流工具                                               |
-| FP8 / W4A16 / AWQ / GPTQ | 量化格式与方案；gptq/awq 系收敛为 auto_gptq/auto_awq（别名 gptq_marlin/awq_marlin）;Marlin 活在 `kernels/linear` 注册表 |
+| FP8 / W4A16 / AWQ / GPTQ | 量化格式与方案；gptq/awq 系收敛为 `auto_gptq`/auto_awq（别名 `gptq_marlin`/awq_marlin）；Marlin 活在 `kernels/linear` 注册表 |
 | online 量化              | 加载时量化 BF16 权重的子系统（`--quantization fp8_per_tensor` 等 shorthand，`quantization/online/`）|
 
 ## KV 分载与生态（第 9、10 讲）

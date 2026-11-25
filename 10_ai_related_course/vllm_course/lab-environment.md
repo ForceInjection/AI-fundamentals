@@ -7,7 +7,7 @@
 | 仓库      | 本地路径                    | 基线 commit                              | 角色                |
 | --------- | --------------------------- | ---------------------------------------- | ------------------- |
 | nano-vllm | `~/Project/study/nano-vllm` | `b9dd55a`（先修课同款）                    | 每讲第 1 层回顾对照 |
-| vLLM      | `~/Project/ai-infra/vLLM`   | `1acec5c009`(v0.34.0rc0-1153,2026-11-23) | 现状走读与实验      |
+| vLLM      | `~/Project/ai-infra/vLLM`   | `2f5d8a2b1`(v0.34.1rc0-84,2026-11-25) | 现状走读与实验      |
 
 - vLLM 基线随课程推进重新钉；换 commit 时须重核课上全部 `file:line`，并在本表更新。
 - 课程写作期发现旧文章（锚点 `8b365ff949`、`43d691ec6b` 等）与本基线的行号代差，属于预期；旧文章在本课程中只作演进脉络素材，不作为现状依据。
@@ -15,12 +15,12 @@
 ## Python 环境
 
 - Python 3.10–3.12（nano-vllm 要求 `<3.13`；vLLM 官方 wheel 按 3.10–3.12 发布）。
-- 建议两个独立 venv:nano-vllm 一个（依赖少，torch + triton + flash-attn）,vLLM 一个（直接 `pip install vllm` 安装稳定版，源码实验用 `-e` 安装本地仓）。
+- 建议两个独立 venv:nano-vllm 一个（依赖少，torch + triton + flash-attn），vLLM 一个（直接 `pip install vllm` 安装稳定版，源码实验用 `-e` 安装本地仓）。
 - 源码安装 vLLM 本地仓：
 
 ```bash
 cd ~/Project/ai-infra/vLLM
-git checkout 1acec5c009
+git checkout 2f5d8a2b1
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cu128  # 按本机 CUDA 调整
 ```
 

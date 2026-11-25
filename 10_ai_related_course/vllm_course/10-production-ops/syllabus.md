@@ -5,7 +5,7 @@
 | 项目     | 内容                                                                |
 | -------- | ------------------------------------------------------------------- |
 | 课时     | 120 分钟                                                            |
-| 基线     | nano-vllm `b9dd55a`；vLLM `1acec5c009`(v0.34.0rc0-1153)            |
+| 基线     | nano-vllm `b9dd55a`；vLLM `2f5d8a2b1`(v0.34.1rc0-84)            |
 | 先修     | 第 1-9 讲（本讲是收官合流讲）                                       |
 | 授课形式 | 运维面走读 + 指标族梳理 + 压测实验 + 生态分层                       |
 
@@ -29,29 +29,29 @@
 
 ## 函数级阅读清单（课前预读）
 
-| 文件                                                  | 函数 / 类                        | 行号            | 看什么                                                 |
-| ----------------------------------------------------- | -------------------------------- | --------------- | ------------------------------------------------------ |
-| `vllm/entrypoints/serve/instrumentator/health.py`     | 健康端点                         | 22-33           | 引擎死 → 503                                          |
-| `vllm/entrypoints/serve/instrumentator/metrics.py`    | /metrics 挂载                    | 56-81           | ASGI mount 绕 307；排除端点清单                        |
-| `vllm/entrypoints/serve/middleware/register.py`       | 中间件洋葱                       | 19-75           | 认证/Request-Id/自定义；无 rate limit                  |
-| `vllm/entrypoints/serve/utils/api_utils.py`           | `listen_for_disconnect`          | 53-111          | 断连监听（不能用 is_disconnected）                     |
-| `vllm/v1/engine/async_llm.py`                         | 取消与 abort                     | 818-826         | CancelledError → abort；引擎死不再 abort               |
-| `vllm/v1/metrics/loggers.py`                          | 指标族                           | 541/551/633/761/812/944/1024 | 调度/吞吐/缓存/延迟各族代表               |
-| `vllm/v1/metrics/loggers.py`                          | `cached_by_source`               | 795-807         | device/host/disk/p2p 分层命中（第 3/9 讲回收）          |
-| `vllm/v1/metrics/stats.py`                            | `SchedulerStats`                 | 224-262         | 统计出口的数据结构                                     |
-| `docs/design/metrics.md`                              | 两分法/ITL vs TPOT               | 13-19 / 67-75   | server-level 与 request-level；两口径分叉              |
-| `vllm/entrypoints/cli/main.py`                        | CMD_MODULES                      | 56-63           | bench 子命令注册                                       |
-| `vllm/benchmarks/datasets/datasets.py`                | `--dataset-name` 全集            | 1614-1631       | 13 种；spec_bench 在 3011                              |
-| `vllm/benchmarks/serve.py`                            | `BenchmarkMetrics`               | 352-393         | TTFT/TPOT/ITL/E2EL 百分位                              |
-| `vllm/v1/fault_tolerance/engine_core_sentinel.py`     | `EngineCoreSentinel`             | 55;on_fault:142-194 | 状态机；清脏块；投票恢复                            |
-| `vllm/entrypoints/serve/fault_tolerance/api_router.py`| FT 端点                          | 41-103          | apply(retry/scale_down)与 status                      |
-| `vllm/v1/executor/multiproc_executor.py`              | `start_worker_monitor`           | 389-424         | worker 死 → 整 executor shutdown（第 1 讲行号已漂移）  |
+| 文件                                                   | 函数 / 类               | 行号                         | 看什么                                                |
+| ------------------------------------------------------ | ----------------------- | ---------------------------- | ----------------------------------------------------- |
+| `vllm/entrypoints/serve/instrumentator/health.py`      | 健康端点                | 22-33                        | 引擎死 → 503                                          |
+| `vllm/entrypoints/serve/instrumentator/metrics.py`     | /metrics 挂载           | 56-81                        | ASGI mount 绕 307；排除端点清单                       |
+| `vllm/entrypoints/serve/middleware/register.py`        | 中间件洋葱              | 19-75                        | 认证/Request-Id/自定义；无 rate limit                 |
+| `vllm/entrypoints/serve/utils/api_utils.py`            | `listen_for_disconnect` | 53-111                       | 断连监听（不能用 `is_disconnected`）                  |
+| `vllm/v1/engine/async_llm.py`                          | 取消与 abort            | 818-826                      | CancelledError → abort；引擎死不再 abort              |
+| `vllm/v1/metrics/loggers.py`                           | 指标族                  | 541/551/633/761/812/944/1024 | 调度/吞吐/缓存/延迟各族代表                           |
+| `vllm/v1/metrics/loggers.py`                           | `cached_by_source`      | 795-807                      | device/host/disk/p2p 分层命中（第 3/9 讲回收）        |
+| `vllm/v1/metrics/stats.py`                             | `SchedulerStats`        | 224-262                      | 统计出口的数据结构                                    |
+| `docs/design/metrics.md`                               | 两分法/ITL vs TPOT      | 13-19 / 67-75                | server-level 与 request-level；两口径分叉             |
+| `vllm/entrypoints/cli/main.py`                         | `CMD_MODULES`           | 56-63                        | bench 子命令注册                                      |
+| `vllm/benchmarks/datasets/datasets.py`                 | `--dataset-name` 全集   | 1614-1631                    | 13 种；`spec_bench` 在 3011                           |
+| `vllm/benchmarks/serve.py`                             | `BenchmarkMetrics`      | 352-393                      | TTFT/TPOT/ITL/E2EL 百分位                             |
+| `vllm/v1/fault_tolerance/engine_core_sentinel.py`      | `EngineCoreSentinel`    | 55；`on_fault`:142-194       | 状态机；清脏块；投票恢复                              |
+| `vllm/entrypoints/serve/fault_tolerance/api_router.py` | FT 端点                 | 41-103                       | apply(retry/scale_down)与 status                      |
+| `vllm/v1/executor/multiproc_executor.py`               | `start_worker_monitor`  | 389-424                      | worker 死 → 整 executor shutdown（第 1 讲行号已漂移） |
 
 ## 重点与难点
 
 - **重点**：运维端点四件；指标族归类；bench 与 metrics 互补；FT 显式协议。
-- **难点**:ITL vs TPOT 口径分叉（投机解码下）;FT 两阶段恢复（orchestrator rendezvous + 投票）。
-- **易错点**:/ping 当通用端点；以为有内置限流；以为 worker 崩溃自动重启；metrics.md 旧指标名（`_total`/`swapped`）。
+- **难点**：ITL vs TPOT 口径分叉（投机解码下）；FT 两阶段恢复（orchestrator rendezvous + 投票）。
+- **易错点**：/ping 当通用端点；以为有内置限流；以为 worker 崩溃自动重启；metrics.md 旧指标名（`_total`/`swapped`）。
 
 ## 参考材料
 

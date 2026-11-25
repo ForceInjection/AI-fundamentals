@@ -7,7 +7,7 @@
 要求：
 
 1. 进程级：三类进程 + coordinator（如适用），画出 ZMQ 与共享内存两类通道，标明 bind/connect 方向。
-2. 类/方法级：至少覆盖七个环节的关键函数（README 七环节的函数名），每个节点标 `file:line`（按基线 `1acec5c009` 核对过的行号）。
+2. 类/方法级：至少覆盖七个环节的关键函数（README 七环节的函数名），关键路径标注来源文件（函数名必标，行号可选）。
 3. 数据形态：标注关键数据在边界上的形态（`EngineCoreRequest` / `SchedulerOutput` / `ModelRunnerOutput` / `EngineCoreOutputs` / `RequestOutput`），序列化方式(msgpack / shm)。
 4. 一页为限（手绘拍照或绘图工具均可）。
 
@@ -19,6 +19,6 @@
 
 ## 自测题（不提交）
 
-1. 为什么 tokenizer 不放在 EngineCore 进程里?（提示：EngineCore 是计算 busy loop,decode 字符串是 IO 型工作；且多 EngineCore 时会重复做）
-2. `AsyncLLM.generate` 里客户端拿到的是不是模型输出张量?在哪一层变成了文本?
-3. `--tensor-parallel-size 2` 时进程数怎么变化?哪一段代码拉起了新进程?
+1. 为什么 tokenizer 不放在 EngineCore 进程里？（提示：EngineCore 是计算 busy loop,decode 字符串是 IO 型工作；且多 EngineCore 时会重复做）
+2. `AsyncLLM.generate` 里客户端拿到的是不是模型输出张量？在哪一层变成了文本？
+3. `--tensor-parallel-size 2` 时进程数怎么变化？哪一段代码拉起了新进程？

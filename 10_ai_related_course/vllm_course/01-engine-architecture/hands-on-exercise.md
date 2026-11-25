@@ -6,7 +6,7 @@
 
 ```bash
 cd ~/Project/ai-infra/vLLM
-git checkout 1acec5c009
+git checkout 2f5d8a2b1
 python3 -c "import vllm; print(vllm.__version__)"   # 确认环境可用
 ```
 
@@ -14,7 +14,7 @@ python3 -c "import vllm; print(vllm.__version__)"   # 确认环境可用
 
 目的：验证进程公式 `A + DP + N`，认出每个进程是谁。
 
-1. 用最小配置起服务（DP=1，单卡 tp=1 时 `A=1, DP=1, N=1`，外加可选 coordinator）:
+1. 用最小配置起服务（DP=1，单卡 tp=1 时 `A=1, DP=1, N=1`，外加可选 coordinator）：
 
    ```bash
    vllm serve Qwen/Qwen3-0.6B --enforce-eager 2>&1 | tee /tmp/vllm-serve.log
@@ -27,8 +27,8 @@ python3 -c "import vllm; print(vllm.__version__)"   # 确认环境可用
    ```
 
 3. 对照检查：
-   - 每个进程的 cmdline 里，API / EngineCore / Worker 各自的辨识特征（`EngineCore` 进程 title 由 `run_engine_core` 设置；`MultiprocExecutor` 拉起的 worker 进程特征）;
-   - `EngineZmqAddresses` 相关日志里的 IPC 端点(inputs / outputs);
+   - 每个进程的 cmdline 里，API / EngineCore / Worker 各自的辨识特征（`EngineCore` 进程 title 由 `run_engine_core` 设置；`MultiprocExecutor` 拉起的 worker 进程特征）；
+   - `EngineZmqAddresses` 相关日志里的 IPC 端点(inputs / outputs)；
    - 改配置再起一次：`--tensor-parallel-size 2`（需 2 卡）或 `--data-parallel-size 2`，数进程，验证公式。
 
 **产出**：一张进程列表截图 + 每个进程一行归类说明（公式项 × 实际 pid）。
@@ -52,15 +52,15 @@ python3 -c "import vllm; print(vllm.__version__)"   # 确认环境可用
    | python3 -m json.tool
    ```
 
-3. 在 `/tmp/vllm-debug.log` 里找并标注（行号随版本浮动，按关键词搜）:
-   - 引擎启动：`init engine` 阶段、KV cache 分配（`# GPU blocks` 相关行，对应 `_initialize_kv_caches`）;
-   - 请求进入：`Received request`（EngineCore 收到 add_request）;
+3. 在 `/tmp/vllm-debug.log` 里找并标注（行号随版本浮动，按关键词搜）：
+   - 引擎启动：`init engine` 阶段、KV cache 分配（`# GPU blocks` 相关行，对应 `_initialize_kv_caches`）；
+   - 请求进入：`Received request`（EngineCore 收到 `add_request`）；
    - 调度与执行：scheduler 输出摘要、每步日志；
    - 输出回流与 finish 原因。
 
 4. 把每条日志对应回七个环节之一，写进标注表。
 
-**产出**:「日志行 ↔ 环节号」标注表（≥7 行，每环节至少一条）。
+**产出**：「日志行 ↔ 环节号」标注表（≥7 行，每环节至少一条）。
 
 ## 实验 3:eager 对照（10 min，可选，需 GPU）
 
