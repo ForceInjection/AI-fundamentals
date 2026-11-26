@@ -36,6 +36,7 @@
   - [NVLink-C2C：芯片级高速互连技术详解](./01_hardware_architecture/superchips/nvlink_c2c.md)
   - [NVIDIA GB300 NVL72：机架级计算系统架构解析](./01_hardware_architecture/superchips/nvidia_gb300.md)
   - [AI 基础设施延迟金字塔](./01_hardware_architecture/performance/ai_latency_pyramid.md)
+  - [AI 工厂的物理极限：CPO 光互连、CXL 解耦内存与冷存储](./01_hardware_architecture/ai_factory_limits/01_cpo_cxl_cold_storage.md) — SC26 复盘：四类物理约束、万卡 CPO 阈值、CXL 产品清单、HDD/磁带供给账
 
 ---
 

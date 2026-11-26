@@ -14,6 +14,7 @@
 > | `gpudirect/`   | GPUDirect P2P / RDMA / Storage (GDS)                    | Zero-copy, Bounce Buffer     | §4                 |
 > | `superchips/`  | NVLink-C2C、GB300 NVL72 机架级架构                      | Chip-to-Chip, Rack-Scale     | §5.1               |
 > | `performance/` | NUMA 亲和性、延迟金字塔、带宽速查表、AMX vs Tensor Core | Latency Hierarchy, Bandwidth | §2.3 / §5.2 / §5.3 |
+> | `ai_factory_limits/` | AI 工厂物理极限：CPO、CXL 解耦内存、冷存储        | CPO, CXL, HDD, TCO           | §7                 |
 > | `assets/`      | GPU↔CPU 数据路径、GPU 物理数据路径全景图                | Topology Atlas, SVG          | §6.1 / §6.2        |
 
 ---
@@ -189,3 +190,13 @@ Blackwell 代际把 AI 机器边界从“单机”推到“机架级单域”：
 [查看完整 SVG 图（gpu_physical_data_paths.svg）](assets/gpu_physical_data_paths.svg)
 
 > 说明：矢量图建议浏览器打开。GPUDirect P2P ⊆ PCIe P2PDMA 能力；NVLink（NV#）为独立非 PCIe 通路，不在本图范围内。
+
+---
+
+## 7. AI 工厂的物理极限（跨层综述）
+
+前面六节按"芯片 → 总线 → 链路 → 直通 → 系统"纵向拆解。这一节换个角度，横向看四条同时撞墙的物理约束：**铜缆传不远（CPO）、单柜功率压不住（液冷/800V DC）、HBM 装不下（CXL 解耦内存）、冷存储供不上（HDD/磁带/新介质）**。
+
+它不是新协议，而是一张账本：每一条极限的缓解手段，都是把成本转移到另一个维度——光互连把距离成本转成激光器运维，CXL 把容量成本转成延迟分层，磁带把在线成本转成恢复时间，液冷把功率成本转成机房改造。
+
+- **[AI 工厂的物理极限：CPO 光互连、CXL 解耦内存与冷存储](ai_factory_limits/README.md)**：四类约束速查表、2026 年产品规格、延迟账本、万卡规模阈值估算、总评与口径折扣、来源索引。

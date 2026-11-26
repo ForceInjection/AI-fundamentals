@@ -119,7 +119,8 @@ Region-to-Region RTT            80-150 ms             80,000-150,000 km (地月�
 | :---------------- | :--------- | :----- | :---------------------------- |
 | **Math**          | < 1 ns     | Nano   | FMA, Tensor Core op           |
 | **SRAM Access**   | 15-30 ns   | Nano   | L1 (~30 cycles), Shared       |
-| **DRAM Access**   | 250-350 ns | Nano   | HBM3 (500 cycles+), DDR5      |
+| **DRAM Access**   | 250-350 ns | Nano   | HBM3 (500 cycles+)            |
+| **DDR5 (CPU)**    | 80-100 ns  | Nano   | CPU load-to-use；与 GPU 侧 HBM 不同口径 |
 | **GPU-GPU Raw**   | 80-250 ns  | Nano   | NVLink (Direct vs Switch)     |
 | **Host-Device**   | 1-3 us     | Micro  | PCIe RTT                      |
 | **Net-Device**    | 2-4 us     | Micro  | GPUDirect RDMA                |
