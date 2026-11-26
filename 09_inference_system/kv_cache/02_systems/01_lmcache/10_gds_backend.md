@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `GdsBackend` 是 LMCache 中基于 **NVIDIA GPUDirect Storage (GDS)** 技术实现的高性能持久化存储后端。它利用 `libcufile` 库，允许 GPU 显存直接与 NVMe 存储进行数据传输（DMA），从而绕过 CPU 和系统内存，显著降低延迟并减轻 CPU 负载。
 
@@ -18,7 +18,7 @@
 
 `GdsBackend` 的初始化逻辑不仅涉及配置参数的加载，还包含了对底层 GDS 环境的检测（如 `libcufile` 的加载）以及元数据索引的构建。它是整个后端启动的基石，确保了后续 I/O 操作能够在正确的环境和状态下执行。
 
-**代码位置**: [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/gds_backend.py)
+**代码位置**: [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/gds_backend.py)
 
 ```python
 class GdsBackend(AllocatorBackendInterface):
@@ -142,16 +142,16 @@ def _load_bytes_from_disk_with_memory(self, ...):
 
 `GdsBackend` 的行为可以通过 `LMCacheEngineConfig` 进行灵活配置。除了基础的路径和缓冲区大小外，还可以通过 `extra_config` 字典微调 I/O 行为（如是否启用 GDS、O_DIRECT 或调整线程池大小）。
 
-**代码位置**: 配置解析主要发生在 [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/gds_backend.py) 的 `__init__` 方法中，部分布尔值解析使用了 `get_extra_config_bool` 辅助函数。
+**代码位置**: 配置解析主要发生在 [`lmcache/v1/storage_backend/gds_backend.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/gds_backend.py) 的 `__init__` 方法中，部分布尔值解析使用了 `get_extra_config_bool` 辅助函数。
 
-| 配置项                          | 说明                                                                                            | 默认值   |
-| :------------------------------ | :---------------------------------------------------------------------------------------------- | :------- |
-| `gds_path`                      | 缓存数据存储的根目录路径（支持 `gds_path_sharding` 分片）。                                     | **必填** |
-| `gds_buffer_size`               | 预分配的 GDS 显存 Buffer 大小 (MB)。                                                            | **必填** |
-| `use_gds`                       | 是否启用 GDS。为 `False` 时回退到 `mmap + cudaMemcpy`；tmpfs/overlayfs 上未显式配置时自动停用。 | `True`   |
-| `gds_backend`                   | 使用的 GDS 库：`cufile` / `hipfile`。                                                           | `cufile` |
-| `extra_config.use_direct_io`    | 是否开启 `O_DIRECT`。                                                                           | `False`  |
-| `extra_config.disk_io_threads`  | GDS 线程池大小（仅 GDS 启用时生效）。                                                           | `4`      |
+| 配置项                         | 说明                                                                                            | 默认值   |
+| :----------------------------- | :---------------------------------------------------------------------------------------------- | :------- |
+| `gds_path`                     | 缓存数据存储的根目录路径（支持 `gds_path_sharding` 分片）。                                     | **必填** |
+| `gds_buffer_size`              | 预分配的 GDS 显存 Buffer 大小 (MB)。                                                            | **必填** |
+| `use_gds`                      | 是否启用 GDS。为 `False` 时回退到 `mmap + cudaMemcpy`；tmpfs/overlayfs 上未显式配置时自动停用。 | `True`   |
+| `gds_backend`                  | 使用的 GDS 库：`cufile` / `hipfile`。                                                           | `cufile` |
+| `extra_config.use_direct_io`   | 是否开启 `O_DIRECT`。                                                                           | `False`  |
+| `extra_config.disk_io_threads` | GDS 线程池大小（仅 GDS 启用时生效）。                                                           | `4`      |
 
 > 旧键名对照：`cufile_buffer_size` → `gds_buffer_size`；`use_cufile` → `gds_backend`（布尔开关改为选择后端字符串）；`extra_config.gds_io_threads` → `extra_config.disk_io_threads`（旧名仍可读但已弃用，会打告警）。
 

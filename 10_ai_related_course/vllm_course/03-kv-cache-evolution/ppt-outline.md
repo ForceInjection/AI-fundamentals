@@ -104,7 +104,7 @@
 
 - **上稿**（`block_pool.py`）：
   - `touch`（`:788-810`）：命中块 `ref_cnt` 0→1，从 free 队列摘除
-  - `free_blocks`（`:798-839`）：`ref_cnt` 归 0 入队——**无哈希块 prepend 队首（LIFO 复用，利好 GPU 局部性）**，**有哈希块 append 队尾(FIFO ⇒ LRU)**
+  - `free_blocks`（`:812-850`）：`ref_cnt` 归 0 入队——**无哈希块 prepend 队首（LIFO 复用，利好 GPU 局部性）**，**有哈希块 append 队尾(FIFO ⇒ LRU)**
 - **口播**：一条链两种入队方向，是两条淘汰策略的合流；nano 的 free/used 集合没有这个区分
 
 ### 第 13 页：升级一：哈希键加 group

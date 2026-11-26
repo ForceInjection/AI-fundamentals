@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `LocalCPUBackend` 构成了 LMCache 多级存储架构中的 **L1 本地内存缓存层**。它利用主机内存（Host Memory）作为最高速的缓存介质，提供微秒级的数据访问延迟。
 
@@ -24,9 +24,9 @@
 
 ### 1.1 初始化与分配器选择
 
-在初始化阶段，`LocalCPUBackend` 不仅负责加载配置，还会利用 `NUMADetector` 探测系统的 NUMA 拓扑结构（[L349](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L349)），以确保后续分配的物理内存位于性能最优的计算节点上。
+在初始化阶段，`LocalCPUBackend` 不仅负责加载配置，还会利用 `NUMADetector` 探测系统的 NUMA 拓扑结构（[L349](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L349)），以确保后续分配的物理内存位于性能最优的计算节点上。
 
-随后，代码会根据配置参数（参考 [initialize_allocator](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L327-L424)）实例化以下三种内存分配器之一：
+随后，代码会根据配置参数（参考 [initialize_allocator](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L327-L424)）实例化以下三种内存分配器之一：
 
 - **LazyMixedMemoryAllocator (重构中)**: 仅在真正写入数据时才通过 `torch.empty` 分配物理内存。目前正在重构中，暂不可用。
 - **MixedMemoryAllocator (默认)**: 传统的预分配策略，在初始化时即占用固定大小的内存池。
@@ -36,7 +36,7 @@
 
 为了规避 OOM（Out Of Memory）风险并保障系统稳定性，`LocalCPUBackend` 实现了**动态容量校准机制**。
 
-参考代码 [calculate_effective_cpu_size](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L271-L326)，系统能够实时探测宿主机的可用物理内存，在扣除配置的预留空间（`reserve_local_cpu_size`）后，动态计算出当前环境下的安全缓存容量上限。
+参考代码 [calculate_effective_cpu_size](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L271-L326)，系统能够实时探测宿主机的可用物理内存，在扣除配置的预留空间（`reserve_local_cpu_size`）后，动态计算出当前环境下的安全缓存容量上限。
 
 ```python
 # Effective memory: min(configured_size, available_memory - reserve_size)
@@ -77,7 +77,7 @@ graph TD
     RetryAlloc -- 失败 --> Loop
 ```
 
-代码参考 [allocate](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L426-L526)：
+代码参考 [allocate](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L426-L526)：
 
 ```python
     def allocate(self, shapes, dtypes, ...):
@@ -150,7 +150,7 @@ LMCache 采用的 **Write-All (全写)** 策略是提升 L1 性能的关键。�
 
 写入操作非常轻量，主要是更新索引和缓存策略。
 
-代码参考 [submit_put_task](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L142-L165)：
+代码参考 [submit_put_task](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L142-L165)：
 
 1. **加锁 (`cpu_lock`)**: 保护 `hot_cache`。
 2. **更新索引**: `self.hot_cache[key] = memory_obj`。
@@ -161,7 +161,7 @@ LMCache 采用的 **Write-All (全写)** 策略是提升 L1 性能的关键。�
 
 读取操作通过 `get_blocking` 实现。为了防止在读取过程中数据被后台线程逐出，LMCache 严格依赖引用计数机制。
 
-代码参考 [get_blocking](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L183-L195)：
+代码参考 [get_blocking](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L183-L195)：
 
 ```python
     def get_blocking(self, key: CacheEngineKey) -> Optional[MemoryObj]:
@@ -180,10 +180,10 @@ LMCache 采用的 **Write-All (全写)** 策略是提升 L1 性能的关键。�
 
 为了减少锁竞争，`LocalCPUBackend` 在读取命中（Hit）时，并不会立即更新 LRU 链表，而是采用了 **Lazy Touch** 机制。
 
-- **记录**: 命中时仅将 Key 记录到 `self.keys_in_request` 列表中（参考 [contains](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L119-L127)）。
+- **记录**: 命中时仅将 Key 记录到 `self.keys_in_request` 列表中（参考 [contains](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L119-L127)）。
 - **批量更新**: 在请求结束时，显式调用 `touch_cache()` 方法，批量更新所有命中 Key 的 LRU 位置。
 
-代码参考 [touch_cache](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py#L129-L135)：
+代码参考 [touch_cache](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py#L129-L135)：
 
 ```python
     def touch_cache(self):
@@ -227,7 +227,7 @@ LMCache 采用的 **Write-All (全写)** 策略是提升 L1 性能的关键。�
 
 `LocalCPUBackend` 的行为由 `config.py` 中的以下参数控制，合理配置这些参数对性能至关重要。
 
-配置文件：[config.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/config.py)
+配置文件：[config.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/config.py)
 
 | 配置项                             | 类型  | 默认值 | 说明                                                                                                                                  |
 | :--------------------------------- | :---- | :----- | :------------------------------------------------------------------------------------------------------------------------------------ |

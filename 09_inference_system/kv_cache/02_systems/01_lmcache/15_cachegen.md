@@ -1,6 +1,6 @@
 # CacheGen 技术详解：KV Cache 的高效压缩与流式传输
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 本文档旨在从源码层面深入剖析 **CacheGen** 在 **LMCache** 中的工程落地。基于 SIGCOMM 2024 顶会论文 _CacheGen: KV Cache Compression and Streaming for Fast Large Language Model Serving_，我们将详细解读其核心机制——**自适应量化 (Adaptive Quantization)** 与 **流式算术编码 (Streaming Arithmetic Coding)** 的代码实现。通过分析 Python 控制层与 CUDA 算子层的交互，揭示 LMCache 如何在保证模型推理精度的前提下，实现极致的 KV Cache 压缩比与传输吞吐量。
 
@@ -122,11 +122,12 @@ class CacheGenConfig:
 
 1. **向量化自适应量化 (Vectorized Adaptive Quantization)**:
    代码中并未采用论文提及的"基于锚点的差值计算 (Change-based Encoding)"，而是通过 `torch_quant_vectorized` 函数对分组内的 Token 进行直接量化。
+
    - **原理**: 计算每组 (Group) 的最大绝对值 (`max1`)，将浮点值归一化并映射到 `[0, bins]` 的整数区间。
    - **分层配置 (Layer-wise Configuration)**: 通过 `CacheGenConfig` 为不同层级设置不同的量化精度 (bins)。例如对于 Llama-3.1-8B 模型：
      - **前 10 层**: Key 使用 32 bins (约 5 bit)，Value 使用 32 bins。
      - **后 22 层**: Key 使用 16 bins (约 4 bit)，Value 使用 16 bins。
-   这种分层设计在保证关键层精度的同时实现了深层的激进压缩。
+       这种分层设计在保证关键层精度的同时实现了深层的激进压缩。
 
    ```python
    # lmcache/storage_backend/serde/cachegen_encoder.py

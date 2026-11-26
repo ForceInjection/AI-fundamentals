@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `NixlStorageBackend` 是 LMCache 为高性能计算环境设计的 **L4 级存储/网络后端**。它基于 NVIDIA 的 **NIXL (NVIDIA Inference Xfer Library)** 库构建，旨在屏蔽底层异构存储与网络协议的复杂性，提供统一的高吞吐、低延迟数据传输能力。
 
@@ -77,6 +77,7 @@
    它实现了 `AllocatorBackendInterface` 接口，并在内部维护了一个私有的 `PagedTensorMemoryAllocator` 实例。这与 `LocalDiskBackend`（强依赖外部传入的 `local_cpu_backend`）形成了鲜明对比。
 
 3. **专用 Buffer 管理**:
+
    - `NixlStorageBackend` 在初始化时会分配一块连续的内存缓冲区（Buffer），大小由 `nixl_buffer_size` 控制（需满足 28MB 对齐要求）。
    - **CPU 模式**: 调用 `_allocate_cpu_memory` 分配 Host Memory。
    - **GPU 模式**: 调用 `_allocate_gpu_memory` 分配 Device Memory。这对 GDS (GPUDirect Storage) 至关重要，因为 GDS 需要数据直接在 GPU 显存和 NVMe 之间传输，中间不经过 CPU 内存。
@@ -105,11 +106,13 @@
 得益于其灵活的后端适配能力，`NixlStorageBackend` 可覆盖从单机加速到云端共享的多种场景：
 
 1. **极速本地二级缓存 (The "Turbo" L3 Cache)**
+
    - **配置**: `Static Mode` + `GDS` + `Local NVMe`
    - **描述**: 在配备高性能 NVMe SSD 的 GPU 节点上，利用 GDS 技术打通 GPU 显存与 SSD 的直接通道。
    - **优势**: 相比传统 `LocalDiskBackend`，吞吐量提升显著，且几乎不占用 CPU 资源，适合对延迟极度敏感的长文本推理任务。
 
 2. **高性能集群共享 (HPC Cluster Sharing)**
+
    - **配置**: `Static Mode` + `HF3FS/Lustre` + `RDMA`
    - **描述**: 在 HPC 环境中，通过 RDMA 网络直接访问共享的高性能并行文件系统。
    - **优势**: 支持成百上千个 GPU 节点同时读取共享的 Checkpoint 或热门 Prompt Cache，打破存储带宽瓶颈。
@@ -258,6 +261,7 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 写入操作被设计为异步任务，避免阻塞主线程的推理循环。其核心逻辑在 `batched_submit_put_task` 和 `mem_to_storage` 中实现。
 
 1. **任务提交与资源检查**:
+
    - 首先获取 `key_lock` 检查资源池 (Pool) 是否有足够空闲描述符。
    - 如果不足 (`available_descs < len(keys)`)，立即触发同步驱逐 (`batched_remove`)，确保有位可写。
 
@@ -292,6 +296,7 @@ NIXL 后端的核心优势在于利用底层硬件（RDMA/GDS）的异步传输�
 
 2. **内存分配**: 使用 `memory_allocator` 在目标设备（CPU 或 GPU）上分配 Buffer。如果是 GDS 后端，通常分配在 GPU 上。
 3. **零拷贝传输**:
+
    - 调用 `agent.get_storage_to_mem_handle` 建立传输通道，传入内存地址 (`mem_indices`) 和存储索引 (`storage_indices`)。
    - `agent.post_blocking(handle)` 触发底层数据搬运。例如在 GDS 模式下，直接由 GPU DMA 引擎将数据从 NVMe 读入显存，无需 CPU 参与数据拷贝。
 
@@ -403,6 +408,7 @@ extra_config:
 
 - **硬件协同 (Hardware Synergy)**:
   尽管不强制依赖，但 DPU (如 NVIDIA BlueField) 是运行 `NixlStorageBackend` 的**理想载体**，能提供更深层次的优化：
+
   - **零拷贝 (Zero-Copy)**: DPU 的 RDMA 引擎天然支持 NIXL 所需的内存注册与直接传输，确保数据流仅在 `GPU Mem <-> PCIe <-> NIC` 之间流转，完全绕过 Host CPU 和主存。
   - **资源隔离 (Isolation)**: DPU 拥有独立的计算单元（Arm Cores），具备承载 LMCache 控制逻辑或辅助计算（如压缩/解压）的潜力，从而实现对 Host 计算资源的"零干扰"。
 

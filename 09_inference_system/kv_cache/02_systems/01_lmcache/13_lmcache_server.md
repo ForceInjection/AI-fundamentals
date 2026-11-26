@@ -2,7 +2,7 @@
 
 [< 返回架构概览](./01_lmcache_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 **LMCache Server** 是 LMCache 项目自带的一个轻量级、高性能的远程 KV 存储服务。它设计用于在没有部署 Redis 或 Mooncake 等复杂分布式存储系统的环境中，快速提供跨实例的 KV Cache 共享能力。
 
@@ -40,7 +40,7 @@ LMCache Server 采用经典的 **多线程阻塞 I/O (Threaded Blocking I/O)** �
 
 ## 2. 通信协议
 
-LMCache Server 使用一套紧凑的自定义二进制协议，代码定义位于 [`lmcache/v1/protocol.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/protocol.py)。
+LMCache Server 使用一套紧凑的自定义二进制协议，代码定义位于 [`lmcache/v1/protocol.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/protocol.py)。
 
 ### 2.1 协议设计 (Protocol)
 
@@ -55,15 +55,15 @@ LMCache Server 使用一套紧凑的自定义二进制协议，代码定义位�
 - **总长度**: 186 Bytes（9 个 int32 + 150 字节 Key）
 - **格式字符串**: `iiiiiiiii{MAX_KEY_LENGTH}s` (对应 `struct.pack`)
 
-| 偏移 (Offset) | 长度 (Bytes) | 字段名    | 类型      | 说明                                                                        |
-| :------------ | :----------- | :-------- | :-------- | :-------------------------------------------------------------------------- |
-| 0             | 4            | `command` | int32     | 指令类型 (1=PUT, 2=GET, 3=EXIST, 4=LIST, 5=HEALTH)                          |
-| 4             | 4            | `length`  | int32     | 后续 Body (数据载荷) 的字节长度。对于无 Payload 的请求 (如 GET)，此值为 0。 |
-| 8             | 4            | `fmt`     | int32     | MemoryFormat 枚举值（数据布局格式）。                                       |
-| 12            | 4            | `dtype`   | int32     | 数据类型（经 `DTYPE_TO_INT` 映射，如 float16=2, bfloat16=3）。              |
-| 16            | 4            | `location`| int32     | 数据来源位置（None=0, LocalCPUBackend=1, LocalDiskBackend=2）。             |
-| 20            | 16           | `shape`   | int32×4   | 张量形状，补齐到 4 维（bytes 型数据为 `[length, 0, 0, 0]`）。               |
-| 36            | 150          | `key`     | char[150] | KV Cache 的 Key。使用 UTF-8 编码，不足 150 字节时**必须**补齐。             |
+| 偏移 (Offset) | 长度 (Bytes) | 字段名     | 类型      | 说明                                                                        |
+| :------------ | :----------- | :--------- | :-------- | :-------------------------------------------------------------------------- |
+| 0             | 4            | `command`  | int32     | 指令类型 (1=PUT, 2=GET, 3=EXIST, 4=LIST, 5=HEALTH)                          |
+| 4             | 4            | `length`   | int32     | 后续 Body (数据载荷) 的字节长度。对于无 Payload 的请求 (如 GET)，此值为 0。 |
+| 8             | 4            | `fmt`      | int32     | MemoryFormat 枚举值（数据布局格式）。                                       |
+| 12            | 4            | `dtype`    | int32     | 数据类型（经 `DTYPE_TO_INT` 映射，如 float16=2, bfloat16=3）。              |
+| 16            | 4            | `location` | int32     | 数据来源位置（None=0, LocalCPUBackend=1, LocalDiskBackend=2）。             |
+| 20            | 16           | `shape`    | int32×4   | 张量形状，补齐到 4 维（bytes 型数据为 `[length, 0, 0, 0]`）。               |
+| 36            | 150          | `key`      | char[150] | KV Cache 的 Key。使用 UTF-8 编码，不足 150 字节时**必须**补齐。             |
 
 > **版本注**: 旧版帧只有 `ii{MAX_KEY_LENGTH}s`（158 字节，command/length/key 三字段）。v0.4.x 起为支持零拷贝分配与形状还原，帧内扩展了 fmt/dtype/location/shape 元数据，Header 变为 186 字节。新旧不互通。
 
@@ -88,14 +88,14 @@ packed_bytes = struct.pack(
 - **总长度**: 36 Bytes（9 个 int32）
 - **格式字符串**: `iiiiiiiii`
 
-| 偏移 (Offset) | 长度 (Bytes) | 字段名    | 类型    | 说明                              |
-| :------------ | :----------- | :-------- | :------ | :-------------------------------- |
-| 0             | 4            | `code`    | int32   | 状态码 (200=SUCCESS, 400=FAIL)    |
-| 4             | 4            | `length`  | int32   | 后续 Body (返回数据) 的字节长度。 |
-| 8             | 4            | `fmt`     | int32   | MemoryFormat 枚举值。             |
-| 12            | 4            | `dtype`   | int32   | 数据类型（`DTYPE_TO_INT` 映射）。 |
-| 16            | 16           | `shape`   | int32×4 | 张量形状，补齐到 4 维。           |
-| 32            | 4            | `location`| int32   | 数据位置（`LOCATION_TO_INT` 映射）。 |
+| 偏移 (Offset) | 长度 (Bytes) | 字段名     | 类型    | 说明                                 |
+| :------------ | :----------- | :--------- | :------ | :----------------------------------- |
+| 0             | 4            | `code`     | int32   | 状态码 (200=SUCCESS, 400=FAIL)       |
+| 4             | 4            | `length`   | int32   | 后续 Body (返回数据) 的字节长度。    |
+| 8             | 4            | `fmt`      | int32   | MemoryFormat 枚举值。                |
+| 12            | 4            | `dtype`    | int32   | 数据类型（`DTYPE_TO_INT` 映射）。    |
+| 16            | 16           | `shape`    | int32×4 | 张量形状，补齐到 4 维。              |
+| 32            | 4            | `location` | int32   | 数据位置（`LOCATION_TO_INT` 映射）。 |
 
 响应携带 fmt/dtype/shape 的原因：客户端收到 Header 后即可按元数据**直接分配目标 Tensor 缓冲区**（`allocate(shape, dtype, fmt)`），再用 `recv_into` 把 Body 读进 Tensor 内存——这是零拷贝接收链路的前提（参见 [remote_connector.md §3.2](./12_remote_connector.md)）。
 
@@ -103,11 +103,11 @@ packed_bytes = struct.pack(
 
 目前支持以下四种指令，每种指令的交互流程如下表所示：
 
-| 指令 (Command) | 值  | 描述              | 请求流程 (Client -> Server)                          | 响应流程 (Server -> Client)                                                       |
-| :------------- | :-- | :---------------- | :--------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| **PUT**        | 1   | 上传 KV Cache     | **[Header 186B]** (length=N) -> **[Body]** (N bytes) | 无响应 (由 Client 直接发送)                                                       |
+| 指令 (Command) | 值  | 描述              | 请求流程 (Client -> Server)                          | 响应流程 (Server -> Client)                                                        |
+| :------------- | :-- | :---------------- | :--------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **PUT**        | 1   | 上传 KV Cache     | **[Header 186B]** (length=N) -> **[Body]** (N bytes) | 无响应 (由 Client 直接发送)                                                        |
 | **GET**        | 2   | 下载 KV Cache     | **[Header 186B]** (length=0)                         | **[Header 36B]** (code/length/fmt/dtype/shape) -> **[Body]** (N bytes, if success) |
-| **EXIST**      | 3   | 检查 Key 是否存在 | **[Header 186B]** (length=0)                         | **[Header 36B]** (code=200/400, length=0)                                         |
+| **EXIST**      | 3   | 检查 Key 是否存在 | **[Header 186B]** (length=0)                         | **[Header 36B]** (code=200/400, length=0)                                          |
 | **HEALTH**     | 5   | 健康探针          | **[Header 186B]** (length=0)                         | **[Header 36B]** (code=200)                                                        |
 | **LIST**       | 4   | 列出所有 Key      | ——                                                   | 服务端分支已注释，**暂未实现** (TODO)                                              |
 

@@ -1,6 +1,6 @@
 # CacheBlend 技术详解：RAG 场景下的 KV Cache 动态融合机制与源码剖析
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 本文档旨在深入剖析 CacheBlend 技术在 LMCache 项目中的工程实现。基于 EuroSys '25 论文 _CacheBlend: Fast Large Language Model Serving for RAG with Cached Knowledge Fusion_ 的理论基础，本文将结合 LMCache 源码，详细解读如何通过“选择性重算与融合”机制，在检索增强生成 (RAG) 场景下突破 Prefix Caching 的限制，实现非前缀 KV Cache 的高效复用与推理加速。
 
@@ -62,7 +62,7 @@ graph LR
     %% 使用一个容器子图来组织布局
     subgraph Comparison ["KV Cache 处理方式对比"]
         direction TB
-        
+
         subgraph Correct ["Full KV Recompute - 正确答案"]
             direction TB
             A1[Chunk 1: Messi 13 球] --> A2[Chunk 2: Ronaldo 8 球]
@@ -137,6 +137,7 @@ graph TB
 
 2. **动态差异检测 (Dynamic Divergence Detection)**:
    为了识别受上下文影响最大的 Token，CacheBlend 会在推理的早期层（Check Layer，通常为 Layer 1）执行一次“全量计算+比对”：
+
    - **差异计算**: 计算当前上下文下生成的 Key 值与检索到的旧 Key 值之间的 L2 距离。
    - **关键 Token 筛选**: 根据差异大小，动态选取 Top-K 个（如 15%）偏差最大的 Token 作为“重算集合”。
 
@@ -405,11 +406,13 @@ CacheBlend 是 LMCache 为应对 RAG 场景中复杂多变的 KV Cache 复用需
 1. **突破 Prefix Caching 限制**: CacheBlend 通过“选择性重算与融合”机制，成功解决了非前缀（Non-Prefix）Chunk 因 Cross-Attention 导致的 KV 失效问题，使得 RAG 系统可以灵活地复用任意位置的文档块缓存。
 
 2. **高效的工程架构**:
+
    - **LMCBlender 控制器**: 作为核心大脑，协调了差异检测、Token 选择和混合更新的全过程。
    - **In-place Update**: 采用原地更新策略，最大限度地复用已加载的 KV 数据，仅对关键 Token 进行“修补”，极大地节省了计算资源。
    - **Layerwise Pipeline**: 将混合逻辑深度嵌入到 I/O 流水线中，实现了计算与数据加载的完美重叠，掩盖了 I/O 延迟。
 
 3. **易用性与灵活性**:
+
    - 提供了环境变量和 YAML 两种配置方式，方便用户集成。
    - 通过特定的分隔符机制，让开发者能够以极低的侵入性改造现有的 Prompt 构建流程。
 
@@ -428,7 +431,7 @@ CacheBlend 默认在 Layer 1 进行关键 Token 选择。这是一种在**准确
 
 ### A.2 为什么使用 Key 差异？
 
-在衡量 KV Cache 失效程度时，CacheBlend 选择计算 **Key 向量的 L2 距离（的平方）**——源码中的差异变量就叫 `diff_k`（[blender.py:90](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/compute/blend/blender.py#L90)）。原因在于注意力权重的分布由 Q·Kᵀ 决定：Key 发生漂移，softmax 后的注意力权重就会重新分配，哪些 Token 的 KV“过期”可以从 Key 的偏差直接看出。因此对 `diff_k` 做 Top-K，选出的就是注意力分布受影响最大的 Token；而 V 向量不参与权重计算，用 V 差异反而无法定位需要重算的位置。
+在衡量 KV Cache 失效程度时，CacheBlend 选择计算 **Key 向量的 L2 距离（的平方）**——源码中的差异变量就叫 `diff_k`（[blender.py:90](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/compute/blend/blender.py#L90)）。原因在于注意力权重的分布由 Q·Kᵀ 决定：Key 发生漂移，softmax 后的注意力权重就会重新分配，哪些 Token 的 KV“过期”可以从 Key 的偏差直接看出。因此对 `diff_k` 做 Top-K，选出的就是注意力分布受影响最大的 Token；而 V 向量不参与权重计算，用 V 差异反而无法定位需要重算的位置。
 
 ### A.3 重计算比例 (15%) 的选择
 

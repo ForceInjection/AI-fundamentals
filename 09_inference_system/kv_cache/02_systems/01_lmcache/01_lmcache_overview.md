@@ -1,6 +1,6 @@
 # LMCache 架构概览
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 **LMCache** 是一个专为大语言模型服务引擎设计的 KV Cache 管理系统，旨在通过高效的缓存机制降低 **Time-To-First-Token(TTFT)** 并提高系统吞吐量，特别是在**长上下文 (Long-Context)** 场景下表现优异。
 
@@ -32,7 +32,6 @@ LMCache 将存储介质划分为四个层级 (L1-L4)，实现了从本地内存�
 LMCache 支持三种核心能力范式，覆盖了从单机加速到大规模分布式集群的多样化需求：
 
 1. **本地复用 (Local Reuse)**:
-
    - **核心价值**: **扩展显存，以空间换时间**。利用本地 CPU 内存和磁盘作为二级缓存，突破 GPU 显存容量限制。
    - **关键机制**: 异步卸载 (Offload) 与 预取 (Prefetch)。
      - **GdsBackend / NixlStorageBackend**: 利用 GPU 直通存储 (GDS) 技术实现零拷贝的极速本地 I/O。
@@ -40,7 +39,6 @@ LMCache 支持三种核心能力范式，覆盖了从单机加速到大规模分
    - **典型场景**: 单实例长文档推理、本地多轮对话历史复用。
 
 2. **集群共享 (Cluster Sharing)**:
-
    - **核心价值**: **一次计算，全局可用**。在多个推理实例间共享 KV Cache，避免重复计算，提升集群整体吞吐量。
    - **关键机制**:
      - **集中式**: 基于共享存储 (**LMCache Server / Redis / Mooncake / S3**) 的 Hub-and-Spoke 模式。**NixlStorageBackend** 支持直接对接 S3 对象存储。
@@ -104,7 +102,7 @@ graph TD
 `LMCacheConnector` (具体实现类为 `LMCacheConnectorV1Impl`) 是 LMCache 与推理引擎（如 vLLM）之间的桥梁。它作为 vLLM 的一个插件运行，拦截 KV Cache 的相关操作。
 
 **角色**：连接器 / 适配器
-**代码位置**：[`lmcache/integration/vllm/vllm_v1_adapter.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)
+**代码位置**：[`lmcache/integration/vllm/vllm_v1_adapter.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/integration/vllm/vllm_v1_adapter.py)
 **功能**：
 
 - **拦截**：拦截 vLLM 的 KV Cache 生成和读取请求。
@@ -118,7 +116,7 @@ graph TD
 `LMCacheEngine` 是 LMCache 的中央控制器，负责协调生命周期管理、I/O 操作和缓存策略执行。
 
 **角色**：核心引擎
-**代码位置**：[`lmcache/v1/cache_engine.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/cache_engine.py)
+**代码位置**：[`lmcache/v1/cache_engine.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/cache_engine.py)
 **功能**：
 
 - **生命周期管理**：管理 KV Cache 的存储、检索和预取。
@@ -132,7 +130,7 @@ graph TD
 `TokenDatabase` 维护了 Token 序列与 KV Cache Key 之间的映射关系，是实现缓存查找的关键组件。
 
 **角色**：元数据索引
-**代码位置**：[`lmcache/v1/token_database.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/token_database.py)
+**代码位置**：[`lmcache/v1/token_database.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/token_database.py)
 **功能**：
 
 - **索引**：根据输入的 Token 序列（Prompt）计算并查找对应的 Cache Key。
@@ -143,7 +141,7 @@ graph TD
 `GPUConnector` 负责处理不同推理引擎（如 vLLM）特有的显存格式（如 PagedAttention）与 LMCache 通用内存格式之间的转换与传输。
 
 **角色**：显存适配器
-**代码位置**：[`lmcache/v1/gpu_connector.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/gpu_connector.py)
+**代码位置**：[`lmcache/v1/gpu_connector.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/gpu_connector.py)
 **功能**：
 
 - **格式转换**：将非连续的 Paged Memory 转换为连续的内存块（或反之）。
@@ -154,7 +152,7 @@ graph TD
 `StorageManager` 实现了分层存储架构，统一管理从内存到远程存储的多级后端，并执行数据读写策略。
 
 **角色**：存储管理
-**代码位置**：[`lmcache/v1/storage_backend/storage_manager.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/storage_manager.py)
+**代码位置**：[`lmcache/v1/storage_backend/storage_manager.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/storage_manager.py)
 **功能**：
 
 - **分层管理**: 统一管理 L1 (Memory), L2 (P2P), L3 (Disk), L4 (Remote) 多级后端。
@@ -173,7 +171,7 @@ graph TD
 `LMCacheWorker` 运行在推理引擎进程内部（作为 `LMCacheEngine` 的一部分），是 `Cache Controller` 在本地的代理。
 
 **角色**：控制代理
-**代码位置**：[`lmcache/v1/cache_controller/worker.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/cache_controller/worker.py)
+**代码位置**：[`lmcache/v1/cache_controller/worker.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/cache_controller/worker.py)
 **功能**：
 
 - **通信**：通过 ZMQ 与远端的 `Cache Controller` 保持长连接。
@@ -185,7 +183,7 @@ graph TD
 `RuntimePluginLauncher` 负责在 LMCache 生命周期中加载和管理外部插件，允许用户通过自定义脚本扩展系统功能。
 
 **角色**：插件启动器
-**代码位置**：[`lmcache/v1/plugin/runtime_plugin_launcher.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/plugin/runtime_plugin_launcher.py)
+**代码位置**：[`lmcache/v1/plugin/runtime_plugin_launcher.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/plugin/runtime_plugin_launcher.py)
 **功能**：
 
 - **插件加载**：根据配置扫描并启动指定目录下的 Python 或 Shell 插件脚本。
@@ -201,7 +199,7 @@ graph TD
 `Cache Controller` 是一个独立的进程，负责管理整个 LMCache 集群的元数据和控制流。
 
 **角色**：控制平面（Control Plane）
-**代码位置**：``lmcache/v1/cache_controller/``
+**代码位置**：`lmcache/v1/cache_controller/`
 **功能**：
 
 - **全局视图**：维护集群中所有 KV Cache 的位置信息。
@@ -214,7 +212,7 @@ graph TD
 `LMCache Server` 是 LMCache 自带的一种轻量级远程存储服务，用于跨机共享 KV Cache。它在架构上与 Mooncake Store、Redis 等第三方存储后端处于同一层级。
 
 **角色**：数据平面（Data Plane） - 默认远程存储后端
-**代码位置**：[`lmcache/v1/server/__main__.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/server/__main__.py)
+**代码位置**：[`lmcache/v1/server/__main__.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/server/__main__.py)
 **核心功能与架构**：
 
 - **远程存储后端**：为 `StorageManager` 提供标准的远程存储接口，负责接收并存储来自推理实例的 KV Cache 数据，以及响应读取请求。
@@ -234,7 +232,7 @@ graph TD
 `Controller Dashboard` 是一个基于 Web 的可视化界面，用于监控 LMCache 集群的实时状态。
 
 **角色**：可视化监控看板
-**代码位置**：``lmcache/v1/cache_controller/frontend/``
+**代码位置**：`lmcache/v1/cache_controller/frontend/`
 **功能**：
 
 - **集群监控**：展示所有连接的 LMCache 实例及其状态（CPU/GPU 缓存使用率）。
@@ -329,24 +327,21 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 当推理实例（如 vLLM）完成 Prefill 阶段或进行 KV Cache 驱逐时，LMCache 执行以下流程将数据持久化并共享：
 
 1. **捕获 (Capture)**
-
    - **核心逻辑**: `LMCacheConnector` 作为 vLLM 的插件，在 `save_kv_layer` 等阶段拦截 KV Cache 保存请求。
-   - **代码位置**: [`lmcache/integration/vllm/vllm_v1_adapter.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)
+   - **代码位置**: [`lmcache/integration/vllm/vllm_v1_adapter.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/integration/vllm/vllm_v1_adapter.py)
    - **细节**: 连接器根据已保存的 token 数量 (`skip_leading_tokens`) 计算本次增量保存的 Token 范围，生成 `store_mask`，并调用核心引擎接口 `store(...)`。
 
 2. **传输 (Transfer)**
-
    - **核心逻辑**: `LMCacheEngine` 协调资源，将数据从 GPU 显存高效传输到 CPU 内存。
-   - **代码位置**: [`lmcache/v1/cache_engine.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/cache_engine.py)
+   - **代码位置**: [`lmcache/v1/cache_engine.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/cache_engine.py)
    - **细节**:
      - 首先调用 `TokenDatabase` 根据 Token 序列计算 Chunk Hash Key。
      - 调用 `StorageManager` 申请 CPU 内存 (`MemoryObj`)。
      - 利用 `GPUConnector` 执行 D2H (Device-to-Host) 拷贝。注意：此步骤通常会同步等待数据完全拷贝到 CPU 内存（除非使用特殊优化的异步流且目标也是 GPU），以确保后续存储操作能读取到有效数据。
 
 3. **存储 (Storage)**
-
    - **核心逻辑**: `StorageManager` 将数据分发到配置的存储后端（分层存储）。
-   - **代码位置**: [`lmcache/v1/storage_backend/storage_manager.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/storage_manager.py)
+   - **代码位置**: [`lmcache/v1/storage_backend/storage_manager.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/storage_manager.py)
    - **细节**: `StorageManager` 按照初始化的优先级顺序，遍历所有激活的存储后端并提交任务。
      - **内存分配器说明**:
        - **Global Allocator**: 默认使用 **LocalCPUBackend** (或 PD 模式下的 PDBackend)。所有 KV Cache 必须先写入它分配的 Host Memory。
@@ -365,7 +360,7 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 
 4. **发布 (Publish)** (仅 P2P 模式)
    - **核心逻辑**: 本地存储完成后，异步通知 Cache Controller 更新元数据。
-   - **代码位置**: [`lmcache/v1/storage_backend/local_cpu_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py)
+   - **代码位置**: [`lmcache/v1/storage_backend/local_cpu_backend.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py)
    - **细节**: 当数据成功存入 `LocalCPUBackend` 后，其内部会通过 `BatchedMessageSender` 构造 `ADMIT` 消息，并经由长连接异步发送给 `Cache Controller`。Controller 收到后更新全局路由表，使其他实例能感知到该数据的存在。
 
 ### 5.2 Reuse (读取流程)
@@ -393,7 +388,6 @@ LMCache 支持三种主要的 KV Cache 共享模式，用户可以根据基础�
 LMCache 提供了丰富的存储后端以应对不同的硬件环境和业务需求。
 
 > 详细的场景分析、后端组合方案及优劣势对比，请参阅 **[存储架构概览 - 典型部署场景与选型指南](./05_lmcache_storage_overview.md#4-典型部署场景与后端组合)**。
-
 > 在 Kubernetes 侧基于 LMCache 做 KV 分层的编排方案，参见 [云原生高性能分布式 LLM 推理框架 llm-d 介绍](../../../../04_cloud_native_ai_platform/k8s/05_llm_d_intro.md)。
 
 ---

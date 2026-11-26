@@ -2,7 +2,7 @@
 
 [< 返回架构概览](./01_lmcache_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 本文档深入剖析 LMCache 的核心调度中枢 `LMCacheEngine`——该组件不仅统筹 KV Cache 的存储、检索全生命周期管理，还支撑层级流水线并行推理的 I/O-计算协同，同时实现与 vLLM 等计算引擎的无缝交互、缓存钉住（Pin）/压缩等进阶能力，并联动存储后端完成跨节点缓存迁移与资源释放。
 
@@ -10,7 +10,7 @@
 
 ## 1. 引擎概览
 
-`LMCacheEngine` 位于 [lmcache/v1/cache_engine.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/cache_engine.py)，它是整个系统的控制中枢，集成了多个关键组件以实现高效的 KV Cache 管理。
+`LMCacheEngine` 位于 [lmcache/v1/cache_engine.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/cache_engine.py)，它是整个系统的控制中枢，集成了多个关键组件以实现高效的 KV Cache 管理。
 
 ### 1.1 核心组件
 

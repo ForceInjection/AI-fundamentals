@@ -2,7 +2,7 @@
 
 [< 返回架构概览](./01_lmcache_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 本文档深入剖析 LMCache 的多级存储架构及其代码实现机制。重点阐述核心组件 `StorageManager` 如何协同管理内存 (L1)、弹性互联 (L2)、本地磁盘 (L3) 及远程共享存储 (L4)，并通过智能调度策略实现 KV Cache 的高效流转与生命周期管理。
 
@@ -48,7 +48,7 @@ LMCache 将存储介质划分为四个层级（部分层级可选），依据访
 
 ## 2. StorageManager：核心调度器
 
-`StorageManager` 是整个多级存储的大脑，位于 [lmcache/v1/storage_backend/storage_manager.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/storage_manager.py)。它负责初始化存储后端、分发存储请求以及协调数据检索。
+`StorageManager` 是整个多级存储的大脑，位于 [lmcache/v1/storage_backend/storage_manager.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/storage_manager.py)。它负责初始化存储后端、分发存储请求以及协调数据检索。
 
 ### 2.1 初始化与后端创建
 
@@ -149,7 +149,7 @@ def get(self, key, location=None):
 
 存储后端的创建顺序定义在 `lmcache/v1/storage_backend/__init__.py` 中的 `CreateStorageBackends` 函数里。
 
-[lmcache/v1/storage_backend/  init  .py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/__init__.py)
+[lmcache/v1/storage_backend/ init .py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/__init__.py)
 
 目前的层级顺序是固定的（Hardcoded）：
 
@@ -171,7 +171,7 @@ def get(self, key, location=None):
 
 > 详细代码分析请参阅 [LocalCPUBackend 源码分析](./06_local_cpu_backend.md)。
 
-`LocalCPUBackend` 位于 [lmcache/v1/storage_backend/local_cpu_backend.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_cpu_backend.py)，利用系统内存存储 KV Cache。它是 LMCache 最基础的存储后端，也是默认的**内存分配器 (Allocator)**。
+`LocalCPUBackend` 位于 [lmcache/v1/storage_backend/local_cpu_backend.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_cpu_backend.py)，利用系统内存存储 KV Cache。它是 LMCache 最基础的存储后端，也是默认的**内存分配器 (Allocator)**。
 
 #### 3.2.1 内存分配与逐出 (Eviction)
 
@@ -199,7 +199,7 @@ def allocate(self, ...):
 
 > 详细代码分析请参阅 [PDBackend 源码分析](./08_pd_backend.md)。
 
-`PDBackend` (位于 [lmcache/v1/storage_backend/pd_backend.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/pd_backend.py)) 是为了支持 **Prefill-Decode 分离 (Disaggregation)** 架构而设计的特殊后端。在此架构中，计算负载被拆分为 Prefill（预填充）和 Decode（解码）两个阶段，通常部署在不同的实例甚至机器上。
+`PDBackend` (位于 [lmcache/v1/storage_backend/pd_backend.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/pd_backend.py)) 是为了支持 **Prefill-Decode 分离 (Disaggregation)** 架构而设计的特殊后端。在此架构中，计算负载被拆分为 Prefill（预填充）和 Decode（解码）两个阶段，通常部署在不同的实例甚至机器上。
 
 #### 3.3.1 核心角色与功能
 
@@ -239,7 +239,7 @@ def _get_allocator_backend(self, config):
 
 > 详细代码分析请参阅 [P2PBackend 源码分析](./07_p2p_backend.md)。
 
-`P2PBackend` 位于 [lmcache/v1/storage_backend/p2p_backend.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/p2p_backend.py)，它在存储层级中拥有比本地磁盘更高的优先级。这意味着当本地 CPU 未命中时，系统会优先尝试从其他节点的 CPU 内存中拉取数据，而不是读取本地磁盘。
+`P2PBackend` 位于 [lmcache/v1/storage_backend/p2p_backend.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/p2p_backend.py)，它在存储层级中拥有比本地磁盘更高的优先级。这意味着当本地 CPU 未命中时，系统会优先尝试从其他节点的 CPU 内存中拉取数据，而不是读取本地磁盘。
 
 #### 3.4.1 查找机制 (Multi-Tier Lookup)
 
@@ -258,7 +258,7 @@ def _get_allocator_backend(self, config):
 
 > 详细代码分析请参阅 [LocalDiskBackend 源码分析](./09_local_disk_backend.md)。
 
-`LocalDiskBackend` 位于 [lmcache/v1/storage_backend/local_disk_backend.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py)。
+`LocalDiskBackend` 位于 [lmcache/v1/storage_backend/local_disk_backend.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py)。
 
 #### 3.4.1 依赖 LocalCPUBackend
 
@@ -314,7 +314,7 @@ def write_file(self, buffer, path):
 
 ### 3.6 RemoteBackend (L4) 实现细节
 
-`RemoteBackend` 位于 [lmcache/v1/storage_backend/remote_backend.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/remote_backend.py)，作为四级缓存，负责与远程存储服务交互。
+`RemoteBackend` 位于 [lmcache/v1/storage_backend/remote_backend.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/remote_backend.py)，作为四级缓存，负责与远程存储服务交互。
 
 #### 3.5.1 RemoteConnector 抽象
 

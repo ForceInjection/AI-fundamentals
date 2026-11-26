@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `PDBackend` (Prefill-Decode Backend) 是 LMCache 专为 **预填充-解码分离 (Prefill-Decode Disaggregation)** 架构设计的核心存储后端。在此模式下，计算负载被拆分为两个阶段：
 
@@ -77,7 +77,7 @@ graph LR
 
 本章深入剖析 `PDBackend` 的实现细节。作为系统中最复杂的后端组件，`PDBackend` 不仅实现了标准的存储接口，还集成了 **内存分配器 (Allocator)**、**ZMQ 控制平面** 与 **数据传输平面**。接下来的分析将围绕 Sender (Prefiller) 与 Receiver (Decoder) 的状态流转展开，揭示其如何通过协同工作实现高效的 KV Cache 推送。
 
-代码位于 [`lmcache/v1/storage_backend/pd_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/pd_backend.py)。
+代码位于 [`lmcache/v1/storage_backend/pd_backend.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/pd_backend.py)。
 
 ### 2.1 初始化与配置
 

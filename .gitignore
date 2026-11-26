@@ -205,3 +205,6 @@ Gemfile.lock
 99_misc/ai_infra_jd_survey/data/
 99_misc/ai_infra_jd_survey/analysis/
 99_misc/ai_infra_jd_survey/scripts/
+
+# vLLM 十讲：deck 由 ppt-outline 生成、PowerPoint 本地维护，不入库
+10_ai_related_course/vllm_course/**/*.pptx

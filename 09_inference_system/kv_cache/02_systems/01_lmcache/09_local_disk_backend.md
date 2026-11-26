@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `LocalDiskBackend` 构成了 LMCache 多级存储架构中的 **L3 本地磁盘缓存层**。它利用本地磁盘（强烈推荐 NVMe SSD）作为高容量、低成本的扩展缓冲池，主要用于接纳从 L1/L2 内存层溢出（Evict）的冷热数据。
 
@@ -25,7 +25,7 @@
   - Key: `model/layer/chunk_hash`
   - Filename: `model-layer-chunk_hash.pt`
 
-代码实现参考 [key_to_path](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L174-L178)：
+代码实现参考 [key_to_path](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L174-L178)：
 
 ```python
     def _key_to_path(
@@ -39,8 +39,8 @@
 
 为了极致的 I/O 性能，磁盘文件**不包含任何元数据头**（Header），仅存储 Tensor 的原始字节流（Raw Bytes）。这是通过 `write_file` 和 `read_file` 方法直接操作 `MemoryObj` 的 `byte_array` 来实现的。
 
-- **写入**: 直接将内存中 `MemoryObj` 的 `byte_array` 写入磁盘。代码参考 [write_file](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L547-L561)。
-- **读取**: 由于文件不自描述，读取时必须依赖内存中的**索引元数据**来获知数据的 Shape、Dtype 和 Format，才能正确地将字节流还原为 Tensor。代码参考 [read_file](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L563-L591)。
+- **写入**: 直接将内存中 `MemoryObj` 的 `byte_array` 写入磁盘。代码参考 [write_file](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L547-L561)。
+- **读取**: 由于文件不自描述，读取时必须依赖内存中的**索引元数据**来获知数据的 Shape、Dtype 和 Format，才能正确地将字节流还原为 Tensor。代码参考 [read_file](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L563-L591)。
 
 这种设计消除了序列化/反序列化的 CPU 开销，实现了 Memory-to-Disk 的零拷贝传输（配合 O_DIRECT）。
 
@@ -54,9 +54,9 @@
 
 为了在无元数据头的扁平文件中快速定位和还原 Tensor，`LocalDiskBackend` 在内存中维护了一个全局的元数据索引。这个索引是整个后端正常工作的核心，它弥补了文件系统无法自描述的缺陷。
 
-- **索引结构**: `self.dict` (线程安全字典)。初始化时通过 `self.cache_policy.init_mutable_mapping()` 创建，参考 [init](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L113)。
+- **索引结构**: `self.dict` (线程安全字典)。初始化时通过 `self.cache_policy.init_mutable_mapping()` 创建，参考 [init](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L113)。
 - **映射关系**: `CacheEngineKey` -> `DiskCacheMetadata`。
-- **DiskCacheMetadata 核心字段**: (定义于 [lmcache/utils.py](https://github.com/LMCache/LMCache/blob/main/lmcache/utils.py#L257-L266))
+- **DiskCacheMetadata 核心字段**: (定义于 [lmcache/utils.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/utils.py#L257-L266))
   - `path`: 文件绝对路径。
   - `size`: 数据字节大小。
   - `shape`: Tensor 形状 (关键，用于还原)。
@@ -71,7 +71,7 @@
 
 **关键设计：细粒度锁 (Fine-grained Locking)**：为了最大化并发性能，系统严格遵循**锁仅保护快速的内存元数据操作，而将耗时的磁盘 I/O 置于临界区（Critical Section）外执行**的原则。
 
-以下面的 `get_blocking` 方法为例，我们可以清晰地看到这一模式。代码参考 [get_blocking](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L356-L384)：
+以下面的 `get_blocking` 方法为例，我们可以清晰地看到这一模式。代码参考 [get_blocking](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L356-L384)：
 
 ```python
     def get_blocking(self, key: CacheEngineKey) -> Optional[MemoryObj]:
@@ -124,7 +124,7 @@
 
 Linux 的标准 I/O 会将数据缓存在 Page Cache 中，这在 KV Cache 场景下会导致双重缓存（LMCache 已有 L1 内存池）和额外的内存拷贝。
 
-`LocalDiskBackend` 在 [write_file](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L547-L561) 和 [read_file](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L563-L591) 中实现了 `O_DIRECT` 模式。
+`LocalDiskBackend` 在 [write_file](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L547-L561) 和 [read_file](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L563-L591) 中实现了 `O_DIRECT` 模式。
 
 以下是 `write_file` 的核心实现，清晰展示了 `O_DIRECT` 的启用条件与调用方式：
 
@@ -170,7 +170,7 @@ Linux 的标准 I/O 会将数据缓存在 Page Cache 中，这在 KV Cache 场�
 
    - **这是 Put 流程中唯一的阻塞点**。
    - 在提交任务前，检查磁盘缓存空间是否充足。如果不足，主线程会**阻塞**，循环调用 `cache_policy.get_evict_candidates` 并执行删除，直到腾出足够空间。
-   - **源码位置**: [submit_put_task](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L310-L329)
+   - **源码位置**: [submit_put_task](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L310-L329)
 
    ```python
    # 伪代码逻辑
@@ -212,7 +212,7 @@ Linux 的标准 I/O 会将数据缓存在 Page Cache 中，这在 KV Cache 场�
 
 底层使用 `AsyncPQThreadPoolExecutor` 实现了一个基于优先级的异步线程池。它结合了 `asyncio.PriorityQueue` 和线程池（`asyncio.to_thread`），确保关键路径上的 I/O 操作优先执行。
 
-**源码位置**: [AsyncPQThreadPoolExecutor](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/job_executor/pq_executor.py#L111)
+**源码位置**: [AsyncPQThreadPoolExecutor](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/job_executor/pq_executor.py#L111)
 
 **调度策略**:
 
@@ -231,16 +231,16 @@ Linux 的标准 I/O 会将数据缓存在 Page Cache 中，这在 KV Cache 场�
 
 在高并发场景下（如多个 Request 引用了相同的 Prefix），可能会对同一个 Key 多次触发 `put` 操作。为了避免重复 I/O 浪费带宽，`LocalDiskWorker` 维护了一个正在进行的任务列表 `put_tasks`。
 
-**源码位置**: [LocalDiskWorker.put_tasks](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L40)
+**源码位置**: [LocalDiskWorker.put_tasks](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L40)
 
 **工作流程**:
 
 1. **提交检查**: 调用 `insert_put_task` 前，先检查 Key 是否已存在。
    - 如果存在，直接跳过并记录日志 (`Put task ... already in progress`)。
-   - 代码: [submit_put_task](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L299-L301)
+   - 代码: [submit_put_task](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L299-L301)
 2. **任务注册**: 将 Key 加入 `put_tasks` 列表（由 `put_lock` 保护）。
 3. **任务完成**: 磁盘写入完成后，调用 `remove_put_task` 将 Key 移除，允许后续再次写入。
-   - 代码: [async_save_bytes_to_disk](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/local_disk_backend.py#L492)
+   - 代码: [async_save_bytes_to_disk](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/local_disk_backend.py#L492)
 
 ---
 
@@ -248,7 +248,7 @@ Linux 的标准 I/O 会将数据缓存在 Page Cache 中，这在 KV Cache 场�
 
 `LocalDiskBackend` 的行为由 `LMCacheEngineConfig` 统一管理。以下是核心配置项及其对性能的影响：
 
-- **源码位置**: [LMCacheEngineConfig](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/config.py)
+- **源码位置**: [LMCacheEngineConfig](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/config.py)
 
 | 配置项                        | 类型    | 默认值        | 说明                                                                                                                                                                                                         |
 | :---------------------------- | :------ | :------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

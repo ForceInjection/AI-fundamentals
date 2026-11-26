@@ -2,7 +2,7 @@
 
 [< 返回架构概览](./01_lmcache_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 **LMCacheConnector** 是 LMCache 架构中负责与 vLLM 计算引擎深度集成的核心适配层。它作为 vLLM 的 `KVConnectorBase_V1` 接口实现，驻留在 vLLM 的进程空间内，充当了 vLLM **基于 Block 的物理内存视图**与 LMCache **基于 Token 的逻辑存储视图**之间的智能转换器与调度器。
 
@@ -19,7 +19,7 @@
 
 ## 1. 连接器架构与初始化
 
-代码主要位于 [lmcache/integration/vllm/lmcache_connector_v1.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/lmcache_connector_v1.py)（入口类）与 [lmcache/integration/vllm/vllm_v1_adapter.py](https://github.com/LMCache/LMCache/blob/main/lmcache/integration/vllm/vllm_v1_adapter.py)（核心实现），组件生命周期由 [lmcache/v1/manager.py](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/manager.py) 的 `LMCacheManager` 统一管理。本章介绍连接器的核心组件构成及其初始化流程。
+代码主要位于 [lmcache/integration/vllm/lmcache_connector_v1.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/integration/vllm/lmcache_connector_v1.py)（入口类）与 [lmcache/integration/vllm/vllm_v1_adapter.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/integration/vllm/vllm_v1_adapter.py)（核心实现），组件生命周期由 [lmcache/v1/manager.py](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/manager.py) 的 `LMCacheManager` 统一管理。本章介绍连接器的核心组件构成及其初始化流程。
 
 ### 1.1 核心组件
 

@@ -2,7 +2,7 @@
 
 [< 返回存储架构概览](./05_lmcache_storage_overview.md)
 
-> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05
+> 核对基线：LMCache v0.5.1（commit 979719d7，2026-07-02）；本文核对日期 2026-11-05。**版本边界**：本文所述为 v0.5.1 的 in-process 架构——该代架构已于 v0.5.7–v0.5.8 移除（#5785/#6135/#6254），与 transwarp fork（v0.5.1+7）同源，对本仓部署仍有效；现行 MultiProcess 架构见 [../02_lmcache_v058/README.md](../02_lmcache_v058/README.md)。
 
 `P2PBackend` 构成了 LMCache 多级存储架构中的 **L2 弹性互联层**。它的核心理念是打破单机内存的物理隔离，通过高速网络（如 RDMA 或 TCP）将集群中其他节点的空闲内存汇聚成一个巨大的共享缓存池。
 
@@ -71,7 +71,7 @@ graph LR
 
 ## 2. 核心代码解析
 
-`P2PBackend` 类位于 [`lmcache/v1/storage_backend/p2p_backend.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/storage_backend/p2p_backend.py)，它继承自 `StorageBackendInterface`。
+`P2PBackend` 类位于 [`lmcache/v1/storage_backend/p2p_backend.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/storage_backend/p2p_backend.py)，它继承自 `StorageBackendInterface`。
 
 ### 2.1 初始化与连接管理
 
@@ -208,11 +208,11 @@ async def _handle_batched_lookup_and_get(self, msg):
 
 为了适配不同的网络环境（TCP, RDMA, etc.），`P2PBackend` 使用 `TransferChannel` 隔离了底层传输细节。
 
-代码位置: ``lmcache/v1/transfer_channel/``
+代码位置: `lmcache/v1/transfer_channel/`
 
 ### 3.1 接口定义
 
-`BaseTransferChannel` (在 [`abstract.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/transfer_channel/abstract.py) 中定义) 是所有传输通道的基类。所有具体的传输通道都必须实现此接口，定义了初始化和批量读写的基本行为。
+`BaseTransferChannel` (在 [`abstract.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/transfer_channel/abstract.py) 中定义) 是所有传输通道的基类。所有具体的传输通道都必须实现此接口，定义了初始化和批量读写的基本行为。
 
 核心接口方法如下：
 
@@ -252,19 +252,19 @@ LMCache 目前提供了以下三种 `TransferChannel` 实现，分别针对不�
 
 **1. PySocketChannel**：
 
-- **代码**: [`py_socket_channel.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/transfer_channel/py_socket_channel.py)
+- **代码**: [`py_socket_channel.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/transfer_channel/py_socket_channel.py)
 - **定位**: 基础实现 / 控制平面参考
 - **描述**: 目前主要实现了基于 ZMQ 的控制平面握手与初始化逻辑。它通常作为其他 Channel 的基类（例如 `MockMemoryChannel`），用于复用标准的连接建立流程。未来计划扩展支持基于原生 TCP Socket 的数据传输能力。
 
 **2. NixlChannel**：
 
-- **代码**: [`nixl_channel.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/transfer_channel/nixl_channel.py)
+- **代码**: [`nixl_channel.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/transfer_channel/nixl_channel.py)
 - **定位**: 高性能生产级通道
 - **描述**: 基于 [UCX](https://openucx.org/) (通过 `nixl` 库封装) 的高性能传输实现。它支持 RDMA 等高速网络协议，利用零拷贝（Zero-copy）和内存注册（Memory Registration）技术，在不同节点的 CPU/GPU 内存间实现低延迟、高吞吐的数据传输。这是生产环境中推荐的配置。
 
 **3. MockMemoryChannel**：
 
-- **代码**: [`mock_memory_channel.py`](https://github.com/LMCache/LMCache/blob/main/lmcache/v1/transfer_channel/mock_memory_channel.py)
+- **代码**: [`mock_memory_channel.py`](https://github.com/LMCache/LMCache/blob/v0.5.8/lmcache/v1/transfer_channel/mock_memory_channel.py)
 - **定位**: 测试与调试
 - **描述**: 继承自 `PySocketChannel`，但在数据平面使用进程内的全局字典 (`_GLOBAL_DATA_STORE`) 来模拟数据传输。它仅适用于单进程环境下的功能验证、单元测试或调试，不具备跨进程或跨网络传输能力。
 
@@ -513,7 +513,7 @@ p2p_lookup_ports: [60001] # 控制端口 A
 
 ```yaml
 p2p_host: "127.0.0.1"
-p2p_init_ports: [60002]   # 数据端口 B (必须不同)
+p2p_init_ports: [60002] # 数据端口 B (必须不同)
 p2p_lookup_ports: [60003] # 控制端口 B (必须不同)
 ```
 
