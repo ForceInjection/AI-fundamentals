@@ -143,3 +143,4 @@ _GPU Architecture and Programming — An Introduction_：
 ## 参考资料
 
 - [CUDA 编程简介 - 基础与实践.pdf](./references/CUDA%20%E7%BC%96%E7%A8%8B%E7%AE%80%E4%BB%8B%20-%20%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%AE%9E%E8%B7%B5.pdf)
+- [FreeCodeCamp CUDA 课 · 从 C/C++ 基础到亲手写神经网络](./references/cuda-course.md) - 外部课程档案：11 章视频配套讲义导读 + 每课一张手绘图，本系列 21 篇的零基础入口。
