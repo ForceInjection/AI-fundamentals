@@ -1,6 +1,6 @@
 # 当 KV Cache 装不进内存：FAST'26 五篇论文给出的五个不同答案
 
-> **元信息**：本文是 FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）「AI and LLMs」两个 session 的系列总纲。五篇 KV Cache × 存储核心论文均有单篇精读：[SolidAttention](02_solidattention.md) · [CacheSlide](03_cacheslide.md) · [Bidaw](04_bidaw.md) · [AITURBO](05_aiturbo.md) · [PPC/modelFS](../../deployment/fast26-programmable-page-cache.md)（另 2 篇训练检查点、2 篇支撑性工作计入口径，Agent 精读报告见 [references/](references/)）。本文数字已与论文原文逐条对照；整理日期 2026-10-10。
+> **元信息**：本文是 FAST '26（24th USENIX Conference on File and Storage Technologies，2026-02-24~26，Santa Clara）「AI and LLMs」两个 session 的系列总纲。五篇 KV Cache × 存储核心论文均有单篇精读：[SolidAttention](02_solidattention.md) · [CacheSlide](03_cacheslide.md) · [Bidaw](04_bidaw.md) · [AITURBO](05_aiturbo.md) · [PPC/modelFS](../../deployment/fast26-programmable-page-cache.md)（另 2 篇训练检查点、2 篇支撑性工作计入口径，单篇精读报告见 [references/](references/)）。本文数字已与论文原文逐条对照；整理日期 2026-10-10。
 
 FAST '26 的「AI and LLMs」两个 session 共九篇论文，本文只精读其中五篇。筛选标准只有一条：是否在处理「KV Cache 与存储系统打交道」这个问题。剩下的四篇不在交点上：GCR 与 AdaCheck 优化的是训练检查点的存取（对象是参数与优化器状态，不是 KV），Seneca 处理训练数据的预处理管道，SYSSPEC（最佳论文）讲的是怎么用 LLM 生成文件系统。这四篇里 SYSSPEC 值得后续单独写，其余与本系列主题无关，故不展开。
 

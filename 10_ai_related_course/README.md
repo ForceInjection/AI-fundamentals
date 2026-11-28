@@ -52,11 +52,11 @@ Trae 智能编程实战教程采用循序渐进的五阶结构，系统讲解从
 
 ### 2.5 vLLM 十讲
 
-10 讲 × 120 分钟的 vLLM 实战课，先修 nano-vllm 实战课程（8 课）。每讲四层递进：nano 已学形态回顾 → V0 → V1 → Model Runner V2 演进 → 当前版本（基线 vLLM `1acec5c009`，v0.34.0rc0）源码走读 → 上手实验。十讲覆盖引擎总架构、调度器、KV cache 管理（含 PagedAttention 退役）、注意力后端、CUDA Graph 与编译、并行与 EP、投机解码、量化、KV 分载与 PD 分离、生产运维与生态。详见 [vllm_course/README.md](vllm_course/README.md)。
+10 讲 × 120 分钟的 vLLM 实战课，先修 nano-vllm 实战课程（8 课）。每讲四层递进：nano 已学形态回顾 → V0 → V1 → Model Runner V2 演进 → 当前版本（基线 vLLM `2f5d8a2b1`，v0.34.1rc0-84）源码走读 → 上手实验。十讲覆盖引擎总架构、调度器、KV cache 管理（含 PagedAttention 退役）、注意力后端、CUDA Graph 与编译、并行与 EP、投机解码、量化、KV 分载与 PD 分离、生产运维与生态。详见 [vllm_course/README.md](vllm_course/README.md)。
 
 - **先修**：[nano-vllm 实战课程](https://github.com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md)。
 - **互补**：KV 容量账本与对象图细节在 [KV Cache 八讲](kv_cache_course/README.md)（两课互相导流，不重复）。
-- **撰写状态**：第 1 讲优先成稿，各讲导读先行。
+- **撰写状态**：十讲全部成稿，每讲导读、syllabus、ppt-outline、实验与作业齐备；另配结课考试卷（exam/）。
 
 ### 2.6 哈佛 CS2680 Modern AI Systems
 

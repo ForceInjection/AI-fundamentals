@@ -6,7 +6,7 @@ nano-vllm 用约 1,400 行 Python 实现了推理引擎的全部核心机制：�
 
 这门课讲的就是这段路：每个主题从你在 nano-vllm 里见过的最小形态出发，看它在真实 vLLM 里演进成了什么、为什么这样设计，最后落到当前版本(v0.34)的源码与上手操作。
 
-**适合谁**：学过 [nano-vllm 实战课程](https://github.`com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md`)（8 课），或能独立读懂 nano-vllm 的 `scheduler.py` 和 `block_manager.py` 的工程师。目标是用上、用好 vLLM 这类生产推理框架。
+**适合谁**：学过 [nano-vllm 实战课程](https://github.com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md)（8 课），或能独立读懂 nano-vllm 的 `scheduler.py` 和 `block_manager.py` 的工程师。目标是用上、用好 vLLM 这类生产推理框架。
 
 | 项目   | 内容                                                     |
 | ------ | -------------------------------------------------------- |
@@ -111,7 +111,7 @@ nano-vllm 教会你机制，生产环境要求你面对真实约束：模型形�
 | 生产部署、压测、集群生态              | ✅ 核心内容（第 10 讲）        | 选型判断的容量输入（第 8 讲）   |
 | 先修顺序                              | 先修 nano-vllm 8 课          | 可与本课穿插或后学            |
 
-另有两类材料不参与边界切分：[nano-vllm 实战课程](https://github.`com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md`)是本课先修（第 1 层「nano 回顾」贯穿全部十讲）；[AI-fundamentals 推理系统目录](../../09_inference_system/README.md)是深读材料库，若干主题的「演进脉络」一节会引用其源码精读文（旧文标注版本锚点，行号以本课基线重新核对为准）。
+另有两类材料不参与边界切分：[nano-vllm 实战课程](https://github.com/ForceInjection/nano-vllm/blob/main/docs/llm-inference-visual/README.md)是本课先修（第 1 层「nano 回顾」贯穿全部十讲）；[AI-fundamentals 推理系统目录](../../09_inference_system/README.md)是深读材料库，若干主题的「演进脉络」一节会引用其源码精读文（旧文标注版本锚点，行号以本课基线重新核对为准）。
 
 ## 三、怎么学习
 
