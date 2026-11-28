@@ -61,6 +61,7 @@
 §2.1 的 Prefix Caching 和 §2.2.2 的 PD 传输都有一个共同前提：缓存的产生者和消费者是**同一个模型**。换了模型，缓存全部作废——而长 agentic 会话与多模型编排正在让"换模型"变成常态，每次切换都要对累积上下文重新 prefill 一遍。
 
 - **[把 14B 的 KV 交给 32B：跨模型复用的可能与代价](01_concepts/09_cross_model/01_cross_model_kv_transfer.md)**：NVIDIA 的闭式线性映射方案（arXiv:2608.03893）。从"KV 是残差流的线性投影"推导出线性映射为何是正确的函数形式，拆解 cross-layer selection / RoPE factoring / per-head ridge 三个组件，核对六组模型对的 retention、GSM8K 断层、R² 与 retention 不相关的反直觉发现，以及 mapper 体积、方向性与校准成本这笔部署账。文末给出适用边界的判断。
+- **[模型升级了，KV Cache 还能接着用吗：DeepSeek-V4-Flash 跨版本复用实测](01_concepts/09_cross_model/02_cross_version_kv_reuse.md)**：跨版本 direct reuse 的实验级深读（arXiv:2611.14051）。四个模型对三种命运：GLM/V4.1 近无损（32K 有害翻转率 0.53%/4.22%）、V4-Flash 总分涨但藏损（破 13 修 24）、Qwen 崩（78.30%）；缓存已备好时 TTFT 加速 2.10–5.08× 而短前缀负加速 0.86×，multi-hop QA 掉 3–7 F1；Flash 缓存注入 Base 把检索从 0% 抬到 91.15%，说明缓存携带指令遵循状态；FCD/HFR 两个指标与「跨版本优先直用、跨尺寸才走映射」的分工判断。上一篇的续篇。
 
 ### 2.4 压缩与量化机制
 

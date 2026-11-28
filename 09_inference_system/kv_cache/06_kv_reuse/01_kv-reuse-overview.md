@@ -125,9 +125,10 @@
 
 - [Prefix Caching 原理与实现](../01_concepts/02_prefix_caching/02_prefix_caching.md) · [RadixAttention 原理与 SGLang 实践及 vLLM APC 对比](../01_concepts/02_prefix_caching/01_radix_attention.md) · [Claude 提示词缓存机制与源码实现深度分析](../01_concepts/02_prefix_caching/03_claude_prompt_caching.md) · [RoPE 与 Prefix Caching 的互作用](../01_concepts/02_prefix_caching/04_rope_and_prefix_caching.md) · [KV Cache 压缩技术详解](../01_concepts/06_compression/01_kv_cache_compression.md)（含系统层 I/O 优化与共享背景）
 
-**跨模型复用的另一条路线**（不借 KV，直接映射）：
+**跨模型与跨版本复用**（映射与直用两条路线）：
 
 - [把 14B 的 KV 交给 32B：跨模型复用的可能与代价](../01_concepts/09_cross_model/01_cross_model_kv_transfer.md)
+- [模型升级了，KV Cache 还能接着用吗：DeepSeek-V4-Flash 跨版本复用实测](../01_concepts/09_cross_model/02_cross_version_kv_reuse.md)
 
 **近前缀复用的工程路线**（框内补救）：
 
