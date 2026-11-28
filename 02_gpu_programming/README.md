@@ -12,6 +12,8 @@
 
 走完这三步，就能独立完成从写 Kernel 到定位带宽/算力瓶颈的过程。
 
+**学习路径**：正在找 CUDA 入门入口的读者，从 [CUDA 学习课程体系](99_courses/cuda-learning-path.md) 开始——它把外部开源课程（cuda-course、GPU-Puzzles、siboehm、LeetCUDA、gpu-mode、H100 课等）与本仓自研内容织成五阶段路径，每阶段带过关标准与本仓对照。重点课程单独建档于 [99_courses/ 课程目录](99_courses/README.md)（首个档案：FreeCodeCamp CUDA 课逐章导读）。
+
 ---
 
 ## 2. 环境准备

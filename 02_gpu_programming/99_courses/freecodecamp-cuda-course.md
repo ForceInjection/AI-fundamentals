@@ -1,14 +1,16 @@
 # FreeCodeCamp CUDA 课 · 从 C/C++ 基础到亲手写神经网络
 
 > 仓库：[Infatoshi/cuda-course](https://github.com/Infatoshi/cuda-course) · 作者 Elliot Arledge · 视频课发布在 freeCodeCamp YouTube（全长 12 小时上下，以课程页标注为准）
-> 核对基线：仓库 HEAD `79681bf`（2026-03-10）；星数 2,660、月增 396（核实于 2026-11-27）；课程面向 Ubuntu Linux
+> 核对基线：仓库 HEAD `79681bf`（2026-03-10）；星数 4,192（2026-11-28 gh api 口径，此前引用的 2,660 为 trending 页渲染误差）；课程面向 Ubuntu Linux
 
 ## 定位
 
-[本目录的 21 篇系列](../README.md)默认读者已经会写代码、能直接进 CUDA 语境。这门课补的正好是缺的那段：从 C/C++ 复习开始，一步步走到用纯 CUDA 手写一个神经网络，识别 0 到 9 的手写数字（MNIST 数据集）。两个用途：
+[02_cuda 的 21 篇系列](../02_cuda/README.md)默认读者已经会写代码、能直接进 CUDA 语境。这门课补的正好是缺的那段：从 C/C++ 复习开始，一步步走到用纯 CUDA 手写一个神经网络，识别 0 到 9 的手写数字（MNIST 数据集）。两个用途：
 
 - 给没写过 kernel 的人一条平缓的入口，梯度刻意放得很低，连 Makefile 和调试器都先复习再进正题；
-- 作为 [Stanford CS336](../../../10_ai_related_course/university_courses/stanford-cs336.md) 作业 2（CUDA/Triton kernel、flash attention、环形 all-reduce）的前置热身，CS336 不教 CUDA 基础。
+- 作为 [Stanford CS336](../../10_ai_related_course/university_courses/stanford-cs336.md) 作业 2（CUDA/Triton kernel、flash attention、环形 all-reduce）的前置热身，CS336 不教 CUDA 基础。
+
+在整条学习路径中的位置：Stage 0–1 的主线课，体系总览见 [CUDA 学习课程体系](cuda-learning-path.md)。
 
 仓库本体是视频课的配套讲义：11 章 README 合计约 700 行，多数章节是笔记式导读和资源索引，单看仓库学不完整，需要配视频。
 
@@ -81,10 +83,10 @@
 
 与本仓库内容的衔接，按学习顺序：
 
-- 02 环境章以 Ubuntu runfile 裸装为主线；生产容器路线见[环境准备目录](../../01_environment/README.md)，裸金属安装步骤可对照[裸金属 CUDA 环境安装指南](../../01_environment/03_cuda_metal_install_guide.md)；
-- 07 的 MatMul 优化阶梯学完后，往深处走是本系列的[Roofline 调优方法论](../17_roofline_optimization.md)与[Tensor Core GEMM 实测](../11_tensor_core_gemm.md)；quantized GEMM 方向接[量化 GEMM 深读目录](../../06_quant_gemm/README.md)（Marlin/UMMA）；
-- 08 Triton 之后可以对比 [TileLang](../../03_tilelang/README.md)：两者都是把线程细节交给编译器的 tile 抽象。Triton 用 Python 直接写，性能可比 cuBLAS/cuDNN；TileLang 覆盖 CUDA/HIP/Metal/Ascend 多后端，长于逼近硬件极限的 GEMM/FlashAttention 实现；
-- 终点项目（MNIST MLP）做完，就可以进本系列压轴的[手搓 Attention](../21_write_attention_from_scratch.md)。
+- 02 环境章以 Ubuntu runfile 裸装为主线；生产容器路线见[环境准备目录](../01_environment/README.md)，裸金属安装步骤可对照[裸金属 CUDA 环境安装指南](../01_environment/03_cuda_metal_install_guide.md)；
+- 07 的 MatMul 优化阶梯学完后，往深处走是本系列的[Roofline 调优方法论](../02_cuda/17_roofline_optimization.md)与[Tensor Core GEMM 实测](../02_cuda/11_tensor_core_gemm.md)；quantized GEMM 方向接[量化 GEMM 深读目录](../06_quant_gemm/README.md)（Marlin/UMMA）；
+- 08 Triton 之后可以对比 [TileLang](../03_tilelang/README.md)：两者都是把线程细节交给编译器的 tile 抽象。Triton 用 Python 直接写，性能可比 cuBLAS/cuDNN；TileLang 覆盖 CUDA/HIP/Metal/Ascend 多后端，长于逼近硬件极限的 GEMM/FlashAttention 实现；
+- 终点项目（MNIST MLP）做完，就可以进本系列压轴的[手搓 Attention](../02_cuda/21_write_attention_from_scratch.md)。
 
 实操提示：macOS 机器没有 NVIDIA GPU，02 章装不了，走远程云 GPU 或实验室服务器；课程自己说明 Windows 需要借道 WSL 或 Docker。深度上这门课止步于入门，07 章之后的真正优化要靠 siboehm 博客和本系列进阶篇补。
 
